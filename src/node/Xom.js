@@ -1054,7 +1054,7 @@ class Xom extends Node {
   }
 
   /**
-   * 将currentStyle计算为computedStyle，同时存入cacheStyle可缓存的结果防止无变更重复计算
+   * 将currentStyle计算为computedStyle，同时存入cacheStyle可缓存的结果防止无变更重复计算，返回背景渲染范围
    * @param renderMode
    * @param ctx
    * @param parent
@@ -1663,9 +1663,9 @@ class Xom extends Node {
     else {
       matrix = this.__calMatrix(lv, cacheStyle, currentStyle, computedStyle, x1, y1, offsetWidth, offsetHeight);
     }
-    // 计算好cacheStyle的内容，在cache且canvas模式时已经提前算好
+    // 计算好cacheStyle的内容，在canvas模式时已经提前算好
     let bx1, by1, bx2, by2;
-    if(cache && renderMode === CANVAS) {
+    if(renderMode === CANVAS) {
       bx1 = this.__bx1;
       bx2 = this.__bx2;
       by1 = this.__by1;

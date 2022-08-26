@@ -22628,7 +22628,7 @@
         return matrixCache;
       }
       /**
-       * 将currentStyle计算为computedStyle，同时存入cacheStyle可缓存的结果防止无变更重复计算
+       * 将currentStyle计算为computedStyle，同时存入cacheStyle可缓存的结果防止无变更重复计算，返回背景渲染范围
        * @param renderMode
        * @param ctx
        * @param parent
@@ -23283,12 +23283,12 @@
           matrix = this.__matrix;
         } else {
           matrix = this.__calMatrix(lv, cacheStyle, currentStyle, computedStyle, x1, y1, offsetWidth, offsetHeight);
-        } // 计算好cacheStyle的内容，在cache且canvas模式时已经提前算好
+        } // 计算好cacheStyle的内容，在canvas模式时已经提前算好
 
 
         var bx1, by1, bx2, by2;
 
-        if (cache && renderMode === CANVAS$1) {
+        if (renderMode === CANVAS$1) {
           bx1 = this.__bx1;
           bx2 = this.__bx2;
           by1 = this.__by1;
@@ -33656,11 +33656,18 @@
             Cache.drawCache(_target, __cacheTotal);
             ctxTotal.globalCompositeOperation = 'source-over';
           } else {
-            if (_refreshLevel >= REPAINT$1) {
-              // 手动计算cacheStyle和根据border-box的坐标再渲染
-              _node2.__calCache(renderMode, ctxTotal, _node2.__domParent, _node2.__cacheStyle, _node2.__currentStyle, _node2.__computedStyle, _node2.__clientWidth, _node2.__clientHeight, _node2.__offsetWidth, _node2.__offsetHeight, _computedStyle2[BORDER_TOP_WIDTH$1], _computedStyle2[BORDER_RIGHT_WIDTH], _computedStyle2[BORDER_BOTTOM_WIDTH$1], _computedStyle2[BORDER_LEFT_WIDTH$1], _computedStyle2[PADDING_TOP$1], _computedStyle2[PADDING_RIGHT], _computedStyle2[PADDING_BOTTOM$1], _computedStyle2[PADDING_LEFT$1], _node2.__sx1, _node2.__sx2, _node2.__sx3, _node2.__sx4, _node2.__sx5, _node2.__sx6, _node2.__sy1, _node2.__sy2, _node2.__sy3, _node2.__sy4, _node2.__sy5, _node2.__sy6);
-            }
-
+            // if(__refreshLevel >= REPAINT) {
+            //   // 手动计算cacheStyle和根据border-box的坐标再渲染
+            //   node.__calCache(renderMode, ctxTotal, node.__domParent,
+            //     node.__cacheStyle, node.__currentStyle, node.__computedStyle,
+            //     node.__clientWidth, node.__clientHeight, node.__offsetWidth, node.__offsetHeight,
+            //     computedStyle[BORDER_TOP_WIDTH], computedStyle[BORDER_RIGHT_WIDTH],
+            //     computedStyle[BORDER_BOTTOM_WIDTH], computedStyle[BORDER_LEFT_WIDTH],
+            //     computedStyle[PADDING_TOP], computedStyle[PADDING_RIGHT],
+            //     computedStyle[PADDING_BOTTOM], computedStyle[PADDING_LEFT],
+            //     node.__sx1, node.__sx2, node.__sx3, node.__sx4, node.__sx5, node.__sx6,
+            //     node.__sy1, node.__sy2, node.__sy3, node.__sy4, node.__sy5, node.__sy6);
+            // }
             var res = _node2.render(renderMode, _refreshLevel, ctxTotal, _i2 === index ? LOCAL : CHILD, dx, dy);
 
             var _ref = res || {},
@@ -33998,12 +34005,19 @@
                   ctx.setTransform(_m[0], _m[1], _m[4], _m[5], _m[12], _m[13]);
                 } else {
                   ctx.setTransform(1, 0, 0, 1, 0, 0);
-                }
+                } // if(__refreshLevel >= REPAINT) {
+                //   // 手动计算cacheStyle和根据border-box的坐标再渲染
+                //   node.__calCache(renderMode, ctx, node.__domParent,
+                //     node.__cacheStyle, node.__currentStyle, node.__computedStyle,
+                //     node.__clientWidth, node.__clientHeight, node.__offsetWidth, node.__offsetHeight,
+                //     computedStyle[BORDER_TOP_WIDTH], computedStyle[BORDER_RIGHT_WIDTH],
+                //     computedStyle[BORDER_BOTTOM_WIDTH], computedStyle[BORDER_LEFT_WIDTH],
+                //     computedStyle[PADDING_TOP], computedStyle[PADDING_RIGHT],
+                //     computedStyle[PADDING_BOTTOM], computedStyle[PADDING_LEFT],
+                //     node.__sx1, node.__sx2, node.__sx3, node.__sx4, node.__sx5, node.__sx6,
+                //     node.__sy1, node.__sy2, node.__sy3, node.__sy4, node.__sy5, node.__sy6);
+                // }
 
-                if (_refreshLevel3 >= REPAINT$1) {
-                  // 手动计算cacheStyle和根据border-box的坐标再渲染
-                  _node3.__calCache(renderMode, ctx, _node3.__domParent, _node3.__cacheStyle, _node3.__currentStyle, _node3.__computedStyle, _node3.__clientWidth, _node3.__clientHeight, _node3.__offsetWidth, _node3.__offsetHeight, _computedStyle3[BORDER_TOP_WIDTH$1], _computedStyle3[BORDER_RIGHT_WIDTH], _computedStyle3[BORDER_BOTTOM_WIDTH$1], _computedStyle3[BORDER_LEFT_WIDTH$1], _computedStyle3[PADDING_TOP$1], _computedStyle3[PADDING_RIGHT], _computedStyle3[PADDING_BOTTOM$1], _computedStyle3[PADDING_LEFT$1], _node3.__sx1, _node3.__sx2, _node3.__sx3, _node3.__sx4, _node3.__sx5, _node3.__sx6, _node3.__sy1, _node3.__sy2, _node3.__sy3, _node3.__sy4, _node3.__sy5, _node3.__sy6);
-                }
 
                 var _res = _node3.render(renderMode, _refreshLevel3, ctx, CHILD, dx, dy);
 
@@ -36020,15 +36034,15 @@
 
       if (__refreshLevel >= REPAINT$1) {
         node.__calCache(renderMode, ctx, node.__domParent, node.__cacheStyle, node.__currentStyle, computedStyle, node.__clientWidth, node.__clientHeight, node.__offsetWidth, node.__offsetHeight, computedStyle[BORDER_TOP_WIDTH$1], computedStyle[BORDER_RIGHT_WIDTH], computedStyle[BORDER_BOTTOM_WIDTH$1], computedStyle[BORDER_LEFT_WIDTH$1], computedStyle[PADDING_TOP$1], computedStyle[PADDING_RIGHT], computedStyle[PADDING_BOTTOM$1], computedStyle[PADDING_LEFT$1], node.__sx1, node.__sx2, node.__sx3, node.__sx4, node.__sx5, node.__sx6, node.__sy1, node.__sy2, node.__sy3, node.__sy4, node.__sy5, node.__sy6);
+      } // 跳过display:none元素和它的所有子节点
+
+
+      if (computedStyle[DISPLAY$1] === 'none') {
+        i += (total || 0) + countMaskNum(__structs, i + (total || 0) + 1, hasMask || 0);
+        continue;
       }
 
       if (__cacheAsBitmap) {
-        // 跳过display:none元素和它的所有子节点
-        if (computedStyle[DISPLAY$1] === 'none') {
-          i += (total || 0) + countMaskNum(__structs, i + (total || 0) + 1, hasMask || 0);
-          continue;
-        }
-
         mergeList.push([i, lv, total, node, hasMask]);
       }
     }

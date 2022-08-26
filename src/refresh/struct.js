@@ -308,7 +308,7 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
         __cacheMask: __cacheMask2,
         __cacheOverflow: __cacheOverflow2,
         __isMask,
-        __refreshLevel: __refreshLevel,
+        __refreshLevel,
       } = node;
       let computedStyle = node.__computedStyle;
       // 跳过display:none元素和它的所有子节点和mask
@@ -459,7 +459,7 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
           __cacheFilter: __cacheFilter2,
           __cacheMask: __cacheMask2,
           __cacheOverflow: __cacheOverflow2,
-          __refreshLevel: __refreshLevel,
+          __refreshLevel,
         } = node;
         if(maskStartHash.hasOwnProperty(i)) {
           let [idx, n, offscreenMask] = maskStartHash[i];
@@ -544,18 +544,18 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
           ctxTotal.globalCompositeOperation = 'source-over';
         }
         else {
-          if(__refreshLevel >= REPAINT) {
-            // 手动计算cacheStyle和根据border-box的坐标再渲染
-            node.__calCache(renderMode, ctxTotal, node.__domParent,
-              node.__cacheStyle, node.__currentStyle, node.__computedStyle,
-              node.__clientWidth, node.__clientHeight, node.__offsetWidth, node.__offsetHeight,
-              computedStyle[BORDER_TOP_WIDTH], computedStyle[BORDER_RIGHT_WIDTH],
-              computedStyle[BORDER_BOTTOM_WIDTH], computedStyle[BORDER_LEFT_WIDTH],
-              computedStyle[PADDING_TOP], computedStyle[PADDING_RIGHT],
-              computedStyle[PADDING_BOTTOM], computedStyle[PADDING_LEFT],
-              node.__sx1, node.__sx2, node.__sx3, node.__sx4, node.__sx5, node.__sx6,
-              node.__sy1, node.__sy2, node.__sy3, node.__sy4, node.__sy5, node.__sy6);
-          }
+          // if(__refreshLevel >= REPAINT) {
+          //   // 手动计算cacheStyle和根据border-box的坐标再渲染
+          //   node.__calCache(renderMode, ctxTotal, node.__domParent,
+          //     node.__cacheStyle, node.__currentStyle, node.__computedStyle,
+          //     node.__clientWidth, node.__clientHeight, node.__offsetWidth, node.__offsetHeight,
+          //     computedStyle[BORDER_TOP_WIDTH], computedStyle[BORDER_RIGHT_WIDTH],
+          //     computedStyle[BORDER_BOTTOM_WIDTH], computedStyle[BORDER_LEFT_WIDTH],
+          //     computedStyle[PADDING_TOP], computedStyle[PADDING_RIGHT],
+          //     computedStyle[PADDING_BOTTOM], computedStyle[PADDING_LEFT],
+          //     node.__sx1, node.__sx2, node.__sx3, node.__sx4, node.__sx5, node.__sx6,
+          //     node.__sy1, node.__sy2, node.__sy3, node.__sy4, node.__sy5, node.__sy6);
+          // }
           let res = node.render(renderMode, __refreshLevel, ctxTotal, i === index ? LOCAL : CHILD, dx, dy);
           let { offscreenBlend, offscreenMask, offscreenFilter, offscreenOverflow } = res || {};
           // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
@@ -686,7 +686,7 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
               __cacheFilter,
               __cacheMask,
               __cacheOverflow,
-              __refreshLevel: __refreshLevel,
+              __refreshLevel,
             } = node;
             if(maskStartHash.hasOwnProperty(i)) {
               let [idx, n, offscreenMask] = maskStartHash[i];
@@ -832,18 +832,18 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
               else {
                 ctx.setTransform(1, 0, 0, 1, 0, 0);
               }
-              if(__refreshLevel >= REPAINT) {
-                // 手动计算cacheStyle和根据border-box的坐标再渲染
-                node.__calCache(renderMode, ctx, node.__domParent,
-                  node.__cacheStyle, node.__currentStyle, node.__computedStyle,
-                  node.__clientWidth, node.__clientHeight, node.__offsetWidth, node.__offsetHeight,
-                  computedStyle[BORDER_TOP_WIDTH], computedStyle[BORDER_RIGHT_WIDTH],
-                  computedStyle[BORDER_BOTTOM_WIDTH], computedStyle[BORDER_LEFT_WIDTH],
-                  computedStyle[PADDING_TOP], computedStyle[PADDING_RIGHT],
-                  computedStyle[PADDING_BOTTOM], computedStyle[PADDING_LEFT],
-                  node.__sx1, node.__sx2, node.__sx3, node.__sx4, node.__sx5, node.__sx6,
-                  node.__sy1, node.__sy2, node.__sy3, node.__sy4, node.__sy5, node.__sy6);
-              }
+              // if(__refreshLevel >= REPAINT) {
+              //   // 手动计算cacheStyle和根据border-box的坐标再渲染
+              //   node.__calCache(renderMode, ctx, node.__domParent,
+              //     node.__cacheStyle, node.__currentStyle, node.__computedStyle,
+              //     node.__clientWidth, node.__clientHeight, node.__offsetWidth, node.__offsetHeight,
+              //     computedStyle[BORDER_TOP_WIDTH], computedStyle[BORDER_RIGHT_WIDTH],
+              //     computedStyle[BORDER_BOTTOM_WIDTH], computedStyle[BORDER_LEFT_WIDTH],
+              //     computedStyle[PADDING_TOP], computedStyle[PADDING_RIGHT],
+              //     computedStyle[PADDING_BOTTOM], computedStyle[PADDING_LEFT],
+              //     node.__sx1, node.__sx2, node.__sx3, node.__sx4, node.__sx5, node.__sx6,
+              //     node.__sy1, node.__sy2, node.__sy3, node.__sy4, node.__sy5, node.__sy6);
+              // }
               let res = node.render(renderMode, __refreshLevel, ctx, CHILD, dx, dy);
               let { offscreenBlend, offscreenMask, offscreenFilter, offscreenOverflow } = res || {};
               // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
@@ -2380,7 +2380,7 @@ function renderWebgl(renderMode, gl, root) {
         __cacheFilter,
         __cacheMask,
         __cacheOverflow,
-        __refreshLevel: __refreshLevel,
+        __refreshLevel,
       } = node;
       let {
         [DISPLAY]: display,
@@ -2541,12 +2541,12 @@ function renderCanvas(renderMode, ctx, root) {
         node.__sx1, node.__sx2, node.__sx3, node.__sx4, node.__sx5, node.__sx6,
         node.__sy1, node.__sy2, node.__sy3, node.__sy4, node.__sy5, node.__sy6);
     }
+    // 跳过display:none元素和它的所有子节点
+    if(computedStyle[DISPLAY] === 'none') {
+      i += (total || 0) + countMaskNum(__structs, i + (total || 0) + 1, hasMask || 0);
+      continue;
+    }
     if(__cacheAsBitmap) {
-      // 跳过display:none元素和它的所有子节点
-      if(computedStyle[DISPLAY] === 'none') {
-        i += (total || 0) + countMaskNum(__structs, i + (total || 0) + 1, hasMask || 0);
-        continue;
-      }
       mergeList.push([i, lv, total, node, hasMask]);
     }
   }
@@ -2599,7 +2599,7 @@ function renderCanvas(renderMode, ctx, root) {
         __cacheFilter,
         __cacheMask,
         __cacheOverflow,
-        __refreshLevel: __refreshLevel,
+        __refreshLevel,
       } = node;
       let {
         [DISPLAY]: display,

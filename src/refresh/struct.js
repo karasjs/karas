@@ -455,10 +455,10 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
       else {
         let {
           __computedStyle: computedStyle,
-          __cacheTotal,
-          __cacheFilter,
-          __cacheMask,
-          __cacheOverflow,
+          __cacheTotal: __cacheTotal2,
+          __cacheFilter: __cacheFilter2,
+          __cacheMask: __cacheMask2,
+          __cacheOverflow: __cacheOverflow2,
           __refreshLevel: __refreshLevel,
         } = node;
         if(maskStartHash.hasOwnProperty(i)) {
@@ -525,7 +525,7 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
         lastLv = lv;
         lastMatrix = m;
         // 子元素有cacheTotal优先使用，也一定是子元素，局部根节点不会进
-        let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]);
+        let target = getCache([__cacheMask2, __cacheFilter2, __cacheOverflow2, __cacheTotal2]);
         if(i !== index && target) {
           i += (total || 0) + countMaskNum(__structs, i + (total || 0) + 1, hasMask || 0);
           // 跳过display:none元素和它的所有子节点
@@ -540,7 +540,7 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
             ctxTotal.globalCompositeOperation = 'source-over';
           }
           ctxTotal.globalAlpha = node.__opacity;
-          Cache.drawCache(target, cacheTotal);
+          Cache.drawCache(target, __cacheTotal);
           ctxTotal.globalCompositeOperation = 'source-over';
         }
         else {

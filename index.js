@@ -33653,7 +33653,7 @@
             }
 
             ctxTotal.globalAlpha = _node2.__opacity;
-            Cache.drawCache(_target, cacheTotal);
+            Cache.drawCache(_target, __cacheTotal);
             ctxTotal.globalCompositeOperation = 'source-over';
           } else {
             if (_refreshLevel >= REPAINT$1) {

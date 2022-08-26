@@ -36963,14 +36963,15 @@
     } // 按节点合并完style后判断改变等级
 
 
-    var tagName = node.tagName,
-        currentStyle = node.__currentStyle,
-        computedStyle = node.__computedStyle,
-        currentProps = node.__currentProps,
-        domParent = node.__domParent,
-        __isMask = node.__isMask,
-        __cacheStyle = node.__cacheStyle,
-        __cacheProps = node.__cacheProps;
+    var node2 = node instanceof Component ? node.shadowRoot : node;
+    var tagName = node2.tagName,
+        currentStyle = node2.__currentStyle,
+        computedStyle = node2.__computedStyle,
+        currentProps = node2.__currentProps,
+        domParent = node2.__domParent,
+        __isMask = node2.__isMask,
+        __cacheStyle = node2.__cacheStyle,
+        __cacheProps = node2.__cacheProps;
     var lv = focus || NONE;
     var hasZ, hasVisibility, hasColor, hasDisplay, hasTsColor, hasTsWidth, hasTsOver; // component无需遍历直接赋值，img重新加载等情况没有样式更新
 

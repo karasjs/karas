@@ -350,7 +350,7 @@ function parseUpdate(renderMode, root, target, reflowList, cacheHash, cacheList,
     });
   }
   // 按节点合并完style后判断改变等级
-
+  let node2 = node instanceof Component ? node.shadowRoot : node;
   let {
     tagName,
     __currentStyle: currentStyle,
@@ -360,7 +360,7 @@ function parseUpdate(renderMode, root, target, reflowList, cacheHash, cacheList,
     __isMask,
     __cacheStyle,
     __cacheProps,
-  } = node;
+  } = node2;
   let lv = focus || NONE;
   let hasZ, hasVisibility, hasColor, hasDisplay, hasTsColor, hasTsWidth, hasTsOver;
   // component无需遍历直接赋值，img重新加载等情况没有样式更新

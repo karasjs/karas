@@ -23,14 +23,15 @@ const ENUM = {
   FILTER: 32, //                                  100000
   MIX_BLEND_MODE: 64, //                         1000000
   PERSPECTIVE: 128, //                          10000000
+  MASK: 256, //                                100000000
 
-  REPAINT: 256, //                             100000000
+  REPAINT: 512, //                            1000000000
 
   // 高位表示reflow
-  REFLOW: 512, //                             1000000000
+  REFLOW: 1024, //                           10000000000
 
   // 特殊高位表示rebuild
-  REBUILD: 1024, //                          10000000000
+  REBUILD: 2048, //                         100000000000
 };
 
 const TRANSFORMS = {

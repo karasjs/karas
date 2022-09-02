@@ -361,8 +361,6 @@ Object.keys(change.GEOM).concat([
   '__offsetY',
   '__calAutoBasis',
   '__computeReflow',
-  '__renderAsMask',
-  '__renderByMask',
   '__mp',
   'animate',
   'removeAnimate',

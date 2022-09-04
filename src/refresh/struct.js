@@ -107,7 +107,7 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
   } = node.__computedStyle;
   // 先将局部根节点的bbox算好，可能没内容是空
   let bboxTotal;
-  if(__cache && __cache.__available) {
+  if(__cache && __cache.available) {
     bboxTotal = __cache.bbox;
   }
   else {
@@ -190,7 +190,7 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
             i += total || 0;
             hasTotal = true;
           }
-          else if(__cache && __cache.__available) {
+          else if(__cache && __cache.available) {
             bbox = __cache.bbox;
             dx = __cache.dbx;
             dy = __cache.dby;
@@ -270,7 +270,7 @@ function mergeBbox(bbox, t, sx1, sy1) {
 function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width, height) {
   let __cacheTotal = node.__cacheTotal;
   // 先绘制形成基础的total，有可能已经存在无变化，就可省略
-  if(!__cacheTotal || !__cacheTotal.__available) {
+  if(!__cacheTotal || !__cacheTotal.available) {
     let { __sx1: sx1, __sy1: sy1, bbox } = node;
     // 局部根节点视为E且无透明度，用bbox而非filterBbox
     let bboxTotal = bbox.slice(0);
@@ -442,9 +442,6 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
           if(!isE(parentMatrix)) {
             m = multiply(parentMatrix, m);
           }
-        }
-        else {
-          m = null;
         }
         if(m) {
           ctxTotal.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
@@ -755,7 +752,7 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
         }
       }
     });
-    if(__cacheMask && __cacheMask.__available) {
+    if(__cacheMask && __cacheMask.available) {
       target = __cacheMask;
     }
   }
@@ -816,7 +813,7 @@ function resetMatrixCacheTotal(__structs, index, total, lv, matrixEvent) {
     assignMatrix(node.__matrixEvent, matrix);
     lastMatrix = matrix;
     // 深度遍历递归进行
-    if(__cacheTotal && __cacheTotal.__available) {
+    if(__cacheTotal && __cacheTotal.available) {
       let needReset = __cacheTotal.isNew;
       if(!needReset && !util.equalArr(old, matrix)) {
         needReset = true;
@@ -908,7 +905,7 @@ function genTotalWebgl(gl, texCache, node, index, total, __structs, cache, limit
   let dx = -bboxTotal[0], dy = -bboxTotal[1];
   let dbx = sx1 - bboxTotal[0], dby = sy1 - bboxTotal[1];
   // 先绘制自己的cache，起点所以matrix视作E为空，opacity固定1
-  if(cache && cache.__available) {
+  if(cache && cache.available) {
     texCache.addTexAndDrawWhenLimit(gl, cache, 1, null, cx, cy, dx, dy, false);
   }
   // limitCache无cache需先绘制到统一的离屏画布上
@@ -973,7 +970,7 @@ function genTotalWebgl(gl, texCache, node, index, total, __structs, cache, limit
       if(transform && !isE(transform)) {
         let tfo = transformOrigin.slice(0);
         // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
-        if(__cache && __cache.__available) {
+        if(__cache && __cache.available) {
           tfo[0] += __cache.sx1;
           tfo[1] += __cache.sy1;
         }
@@ -1360,7 +1357,7 @@ function genMaskWebgl(gl, texCache, node, cache, W, H, lv, __structs) {
         continue;
       }
       if(node instanceof Text) {
-        if(__cache && __cache.__available) {
+        if(__cache && __cache.available) {
           // text用父级的matrixEvent，在之前texCache添加到末尾了
           texCache.addTexAndDrawWhenLimit(gl, __cache, parentOpacity, texCache.last[2], cx, cy, 0, 0,true);
         }
@@ -2070,7 +2067,7 @@ function renderWebgl(renderMode, gl, root) {
       }
       // 这里和canvas不一样，前置cacheAsBitmap条件变成或条件之一，新的ppt层级且画中画需要新的fbo
       if((filter && filter.length || contain(__refreshLevel, MASK) && hasMask)
-        && __cacheTotal && __cacheTotal.__available
+        && __cacheTotal && __cacheTotal.available
         || contain(__refreshLevel, CACHE)
         || node.__cacheAsBitmap || pptCount > 1 && pptCount > pptList[lv - 1]) {
         mergeList.push({
@@ -2082,7 +2079,7 @@ function renderWebgl(renderMode, gl, root) {
         });
       }
       // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total，但不跳过mask节点
-      if(__cacheTotal && __cacheTotal.__available) {
+      if(__cacheTotal && __cacheTotal.available) {
         i += (total || 0);
         if(!contain(__refreshLevel, MASK)) {
           i += countMaskNum(__structs, i + 1, hasMask);
@@ -2213,7 +2210,7 @@ function renderWebgl(renderMode, gl, root) {
       } = node;
       let needGen;
       // 可能没变化，比如被遮罩节点、filter变更等
-      if(!__cacheTotal || !__cacheTotal.__available) {
+      if(!__cacheTotal || !__cacheTotal.available) {
         let [limit, res] = genTotalWebgl(gl, texCache, node, i, total || 0, __structs, __cache, __limitCache, hasMbm, width, height);
         __cacheTotal = res;
         needGen = true;
@@ -2226,7 +2223,7 @@ function renderWebgl(renderMode, gl, root) {
       // 即使超限，也有total结果
       let target = __cacheTotal;
       if(overflow === 'hidden') {
-        if(!__cacheOverflow || !__cacheOverflow.__available || needGen) {
+        if(!__cacheOverflow || !__cacheOverflow.available || needGen) {
           let temp = genOverflowWebgl(gl, texCache, node, target, width, height);
           if(temp) {
             target = temp;
@@ -2241,7 +2238,7 @@ function renderWebgl(renderMode, gl, root) {
         }
       }
       if(filter.length) {
-        if(!__cacheFilter || !__cacheFilter.__available || needGen) {
+        if(!__cacheFilter || !__cacheFilter.available || needGen) {
           let old = target;
           target = genFilterWebgl(gl, texCache, node, target, filter, width, height);
           if(target !== old) {
@@ -2255,7 +2252,7 @@ function renderWebgl(renderMode, gl, root) {
           target = __cacheFilter;
         }
       }
-      if(hasMask && (!__cacheMask || !__cacheMask.__available || needGen)) {
+      if(hasMask && (!__cacheMask || !__cacheMask.available || needGen)) {
         target = genMaskWebgl(gl, texCache, node, target, width, height, lv, __structs);
         if(!__limitCache) {
           node.__cacheMask = target;
@@ -2291,7 +2288,7 @@ function renderWebgl(renderMode, gl, root) {
         __matrixEvent,
         __opacity,
       } = node.__domParent;
-      if(__cache && __cache.__available) {
+      if(__cache && __cache.available) {
         texCache.addTexAndDrawWhenLimit(gl, __cache, __opacity, __matrixEvent, cx, cy, 0, 0,true);
       }
       // 超限特殊处理，先生成画布尺寸大小的纹理然后原始位置绘制
@@ -2514,7 +2511,7 @@ function renderCanvas(renderMode, ctx, root) {
       // filter/mask变化需重新生成，cacheTotal本身就存在要判断下；CACHE取消重新生成则无需判断
       if(node.__cacheAsBitmap) {
         if((filter && filter.length || contain(__refreshLevel, MASK) && hasMask)
-          && __cacheTotal && __cacheTotal.__available
+          && __cacheTotal && __cacheTotal.available
           || contain(__refreshLevel, CACHE)) {
           mergeList.push({
             i,
@@ -2526,7 +2523,7 @@ function renderCanvas(renderMode, ctx, root) {
         }
       }
       // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total
-      if(__cacheTotal && __cacheTotal.__available) {
+      if(__cacheTotal && __cacheTotal.available) {
         i += (total || 0);
         if(!contain(__refreshLevel, MASK)) {
           i += countMaskNum(__structs, i + 1, hasMask);

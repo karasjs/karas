@@ -62,6 +62,8 @@ const {
     TEXT_STROKE_COLOR,
     TEXT_STROKE_WIDTH,
     TEXT_STROKE_OVER,
+    MATRIX,
+    TRANSFORM,
   },
 } = enums;
 const DIRECTION_HASH = {
@@ -73,7 +75,7 @@ const DIRECTION_HASH = {
 const { isNil, isObject, isFunction } = util;
 const { AUTO, PX, PERCENT, INHERIT } = unit;
 const { isRelativeOrAbsolute, equalStyle } = css;
-const { contain, getLevel, isRepaint, NONE, FILTER, PERSPECTIVE, REPAINT, REFLOW, REBUILD } = level;
+const { contain, getLevel, isRepaint, NONE, FILTER, PERSPECTIVE, REPAINT, REFLOW, REBUILD, CACHE, TRANSFORM_ALL } = level;
 const { isIgnore, isGeom } = change;
 
 const ROOT_DOM_NAME = {
@@ -434,6 +436,10 @@ function parseUpdate(renderMode, root, target, reflowList, cacheHash, cacheList,
   if(computedStyle[DISPLAY] === 'none' && !hasDisplay) {
     return;
   }
+  // transform变化清空重算
+  if(contain(lv, TRANSFORM_ALL)) {
+    __cacheStyle[MATRIX] = computedStyle[TRANSFORM] = undefined;
+  }
   // 记录下来清除parent的zIndexChildren缓存
   if(hasZ && domParent) {
     delete domParent.__zIndexChildren;
@@ -577,6 +583,7 @@ function parseUpdate(renderMode, root, target, reflowList, cacheHash, cacheList,
     if(need && parent.__cache) {
       parent.__cache.release();
     }
+    parent.__refreshLevel |= CACHE;
     // 前面已经过滤了无改变NONE的，只要孩子有任何改变父亲就要清除
     if(parent.__cacheTotal) {
       parent.__cacheTotal.release();

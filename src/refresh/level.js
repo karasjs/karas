@@ -14,21 +14,22 @@ const { STYLE_KEY, STYLE_KEY: {
 const ENUM = {
   // 低位表示<repaint级别
   NONE: 0, //                                          0
-  TRANSLATE_X: 1, //                                   1
-  TRANSLATE_Y: 2, //                                  10
-  TRANSLATE_Z: 4, //                                 100
-  TRANSFORM: 8, //                                  1000
-  TRANSFORM_ALL: 15, //                             1111
-  OPACITY: 16, //                                  10000
-  FILTER: 32, //                                  100000
-  MIX_BLEND_MODE: 64, //                         1000000
-  PERSPECTIVE: 128, //                          10000000
-
-  // mask发生变化但节点没有变化时候
-  MASK: 256, //                                100000000
 
   // cacheTotal变化需重新生成的时候
-  CACHE: 512, //                              1000000000
+  CACHE: 1, //                                         1
+
+  // mask发生变化但节点没有变化时候
+  MASK: 2, //                                         10
+
+  TRANSLATE_X: 4, //                                 100
+  TRANSLATE_Y: 8, //                                1000
+  TRANSLATE_Z: 16, //                              10000
+  TRANSFORM: 32, //                               100000
+  TRANSFORM_ALL: 60, //                           111100
+  OPACITY: 64, //                                1000000
+  FILTER: 128, //                               10000000
+  MIX_BLEND_MODE: 256, //                      100000000
+  PERSPECTIVE: 512, //                        1000000000
 
   REPAINT: 1024, //                          10000000000
 

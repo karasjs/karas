@@ -196,8 +196,8 @@ class Img extends Dom {
     //   ctx = __cache.ctx;
     // }
     let originX, originY;
-    originX = res.x3 + dx;
-    originY = res.y3 + dy;
+    originX = res.sx3 + dx;
+    originY = res.sy3 + dy;
     // 根据配置以及占位图显示error
     let source = loadImg.source;
     if(loadImg.error && !placeholder && Img.showError) {

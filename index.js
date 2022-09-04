@@ -15211,7 +15211,7 @@
         for (var i = 0, len = list.length; i < len; i++) {
           var item = list[i];
 
-          if (item && item.__available) {
+          if (item && item.available) {
             return item;
           }
         }
@@ -29966,8 +29966,8 @@
 
 
         var originX, originY;
-        originX = res.x3 + dx;
-        originY = res.y3 + dy; // 根据配置以及占位图显示error
+        originX = res.sx3 + dx;
+        originY = res.sy3 + dy; // 根据配置以及占位图显示error
 
         var source = loadImg.source;
 
@@ -33609,26 +33609,26 @@
     var target = __cacheTotal;
 
     if (overflow === 'hidden') {
-      if (!__cacheOverflow || !__cacheOverflow.__available) {
+      if (!__cacheOverflow || !__cacheOverflow.available) {
         node.__cacheOverflow = __cacheOverflow = Cache.genOverflow(target, node);
       }
 
-      if (__cacheOverflow && __cacheOverflow.__available) {
+      if (__cacheOverflow && __cacheOverflow.available) {
         target = __cacheOverflow;
       }
     }
 
     if (filter && filter.length) {
-      if (!__cacheFilter || !__cacheFilter.__available) {
+      if (!__cacheFilter || !__cacheFilter.available) {
         node.__cacheFilter = __cacheFilter = Cache.genFilter(target, filter);
       }
 
-      if (__cacheFilter && __cacheFilter.__available) {
-        target = __cacheOverflow;
+      if (__cacheFilter && __cacheFilter.available) {
+        target = __cacheFilter;
       }
     }
 
-    if (hasMask && (!__cacheMask || !__cacheMask.__available)) {
+    if (hasMask && (!__cacheMask || !__cacheMask.available)) {
       node.__cacheMask = __cacheMask = Cache.genMask(target, node, function (item, cacheMask, inverse) {
         // 和外面没cache的类似，mask生成hash记录，这里mask节点一定是个普通无cache的独立节点
         var maskStartHash = {};

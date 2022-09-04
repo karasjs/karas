@@ -541,22 +541,22 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
   } = __computedStyle;
   let target = __cacheTotal;
   if(overflow === 'hidden') {
-    if(!__cacheOverflow || !__cacheOverflow.__available) {
+    if(!__cacheOverflow || !__cacheOverflow.available) {
       node.__cacheOverflow = __cacheOverflow = Cache.genOverflow(target, node);
     }
-    if(__cacheOverflow && __cacheOverflow.__available) {
+    if(__cacheOverflow && __cacheOverflow.available) {
       target = __cacheOverflow;
     }
   }
   if(filter && filter.length) {
-    if(!__cacheFilter || !__cacheFilter.__available) {
+    if(!__cacheFilter || !__cacheFilter.available) {
       node.__cacheFilter = __cacheFilter = Cache.genFilter(target, filter);
     }
-    if(__cacheFilter && __cacheFilter.__available) {
-      target = __cacheOverflow;
+    if(__cacheFilter && __cacheFilter.available) {
+      target = __cacheFilter;
     }
   }
-  if(hasMask && (!__cacheMask || !__cacheMask.__available)) {
+  if(hasMask && (!__cacheMask || !__cacheMask.available)) {
     node.__cacheMask = __cacheMask = Cache.genMask(target, node, function(item, cacheMask, inverse) {
       // 和外面没cache的类似，mask生成hash记录，这里mask节点一定是个普通无cache的独立节点
       let maskStartHash = {};

@@ -317,7 +317,7 @@ class Cache {
   static getCache(list) {
     for(let i = 0, len = list.length; i < len; i++) {
       let item = list[i];
-      if(item && item.__available) {
+      if(item && item.available) {
         return item;
       }
     }

@@ -3894,9 +3894,8 @@
   function canvasFilter(filter) {
     var s = '';
     filter.forEach(function (item) {
-      var _item3 = _slicedToArray(item, 2),
-          k = _item3[0],
-          v = _item3[1];
+      var k = item.k,
+          v = item.v;
 
       if (k === 'blur') {
         s += "blur(".concat(v, "px)");
@@ -24056,16 +24055,16 @@
             y = e.y;
         var __sx1 = this.__sx1,
             __sy1 = this.__sy1,
-            offsetWidth = this.offsetWidth,
-            offsetHeight = this.offsetHeight,
-            matrixEvent = this.matrixEvent,
-            computedStyle = this.computedStyle;
+            __offsetWidth = this.__offsetWidth,
+            __offsetHeight = this.__offsetHeight,
+            __matrixEvent = this.__matrixEvent,
+            __computedStyle = this.__computedStyle;
 
-        if (computedStyle[POINTER_EVENTS$1] === 'none') {
+        if (__computedStyle[POINTER_EVENTS$1] === 'none') {
           return;
         }
 
-        var inThis = geom$1.pointInQuadrilateral(x, y, __sx1, __sy1, __sx1 + offsetWidth, __sy1, __sx1 + offsetWidth, __sy1 + offsetHeight, __sx1, __sy1 + offsetHeight, matrixEvent);
+        var inThis = geom$1.pointInQuadrilateral(x, y, __sx1, __sy1, __sx1 + __offsetWidth, __sy1, __sx1 + __offsetWidth, __sy1 + __offsetHeight, __sx1, __sy1 + __offsetHeight, __matrixEvent);
 
         if (inThis) {
           if (!e.target && !ignore) {
@@ -35049,6 +35048,14 @@
           _node6.__cacheDefs.splice(0);
 
           _node6.__calCache(_node6.__currentStyle, _node6.__computedStyle, _node6.__cacheStyle);
+
+          var _matrix2 = _node6.__matrix;
+
+          if (parentMatrix && _matrix2) {
+            _matrix2 = multiply(parentMatrix, _matrix2);
+          }
+
+          assignMatrix(_node6.__matrixEvent, _matrix2);
         }
 
         _node6.render(renderMode, ctx, 0, 0);
@@ -35118,11 +35125,11 @@
                   }
                 }
 
-                var _matrix2 = _node7.matrix;
+                var _matrix3 = _node7.matrix;
                 var ivs = inverse(dom.matrix);
-                _matrix2 = multiply(ivs, _matrix2); // path没有transform属性，在vd上，需要弥补
+                _matrix3 = multiply(ivs, _matrix3); // path没有transform属性，在vd上，需要弥补
 
-                props.push(['transform', "matrix(".concat(util.joinArr(mx.m2m6(_matrix2), ','), ")")]); // path没有opacity属性，在vd上，需要弥补
+                props.push(['transform', "matrix(".concat(util.joinArr(mx.m2m6(_matrix3), ','), ")")]); // path没有opacity属性，在vd上，需要弥补
 
                 if (!util.isNil(_opacity6) && _opacity6 !== 1) {
                   props.push(['opacity', _opacity6]);
@@ -35145,14 +35152,14 @@
                     props.push(['transform', "matrix(".concat(util.joinArr(mx.m2m6(_ivs), ','), ")")]);
                   }
                 } else {
-                  var _matrix3 = props[hasTransform][1].match(/[\d.]+/g).map(function (i) {
+                  var _matrix4 = props[hasTransform][1].match(/[\d.]+/g).map(function (i) {
                     return parseFloat(i);
                   });
 
                   var _ivs2 = inverse(dom.matrix);
 
-                  _matrix3 = multiply(_ivs2, _matrix3);
-                  props[hasTransform][1] = "matrix(".concat(util.joinArr(mx.m2m6(_matrix3), ','), ")");
+                  _matrix4 = multiply(_ivs2, _matrix4);
+                  props[hasTransform][1] = "matrix(".concat(util.joinArr(mx.m2m6(_matrix4), ','), ")");
                 }
               }
             }
@@ -35738,7 +35745,7 @@
           __cacheTotal = node.__cacheTotal;
       node.__refreshLevel = NONE$1;
 
-      if (__refreshLevel === NONE$1) ; else if (__refreshLevel < REPAINT$1) {
+      if (__refreshLevel < REPAINT$1) {
         if (contain$1(__refreshLevel, TRANSFORM_ALL)) {
           node.__calMatrix(__refreshLevel, __currentStyle, __computedStyle, __cacheStyle);
         }

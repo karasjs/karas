@@ -128,7 +128,7 @@ function svgLine(x1, y1, x2, y2, controlA, controlB, num) {
 function canvasFilter(filter) {
   let s = '';
   filter.forEach(item => {
-    let [k, v] = item;
+    let { k, v } = item;
     if(k === 'blur') {
       s += `blur(${v}px)`;
     }

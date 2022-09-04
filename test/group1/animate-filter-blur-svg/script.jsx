@@ -21,12 +21,12 @@ let input = document.querySelector('input');
 animation.on('frame', () => {
   n++;
   if(n === 1) {
-    input.value = t.getComputedStyle().filter;
+    input.value = JSON.stringify(t.getComputedStyle().filter);
   }
   else if(n === 3) {
     input.value += '/' + (t.getComputedStyle().filter[0][1] > 0);
   }
 });
 animation.on('finish', () => {
-  input.value += '/' + t.getComputedStyle().filter;
+  input.value += '/' + JSON.stringify(t.getComputedStyle().filter);
 });

@@ -2385,17 +2385,17 @@ class Xom extends Node {
 
   willResponseEvent(e, ignore) {
     let { x, y } = e;
-    let { __sx1, __sy1, offsetWidth, offsetHeight, matrixEvent, computedStyle } = this;
-    if(computedStyle[POINTER_EVENTS] === 'none') {
+    let { __sx1, __sy1, __offsetWidth, __offsetHeight, __matrixEvent, __computedStyle } = this;
+    if(__computedStyle[POINTER_EVENTS] === 'none') {
       return;
     }
     let inThis = geom.pointInQuadrilateral(
       x, y,
       __sx1, __sy1,
-      __sx1 + offsetWidth, __sy1,
-      __sx1 + offsetWidth, __sy1 + offsetHeight,
-      __sx1, __sy1 + offsetHeight,
-      matrixEvent
+      __sx1 + __offsetWidth, __sy1,
+      __sx1 + __offsetWidth, __sy1 + __offsetHeight,
+      __sx1, __sy1 + __offsetHeight,
+      __matrixEvent
     );
     if(inThis) {
       if(!e.target && !ignore) {

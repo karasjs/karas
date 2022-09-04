@@ -1802,6 +1802,11 @@ function renderSvg(renderMode, ctx, root, isFirst) {
       if(!(node instanceof Text)) {
         node.__cacheDefs.splice(0);
         node.__calCache(node.__currentStyle, node.__computedStyle, node.__cacheStyle);
+        let matrix = node.__matrix;
+        if(parentMatrix && matrix) {
+          matrix = multiply(parentMatrix, matrix);
+        }
+        assignMatrix(node.__matrixEvent, matrix);
       }
       node.render(renderMode, ctx, 0, 0);
       virtualDom = node.__virtualDom;
@@ -2492,8 +2497,7 @@ function renderCanvas(renderMode, ctx, root) {
       __cacheTotal,
     } = node;
     node.__refreshLevel = NONE;
-    if(__refreshLevel === NONE) {}
-    else if(__refreshLevel < REPAINT) {
+    if(__refreshLevel < REPAINT) {
       if(contain(__refreshLevel, TRANSFORM_ALL)) {
         node.__calMatrix(__refreshLevel, __currentStyle, __computedStyle, __cacheStyle);
       }

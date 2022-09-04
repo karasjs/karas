@@ -1,6 +1,6 @@
 class $ extends karas.Geom {
-  render(renderMode, lv, ctx, cache, dx, dy) {
-    super.render(renderMode, lv, ctx, cache, dx, dy);
+  render(renderMode, ctx, dx, dy) {
+    super.render(renderMode, ctx, dx, dy);
     ctx.beginPath();
     ctx.fillStyle = '#F00';
     ctx.moveTo(0, 0);

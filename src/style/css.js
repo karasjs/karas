@@ -1690,7 +1690,7 @@ function spreadFilter(bbox, filter) {
   // filter对整体有影响，且filter子项可以先后多次重复出现，上面计算完后，依次处理
   if(Array.isArray(filter)) {
     filter.forEach(item => {
-      let [k, v] = item;
+      let { k, v } = item;
       if(k === 'blur' && v > 0) {
         let d = blur.kernelSize(v);
         let spread = blur.outerSizeByD(d);

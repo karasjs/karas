@@ -9747,9 +9747,8 @@
 
     if (Array.isArray(filter)) {
       filter.forEach(function (item) {
-        var _item3 = _slicedToArray(item, 2),
-            k = _item3[0],
-            v = _item3[1];
+        var k = item.k,
+            v = item.v;
 
         if (k === 'blur' && v > 0) {
           var d = blur.kernelSize(v);
@@ -23405,7 +23404,7 @@
         if (mixBlendMode !== 'normal' && isValidMbm$1(mixBlendMode)) {
           mixBlendMode = mbmName$1(mixBlendMode);
 
-          if (renderMode === CANVAS$1) {
+          if (renderMode === CANVAS$1 && (!this.__cacheTotal || !this.__cacheTotal.__available)) {
             var width = root.width,
                 height = root.height;
             var c = inject.getCacheCanvas(width, height, null, 'blend');
@@ -23427,7 +23426,7 @@
         var offscreenMask;
 
         if (__hasMask) {
-          if (renderMode === CANVAS$1) {
+          if (renderMode === CANVAS$1 && (!this.__cacheTotal || !this.__cacheTotal.__available)) {
             var _width = root.width,
                 _height = root.height;
 
@@ -23447,7 +23446,7 @@
         var offscreenFilter;
 
         if (hasFilter) {
-          if (renderMode === CANVAS$1) {
+          if (renderMode === CANVAS$1 && (!this.__cacheTotal || !this.__cacheTotal.__available)) {
             var _width2 = root.width,
                 _height2 = root.height;
 
@@ -23499,7 +23498,7 @@
         if (overflow === 'hidden' && display !== 'inline') {
           borderList = border.calRadius(bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
 
-          if (renderMode === CANVAS$1) {
+          if (renderMode === CANVAS$1 && (!this.__cacheTotal || !this.__cacheTotal.__available)) {
             var _width3 = root.width,
                 _height3 = root.height;
 
@@ -33526,8 +33525,7 @@
               _list.push({
                 idx: _i2,
                 lv: _lv,
-                type: type,
-                OFFSCREEN_BLEND: OFFSCREEN_BLEND,
+                type: OFFSCREEN_BLEND,
                 offscreen: offscreenBlend
               });
 
@@ -34955,13 +34953,14 @@
         vdList.splice(-diff);
         parentVd = vdList[lv - 1];
       } else if (lv > lastLv) {
-        matrixList.push(lastNode.__matrix);
+        matrixList.push(parentMatrix = lastNode.__matrix);
         var vd = lastNode.__virtualDom;
         vdList.push(vd);
         parentVd = vd;
       }
 
       lastNode = _node6;
+      lastLv = lv;
       var virtualDom = void 0; // svg小刷新等级时直接修改vd，这样Geom不再感知
 
       if (_refreshLevel < REPAINT$1 && !(_node6 instanceof Text)) {
@@ -35051,7 +35050,7 @@
 
           var _matrix2 = _node6.__matrix;
 
-          if (parentMatrix && _matrix2) {
+          if (parentMatrix) {
             _matrix2 = multiply(parentMatrix, _matrix2);
           }
 
@@ -35197,8 +35196,6 @@
         parentMatrix = _node6.__matrix;
         parentVd = virtualDom;
       }
-
-      lastLv = lv;
     }
   }
 
@@ -36002,8 +35999,7 @@
             _list7.push({
               idx: _i10,
               lv: _lv5,
-              type: type,
-              OFFSCREEN_BLEND: OFFSCREEN_BLEND,
+              type: OFFSCREEN_BLEND,
               offscreen: offscreenBlend
             });
 

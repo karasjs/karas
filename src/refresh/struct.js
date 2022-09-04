@@ -481,7 +481,7 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
               j += countMaskNum(__structs, j + 1, hasMask);
             }
             let list = offscreenHash[j] = offscreenHash[j] || [];
-            list.push({ idx: i, lv, type, OFFSCREEN_BLEND, offscreen: offscreenBlend });
+            list.push({ idx: i, lv, type: OFFSCREEN_BLEND, offscreen: offscreenBlend });
             ctxTotal = offscreenBlend.target.ctx;
           }
           // 被遮罩的节点要为第一个遮罩和最后一个遮罩的索引打标，被遮罩的本身在一个离屏canvas，遮罩的元素在另外一个
@@ -1719,12 +1719,13 @@ function renderSvg(renderMode, ctx, root, isFirst) {
       parentVd = vdList[lv - 1];
     }
     else if(lv > lastLv) {
-      matrixList.push(lastNode.__matrix);
+      matrixList.push(parentMatrix = lastNode.__matrix);
       let vd = lastNode.__virtualDom;
       vdList.push(vd);
       parentVd = vd;
     }
     lastNode = node;
+    lastLv = lv;
     let virtualDom;
     // svg小刷新等级时直接修改vd，这样Geom不再感知
     if(__refreshLevel < REPAINT && !(node instanceof Text)) {
@@ -1803,7 +1804,7 @@ function renderSvg(renderMode, ctx, root, isFirst) {
         node.__cacheDefs.splice(0);
         node.__calCache(node.__currentStyle, node.__computedStyle, node.__cacheStyle);
         let matrix = node.__matrix;
-        if(parentMatrix && matrix) {
+        if(parentMatrix) {
           matrix = multiply(parentMatrix, matrix);
         }
         assignMatrix(node.__matrixEvent, matrix);
@@ -1921,7 +1922,6 @@ function renderSvg(renderMode, ctx, root, isFirst) {
       parentMatrix = node.__matrix;
       parentVd = virtualDom;
     }
-    lastLv = lv;
   }
 }
 
@@ -2690,7 +2690,7 @@ function renderCanvas(renderMode, ctx, root) {
             j += countMaskNum(__structs, j + 1, hasMask);
           }
           let list = offscreenHash[j] = offscreenHash[j] || [];
-          list.push({ idx: i, lv, type, OFFSCREEN_BLEND, offscreen: offscreenBlend });
+          list.push({ idx: i, lv, type: OFFSCREEN_BLEND, offscreen: offscreenBlend });
           ctx = offscreenBlend.target.ctx;
         }
         // 被遮罩的节点要为第一个遮罩和最后一个遮罩的索引打标，被遮罩的本身在一个离屏canvas，遮罩的元素在另外一个

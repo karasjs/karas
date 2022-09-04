@@ -3081,11 +3081,11 @@ class Dom extends Xom {
     this.__execAr();
   }
 
-  render(renderMode, lv, ctx, cache, dx, dy) {
-    let res = super.render(renderMode, lv, ctx, cache, dx, dy);
+  render(renderMode, ctx, dx, dy) {
+    let res = super.render(renderMode, ctx, dx, dy);
     let ep = this.__ellipsis;
     if(ep) {
-      ep.render(renderMode, lv, res.ctx, cache, dx, dy)
+      ep.render(renderMode, res.ctx, dx, dy)
     }
     if(renderMode === SVG) {
       this.virtualDom.type = 'dom';

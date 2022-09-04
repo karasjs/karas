@@ -145,8 +145,8 @@ class Img extends Dom {
     return res;
   }
 
-  render(renderMode, lv, ctx, cache, dx = 0, dy = 0) {
-    let res = super.render(renderMode, lv, ctx, cache, dx, dy);
+  render(renderMode, ctx, dx = 0, dy = 0) {
+    let res = super.render(renderMode, ctx, dx, dy);
     if(renderMode === mode.WEBGL) {
       dx = res.dx;
       dy = res.dy;
@@ -191,10 +191,10 @@ class Img extends Dom {
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return res;
     }
-    let __cache = this.__cache;
-    if(cache && __cache && __cache.enabled) {
-      ctx = __cache.ctx;
-    }
+    // let __cache = this.__cache;
+    // if(cache && __cache && __cache.enabled) {
+    //   ctx = __cache.ctx;
+    // }
     let originX, originY;
     originX = res.x3 + dx;
     originY = res.y3 + dy;

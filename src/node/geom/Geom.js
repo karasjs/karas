@@ -208,13 +208,13 @@ class Geom extends Xom {
     } = computedStyle;
     stroke = stroke.map(item => {
       if(item.k) {
-        return this.__gradient(renderMode, res.ctx, res.x3, res.y3, res.x4, res.y4, item, res.dx, res.dy);
+        return this.__gradient(renderMode, res.ctx, res.sx3, res.sy3, res.sx4, res.sy4, item, res.dx, res.dy);
       }
       return int2rgba(item);
     });
     fill = fill.map(item => {
       if(item.k) {
-        return this.__gradient(renderMode, res.ctx, res.x3, res.y3, res.x4, res.y4, item, res.dx, res.dy);
+        return this.__gradient(renderMode, res.ctx, res.sx3, res.sy3, res.sx4, res.sy4, item, res.dx, res.dy);
       }
       return int2rgba(item);
     });

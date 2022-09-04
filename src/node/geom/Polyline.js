@@ -468,8 +468,8 @@ class Polyline extends Geom {
     return rebuild || rebuildSE;
   }
 
-  render(renderMode, lv, ctx, cache, dx, dy) {
-    let res = super.render(renderMode, lv, ctx, cache, dx, dy);
+  render(renderMode, ctx, dx, dy) {
+    let res = super.render(renderMode, ctx, dx, dy);
     if(res.break) {
       return res;
     }

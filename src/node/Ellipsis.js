@@ -22,7 +22,7 @@ const { CANVAS, SVG, WEBGL } = mode;
 
 const CHAR = '…';
 
-class Ellipsis extends Node{
+class Ellipsis extends Node {
   constructor(x, y, width, parent, isUpright) {
     super();
     this.__x = this.__sx1 = x;
@@ -35,7 +35,7 @@ class Ellipsis extends Node{
     this.__isVertical = isUpright;
   }
 
-  render(renderMode, lv, ctx, cache, dx = 0, dy = 0) {
+  render(renderMode, ctx, dx = 0, dy = 0) {
     let { x, y, parent, isUpright } = this;
     let {
       ox,

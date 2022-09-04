@@ -14509,9 +14509,9 @@
 
     _createClass(Ellipsis, [{
       key: "render",
-      value: function render(renderMode, lv, ctx, cache) {
-        var dx = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
-        var dy = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 0;
+      value: function render(renderMode, ctx) {
+        var dx = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+        var dy = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
         var x = this.x,
             y = this.y,
             parent = this.parent,
@@ -23967,7 +23967,7 @@
     }, {
       key: "__destroy",
       value: function __destroy() {
-        if (this.isDestroyed) {
+        if (this.__isDestroyed) {
           return;
         }
 
@@ -29252,13 +29252,13 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, lv, ctx, cache, dx, dy) {
-        var res = _get(_getPrototypeOf(Dom.prototype), "render", this).call(this, renderMode, lv, ctx, cache, dx, dy);
+      value: function render(renderMode, ctx, dx, dy) {
+        var res = _get(_getPrototypeOf(Dom.prototype), "render", this).call(this, renderMode, ctx, dx, dy);
 
         var ep = this.__ellipsis;
 
         if (ep) {
-          ep.render(renderMode, lv, res.ctx, cache, dx, dy);
+          ep.render(renderMode, res.ctx, dx, dy);
         }
 
         if (renderMode === SVG) {
@@ -29907,11 +29907,11 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, lv, ctx, cache) {
-        var dx = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
-        var dy = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 0;
+      value: function render(renderMode, ctx) {
+        var dx = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+        var dy = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
 
-        var res = _get(_getPrototypeOf(Img.prototype), "render", this).call(this, renderMode, lv, ctx, cache, dx, dy);
+        var res = _get(_getPrototypeOf(Img.prototype), "render", this).call(this, renderMode, ctx, dx, dy);
 
         if (renderMode === mode.WEBGL) {
           dx = res.dx;
@@ -29961,13 +29961,11 @@
 
         if (isDestroyed || display === 'none' || visibility === 'hidden') {
           return res;
-        }
+        } // let __cache = this.__cache;
+        // if(cache && __cache && __cache.enabled) {
+        //   ctx = __cache.ctx;
+        // }
 
-        var __cache = this.__cache;
-
-        if (cache && __cache && __cache.enabled) {
-          ctx = __cache.ctx;
-        }
 
         var originX, originY;
         originX = res.x3 + dx;
@@ -30737,14 +30735,14 @@
             fillRule = computedStyle[FILL_RULE];
         stroke = stroke.map(function (item) {
           if (item.k) {
-            return _this3.__gradient(renderMode, res.ctx, res.x3, res.y3, res.x4, res.y4, item, res.dx, res.dy);
+            return _this3.__gradient(renderMode, res.ctx, res.sx3, res.sy3, res.sx4, res.sy4, item, res.dx, res.dy);
           }
 
           return int2rgba(item);
         });
         fill = fill.map(function (item) {
           if (item.k) {
-            return _this3.__gradient(renderMode, res.ctx, res.x3, res.y3, res.x4, res.y4, item, res.dx, res.dy);
+            return _this3.__gradient(renderMode, res.ctx, res.sx3, res.sy3, res.sx4, res.sy4, item, res.dx, res.dy);
           }
 
           return int2rgba(item);
@@ -32948,7 +32946,7 @@
       this.height = height;
       this.bbox = bbox;
       this.available = true;
-      this.__page = new MockPage(texture, width, height);
+      this.page = new MockPage(texture, width, height);
       this.reOffset();
     }
 
@@ -32966,11 +32964,6 @@
       value: function release() {
         this.available = false;
         this.gl.deleteTexture(this.page.texture);
-      }
-    }, {
-      key: "page",
-      get: function get() {
-        return this.__page;
       }
     }]);
 
@@ -33298,7 +33291,12 @@
             __isMask = _node.__isMask; // 跳过display:none元素和它的所有子节点和mask，本身是mask除外
 
         if (__computedStyle2[DISPLAY$1] === 'none' || i !== index && __isMask) {
-          i += (_total3 || 0) + countMaskNum(__structs, i + (_total3 || 0) + 1, _hasMask || 0);
+          i += _total3 || 0;
+
+          if (_hasMask) {
+            i += countMaskNum(__structs, i + 1, _hasMask);
+          }
+
           continue;
         }
 
@@ -33317,7 +33315,12 @@
         var target = getCache([__cacheMask2, __cacheFilter2, __cacheOverflow2, __cacheTotal2]); // 局部根节点的total不需要考虑filter，子节点要
 
         if (target) {
-          i += (_total3 || 0) + countMaskNum(__structs, i + (_total3 || 0) + 1, _hasMask || 0);
+          i += _total3 || 0;
+
+          if (_hasMask) {
+            i += countMaskNum(__structs, i + 1, _hasMask);
+          }
+
           _bbox = target.bbox;
         } else {
           _bbox = _node.filterBbox;
@@ -33378,10 +33381,14 @@
           var _computedStyle = _node2.__computedStyle; // none跳过这棵子树，判断下最后一个节点的离屏应用即可
 
           if (_computedStyle[DISPLAY$1] === 'none') {
-            _i2 += (_total4 || 0) + countMaskNum(__structs, _i2 + (_total4 || 0) + 1, _hasMask2 || 0);
+            _i2 += _total4 || 0;
 
-            if (offscreenHash.hasOwnProperty(_i2 - 1)) {
-              ctxTotal = applyOffscreen(ctxTotal, offscreenHash[_i2 - 1], width, height, true);
+            if (_hasMask2) {
+              _i2 += countMaskNum(__structs, _i2 + 1, _hasMask2);
+            }
+
+            if (offscreenHash.hasOwnProperty(_i2)) {
+              ctxTotal = applyOffscreen(ctxTotal, offscreenHash[_i2], width, height, true);
             }
 
             continue;
@@ -33480,13 +33487,16 @@
           var _target = _i2 > index && getCache([_cacheMask, _cacheFilter, _cacheOverflow, _cacheTotal2]);
 
           if (_target) {
-            _i2 += (_total4 || 0) + countMaskNum(__structs, _i2 + (_total4 || 0) + 1, _hasMask2 || 0);
+            _i2 += _total4 || 0;
+
+            if (_hasMask2) {
+              _i2 += countMaskNum(__structs, _i2 + 1, _hasMask2);
+            }
+
             var mixBlendMode = _computedStyle[MIX_BLEND_MODE];
 
             if (isValidMbm(mixBlendMode)) {
               ctxTotal.globalCompositeOperation = mbmName(mixBlendMode);
-            } else {
-              ctxTotal.globalCompositeOperation = 'source-over';
             }
 
             Cache.drawCache(_target, __cacheTotal);
@@ -33506,11 +33516,21 @@
 
 
             if (offscreenBlend) {
-              var _j = _i2 + (_total4 || 0) + countMaskNum(__structs, _i2 + (_total4 || 0) + 1, _hasMask2 || 0);
+              var _j = _i2 + (_total4 || 0);
+
+              if (_hasMask2) {
+                _j += countMaskNum(__structs, _j + 1, _hasMask2);
+              }
 
               var _list = offscreenHash[_j] = offscreenHash[_j] || [];
 
-              _list.push([_i2, _lv, OFFSCREEN_BLEND, offscreenBlend]);
+              _list.push({
+                idx: _i2,
+                lv: _lv,
+                type: type,
+                OFFSCREEN_BLEND: OFFSCREEN_BLEND,
+                offscreen: offscreenBlend
+              });
 
               ctxTotal = offscreenBlend.target.ctx;
             } // 被遮罩的节点要为第一个遮罩和最后一个遮罩的索引打标，被遮罩的本身在一个离屏canvas，遮罩的元素在另外一个
@@ -33530,22 +33550,40 @@
 
 
             if (offscreenFilter) {
-              var _j3 = _i2 + (_total4 || 0) + countMaskNum(__structs, _i2 + (_total4 || 0) + 1, _hasMask2 || 0);
+              var _j3 = _i2 + (_total4 || 0);
+
+              if (_hasMask2) {
+                _j3 += countMaskNum(__structs, _j3 + 1, _hasMask2);
+              }
 
               var _list2 = offscreenHash[_j3] = offscreenHash[_j3] || [];
 
-              _list2.push([_i2, _lv, OFFSCREEN_FILTER, offscreenFilter]);
+              _list2.push({
+                idx: _i2,
+                lv: _lv,
+                type: OFFSCREEN_FILTER,
+                offscreen: offscreenFilter
+              });
 
               ctxTotal = offscreenFilter.target.ctx;
             } // overflow:hidden的离屏，最后孩子进行截取
 
 
             if (offscreenOverflow) {
-              var _j4 = _i2 + (_total4 || 0) + countMaskNum(__structs, _i2 + (_total4 || 0) + 1, _hasMask2 || 0);
+              var _j4 = _i2 + (_total4 || 0);
+
+              if (_hasMask2) {
+                _j4 += countMaskNum(__structs, _j4 + 1, _hasMask2);
+              }
 
               var _list3 = offscreenHash[_j4] = offscreenHash[_j4] || [];
 
-              _list3.push([_i2, _lv, OFFSCREEN_OVERFLOW, offscreenOverflow]);
+              _list3.push({
+                idx: _i2,
+                lv: _lv,
+                type: OFFSCREEN_OVERFLOW,
+                offscreen: offscreenOverflow
+              });
 
               ctxTotal = offscreenOverflow.target.ctx;
             } // 离屏应用，按照lv从大到小即子节点在前先应用，同一个节点多个效果按offscreen优先级从小到大来，
@@ -34930,11 +34968,11 @@
       if (_refreshLevel < REPAINT$1 && !(_node6 instanceof Text)) {
         virtualDom = _node6.__virtualDom; // total可以跳过所有孩子节点省略循环
 
-        if (__cacheTotal && __cacheTotal.__available) {
+        if (__cacheTotal && __cacheTotal.available) {
           _i7 += _total11 || 0;
           virtualDom.cache = true;
         } else {
-          __cacheTotal && (__cacheTotal.__available = true);
+          __cacheTotal && (__cacheTotal.available = true);
           virtualDom = _node6.__virtualDom = util.extend({}, virtualDom); // dom要清除children缓存，geom和img无需
 
           if (_node6 instanceof Dom && !(_node6 instanceof Img)) {
@@ -35821,8 +35859,8 @@
             _i10 += countMaskNum(__structs, _i10 + 1, _hasMask8);
           }
 
-          if (offscreenHash.hasOwnProperty(_i10 - 1)) {
-            ctx = applyOffscreen(ctx, offscreenHash[_i10 - 1], width, height, true);
+          if (offscreenHash.hasOwnProperty(_i10)) {
+            ctx = applyOffscreen(ctx, offscreenHash[_i10], width, height, true);
           }
 
           continue;
@@ -35954,7 +35992,13 @@
 
             var _list7 = offscreenHash[_j11] = offscreenHash[_j11] || [];
 
-            _list7.push([_i10, _lv5, OFFSCREEN_BLEND, offscreenBlend]);
+            _list7.push({
+              idx: _i10,
+              lv: _lv5,
+              type: type,
+              OFFSCREEN_BLEND: OFFSCREEN_BLEND,
+              offscreen: offscreenBlend
+            });
 
             ctx = offscreenBlend.target.ctx;
           } // 被遮罩的节点要为第一个遮罩和最后一个遮罩的索引打标，被遮罩的本身在一个离屏canvas，遮罩的元素在另外一个
@@ -35982,7 +36026,12 @@
 
             var _list8 = offscreenHash[_j13] = offscreenHash[_j13] || [];
 
-            _list8.push([_i10, _lv5, OFFSCREEN_FILTER, offscreenFilter]);
+            _list8.push({
+              idx: _i10,
+              lv: _lv5,
+              type: OFFSCREEN_FILTER,
+              offscreen: offscreenFilter
+            });
 
             ctx = offscreenFilter.target.ctx;
           } // overflow:hidden的离屏，最后孩子进行截取
@@ -35997,7 +36046,12 @@
 
             var _list9 = offscreenHash[_j14] = offscreenHash[_j14] || [];
 
-            _list9.push([_i10, _lv5, OFFSCREEN_OVERFLOW, offscreenOverflow]);
+            _list9.push({
+              idx: _i10,
+              lv: _lv5,
+              type: OFFSCREEN_OVERFLOW,
+              offscreen: offscreenOverflow
+            });
 
             ctx = offscreenOverflow.target.ctx;
           } // 离屏应用，按照lv从大到小即子节点在前先应用，同一个节点多个效果按offscreen优先级从小到大来，
@@ -38894,10 +38948,10 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, lv, ctx, cache, dx2, dy2) {
+      value: function render(renderMode, ctx, dx2, dy2) {
         var _this3 = this;
 
-        var res = _get(_getPrototypeOf(Line.prototype), "render", this).call(this, renderMode, lv, ctx, cache, dx2, dy2);
+        var res = _get(_getPrototypeOf(Line.prototype), "render", this).call(this, renderMode, ctx, dx2, dy2);
 
         if (res["break"]) {
           return res;
@@ -39774,8 +39828,8 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, lv, ctx, cache, dx, dy) {
-        var res = _get(_getPrototypeOf(Polyline.prototype), "render", this).call(this, renderMode, lv, ctx, cache, dx, dy);
+      value: function render(renderMode, ctx, dx, dy) {
+        var res = _get(_getPrototypeOf(Polyline.prototype), "render", this).call(this, renderMode, ctx, dx, dy);
 
         if (res["break"]) {
           return res;
@@ -40114,8 +40168,8 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, lv, ctx, cache, dx2, dy2) {
-        var res = _get(_getPrototypeOf(Sector.prototype), "render", this).call(this, renderMode, lv, ctx, cache, dx2, dy2);
+      value: function render(renderMode, ctx, dx2, dy2) {
+        var res = _get(_getPrototypeOf(Sector.prototype), "render", this).call(this, renderMode, ctx, dx2, dy2);
 
         if (res["break"]) {
           return res;
@@ -40460,8 +40514,8 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, lv, ctx, cache, dx, dy) {
-        var res = _get(_getPrototypeOf(Rect.prototype), "render", this).call(this, renderMode, lv, ctx, cache, dx, dy);
+      value: function render(renderMode, ctx, dx, dy) {
+        var res = _get(_getPrototypeOf(Rect.prototype), "render", this).call(this, renderMode, ctx, dx, dy);
 
         if (res["break"]) {
           return res;
@@ -40582,8 +40636,8 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, lv, ctx, cache, dx, dy) {
-        var res = _get(_getPrototypeOf(Circle.prototype), "render", this).call(this, renderMode, lv, ctx, cache, dx, dy);
+      value: function render(renderMode, ctx, dx, dy) {
+        var res = _get(_getPrototypeOf(Circle.prototype), "render", this).call(this, renderMode, ctx, dx, dy);
 
         if (res["break"]) {
           return res;
@@ -40763,8 +40817,8 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, lv, ctx, cache, dx, dy) {
-        var res = _get(_getPrototypeOf(Ellipse.prototype), "render", this).call(this, renderMode, lv, ctx, cache, dx, dy);
+      value: function render(renderMode, ctx, dx, dy) {
+        var res = _get(_getPrototypeOf(Ellipse.prototype), "render", this).call(this, renderMode, ctx, dx, dy);
 
         if (res["break"]) {
           return res;

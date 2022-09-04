@@ -2318,7 +2318,7 @@ class Xom extends Node {
   }
 
   __destroy() {
-    if(this.isDestroyed) {
+    if(this.__isDestroyed) {
       return;
     }
     super.__destroy();

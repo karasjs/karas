@@ -228,8 +228,8 @@ class Line extends Geom {
     return rebuild;
   }
 
-  render(renderMode, lv, ctx, cache, dx2, dy2) {
-    let res = super.render(renderMode, lv, ctx, cache, dx2, dy2);
+  render(renderMode, ctx, dx2, dy2) {
+    let res = super.render(renderMode, ctx, dx2, dy2);
     if(res.break) {
       return res;
     }

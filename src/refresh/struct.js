@@ -79,6 +79,7 @@ const {
   MIX_BLEND_MODE: MBM,
   PERSPECTIVE: PPT,
   MASK,
+  CACHE,
 } = level;
 const { isE, inverse, multiply } = mx;
 const { mbmName, isValidMbm } = mbm;
@@ -329,6 +330,8 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
     // 生成cacheTotal，获取偏移dx/dy
     __cacheTotal = node.__cacheTotal = Cache.getInstance(bboxTotal, sx1, sy1);
     if(!__cacheTotal || !__cacheTotal.__enabled) {
+      inject.warn('Cache of ' + node.tagName + '(' + index + ')' + ' is oversize: '
+        + (bboxTotal[2] - bboxTotal[0]) + ', ' + (bboxTotal[3] - bboxTotal[1]));
       return;
     }
     __cacheTotal.__available = true;
@@ -1641,7 +1644,7 @@ function renderSvg(renderMode, ctx, root, isFirst) {
           }
         }
         // 去除特殊的filter，普通节点或不影响的mask在<REPAINT下defs的其它都可缓存
-        else {
+        else if(!(node instanceof Text)) {
           __cacheDefs.forEach(item => {
             ctx.addCache(item);
           });
@@ -1907,6 +1910,8 @@ function renderWebgl(renderMode, gl, root) {
   let parentMatrix;
   let opacityList = [];
   let parentOpacity = 1;
+  let pptCount = 0;
+  let pptList = [];
   let pmList = [];
   let parentPm;
   let lastRefreshLevel = NONE;
@@ -1955,32 +1960,35 @@ function renderWebgl(renderMode, gl, root) {
     lastRefreshLevel = __refreshLevel;
     node.__refreshLevel = NONE;
     // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，Root节点是第一个特殊处理
-    // if(i === 0) {}
-    // else if(lv > lastLv) {
-    //   parentMatrix = lastNode.__matrixEvent;
-    //   if(isE(parentMatrix)) {
-    //     parentMatrix = null;
-    //   }
-    //   matrixList.push(parentMatrix);
-    //   parentOpacity = lastNode.__opacity;
-    //   opacityList.push(parentOpacity);
-    //   parentPm = lastNode.__perspectiveMatrix;
-    //   if(isE(parentPm)) {
-    //     parentPm = null;
-    //   }
-    //   pmList.push(parentPm);
-    // }
-    // // 变小出栈索引需注意，可能不止一层，多层计算diff层级
-    // else if(lv < lastLv) {
-    //   let diff = lastLv - lv;
-    //   matrixList.splice(-diff);
-    //   parentMatrix = matrixList[lv - 1];
-    //   opacityList.splice(-diff);
-    //   parentOpacity = opacityList[lv - 1];
-    //   pmList.splice(-diff);
-    //   parentPm = pmList[lv - 1];
-    // }
-    // // 不变是同级兄弟，无需特殊处理 else {}
+    if(i === 0) {}
+    else if(lv > lastLv) {
+      // parentMatrix = lastNode.__matrixEvent;
+      // if(isE(parentMatrix)) {
+      //   parentMatrix = null;
+      // }
+      // matrixList.push(parentMatrix);
+      // parentOpacity = lastNode.__opacity;
+      // opacityList.push(parentOpacity);
+      // parentPm = lastNode.__perspectiveMatrix;
+      // if(isE(parentPm)) {
+      //   parentPm = null;
+      // }
+      // pmList.push(parentPm);
+      pptList.push(pptCount);
+    }
+    // 变小出栈索引需注意，可能不止一层，多层计算diff层级
+    else if(lv < lastLv) {
+      let diff = lastLv - lv;
+      // matrixList.splice(-diff);
+      // parentMatrix = matrixList[lv - 1];
+      // opacityList.splice(-diff);
+      // parentOpacity = opacityList[lv - 1];
+      // pmList.splice(-diff);
+      // parentPm = pmList[lv - 1];
+      pptList.splice(-diff);
+      pptCount = pptList[lv - 1];
+    }
+    // 不变是同级兄弟，无需特殊处理 else {}
     // lastRefreshLevel = __refreshLevel;
     // lastNode = node;
     // lastLv = lv;
@@ -1993,8 +2001,12 @@ function renderWebgl(renderMode, gl, root) {
      * 如果没有或无效，直接添加，无视节点本身变化，后面防重即可
      */
     if(__refreshLevel < REPAINT) {
+      let ppt;
       if(contain(__refreshLevel, PPT)) {
-        node.__calPerspective(__currentStyle, __computedStyle, __cacheStyle);
+        ppt = node.__calPerspective(__currentStyle, __computedStyle, __cacheStyle);
+      }
+      else {
+        ppt = node.__perspectiveMatrix;
       }
       // transform变化，父元素的perspective变化也会在Root特殊处理重新计算
       // let matrix;
@@ -2029,10 +2041,15 @@ function renderWebgl(renderMode, gl, root) {
       if(contain(__refreshLevel, MBM)) {
         __computedStyle[MIX_BLEND_MODE] = __currentStyle[MIX_BLEND_MODE];
       }
-      // filter/mask变化需重新生成
-      if((filter && filter.length || contain(__refreshLevel, MASK))
-        && node.__cacheAsBitmap
-        && __cacheTotal && __cacheTotal.__available) {
+      // 新的perspective父容器，子节点需要有透视，多个则需要生成画中画影响性能
+      if(!isE(ppt)) {
+        pptCount++;
+      }
+      // 这里和canvas不一样，前置cacheAsBitmap条件变成或条件之一，新的ppt层级且画中画需要新的fbo
+      if((filter && filter.length || contain(__refreshLevel, MASK) && hasMask)
+        && __cacheTotal && __cacheTotal.__available
+        || contain(__refreshLevel, CACHE)
+        || node.__cacheAsBitmap || pptCount > 1 && pptCount > pptList[lv - 1]) {
         mergeList.push({
           i,
           lv,
@@ -2457,7 +2474,8 @@ function renderCanvas(renderMode, ctx, root) {
       __cacheTotal,
     } = node;
     node.__refreshLevel = NONE;
-    if(__refreshLevel < REPAINT) {
+    if(__refreshLevel === NONE) {}
+    else if(__refreshLevel < REPAINT) {
       if(contain(__refreshLevel, TRANSFORM_ALL)) {
         node.__calMatrix(__refreshLevel, __currentStyle, __computedStyle, __cacheStyle);
       }
@@ -2471,17 +2489,19 @@ function renderCanvas(renderMode, ctx, root) {
       if(contain(__refreshLevel, MBM)) {
         __computedStyle[MIX_BLEND_MODE] = __currentStyle[MIX_BLEND_MODE];
       }
-      // filter/mask变化需重新生成
-      if((filter && filter.length || contain(__refreshLevel, MASK))
-        && node.__cacheAsBitmap
-        && __cacheTotal && __cacheTotal.__available) {
-        mergeList.push({
-          i,
-          lv,
-          total,
-          node,
-          hasMask,
-        });
+      // filter/mask变化需重新生成，cacheTotal本身就存在要判断下；CACHE取消重新生成则无需判断
+      if(node.__cacheAsBitmap) {
+        if((filter && filter.length || contain(__refreshLevel, MASK) && hasMask)
+          && __cacheTotal && __cacheTotal.__available
+          || contain(__refreshLevel, CACHE)) {
+          mergeList.push({
+            i,
+            lv,
+            total,
+            node,
+            hasMask,
+          });
+        }
       }
       // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total
       if(__cacheTotal && __cacheTotal.__available) {

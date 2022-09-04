@@ -1075,6 +1075,7 @@ class Xom extends Node {
       __sy5,
       __sy6,
     } = this;
+    this.__bbox = null;
     let bx1 = __sx1, by1 = __sy1, bx2 = __sx6, by2 = __sy6;
     let backgroundClip = __computedStyle[BACKGROUND_CLIP] = __currentStyle[BACKGROUND_CLIP];
     // 默认border-box
@@ -1439,14 +1440,14 @@ class Xom extends Node {
   }
 
   __calPerspective(__currentStyle, __computedStyle, __cacheStyle) {
+    this.__perspectiveMatrix = [];
     let rebuild;
     let { __sx1, __sy1 } = this;
     if(isNil(__cacheStyle[PERSPECTIVE])) {
       __cacheStyle[PERSPECTIVE] = true;
       rebuild = true;
       let v = __currentStyle[PERSPECTIVE];
-      let ppt = this.__calSize(v, this.clientWidth, true);
-      __computedStyle[PERSPECTIVE] = ppt;
+      __computedStyle[PERSPECTIVE] = this.__calSize(v, this.clientWidth, true);
     }
     if(isNil(__cacheStyle[PERSPECTIVE_ORIGIN])) {
       __cacheStyle[PERSPECTIVE_ORIGIN] = true;
@@ -1455,11 +1456,13 @@ class Xom extends Node {
         return this.__calSize(item, i ? this.__offsetHeight : this.__offsetWidth, true);
       });
     }
-    if(rebuild) {
+    let ppt = __computedStyle[PERSPECTIVE];
+    // perspective为0无效
+    if(rebuild && ppt) {
       let po = __computedStyle[PERSPECTIVE_ORIGIN].slice(0);
       po[0] += __sx1 || 0;
       po[1] += __sy1 || 0;
-      this.__perspectiveMatrix = tf.calPerspectiveMatrix(__computedStyle[PERSPECTIVE], po);
+      this.__perspectiveMatrix = tf.calPerspectiveMatrix(ppt, po);
     }
     return this.__perspectiveMatrix;
   }

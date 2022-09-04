@@ -132,28 +132,20 @@ class Geom extends Xom {
     this.__cacheProps = {};
   }
 
-  __calCache(renderMode, ctx, parent, __cacheStyle, currentStyle, computedStyle,
-             clientWidth, clientHeight, offsetWidth, offsetHeight,
-             borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
-             paddingTop, paddingRight, paddingBottom, paddingLeft,
-             x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6) {
-    let res = super.__calCache(renderMode, ctx, parent, __cacheStyle, currentStyle, computedStyle,
-      clientWidth, clientHeight, offsetWidth, offsetHeight,
-      borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
-      paddingTop, paddingRight, paddingBottom, paddingLeft,
-      x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6);
+  __calCache(__currentStyle, __computedStyle, __cacheStyle) {
+    let res = super.__calCache(__currentStyle, __computedStyle, __cacheStyle);
     if(isNil(__cacheStyle[STROKE_WIDTH])) {
       __cacheStyle[STROKE_WIDTH] = true;
-      let strokeWidth = currentStyle[STROKE_WIDTH] || [];
+      let strokeWidth = __currentStyle[STROKE_WIDTH] || [];
       let w = this.width;
-      computedStyle[STROKE_WIDTH] = strokeWidth.map(item => {
+      __computedStyle[STROKE_WIDTH] = strokeWidth.map(item => {
         return this.__calSize(item, w, true);
       });
     }
     if(isNil(__cacheStyle[STROKE_DASHARRAY])) {
       __cacheStyle[STROKE_DASHARRAY] = true;
-      computedStyle[STROKE_DASHARRAY] = currentStyle[STROKE_DASHARRAY] || [];
-      __cacheStyle[STROKE_DASHARRAY_STR] = computedStyle[STROKE_DASHARRAY].map(item => joinArr(item, ','));
+      __computedStyle[STROKE_DASHARRAY] = __currentStyle[STROKE_DASHARRAY] || [];
+      __cacheStyle[STROKE_DASHARRAY_STR] = __computedStyle[STROKE_DASHARRAY].map(item => joinArr(item, ','));
     }
     // 直接赋值的
     [
@@ -162,13 +154,13 @@ class Geom extends Xom {
       STROKE_MITERLIMIT,
       FILL_RULE,
     ].forEach(k => {
-      computedStyle[k] = currentStyle[k];
+      __computedStyle[k] = __currentStyle[k];
     });
     // stroke/fll移至render里处理，因为cache涉及渐变坐标偏移
     [FILL, STROKE].forEach(k => {
       if(isNil(__cacheStyle[k])) {
-        let v = currentStyle[k];
-        let cs = computedStyle[k] = [];
+        let v = __currentStyle[k];
+        let cs = __computedStyle[k] = [];
         let res = __cacheStyle[k] = [];
         if(Array.isArray(v)) {
           v.forEach(item => {
@@ -192,7 +184,7 @@ class Geom extends Xom {
     return res;
   }
 
-  __calContent(renderMode, lv, currentStyle, computedStyle) {
+  __calContent(currentStyle, computedStyle) {
     // Geom强制有内容
     return computedStyle[VISIBILITY] !== 'hidden';
   }

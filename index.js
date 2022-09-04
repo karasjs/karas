@@ -15264,15 +15264,19 @@
     //                         1000000
     PERSPECTIVE: 128,
     //                          10000000
+    // mask发生变化但节点没有变化时候
     MASK: 256,
     //                                100000000
-    REPAINT: 512,
-    //                            1000000000
+    // cacheTotal变化需重新生成的时候
+    CACHE: 512,
+    //                              1000000000
+    REPAINT: 1024,
+    //                          10000000000
     // 高位表示reflow
-    REFLOW: 1024,
-    //                           10000000000
+    REFLOW: 2048,
+    //                          100000000000
     // 特殊高位表示rebuild
-    REBUILD: 2048 //                         100000000000
+    REBUILD: 4096 //                        1000000000000
 
   };
   var TRANSFORMS = (_TRANSFORMS = {}, _defineProperty(_TRANSFORMS, STYLE_KEY$1.SCALE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.SCALE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.SCALE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.ROTATE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.ROTATE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.ROTATE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.SKEW_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.SKEW_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.ROTATE_3D, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.TRANSFORM, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.TRANSFORM_ORIGIN, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.TRANSLATE_PATH, true), _TRANSFORMS);
@@ -22631,6 +22635,7 @@
             __sy4 = this.__sy4,
             __sy5 = this.__sy5,
             __sy6 = this.__sy6;
+        this.__bbox = null;
         var bx1 = __sx1,
             by1 = __sy1,
             bx2 = __sx6,
@@ -22984,6 +22989,7 @@
       value: function __calPerspective(__currentStyle, __computedStyle, __cacheStyle) {
         var _this7 = this;
 
+        this.__perspectiveMatrix = [];
         var rebuild;
         var __sx1 = this.__sx1,
             __sy1 = this.__sy1;
@@ -22992,10 +22998,7 @@
           __cacheStyle[PERSPECTIVE$2] = true;
           rebuild = true;
           var v = __currentStyle[PERSPECTIVE$2];
-
-          var ppt = this.__calSize(v, this.clientWidth, true);
-
-          __computedStyle[PERSPECTIVE$2] = ppt;
+          __computedStyle[PERSPECTIVE$2] = this.__calSize(v, this.clientWidth, true);
         }
 
         if (isNil$a(__cacheStyle[PERSPECTIVE_ORIGIN$1])) {
@@ -23006,12 +23009,14 @@
           });
         }
 
-        if (rebuild) {
+        var ppt = __computedStyle[PERSPECTIVE$2]; // perspective为0无效
+
+        if (rebuild && ppt) {
           var po = __computedStyle[PERSPECTIVE_ORIGIN$1].slice(0);
 
           po[0] += __sx1 || 0;
           po[1] += __sy1 || 0;
-          this.__perspectiveMatrix = transform.calPerspectiveMatrix(__computedStyle[PERSPECTIVE$2], po);
+          this.__perspectiveMatrix = transform.calPerspectiveMatrix(ppt, po);
         }
 
         return this.__perspectiveMatrix;
@@ -30648,37 +30653,37 @@
       }
     }, {
       key: "__calCache",
-      value: function __calCache(renderMode, ctx, parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6) {
+      value: function __calCache(__currentStyle, __computedStyle, __cacheStyle) {
         var _this2 = this;
 
-        var res = _get(_getPrototypeOf(Geom.prototype), "__calCache", this).call(this, renderMode, ctx, parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6);
+        var res = _get(_getPrototypeOf(Geom.prototype), "__calCache", this).call(this, __currentStyle, __computedStyle, __cacheStyle);
 
         if (isNil$8(__cacheStyle[STROKE_WIDTH$6])) {
           __cacheStyle[STROKE_WIDTH$6] = true;
-          var strokeWidth = currentStyle[STROKE_WIDTH$6] || [];
+          var strokeWidth = __currentStyle[STROKE_WIDTH$6] || [];
           var w = this.width;
-          computedStyle[STROKE_WIDTH$6] = strokeWidth.map(function (item) {
+          __computedStyle[STROKE_WIDTH$6] = strokeWidth.map(function (item) {
             return _this2.__calSize(item, w, true);
           });
         }
 
         if (isNil$8(__cacheStyle[STROKE_DASHARRAY])) {
           __cacheStyle[STROKE_DASHARRAY] = true;
-          computedStyle[STROKE_DASHARRAY] = currentStyle[STROKE_DASHARRAY] || [];
-          __cacheStyle[STROKE_DASHARRAY_STR] = computedStyle[STROKE_DASHARRAY].map(function (item) {
+          __computedStyle[STROKE_DASHARRAY] = __currentStyle[STROKE_DASHARRAY] || [];
+          __cacheStyle[STROKE_DASHARRAY_STR] = __computedStyle[STROKE_DASHARRAY].map(function (item) {
             return joinArr(item, ',');
           });
         } // 直接赋值的
 
 
         [STROKE_LINECAP, STROKE_LINEJOIN, STROKE_MITERLIMIT, FILL_RULE].forEach(function (k) {
-          computedStyle[k] = currentStyle[k];
+          __computedStyle[k] = __currentStyle[k];
         }); // stroke/fll移至render里处理，因为cache涉及渐变坐标偏移
 
         [FILL$1, STROKE].forEach(function (k) {
           if (isNil$8(__cacheStyle[k])) {
-            var v = currentStyle[k];
-            var cs = computedStyle[k] = [];
+            var v = __currentStyle[k];
+            var cs = __computedStyle[k] = [];
 
             var _res = __cacheStyle[k] = [];
 
@@ -30706,7 +30711,7 @@
       }
     }, {
       key: "__calContent",
-      value: function __calContent(renderMode, lv, currentStyle, computedStyle) {
+      value: function __calContent(currentStyle, computedStyle) {
         // Geom强制有内容
         return computedStyle[VISIBILITY$2] !== 'hidden';
       }
@@ -33048,7 +33053,8 @@
       contain$1 = o$1.contain,
       MBM = o$1.MIX_BLEND_MODE,
       PPT = o$1.PERSPECTIVE,
-      MASK = o$1.MASK;
+      MASK = o$1.MASK,
+      CACHE = o$1.CACHE;
   var isE = mx.isE,
       inverse = mx.inverse,
       multiply = mx.multiply;
@@ -33326,6 +33332,7 @@
       __cacheTotal = node.__cacheTotal = Cache.getInstance(bboxTotal, sx1, sy1);
 
       if (!__cacheTotal || !__cacheTotal.__enabled) {
+        inject.warn('Cache of ' + node.tagName + '(' + index + ')' + ' is oversize: ' + (bboxTotal[2] - bboxTotal[0]) + ', ' + (bboxTotal[3] - bboxTotal[1]));
         return;
       }
 
@@ -34845,7 +34852,7 @@
               });
             }
           } // 去除特殊的filter，普通节点或不影响的mask在<REPAINT下defs的其它都可缓存
-          else {
+          else if (!(node instanceof Text)) {
             __cacheDefs.forEach(function (item) {
               ctx.addCache(item);
             });
@@ -35157,7 +35164,10 @@
         texCache = root.texCache;
     var cx = width * 0.5,
         cy = height * 0.5; // 栈代替递归，存父节点的matrix/opacity，matrix为E时存null省略计算
+    var pptCount = 0;
+    var pptList = [];
     var lastRefreshLevel = NONE$1;
+    var lastLv = 0;
     var mergeList = [];
     var hasMbm; // 是否有混合模式出现
 
@@ -35204,6 +35214,33 @@
           node.__domParent;
       lastRefreshLevel = __refreshLevel;
       node.__refreshLevel = NONE$1; // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，Root节点是第一个特殊处理
+
+      if (i === 0) ; else if (lv > lastLv) {
+        // parentMatrix = lastNode.__matrixEvent;
+        // if(isE(parentMatrix)) {
+        //   parentMatrix = null;
+        // }
+        // matrixList.push(parentMatrix);
+        // parentOpacity = lastNode.__opacity;
+        // opacityList.push(parentOpacity);
+        // parentPm = lastNode.__perspectiveMatrix;
+        // if(isE(parentPm)) {
+        //   parentPm = null;
+        // }
+        // pmList.push(parentPm);
+        pptList.push(pptCount);
+      } // 变小出栈索引需注意，可能不止一层，多层计算diff层级
+      else if (lv < lastLv) {
+        var diff = lastLv - lv; // matrixList.splice(-diff);
+        // parentMatrix = matrixList[lv - 1];
+        // opacityList.splice(-diff);
+        // parentOpacity = opacityList[lv - 1];
+        // pmList.splice(-diff);
+        // parentPm = pmList[lv - 1];
+
+        pptList.splice(-diff);
+        pptCount = pptList[lv - 1];
+      } // 不变是同级兄弟，无需特殊处理 else {}
       /**
        * lv<REPAINT，一般会有__cache，跳过渲染过程，快速运算，没有cache则是自身超限或无内容，目前不感知
        * 可能有cacheTotal，为之前生成的局部根，清除逻辑在更新检查是否>=REPAINT那里，小变化不动
@@ -35213,8 +35250,12 @@
        */
 
       if (__refreshLevel < REPAINT$1) {
+        var ppt = void 0;
+
         if (contain$1(__refreshLevel, PPT)) {
-          node.__calPerspective(__currentStyle, __computedStyle, __cacheStyle);
+          ppt = node.__calPerspective(__currentStyle, __computedStyle, __cacheStyle);
+        } else {
+          ppt = node.__perspectiveMatrix;
         } // transform变化，父元素的perspective变化也会在Root特殊处理重新计算
         // let matrix;
 
@@ -35253,10 +35294,15 @@
 
         if (contain$1(__refreshLevel, MBM)) {
           __computedStyle[MIX_BLEND_MODE] = __currentStyle[MIX_BLEND_MODE];
-        } // filter/mask变化需重新生成
+        } // 新的perspective父容器，子节点需要有透视，多个则需要生成画中画影响性能
 
 
-        if ((filter && filter.length || contain$1(__refreshLevel, MASK)) && node.__cacheAsBitmap && __cacheTotal && __cacheTotal.__available) {
+        if (!isE(ppt)) {
+          pptCount++;
+        } // 这里和canvas不一样，前置cacheAsBitmap条件变成或条件之一，新的ppt层级且画中画需要新的fbo
+
+
+        if ((filter && filter.length || contain$1(__refreshLevel, MASK) && hasMask) && __cacheTotal && __cacheTotal.__available || contain$1(__refreshLevel, CACHE) || node.__cacheAsBitmap || pptCount > 1 && pptCount > pptList[lv - 1]) {
           mergeList.push({
             i: i,
             lv: lv,
@@ -35654,7 +35700,7 @@
           __cacheTotal = node.__cacheTotal;
       node.__refreshLevel = NONE$1;
 
-      if (__refreshLevel < REPAINT$1) {
+      if (__refreshLevel === NONE$1) ; else if (__refreshLevel < REPAINT$1) {
         if (contain$1(__refreshLevel, TRANSFORM_ALL)) {
           node.__calMatrix(__refreshLevel, __currentStyle, __computedStyle, __cacheStyle);
         }
@@ -35671,17 +35717,19 @@
 
         if (contain$1(__refreshLevel, MBM)) {
           __computedStyle[MIX_BLEND_MODE] = __currentStyle[MIX_BLEND_MODE];
-        } // filter/mask变化需重新生成
+        } // filter/mask变化需重新生成，cacheTotal本身就存在要判断下；CACHE取消重新生成则无需判断
 
 
-        if ((filter && filter.length || contain$1(__refreshLevel, MASK)) && node.__cacheAsBitmap && __cacheTotal && __cacheTotal.__available) {
-          mergeList.push({
-            i: i,
-            lv: lv,
-            total: total,
-            node: node,
-            hasMask: hasMask
-          });
+        if (node.__cacheAsBitmap) {
+          if ((filter && filter.length || contain$1(__refreshLevel, MASK) && hasMask) && __cacheTotal && __cacheTotal.__available || contain$1(__refreshLevel, CACHE)) {
+            mergeList.push({
+              i: i,
+              lv: lv,
+              total: total,
+              node: node,
+              hasMask: hasMask
+            });
+          }
         } // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total
 
 

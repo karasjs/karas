@@ -23,15 +23,20 @@ const ENUM = {
   FILTER: 32, //                                  100000
   MIX_BLEND_MODE: 64, //                         1000000
   PERSPECTIVE: 128, //                          10000000
+
+  // mask发生变化但节点没有变化时候
   MASK: 256, //                                100000000
 
-  REPAINT: 512, //                            1000000000
+  // cacheTotal变化需重新生成的时候
+  CACHE: 512, //                              1000000000
+
+  REPAINT: 1024, //                          10000000000
 
   // 高位表示reflow
-  REFLOW: 1024, //                           10000000000
+  REFLOW: 2048, //                          100000000000
 
   // 特殊高位表示rebuild
-  REBUILD: 2048, //                         100000000000
+  REBUILD: 4096, //                        1000000000000
 };
 
 const TRANSFORMS = {

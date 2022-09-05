@@ -131,8 +131,8 @@ class Img extends Dom {
   }
 
   // img根据加载情况更新__hasContent
-  __calContent(renderMode, lv, currentStyle, computedStyle) {
-    let res = super.__calContent(renderMode, lv, currentStyle, computedStyle);
+  __calContent(currentStyle, computedStyle) {
+    let res = super.__calContent(currentStyle, computedStyle);
     if(!res) {
       let {
         __loadImg: loadImg,
@@ -150,6 +150,7 @@ class Img extends Dom {
     if(renderMode === mode.WEBGL) {
       dx = res.dx;
       dy = res.dy;
+      ctx = res.ctx;
     }
     let {
       offscreenBlend, offscreenMask, offscreenFilter, offscreenOverflow,

@@ -2083,17 +2083,20 @@ function renderWebgl(renderMode, gl, root) {
       if(contain(__refreshLevel, FT)) {
         node.__calFilter(__currentStyle, __computedStyle, __cacheStyle);
       }
-      let mixBlendMode;
       if(contain(__refreshLevel, MBM)) {
-        mixBlendMode = __computedStyle[MIX_BLEND_MODE] = __currentStyle[MIX_BLEND_MODE];
+        __computedStyle[MIX_BLEND_MODE] = __currentStyle[MIX_BLEND_MODE];
       }
       // 新的perspective父容器，子节点需要有透视，多个则需要生成画中画影响性能
       if(!isE(ppt)) {
         pptCount++;
       }
+      let isMbm = contain(__refreshLevel, MBM) && isValidMbm(__computedStyle[MIX_BLEND_MODE]);
+      if(isMbm) {
+        hasMbm = true;
+      }
       // 这里和canvas不一样，前置cacheAsBitmap条件变成或条件之一，新的ppt层级且画中画需要新的fbo
       if(contain(__refreshLevel, CACHE | FT)
-        || mixBlendMode && isValidMbm(mixBlendMode)
+        || isMbm
         || pptCount > 1 && pptCount > pptList[lv - 1]) {
         mergeList.push({
           i,
@@ -2118,6 +2121,7 @@ function renderWebgl(renderMode, gl, root) {
     else {
       node.__calCache(__currentStyle, __computedStyle, __cacheStyle);
       node.__calContent(__currentStyle, __computedStyle);
+      let ppt = node.__calPerspective(__currentStyle, __computedStyle, __cacheStyle);
       // let matrix = node.__matrix;
       // // 先左乘perspective的矩阵，再左乘父级的总矩阵
       // if(__domParent) {
@@ -2138,17 +2142,25 @@ function renderWebgl(renderMode, gl, root) {
         gl.viewport(0, 0, width, height);
         gl.useProgram(gl.program);
       }
+      if(!isE(ppt)) {
+        pptCount++;
+      }
       let {
         [OVERFLOW]: overflow,
         [FILTER]: filter,
         [MIX_BLEND_MODE]: mixBlendMode,
       } = __computedStyle;
+      let isMbm = isValidMbm(mixBlendMode);
+      if(isMbm) {
+        hasMbm = true;
+      }
       if(!node.__limitCache
         && (node.__cacheAsBitmap
           || hasMask
           || filter.length
-          || isValidMbm(mixBlendMode)
-          || overflow === 'hidden' && total)) {
+          || isMbm
+          || overflow === 'hidden' && total)
+          || pptCount > 1 && pptCount > pptList[lv - 1]) {
         mergeList.push({
           i,
           lv,
@@ -2193,7 +2205,7 @@ function renderWebgl(renderMode, gl, root) {
     //     mergeList.push([i, lv, total, node, __limitCache, hasMask, filter, overflow, isPerspective, __cacheAsBitmap]);
     //   }
     // }
-  }console.log(mergeList)
+  }
   let limitHash = {};
   // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
   // 这样保证子节点在前，后节点在前，后节点是为了mask先应用自身如filter之后再进行遮罩
@@ -2336,7 +2348,7 @@ function renderWebgl(renderMode, gl, root) {
         let j = texCache.lockOneChannel();
         let texture = webgl.createTexture(gl, c.canvas, j);
         let mockCache = new MockCache(gl, texture, 0, 0, width, height, [0, 0, width, height]);
-        texCache.addTexAndDrawWhenLimit(gl, mockCache, opacity, matrixEvent, cx, cy, 0, 0, true);
+        texCache.addTexAndDrawWhenLimit(gl, mockCache, node.__opacity, node.__matrixEvent, cx, cy, 0, 0, true);
         texCache.refresh(gl, cx, cy, true);
         c.ctx.setTransform(1, 0, 0, 1, 0, 0);
         c.ctx.globalAlpha = 1;

@@ -23414,6 +23414,7 @@
             ctx = c.ctx;
             var m = this.__matrixEvent;
             ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+            ctx.globalAlpha = this.__opacity;
           } else if (renderMode === SVG$1) {
             virtualDom.mixBlendMode = mixBlendMode;
           }
@@ -23439,6 +23440,7 @@
             ctx = _c.ctx;
             var _m = this.__matrixEvent;
             ctx.setTransform(_m[0], _m[1], _m[4], _m[5], _m[12], _m[13]);
+            ctx.globalAlpha = this.__opacity;
           }
         } // 无cache时canvas的blur需绘制到离屏上应用后反向绘制回来，有cache在Dom里另生成一个filter的cache
 
@@ -23462,6 +23464,7 @@
             ctx = _c2.ctx;
             var _m2 = this.__matrixEvent;
             ctx.setTransform(_m2[0], _m2[1], _m2[4], _m2[5], _m2[12], _m2[13]);
+            ctx.globalAlpha = this.__opacity;
           } else if (renderMode === SVG$1) {
             virtualDom.filter = painter.svgFilter(filter);
           }
@@ -23515,6 +23518,7 @@
             ctx = _c3.ctx;
             var _m3 = this.__matrixEvent;
             ctx.setTransform(_m3[0], _m3[1], _m3[4], _m3[5], _m3[12], _m3[13]);
+            ctx.globalAlpha = this.__opacity;
             offscreenOverflow.x = sx1;
             offscreenOverflow.y = sy1;
             offscreenOverflow.offsetWidth = __offsetWidth;
@@ -29895,8 +29899,8 @@
 
     }, {
       key: "__calContent",
-      value: function __calContent(renderMode, lv, currentStyle, computedStyle) {
-        var res = _get(_getPrototypeOf(Img.prototype), "__calContent", this).call(this, renderMode, lv, currentStyle, computedStyle);
+      value: function __calContent(currentStyle, computedStyle) {
+        var res = _get(_getPrototypeOf(Img.prototype), "__calContent", this).call(this, currentStyle, computedStyle);
 
         if (!res) {
           var loadImg = this.__loadImg;
@@ -29919,6 +29923,7 @@
         if (renderMode === mode.WEBGL) {
           dx = res.dx;
           dy = res.dy;
+          ctx = res.ctx;
         }
 
         var offscreenBlend = res.offscreenBlend,
@@ -33141,7 +33146,7 @@
               visibility = _node2$computedStyle[VISIBILITY$1],
               transform$1 = _node2$computedStyle[TRANSFORM$1],
               transformOrigin = _node2$computedStyle[TRANSFORM_ORIGIN],
-              _opacity = _node2$computedStyle[OPACITY]; // webgl不能跳过超限
+              opacity = _node2$computedStyle[OPACITY]; // webgl不能跳过超限
 
           if (__limitCache && !includeLimitCache) {
             return;
@@ -33158,7 +33163,7 @@
           }
 
           parentIndexHash[_i] = parentIndex;
-          opacityHash[_i] = opacityHash[parentIndex] * _opacity;
+          opacityHash[_i] = opacityHash[parentIndex] * opacity;
           var bbox = void 0,
               dx = 0,
               dy = 0,
@@ -33758,13 +33763,13 @@
 
             var transform$1 = _computedStyle2[TRANSFORM$1],
                 tfo = _computedStyle2[TRANSFORM_ORIGIN],
-                _opacity2 = _computedStyle2[OPACITY];
+                opacity = _computedStyle2[OPACITY];
 
             if (i !== index) {
-              _opacity2 *= parentOpacity;
+              opacity *= parentOpacity;
             }
 
-            ctx.globalAlpha = _node3.__opacity = lastOpacity = _opacity2; // 特殊渲染的matrix，局部根节点为原点且考虑根节点自身的transform
+            ctx.globalAlpha = _node3.__opacity = lastOpacity = opacity; // 特殊渲染的matrix，局部根节点为原点且考虑根节点自身的transform
 
             var m = void 0;
 
@@ -34066,7 +34071,7 @@
       var parentIndex = parentIndexHash[i];
       var matrix = matrixHash[parentIndex]; // 父节点的在每个节点计算后保存，第一个为top的默认为E（空）
 
-      var _opacity3 = opacityHash[i]; // opacity在合并box时已经计算可以直接用
+      var opacity = opacityHash[i]; // opacity在合并box时已经计算可以直接用
       // 先看text，visibility会在内部判断，display会被parent判断
 
       if (_node4 instanceof Text) {
@@ -34074,7 +34079,7 @@
           matrix = multiply(parentPm, matrix);
         }
 
-        texCache.addTexAndDrawWhenLimit(gl, _node4.__cache, _opacity3, matrix, cx, cy, dx, dy, false);
+        texCache.addTexAndDrawWhenLimit(gl, _node4.__cache, opacity, matrix, cx, cy, dx, dy, false);
       } // 再看total缓存/cache，都没有的是无内容的Xom节点
       else {
         var __cache = _node4.__cache,
@@ -34152,7 +34157,7 @@
                 frameBuffer2 = _genFrameBufferWithTe4[1],
                 texture2 = _genFrameBufferWithTe4[2];
 
-            texCache.addTexAndDrawWhenLimit(gl, target, _opacity3, matrix, cx, cy, dx, dy, false);
+            texCache.addTexAndDrawWhenLimit(gl, target, opacity, matrix, cx, cy, dx, dy, false);
             texCache.refresh(gl, cx, cy); // 合成结果作为当前frameBuffer，以及纹理和单元，等于替代了当前fbo作为绘制对象
 
             var _genMbmWebgl = genMbmWebgl(gl, texCache, n, n2, frameBuffer, texture, mbmName(mixBlendMode), width, height);
@@ -34165,7 +34170,7 @@
             gl.deleteFramebuffer(frameBuffer2);
             gl.deleteTexture(texture2);
           } else {
-            texCache.addTexAndDrawWhenLimit(gl, target, _opacity3, matrix, cx, cy, dx, dy, false);
+            texCache.addTexAndDrawWhenLimit(gl, target, opacity, matrix, cx, cy, dx, dy, false);
           }
 
           if (target !== __cache) {
@@ -34179,7 +34184,7 @@
 
 
         if (_node4.hookGlRender) {
-          _node4.hookGlRender(gl, _opacity3, matrix, cx, cy, dx, dy, false);
+          _node4.hookGlRender(gl, opacity, matrix, cx, cy, dx, dy, false);
         }
       }
     }
@@ -34612,7 +34617,7 @@
               __cacheOverflow = _node5.__cacheOverflow,
               __cacheTotal = _node5.__cacheTotal;
           var _node5$__computedStyl = _node5.__computedStyle,
-              _opacity4 = _node5$__computedStyl[OPACITY],
+              opacity = _node5$__computedStyl[OPACITY],
               _transform = _node5$__computedStyl[TRANSFORM$1],
               _transformOrigin = _node5$__computedStyl[TRANSFORM_ORIGIN]; // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理
 
@@ -34664,7 +34669,7 @@
               lastMatrix = multiply(parentMatrix, lastMatrix);
             }
 
-            lastOpacity = parentOpacity * _opacity4;
+            lastOpacity = parentOpacity * opacity;
             texCache.addTexAndDrawWhenLimit(gl, target, lastOpacity, m, cx, cy, dx, dy, true);
 
             if (target !== _cache2) {
@@ -35065,12 +35070,12 @@
         }
 
         if (contain$1(_refreshLevel, OP)) {
-          var _opacity5 = computedStyle[OPACITY] = currentStyle[OPACITY];
+          var opacity = computedStyle[OPACITY] = currentStyle[OPACITY];
 
-          if (_opacity5 === 1) {
+          if (opacity === 1) {
             delete virtualDom.opacity;
           } else {
-            virtualDom.opacity = _opacity5;
+            virtualDom.opacity = opacity;
           }
         }
 
@@ -35157,7 +35162,7 @@
               fill = _node7$computedStyle[FILL],
               _node7$virtualDom = _node7.virtualDom,
               children = _node7$virtualDom.children,
-              _opacity6 = _node7$virtualDom.opacity;
+              _opacity = _node7$virtualDom.opacity;
 
           if (_display !== 'none' && visibility !== 'hidden') {
             // 引用相同无法diff，需要clone
@@ -35186,8 +35191,8 @@
 
                 props.push(['transform', "matrix(".concat(util.joinArr(mx.m2m6(_matrix3), ','), ")")]); // path没有opacity属性，在vd上，需要弥补
 
-                if (!util.isNil(_opacity6) && _opacity6 !== 1) {
-                  props.push(['opacity', _opacity6]);
+                if (!util.isNil(_opacity) && _opacity !== 1) {
+                  props.push(['opacity', _opacity]);
                 }
               } // img可能有matrix属性，需判断
               else if (tagName === 'image') {
@@ -35267,6 +35272,7 @@
     var lastRefreshLevel = NONE$1;
     var lastLv = 0;
     var mergeList = [];
+    var hasMbm; // 是否有混合模式出现
 
     /**
      * 先一遍先序遍历每个节点绘制到自己__cache上，排除Text和已有的缓存以及局部根缓存，
@@ -35387,19 +35393,23 @@
           node.__calFilter(__currentStyle, __computedStyle, __cacheStyle);
         }
 
-        var mixBlendMode = void 0;
-
         if (contain$1(__refreshLevel, MBM)) {
-          mixBlendMode = __computedStyle[MIX_BLEND_MODE] = __currentStyle[MIX_BLEND_MODE];
+          __computedStyle[MIX_BLEND_MODE] = __currentStyle[MIX_BLEND_MODE];
         } // 新的perspective父容器，子节点需要有透视，多个则需要生成画中画影响性能
 
 
         if (!isE(ppt)) {
           pptCount++;
+        }
+
+        var isMbm = contain$1(__refreshLevel, MBM) && isValidMbm(__computedStyle[MIX_BLEND_MODE]);
+
+        if (isMbm) {
+          hasMbm = true;
         } // 这里和canvas不一样，前置cacheAsBitmap条件变成或条件之一，新的ppt层级且画中画需要新的fbo
 
 
-        if (contain$1(__refreshLevel, CACHE$1 | FT) || mixBlendMode && isValidMbm(mixBlendMode) || pptCount > 1 && pptCount > pptList[lv - 1]) {
+        if (contain$1(__refreshLevel, CACHE$1 | FT) || isMbm || pptCount > 1 && pptCount > pptList[lv - 1]) {
           mergeList.push({
             i: i,
             lv: lv,
@@ -35425,7 +35435,9 @@
       else {
         node.__calCache(__currentStyle, __computedStyle, __cacheStyle);
 
-        node.__calContent(__currentStyle, __computedStyle); // let matrix = node.__matrix;
+        node.__calContent(__currentStyle, __computedStyle);
+
+        var _ppt = node.__calPerspective(__currentStyle, __computedStyle, __cacheStyle); // let matrix = node.__matrix;
         // // 先左乘perspective的矩阵，再左乘父级的总矩阵
         // if(__domParent) {
         //   matrix = multiply(__domParent.__perspectiveMatrix, matrix);
@@ -35452,11 +35464,21 @@
           gl.useProgram(gl.program);
         }
 
+        if (!isE(_ppt)) {
+          pptCount++;
+        }
+
         var overflow = __computedStyle[OVERFLOW],
             filter = __computedStyle[FILTER$1],
-            _mixBlendMode = __computedStyle[MIX_BLEND_MODE];
+            mixBlendMode = __computedStyle[MIX_BLEND_MODE];
 
-        if (!node.__limitCache && (node.__cacheAsBitmap || hasMask || filter.length || isValidMbm(_mixBlendMode) || overflow === 'hidden' && total)) {
+        var _isMbm = isValidMbm(mixBlendMode);
+
+        if (_isMbm) {
+          hasMbm = true;
+        }
+
+        if (!node.__limitCache && (node.__cacheAsBitmap || hasMask || filter.length || _isMbm || overflow === 'hidden' && total) || pptCount > 1 && pptCount > pptList[lv - 1]) {
           mergeList.push({
             i: i,
             lv: lv,
@@ -35503,7 +35525,6 @@
 
     }
 
-    console.log(mergeList);
     var limitHash = {}; // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
     // 这样保证子节点在前，后节点在前，后节点是为了mask先应用自身如filter之后再进行遮罩
 
@@ -35621,6 +35642,25 @@
         }
       });
     }
+    /**
+     * 最后先序遍历一次应用__cacheTotal即可，没有的用__cache，以及剩下的超尺寸的和Text
+     * 由于mixBlendMode的存在，需先申请个fbo纹理，所有绘制默认向该纹理绘制，最后fbo纹理再进入主画布
+     * 前面循环时有记录是否出现mbm，只有出现才申请，否则不浪费直接输出到主画布
+     * 超尺寸的要走无cache逻辑render，和canvas很像，除了离屏canvas超限，汇总total也会纹理超限
+     */
+
+
+    var n, frameBuffer, texture;
+
+    if (hasMbm) {
+      var _genFrameBufferWithTe21 = genFrameBufferWithTexture(gl, texCache, width, height);
+
+      var _genFrameBufferWithTe22 = _slicedToArray(_genFrameBufferWithTe21, 3);
+
+      n = _genFrameBufferWithTe22[0];
+      frameBuffer = _genFrameBufferWithTe22[1];
+      texture = _genFrameBufferWithTe22[2];
+    }
 
     for (var _i9 = 0, _len8 = __structs.length; _i9 < _len8; _i9++) {
       var _structs$_i5 = __structs[_i9],
@@ -35648,7 +35688,7 @@
           var _texture2 = webgl.createTexture(gl, c.canvas, j);
 
           var mockCache = new MockCache(gl, _texture2, 0, 0, width, height, [0, 0, width, height]);
-          texCache.addTexAndDrawWhenLimit(gl, mockCache, opacity, matrixEvent, cx, cy, 0, 0, true);
+          texCache.addTexAndDrawWhenLimit(gl, mockCache, _node8.__opacity, _node8.__matrixEvent, cx, cy, 0, 0, true);
           texCache.refresh(gl, cx, cy, true);
           c.ctx.setTransform(1, 0, 0, 1, 0, 0);
           c.ctx.globalAlpha = 1;
@@ -35676,17 +35716,17 @@
             __cacheOverflow = _node8.__cacheOverflow,
             _domParent = _node8.__domParent,
             __matrix = _node8.__matrix;
-        var _opacity7 = _computedStyle3[OPACITY],
-            visibility = _computedStyle3[VISIBILITY$1];
-            _computedStyle3[MIX_BLEND_MODE];
+        var opacity = _computedStyle3[OPACITY],
+            visibility = _computedStyle3[VISIBILITY$1],
+            _mixBlendMode = _computedStyle3[MIX_BLEND_MODE];
         var m = __matrix;
 
         if (_domParent) {
-          _opacity7 *= _domParent.__opacity;
+          opacity *= _domParent.__opacity;
           m = multiply(_domParent.__matrixEvent, m);
         }
 
-        _node8.__opacity = _opacity7;
+        _node8.__opacity = opacity;
         assignMatrix(_node8.__matrixEvent, m); // 有total的可以直接绘制并跳过子节点索引，忽略total本身，其独占用纹理单元，注意特殊不取cacheTotal，
         // 这种情况发生在只有overflow:hidden声明但无效没有生成__cacheOverflow的情况，
         // 因为webgl纹理单元缓存原因，所以不用cacheTotal防止切换性能损耗
@@ -35696,8 +35736,29 @@
 
         if (target) {
           // 有mbm先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
-          {
-            texCache.addTexAndDrawWhenLimit(gl, target, _opacity7, m, cx, cy, 0, 0, true);
+          if (hasMbm && isValidMbm(_mixBlendMode)) {
+            texCache.refresh(gl, cx, cy, true);
+
+            var _genFrameBufferWithTe23 = genFrameBufferWithTexture(gl, texCache, width, height),
+                _genFrameBufferWithTe24 = _slicedToArray(_genFrameBufferWithTe23, 3),
+                n2 = _genFrameBufferWithTe24[0],
+                frameBuffer2 = _genFrameBufferWithTe24[1],
+                texture2 = _genFrameBufferWithTe24[2];
+
+            texCache.addTexAndDrawWhenLimit(gl, target, opacity, m, cx, cy, 0, 0, true);
+            texCache.refresh(gl, cx, cy, true); // 合成结果作为当前frameBuffer，以及纹理和单元，等于替代了当前画布作为绘制对象
+
+            var _genMbmWebgl3 = genMbmWebgl(gl, texCache, n, n2, frameBuffer, texture, mbmName(_mixBlendMode), width, height);
+
+            var _genMbmWebgl4 = _slicedToArray(_genMbmWebgl3, 3);
+
+            n = _genMbmWebgl4[0];
+            frameBuffer = _genMbmWebgl4[1];
+            texture = _genMbmWebgl4[2];
+            gl.deleteFramebuffer(frameBuffer2);
+            gl.deleteTexture(texture2);
+          } else {
+            texCache.addTexAndDrawWhenLimit(gl, target, opacity, m, cx, cy, 0, 0, true);
           }
 
           if (target !== _cache3) {
@@ -35710,8 +35771,29 @@
         } else if (limitHash.hasOwnProperty(_i9)) {
           var _target5 = limitHash[_i9];
 
-          {
-            texCache.addTexAndDrawWhenLimit(gl, _target5, _opacity7, m, cx, cy, 0, 0, true);
+          if (hasMbm && isValidMbm(_mixBlendMode)) {
+            texCache.refresh(gl, cx, cy, true);
+
+            var _genFrameBufferWithTe25 = genFrameBufferWithTexture(gl, texCache, width, height),
+                _genFrameBufferWithTe26 = _slicedToArray(_genFrameBufferWithTe25, 3),
+                _n = _genFrameBufferWithTe26[0],
+                _frameBuffer2 = _genFrameBufferWithTe26[1],
+                _texture3 = _genFrameBufferWithTe26[2];
+
+            texCache.addTexAndDrawWhenLimit(gl, _target5, opacity, m, cx, cy, 0, 0, true);
+            texCache.refresh(gl, cx, cy, true); // 合成结果作为当前frameBuffer，以及纹理和单元，等于替代了当前画布作为绘制对象
+
+            var _genMbmWebgl5 = genMbmWebgl(gl, texCache, n, _n, frameBuffer, texture, mbmName(_mixBlendMode), width, height);
+
+            var _genMbmWebgl6 = _slicedToArray(_genMbmWebgl5, 3);
+
+            n = _genMbmWebgl6[0];
+            frameBuffer = _genMbmWebgl6[1];
+            texture = _genMbmWebgl6[2];
+            gl.deleteFramebuffer(_frameBuffer2);
+            gl.deleteTexture(_texture3);
+          } else {
+            texCache.addTexAndDrawWhenLimit(gl, _target5, opacity, m, cx, cy, 0, 0, true);
           }
 
           _i9 += _total12 || 0;
@@ -35732,7 +35814,7 @@
 
           var _mockCache2 = new MockCache(gl, _texture4, 0, 0, width, height, [0, 0, width, height]);
 
-          texCache.addTexAndDrawWhenLimit(gl, _mockCache2, _opacity7, m, cx, cy, 0, 0, true);
+          texCache.addTexAndDrawWhenLimit(gl, _mockCache2, opacity, m, cx, cy, 0, 0, true);
           texCache.refresh(gl, cx, cy, true);
 
           _c2.ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -35748,12 +35830,49 @@
 
 
         if (_node8.hookGlRender) {
-          _node8.hookGlRender(gl, _opacity7, m, cx, cy, 0, 0, true);
+          _node8.hookGlRender(gl, opacity, m, cx, cy, 0, 0, true);
         }
       }
     }
 
     texCache.refresh(gl, cx, cy, true); // 有mbm时将汇总的fbo绘入主画布，否则本身就是到主画布无需多余操作
+
+    if (hasMbm) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      texCache.releaseLockChannel(n);
+      gl.deleteFramebuffer(frameBuffer); // 顶点buffer
+
+      var pointBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, -1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+      var a_position = gl.getAttribLocation(gl.program, 'a_position');
+      gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(a_position); // 纹理buffer
+
+      var texBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1]), gl.STATIC_DRAW);
+      var a_texCoords = gl.getAttribLocation(gl.program, 'a_texCoords');
+      gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(a_texCoords); // opacity buffer
+
+      var opacityBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, opacityBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([1, 1, 1, 1, 1, 1]), gl.STATIC_DRAW);
+      var a_opacity = gl.getAttribLocation(gl.program, 'a_opacity');
+      gl.vertexAttribPointer(a_opacity, 1, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(a_opacity); // 纹理单元
+
+      var u_texture = gl.getUniformLocation(gl.program, 'u_texture');
+      gl.uniform1i(u_texture, n);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+      gl.deleteBuffer(pointBuffer);
+      gl.deleteBuffer(texBuffer);
+      gl.deleteBuffer(opacityBuffer);
+      gl.disableVertexAttribArray(a_position);
+      gl.disableVertexAttribArray(a_texCoords);
+      gl.deleteTexture(texture);
+    }
   }
 
   function renderCanvas(renderMode, ctx, root) {
@@ -35972,16 +36091,16 @@
         } // 设置opacity/matrix，根节点是没有父节点的不计算继承值
 
 
-        var _opacity8 = _computedStyle4[OPACITY];
+        var opacity = _computedStyle4[OPACITY];
         var m = __matrix;
 
         if (__domParent) {
-          _opacity8 *= __domParent.__opacity;
+          opacity *= __domParent.__opacity;
           m = multiply(__domParent.__matrixEvent, m);
         }
 
-        _node9.__opacity = _opacity8;
-        ctx.globalAlpha = _opacity8;
+        _node9.__opacity = opacity;
+        ctx.globalAlpha = opacity;
         assignMatrix(_node9.__matrixEvent, m);
         ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]); // 有cache声明从而有total的可以直接绘制并跳过子节点索，total生成可能会因超限而失败
 

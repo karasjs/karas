@@ -558,7 +558,7 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
       // 和外面没cache的类似，mask生成hash记录，这里mask节点一定是个普通无cache的独立节点
       let maskStartHash = {};
       let offscreenHash = {};
-      let { dx, dy, dbx, dby, x: tx, y: ty, ctx } = cacheMask;
+      let { dx, dy, dbx, dby, x: tx, y: ty, ctx, sx1, sy1 } = cacheMask;
       let {
         index,
         total,
@@ -593,8 +593,8 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
             if(hasMask) {
               i += countMaskNum(__structs, i + 1, hasMask);
             }
-            if(offscreenHash.hasOwnProperty(i - 1)) {
-              ctx = applyOffscreen(ctx, offscreenHash[i - 1], width, height, true);
+            if(offscreenHash.hasOwnProperty(i)) {
+              ctx = applyOffscreen(ctx, offscreenHash[i], width, height, true);
             }
             continue;
           }
@@ -659,39 +659,30 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
           let m;
           if(!isE(transform)) {
             tfo = tfo.slice(0);
-            tfo[0] += dbx + tx;
-            tfo[1] += dby + ty;
+            tfo[0] += dbx + node.__sx1 - sx1 + tx;
+            tfo[1] += dby + node.__sy1 - sy1 + ty;
             m = tf.calMatrixByOrigin(transform, tfo);
-          }
-          else {
-            m = null;
-          }
-          if(!isE(parentMatrix)) {
-            m = multiply(parentMatrix, m);
+            if(!isE(parentMatrix)) {
+              m = multiply(parentMatrix, m);
+            }
           }
           lastMatrix = m;
           if(m) {
-            assignMatrix(node.__matrixEvent, m);
             // 很多情况mask和target相同matrix，可简化计算
             if(util.equalArr(m, inverse)) {
-              ctx.setTransform(1, 0, 0, 1, 0, 0);
+              m = mx.identity();
             }
-            else {
+            else if(inverse) {
               inverse = mx.inverse(inverse);
               m = mx.multiply(inverse, m);
-              ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
             }
           }
-          else {
-            assignMatrix(node.__matrixEvent, mx.identity());
-            if(isE(inverse)) {
-              ctx.setTransform(1, 0, 0, 1, 0, 0);
-            }
-            else {
-              m = mx.inverse(inverse);
-              ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
-            }
+          else if(!isE(inverse)) {
+            m = mx.inverse(inverse);
           }
+          m = m || mx.identity();
+          assignMatrix(node.__matrixEvent, m);
+          ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
           // 特殊渲染的matrix，局部根节点为原点考虑，本节点需inverse反向
           let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]);
           if(target) {
@@ -706,8 +697,10 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
             else {
               ctx.globalCompositeOperation = 'source-over';
             }
-            let { x, y, canvas, width, height } = target;
-            ctx.drawImage(canvas, x, y, width, height, cacheMask.x, cacheMask.y, width, height);
+            let { x, y, canvas, width, height, sx1: sx2, sy1: sy2, dbx: dbx2, dby: dby2 } = target;
+            let ox = tx + sx2 - sx1 + dbx - dbx2;
+            let oy = ty + sy2 - sy1 + dby - dby2;
+            ctx.drawImage(canvas, x, y, width, height, ox, oy, width, height);
             ctx.globalCompositeOperation = 'source-over';
             if(offscreenHash.hasOwnProperty(i)) {
               ctx = applyOffscreen(ctx, offscreenHash[i], width, height, false);
@@ -2217,24 +2210,37 @@ function renderWebgl(renderMode, gl, root) {
     // 同时因为是后序遍历，孩子先存所有父亲的index即可保证父亲才能生成cacheTotal
     let pptHash = {};
     mergeList.forEach(item => {
-      let [i, lv, total, node, __limitCache, hasMask, filter, overflow, isPerspective, __cacheAsBitmap] = item;
+      let {
+        i,
+        lv,
+        total,
+        node,
+        hasMask,
+      } = item;
+      let {
+        [OVERFLOW]: overflow,
+        [FILTER]: filter,
+        [MIX_BLEND_MODE]: mixBlendMode,
+      } = node.__computedStyle;
+      let __limitCache = node.__limitCache;
+      // let [i, lv, total, node, __limitCache, hasMask, filter, overflow, isPerspective, __cacheAsBitmap] = item;
       // 有ppt的，向上查找所有父亲index记录，可能出现重复记得提前跳出
-      if(isPerspective) {
-        let parent = node.__domParent;
-        while(parent) {
-          let idx = parent.__struct.index;
-          if(pptHash[idx]) {
-            break;
-          }
-          if(tf.isPerspectiveMatrix(parent.__matrix) || parent.__perspectiveMatrix) {
-            pptHash[idx] = true;
-          }
-          parent = parent.__domParent;
-        }
-        if(!pptHash[i] && !hasMask && !filter.length && overflow !== 'hidden' && !__cacheAsBitmap) {
-          return;
-        }
-      }
+      // if(isPerspective) {
+      //   let parent = node.__domParent;
+      //   while(parent) {
+      //     let idx = parent.__struct.index;
+      //     if(pptHash[idx]) {
+      //       break;
+      //     }
+      //     if(tf.isPerspectiveMatrix(parent.__matrix) || parent.__perspectiveMatrix) {
+      //       pptHash[idx] = true;
+      //     }
+      //     parent = parent.__domParent;
+      //   }
+      //   if(!pptHash[i] && !hasMask && !filter.length && overflow !== 'hidden' && !__cacheAsBitmap) {
+      //     return;
+      //   }
+      // }
       let {
         __cache,
         __cacheTotal,

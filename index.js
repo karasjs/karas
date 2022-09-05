@@ -32872,8 +32872,8 @@
           }
 
           ctx.globalCompositeOperation = 'source-over';
-          mask.ctx.setTransform(1, 0, 0, 1, 0, 0); // mask.ctx.clearRect(0, 0, width, height);
-
+          mask.ctx.setTransform(1, 0, 0, 1, 0, 0);
+          mask.ctx.clearRect(0, 0, width, height);
           inject.releaseCacheCanvas(mask.canvas);
           ctx = offscreen.ctx;
           ctx.globalAlpha = 1;
@@ -32883,8 +32883,9 @@
             ctx.drawImage(_target2.canvas, 0, 0, width, height, 0, 0, width, height);
           }
 
-          _target2.ctx.setTransform(1, 0, 0, 1, 0, 0); // target.ctx.clearRect(0, 0, width, height);
+          _target2.ctx.setTransform(1, 0, 0, 1, 0, 0);
 
+          _target2.ctx.clearRect(0, 0, width, height);
 
           inject.releaseCacheCanvas(_target2.canvas);
         }
@@ -33641,7 +33642,9 @@
             dby = cacheMask.dby,
             tx = cacheMask.x,
             ty = cacheMask.y,
-            ctx = cacheMask.ctx;
+            ctx = cacheMask.ctx,
+            sx1 = cacheMask.sx1,
+            sy1 = cacheMask.sy1;
         var _item$__struct = item.__struct,
             index = _item$__struct.index,
             total = _item$__struct.total,
@@ -33677,8 +33680,8 @@
                 i += countMaskNum(__structs, i + 1, _hasMask4);
               }
 
-              if (offscreenHash.hasOwnProperty(i - 1)) {
-                ctx = applyOffscreen(ctx, offscreenHash[i - 1], width, height, true);
+              if (offscreenHash.hasOwnProperty(i)) {
+                ctx = applyOffscreen(ctx, offscreenHash[i], width, height, true);
               }
 
               continue;
@@ -33766,40 +33769,32 @@
 
             if (!isE(transform$1)) {
               tfo = tfo.slice(0);
-              tfo[0] += dbx + tx;
-              tfo[1] += dby + ty;
+              tfo[0] += dbx + _node3.__sx1 - sx1 + tx;
+              tfo[1] += dby + _node3.__sy1 - sy1 + ty;
               m = transform.calMatrixByOrigin(transform$1, tfo);
-            } else {
-              m = null;
-            }
 
-            if (!isE(parentMatrix)) {
-              m = multiply(parentMatrix, m);
+              if (!isE(parentMatrix)) {
+                m = multiply(parentMatrix, m);
+              }
             }
 
             lastMatrix = m;
 
             if (m) {
-              assignMatrix(_node3.__matrixEvent, m); // 很多情况mask和target相同matrix，可简化计算
-
+              // 很多情况mask和target相同matrix，可简化计算
               if (util.equalArr(m, inverse)) {
-                ctx.setTransform(1, 0, 0, 1, 0, 0);
-              } else {
+                m = mx.identity();
+              } else if (inverse) {
                 inverse = mx.inverse(inverse);
                 m = mx.multiply(inverse, m);
-                ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
               }
-            } else {
-              assignMatrix(_node3.__matrixEvent, mx.identity());
+            } else if (!isE(inverse)) {
+              m = mx.inverse(inverse);
+            }
 
-              if (isE(inverse)) {
-                ctx.setTransform(1, 0, 0, 1, 0, 0);
-              } else {
-                m = mx.inverse(inverse);
-                ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
-              }
-            } // 特殊渲染的matrix，局部根节点为原点考虑，本节点需inverse反向
-
+            m = m || mx.identity();
+            assignMatrix(_node3.__matrixEvent, m);
+            ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]); // 特殊渲染的matrix，局部根节点为原点考虑，本节点需inverse反向
 
             var _target3 = getCache([_cacheMask2, _cacheFilter2, _cacheOverflow2, _cacheTotal3]);
 
@@ -33822,8 +33817,14 @@
                   y = _target3.y,
                   canvas = _target3.canvas,
                   _width = _target3.width,
-                  _height = _target3.height;
-              ctx.drawImage(canvas, x, y, _width, _height, cacheMask.x, cacheMask.y, _width, _height);
+                  _height = _target3.height,
+                  sx2 = _target3.sx1,
+                  sy2 = _target3.sy1,
+                  dbx2 = _target3.dbx,
+                  dby2 = _target3.dby;
+              var ox = tx + sx2 - sx1 + dbx - dbx2;
+              var oy = ty + sy2 - sy1 + dby - dby2;
+              ctx.drawImage(canvas, x, y, _width, _height, ox, oy, _width, _height);
               ctx.globalCompositeOperation = 'source-over';
 
               if (offscreenHash.hasOwnProperty(i)) {
@@ -35500,44 +35501,34 @@
 
         return b[1] - a[1];
       }); // ppt只有嵌套才需要生成，最下面的孩子节点的ppt无需，因此记录一个hash存index，
-      // 同时因为是后序遍历，孩子先存所有父亲的index即可保证父亲才能生成cacheTotal
-
-      var pptHash = {};
       mergeList.forEach(function (item) {
-        var _item4 = _slicedToArray(item, 10),
-            i = _item4[0],
-            lv = _item4[1],
-            total = _item4[2],
-            node = _item4[3],
-            __limitCache = _item4[4],
-            hasMask = _item4[5],
-            filter = _item4[6],
-            overflow = _item4[7],
-            isPerspective = _item4[8],
-            __cacheAsBitmap = _item4[9]; // 有ppt的，向上查找所有父亲index记录，可能出现重复记得提前跳出
-
-
-        if (isPerspective) {
-          var parent = node.__domParent;
-
-          while (parent) {
-            var idx = parent.__struct.index;
-
-            if (pptHash[idx]) {
-              break;
-            }
-
-            if (transform.isPerspectiveMatrix(parent.__matrix) || parent.__perspectiveMatrix) {
-              pptHash[idx] = true;
-            }
-
-            parent = parent.__domParent;
-          }
-
-          if (!pptHash[i] && !hasMask && !filter.length && overflow !== 'hidden' && !__cacheAsBitmap) {
-            return;
-          }
-        }
+        var i = item.i,
+            lv = item.lv,
+            total = item.total,
+            node = item.node,
+            hasMask = item.hasMask;
+        var _node$__computedStyle3 = node.__computedStyle,
+            overflow = _node$__computedStyle3[OVERFLOW],
+            filter = _node$__computedStyle3[FILTER$1];
+            _node$__computedStyle3[MIX_BLEND_MODE];
+        var __limitCache = node.__limitCache; // let [i, lv, total, node, __limitCache, hasMask, filter, overflow, isPerspective, __cacheAsBitmap] = item;
+        // 有ppt的，向上查找所有父亲index记录，可能出现重复记得提前跳出
+        // if(isPerspective) {
+        //   let parent = node.__domParent;
+        //   while(parent) {
+        //     let idx = parent.__struct.index;
+        //     if(pptHash[idx]) {
+        //       break;
+        //     }
+        //     if(tf.isPerspectiveMatrix(parent.__matrix) || parent.__perspectiveMatrix) {
+        //       pptHash[idx] = true;
+        //     }
+        //     parent = parent.__domParent;
+        //   }
+        //   if(!pptHash[i] && !hasMask && !filter.length && overflow !== 'hidden' && !__cacheAsBitmap) {
+        //     return;
+        //   }
+        // }
 
         var __cache = node.__cache,
             __cacheTotal = node.__cacheTotal,

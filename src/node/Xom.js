@@ -1483,7 +1483,7 @@ class Xom extends Node {
       }
       else {
         // 部分%单位的滤镜强制使用数字
-        if(v.u === DEG || v.u === NUMBER) {
+        if(v.u === DEG || v.u === NUMBER || v.u === PERCENT) {
           v = v.v;
         }
         else {
@@ -1814,6 +1814,8 @@ class Xom extends Node {
           matrix,
         };
         ctx = c.ctx;
+        let m = this.__matrixEvent;
+        ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
       }
       else if(renderMode === SVG) {
         virtualDom.mixBlendMode = mixBlendMode;
@@ -1834,6 +1836,8 @@ class Xom extends Node {
           matrix,
         };
         ctx = c.ctx;
+        let m = this.__matrixEvent;
+        ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
       }
     }
     // 无cache时canvas的blur需绘制到离屏上应用后反向绘制回来，有cache在Dom里另生成一个filter的cache
@@ -1850,6 +1854,8 @@ class Xom extends Node {
           matrix,
         };
         ctx = c.ctx;
+        let m = this.__matrixEvent;
+        ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
       }
       else if(renderMode === SVG) {
         virtualDom.filter = painter.svgFilter(filter);
@@ -1896,6 +1902,8 @@ class Xom extends Node {
           matrix,
         };
         ctx = c.ctx;
+        let m = this.__matrixEvent;
+        ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
         offscreenOverflow.x = sx1;
         offscreenOverflow.y = sy1;
         offscreenOverflow.offsetWidth = __offsetWidth;

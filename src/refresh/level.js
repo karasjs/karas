@@ -18,26 +18,23 @@ const ENUM = {
   // cacheTotal变化需重新生成的时候
   CACHE: 1, //                                         1
 
-  // mask发生变化但节点没有变化时候
-  MASK: 2, //                                         10
+  TRANSLATE_X: 2, //                                  10
+  TRANSLATE_Y: 4, //                                 100
+  TRANSLATE_Z: 8, //                                1000
+  TRANSFORM: 16, //                                10000
+  TRANSFORM_ALL: 30, //                            11110
+  OPACITY: 32, //                                 100000
+  FILTER: 64, //                                 1000000
+  MIX_BLEND_MODE: 128, //                       10000000
+  PERSPECTIVE: 256, //                         100000000
 
-  TRANSLATE_X: 4, //                                 100
-  TRANSLATE_Y: 8, //                                1000
-  TRANSLATE_Z: 16, //                              10000
-  TRANSFORM: 32, //                               100000
-  TRANSFORM_ALL: 60, //                           111100
-  OPACITY: 64, //                                1000000
-  FILTER: 128, //                               10000000
-  MIX_BLEND_MODE: 256, //                      100000000
-  PERSPECTIVE: 512, //                        1000000000
-
-  REPAINT: 1024, //                          10000000000
+  REPAINT: 512, //                            1000000000
 
   // 高位表示reflow
-  REFLOW: 2048, //                          100000000000
+  REFLOW: 1024, //                           10000000000
 
   // 特殊高位表示rebuild
-  REBUILD: 4096, //                        1000000000000
+  REBUILD: 2048, //                         100000000000
 };
 
 const TRANSFORMS = {

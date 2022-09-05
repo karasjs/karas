@@ -589,7 +589,10 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
           let __computedStyle = node.__computedStyle;
           // none跳过这棵子树，判断下最后一个节点的离屏应用即可
           if(__computedStyle[DISPLAY] === 'none') {
-            i += (total || 0) + countMaskNum(__structs, i + (total || 0) + 1, hasMask || 0);
+            i += (total || 0);
+            if(hasMask) {
+              i += countMaskNum(__structs, i + 1, hasMask);
+            }
             if(offscreenHash.hasOwnProperty(i - 1)) {
               ctx = applyOffscreen(ctx, offscreenHash[i - 1], width, height, true);
             }
@@ -692,7 +695,10 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
           // 特殊渲染的matrix，局部根节点为原点考虑，本节点需inverse反向
           let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]);
           if(target) {
-            i += (total || 0) + countMaskNum(__structs, i + (total || 0) + 1, hasMask || 0);
+            i += (total || 0);
+            if(hasMask) {
+              i += countMaskNum(__structs, i + 1, hasMask);
+            }
             let mixBlendMode = __computedStyle[MIX_BLEND_MODE];
             if(isValidMbm(mixBlendMode)) {
               ctx.globalCompositeOperation = mbmName(mixBlendMode);
@@ -713,7 +719,10 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
             let { offscreenBlend, offscreenMask, offscreenFilter, offscreenOverflow } = res || {};
             // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
             if(offscreenBlend) {
-              let j = i + (total || 0) + countMaskNum(__structs, i + (total || 0) + 1, hasMask || 0);
+              let j = i + (total || 0);
+              if(hasMask) {
+                j += countMaskNum(__structs, j + 1, hasMask);
+              }
               let list = offscreenHash[j] = offscreenHash[j] || [];
               list.push([i, lv, OFFSCREEN_BLEND, offscreenBlend]);
               ctx = offscreenBlend.target.ctx;
@@ -731,14 +740,21 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
             }
             // filter造成的离屏，需要将后续一段孩子节点区域的ctx替换，并在结束后应用结果，再替换回来
             if(offscreenFilter) {
-              let j = i + (total || 0) + countMaskNum(__structs, i + (total || 0) + 1, hasMask || 0);
+
+              let j = i + (total || 0);
+              if(hasMask) {
+                j += countMaskNum(__structs, j + 1, hasMask);
+              }
               let list = offscreenHash[j] = offscreenHash[j] || [];
               list.push([i, lv, OFFSCREEN_FILTER, offscreenFilter]);
               ctx = offscreenFilter.target.ctx;
             }
             // overflow:hidden的离屏，最后孩子进行截取
             if(offscreenOverflow) {
-              let j = i + (total || 0) + countMaskNum(__structs, i + (total || 0) + 1, hasMask || 0);
+              let j = i + (total || 0);
+              if(hasMask) {
+                j += countMaskNum(__structs, j + 1, hasMask);
+              }
               let list = offscreenHash[j] = offscreenHash[j] || [];
               list.push([i, lv, OFFSCREEN_OVERFLOW, offscreenOverflow]);
               ctx = offscreenOverflow.target.ctx;
@@ -784,7 +800,10 @@ function resetMatrixCacheTotal(__structs, index, total, lv, matrixEvent) {
     } = node;
     // 跳过display:none元素和它的所有子节点和mask
     if(computedStyle[DISPLAY] === 'none') {
-      i += (total || 0) + countMaskNum(__structs, i + (total || 0) + 1, hasMask || 0);
+      i += (total || 0);
+      if(hasMask) {
+        i += countMaskNum(__structs, i + 1, hasMask);
+      }
       continue;
     }
     // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树
@@ -822,7 +841,10 @@ function resetMatrixCacheTotal(__structs, index, total, lv, matrixEvent) {
         resetMatrixCacheTotal(__structs, i, total || 0, lv, matrix);
       }
       __cacheTotal.__isNew = false;
-      i += (total || 0) + countMaskNum(__structs, i + (total || 0) + 1, hasMask || 0);
+      i += (total || 0);
+      if(hasMask) {
+        i += countMaskNum(__structs, i + 1, hasMask);
+      }
     }
   }
 }
@@ -960,7 +982,10 @@ function genTotalWebgl(gl, texCache, node, index, total, __structs, cache, limit
         [MIX_BLEND_MODE]: mixBlendMode,
       } = node.__computedStyle;
       if(display === 'none') {
-        i += (total || 0) + countMaskNum(__structs, i + (total || 0) + 1, hasMask || 0);
+        i += (total || 0);
+        if(hasMask) {
+          i += countMaskNum(__structs, i + 1, hasMask);
+        }
         continue;
       }
       // mask和不可见不能被汇总到top上
@@ -1013,7 +1038,10 @@ function genTotalWebgl(gl, texCache, node, index, total, __structs, cache, limit
           texCache.addTexAndDrawWhenLimit(gl, target, opacity, matrix, cx, cy, dx, dy, false);
         }
         if(target !== __cache) {
-          i += (total || 0) + countMaskNum(__structs, i + (total || 0) + 1, hasMask || 0);
+          i += (total || 0);
+          if(hasMask) {
+            i += countMaskNum(__structs, i + 1, hasMask);
+          }
         }
       }
       // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
@@ -1353,7 +1381,10 @@ function genMaskWebgl(gl, texCache, node, cache, W, H, lv, __structs) {
       let computedStyle = node.__computedStyle;
       // 跳过display:none元素和它的所有子节点和mask
       if(computedStyle[DISPLAY] === 'none') {
-        i += (total || 0) + countMaskNum(__structs, i + (total || 0) + 1, hasMask || 0);
+        i += (total || 0);
+        if(hasMask) {
+          i += countMaskNum(__structs, i + 1, hasMask);
+        }
         continue;
       }
       if(node instanceof Text) {
@@ -1423,7 +1454,10 @@ function genMaskWebgl(gl, texCache, node, cache, W, H, lv, __structs) {
           lastOpacity = parentOpacity * opacity;
           texCache.addTexAndDrawWhenLimit(gl, target, lastOpacity, m, cx, cy, dx, dy, true);
           if(target !== __cache) {
-            i += (total || 0) + countMaskNum(__structs, i + (total || 0) + 1, hasMask || 0);
+            i += (total || 0);
+            if(hasMask) {
+              i += countMaskNum(__structs, i + 1, hasMask);
+            }
           }
         }
         else if(__limitCache) {
@@ -2381,7 +2415,10 @@ function renderWebgl(renderMode, gl, root) {
         else {
           texCache.addTexAndDrawWhenLimit(gl, target, opacity, m, cx, cy, 0, 0, true);
         }
-        i += (total || 0) + countMaskNum(__structs, i + (total || 0) + 1, hasMask || 0);
+        i += (total || 0);
+        if(hasMask) {
+          i += countMaskNum(__structs, i + 1, hasMask);
+        }
       }
       // 超限的情况，这里是普通单节点超限，没有合成total后再合成特殊cache如filter/mask/mbm之类的，
       // 直接按原始位置绘制到离屏canvas，再作为纹理绘制即可，特殊的在total那做过降级了
@@ -2482,7 +2519,7 @@ function renderCanvas(renderMode, ctx, root) {
     if(__computedStyle[DISPLAY] === 'none') {
       i += (total || 0);
       if(hasMask) {
-        i += countMaskNum(__structs, i + (total || 0) + 1, hasMask);
+        i += countMaskNum(__structs, i + 1, hasMask);
       }
       continue;
     }

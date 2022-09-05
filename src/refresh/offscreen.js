@@ -115,7 +115,7 @@ function applyOffscreen(ctx, list, width, height) {
         }
         ctx.globalCompositeOperation = 'source-over';
         mask.ctx.setTransform(1, 0, 0, 1, 0, 0);
-        mask.ctx.clearRect(0, 0, width, height);
+        // mask.ctx.clearRect(0, 0, width, height);
         inject.releaseCacheCanvas(mask.canvas);
         ctx = offscreen.ctx;
         ctx.globalAlpha = 1;
@@ -124,7 +124,7 @@ function applyOffscreen(ctx, list, width, height) {
           ctx.drawImage(target.canvas, 0, 0, width, height, 0, 0, width, height);
         }
         target.ctx.setTransform(1, 0, 0, 1, 0, 0);
-        target.ctx.clearRect(0, 0, width, height);
+        // target.ctx.clearRect(0, 0, width, height);
         inject.releaseCacheCanvas(target.canvas);
       }
     }

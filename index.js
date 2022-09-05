@@ -15247,34 +15247,31 @@
     // cacheTotal变化需重新生成的时候
     CACHE: 1,
     //                                         1
-    // mask发生变化但节点没有变化时候
-    MASK: 2,
-    //                                         10
-    TRANSLATE_X: 4,
+    TRANSLATE_X: 2,
+    //                                  10
+    TRANSLATE_Y: 4,
     //                                 100
-    TRANSLATE_Y: 8,
+    TRANSLATE_Z: 8,
     //                                1000
-    TRANSLATE_Z: 16,
-    //                              10000
-    TRANSFORM: 32,
-    //                               100000
-    TRANSFORM_ALL: 60,
-    //                           111100
-    OPACITY: 64,
-    //                                1000000
-    FILTER: 128,
-    //                               10000000
-    MIX_BLEND_MODE: 256,
-    //                      100000000
-    PERSPECTIVE: 512,
-    //                        1000000000
-    REPAINT: 1024,
-    //                          10000000000
+    TRANSFORM: 16,
+    //                                10000
+    TRANSFORM_ALL: 30,
+    //                            11110
+    OPACITY: 32,
+    //                                 100000
+    FILTER: 64,
+    //                                 1000000
+    MIX_BLEND_MODE: 128,
+    //                       10000000
+    PERSPECTIVE: 256,
+    //                         100000000
+    REPAINT: 512,
+    //                            1000000000
     // 高位表示reflow
-    REFLOW: 2048,
-    //                          100000000000
+    REFLOW: 1024,
+    //                           10000000000
     // 特殊高位表示rebuild
-    REBUILD: 4096 //                        1000000000000
+    REBUILD: 2048 //                         100000000000
 
   };
   var TRANSFORMS = (_TRANSFORMS = {}, _defineProperty(_TRANSFORMS, STYLE_KEY$1.SCALE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.SCALE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.SCALE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.ROTATE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.ROTATE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.ROTATE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.SKEW_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.SKEW_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.ROTATE_3D, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.TRANSFORM, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.TRANSFORM_ORIGIN, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.TRANSLATE_PATH, true), _TRANSFORMS);
@@ -23044,7 +23041,7 @@
             };
           } else {
             // 部分%单位的滤镜强制使用数字
-            if (v.u === DEG || v.u === NUMBER) {
+            if (v.u === DEG || v.u === NUMBER || v.u === PERCENT$5) {
               v = v.v;
             } else {
               v = _this8.__calSize(v, _this8.root.width, true);
@@ -23415,6 +23412,8 @@
               matrix: matrix
             };
             ctx = c.ctx;
+            var m = this.__matrixEvent;
+            ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
           } else if (renderMode === SVG$1) {
             virtualDom.mixBlendMode = mixBlendMode;
           }
@@ -23438,6 +23437,8 @@
               matrix: matrix
             };
             ctx = _c.ctx;
+            var _m = this.__matrixEvent;
+            ctx.setTransform(_m[0], _m[1], _m[4], _m[5], _m[12], _m[13]);
           }
         } // 无cache时canvas的blur需绘制到离屏上应用后反向绘制回来，有cache在Dom里另生成一个filter的cache
 
@@ -23459,6 +23460,8 @@
               matrix: matrix
             };
             ctx = _c2.ctx;
+            var _m2 = this.__matrixEvent;
+            ctx.setTransform(_m2[0], _m2[1], _m2[4], _m2[5], _m2[12], _m2[13]);
           } else if (renderMode === SVG$1) {
             virtualDom.filter = painter.svgFilter(filter);
           }
@@ -23510,6 +23513,8 @@
               matrix: matrix
             };
             ctx = _c3.ctx;
+            var _m3 = this.__matrixEvent;
+            ctx.setTransform(_m3[0], _m3[1], _m3[4], _m3[5], _m3[12], _m3[13]);
             offscreenOverflow.x = sx1;
             offscreenOverflow.y = sy1;
             offscreenOverflow.offsetWidth = __offsetWidth;
@@ -32867,8 +32872,8 @@
           }
 
           ctx.globalCompositeOperation = 'source-over';
-          mask.ctx.setTransform(1, 0, 0, 1, 0, 0);
-          mask.ctx.clearRect(0, 0, width, height);
+          mask.ctx.setTransform(1, 0, 0, 1, 0, 0); // mask.ctx.clearRect(0, 0, width, height);
+
           inject.releaseCacheCanvas(mask.canvas);
           ctx = offscreen.ctx;
           ctx.globalAlpha = 1;
@@ -32878,9 +32883,8 @@
             ctx.drawImage(_target2.canvas, 0, 0, width, height, 0, 0, width, height);
           }
 
-          _target2.ctx.setTransform(1, 0, 0, 1, 0, 0);
+          _target2.ctx.setTransform(1, 0, 0, 1, 0, 0); // target.ctx.clearRect(0, 0, width, height);
 
-          _target2.ctx.clearRect(0, 0, width, height);
 
           inject.releaseCacheCanvas(_target2.canvas);
         }
@@ -33667,7 +33671,11 @@
             var _computedStyle2 = _node3.__computedStyle; // none跳过这棵子树，判断下最后一个节点的离屏应用即可
 
             if (_computedStyle2[DISPLAY$1] === 'none') {
-              i += (_total6 || 0) + countMaskNum(__structs, i + (_total6 || 0) + 1, _hasMask4 || 0);
+              i += _total6 || 0;
+
+              if (_hasMask4) {
+                i += countMaskNum(__structs, i + 1, _hasMask4);
+              }
 
               if (offscreenHash.hasOwnProperty(i - 1)) {
                 ctx = applyOffscreen(ctx, offscreenHash[i - 1], width, height, true);
@@ -33796,7 +33804,12 @@
             var _target3 = getCache([_cacheMask2, _cacheFilter2, _cacheOverflow2, _cacheTotal3]);
 
             if (_target3) {
-              i += (_total6 || 0) + countMaskNum(__structs, i + (_total6 || 0) + 1, _hasMask4 || 0);
+              i += _total6 || 0;
+
+              if (_hasMask4) {
+                i += countMaskNum(__structs, i + 1, _hasMask4);
+              }
+
               var mixBlendMode = _computedStyle2[MIX_BLEND_MODE];
 
               if (isValidMbm(mixBlendMode)) {
@@ -33828,7 +33841,11 @@
 
 
               if (offscreenBlend) {
-                var _j5 = i + (_total6 || 0) + countMaskNum(__structs, i + (_total6 || 0) + 1, _hasMask4 || 0);
+                var _j5 = i + (_total6 || 0);
+
+                if (_hasMask4) {
+                  _j5 += countMaskNum(__structs, _j5 + 1, _hasMask4);
+                }
 
                 var _list4 = offscreenHash[_j5] = offscreenHash[_j5] || [];
 
@@ -33852,7 +33869,11 @@
 
 
               if (offscreenFilter) {
-                var _j7 = i + (_total6 || 0) + countMaskNum(__structs, i + (_total6 || 0) + 1, _hasMask4 || 0);
+                var _j7 = i + (_total6 || 0);
+
+                if (_hasMask4) {
+                  _j7 += countMaskNum(__structs, _j7 + 1, _hasMask4);
+                }
 
                 var _list5 = offscreenHash[_j7] = offscreenHash[_j7] || [];
 
@@ -33863,7 +33884,11 @@
 
 
               if (offscreenOverflow) {
-                var _j8 = i + (_total6 || 0) + countMaskNum(__structs, i + (_total6 || 0) + 1, _hasMask4 || 0);
+                var _j8 = i + (_total6 || 0);
+
+                if (_hasMask4) {
+                  _j8 += countMaskNum(__structs, _j8 + 1, _hasMask4);
+                }
 
                 var _list6 = offscreenHash[_j8] = offscreenHash[_j8] || [];
 
@@ -34050,7 +34075,12 @@
             mixBlendMode = _node4$__computedStyl[MIX_BLEND_MODE];
 
         if (display === 'none') {
-          i += (_total9 || 0) + countMaskNum(__structs, i + (_total9 || 0) + 1, hasMask || 0);
+          i += _total9 || 0;
+
+          if (hasMask) {
+            i += countMaskNum(__structs, i + 1, hasMask);
+          }
+
           continue;
         } // mask和不可见不能被汇总到top上
 
@@ -34123,7 +34153,11 @@
           }
 
           if (target !== __cache) {
-            i += (_total9 || 0) + countMaskNum(__structs, i + (_total9 || 0) + 1, hasMask || 0);
+            i += _total9 || 0;
+
+            if (hasMask) {
+              i += countMaskNum(__structs, i + 1, hasMask);
+            }
           }
         } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
 
@@ -34540,7 +34574,12 @@
         var computedStyle = _node5.__computedStyle; // 跳过display:none元素和它的所有子节点和mask
 
         if (computedStyle[DISPLAY$1] === 'none') {
-          _i6 += (_total10 || 0) + countMaskNum(__structs, _i6 + (_total10 || 0) + 1, hasMask || 0);
+          _i6 += _total10 || 0;
+
+          if (hasMask) {
+            _i6 += countMaskNum(__structs, _i6 + 1, hasMask);
+          }
+
           continue;
         }
 
@@ -34614,7 +34653,11 @@
             texCache.addTexAndDrawWhenLimit(gl, target, lastOpacity, m, cx, cy, dx, dy, true);
 
             if (target !== _cache2) {
-              _i6 += (_total10 || 0) + countMaskNum(__structs, _i6 + (_total10 || 0) + 1, hasMask || 0);
+              _i6 += _total10 || 0;
+
+              if (hasMask) {
+                _i6 += countMaskNum(__structs, _i6 + 1, hasMask);
+              }
             }
           } else if (__limitCache) {
             return;
@@ -35662,7 +35705,11 @@
             texCache.addTexAndDrawWhenLimit(gl, _target5, _opacity7, m, cx, cy, 0, 0, true);
           }
 
-          _i9 += (_total12 || 0) + countMaskNum(__structs, _i9 + (_total12 || 0) + 1, _hasMask7 || 0);
+          _i9 += _total12 || 0;
+
+          if (_hasMask7) {
+            _i9 += countMaskNum(__structs, _i9 + 1, _hasMask7);
+          }
         } // 超限的情况，这里是普通单节点超限，没有合成total后再合成特殊cache如filter/mask/mbm之类的，
         // 直接按原始位置绘制到离屏canvas，再作为纹理绘制即可，特殊的在total那做过降级了
         else if (_node8.__limitCache && visibility !== 'hidden') {
@@ -35727,7 +35774,7 @@
         i += total || 0;
 
         if (hasMask) {
-          i += countMaskNum(__structs, i + (total || 0) + 1, hasMask);
+          i += countMaskNum(__structs, i + 1, hasMask);
         }
 
         continue;

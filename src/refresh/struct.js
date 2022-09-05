@@ -78,7 +78,6 @@ const {
   contain,
   MIX_BLEND_MODE: MBM,
   PERSPECTIVE: PPT,
-  MASK,
   CACHE,
 } = level;
 const { isE, inverse, multiply } = mx;
@@ -123,7 +122,7 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
   let list = [index];
   let d = 0;
   filter.forEach(item => {
-    let [k, v] = item;
+    let { k, v } = item;
     if(k === 'blur') {
       d = blur.outerSize(v);
     }
@@ -536,24 +535,26 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
     [OVERFLOW]: overflow,
     [FILTER]: filter,
   } = __computedStyle;
-  let target = __cacheTotal;
+  let target = __cacheTotal, needGen;
   if(overflow === 'hidden') {
     if(!__cacheOverflow || !__cacheOverflow.available) {
       node.__cacheOverflow = __cacheOverflow = Cache.genOverflow(target, node);
+      needGen = true;
     }
     if(__cacheOverflow && __cacheOverflow.available) {
       target = __cacheOverflow;
     }
   }
   if(filter && filter.length) {
-    if(!__cacheFilter || !__cacheFilter.available) {
+    if(!__cacheFilter || !__cacheFilter.available || needGen) {
       node.__cacheFilter = __cacheFilter = Cache.genFilter(target, filter);
+      needGen = true;
     }
     if(__cacheFilter && __cacheFilter.available) {
       target = __cacheFilter;
     }
   }
-  if(hasMask && (!__cacheMask || !__cacheMask.available)) {
+  if(hasMask && (!__cacheMask || !__cacheMask.available || needGen)) {
     node.__cacheMask = __cacheMask = Cache.genMask(target, node, function(item, cacheMask, inverse) {
       // 和外面没cache的类似，mask生成hash记录，这里mask节点一定是个普通无cache的独立节点
       let maskStartHash = {};
@@ -890,12 +891,11 @@ function genFrameBufferWithTexture(gl, texCache, width, height) {
  * @param __structs
  * @param cache
  * @param limitCache
- * @param hasMbm
  * @param W
  * @param H
  * @returns {*}
  */
-function genTotalWebgl(gl, texCache, node, index, total, __structs, cache, limitCache, hasMbm, W, H) {
+function genTotalWebgl(gl, texCache, node, index, total, __structs, cache, limitCache, W, H) {
   // 存每层父亲的matrix和opacity和index，bbox计算过程中生成，缓存给下面渲染过程用
   let parentIndexHash = {};
   let opacityHash = {};
@@ -1060,7 +1060,7 @@ function genFilterWebgl(gl, texCache, node, cache, filter, W, H) {
   let { sx1, sy1, width, height, bbox } = cache;
   let mockCache = cache;
   filter.forEach(item => {
-    let [k, v] = item;
+    let { k, v } = item;
     if(k === 'blur' && v > 0) {
       let res = genBlurWebgl(gl, texCache, mockCache, v, width, height, sx1, sy1, bbox);
       if(res) {
@@ -2080,22 +2080,21 @@ function renderWebgl(renderMode, gl, root) {
       // }
       // node.__opacity = opacity;
       // filter会改变bbox范围
-      let filter;
       if(contain(__refreshLevel, FT)) {
-        filter = node.__calFilter(__currentStyle, __computedStyle, __cacheStyle);
+        node.__calFilter(__currentStyle, __computedStyle, __cacheStyle);
       }
+      let mixBlendMode;
       if(contain(__refreshLevel, MBM)) {
-        __computedStyle[MIX_BLEND_MODE] = __currentStyle[MIX_BLEND_MODE];
+        mixBlendMode = __computedStyle[MIX_BLEND_MODE] = __currentStyle[MIX_BLEND_MODE];
       }
       // 新的perspective父容器，子节点需要有透视，多个则需要生成画中画影响性能
       if(!isE(ppt)) {
         pptCount++;
       }
       // 这里和canvas不一样，前置cacheAsBitmap条件变成或条件之一，新的ppt层级且画中画需要新的fbo
-      if((filter && filter.length || contain(__refreshLevel, MASK) && hasMask)
-        && __cacheTotal && __cacheTotal.available
-        || contain(__refreshLevel, CACHE)
-        || node.__cacheAsBitmap || pptCount > 1 && pptCount > pptList[lv - 1]) {
+      if(contain(__refreshLevel, CACHE | FT)
+        || mixBlendMode && isValidMbm(mixBlendMode)
+        || pptCount > 1 && pptCount > pptList[lv - 1]) {
         mergeList.push({
           i,
           lv,
@@ -2104,10 +2103,10 @@ function renderWebgl(renderMode, gl, root) {
           hasMask,
         });
       }
-      // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total，但不跳过mask节点
+      // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total
       if(__cacheTotal && __cacheTotal.available) {
         i += (total || 0);
-        if(!contain(__refreshLevel, MASK)) {
+        if(__refreshLevel === NONE && hasMask) {
           i += countMaskNum(__structs, i + 1, hasMask);
         }
       }
@@ -2194,16 +2193,16 @@ function renderWebgl(renderMode, gl, root) {
     //     mergeList.push([i, lv, total, node, __limitCache, hasMask, filter, overflow, isPerspective, __cacheAsBitmap]);
     //   }
     // }
-  }
+  }console.log(mergeList)
   let limitHash = {};
   // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
   // 这样保证子节点在前，后节点在前，后节点是为了mask先应用自身如filter之后再进行遮罩
   if(mergeList.length) {
     mergeList.sort(function(a, b) {
-      if(a[1] === b[1]) {
-        return b[0] - a[0];
+      if(a.lv === b.lv) {
+        return b.i - a.i;
       }
-      return b[1] - a[1];
+      return b.lv - a.lv;
     });
     // ppt只有嵌套才需要生成，最下面的孩子节点的ppt无需，因此记录一个hash存index，
     // 同时因为是后序遍历，孩子先存所有父亲的index即可保证父亲才能生成cacheTotal
@@ -2250,7 +2249,7 @@ function renderWebgl(renderMode, gl, root) {
       let needGen;
       // 可能没变化，比如被遮罩节点、filter变更等
       if(!__cacheTotal || !__cacheTotal.available) {
-        let [limit, res] = genTotalWebgl(gl, texCache, node, i, total || 0, __structs, __cache, __limitCache, hasMbm, width, height);
+        let [limit, res] = genTotalWebgl(gl, texCache, node, i, total || 0, __structs, __cache, __limitCache, width, height);
         __cacheTotal = res;
         needGen = true;
         __limitCache = limit;
@@ -2272,7 +2271,7 @@ function renderWebgl(renderMode, gl, root) {
             }
           }
         }
-        else {
+        if(__cacheOverflow && __cacheOverflow.available) {
           target = __cacheOverflow;
         }
       }
@@ -2287,7 +2286,7 @@ function renderWebgl(renderMode, gl, root) {
             }
           }
         }
-        else {
+        if(__cacheFilter && __cacheFilter.available) {
           target = __cacheFilter;
         }
       }
@@ -2543,18 +2542,15 @@ function renderCanvas(renderMode, ctx, root) {
       if(contain(__refreshLevel, OP)) {
         __computedStyle[OPACITY] = __currentStyle[OPACITY];
       }
-      let filter;
       if(contain(__refreshLevel, FT)) {
-        filter = node.__calFilter(__currentStyle, __computedStyle, __cacheStyle);
+        node.__calFilter(__currentStyle, __computedStyle, __cacheStyle);
       }
       if(contain(__refreshLevel, MBM)) {
         __computedStyle[MIX_BLEND_MODE] = __currentStyle[MIX_BLEND_MODE];
       }
-      // filter/mask变化需重新生成，cacheTotal本身就存在要判断下；CACHE取消重新生成则无需判断
+      // filter变化需重新生成，cacheTotal本身就存在要判断下；CACHE取消重新生成则无需判断
       if(node.__cacheAsBitmap) {
-        if((filter && filter.length || contain(__refreshLevel, MASK) && hasMask)
-          && __cacheTotal && __cacheTotal.available
-          || contain(__refreshLevel, CACHE)) {
+        if(contain(__refreshLevel, CACHE | FT)) {
           mergeList.push({
             i,
             lv,
@@ -2567,7 +2563,7 @@ function renderCanvas(renderMode, ctx, root) {
       // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total
       if(__cacheTotal && __cacheTotal.available) {
         i += (total || 0);
-        if(!contain(__refreshLevel, MASK)) {
+        if(__refreshLevel === NONE && hasMask) {
           i += countMaskNum(__structs, i + 1, hasMask);
         }
       }
@@ -2587,7 +2583,7 @@ function renderCanvas(renderMode, ctx, root) {
   }
   /**
    * 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
-   * 这样保证子节点在前，后节点在前（mask在后面），渲染顺序正确
+   * 这样保证子节点在前，后节点在前，后节点是为了mask先应用自身如filter之后再进行遮罩
    */
   if(mergeList.length) {
     mergeList.sort(function(a, b) {

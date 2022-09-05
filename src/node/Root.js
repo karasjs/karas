@@ -489,6 +489,7 @@ function parseUpdate(renderMode, root, target, reflowList, cacheHash, cacheList,
     }
     if(prev && prev.__cacheMask) {
       prev.__cacheMask.release();
+      prev.__refreshLevel |= CACHE;
     }
   }
   // 特殊情况，父节点display:none，子节点进行任意变更，应视为无效

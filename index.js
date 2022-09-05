@@ -33049,7 +33049,6 @@
       contain$1 = o$1.contain,
       MBM = o$1.MIX_BLEND_MODE,
       PPT = o$1.PERSPECTIVE,
-      MASK = o$1.MASK,
       CACHE$1 = o$1.CACHE;
   var isE = mx.isE,
       inverse = mx.inverse,
@@ -33101,9 +33100,8 @@
     var list = [index];
     var d = 0;
     filter.forEach(function (item) {
-      var _item = _slicedToArray(item, 2),
-          k = _item[0],
-          v = _item[1];
+      var k = item.k,
+          v = item.v;
 
       if (k === 'blur') {
         d = blur.outerSize(v);
@@ -33609,11 +33607,13 @@
         __cacheMask = node.__cacheMask;
     var overflow = __computedStyle[OVERFLOW],
         filter = __computedStyle[FILTER$1];
-    var target = __cacheTotal;
+    var target = __cacheTotal,
+        needGen;
 
     if (overflow === 'hidden') {
       if (!__cacheOverflow || !__cacheOverflow.available) {
         node.__cacheOverflow = __cacheOverflow = Cache.genOverflow(target, node);
+        needGen = true;
       }
 
       if (__cacheOverflow && __cacheOverflow.available) {
@@ -33622,8 +33622,9 @@
     }
 
     if (filter && filter.length) {
-      if (!__cacheFilter || !__cacheFilter.available) {
+      if (!__cacheFilter || !__cacheFilter.available || needGen) {
         node.__cacheFilter = __cacheFilter = Cache.genFilter(target, filter);
+        needGen = true;
       }
 
       if (__cacheFilter && __cacheFilter.available) {
@@ -33631,7 +33632,7 @@
       }
     }
 
-    if (hasMask && (!__cacheMask || !__cacheMask.available)) {
+    if (hasMask && (!__cacheMask || !__cacheMask.available || needGen)) {
       node.__cacheMask = __cacheMask = Cache.genMask(target, node, function (item, cacheMask, inverse) {
         // 和外面没cache的类似，mask生成hash记录，这里mask节点一定是个普通无cache的独立节点
         var maskStartHash = {};
@@ -33984,14 +33985,13 @@
    * @param __structs
    * @param cache
    * @param limitCache
-   * @param hasMbm
    * @param W
    * @param H
    * @returns {*}
    */
 
 
-  function genTotalWebgl(gl, texCache, node, index, total, __structs, cache, limitCache, hasMbm, W, H) {
+  function genTotalWebgl(gl, texCache, node, index, total, __structs, cache, limitCache, W, H) {
     // 存每层父亲的matrix和opacity和index，bbox计算过程中生成，缓存给下面渲染过程用
     var parentIndexHash = {};
     var opacityHash = {};
@@ -34207,9 +34207,8 @@
         bbox = cache.bbox;
     var mockCache = cache;
     filter.forEach(function (item) {
-      var _item2 = _slicedToArray(item, 2),
-          k = _item2[0],
-          v = _item2[1];
+      var k = item.k,
+          v = item.v;
 
       if (k === 'blur' && v > 0) {
         var res = genBlurWebgl(gl, texCache, mockCache, v, width, height, sx1, sy1, bbox);
@@ -35224,9 +35223,9 @@
 
 
         for (var _i8 = _cacheDefs.length - 1; _i8 >= 0; _i8--) {
-          var _item3 = _cacheDefs[_i8];
+          var _item = _cacheDefs[_i8];
 
-          if (_item3.tagName === 'mask') {
+          if (_item.tagName === 'mask') {
             _cacheDefs.splice(_i8, 1);
           }
         }
@@ -35268,7 +35267,6 @@
     var lastRefreshLevel = NONE$1;
     var lastLv = 0;
     var mergeList = [];
-    var hasMbm; // 是否有混合模式出现
 
     /**
      * 先一遍先序遍历每个节点绘制到自己__cache上，排除Text和已有的缓存以及局部根缓存，
@@ -35385,14 +35383,14 @@
         // filter会改变bbox范围
 
 
-        var filter = void 0;
-
         if (contain$1(__refreshLevel, FT)) {
-          filter = node.__calFilter(__currentStyle, __computedStyle, __cacheStyle);
+          node.__calFilter(__currentStyle, __computedStyle, __cacheStyle);
         }
 
+        var mixBlendMode = void 0;
+
         if (contain$1(__refreshLevel, MBM)) {
-          __computedStyle[MIX_BLEND_MODE] = __currentStyle[MIX_BLEND_MODE];
+          mixBlendMode = __computedStyle[MIX_BLEND_MODE] = __currentStyle[MIX_BLEND_MODE];
         } // 新的perspective父容器，子节点需要有透视，多个则需要生成画中画影响性能
 
 
@@ -35401,7 +35399,7 @@
         } // 这里和canvas不一样，前置cacheAsBitmap条件变成或条件之一，新的ppt层级且画中画需要新的fbo
 
 
-        if ((filter && filter.length || contain$1(__refreshLevel, MASK) && hasMask) && __cacheTotal && __cacheTotal.available || contain$1(__refreshLevel, CACHE$1) || node.__cacheAsBitmap || pptCount > 1 && pptCount > pptList[lv - 1]) {
+        if (contain$1(__refreshLevel, CACHE$1 | FT) || mixBlendMode && isValidMbm(mixBlendMode) || pptCount > 1 && pptCount > pptList[lv - 1]) {
           mergeList.push({
             i: i,
             lv: lv,
@@ -35409,13 +35407,13 @@
             node: node,
             hasMask: hasMask
           });
-        } // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total，但不跳过mask节点
+        } // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total
 
 
         if (__cacheTotal && __cacheTotal.available) {
           i += total || 0;
 
-          if (!contain$1(__refreshLevel, MASK)) {
+          if (__refreshLevel === NONE$1 && hasMask) {
             i += countMaskNum(__structs, i + 1, hasMask);
           }
         }
@@ -35455,10 +35453,10 @@
         }
 
         var overflow = __computedStyle[OVERFLOW],
-            _filter = __computedStyle[FILTER$1],
-            mixBlendMode = __computedStyle[MIX_BLEND_MODE];
+            filter = __computedStyle[FILTER$1],
+            _mixBlendMode = __computedStyle[MIX_BLEND_MODE];
 
-        if (!node.__limitCache && (node.__cacheAsBitmap || hasMask || _filter.length || isValidMbm(mixBlendMode) || overflow === 'hidden' && total)) {
+        if (!node.__limitCache && (node.__cacheAsBitmap || hasMask || filter.length || isValidMbm(_mixBlendMode) || overflow === 'hidden' && total)) {
           mergeList.push({
             i: i,
             lv: lv,
@@ -35505,16 +35503,17 @@
 
     }
 
+    console.log(mergeList);
     var limitHash = {}; // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
     // 这样保证子节点在前，后节点在前，后节点是为了mask先应用自身如filter之后再进行遮罩
 
     if (mergeList.length) {
       mergeList.sort(function (a, b) {
-        if (a[1] === b[1]) {
-          return b[0] - a[0];
+        if (a.lv === b.lv) {
+          return b.i - a.i;
         }
 
-        return b[1] - a[1];
+        return b.lv - a.lv;
       }); // ppt只有嵌套才需要生成，最下面的孩子节点的ppt无需，因此记录一个hash存index，
       mergeList.forEach(function (item) {
         var i = item.i,
@@ -35553,7 +35552,7 @@
         var needGen; // 可能没变化，比如被遮罩节点、filter变更等
 
         if (!__cacheTotal || !__cacheTotal.available) {
-          var _genTotalWebgl = genTotalWebgl(gl, texCache, node, i, total || 0, __structs, __cache, __limitCache, hasMbm, width, height),
+          var _genTotalWebgl = genTotalWebgl(gl, texCache, node, i, total || 0, __structs, __cache, __limitCache, width, height),
               _genTotalWebgl2 = _slicedToArray(_genTotalWebgl, 2),
               limit = _genTotalWebgl2[0],
               _res19 = _genTotalWebgl2[1];
@@ -35582,7 +35581,9 @@
                 node.__cacheOverflow = target;
               }
             }
-          } else {
+          }
+
+          if (__cacheOverflow && __cacheOverflow.available) {
             target = __cacheOverflow;
           }
         }
@@ -35599,7 +35600,9 @@
                 node.__cacheFilter = target;
               }
             }
-          } else {
+          }
+
+          if (__cacheFilter && __cacheFilter.available) {
             target = __cacheFilter;
           }
         }
@@ -35802,19 +35805,17 @@
           __computedStyle[OPACITY] = __currentStyle[OPACITY];
         }
 
-        var filter = void 0;
-
         if (contain$1(__refreshLevel, FT)) {
-          filter = node.__calFilter(__currentStyle, __computedStyle, __cacheStyle);
+          node.__calFilter(__currentStyle, __computedStyle, __cacheStyle);
         }
 
         if (contain$1(__refreshLevel, MBM)) {
           __computedStyle[MIX_BLEND_MODE] = __currentStyle[MIX_BLEND_MODE];
-        } // filter/mask变化需重新生成，cacheTotal本身就存在要判断下；CACHE取消重新生成则无需判断
+        } // filter变化需重新生成，cacheTotal本身就存在要判断下；CACHE取消重新生成则无需判断
 
 
         if (node.__cacheAsBitmap) {
-          if ((filter && filter.length || contain$1(__refreshLevel, MASK) && hasMask) && __cacheTotal && __cacheTotal.available || contain$1(__refreshLevel, CACHE$1)) {
+          if (contain$1(__refreshLevel, CACHE$1 | FT)) {
             mergeList.push({
               i: i,
               lv: lv,
@@ -35829,7 +35830,7 @@
         if (__cacheTotal && __cacheTotal.available) {
           i += total || 0;
 
-          if (!contain$1(__refreshLevel, MASK)) {
+          if (__refreshLevel === NONE$1 && hasMask) {
             i += countMaskNum(__structs, i + 1, hasMask);
           }
         }
@@ -35849,7 +35850,7 @@
     }
     /**
      * 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
-     * 这样保证子节点在前，后节点在前（mask在后面），渲染顺序正确
+     * 这样保证子节点在前，后节点在前，后节点是为了mask先应用自身如filter之后再进行遮罩
      */
 
 
@@ -36968,6 +36969,8 @@
 
       if (prev && prev.__cacheMask) {
         prev.__cacheMask.release();
+
+        prev.__refreshLevel |= CACHE;
       }
     } // 特殊情况，父节点display:none，子节点进行任意变更，应视为无效
     // 如果父节点由none变block，这里也return false，因为父节点会重新layout+render

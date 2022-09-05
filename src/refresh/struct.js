@@ -2343,7 +2343,7 @@ function renderWebgl(renderMode, gl, root) {
       // 超限特殊处理，先生成画布尺寸大小的纹理然后原始位置绘制
       else if(node.__limitCache) {
         let c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
-        node.render(renderMode, 0, gl, NA, 0, 0);
+        node.render(renderMode, gl,0, 0);
         let j = texCache.lockOneChannel();
         let texture = webgl.createTexture(gl, c.canvas, j);
         let mockCache = new MockCache(gl, texture, 0, 0, width, height, [0, 0, width, height]);
@@ -2383,6 +2383,10 @@ function renderWebgl(renderMode, gl, root) {
       let m = __matrix;
       if(__domParent) {
         opacity *= __domParent.__opacity;
+        let ppt = __domParent.__perspectiveMatrix;
+        if(!isE(ppt)) {
+          m = multiply(ppt, m);
+        }
         m = multiply(__domParent.__matrixEvent, m);
       }
       node.__opacity = opacity;

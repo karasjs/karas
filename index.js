@@ -33850,7 +33850,12 @@
 
                 var _list4 = offscreenHash[_j5] = offscreenHash[_j5] || [];
 
-                _list4.push([i, _lv2, OFFSCREEN_BLEND, offscreenBlend]);
+                _list4.push({
+                  idx: i,
+                  lv: _lv2,
+                  type: OFFSCREEN_BLEND,
+                  offscreen: offscreenBlend
+                });
 
                 ctx = offscreenBlend.target.ctx;
               } // 被遮罩的节点要为第一个遮罩和最后一个遮罩的索引打标，被遮罩的本身在一个离屏canvas，遮罩的元素在另外一个
@@ -33878,7 +33883,12 @@
 
                 var _list5 = offscreenHash[_j7] = offscreenHash[_j7] || [];
 
-                _list5.push([i, _lv2, OFFSCREEN_FILTER, offscreenFilter]);
+                _list5.push({
+                  idx: i,
+                  lv: _lv2,
+                  type: OFFSCREEN_FILTER,
+                  offscreen: offscreenFilter
+                });
 
                 ctx = offscreenFilter.target.ctx;
               } // overflow:hidden的离屏，最后孩子进行截取
@@ -33893,7 +33903,12 @@
 
                 var _list6 = offscreenHash[_j8] = offscreenHash[_j8] || [];
 
-                _list6.push([i, _lv2, OFFSCREEN_OVERFLOW, offscreenOverflow]);
+                _list6.push({
+                  idx: i,
+                  lv: _lv2,
+                  type: OFFSCREEN_OVERFLOW,
+                  offscreen: offscreenOverflow
+                });
 
                 ctx = offscreenOverflow.target.ctx;
               } // 离屏应用，按照lv从大到小即子节点在前先应用，同一个节点多个效果按offscreen优先级从小到大来，

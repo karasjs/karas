@@ -925,7 +925,7 @@ function genTotalWebgl(gl, texCache, node, index, total, __structs, cache, limit
   // limitCache无cache需先绘制到统一的离屏画布上
   else if(limitCache) {
     let c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
-    node.render(mode.WEBGL, 0, gl, NA, 0, 0);
+    node.render(mode.WEBGL, gl, 0, 0);
     let j = texCache.lockOneChannel();
     let texture = webgl.createTexture(gl, c.canvas, j);
     let mockCache = new MockCache(gl, texture, 0, 0, width, height, [0, 0, width, height]);
@@ -1991,7 +1991,7 @@ function renderWebgl(renderMode, gl, root) {
     if(__computedStyle[DISPLAY] === 'none') {
       i += (total || 0);
       if(hasMask) {
-        i += countMaskNum(__structs, i + (total || 0) + 1, hasMask);
+        i += countMaskNum(__structs, i + 1, hasMask);
       }
       continue;
     }
@@ -2154,12 +2154,11 @@ function renderWebgl(renderMode, gl, root) {
       if(isMbm) {
         hasMbm = true;
       }
-      if(!node.__limitCache
-        && (node.__cacheAsBitmap
+      if(node.__cacheAsBitmap
           || hasMask
           || filter.length
           || isMbm
-          || overflow === 'hidden' && total)
+          || overflow === 'hidden' && total
           || pptCount > 1 && pptCount > pptList[lv - 1]) {
         mergeList.push({
           i,

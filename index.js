@@ -33804,7 +33804,7 @@
               opacity *= parentOpacity;
             }
 
-            ctx.globalAlpha = _node3.__opacity = lastOpacity = opacity; // 特殊渲染的matrix，局部根节点为原点且考虑根节点自身的transform
+            _node3.__opacity = lastOpacity = opacity; // 特殊渲染的matrix，局部根节点为原点且考虑根节点自身的transform
 
             var m = void 0;
 
@@ -33834,8 +33834,7 @@
             }
 
             m = m || mx.identity();
-            assignMatrix(_node3.__matrixEvent, m);
-            ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]); // 特殊渲染的matrix，局部根节点为原点考虑，本节点需inverse反向
+            assignMatrix(_node3.__matrixEvent, m); // 特殊渲染的matrix，局部根节点为原点考虑，本节点需inverse反向
 
             var _target3 = getCache([_cacheMask2, _cacheFilter2, _cacheOverflow2, _cacheTotal3]);
 
@@ -33846,6 +33845,8 @@
                 i += countMaskNum(__structs, i + 1, _hasMask4);
               }
 
+              ctx.globalAlpha = opacity;
+              ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
               var mixBlendMode = _computedStyle2[MIX_BLEND_MODE];
 
               if (isValidMbm(mixBlendMode)) {
@@ -33873,13 +33874,25 @@
               }
             } // 等于将外面bbox计算和渲染合一的过程，但不需要bbox本身的内容
             else {
-              var res = _node3.render(renderMode, ctx, dx, dy);
+              var offscreenBlend = void 0,
+                  _offscreenMask2 = void 0,
+                  offscreenFilter = void 0,
+                  offscreenOverflow = void 0;
 
-              var _ref = res || {},
-                  offscreenBlend = _ref.offscreenBlend,
-                  _offscreenMask2 = _ref.offscreenMask,
-                  offscreenFilter = _ref.offscreenFilter,
-                  offscreenOverflow = _ref.offscreenOverflow; // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
+              var _offscreen2 = _node3.__calOffscreen(ctx, _computedStyle2);
+
+              if (_offscreen2) {
+                ctx = _offscreen2.ctx;
+                offscreenBlend = _offscreen2.offscreenBlend;
+                _offscreenMask2 = _offscreen2.offscreenMask;
+                offscreenFilter = _offscreen2.offscreenFilter;
+                offscreenOverflow = _offscreen2.offscreenOverflow;
+              }
+
+              ctx.globalAlpha = opacity;
+              ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+
+              _node3.render(renderMode, ctx, dx, dy); // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
 
 
               if (offscreenBlend) {
@@ -33896,9 +33909,8 @@
                   lv: _lv2,
                   type: OFFSCREEN_BLEND,
                   offscreen: offscreenBlend
-                });
+                }); // ctx = offscreenBlend.target.ctx;
 
-                ctx = offscreenBlend.target.ctx;
               } // 被遮罩的节点要为第一个遮罩和最后一个遮罩的索引打标，被遮罩的本身在一个离屏canvas，遮罩的元素在另外一个
               // 最后一个遮罩索引因数量不好计算，放在maskStartHash做
 
@@ -33910,8 +33922,7 @@
                   idx: i,
                   hasMask: _hasMask4,
                   offscreenMask: _offscreenMask2
-                };
-                ctx = _offscreenMask2.target.ctx;
+                }; // ctx = offscreenMask.target.ctx;
               } // filter造成的离屏，需要将后续一段孩子节点区域的ctx替换，并在结束后应用结果，再替换回来
 
 
@@ -33929,9 +33940,8 @@
                   lv: _lv2,
                   type: OFFSCREEN_FILTER,
                   offscreen: offscreenFilter
-                });
+                }); // ctx = offscreenFilter.target.ctx;
 
-                ctx = offscreenFilter.target.ctx;
               } // overflow:hidden的离屏，最后孩子进行截取
 
 
@@ -33949,9 +33959,8 @@
                   lv: _lv2,
                   type: OFFSCREEN_OVERFLOW,
                   offscreen: offscreenOverflow
-                });
+                }); // ctx = offscreenOverflow.target.ctx;
 
-                ctx = offscreenOverflow.target.ctx;
               } // 离屏应用，按照lv从大到小即子节点在前先应用，同一个节点多个效果按offscreen优先级从小到大来，
               // 由于mask特殊索引影响，所有离屏都在最后一个mask索引判断，此时mask本身优先结算，以index序大到小判断
 
@@ -36178,14 +36187,14 @@
               offscreenFilter = void 0,
               offscreenOverflow = void 0;
 
-          var _offscreen2 = _node9.__calOffscreen(ctx, _computedStyle4);
+          var _offscreen3 = _node9.__calOffscreen(ctx, _computedStyle4);
 
-          if (_offscreen2) {
-            ctx = _offscreen2.ctx;
-            offscreenBlend = _offscreen2.offscreenBlend;
-            _offscreenMask3 = _offscreen2.offscreenMask;
-            offscreenFilter = _offscreen2.offscreenFilter;
-            offscreenOverflow = _offscreen2.offscreenOverflow;
+          if (_offscreen3) {
+            ctx = _offscreen3.ctx;
+            offscreenBlend = _offscreen3.offscreenBlend;
+            _offscreenMask3 = _offscreen3.offscreenMask;
+            offscreenFilter = _offscreen3.offscreenFilter;
+            offscreenOverflow = _offscreen3.offscreenOverflow;
           } // 节点自身渲染
 
 

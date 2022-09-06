@@ -670,7 +670,7 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
           if(i !== index) {
             opacity *= parentOpacity;
           }
-          ctx.globalAlpha = node.__opacity = lastOpacity = opacity;
+          node.__opacity = lastOpacity = opacity;
           // 特殊渲染的matrix，局部根节点为原点且考虑根节点自身的transform
           let m;
           if(!isE(transform)) {
@@ -698,7 +698,6 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
           }
           m = m || mx.identity();
           assignMatrix(node.__matrixEvent, m);
-          ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
           // 特殊渲染的matrix，局部根节点为原点考虑，本节点需inverse反向
           let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]);
           if(target) {
@@ -706,6 +705,8 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
             if(hasMask) {
               i += countMaskNum(__structs, i + 1, hasMask);
             }
+            ctx.globalAlpha = opacity;
+            ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
             let mixBlendMode = __computedStyle[MIX_BLEND_MODE];
             if(isValidMbm(mixBlendMode)) {
               ctx.globalCompositeOperation = mbmName(mixBlendMode);
@@ -724,8 +725,18 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
           }
           // 等于将外面bbox计算和渲染合一的过程，但不需要bbox本身的内容
           else {
-            let res = node.render(renderMode, ctx, dx, dy);
-            let { offscreenBlend, offscreenMask, offscreenFilter, offscreenOverflow } = res || {};
+            let offscreenBlend, offscreenMask, offscreenFilter, offscreenOverflow;
+            let offscreen = node.__calOffscreen(ctx, __computedStyle);
+            if(offscreen) {
+              ctx = offscreen.ctx;
+              offscreenBlend = offscreen.offscreenBlend;
+              offscreenMask = offscreen.offscreenMask;
+              offscreenFilter = offscreen.offscreenFilter;
+              offscreenOverflow = offscreen.offscreenOverflow;
+            }
+            ctx.globalAlpha = opacity;
+            ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+            node.render(renderMode, ctx, dx, dy);
             // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
             if(offscreenBlend) {
               let j = i + (total || 0);
@@ -734,7 +745,7 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
               }
               let list = offscreenHash[j] = offscreenHash[j] || [];
               list.push({ idx: i, lv, type: OFFSCREEN_BLEND, offscreen: offscreenBlend });
-              ctx = offscreenBlend.target.ctx;
+              // ctx = offscreenBlend.target.ctx;
             }
             // 被遮罩的节点要为第一个遮罩和最后一个遮罩的索引打标，被遮罩的本身在一个离屏canvas，遮罩的元素在另外一个
             // 最后一个遮罩索引因数量不好计算，放在maskStartHash做
@@ -745,7 +756,7 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
                 hasMask,
                 offscreenMask,
               };
-              ctx = offscreenMask.target.ctx;
+              // ctx = offscreenMask.target.ctx;
             }
             // filter造成的离屏，需要将后续一段孩子节点区域的ctx替换，并在结束后应用结果，再替换回来
             if(offscreenFilter) {
@@ -755,7 +766,7 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
               }
               let list = offscreenHash[j] = offscreenHash[j] || [];
               list.push({ idx: i, lv, type: OFFSCREEN_FILTER, offscreen: offscreenFilter });
-              ctx = offscreenFilter.target.ctx;
+              // ctx = offscreenFilter.target.ctx;
             }
             // overflow:hidden的离屏，最后孩子进行截取
             if(offscreenOverflow) {
@@ -765,7 +776,7 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
               }
               let list = offscreenHash[j] = offscreenHash[j] || [];
               list.push({ idx: i, lv, type: OFFSCREEN_OVERFLOW, offscreen: offscreenOverflow });
-              ctx = offscreenOverflow.target.ctx;
+              // ctx = offscreenOverflow.target.ctx;
             }
             // 离屏应用，按照lv从大到小即子节点在前先应用，同一个节点多个效果按offscreen优先级从小到大来，
             // 由于mask特殊索引影响，所有离屏都在最后一个mask索引判断，此时mask本身优先结算，以index序大到小判断

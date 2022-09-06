@@ -2085,7 +2085,7 @@ function renderWebgl(renderMode, gl, root) {
         hasMbm = true;
       }
       // 这里和canvas不一样，前置cacheAsBitmap条件变成或条件之一，新的ppt层级且画中画需要新的fbo
-      if(contain(__refreshLevel, CACHE | FT | MBM)
+      if(contain(__refreshLevel, FT | MBM)
         || isPpt) {
         mergeList.push({
           i,
@@ -2226,7 +2226,7 @@ function renderWebgl(renderMode, gl, root) {
         [OVERFLOW]: overflow,
         [FILTER]: filter,
       } = __computedStyle
-      let isPerspective = !isE(__domParent.__perspectiveMatrix) || tf.isPerspectiveMatrix(__matrix);
+      let isPerspective = !isE(__domParent && __domParent.__perspectiveMatrix) || tf.isPerspectiveMatrix(__matrix);
       // let [i, lv, total, node, __limitCache, hasMask, filter, overflow, isPerspective, __cacheAsBitmap] = item;
       // 有ppt的，向上查找所有父亲index记录，可能出现重复记得提前跳出
       if(isPerspective) {

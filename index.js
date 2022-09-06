@@ -2331,7 +2331,6 @@
         context.clearRect(0, 0, 16, 16);
         context.font = '16px ' + this.defaultFontFamily;
         context.fillText('a', 8, 8);
-        canvas.draw();
         defaultFontFamilyData = context.getImageData(0, 0, 16, 16).data;
       }
 
@@ -2343,7 +2342,6 @@
 
       context.font = '16px ' + ff + ',' + this.defaultFontFamily;
       context.fillText('a', 8, 8);
-      canvas.draw();
       var data = context.getImageData(0, 0, 16, 16).data;
 
       for (var i = 0, len = data.length; i < len; i++) {

@@ -335,7 +335,6 @@ let inject = {
       context.clearRect(0, 0, 16, 16);
       context.font = '16px ' + this.defaultFontFamily;
       context.fillText('a', 8, 8);
-      canvas.draw();
       defaultFontFamilyData = context.getImageData(0, 0, 16, 16).data;
     }
     context.clearRect(0, 0, 16, 16);
@@ -344,7 +343,6 @@ let inject = {
     }
     context.font = '16px ' + ff + ',' + this.defaultFontFamily;
     context.fillText('a', 8, 8);
-    canvas.draw();
     let data = context.getImageData(0, 0, 16, 16).data;
     for(let i = 0, len = data.length; i < len; i++) {
       if(defaultFontFamilyData[i] !== data[i]) {

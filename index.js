@@ -35267,10 +35267,7 @@
         texCache = root.texCache;
     var cx = width * 0.5,
         cy = height * 0.5; // 栈代替递归，存父节点的matrix/opacity，matrix为E时存null省略计算
-    var pptCount = 0;
-    var pptList = [];
     var lastRefreshLevel = NONE$1;
-    var lastLv = 0;
     var mergeList = [];
     var hasMbm; // 是否有混合模式出现
 
@@ -35317,33 +35314,6 @@
           node.__domParent;
       lastRefreshLevel = __refreshLevel;
       node.__refreshLevel = NONE$1; // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，Root节点是第一个特殊处理
-
-      if (i === 0) ; else if (lv > lastLv) {
-        // parentMatrix = lastNode.__matrixEvent;
-        // if(isE(parentMatrix)) {
-        //   parentMatrix = null;
-        // }
-        // matrixList.push(parentMatrix);
-        // parentOpacity = lastNode.__opacity;
-        // opacityList.push(parentOpacity);
-        // parentPm = lastNode.__perspectiveMatrix;
-        // if(isE(parentPm)) {
-        //   parentPm = null;
-        // }
-        // pmList.push(parentPm);
-        pptList.push(pptCount);
-      } // 变小出栈索引需注意，可能不止一层，多层计算diff层级
-      else if (lv < lastLv) {
-        var diff = lastLv - lv; // matrixList.splice(-diff);
-        // parentMatrix = matrixList[lv - 1];
-        // opacityList.splice(-diff);
-        // parentOpacity = opacityList[lv - 1];
-        // pmList.splice(-diff);
-        // parentPm = pmList[lv - 1];
-
-        pptList.splice(-diff);
-        pptCount = pptList[lv - 1];
-      } // 不变是同级兄弟，无需特殊处理 else {}
       /**
        * lv<REPAINT，一般会有__cache，跳过渲染过程，快速运算，没有cache则是自身超限或无内容，目前不感知
        * 可能有cacheTotal，为之前生成的局部根，清除逻辑在更新检查是否>=REPAINT那里，小变化不动
@@ -35353,22 +35323,18 @@
        */
 
       if (__refreshLevel < REPAINT$1) {
-        var ppt = void 0;
-
         if (contain$1(__refreshLevel, PPT)) {
-          ppt = node.__calPerspective(__currentStyle, __computedStyle, __cacheStyle);
-        } else {
-          ppt = node.__perspectiveMatrix;
+          node.__calPerspective(__currentStyle, __computedStyle, __cacheStyle);
         } // transform变化，父元素的perspective变化也会在Root特殊处理重新计算
-        // let matrix;
 
+
+        var matrix = void 0;
 
         if (contain$1(__refreshLevel, TRANSFORM_ALL$1)) {
-          node.__calMatrix(__refreshLevel, __currentStyle, __computedStyle, __cacheStyle);
-        } // else {
-        //   matrix = node.__matrix;
-        // }
-        // // 先左乘perspective的矩阵，再左乘父级的总矩阵
+          matrix = node.__calMatrix(__refreshLevel, __currentStyle, __computedStyle, __cacheStyle);
+        } else {
+          matrix = node.__matrix;
+        } // // 先左乘perspective的矩阵，再左乘父级的总矩阵
         // if(__domParent) {
         //   matrix = multiply(__domParent.__perspectiveMatrix, matrix);
         //   matrix = multiply(__domParent.__matrixEvent, matrix);
@@ -35393,23 +35359,22 @@
           node.__calFilter(__currentStyle, __computedStyle, __cacheStyle);
         }
 
+        var _mbm = void 0;
+
         if (contain$1(__refreshLevel, MBM)) {
-          __computedStyle[MIX_BLEND_MODE] = __currentStyle[MIX_BLEND_MODE];
-        } // 新的perspective父容器，子节点需要有透视，多个则需要生成画中画影响性能
-
-
-        if (!isE(ppt)) {
-          pptCount++;
+          _mbm = __computedStyle[MIX_BLEND_MODE] = __currentStyle[MIX_BLEND_MODE];
         }
 
-        var isMbm = contain$1(__refreshLevel, MBM) && isValidMbm(__computedStyle[MIX_BLEND_MODE]);
+        var isMbm = contain$1(__refreshLevel, MBM) && isValidMbm(_mbm);
+        var _domParent = node.__domParent;
+        var isPpt = !isE(_domParent && _domParent.__perspectiveMatrix) || transform.isPerspectiveMatrix(matrix);
 
         if (isMbm) {
           hasMbm = true;
         } // 这里和canvas不一样，前置cacheAsBitmap条件变成或条件之一，新的ppt层级且画中画需要新的fbo
 
 
-        if (contain$1(__refreshLevel, CACHE$1 | FT) || isMbm || pptCount > 1 && pptCount > pptList[lv - 1]) {
+        if (contain$1(__refreshLevel, CACHE$1 | FT | MBM) || isPpt) {
           mergeList.push({
             i: i,
             lv: lv,
@@ -35437,7 +35402,7 @@
 
         node.__calContent(__currentStyle, __computedStyle);
 
-        var _ppt = node.__calPerspective(__currentStyle, __computedStyle, __cacheStyle); // let matrix = node.__matrix;
+        node.__calPerspective(__currentStyle, __computedStyle, __cacheStyle); // let matrix = node.__matrix;
         // // 先左乘perspective的矩阵，再左乘父级的总矩阵
         // if(__domParent) {
         //   matrix = multiply(__domParent.__perspectiveMatrix, matrix);
@@ -35464,21 +35429,24 @@
           gl.useProgram(gl.program);
         }
 
-        if (!isE(_ppt)) {
-          pptCount++;
-        }
-
         var overflow = __computedStyle[OVERFLOW],
             filter = __computedStyle[FILTER$1],
             mixBlendMode = __computedStyle[MIX_BLEND_MODE];
 
         var _isMbm = isValidMbm(mixBlendMode);
 
+        var _domParent2 = node.__domParent;
+
+        var _isPpt = !isE(_domParent2 && _domParent2.__perspectiveMatrix) || transform.isPerspectiveMatrix(node.__matrix);
+
+        var isOverflow = overflow === 'hidden' && total;
+        var isFilter = filter && filter.length;
+
         if (_isMbm) {
           hasMbm = true;
         }
 
-        if (node.__cacheAsBitmap || hasMask || filter.length || _isMbm || overflow === 'hidden' && total || pptCount > 1 && pptCount > pptList[lv - 1]) {
+        if (node.__cacheAsBitmap || hasMask || isFilter || _isMbm || isOverflow || _isPpt) {
           mergeList.push({
             i: i,
             lv: lv,
@@ -35536,34 +35504,49 @@
 
         return b.lv - a.lv;
       }); // ppt只有嵌套才需要生成，最下面的孩子节点的ppt无需，因此记录一个hash存index，
+      // 同时因为是后序遍历，孩子先存所有父亲的index即可保证父亲才能生成cacheTotal
+
+      var pptHash = {};
       mergeList.forEach(function (item) {
         var i = item.i,
             lv = item.lv,
             total = item.total,
             node = item.node,
             hasMask = item.hasMask;
-        var _node$__computedStyle3 = node.__computedStyle,
-            overflow = _node$__computedStyle3[OVERFLOW],
-            filter = _node$__computedStyle3[FILTER$1];
-            _node$__computedStyle3[MIX_BLEND_MODE];
-        var __limitCache = node.__limitCache; // let [i, lv, total, node, __limitCache, hasMask, filter, overflow, isPerspective, __cacheAsBitmap] = item;
+        var __limitCache = node.__limitCache,
+            __matrix = node.__matrix,
+            __domParent = node.__domParent,
+            __computedStyle = node.__computedStyle;
+        var overflow = __computedStyle[OVERFLOW],
+            filter = __computedStyle[FILTER$1];
+        var isPerspective = !isE(__domParent.__perspectiveMatrix) || transform.isPerspectiveMatrix(__matrix); // let [i, lv, total, node, __limitCache, hasMask, filter, overflow, isPerspective, __cacheAsBitmap] = item;
         // 有ppt的，向上查找所有父亲index记录，可能出现重复记得提前跳出
-        // if(isPerspective) {
-        //   let parent = node.__domParent;
-        //   while(parent) {
-        //     let idx = parent.__struct.index;
-        //     if(pptHash[idx]) {
-        //       break;
-        //     }
-        //     if(tf.isPerspectiveMatrix(parent.__matrix) || parent.__perspectiveMatrix) {
-        //       pptHash[idx] = true;
-        //     }
-        //     parent = parent.__domParent;
-        //   }
-        //   if(!pptHash[i] && !hasMask && !filter.length && overflow !== 'hidden' && !__cacheAsBitmap) {
-        //     return;
-        //   }
-        // }
+
+        if (isPerspective) {
+          var parent = node.__domParent;
+
+          while (parent) {
+            var idx = parent.__struct.index;
+
+            if (pptHash[idx]) {
+              break;
+            }
+
+            if (transform.isPerspectiveMatrix(parent.__matrix)) {
+              pptHash[idx] = true;
+            }
+
+            parent = parent.__domParent;
+
+            if (parent && parent.__perspectiveMatrix) {
+              pptHash[idx] = true;
+            }
+          }
+
+          if (!pptHash[i] && !hasMask && !filter.length && !(overflow === 'hidden' && total) && !node.__cacheAsBitmap) {
+            return;
+          }
+        }
 
         var __cache = node.__cache,
             __cacheTotal = node.__cacheTotal,
@@ -35714,22 +35697,22 @@
             __cacheFilter = _node8.__cacheFilter,
             __cacheMask = _node8.__cacheMask,
             __cacheOverflow = _node8.__cacheOverflow,
-            _domParent = _node8.__domParent,
+            _domParent3 = _node8.__domParent,
             __matrix = _node8.__matrix;
         var opacity = _computedStyle3[OPACITY],
             visibility = _computedStyle3[VISIBILITY$1],
             _mixBlendMode = _computedStyle3[MIX_BLEND_MODE];
         var m = __matrix;
 
-        if (_domParent) {
-          opacity *= _domParent.__opacity;
-          var _ppt2 = _domParent.__perspectiveMatrix;
+        if (_domParent3) {
+          opacity *= _domParent3.__opacity;
+          var pm = _domParent3.__perspectiveMatrix;
 
-          if (!isE(_ppt2)) {
-            m = multiply(_ppt2, m);
+          if (!isE(pm)) {
+            m = multiply(pm, m);
           }
 
-          m = multiply(_domParent.__matrixEvent, m);
+          m = multiply(_domParent3.__matrixEvent, m);
         }
 
         _node8.__opacity = opacity;

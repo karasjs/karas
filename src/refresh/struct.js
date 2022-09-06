@@ -1956,8 +1956,6 @@ function renderWebgl(renderMode, gl, root) {
   let parentMatrix;
   let opacityList = [];
   let parentOpacity = 1;
-  let pptCount = 0;
-  let pptList = [];
   let pmList = [];
   let parentPm;
   let lastRefreshLevel = NONE;
@@ -2020,19 +2018,16 @@ function renderWebgl(renderMode, gl, root) {
       //   parentPm = null;
       // }
       // pmList.push(parentPm);
-      pptList.push(pptCount);
     }
     // 变小出栈索引需注意，可能不止一层，多层计算diff层级
     else if(lv < lastLv) {
-      let diff = lastLv - lv;
+      // let diff = lastLv - lv;
       // matrixList.splice(-diff);
       // parentMatrix = matrixList[lv - 1];
       // opacityList.splice(-diff);
       // parentOpacity = opacityList[lv - 1];
       // pmList.splice(-diff);
       // parentPm = pmList[lv - 1];
-      pptList.splice(-diff);
-      pptCount = pptList[lv - 1];
     }
     // 不变是同级兄弟，无需特殊处理 else {}
     // lastRefreshLevel = __refreshLevel;
@@ -2047,21 +2042,17 @@ function renderWebgl(renderMode, gl, root) {
      * 如果没有或无效，直接添加，无视节点本身变化，后面防重即可
      */
     if(__refreshLevel < REPAINT) {
-      let ppt;
       if(contain(__refreshLevel, PPT)) {
-        ppt = node.__calPerspective(__currentStyle, __computedStyle, __cacheStyle);
-      }
-      else {
-        ppt = node.__perspectiveMatrix;
+        node.__calPerspective(__currentStyle, __computedStyle, __cacheStyle);
       }
       // transform变化，父元素的perspective变化也会在Root特殊处理重新计算
-      // let matrix;
+      let matrix;
       if(contain(__refreshLevel, TRANSFORM_ALL)) {
-        node.__calMatrix(__refreshLevel, __currentStyle, __computedStyle, __cacheStyle);
+        matrix = node.__calMatrix(__refreshLevel, __currentStyle, __computedStyle, __cacheStyle);
       }
-      // else {
-      //   matrix = node.__matrix;
-      // }
+      else {
+        matrix = node.__matrix;
+      }
       // // 先左乘perspective的矩阵，再左乘父级的总矩阵
       // if(__domParent) {
       //   matrix = multiply(__domParent.__perspectiveMatrix, matrix);
@@ -2083,21 +2074,19 @@ function renderWebgl(renderMode, gl, root) {
       if(contain(__refreshLevel, FT)) {
         node.__calFilter(__currentStyle, __computedStyle, __cacheStyle);
       }
+      let mbm;
       if(contain(__refreshLevel, MBM)) {
-        __computedStyle[MIX_BLEND_MODE] = __currentStyle[MIX_BLEND_MODE];
+        mbm = __computedStyle[MIX_BLEND_MODE] = __currentStyle[MIX_BLEND_MODE];
       }
-      // 新的perspective父容器，子节点需要有透视，多个则需要生成画中画影响性能
-      if(!isE(ppt)) {
-        pptCount++;
-      }
-      let isMbm = contain(__refreshLevel, MBM) && isValidMbm(__computedStyle[MIX_BLEND_MODE]);
+      let isMbm = contain(__refreshLevel, MBM) && isValidMbm(mbm);
+      let __domParent = node.__domParent;
+      let isPpt = !isE(__domParent && __domParent.__perspectiveMatrix) || tf.isPerspectiveMatrix(matrix);
       if(isMbm) {
         hasMbm = true;
       }
       // 这里和canvas不一样，前置cacheAsBitmap条件变成或条件之一，新的ppt层级且画中画需要新的fbo
-      if(contain(__refreshLevel, CACHE | FT)
-        || isMbm
-        || pptCount > 1 && pptCount > pptList[lv - 1]) {
+      if(contain(__refreshLevel, CACHE | FT | MBM)
+        || isPpt) {
         mergeList.push({
           i,
           lv,
@@ -2121,7 +2110,7 @@ function renderWebgl(renderMode, gl, root) {
     else {
       node.__calCache(__currentStyle, __computedStyle, __cacheStyle);
       node.__calContent(__currentStyle, __computedStyle);
-      let ppt = node.__calPerspective(__currentStyle, __computedStyle, __cacheStyle);
+      node.__calPerspective(__currentStyle, __computedStyle, __cacheStyle);
       // let matrix = node.__matrix;
       // // 先左乘perspective的矩阵，再左乘父级的总矩阵
       // if(__domParent) {
@@ -2142,24 +2131,25 @@ function renderWebgl(renderMode, gl, root) {
         gl.viewport(0, 0, width, height);
         gl.useProgram(gl.program);
       }
-      if(!isE(ppt)) {
-        pptCount++;
-      }
       let {
         [OVERFLOW]: overflow,
         [FILTER]: filter,
         [MIX_BLEND_MODE]: mixBlendMode,
       } = __computedStyle;
       let isMbm = isValidMbm(mixBlendMode);
+      let __domParent = node.__domParent;
+      let isPpt = !isE(__domParent && __domParent.__perspectiveMatrix) || tf.isPerspectiveMatrix(node.__matrix);
+      let isOverflow = overflow === 'hidden' && total;
+      let isFilter = filter && filter.length;
       if(isMbm) {
         hasMbm = true;
       }
       if(node.__cacheAsBitmap
           || hasMask
-          || filter.length
+          || isFilter
           || isMbm
-          || overflow === 'hidden' && total
-          || pptCount > 1 && pptCount > pptList[lv - 1]) {
+          || isOverflow
+          || isPpt) {
         mergeList.push({
           i,
           lv,
@@ -2227,29 +2217,37 @@ function renderWebgl(renderMode, gl, root) {
         hasMask,
       } = item;
       let {
+        __limitCache,
+        __matrix,
+        __domParent,
+        __computedStyle,
+      } = node;
+      let {
         [OVERFLOW]: overflow,
         [FILTER]: filter,
-        [MIX_BLEND_MODE]: mixBlendMode,
-      } = node.__computedStyle;
-      let __limitCache = node.__limitCache;
+      } = __computedStyle
+      let isPerspective = !isE(__domParent.__perspectiveMatrix) || tf.isPerspectiveMatrix(__matrix);
       // let [i, lv, total, node, __limitCache, hasMask, filter, overflow, isPerspective, __cacheAsBitmap] = item;
       // 有ppt的，向上查找所有父亲index记录，可能出现重复记得提前跳出
-      // if(isPerspective) {
-      //   let parent = node.__domParent;
-      //   while(parent) {
-      //     let idx = parent.__struct.index;
-      //     if(pptHash[idx]) {
-      //       break;
-      //     }
-      //     if(tf.isPerspectiveMatrix(parent.__matrix) || parent.__perspectiveMatrix) {
-      //       pptHash[idx] = true;
-      //     }
-      //     parent = parent.__domParent;
-      //   }
-      //   if(!pptHash[i] && !hasMask && !filter.length && overflow !== 'hidden' && !__cacheAsBitmap) {
-      //     return;
-      //   }
-      // }
+      if(isPerspective) {
+        let parent = node.__domParent;
+        while(parent) {
+          let idx = parent.__struct.index;
+          if(pptHash[idx]) {
+            break;
+          }
+          if(tf.isPerspectiveMatrix(parent.__matrix)) {
+            pptHash[idx] = true;
+          }
+          parent = parent.__domParent;
+          if(parent && parent.__perspectiveMatrix) {
+            pptHash[idx] = true;
+          }
+        }
+        if(!pptHash[i] && !hasMask && !filter.length && !(overflow === 'hidden' && total) && !node.__cacheAsBitmap) {
+          return;
+        }
+      }
       let {
         __cache,
         __cacheTotal,
@@ -2383,9 +2381,9 @@ function renderWebgl(renderMode, gl, root) {
       let m = __matrix;
       if(__domParent) {
         opacity *= __domParent.__opacity;
-        let ppt = __domParent.__perspectiveMatrix;
-        if(!isE(ppt)) {
-          m = multiply(ppt, m);
+        let pm = __domParent.__perspectiveMatrix;
+        if(!isE(pm)) {
+          m = multiply(pm, m);
         }
         m = multiply(__domParent.__matrixEvent, m);
       }

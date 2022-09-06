@@ -477,6 +477,13 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
             offscreenFilter = offscreen.offscreenFilter;
             offscreenOverflow = offscreen.offscreenOverflow;
           }
+          ctxTotal.globalAlpha = node.__opacity;
+          if(m) {
+            ctxTotal.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+          }
+          else {
+            ctxTotal.setTransform(1, 0, 0, 1, 0, 0);
+          }
           node.render(renderMode, ctxTotal, dx, dy);
           // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
           if(offscreenBlend) {

@@ -33547,6 +33547,14 @@
               offscreenOverflow = _offscreen.offscreenOverflow;
             }
 
+            ctxTotal.globalAlpha = _node2.__opacity;
+
+            if (m) {
+              ctxTotal.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+            } else {
+              ctxTotal.setTransform(1, 0, 0, 1, 0, 0);
+            }
+
             _node2.render(renderMode, ctxTotal, dx, dy); // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
 
 

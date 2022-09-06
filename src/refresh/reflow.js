@@ -116,7 +116,7 @@ function offsetAndResizeByNodeOnY(node, root, reflowHash, dy, inDirectAbsList) {
     while(true);
     // 最后一个递归向上取消总缓存，防止过程中重复next多次无用递归
     while(last) {
-      last.clearCache(true);
+      last.clearCache();
       last = last.domParent;
     }
   }

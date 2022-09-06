@@ -21590,7 +21590,7 @@
       isValidMbm$1 = mbm.isValidMbm;
   var point2d = mx.point2d;
   var contain$3 = o$1.contain,
-      TF = o$1.TRANSFORM,
+      TF$1 = o$1.TRANSFORM,
       REFLOW$2 = o$1.REFLOW,
       REPAINT$2 = o$1.REPAINT,
       TX = o$1.TRANSLATE_X,
@@ -22384,7 +22384,7 @@
 
         var matrixCache = __cacheStyle[MATRIX$1]; // tx/ty变化特殊优化
 
-        if (matrixCache && lv < REFLOW$2 && !contain$3(lv, TF)) {
+        if (matrixCache && lv < REFLOW$2 && !contain$3(lv, TF$1)) {
           var x = 0,
               y = 0,
               z = 0;
@@ -24078,19 +24078,15 @@
 
     }, {
       key: "clearCache",
-      value: function clearCache(onlyTotal) {
+      value: function clearCache() {
         var __cacheTotal = this.__cacheTotal;
         var __cacheFilter = this.__cacheFilter;
         var __cacheMask = this.__cacheMask;
         var __cacheOverflow = this.__cacheOverflow;
+        var __cache = this.__cache;
 
-        if (!onlyTotal) {
-          this.__cacheStyle = {};
-          var __cache = this.__cache;
-
-          if (__cache) {
-            __cache.release();
-          }
+        if (__cache) {
+          __cache.release();
         }
 
         if (__cacheTotal) {
@@ -25645,7 +25641,7 @@
 
 
       while (last) {
-        last.clearCache(true);
+        last.clearCache();
         last = last.domParent;
       }
     }
@@ -31688,7 +31684,7 @@
       joinDef = util.joinDef;
   var contain$2 = o$1.contain,
       NONE$2 = o$1.NONE,
-      TRANSFORM_ALL$2 = o$1.TRANSFORM_ALL,
+      TRANSFORM_ALL$1 = o$1.TRANSFORM_ALL,
       OPACITY$1 = o$1.OPACITY,
       FILTER$2 = o$1.FILTER,
       MIX_BLEND_MODE$1 = o$1.MIX_BLEND_MODE;
@@ -31916,7 +31912,7 @@
       return;
     }
 
-    if (contain$2(lv, TRANSFORM_ALL$2)) {
+    if (contain$2(lv, TRANSFORM_ALL$1)) {
       if (transform) {
         elem.setAttribute('transform', transform);
       } else {
@@ -32883,7 +32879,7 @@
       PERSPECTIVE_ORIGIN = _enums$STYLE_KEY$1.PERSPECTIVE_ORIGIN;
       _enums$STYLE_KEY$1.MATRIX;
   var NONE$1 = o$1.NONE,
-      TRANSFORM_ALL$1 = o$1.TRANSFORM_ALL,
+      TRANSFORM_ALL = o$1.TRANSFORM_ALL,
       OP = o$1.OPACITY,
       FT = o$1.FILTER,
       REPAINT$1 = o$1.REPAINT,
@@ -34780,7 +34776,7 @@
         var __cacheDefs = node.__cacheDefs;
         var __refreshLevel = node.__refreshLevel; // 只要涉及到matrix和opacity就影响mask
 
-        var hasEffectMask = hasMask && (__refreshLevel >= REPAINT$1 || contain$1(__refreshLevel, TRANSFORM_ALL$1 | OP));
+        var hasEffectMask = hasMask && (__refreshLevel >= REPAINT$1 || contain$1(__refreshLevel, TRANSFORM_ALL | OP));
 
         if (hasEffectMask) {
           var start = i + (total || 0) + 1;
@@ -34795,7 +34791,7 @@
           if (maskEffectHash.hasOwnProperty(i)) {
             var v = maskEffectHash[i];
 
-            if (!contain$1(__refreshLevel, TRANSFORM_ALL$1) && v < REPAINT$1 && !contain$1(v, TRANSFORM_ALL$1)) {
+            if (!contain$1(__refreshLevel, TRANSFORM_ALL) && v < REPAINT$1 && !contain$1(v, TRANSFORM_ALL)) {
               __cacheDefs.forEach(function (item) {
                 ctx.addCache(item);
               });
@@ -34906,7 +34902,7 @@
         var __cacheStyle = _node6.__cacheStyle;
         var currentStyle = _node6.__currentStyle;
 
-        if (contain$1(_refreshLevel, TRANSFORM_ALL$1)) {
+        if (contain$1(_refreshLevel, TRANSFORM_ALL)) {
           var matrix = _node6.__calMatrix(_refreshLevel, currentStyle, computedStyle, __cacheStyle);
 
           if (!matrix || isE(matrix)) {
@@ -34989,7 +34985,7 @@
        */
 
 
-      if (maskHash.hasOwnProperty(_i7) && (maskEffectHash.hasOwnProperty(_i7) || _refreshLevel >= REPAINT$1 || contain$1(_refreshLevel, TRANSFORM_ALL$1 | OP))) {
+      if (maskHash.hasOwnProperty(_i7) && (maskEffectHash.hasOwnProperty(_i7) || _refreshLevel >= REPAINT$1 || contain$1(_refreshLevel, TRANSFORM_ALL | OP))) {
         var _maskHash$_i = maskHash[_i7],
             index = _maskHash$_i.index,
             _start2 = _maskHash$_i.start,
@@ -35183,7 +35179,7 @@
 
         var matrix = void 0;
 
-        if (contain$1(__refreshLevel, TRANSFORM_ALL$1)) {
+        if (contain$1(__refreshLevel, TRANSFORM_ALL)) {
           matrix = node.__calMatrix(__refreshLevel, __currentStyle, __computedStyle, __cacheStyle);
         } else {
           matrix = node.__matrix;
@@ -35697,7 +35693,7 @@
       node.__refreshLevel = NONE$1;
 
       if (__refreshLevel < REPAINT$1) {
-        if (contain$1(__refreshLevel, TRANSFORM_ALL$1)) {
+        if (contain$1(__refreshLevel, TRANSFORM_ALL)) {
           node.__calMatrix(__refreshLevel, __currentStyle, __computedStyle, __cacheStyle);
         }
 
@@ -36423,7 +36419,7 @@
       REFLOW = o$1.REFLOW,
       REBUILD = o$1.REBUILD,
       CACHE = o$1.CACHE,
-      TRANSFORM_ALL = o$1.TRANSFORM_ALL;
+      TF = o$1.TRANSFORM;
   var isIgnore = o$2.isIgnore,
       isGeom = o$2.isGeom;
   var ROOT_DOM_NAME = {
@@ -36819,7 +36815,7 @@
     } // transform变化清空重算
 
 
-    if (contain(lv, TRANSFORM_ALL)) {
+    if (contain(lv, TF) || lv > REPAINT) {
       __cacheStyle[MATRIX] = computedStyle[TRANSFORM] = undefined;
     } // 记录下来清除parent的zIndexChildren缓存
 

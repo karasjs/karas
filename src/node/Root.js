@@ -75,7 +75,19 @@ const DIRECTION_HASH = {
 const { isNil, isObject, isFunction } = util;
 const { AUTO, PX, PERCENT, INHERIT } = unit;
 const { isRelativeOrAbsolute, equalStyle } = css;
-const { contain, getLevel, isRepaint, NONE, FILTER, PERSPECTIVE, REPAINT, REFLOW, REBUILD, CACHE, TRANSFORM_ALL } = level;
+const {
+  contain,
+  getLevel,
+  isRepaint,
+  NONE,
+  FILTER,
+  PERSPECTIVE,
+  REPAINT,
+  REFLOW,
+  REBUILD,
+  CACHE,
+  TRANSFORM: TF,
+} = level;
 const { isIgnore, isGeom } = change;
 
 const ROOT_DOM_NAME = {
@@ -437,7 +449,7 @@ function parseUpdate(renderMode, root, target, reflowList, cacheHash, cacheList,
     return;
   }
   // transform变化清空重算
-  if(contain(lv, TRANSFORM_ALL)) {
+  if(contain(lv, TF) || lv > REPAINT) {
     __cacheStyle[MATRIX] = computedStyle[TRANSFORM] = undefined;
   }
   // 记录下来清除parent的zIndexChildren缓存

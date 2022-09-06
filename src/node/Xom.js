@@ -552,6 +552,7 @@ class Xom extends Node {
 
   // absolute且无尺寸时，isAbs标明先假布局一次计算尺寸，还有flex列计算时isColumn假布局，flex横计算时writingMode垂直假布局
   __layout(data, isAbs, isColumn, isRow) {
+    this.__cacheStyle = {};
     this.__computeReflow();
     let { w } = data;
     let { isDestroyed, currentStyle, computedStyle, __ellipsis } = this;

@@ -22016,6 +22016,8 @@
     }, {
       key: "__layout",
       value: function __layout(data, isAbs, isColumn, isRow) {
+        this.__cacheStyle = {};
+
         this.__computeReflow();
 
         var w = data.w;
@@ -29774,10 +29776,7 @@
           dx = res.dx;
           dy = res.dy;
           ctx = res.ctx;
-        } // let {
-        //   offscreenBlend, offscreenMask, offscreenFilter, offscreenOverflow,
-        // } = res;
-
+        }
 
         var width = this.width,
             height = this.height,
@@ -29793,19 +29792,7 @@
             visibility = _this$computedStyle[VISIBILITY$3],
             virtualDom = this.virtualDom,
             loadImg = this.__loadImg,
-            root = this.root; // if(offscreenBlend) {
-        //   ctx = offscreenBlend.target.ctx;
-        // }
-        // if(offscreenMask) {
-        //   ctx = offscreenMask.target.ctx;
-        // }
-        // if(offscreenFilter) {
-        //   ctx = offscreenFilter.target.ctx;
-        // }
-        // if(offscreenOverflow) {
-        //   ctx = offscreenOverflow.target.ctx;
-        // }
-        // 没source且不error时加载图片
+            root = this.root; // 没source且不error时加载图片
 
         if (!loadImg.source && !loadImg.error && !loadImg.loading) {
           this.__loadAndRefresh(loadImg, root, ctx, placeholder, computedStyle, width, height);
@@ -29813,11 +29800,7 @@
 
         if (isDestroyed || display === 'none' || visibility === 'hidden') {
           return res;
-        } // let __cache = this.__cache;
-        // if(cache && __cache && __cache.enabled) {
-        //   ctx = __cache.ctx;
-        // }
-
+        }
 
         var originX, originY;
         originX = res.sx3 + dx;

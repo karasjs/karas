@@ -233,7 +233,9 @@ class Line extends Geom {
     if(res.break) {
       return res;
     }
-    ctx = res.ctx;
+    if(renderMode === mode.WEBGL) {
+      ctx = res.ctx;
+    }
     let {
       sx3,
       sy3,

@@ -23055,6 +23055,126 @@
         });
       }
     }, {
+      key: "__calOffscreen",
+      value: function __calOffscreen(ctx, __computedStyle) {
+        var offscreenBlend,
+            offscreenMask,
+            offscreenFilter,
+            offscreenOverflow,
+            root = this.__root;
+        var width = root.width,
+            height = root.height;
+        var origin = ctx;
+        var mixBlendMode = __computedStyle[MIX_BLEND_MODE$2],
+            filter = __computedStyle[FILTER$3],
+            overflow = __computedStyle[OVERFLOW$2],
+            display = __computedStyle[DISPLAY$6];
+
+        if (mixBlendMode !== 'normal' && isValidMbm$1(mixBlendMode)) {
+          mixBlendMode = mbmName$1(mixBlendMode);
+          var c = inject.getCacheCanvas(width, height, null, 'blend');
+          offscreenBlend = {
+            ctx: ctx,
+            target: c,
+            mixBlendMode: mixBlendMode
+          };
+          ctx = c.ctx;
+        }
+
+        if (this.__hasMask) {
+          var _c = inject.getCacheCanvas(width, height, null, 'mask1');
+
+          offscreenMask = {
+            ctx: ctx,
+            target: _c
+          };
+          ctx = _c.ctx;
+        }
+
+        if (filter && filter.length) {
+          var _c2 = inject.getCacheCanvas(width, height, null, 'filter');
+
+          offscreenFilter = {
+            ctx: ctx,
+            filter: filter,
+            target: _c2
+          };
+          ctx = _c2.ctx;
+        }
+
+        if (overflow === 'hidden' && display !== 'inline') {
+          var _c3 = inject.getCacheCanvas(width, height, null, 'overflow');
+
+          var bx1 = this.__bx1;
+          var bx2 = this.__bx2;
+          var by1 = this.__by1;
+          var by2 = this.__by2;
+          var borderTopLeftRadius = __computedStyle[BORDER_TOP_LEFT_RADIUS$1],
+              borderTopRightRadius = __computedStyle[BORDER_TOP_RIGHT_RADIUS$1],
+              borderBottomRightRadius = __computedStyle[BORDER_BOTTOM_RIGHT_RADIUS$1],
+              borderBottomLeftRadius = __computedStyle[BORDER_BOTTOM_LEFT_RADIUS$1],
+              backgroundClip = __computedStyle[BACKGROUND_CLIP],
+              borderLeftWidth = __computedStyle[BORDER_LEFT_WIDTH$5],
+              borderRightWidth = __computedStyle[BORDER_RIGHT_WIDTH$4],
+              borderTopWidth = __computedStyle[BORDER_TOP_WIDTH$3],
+              borderBottomWidth = __computedStyle[BORDER_BOTTOM_WIDTH$3],
+              paddingTop = __computedStyle[PADDING_TOP$3],
+              paddingRight = __computedStyle[PADDING_RIGHT$4],
+              paddingBottom = __computedStyle[PADDING_BOTTOM$3],
+              paddingLeft = __computedStyle[PADDING_LEFT$5];
+          var btlr = borderTopLeftRadius.slice(0);
+          var btrr = borderTopRightRadius.slice(0);
+          var bbrr = borderBottomRightRadius.slice(0);
+          var bblr = borderBottomLeftRadius.slice(0);
+
+          if (backgroundClip === 'paddingBox') {
+            btlr[0] -= borderLeftWidth;
+            btlr[1] -= borderTopWidth;
+            btrr[0] -= borderRightWidth;
+            btrr[1] -= borderTopWidth;
+            bbrr[0] -= borderRightWidth;
+            bbrr[1] -= borderBottomWidth;
+            bblr[0] -= borderLeftWidth;
+            bblr[1] -= borderBottomWidth;
+          } else if (backgroundClip === 'contentBox') {
+            btlr[0] -= borderLeftWidth + paddingLeft;
+            btlr[1] -= borderTopWidth + paddingTop;
+            btrr[0] -= borderRightWidth + paddingRight;
+            btrr[1] -= borderTopWidth + paddingTop;
+            bbrr[0] -= borderRightWidth + paddingRight;
+            bbrr[1] -= borderBottomWidth + paddingBottom;
+            bblr[0] -= borderLeftWidth + paddingLeft;
+            bblr[1] -= borderBottomWidth + paddingBottom;
+          }
+
+          var borderList = border.calRadius(bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
+          offscreenOverflow = {
+            ctx: ctx,
+            target: _c3,
+            matrix: this.__matrixEvent,
+            x: this.__sx1,
+            y: this.__sy1,
+            offsetWidth: this.__offsetWidth,
+            offsetHeight: this.__offsetHeight,
+            borderList: borderList
+          };
+          ctx = _c3.ctx;
+        } // 无离屏不返回
+
+
+        if (origin === ctx) {
+          return;
+        }
+
+        return {
+          ctx: ctx,
+          offscreenBlend: offscreenBlend,
+          offscreenMask: offscreenMask,
+          offscreenFilter: offscreenFilter,
+          offscreenOverflow: offscreenOverflow
+        };
+      }
+    }, {
       key: "__calContent",
       value: function __calContent(__currentStyle, __computedStyle) {
         var visibility = __currentStyle[VISIBILITY$4];
@@ -23186,8 +23306,8 @@
 
 
         var __offsetWidth = this.__offsetWidth,
-            __offsetHeight = this.__offsetHeight,
-            __hasMask = this.__hasMask;
+            __offsetHeight = this.__offsetHeight;
+            this.__hasMask;
         var paddingTop = computedStyle[PADDING_TOP$3],
             paddingRight = computedStyle[PADDING_RIGHT$4],
             paddingBottom = computedStyle[PADDING_BOTTOM$3],
@@ -23372,50 +23492,11 @@
 
           virtualDom.visibility = visibility;
         } // cache模式的canvas的matrix计算在外部做好了，且perspective无效
-        // if(renderMode === CANVAS && cache) {
-        //   matrix = this.__matrixEvent;
-        // }
-        // else {
-        //   let m = this.__matrix;
-        //   util.assignMatrix(m, matrix);
-        //   // 变换和canvas要以父元素matrixEvent为基础，svg使用自身即css规则，webgl在struct渲染时另算
-        //   if(p) {
-        //     if(p.perspectiveMatrix) {
-        //       matrix = mx.multiply(p.perspectiveMatrix, matrix);
-        //     }
-        //     matrix = mx.multiply(p.matrixEvent, matrix);
-        //   }
-        //   // 为了引用不变，防止变化后text子节点获取不到，恶心的v8优化，初始化在构造函数中空数组
-        //   m = this.__matrixEvent;
-        //   util.assignMatrix(m, matrix);
-        // }
-        // 无离屏功能或超限视为不可缓存本身，等降级无cache再次绘制，webgl一样
-        // if(res.limitCache) {
-        //   return res;
-        // }
-        // 按照顺序依次检查生成offscreen离屏功能，顺序在structs中渲染离屏时用到，多个离屏时隔离并且后面有前面的ctx引用
-
-
-        var offscreenBlend;
 
         if (mixBlendMode !== 'normal' && isValidMbm$1(mixBlendMode)) {
           mixBlendMode = mbmName$1(mixBlendMode);
 
-          if (renderMode === CANVAS$1 && (!this.__cacheTotal || !this.__cacheTotal.__available)) {
-            var width = root.width,
-                height = root.height;
-            var c = inject.getCacheCanvas(width, height, null, 'blend');
-            offscreenBlend = {
-              ctx: ctx,
-              target: c,
-              mixBlendMode: mixBlendMode,
-              matrix: matrix
-            };
-            ctx = c.ctx;
-            var m = this.__matrixEvent;
-            ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
-            ctx.globalAlpha = this.__opacity;
-          } else if (renderMode === SVG$1) {
+          if (renderMode === CANVAS$1 && (!this.__cacheTotal || !this.__cacheTotal.__available)) ; else if (renderMode === SVG$1) {
             virtualDom.mixBlendMode = mixBlendMode;
           }
         } // svg特殊没有mbm删除
@@ -23423,49 +23504,11 @@
           delete virtualDom.mixBlendMode;
         }
 
-        var offscreenMask;
-
-        if (__hasMask) {
-          if (renderMode === CANVAS$1 && (!this.__cacheTotal || !this.__cacheTotal.__available)) {
-            var _width = root.width,
-                _height = root.height;
-
-            var _c = inject.getCacheCanvas(_width, _height, null, 'mask1');
-
-            offscreenMask = {
-              ctx: ctx,
-              target: _c,
-              matrix: matrix
-            };
-            ctx = _c.ctx;
-            var _m = this.__matrixEvent;
-            ctx.setTransform(_m[0], _m[1], _m[4], _m[5], _m[12], _m[13]);
-            ctx.globalAlpha = this.__opacity;
-          }
-        } // 无cache时canvas的blur需绘制到离屏上应用后反向绘制回来，有cache在Dom里另生成一个filter的cache
-
 
         var hasFilter = filter && filter.length;
-        var offscreenFilter;
 
         if (hasFilter) {
-          if (renderMode === CANVAS$1 && (!this.__cacheTotal || !this.__cacheTotal.__available)) {
-            var _width2 = root.width,
-                _height2 = root.height;
-
-            var _c2 = inject.getCacheCanvas(_width2, _height2, null, 'filter');
-
-            offscreenFilter = {
-              ctx: ctx,
-              filter: filter,
-              target: _c2,
-              matrix: matrix
-            };
-            ctx = _c2.ctx;
-            var _m2 = this.__matrixEvent;
-            ctx.setTransform(_m2[0], _m2[1], _m2[4], _m2[5], _m2[12], _m2[13]);
-            ctx.globalAlpha = this.__opacity;
-          } else if (renderMode === SVG$1) {
+          if (renderMode === CANVAS$1 && (!this.__cacheTotal || !this.__cacheTotal.__available)) ; else if (renderMode === SVG$1) {
             virtualDom.filter = painter.svgFilter(filter);
           }
         } else if (renderMode === SVG$1) {
@@ -23499,32 +23542,29 @@
         } // overflow:hidden，最后判断，filter/mask优先
 
 
-        var offscreenOverflow, borderList;
+        var borderList;
 
         if (overflow === 'hidden' && display !== 'inline') {
-          borderList = border.calRadius(bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
+          borderList = border.calRadius(bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr); // if(renderMode === CANVAS && (!this.__cacheTotal || !this.__cacheTotal.__available)) {
+          //   let { width, height } = root;
+          //   let c = inject.getCacheCanvas(width, height, null, 'overflow');
+          //   offscreenOverflow = {
+          //     ctx,
+          //     target: c,
+          //     matrix,
+          //   };
+          //   ctx = c.ctx;
+          //   let m = this.__matrixEvent;
+          //   ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+          //   ctx.globalAlpha = this.__opacity;
+          //   offscreenOverflow.x = sx1;
+          //   offscreenOverflow.y = sy1;
+          //   offscreenOverflow.offsetWidth = __offsetWidth;
+          //   offscreenOverflow.offsetHeight = __offsetHeight;
+          //   offscreenOverflow.list = borderList;
+          // }
 
-          if (renderMode === CANVAS$1 && (!this.__cacheTotal || !this.__cacheTotal.__available)) {
-            var _width3 = root.width,
-                _height3 = root.height;
-
-            var _c3 = inject.getCacheCanvas(_width3, _height3, null, 'overflow');
-
-            offscreenOverflow = {
-              ctx: ctx,
-              target: _c3,
-              matrix: matrix
-            };
-            ctx = _c3.ctx;
-            var _m3 = this.__matrixEvent;
-            ctx.setTransform(_m3[0], _m3[1], _m3[4], _m3[5], _m3[12], _m3[13]);
-            ctx.globalAlpha = this.__opacity;
-            offscreenOverflow.x = sx1;
-            offscreenOverflow.y = sy1;
-            offscreenOverflow.offsetWidth = __offsetWidth;
-            offscreenOverflow.offsetHeight = __offsetHeight;
-            offscreenOverflow.list = borderList;
-          } else if (renderMode === SVG$1) {
+          if (renderMode === SVG$1) {
             var d = svgPolygon$2(borderList) || "M".concat(sx1, ",").concat(sy1, "L").concat(sx1 + __offsetWidth, ",").concat(sy1, "L").concat(sx1 + __offsetWidth, ",").concat(sy1 + __offsetHeight, "L").concat(sx1, ",").concat(sy1 + __offsetHeight, ",L").concat(sx1, ",").concat(sy1);
             var v = {
               tagName: 'clipPath',
@@ -23543,19 +23583,6 @@
         } else if (renderMode === SVG$1) {
           delete virtualDom.overflow;
         } // 无法使用缓存时主画布直接绘制需设置
-
-
-        if (renderMode === CANVAS$1) {
-          res.offscreenBlend = offscreenBlend;
-          res.offscreenMask = offscreenMask;
-          res.offscreenFilter = offscreenFilter;
-          res.offscreenOverflow = offscreenOverflow;
-          res.ctx = ctx; // ctx.globalAlpha = opacity;
-          // cache模式在外面设置
-          // if(!cache) {
-          //   ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
-          // }
-        } // 隐藏不渲染
 
 
         if ((visibility === 'hidden' || res["break"]) && (renderMode === CANVAS$1 || renderMode === WEBGL$1)) {
@@ -29924,12 +29951,11 @@
           dx = res.dx;
           dy = res.dy;
           ctx = res.ctx;
-        }
+        } // let {
+        //   offscreenBlend, offscreenMask, offscreenFilter, offscreenOverflow,
+        // } = res;
 
-        var offscreenBlend = res.offscreenBlend,
-            offscreenMask = res.offscreenMask,
-            offscreenFilter = res.offscreenFilter,
-            offscreenOverflow = res.offscreenOverflow;
+
         var width = this.width,
             height = this.height,
             isDestroyed = this.isDestroyed,
@@ -29944,24 +29970,19 @@
             visibility = _this$computedStyle[VISIBILITY$3],
             virtualDom = this.virtualDom,
             loadImg = this.__loadImg,
-            root = this.root;
-
-        if (offscreenBlend) {
-          ctx = offscreenBlend.target.ctx;
-        }
-
-        if (offscreenMask) {
-          ctx = offscreenMask.target.ctx;
-        }
-
-        if (offscreenFilter) {
-          ctx = offscreenFilter.target.ctx;
-        }
-
-        if (offscreenOverflow) {
-          ctx = offscreenOverflow.target.ctx;
-        } // 没source且不error时加载图片
-
+            root = this.root; // if(offscreenBlend) {
+        //   ctx = offscreenBlend.target.ctx;
+        // }
+        // if(offscreenMask) {
+        //   ctx = offscreenMask.target.ctx;
+        // }
+        // if(offscreenFilter) {
+        //   ctx = offscreenFilter.target.ctx;
+        // }
+        // if(offscreenOverflow) {
+        //   ctx = offscreenOverflow.target.ctx;
+        // }
+        // 没source且不error时加载图片
 
         if (!loadImg.source && !loadImg.error && !loadImg.loading) {
           this.__loadAndRefresh(loadImg, root, ctx, placeholder, computedStyle, width, height);
@@ -30829,8 +30850,8 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, lv, ctx, cache, dx, dy) {
-        var res = _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode, lv, ctx, cache, dx, dy);
+      value: function render(renderMode, ctx, dx, dy) {
+        var res = _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode, ctx, dx, dy);
 
         if (renderMode === mode.SVG) {
           this.virtualDom.type = 'geom';
@@ -33479,14 +33500,7 @@
             }
           }
 
-          if (m) {
-            ctxTotal.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
-          } else {
-            ctxTotal.setTransform(1, 0, 0, 1, 0, 0);
-          }
-
-          lastMatrix = m;
-          ctxTotal.globalAlpha = _node2.__opacity; // 子元素有cacheTotal优先使用
+          lastMatrix = m; // 子元素有cacheTotal优先使用
 
           var _target = _i2 > index && getCache([_cacheMask, _cacheFilter, _cacheOverflow, _cacheTotal2]);
 
@@ -33495,6 +33509,14 @@
 
             if (_hasMask2) {
               _i2 += countMaskNum(__structs, _i2 + 1, _hasMask2);
+            }
+
+            ctxTotal.globalAlpha = _node2.__opacity;
+
+            if (m) {
+              ctxTotal.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+            } else {
+              ctxTotal.setTransform(1, 0, 0, 1, 0, 0);
             }
 
             var mixBlendMode = _computedStyle[MIX_BLEND_MODE];
@@ -33510,13 +33532,22 @@
               ctxTotal = applyOffscreen(ctxTotal, offscreenHash[_i2], width, height, false);
             }
           } else {
-            var res = _node2.render(renderMode, ctxTotal, dx, dy);
+            var offscreenBlend = void 0,
+                _offscreenMask = void 0,
+                offscreenFilter = void 0,
+                offscreenOverflow = void 0;
 
-            var _ref = res || {},
-                offscreenBlend = _ref.offscreenBlend,
-                _offscreenMask = _ref.offscreenMask,
-                offscreenFilter = _ref.offscreenFilter,
-                offscreenOverflow = _ref.offscreenOverflow; // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
+            var _offscreen = _node2.__calOffscreen(ctxTotal, _computedStyle);
+
+            if (_offscreen) {
+              ctxTotal = _offscreen.ctx;
+              offscreenBlend = _offscreen.offscreenBlend;
+              _offscreenMask = _offscreen.offscreenMask;
+              offscreenFilter = _offscreen.offscreenFilter;
+              offscreenOverflow = _offscreen.offscreenOverflow;
+            }
+
+            _node2.render(renderMode, ctxTotal, dx, dy); // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
 
 
             if (offscreenBlend) {
@@ -33533,9 +33564,8 @@
                 lv: _lv,
                 type: OFFSCREEN_BLEND,
                 offscreen: offscreenBlend
-              });
+              }); // ctxTotal = offscreenBlend.target.ctx;
 
-              ctxTotal = offscreenBlend.target.ctx;
             } // 被遮罩的节点要为第一个遮罩和最后一个遮罩的索引打标，被遮罩的本身在一个离屏canvas，遮罩的元素在另外一个
             // 最后一个遮罩索引因数量不好计算，放在maskStartHash做
 
@@ -33547,8 +33577,7 @@
                 idx: _i2,
                 hasMask: _hasMask2,
                 offscreenMask: _offscreenMask
-              };
-              ctxTotal = _offscreenMask.target.ctx;
+              }; // ctxTotal = offscreenMask.target.ctx;
             } // filter造成的离屏，需要将后续一段孩子节点区域的ctx替换，并在结束后应用结果，再替换回来
 
 
@@ -33566,9 +33595,8 @@
                 lv: _lv,
                 type: OFFSCREEN_FILTER,
                 offscreen: offscreenFilter
-              });
+              }); // ctxTotal = offscreenFilter.target.ctx;
 
-              ctxTotal = offscreenFilter.target.ctx;
             } // overflow:hidden的离屏，最后孩子进行截取
 
 
@@ -33586,9 +33614,8 @@
                 lv: _lv,
                 type: OFFSCREEN_OVERFLOW,
                 offscreen: offscreenOverflow
-              });
+              }); // ctxTotal = offscreenOverflow.target.ctx;
 
-              ctxTotal = offscreenOverflow.target.ctx;
             } // 离屏应用，按照lv从大到小即子节点在前先应用，同一个节点多个效果按offscreen优先级从小到大来，
             // 由于mask特殊索引影响，所有离屏都在最后一个mask索引判断，此时mask本身优先结算，以index序大到小判断
 
@@ -33840,11 +33867,11 @@
             else {
               var res = _node3.render(renderMode, ctx, dx, dy);
 
-              var _ref2 = res || {},
-                  offscreenBlend = _ref2.offscreenBlend,
-                  _offscreenMask2 = _ref2.offscreenMask,
-                  offscreenFilter = _ref2.offscreenFilter,
-                  offscreenOverflow = _ref2.offscreenOverflow; // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
+              var _ref = res || {},
+                  offscreenBlend = _ref.offscreenBlend,
+                  _offscreenMask2 = _ref.offscreenMask,
+                  offscreenFilter = _ref.offscreenFilter,
+                  offscreenOverflow = _ref.offscreenOverflow; // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
 
 
               if (offscreenBlend) {
@@ -36089,9 +36116,7 @@
         }
 
         _node9.__opacity = opacity;
-        ctx.globalAlpha = opacity;
-        assignMatrix(_node9.__matrixEvent, m);
-        ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]); // 有cache声明从而有total的可以直接绘制并跳过子节点索，total生成可能会因超限而失败
+        assignMatrix(_node9.__matrixEvent, m); // 有cache声明从而有total的可以直接绘制并跳过子节点索，total生成可能会因超限而失败
 
         var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, _cacheTotal5]);
 
@@ -36102,6 +36127,8 @@
             _i10 += countMaskNum(__structs, _i10 + 1, _hasMask8);
           }
 
+          ctx.globalAlpha = opacity;
+          ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
           var mixBlendMode = _computedStyle4[MIX_BLEND_MODE];
 
           if (isValidMbm(mixBlendMode)) {
@@ -36137,14 +36164,27 @@
 
         } // 没有cacheTotal是普通节点绘制
         else {
-          // 节点自身渲染
-          var res = _node9.render(renderMode, ctx, 0, 0);
+          // 如果有离屏则先申请替换ctx
+          var offscreenBlend = void 0,
+              _offscreenMask3 = void 0,
+              offscreenFilter = void 0,
+              offscreenOverflow = void 0;
 
-          var _ref3 = res || {},
-              offscreenBlend = _ref3.offscreenBlend,
-              _offscreenMask3 = _ref3.offscreenMask,
-              offscreenFilter = _ref3.offscreenFilter,
-              offscreenOverflow = _ref3.offscreenOverflow; // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
+          var _offscreen2 = _node9.__calOffscreen(ctx, _computedStyle4);
+
+          if (_offscreen2) {
+            ctx = _offscreen2.ctx;
+            offscreenBlend = _offscreen2.offscreenBlend;
+            _offscreenMask3 = _offscreen2.offscreenMask;
+            offscreenFilter = _offscreen2.offscreenFilter;
+            offscreenOverflow = _offscreen2.offscreenOverflow;
+          } // 节点自身渲染
+
+
+          ctx.globalAlpha = opacity;
+          ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+
+          _node9.render(renderMode, ctx, 0, 0); // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
 
 
           if (offscreenBlend) {
@@ -36161,9 +36201,8 @@
               lv: _lv5,
               type: OFFSCREEN_BLEND,
               offscreen: offscreenBlend
-            });
+            }); // ctx = offscreenBlend.target.ctx;
 
-            ctx = offscreenBlend.target.ctx;
           } // 被遮罩的节点要为第一个遮罩和最后一个遮罩的索引打标，被遮罩的本身在一个离屏canvas，遮罩的元素在另外一个
           // 最后一个遮罩索引因数量不好计算，放在maskStartHash做
 
@@ -36175,8 +36214,7 @@
               idx: _i10,
               hasMask: _hasMask8,
               offscreenMask: _offscreenMask3
-            };
-            ctx = _offscreenMask3.target.ctx;
+            }; // ctx = offscreenMask.target.ctx;
           } // filter造成的离屏，需要将后续一段孩子节点区域的ctx替换，并在结束后应用结果，再替换回来
 
 
@@ -36194,9 +36232,8 @@
               lv: _lv5,
               type: OFFSCREEN_FILTER,
               offscreen: offscreenFilter
-            });
+            }); // ctx = offscreenFilter.target.ctx;
 
-            ctx = offscreenFilter.target.ctx;
           } // overflow:hidden的离屏，最后孩子进行截取
 
 
@@ -36214,9 +36251,8 @@
               lv: _lv5,
               type: OFFSCREEN_OVERFLOW,
               offscreen: offscreenOverflow
-            });
+            }); // ctx = offscreenOverflow.target.ctx;
 
-            ctx = offscreenOverflow.target.ctx;
           } // 离屏应用，按照lv从大到小即子节点在前先应用，同一个节点多个效果按offscreen优先级从小到大来，
           // 由于mask特殊索引影响，所有离屏都在最后一个mask索引判断，此时mask本身优先结算，以index序大到小判断
 
@@ -39132,7 +39168,10 @@
           return res;
         }
 
-        ctx = res.ctx;
+        if (renderMode === mode.WEBGL) {
+          ctx = res.ctx;
+        }
+
         var sx3 = res.sx3,
             sy3 = res.sy3,
             strokes = res.stroke,
@@ -40011,7 +40050,10 @@
         }
 
         this.buildCache(res.sx3, res.sy3);
-        ctx = res.ctx;
+
+        if (renderMode === mode.WEBGL) {
+          ctx = res.ctx;
+        }
 
         this.__renderPolygon(renderMode, ctx, res);
 
@@ -40351,7 +40393,11 @@
         }
 
         this.buildCache(res.cx, res.cy);
-        ctx = res.ctx;
+
+        if (renderMode === mode.WEBGL) {
+          ctx = res.ctx;
+        }
+
         var fills = res.fill,
             fillRules = res.fillRule,
             strokes = res.stroke,
@@ -40697,7 +40743,10 @@
         }
 
         this.buildCache(res.sx3, res.sy3);
-        ctx = res.ctx;
+
+        if (renderMode === mode.WEBGL) {
+          ctx = res.ctx;
+        }
 
         this.__renderPolygon(renderMode, ctx, res);
 
@@ -40819,7 +40868,10 @@
         }
 
         this.buildCache(res.cx, res.cy);
-        ctx = res.ctx;
+
+        if (renderMode === mode.WEBGL) {
+          ctx = res.ctx;
+        }
 
         this.__renderPolygon(renderMode, ctx, res);
 
@@ -41000,7 +41052,10 @@
         }
 
         this.buildCache(res.cx, res.cy);
-        ctx = res.ctx;
+
+        if (renderMode === mode.WEBGL) {
+          ctx = res.ctx;
+        }
 
         this.__renderPolygon(renderMode, ctx, res);
 

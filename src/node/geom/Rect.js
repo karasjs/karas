@@ -2,6 +2,7 @@ import Geom from './Geom';
 import util from '../../util/util';
 import enums from '../../util/enums';
 import geom from '../../math/geom';
+import mode from '../../refresh/mode';
 
 const { STYLE_KEY: {
   STROKE_WIDTH,
@@ -106,7 +107,9 @@ class Rect extends Geom {
       return res;
     }
     this.buildCache(res.sx3, res.sy3);
-    ctx = res.ctx;
+    if(renderMode === mode.WEBGL) {
+      ctx = res.ctx;
+    }
     this.__renderPolygon(renderMode, ctx, res);
     return res;
   }

@@ -152,9 +152,9 @@ class Img extends Dom {
       dy = res.dy;
       ctx = res.ctx;
     }
-    let {
-      offscreenBlend, offscreenMask, offscreenFilter, offscreenOverflow,
-    } = res;
+    // let {
+    //   offscreenBlend, offscreenMask, offscreenFilter, offscreenOverflow,
+    // } = res;
     let {
       width, height, isDestroyed,
       props: {
@@ -173,18 +173,18 @@ class Img extends Dom {
       __loadImg: loadImg,
       root,
     } = this;
-    if(offscreenBlend) {
-      ctx = offscreenBlend.target.ctx;
-    }
-    if(offscreenMask) {
-      ctx = offscreenMask.target.ctx;
-    }
-    if(offscreenFilter) {
-      ctx = offscreenFilter.target.ctx;
-    }
-    if(offscreenOverflow) {
-      ctx = offscreenOverflow.target.ctx;
-    }
+    // if(offscreenBlend) {
+    //   ctx = offscreenBlend.target.ctx;
+    // }
+    // if(offscreenMask) {
+    //   ctx = offscreenMask.target.ctx;
+    // }
+    // if(offscreenFilter) {
+    //   ctx = offscreenFilter.target.ctx;
+    // }
+    // if(offscreenOverflow) {
+    //   ctx = offscreenOverflow.target.ctx;
+    // }
     // 没source且不error时加载图片
     if(!loadImg.source && !loadImg.error && !loadImg.loading) {
       this.__loadAndRefresh(loadImg, root, ctx, placeholder, computedStyle, width, height);

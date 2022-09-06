@@ -1494,6 +1494,114 @@ class Xom extends Node {
     });
   }
 
+  __calOffscreen(ctx, __computedStyle) {
+    let offscreenBlend, offscreenMask, offscreenFilter, offscreenOverflow, root = this.__root;
+    let { width, height } = root;
+    let origin = ctx;
+    let {
+      [MIX_BLEND_MODE]: mixBlendMode,
+      [FILTER]: filter,
+      [OVERFLOW]: overflow,
+      [DISPLAY]: display,
+    } = __computedStyle;
+    if(mixBlendMode !== 'normal' && isValidMbm(mixBlendMode)) {
+      mixBlendMode = mbmName(mixBlendMode);
+      let c = inject.getCacheCanvas(width, height, null, 'blend');
+      offscreenBlend = {
+        ctx,
+        target: c,
+        mixBlendMode,
+      };
+      ctx = c.ctx;
+    }
+    if(this.__hasMask) {
+      let c = inject.getCacheCanvas(width, height, null, 'mask1');
+      offscreenMask = {
+        ctx,
+        target: c,
+      };
+      ctx = c.ctx;
+    }
+    if(filter && filter.length) {
+      let c = inject.getCacheCanvas(width, height, null, 'filter');
+      offscreenFilter = {
+        ctx,
+        filter,
+        target: c,
+      };
+      ctx = c.ctx;
+    }
+    if(overflow === 'hidden' && display !== 'inline') {
+      let c = inject.getCacheCanvas(width, height, null, 'overflow');
+      let bx1 = this.__bx1;
+      let bx2 = this.__bx2;
+      let by1 = this.__by1;
+      let by2 = this.__by2;
+      let {
+        [BORDER_TOP_LEFT_RADIUS]: borderTopLeftRadius,
+        [BORDER_TOP_RIGHT_RADIUS]: borderTopRightRadius,
+        [BORDER_BOTTOM_RIGHT_RADIUS]: borderBottomRightRadius,
+        [BORDER_BOTTOM_LEFT_RADIUS]: borderBottomLeftRadius,
+        [BACKGROUND_CLIP]: backgroundClip,
+        [BORDER_LEFT_WIDTH]: borderLeftWidth,
+        [BORDER_RIGHT_WIDTH]: borderRightWidth,
+        [BORDER_TOP_WIDTH]: borderTopWidth,
+        [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
+        [PADDING_TOP]: paddingTop,
+        [PADDING_RIGHT]: paddingRight,
+        [PADDING_BOTTOM]: paddingBottom,
+        [PADDING_LEFT]: paddingLeft,
+      } = __computedStyle;
+      let btlr = borderTopLeftRadius.slice(0);
+      let btrr = borderTopRightRadius.slice(0);
+      let bbrr = borderBottomRightRadius.slice(0);
+      let bblr = borderBottomLeftRadius.slice(0);
+      if(backgroundClip === 'paddingBox') {
+        btlr[0] -= borderLeftWidth;
+        btlr[1] -= borderTopWidth;
+        btrr[0] -= borderRightWidth;
+        btrr[1] -= borderTopWidth;
+        bbrr[0] -= borderRightWidth;
+        bbrr[1] -= borderBottomWidth;
+        bblr[0] -= borderLeftWidth;
+        bblr[1] -= borderBottomWidth;
+      }
+      else if(backgroundClip === 'contentBox') {
+        btlr[0] -= borderLeftWidth + paddingLeft;
+        btlr[1] -= borderTopWidth + paddingTop;
+        btrr[0] -= borderRightWidth + paddingRight;
+        btrr[1] -= borderTopWidth + paddingTop;
+        bbrr[0] -= borderRightWidth + paddingRight;
+        bbrr[1] -= borderBottomWidth + paddingBottom;
+        bblr[0] -= borderLeftWidth + paddingLeft;
+        bblr[1] -= borderBottomWidth + paddingBottom;
+      }
+      let borderList = border.calRadius(bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
+      offscreenOverflow = {
+        ctx,
+        target: c,
+        matrix: this.__matrixEvent,
+        x: this.__sx1,
+        y: this.__sy1,
+        offsetWidth: this.__offsetWidth,
+        offsetHeight: this.__offsetHeight,
+        borderList,
+      };
+      ctx = c.ctx;
+    }
+    // 无离屏不返回
+    if(origin === ctx) {
+      return;
+    }
+    return {
+      ctx,
+      offscreenBlend,
+      offscreenMask,
+      offscreenFilter,
+      offscreenOverflow,
+    };
+  }
+
   __calContent(__currentStyle, __computedStyle) {
     let visibility = __currentStyle[VISIBILITY];
     if(visibility !== 'hidden') {
@@ -1805,18 +1913,18 @@ class Xom extends Node {
     if(mixBlendMode !== 'normal' && isValidMbm(mixBlendMode)) {
       mixBlendMode = mbmName(mixBlendMode);
       if(renderMode === CANVAS && (!this.__cacheTotal || !this.__cacheTotal.__available)) {
-        let { width, height } = root;
-        let c = inject.getCacheCanvas(width, height, null, 'blend');
-        offscreenBlend = {
-          ctx,
-          target: c,
-          mixBlendMode,
-          matrix,
-        };
-        ctx = c.ctx;
-        let m = this.__matrixEvent;
-        ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
-        ctx.globalAlpha = this.__opacity;
+        // let { width, height } = root;
+        // let c = inject.getCacheCanvas(width, height, null, 'blend');
+        // offscreenBlend = {
+        //   ctx,
+        //   target: c,
+        //   mixBlendMode,
+        //   matrix,
+        // };
+        // ctx = c.ctx;
+        // let m = this.__matrixEvent;
+        // ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+        // ctx.globalAlpha = this.__opacity;
       }
       else if(renderMode === SVG) {
         virtualDom.mixBlendMode = mixBlendMode;
@@ -1828,37 +1936,37 @@ class Xom extends Node {
     }
     let offscreenMask;
     if(__hasMask) {
-      if(renderMode === CANVAS && (!this.__cacheTotal || !this.__cacheTotal.__available)) {
-        let { width, height } = root;
-        let c = inject.getCacheCanvas(width, height, null, 'mask1');
-        offscreenMask = {
-          ctx,
-          target: c,
-          matrix,
-        };
-        ctx = c.ctx;
-        let m = this.__matrixEvent;
-        ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
-        ctx.globalAlpha = this.__opacity;
-      }
+      // if(renderMode === CANVAS && (!this.__cacheTotal || !this.__cacheTotal.__available)) {
+      //   let { width, height } = root;
+      //   let c = inject.getCacheCanvas(width, height, null, 'mask1');
+      //   offscreenMask = {
+      //     ctx,
+      //     target: c,
+      //     matrix,
+      //   };
+      //   ctx = c.ctx;
+      //   let m = this.__matrixEvent;
+      //   ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+      //   ctx.globalAlpha = this.__opacity;
+      // }
     }
     // 无cache时canvas的blur需绘制到离屏上应用后反向绘制回来，有cache在Dom里另生成一个filter的cache
     let hasFilter = filter && filter.length;
     let offscreenFilter;
     if(hasFilter) {
       if(renderMode === CANVAS && (!this.__cacheTotal || !this.__cacheTotal.__available)) {
-        let { width, height } = root;
-        let c = inject.getCacheCanvas(width, height, null, 'filter');
-        offscreenFilter = {
-          ctx,
-          filter,
-          target: c,
-          matrix,
-        };
-        ctx = c.ctx;
-        let m = this.__matrixEvent;
-        ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
-        ctx.globalAlpha = this.__opacity;
+        // let { width, height } = root;
+        // let c = inject.getCacheCanvas(width, height, null, 'filter');
+        // offscreenFilter = {
+        //   ctx,
+        //   filter,
+        //   target: c,
+        //   matrix,
+        // };
+        // ctx = c.ctx;
+        // let m = this.__matrixEvent;
+        // ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+        // ctx.globalAlpha = this.__opacity;
       }
       else if(renderMode === SVG) {
         virtualDom.filter = painter.svgFilter(filter);
@@ -1896,25 +2004,25 @@ class Xom extends Node {
     let offscreenOverflow, borderList;
     if(overflow === 'hidden' && display !== 'inline') {
       borderList = border.calRadius(bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
-      if(renderMode === CANVAS && (!this.__cacheTotal || !this.__cacheTotal.__available)) {
-        let { width, height } = root;
-        let c = inject.getCacheCanvas(width, height, null, 'overflow');
-        offscreenOverflow = {
-          ctx,
-          target: c,
-          matrix,
-        };
-        ctx = c.ctx;
-        let m = this.__matrixEvent;
-        ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
-        ctx.globalAlpha = this.__opacity;
-        offscreenOverflow.x = sx1;
-        offscreenOverflow.y = sy1;
-        offscreenOverflow.offsetWidth = __offsetWidth;
-        offscreenOverflow.offsetHeight = __offsetHeight;
-        offscreenOverflow.list = borderList;
-      }
-      else if(renderMode === SVG) {
+      // if(renderMode === CANVAS && (!this.__cacheTotal || !this.__cacheTotal.__available)) {
+      //   let { width, height } = root;
+      //   let c = inject.getCacheCanvas(width, height, null, 'overflow');
+      //   offscreenOverflow = {
+      //     ctx,
+      //     target: c,
+      //     matrix,
+      //   };
+      //   ctx = c.ctx;
+      //   let m = this.__matrixEvent;
+      //   ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+      //   ctx.globalAlpha = this.__opacity;
+      //   offscreenOverflow.x = sx1;
+      //   offscreenOverflow.y = sy1;
+      //   offscreenOverflow.offsetWidth = __offsetWidth;
+      //   offscreenOverflow.offsetHeight = __offsetHeight;
+      //   offscreenOverflow.list = borderList;
+      // }
+      if(renderMode === SVG) {
         let d = svgPolygon(borderList) || `M${sx1},${sy1}L${sx1 + __offsetWidth},${sy1}L${sx1 + __offsetWidth},${sy1 + __offsetHeight}L${sx1},${sy1 + __offsetHeight},L${sx1},${sy1}`;
         let v = {
           tagName: 'clipPath',
@@ -1938,11 +2046,11 @@ class Xom extends Node {
     }
     // 无法使用缓存时主画布直接绘制需设置
     if(renderMode === CANVAS) {
-      res.offscreenBlend = offscreenBlend;
-      res.offscreenMask = offscreenMask;
-      res.offscreenFilter = offscreenFilter;
-      res.offscreenOverflow = offscreenOverflow;
-      res.ctx = ctx;
+      // res.offscreenBlend = offscreenBlend;
+      // res.offscreenMask = offscreenMask;
+      // res.offscreenFilter = offscreenFilter;
+      // res.offscreenOverflow = offscreenOverflow;
+      // res.ctx = ctx;
       // ctx.globalAlpha = opacity;
       // cache模式在外面设置
       // if(!cache) {

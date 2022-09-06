@@ -469,7 +469,7 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
         }
         else {
           let offscreenBlend, offscreenMask, offscreenFilter, offscreenOverflow;
-          let offscreen = node.__calOffscreen(ctxTotal, __computedStyle2);
+          let offscreen = i > index && node.__calOffscreen(ctxTotal, __computedStyle2);
           if(offscreen) {
             ctxTotal = offscreen.ctx;
             offscreenBlend = offscreen.offscreenBlend;

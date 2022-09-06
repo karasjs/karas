@@ -33537,7 +33537,7 @@
                 offscreenFilter = void 0,
                 offscreenOverflow = void 0;
 
-            var _offscreen = _node2.__calOffscreen(ctxTotal, _computedStyle);
+            var _offscreen = _i2 > index && _node2.__calOffscreen(ctxTotal, _computedStyle);
 
             if (_offscreen) {
               ctxTotal = _offscreen.ctx;

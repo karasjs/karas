@@ -35,7 +35,7 @@ import fragmentSaturation from '../gl/mbm/saturation.frag';
 import fragmentColor from '../gl/mbm/color.frag';
 import fragmentLuminosity from '../gl/mbm/luminosity.frag';
 
-const { NA, LOCAL, CHILD, SELF, getCache } = Cache;
+const { getCache } = Cache;
 const {
   OFFSCREEN_OVERFLOW,
   OFFSCREEN_FILTER,
@@ -58,14 +58,6 @@ const {
     TRANSFORM_ORIGIN,
     PERSPECTIVE,
     PERSPECTIVE_ORIGIN,
-    PADDING_LEFT,
-    PADDING_RIGHT,
-    PADDING_TOP,
-    PADDING_BOTTOM,
-    BORDER_TOP_WIDTH,
-    BORDER_RIGHT_WIDTH,
-    BORDER_BOTTOM_WIDTH,
-    BORDER_LEFT_WIDTH,
     MATRIX,
   },
 } = enums;
@@ -493,7 +485,6 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
             }
             let list = offscreenHash[j] = offscreenHash[j] || [];
             list.push({ idx: i, lv, type: OFFSCREEN_BLEND, offscreen: offscreenBlend });
-            // ctxTotal = offscreenBlend.target.ctx;
           }
           // 被遮罩的节点要为第一个遮罩和最后一个遮罩的索引打标，被遮罩的本身在一个离屏canvas，遮罩的元素在另外一个
           // 最后一个遮罩索引因数量不好计算，放在maskStartHash做
@@ -504,7 +495,6 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
               hasMask,
               offscreenMask,
             };
-            // ctxTotal = offscreenMask.target.ctx;
           }
           // filter造成的离屏，需要将后续一段孩子节点区域的ctx替换，并在结束后应用结果，再替换回来
           if(offscreenFilter) {
@@ -514,7 +504,6 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
             }
             let list = offscreenHash[j] = offscreenHash[j] || [];
             list.push({ idx: i, lv, type: OFFSCREEN_FILTER, offscreen: offscreenFilter });
-            // ctxTotal = offscreenFilter.target.ctx;
           }
           // overflow:hidden的离屏，最后孩子进行截取
           if(offscreenOverflow) {
@@ -524,7 +513,6 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
             }
             let list = offscreenHash[j] = offscreenHash[j] || [];
             list.push({ idx: i, lv, type: OFFSCREEN_OVERFLOW, offscreen: offscreenOverflow });
-            // ctxTotal = offscreenOverflow.target.ctx;
           }
           // 离屏应用，按照lv从大到小即子节点在前先应用，同一个节点多个效果按offscreen优先级从小到大来，
           // 由于mask特殊索引影响，所有离屏都在最后一个mask索引判断，此时mask本身优先结算，以index序大到小判断
@@ -745,7 +733,6 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
               }
               let list = offscreenHash[j] = offscreenHash[j] || [];
               list.push({ idx: i, lv, type: OFFSCREEN_BLEND, offscreen: offscreenBlend });
-              // ctx = offscreenBlend.target.ctx;
             }
             // 被遮罩的节点要为第一个遮罩和最后一个遮罩的索引打标，被遮罩的本身在一个离屏canvas，遮罩的元素在另外一个
             // 最后一个遮罩索引因数量不好计算，放在maskStartHash做
@@ -756,7 +743,6 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
                 hasMask,
                 offscreenMask,
               };
-              // ctx = offscreenMask.target.ctx;
             }
             // filter造成的离屏，需要将后续一段孩子节点区域的ctx替换，并在结束后应用结果，再替换回来
             if(offscreenFilter) {
@@ -766,7 +752,6 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
               }
               let list = offscreenHash[j] = offscreenHash[j] || [];
               list.push({ idx: i, lv, type: OFFSCREEN_FILTER, offscreen: offscreenFilter });
-              // ctx = offscreenFilter.target.ctx;
             }
             // overflow:hidden的离屏，最后孩子进行截取
             if(offscreenOverflow) {
@@ -776,7 +761,6 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
               }
               let list = offscreenHash[j] = offscreenHash[j] || [];
               list.push({ idx: i, lv, type: OFFSCREEN_OVERFLOW, offscreen: offscreenOverflow });
-              // ctx = offscreenOverflow.target.ctx;
             }
             // 离屏应用，按照lv从大到小即子节点在前先应用，同一个节点多个效果按offscreen优先级从小到大来，
             // 由于mask特殊索引影响，所有离屏都在最后一个mask索引判断，此时mask本身优先结算，以index序大到小判断
@@ -1978,15 +1962,7 @@ function renderWebgl(renderMode, gl, root) {
   let { __structs, width, height, texCache } = root;
   let cx = width * 0.5, cy = height * 0.5;
   // 栈代替递归，存父节点的matrix/opacity，matrix为E时存null省略计算
-  let matrixList = [];
-  let parentMatrix;
-  let opacityList = [];
-  let parentOpacity = 1;
-  let pmList = [];
-  let parentPm;
   let lastRefreshLevel = NONE;
-  let lastNode;
-  let lastLv = 0;
   let mergeList = [];
   let hasMbm; // 是否有混合模式出现
   /**
@@ -2025,7 +2001,6 @@ function renderWebgl(renderMode, gl, root) {
       __currentStyle,
       __cacheStyle,
       __cacheTotal,
-      __domParent,
     } = node;
     lastRefreshLevel = __refreshLevel;
     node.__refreshLevel = NONE;
@@ -2092,18 +2067,6 @@ function renderWebgl(renderMode, gl, root) {
       node.__calCache(__currentStyle, __computedStyle, __cacheStyle);
       node.__calContent(__currentStyle, __computedStyle);
       node.__calPerspective(__currentStyle, __computedStyle, __cacheStyle);
-      // let matrix = node.__matrix;
-      // // 先左乘perspective的矩阵，再左乘父级的总矩阵
-      // if(__domParent) {
-      //   matrix = multiply(__domParent.__perspectiveMatrix, matrix);
-      //   matrix = multiply(__domParent.__matrixEvent, matrix);
-      // }
-      // assignMatrix(node.__matrixEvent, matrix);
-      // let opacity = __computedStyle[OPACITY];
-      // if(__domParent) {
-      //   opacity *= __domParent.__opacity;
-      // }
-      // node.__opacity = opacity;
       let res = node.render(renderMode, gl, 0, 0);
       // geom可返回texture纹理，替代原有xom的__cache纹理
       if(res && inject.isWebGLTexture(res.texture)) {
@@ -2275,19 +2238,18 @@ function renderWebgl(renderMode, gl, root) {
     // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
     if(node instanceof Text) {
       // text特殊之处，__config部分是复用parent的
-      let __cache = node.__cache;
+      let __cache = node.__cache, __domParent = node.__domParent;
       let {
         __matrixEvent,
         __opacity,
-      } = node.__domParent;
+      } = __domParent;
       if(__cache && __cache.available) {
         texCache.addTexAndDrawWhenLimit(gl, __cache, __opacity, __matrixEvent, cx, cy, 0, 0,true);
       }
       // 超限特殊处理，先生成画布尺寸大小的纹理然后原始位置绘制
-      else if(node.__limitCache) {
-        let c = node.__limitCache;
-        // let c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
-        // node.render(renderMode, gl,0, 0);
+      else if(node.__limitCache && __domParent.__computedStyle[VISIBILITY] !== 'hidden') {
+        let c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
+        node.render(renderMode, gl, 0, 0);
         let j = texCache.lockOneChannel();
         let texture = webgl.createTexture(gl, c.canvas, j);
         let mockCache = new MockCache(gl, texture, 0, 0, width, height, [0, 0, width, height]);
@@ -2386,9 +2348,9 @@ function renderWebgl(renderMode, gl, root) {
       // 超限的情况，这里是普通单节点超限，没有合成total后再合成特殊cache如filter/mask/mbm之类的，
       // 直接按原始位置绘制到离屏canvas，再作为纹理绘制即可，特殊的在total那做过降级了
       else if(node.__limitCache && visibility !== 'hidden') {
-        let c = node.__limitCache;
-        // let c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
-        // node.render(renderMode, gl, 0, 0);
+        let c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
+        // let c = node.__limitCache;
+        node.render(renderMode, gl, 0, 0);
         let j = texCache.lockOneChannel();
         let texture = webgl.createTexture(gl, c.canvas, j);
         let mockCache = new MockCache(gl, texture, 0, 0, width, height, [0, 0, width, height]);
@@ -2697,7 +2659,6 @@ function renderCanvas(renderMode, ctx, root) {
           }
           let list = offscreenHash[j] = offscreenHash[j] || [];
           list.push({ idx: i, lv, type: OFFSCREEN_BLEND, offscreen: offscreenBlend });
-          // ctx = offscreenBlend.target.ctx;
         }
         // 被遮罩的节点要为第一个遮罩和最后一个遮罩的索引打标，被遮罩的本身在一个离屏canvas，遮罩的元素在另外一个
         // 最后一个遮罩索引因数量不好计算，放在maskStartHash做
@@ -2708,7 +2669,6 @@ function renderCanvas(renderMode, ctx, root) {
             hasMask,
             offscreenMask,
           };
-          // ctx = offscreenMask.target.ctx;
         }
         // filter造成的离屏，需要将后续一段孩子节点区域的ctx替换，并在结束后应用结果，再替换回来
         if(offscreenFilter) {
@@ -2718,7 +2678,6 @@ function renderCanvas(renderMode, ctx, root) {
           }
           let list = offscreenHash[j] = offscreenHash[j] || [];
           list.push({ idx: i, lv, type: OFFSCREEN_FILTER, offscreen: offscreenFilter });
-          // ctx = offscreenFilter.target.ctx;
         }
         // overflow:hidden的离屏，最后孩子进行截取
         if(offscreenOverflow) {
@@ -2728,7 +2687,6 @@ function renderCanvas(renderMode, ctx, root) {
           }
           let list = offscreenHash[j] = offscreenHash[j] || [];
           list.push({ idx: i, lv, type: OFFSCREEN_OVERFLOW, offscreen: offscreenOverflow });
-          // ctx = offscreenOverflow.target.ctx;
         }
         // 离屏应用，按照lv从大到小即子节点在前先应用，同一个节点多个效果按offscreen优先级从小到大来，
         // 由于mask特殊索引影响，所有离屏都在最后一个mask索引判断，此时mask本身优先结算，以index序大到小判断

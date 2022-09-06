@@ -28,7 +28,6 @@ import reset from '../style/reset';
 
 const { svgPolygon } = painter;
 const { CANVAS, SVG, WEBGL } = mode;
-const { LOCAL } = Cache;
 
 const {
   STYLE_KEY,
@@ -138,7 +137,6 @@ const { point2d } = mx;
 
 const {
   contain,
-  NONE,
   TRANSFORM: TF,
   REFLOW,
   REPAINT,
@@ -946,12 +944,6 @@ class Xom extends Node {
     }
     // 先根据cache计算需要重新计算的computedStyle
     else {
-      // if(sx1 === undefined) {
-      //   sx1 = this.__sx1;
-      //   sy1 = this.__sy1;
-      //   offsetWidth = this.offsetWidth;
-      //   offsetHeight = this.offsetHeight;
-      // }
       if(__cacheStyle[TRANSFORM_ORIGIN] === undefined) {
         __cacheStyle[TRANSFORM_ORIGIN] = true;
         matrixCache = null;
@@ -1645,18 +1637,12 @@ class Xom extends Node {
    * 渲染基础方法，Dom/Geom公用
    * @param renderMode
    * @see node/mode
-   * @see refresh/level
    * @param ctx canvas/svg/webgl共用
    * @param dx cache时偏移x
    * @param dy cache时偏移y
    * @return Object
    * sx1/sx2/sx3/sx4/sx5/sx6/sy1/sy2/sy3/sy4/sy5/sy6 坐标
    * break svg判断无变化提前跳出
-   * cacheError 离屏申请失败，仅canvas
-   * offscreenBlend 无cache时的离屏canvas，仅canvas
-   * offscreenFilter 无cache时的离屏canvas，仅canvas
-   * offscreenOverflow 无cache时的离屏canvas，仅canvas
-   * offscreenMask 无cache时的离屏canvas，仅canvas
    */
   render(renderMode, ctx, dx = 0, dy = 0) {
     let {
@@ -1667,16 +1653,6 @@ class Xom extends Node {
     let cacheStyle = this.__cacheStyle;
     // let currentStyle = this.__currentStyle;
     let computedStyle = this.__computedStyle;
-    // 渲染完认为完全无变更，等布局/动画/更新重置
-    // this.__refreshLevel = NONE;
-    // >=REPAINT清空bbox
-    // if(lv >= REPAINT) {
-    //   this.__bbox = null;
-    //   this.__filterBbox = null;
-    // }
-    // else if(contain(__refreshLevel, FT)) {
-    //   this.__filterBbox = null;
-    // }
     if(isDestroyed) {
       return { isDestroyed, break: true };
     }
@@ -1709,11 +1685,8 @@ class Xom extends Node {
     }
     // 使用sx和sy渲染位置，考虑了relative和translate影响
     let {
-      // clientWidth,
-      // clientHeight,
       __offsetWidth,
       __offsetHeight,
-      __hasMask,
     } = this;
     let {
       [PADDING_TOP]: paddingTop,
@@ -1748,44 +1721,8 @@ class Xom extends Node {
       sx1, sx2, sx3, sx4, sx5, sx6, sy1, sy2, sy3, sy4, sy5, sy6,
       bx1, bx2, by1, by2,
     };
-    // 防止cp直接返回cp嵌套，拿到真实dom的parent
-    // let p = this.__domParent;
-    // if(renderMode === WEBGL) {
-    //   this.__calPerspective(cacheStyle, currentStyle, computedStyle);
-    // }
     // cache的canvas模式已经提前计算好了，其它需要现在计算
     let matrix = this.__matrix;
-    // if(cache && renderMode === CANVAS) {
-    //   matrix = this.__matrix;
-    // }
-    // else {
-    //   matrix = this.__calMatrix(lv, cacheStyle, currentStyle, computedStyle, x1, y1, offsetWidth, offsetHeight);
-    // }
-    // 计算好cacheStyle的内容，在canvas模式时已经提前算好
-    // let bx1, by1, bx2, by2;
-    // bx1 = this.__bx1;
-    // bx2 = this.__bx2;
-    // by1 = this.__by1;
-    // by2 = this.__by2;
-    // if(cache && renderMode === CANVAS) {
-    //   bx1 = this.__bx1;
-    //   bx2 = this.__bx2;
-    //   by1 = this.__by1;
-    //   by2 = this.__by2;
-    // }
-    // else {
-    //   [bx1, by1, bx2, by2] = this.__calCache(renderMode, ctx, p,
-    //     cacheStyle, currentStyle, computedStyle,
-    //     clientWidth, clientHeight, offsetWidth, offsetHeight,
-    //     borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
-    //     paddingTop, paddingRight, paddingBottom, paddingLeft,
-    //     x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6
-    //   );
-    // }
-    // res.bx1 = bx1;
-    // res.by1 = by1;
-    // res.bx2 = bx2;
-    // res.by2 = by2;
     // webgl特殊申请离屏缓存
     if(renderMode === WEBGL) {
       // 无内容可释放并提前跳出，geom覆盖特殊判断，因为后面子类会绘制矢量，img也覆盖特殊判断，加载完肯定有内容
@@ -1817,23 +1754,13 @@ class Xom extends Node {
           __cache && __cache.clear();
           __cache = null;
           let c = inject.getCacheCanvas(root.width, root.height, '__$$OVERSIZE$$__');
-          c.__available = true;
+          c.available = true;
           res.ctx = ctx = c.ctx;
           res.limitCache = this.__limitCache = c;
         }
         this.__cache = __cache;
       }
-      // 降级的webgl绘制，超限尺寸
-      // else {
-      //   let c = inject.getCacheCanvas(root.width, root.height, '__$$OVERSIZE$$__');
-      //   res.ctx = ctx = c.ctx;
-      // }
     }
-    // 降级的webgl绘制
-    // else if(renderMode === WEBGL) {
-    //   let c = inject.getCacheCanvas(root.width, root.height, '__$$OVERSIZE$$__');
-    //   res.ctx = ctx = c.ctx;
-    // }
     // 渲染样式
     let {
       [BACKGROUND_COLOR]: backgroundColor,
@@ -1858,16 +1785,6 @@ class Xom extends Node {
       [WRITING_MODE]: writingMode,
     } = computedStyle;
     let isUpright = writingMode.indexOf('vertical') === 0;
-    // 先设置透明度，canvas可以向上累积，cache模式外部已计算好
-    // if(cache && renderMode === CANVAS) {
-    //   opacity = this.__opacity;
-    // }
-    // else if(renderMode === CANVAS || renderMode === WEBGL) {
-    //   if(p) {
-    //     opacity *= p.__opacity;
-    //   }
-    //   this.__opacity = opacity;
-    // }
     if(renderMode === SVG) {
       if(opacity === 1) {
         delete virtualDom.opacity;
@@ -1886,94 +1803,20 @@ class Xom extends Node {
       }
       virtualDom.visibility = visibility;
     }
-    // cache模式的canvas的matrix计算在外部做好了，且perspective无效
-    // if(renderMode === CANVAS && cache) {
-    //   matrix = this.__matrixEvent;
-    // }
-    // else {
-    //   let m = this.__matrix;
-    //   util.assignMatrix(m, matrix);
-    //   // 变换和canvas要以父元素matrixEvent为基础，svg使用自身即css规则，webgl在struct渲染时另算
-    //   if(p) {
-    //     if(p.perspectiveMatrix) {
-    //       matrix = mx.multiply(p.perspectiveMatrix, matrix);
-    //     }
-    //     matrix = mx.multiply(p.matrixEvent, matrix);
-    //   }
-    //   // 为了引用不变，防止变化后text子节点获取不到，恶心的v8优化，初始化在构造函数中空数组
-    //   m = this.__matrixEvent;
-    //   util.assignMatrix(m, matrix);
-    // }
-    // 无离屏功能或超限视为不可缓存本身，等降级无cache再次绘制，webgl一样
-    // if(res.limitCache) {
-    //   return res;
-    // }
-    // 按照顺序依次检查生成offscreen离屏功能，顺序在structs中渲染离屏时用到，多个离屏时隔离并且后面有前面的ctx引用
-    let offscreenBlend;
-    if(mixBlendMode !== 'normal' && isValidMbm(mixBlendMode)) {
-      mixBlendMode = mbmName(mixBlendMode);
-      if(renderMode === CANVAS && (!this.__cacheTotal || !this.__cacheTotal.__available)) {
-        // let { width, height } = root;
-        // let c = inject.getCacheCanvas(width, height, null, 'blend');
-        // offscreenBlend = {
-        //   ctx,
-        //   target: c,
-        //   mixBlendMode,
-        //   matrix,
-        // };
-        // ctx = c.ctx;
-        // let m = this.__matrixEvent;
-        // ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
-        // ctx.globalAlpha = this.__opacity;
-      }
-      else if(renderMode === SVG) {
+    if(renderMode === SVG) {
+      if(mixBlendMode !== 'normal' && isValidMbm(mixBlendMode)) {
+        mixBlendMode = mbmName(mixBlendMode);
         virtualDom.mixBlendMode = mixBlendMode;
       }
-    }
-    // svg特殊没有mbm删除
-    else if(renderMode === SVG) {
-      delete virtualDom.mixBlendMode;
-    }
-    let offscreenMask;
-    if(__hasMask) {
-      // if(renderMode === CANVAS && (!this.__cacheTotal || !this.__cacheTotal.__available)) {
-      //   let { width, height } = root;
-      //   let c = inject.getCacheCanvas(width, height, null, 'mask1');
-      //   offscreenMask = {
-      //     ctx,
-      //     target: c,
-      //     matrix,
-      //   };
-      //   ctx = c.ctx;
-      //   let m = this.__matrixEvent;
-      //   ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
-      //   ctx.globalAlpha = this.__opacity;
-      // }
-    }
-    // 无cache时canvas的blur需绘制到离屏上应用后反向绘制回来，有cache在Dom里另生成一个filter的cache
-    let hasFilter = filter && filter.length;
-    let offscreenFilter;
-    if(hasFilter) {
-      if(renderMode === CANVAS && (!this.__cacheTotal || !this.__cacheTotal.__available)) {
-        // let { width, height } = root;
-        // let c = inject.getCacheCanvas(width, height, null, 'filter');
-        // offscreenFilter = {
-        //   ctx,
-        //   filter,
-        //   target: c,
-        //   matrix,
-        // };
-        // ctx = c.ctx;
-        // let m = this.__matrixEvent;
-        // ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
-        // ctx.globalAlpha = this.__opacity;
+      else {
+        delete virtualDom.mixBlendMode;
       }
-      else if(renderMode === SVG) {
+      if(filter && filter.length) {
         virtualDom.filter = painter.svgFilter(filter);
       }
-    }
-    else if(renderMode === SVG) {
-      delete virtualDom.filter;
+      else {
+        delete virtualDom.filter;
+      }
     }
     // 根据backgroundClip的不同值要调整bg渲染坐标尺寸，也会影响borderRadius
     let btlr = borderTopLeftRadius.slice(0);
@@ -2001,27 +1844,9 @@ class Xom extends Node {
       bblr[1] -= borderBottomWidth + paddingBottom;
     }
     // overflow:hidden，最后判断，filter/mask优先
-    let offscreenOverflow, borderList;
+    let borderList;
     if(overflow === 'hidden' && display !== 'inline') {
       borderList = border.calRadius(bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
-      // if(renderMode === CANVAS && (!this.__cacheTotal || !this.__cacheTotal.__available)) {
-      //   let { width, height } = root;
-      //   let c = inject.getCacheCanvas(width, height, null, 'overflow');
-      //   offscreenOverflow = {
-      //     ctx,
-      //     target: c,
-      //     matrix,
-      //   };
-      //   ctx = c.ctx;
-      //   let m = this.__matrixEvent;
-      //   ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
-      //   ctx.globalAlpha = this.__opacity;
-      //   offscreenOverflow.x = sx1;
-      //   offscreenOverflow.y = sy1;
-      //   offscreenOverflow.offsetWidth = __offsetWidth;
-      //   offscreenOverflow.offsetHeight = __offsetHeight;
-      //   offscreenOverflow.list = borderList;
-      // }
       if(renderMode === SVG) {
         let d = svgPolygon(borderList) || `M${sx1},${sy1}L${sx1 + __offsetWidth},${sy1}L${sx1 + __offsetWidth},${sy1 + __offsetHeight}L${sx1},${sy1 + __offsetHeight},L${sx1},${sy1}`;
         let v = {
@@ -2044,26 +1869,13 @@ class Xom extends Node {
     else if(renderMode === SVG) {
       delete virtualDom.overflow;
     }
-    // 无法使用缓存时主画布直接绘制需设置
-    if(renderMode === CANVAS) {
-      // res.offscreenBlend = offscreenBlend;
-      // res.offscreenMask = offscreenMask;
-      // res.offscreenFilter = offscreenFilter;
-      // res.offscreenOverflow = offscreenOverflow;
-      // res.ctx = ctx;
-      // ctx.globalAlpha = opacity;
-      // cache模式在外面设置
-      // if(!cache) {
-      //   ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
-      // }
-    }
     // 隐藏不渲染
     if((visibility === 'hidden' || res.break) && (renderMode === CANVAS || renderMode === WEBGL)) {
       res.break = true;
       return res;
     }
     // 仅webgl有用
-    if(__cache && __cache.enabled) {
+    if(renderMode === WEBGL && __cache && __cache.enabled) {
       __cache.__available = true;
     }
     /**

@@ -52,9 +52,6 @@ function cache(key, width, height, hash, message) {
   return {
     canvas: o,
     ctx,
-    draw() {
-      // 空函数，仅对小程序提供hook特殊处理，flush缓冲
-    },
     enabled: true,
     available: true,
     release() {

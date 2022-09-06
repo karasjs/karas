@@ -724,35 +724,11 @@ class Text extends Node {
           __cache = null;
           let root = this.root;
           let c = inject.getCacheCanvas(root.width, root.height, '__$$OVERSIZE$$__');
-          c.__available = true;
+          c.available = true;
           ctx = c.ctx;
           this.__limitCache = c;
         }
         this.__cache = __cache;
-        // if(cache) {
-        //   if(__cache && __cache.enabled) {
-        //     __cache.__available = true;
-        //     ctx = __cache.ctx;
-        //     dx += __cache.dx;
-        //     dy += __cache.dy;
-        //     this.__limitCache = null;
-        //   }
-        //   else {
-        //     this.__limitCache = true;
-        //     return;
-        //   }
-        // }
-        // else {
-        //   let root = this.root;
-        //   let c = inject.getCacheCanvas(root.width, root.height, '__$$OVERSIZE$$__');
-        //   ctx = c.ctx;
-        //   let {
-        //     __matrixEvent: m,
-        //     __opacity: opacity
-        //   } = this.__domParent;
-        //   ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
-        //   ctx.globalAlpha = opacity;
-        // }
       }
       let font = css.setFontStyle(computedStyle);
       if(ctx.font !== font) {

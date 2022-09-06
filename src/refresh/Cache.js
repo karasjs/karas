@@ -56,7 +56,6 @@ class Cache {
     this.__x = x;
     this.__y = y;
     this.__appendData(x1, y1);
-    this.__isNew = true;
     if(page.canvas) {
       this.__enabled = true;
       let ctx = page.ctx;
@@ -90,7 +89,6 @@ class Cache {
       let size = this.page.size;
       ctx.clearRect(this.x, this.y, size, size);
       this.__available = false;
-      this.__isNew = true;
     }
   }
 
@@ -169,10 +167,6 @@ class Cache {
 
   get pos() {
     return this.__pos;
-  }
-
-  get isNew() {
-    return this.__isNew;
   }
 
   static get MAX() {
@@ -284,35 +278,8 @@ class Cache {
     let { x, y, canvas, sx1: sx2, sy1: sy2, dbx: dbx2, dby: dby2, width, height } = source;
     let ox = tx + sx2 - sx1 + dbx - dbx2;
     let oy = ty + sy2 - sy1 + dby - dby2;
-    // if(transform && matrix && tfo) {
-    //   tfo[0] += ox;
-    //   tfo[1] += oy;
-    //   let m = tf.calMatrixByOrigin(transform, tfo);
-    //   matrix = mx.multiply(matrix, m);
-    //   if(!mx.isE(parentMatrix)) {
-    //     matrix = mx.multiply(parentMatrix, matrix);
-    //   }
-    //   if(inverse) {
-    //     // 很多情况mask和target相同matrix，可简化计算
-    //     if(util.equalArr(matrix, inverse)) {
-    //       matrix = mx.identity();
-    //     }
-    //     else {
-    //       inverse = mx.inverse(inverse);
-    //       matrix = mx.multiply(inverse, matrix);
-    //     }
-    //   }
-    //   ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
-    // }
     ctx.drawImage(canvas, x, y, width, height, ox, oy, width, height);
   }
-
-  // static draw(ctx, opacity, matrix, cache) {
-  //   // ctx.globalAlpha = opacity;
-  //   // ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
-  //   let { x, y, canvas, sx1, sy1, dbx, dby, width, height } = cache;
-  //   ctx.drawImage(canvas, x, y, width, height, sx1 - dbx, sy1 - dby, width, height);
-  // }
 
   static getCache(list) {
     for(let i = 0, len = list.length; i < len; i++) {
@@ -322,11 +289,6 @@ class Cache {
       }
     }
   }
-
-  static NA = 0; // 无缓存模式
-  static LOCAL = 1; // 局部根节点
-  static CHILD = 2; // 其子节点
-  static SELF = 3; // webgl专用
 }
 
 export default Cache;

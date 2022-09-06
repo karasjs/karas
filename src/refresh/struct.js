@@ -2029,37 +2029,6 @@ function renderWebgl(renderMode, gl, root) {
     } = node;
     lastRefreshLevel = __refreshLevel;
     node.__refreshLevel = NONE;
-    // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，Root节点是第一个特殊处理
-    if(i === 0) {}
-    else if(lv > lastLv) {
-      // parentMatrix = lastNode.__matrixEvent;
-      // if(isE(parentMatrix)) {
-      //   parentMatrix = null;
-      // }
-      // matrixList.push(parentMatrix);
-      // parentOpacity = lastNode.__opacity;
-      // opacityList.push(parentOpacity);
-      // parentPm = lastNode.__perspectiveMatrix;
-      // if(isE(parentPm)) {
-      //   parentPm = null;
-      // }
-      // pmList.push(parentPm);
-    }
-    // 变小出栈索引需注意，可能不止一层，多层计算diff层级
-    else if(lv < lastLv) {
-      // let diff = lastLv - lv;
-      // matrixList.splice(-diff);
-      // parentMatrix = matrixList[lv - 1];
-      // opacityList.splice(-diff);
-      // parentOpacity = opacityList[lv - 1];
-      // pmList.splice(-diff);
-      // parentPm = pmList[lv - 1];
-    }
-    // 不变是同级兄弟，无需特殊处理 else {}
-    // lastRefreshLevel = __refreshLevel;
-    // lastNode = node;
-    // lastLv = lv;
-    let hasRecordAsMask;
     /**
      * lv<REPAINT，一般会有__cache，跳过渲染过程，快速运算，没有cache则是自身超限或无内容，目前不感知
      * 可能有cacheTotal，为之前生成的局部根，清除逻辑在更新检查是否>=REPAINT那里，小变化不动
@@ -2079,23 +2048,9 @@ function renderWebgl(renderMode, gl, root) {
       else {
         matrix = node.__matrix;
       }
-      // // 先左乘perspective的矩阵，再左乘父级的总矩阵
-      // if(__domParent) {
-      //   matrix = multiply(__domParent.__perspectiveMatrix, matrix);
-      //   matrix = multiply(__domParent.__matrixEvent, matrix);
-      // }
-      // assignMatrix(node.__matrixEvent, matrix);
-      // let opacity;
       if(contain(__refreshLevel, OP)) {
         __computedStyle[OPACITY] = __currentStyle[OPACITY];
       }
-      // else {
-      //   opacity = __computedStyle[OPACITY];
-      // }
-      // if(__domParent) {
-      //   opacity *= __domParent.__opacity;
-      // }
-      // node.__opacity = opacity;
       // filter会改变bbox范围
       if(contain(__refreshLevel, FT)) {
         node.__calFilter(__currentStyle, __computedStyle, __cacheStyle);
@@ -2185,41 +2140,6 @@ function renderWebgl(renderMode, gl, root) {
         });
       }
     }
-    // 每个元素检查cacheTotal生成，已有的上面会continue跳过
-    // let {
-    //   __limitCache,
-    //   __cacheAsBitmap,
-    // } = node;
-    // let {
-    //   [OVERFLOW]: overflow,
-    //   [FILTER]: filter,
-    //   [MIX_BLEND_MODE]: mixBlendMode,
-    //   [TRANSFORM]: transform,
-    // } = __computedStyle;
-    // let validMbm = isValidMbm(mixBlendMode);
-    // // 3d渲染上下文
-    // let isPerspective = tf.isPerspectiveMatrix(transform)
-    //   || __domParent && !isE(__domParent.__perspectiveMatrix);
-    // if(__cacheAsBitmap
-    //   || hasMask
-    //   || filter.length
-    //   || (overflow === 'hidden' && total)
-    //   || validMbm
-    //   || isPerspective) {
-    //   if(validMbm) {
-    //     hasMbm = true;
-    //   }
-    //   if(hasRecordAsMask) {
-    //     hasRecordAsMask[5] = __limitCache;
-    //     hasRecordAsMask[7] = filter;
-    //     hasRecordAsMask[8] = overflow;
-    //     hasRecordAsMask[9] = isPerspective;
-    //     hasRecordAsMask[10] = __cacheAsBitmap;
-    //   }
-    //   else {
-    //     mergeList.push([i, lv, total, node, __limitCache, hasMask, filter, overflow, isPerspective, __cacheAsBitmap]);
-    //   }
-    // }
   }
   let limitHash = {};
   // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
@@ -2253,7 +2173,6 @@ function renderWebgl(renderMode, gl, root) {
         [FILTER]: filter,
       } = __computedStyle
       let isPerspective = !isE(__domParent && __domParent.__perspectiveMatrix) || tf.isPerspectiveMatrix(__matrix);
-      // let [i, lv, total, node, __limitCache, hasMask, filter, overflow, isPerspective, __cacheAsBitmap] = item;
       // 有ppt的，向上查找所有父亲index记录，可能出现重复记得提前跳出
       if(isPerspective) {
         let parent = node.__domParent;
@@ -2366,8 +2285,9 @@ function renderWebgl(renderMode, gl, root) {
       }
       // 超限特殊处理，先生成画布尺寸大小的纹理然后原始位置绘制
       else if(node.__limitCache) {
-        let c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
-        node.render(renderMode, gl,0, 0);
+        let c = node.__limitCache;
+        // let c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
+        // node.render(renderMode, gl,0, 0);
         let j = texCache.lockOneChannel();
         let texture = webgl.createTexture(gl, c.canvas, j);
         let mockCache = new MockCache(gl, texture, 0, 0, width, height, [0, 0, width, height]);
@@ -2466,8 +2386,9 @@ function renderWebgl(renderMode, gl, root) {
       // 超限的情况，这里是普通单节点超限，没有合成total后再合成特殊cache如filter/mask/mbm之类的，
       // 直接按原始位置绘制到离屏canvas，再作为纹理绘制即可，特殊的在total那做过降级了
       else if(node.__limitCache && visibility !== 'hidden') {
-        let c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
-        node.render(renderMode, gl, 0, 0);
+        let c = node.__limitCache;
+        // let c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
+        // node.render(renderMode, gl, 0, 0);
         let j = texCache.lockOneChannel();
         let texture = webgl.createTexture(gl, c.canvas, j);
         let mockCache = new MockCache(gl, texture, 0, 0, width, height, [0, 0, width, height]);

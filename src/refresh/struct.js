@@ -1583,6 +1583,7 @@ function genMbmWebgl(gl, texCache, i, j, fbo, tex, mbm, W, H) {
   webgl.drawMbm(gl, program, i, j, W, H);
   // 切换回主程序并销毁这个临时program
   gl.useProgram(gl.program);
+  gl.viewport(0, 0, W, H);
   gl.deleteShader(program.vertexShader);
   gl.deleteShader(program.fragmentShader);
   gl.deleteProgram(program);

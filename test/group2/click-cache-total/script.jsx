@@ -4,7 +4,7 @@ function cb(v) {
   document.getElementById('base64').value = v;
 }
 
-karas.render(
+let o = karas.render(
   <canvas width="360" height="360">
     <div cacheAsBitmap={1} ref="a" style={{
       position:'absolute',left:10,top:10,width:100,height:100,
@@ -23,7 +23,7 @@ karas.render(
         position:'absolute',left:10,top:10,width:80,height:80,
         background:'#0F0',
       }}>
-          <span onClick={e => console.log(1)} ref="d" style={{
+          <span onClick={e => cb(count++)} ref="d" style={{
             position:'absolute',left:10,top:10,width:50,height:50,
             background:'#00F',
           }}/>
@@ -32,3 +32,12 @@ karas.render(
   </canvas>,
   '#test'
 );
+o.ref.a.updateStyle({
+  translateX:100
+});
+o.ref.b.updateStyle({
+  translateX:100
+});
+o.ref.c.updateStyle({
+  translateY:100
+});

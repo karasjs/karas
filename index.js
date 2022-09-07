@@ -33923,7 +33923,7 @@
           _node4.render(renderMode, gl, dx, dy);
 
           gl.useProgram(gl.program);
-          gl.viewport(0, 0, W, H);
+          gl.viewport(0, 0, width, height);
           continue;
         }
 
@@ -34001,7 +34001,7 @@
             _node4.render(renderMode, gl, dx, dy);
 
             gl.useProgram(gl.program);
-            gl.viewport(0, 0, W, H);
+            gl.viewport(0, 0, width, height);
           }
         }
       }
@@ -34009,11 +34009,12 @@
 
     node.render(renderMode, gl, dx, dy);
     gl.useProgram(gl.program);
-    gl.viewport(0, 0, W, H); // 绘制到fbo的纹理对象上并删除fbo恢复
+    gl.viewport(0, 0, width, height); // 绘制到fbo的纹理对象上并删除fbo恢复
 
     texCache.refresh(gl, cx, cy);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.deleteFramebuffer(frameBuffer); // 生成的纹理对象本身已绑定一个纹理单元了，释放lock的同时可以给texCache的channel缓存，避免重复上传
+    gl.deleteFramebuffer(frameBuffer);
+    gl.viewport(0, 0, W, H); // 生成的纹理对象本身已绑定一个纹理单元了，释放lock的同时可以给texCache的channel缓存，避免重复上传
 
     var mockCache = new MockCache(gl, texture, sx1, sy1, width, height, bboxTotal);
     texCache.releaseLockChannel(n, mockCache.page);
@@ -35249,14 +35250,7 @@
           }
         } else {
           node.__limitCache = false;
-        } // let res = node.render(renderMode, gl, 0, 0);
-        // // geom可返回texture纹理，替代原有xom的__cache纹理
-        // if(res && inject.isWebGLTexture(res.texture)) {
-        //   let { __sx1: sx1, __sy1: sy1, __offsetWidth: w, __offsetHeight: h, bbox } = node;
-        //  node.__cache = new MockCache(gl, res.texture, sx1, sy1, w, h, bbox);
-        //   gl.viewport(0, 0, width, height);
-        //   gl.useProgram(gl.program);
-        // }
+        } // }
 
 
         var overflow = __computedStyle[OVERFLOW],

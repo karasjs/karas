@@ -548,8 +548,9 @@ class Geom extends Xom {
     if(renderMode === mode.CANVAS) {
       if(matrix) {
         ctx.save();
-        // 临时解决方案，webgl和cacheCanvas的渲染忽略世界matrix
-        let me = this.matrixEvent;
+        // 获取当前matrix，在webgl中为E，在canvas中分无cache和有cache模式
+        let me = ctx.getTransform();
+        me = [me.a, me.b, 0, 0, me.c, me.d, 0, 0, 0, 0, 1, 0, me.e, me.f, 1, 0];
         matrix = mx.multiply(me, matrix);
         ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
       }

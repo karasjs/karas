@@ -116,8 +116,8 @@ void main() {
       gl.deleteBuffer(pointBuffer);
       gl.disableVertexAttribArray(a_position);
 
-      gl.useProgram(gl.program);
-      gl.viewport(0, 0, root.width, root.height);
+      // gl.useProgram(gl.program);
+      // gl.viewport(0, 0, root.width, root.height);
     }
     return res;
   }

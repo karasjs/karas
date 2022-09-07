@@ -130,19 +130,9 @@ class Img extends Dom {
     this.__task = null;
   }
 
-  // img根据加载情况更新__hasContent
+  // img强制有内容
   __calContent(currentStyle, computedStyle) {
-    let res = super.__calContent(currentStyle, computedStyle);
-    if(!res) {
-      let {
-        __loadImg: loadImg,
-      } = this;
-      if(computedStyle[VISIBILITY] !== 'hidden' && (computedStyle[WIDTH] || computedStyle[HEIGHT])
-        && loadImg.source) {
-        res = true;
-      }
-    }
-    return res;
+    return computedStyle[VISIBILITY] !== 'hidden';
   }
 
   render(renderMode, ctx, dx = 0, dy = 0) {

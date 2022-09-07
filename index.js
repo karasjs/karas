@@ -29749,22 +29749,12 @@
         _get(_getPrototypeOf(Img.prototype), "__destroy", this).call(this);
 
         this.__task = null;
-      } // img根据加载情况更新__hasContent
+      } // img强制有内容
 
     }, {
       key: "__calContent",
       value: function __calContent(currentStyle, computedStyle) {
-        var res = _get(_getPrototypeOf(Img.prototype), "__calContent", this).call(this, currentStyle, computedStyle);
-
-        if (!res) {
-          var loadImg = this.__loadImg;
-
-          if (computedStyle[VISIBILITY$3] !== 'hidden' && (computedStyle[WIDTH$2] || computedStyle[HEIGHT$2]) && loadImg.source) {
-            res = true;
-          }
-        }
-
-        return res;
+        return computedStyle[VISIBILITY$3] !== 'hidden';
       }
     }, {
       key: "render",
@@ -30933,9 +30923,10 @@
 
         if (renderMode === mode.CANVAS) {
           if (matrix) {
-            ctx.save(); // 临时解决方案，webgl和cacheCanvas的渲染忽略世界matrix
+            ctx.save(); // 获取当前matrix，在webgl中为E，在canvas中分无cache和有cache模式
 
-            var me = this.matrixEvent;
+            var me = ctx.getTransform();
+            me = [me.a, me.b, 0, 0, me.c, me.d, 0, 0, 0, 0, 1, 0, me.e, me.f, 1, 0];
             matrix = mx.multiply(me, matrix);
             ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
           }
@@ -33931,6 +33922,8 @@
         if (visibility === 'hidden' || __isMask) {
           _node4.render(renderMode, gl, dx, dy);
 
+          gl.useProgram(gl.program);
+          gl.viewport(0, 0, W, H);
           continue;
         }
 
@@ -34006,16 +33999,20 @@
           } else {
             // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
             _node4.render(renderMode, gl, dx, dy);
+
+            gl.useProgram(gl.program);
+            gl.viewport(0, 0, W, H);
           }
         }
       }
     }
 
-    node.render(renderMode, gl, dx, dy); // 绘制到fbo的纹理对象上并删除fbo恢复
+    node.render(renderMode, gl, dx, dy);
+    gl.useProgram(gl.program);
+    gl.viewport(0, 0, W, H); // 绘制到fbo的纹理对象上并删除fbo恢复
 
     texCache.refresh(gl, cx, cy);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.viewport(0, 0, W, H);
     gl.deleteFramebuffer(frameBuffer); // 生成的纹理对象本身已绑定一个纹理单元了，释放lock的同时可以给texCache的channel缓存，避免重复上传
 
     var mockCache = new MockCache(gl, texture, sx1, sy1, width, height, bboxTotal);
@@ -35555,6 +35552,9 @@
           } else {
             // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
             _node8.render(renderMode, gl, 0, 0);
+
+            gl.useProgram(gl.program);
+            gl.viewport(0, 0, width, height);
           }
         } else if (limitHash.hasOwnProperty(_i9)) {
           var _target5 = limitHash[_i9];
@@ -35592,6 +35592,9 @@
 
 
           _node8.render(renderMode, gl, 0, 0);
+
+          gl.useProgram(gl.program);
+          gl.viewport(0, 0, width, height);
         } // 超限的情况，这里是普通单节点超限，没有合成total后再合成特殊cache如filter/mask/mbm之类的，
         // 直接按原始位置绘制到离屏canvas，再作为纹理绘制即可，特殊的在total那做过降级了
         else if (_node8.__limitCache && _node8.__hasContent) {
@@ -35619,9 +35622,10 @@
           texCache.releaseLockChannel(_j10); // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
 
           _node8.render(renderMode, gl, 0, 0);
-        } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
-        // node.render(renderMode, gl, 0, 0);
 
+          gl.useProgram(gl.program);
+          gl.viewport(0, 0, width, height);
+        }
       }
     }
 
@@ -40847,8 +40851,8 @@
           });
           half = Math.ceil(half * 0.5) + 1;
           var xa = cx - rx - half;
-          var xb = cx + rx - half;
-          var ya = cy - ry + half;
+          var xb = cx + rx + half;
+          var ya = cy - ry - half;
           var yb = cy + ry + half;
           bbox[0] = Math.min(bbox[0], xa);
           bbox[1] = Math.min(bbox[1], ya);

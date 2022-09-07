@@ -920,6 +920,8 @@ function genTotalWebgl(renderMode, gl, texCache, node, index, total, __structs, 
       // mask和不可见不能被汇总到top上
       if((visibility === 'hidden' || __isMask)) {
         node.render(renderMode, gl, dx, dy);
+        gl.useProgram(gl.program);
+        gl.viewport(0, 0, W, H);
         continue;
       }
       if(transform && !isE(transform)) {
@@ -976,15 +978,18 @@ function genTotalWebgl(renderMode, gl, texCache, node, index, total, __structs, 
         else {
           // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
           node.render(renderMode, gl, dx, dy);
+          gl.useProgram(gl.program);
+          gl.viewport(0, 0, W, H);
         }
       }
     }
   }
   node.render(renderMode, gl, dx, dy);
+  gl.useProgram(gl.program);
+  gl.viewport(0, 0, W, H);
   // 绘制到fbo的纹理对象上并删除fbo恢复
   texCache.refresh(gl, cx, cy);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  gl.viewport(0, 0, W, H);
   gl.deleteFramebuffer(frameBuffer);
   // 生成的纹理对象本身已绑定一个纹理单元了，释放lock的同时可以给texCache的channel缓存，避免重复上传
   let mockCache = new MockCache(gl, texture, sx1, sy1, width, height, bboxTotal);
@@ -2292,6 +2297,8 @@ function renderWebgl(renderMode, gl, root) {
         else {
           // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
           node.render(renderMode, gl, 0, 0);
+          gl.useProgram(gl.program);
+          gl.viewport(0, 0, width, height);
         }
       }
       else if(limitHash.hasOwnProperty(i)) {
@@ -2315,6 +2322,8 @@ function renderWebgl(renderMode, gl, root) {
         }
         // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
         node.render(renderMode, gl, 0, 0);
+        gl.useProgram(gl.program);
+        gl.viewport(0, 0, width, height);
       }
       // 超限的情况，这里是普通单节点超限，没有合成total后再合成特殊cache如filter/mask/mbm之类的，
       // 直接按原始位置绘制到离屏canvas，再作为纹理绘制即可，特殊的在total那做过降级了
@@ -2333,9 +2342,9 @@ function renderWebgl(renderMode, gl, root) {
         texCache.releaseLockChannel(j);
         // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
         node.render(renderMode, gl, 0, 0);
+        gl.useProgram(gl.program);
+        gl.viewport(0, 0, width, height);
       }
-      // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
-      // node.render(renderMode, gl, 0, 0);
     }
   }
   texCache.refresh(gl, cx, cy, true);

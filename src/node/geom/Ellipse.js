@@ -133,8 +133,8 @@ class Ellipse extends Geom {
       });
       half = Math.ceil(half * 0.5) + 1;
       let xa = cx - rx - half;
-      let xb = cx + rx - half;
-      let ya = cy - ry + half;
+      let xb = cx + rx + half;
+      let ya = cy - ry - half;
       let yb = cy + ry + half;
       bbox[0] = Math.min(bbox[0], xa);
       bbox[1] = Math.min(bbox[1], ya);

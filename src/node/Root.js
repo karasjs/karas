@@ -134,7 +134,7 @@ function initEvent(dom, Root) {
           let event = root.__wrapEvent(e);
           event.target = target;
           while(target) {
-            target.__emitEvent(event, true);
+            target.__emitEvent(event, null, true);
             target = target.domParent;
           }
         }
@@ -738,7 +738,7 @@ class Root extends Dom {
       return;
     }
     let data = this.__wrapEvent(e);
-    this.__emitEvent(data);
+    this.__emitEvent(data, null, false);
     return data;
   }
 

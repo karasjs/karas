@@ -552,7 +552,6 @@ class Xom extends Node {
 
   // absolute且无尺寸时，isAbs标明先假布局一次计算尺寸，还有flex列计算时isColumn假布局，flex横计算时writingMode垂直假布局
   __layout(data, isAbs, isColumn, isRow) {
-    this.__cacheStyle = {};
     this.__computeReflow();
     let { w } = data;
     let { isDestroyed, currentStyle, computedStyle, __ellipsis } = this;
@@ -578,6 +577,7 @@ class Xom extends Node {
     // 防止display:none不统计mask，isVirtual忽略，abs/flex布局后续会真正来走一遍
     if(!isAbs && !isColumn && !isRow) {
       this.clearCache();
+      this.__cacheStyle = {};
       this.__refreshLevel = REFLOW;
       this.__limitCache = null;
       this.__isInline = false;
@@ -2927,7 +2927,12 @@ class Xom extends Node {
   }
 
   get matrixEvent() {
-    return this.__matrixEvent;
+    let __domParent = this.__domParent, matrix = this.__matrix;
+    while(__domParent) {
+      matrix = mx.multiply(__domParent.__matrix, matrix);
+      __domParent = __domParent.__domParent;
+    }
+    return matrix;
   }
 
   get perspectiveMatrix() {

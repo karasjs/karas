@@ -263,11 +263,11 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
   // 先绘制形成基础的total，有可能已经存在无变化，就可省略
   if(!__cacheTotal || !__cacheTotal.available) {
     let { __sx1: sx1, __sy1: sy1, bbox } = node;
-    // 局部根节点视为E且无透明度，用bbox而非filterBbox
+    // 局部根节点视为E且无透明度，用bbox，子节点用filterBbox
     let bboxTotal = bbox.slice(0);
-    node.__matrixEvent = mx.identity();
+    assignMatrix(node.__matrixEvent, mx.identity());
     node.__opacity = 1;
-    // 先遍历每个节点，以局部根节点左上角为原点，求得所占的总的bbox，即合并所有bbox
+    // 先遍历每个节点，以局部根节点为E，求得所占的总的bbox，即合并所有bbox
     for(let i = index + 1, len = index + (total || 0) + 1; i < len; i++) {
       let {
         node,
@@ -776,80 +776,6 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
     }
   }
   return target;
-}
-
-function resetMatrixCacheTotal(__structs, index, total, lv, matrixEvent) {
-  let matrixList = [];
-  let parentMatrix;
-  let lastMatrix = matrixEvent;
-  let lastLv = lv;
-  for(let i = index + 1, len = index + (total || 0) + 1; i < len; i++) {
-    let {
-      node,
-      lv,
-      total,
-      hasMask,
-    } = __structs[i];
-    // 排除Text
-    if(node instanceof Text) {
-      continue;
-    }
-    let {
-      __cacheStyle: cacheStyle,
-      __currentStyle: currentStyle,
-      __computedStyle: computedStyle,
-      __cacheTotal,
-      __matrixEvent: old,
-    } = node;
-    // 跳过display:none元素和它的所有子节点和mask
-    if(computedStyle[DISPLAY] === 'none') {
-      i += (total || 0);
-      if(hasMask) {
-        i += countMaskNum(__structs, i + 1, hasMask);
-      }
-      continue;
-    }
-    // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树
-    if(lv > lastLv) {
-      parentMatrix = lastMatrix;
-      if(isE(parentMatrix)) {
-        parentMatrix = null;
-      }
-      matrixList.push(parentMatrix);
-    }
-    // 变小出栈索引需注意，可能不止一层，多层计算diff层级
-    else if(lv < lastLv) {
-      let diff = lastLv - lv;
-      matrixList.splice(-diff);
-      parentMatrix = matrixList[lv - 1];
-    }
-    // 不变是同级兄弟，无需特殊处理 else {}
-    lastLv = lv;
-    old = old.slice(0);
-    // 计算真正的相对于root原点的matrix
-    cacheStyle[MATRIX] = null;
-    let matrix = node.__calMatrix(REPAINT, cacheStyle, currentStyle, computedStyle);
-    if(!isE(parentMatrix)) {
-      matrix = multiply(parentMatrix, matrix);
-    }
-    assignMatrix(node.__matrixEvent, matrix);
-    lastMatrix = matrix;
-    // 深度遍历递归进行
-    if(__cacheTotal && __cacheTotal.available) {
-      let needReset = __cacheTotal.isNew;
-      if(!needReset && !util.equalArr(old, matrix)) {
-        needReset = true;
-      }
-      if(needReset) {
-        resetMatrixCacheTotal(__structs, i, total || 0, lv, matrix);
-      }
-      __cacheTotal.__isNew = false;
-      i += (total || 0);
-      if(hasMask) {
-        i += countMaskNum(__structs, i + 1, hasMask);
-      }
-    }
-  }
 }
 
 /**
@@ -2623,17 +2549,6 @@ function renderCanvas(renderMode, ctx, root) {
         if(offscreenHash.hasOwnProperty(i)) {
           ctx = applyOffscreen(ctx, offscreenHash[i], width, height, false);
         }
-        // 有cache的可以跳过子节点，但如果matrixEvent变化还是需要遍历计算一下的，虽然跳过了渲染
-        // 如果cache是新的，则需要完整遍历设置一次
-        // 如果isNew为false，则计算下局部根节点再对比下看是否有变化，无变化可省略
-        // let needReset = __cacheTotal.__isNew;
-        // if(!needReset && !isE(matrix)) {
-        //   needReset = true;
-        // }
-        // if(needReset) {
-        //   resetMatrixCacheTotal(__structs, j, total || 0, lv, matrix);
-        // }
-        // __cacheTotal.__isNew = false;
       }
       // 没有cacheTotal是普通节点绘制
       else {

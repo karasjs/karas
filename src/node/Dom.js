@@ -16,6 +16,8 @@ import reflow from '../refresh/reflow';
 import builder from '../util/builder';
 import mode from '../refresh/mode';
 import level from '../refresh/level';
+import geom from '../math/geom';
+import mx from '../math/matrix';
 
 const {
   STYLE_KEY: {
@@ -64,8 +66,9 @@ const {
 } = enums;
 const { AUTO, PX, PERCENT, REM, VW, VH, VMAX, VMIN } = unit;
 const { isRelativeOrAbsolute, getBaseline, getVerticalBaseline } = css;
-const { extend, isNil, isFunction } = util;
+const { extend, isNil, isFunction, assignMatrix } = util;
 const { CANVAS, SVG, WEBGL } = mode;
+const { isE, multiply } = mx;
 
 // 渲染获取zIndex顺序
 function genZIndexChildren(dom) {
@@ -3109,11 +3112,11 @@ class Dom extends Xom {
     super.__destroy();
   }
 
-  __emitEvent(e, force) {
+  __emitEvent(e, pm, force) {
     if(force) {
       return super.__emitEvent(e, force);
     }
-    let { __isDestroyed, __computedStyle: computedStyle, __isMask } = this;
+    let { __isDestroyed, __computedStyle: computedStyle, __isMask, __cacheTotal } = this;
     if(__isDestroyed || computedStyle[DISPLAY] === 'none' || e.__stopPropagation || __isMask) {
       return;
     }
@@ -3128,6 +3131,27 @@ class Dom extends Xom {
     if(computedStyle[OVERFLOW] === 'hidden' && !this.willResponseEvent(e, true)) {
       return;
     }
+    // __cacheTotal可提前判断是否在bbox范围内
+    if(__cacheTotal && __cacheTotal.available) {
+      // 不是E的话，因为缓存缘故影响cache的子元素，先左乘可能的父matrix（嵌套cache），再赋值给pm递归传下去
+      if(!isE(this.__matrix)) {
+        pm = multiply(pm, this.__matrix);
+        assignMatrix(this.__matrixEvent, pm);
+      }
+      let bbox = __cacheTotal.bbox;
+      if(!geom.pointInQuadrilateral(
+        e.x, e.y,
+        bbox[0], bbox[1],
+        bbox[2], bbox[1],
+        bbox[2], bbox[3],
+        bbox[0], bbox[3], this.__matrixEvent)) {
+        return;
+      }
+    }
+    // 递归传下来的pm如果有说明是cache的子元素且需要重新计算matrix
+    else if(!mx.isE(pm)) {
+      util.assignMatrix(this.__matrixEvent, mx.multiply(pm, this.__matrix));
+    }
     // 找到对应的callback
     let { event: { type } } = e;
     let { listener, zIndexChildren } = this;
@@ -3140,7 +3164,7 @@ class Dom extends Xom {
       let child = zIndexChildren[i];
       if(child instanceof Xom
         || child instanceof Component && child.shadowRoot instanceof Xom) {
-        if(child.__emitEvent(e)) {
+        if(child.__emitEvent(e, pm, false)) {
           // 孩子阻止冒泡
           if(e.__stopPropagation) {
             return;
@@ -3153,7 +3177,7 @@ class Dom extends Xom {
       }
     }
     // child不触发再看自己
-    return super.__emitEvent(e);
+    return super.__emitEvent(e, false);
   }
 
   // 深度遍历执行所有子节点，包含自己，如果cb返回true，提前跳出不继续深度遍历

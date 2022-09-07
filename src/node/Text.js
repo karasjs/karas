@@ -692,44 +692,18 @@ class Text extends Node {
       };
     }
     // >=REPAINT清空bbox
-    // if(lv >= level.REPAINT) {
-      this.__bbox = null;
-      this.__filterBbox = null;
-    // }
+    this.__bbox = null;
+    this.__filterBbox = null;
     if(__isDestroyed || computedStyle[DISPLAY] === 'none' || computedStyle[VISIBILITY] === 'hidden'
       || !textBoxes.length) {
       this.__hasContent = false;
       return;
     }
     this.__hasContent = true;
-    if(renderMode === CANVAS || renderMode === WEBGL) {
-      // webgl借用离屏canvas绘制文本，cache标识为true是普通绘制，否则是超限降级情况
-      if(renderMode === WEBGL) {
-        let { __sx, __sy, bbox, __cache } = this;
-        if(__cache) {
-          __cache.reset(bbox, __sx, __sy);
-        }
-        else {
-          __cache = Cache.getInstance(bbox, __sx, __sy);
-        }
-        if(__cache && __cache.enabled) {
-          __cache.__available = true;
-          ctx = __cache.ctx;
-          dx += __cache.dx;
-          dy += __cache.dy;
-          this.__limitCache = null;
-        }
-        else {
-          __cache && __cache.clear();
-          __cache = null;
-          let root = this.root;
-          let c = inject.getCacheCanvas(root.width, root.height, '__$$OVERSIZE$$__');
-          c.available = true;
-          ctx = c.ctx;
-          this.__limitCache = c;
-        }
-        this.__cache = __cache;
-      }
+    if(renderMode === WEBGL) {
+      return;
+    }
+    if(renderMode === CANVAS) {
       let font = css.setFontStyle(computedStyle);
       if(ctx.font !== font) {
         ctx.font = font;

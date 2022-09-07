@@ -819,6 +819,7 @@ function genFrameBufferWithTexture(gl, texCache, width, height) {
 /**
  * 局部根节点复合图层生成，汇总所有子节点到一颗局部树上的位图缓存，包含超限特殊情况
  * 即便只有自己一个也要返回，因为webgl生成total的原因是有类似filter/mask等必须离屏处理的东西
+ * @param renderMode
  * @param gl
  * @param texCache
  * @param node
@@ -831,7 +832,7 @@ function genFrameBufferWithTexture(gl, texCache, width, height) {
  * @param H
  * @returns {*}
  */
-function genTotalWebgl(gl, texCache, node, index, total, __structs, cache, limitCache, W, H) {
+function genTotalWebgl(renderMode, gl, texCache, node, index, total, __structs, cache, limitCache, W, H) {
   // 存每层父亲的matrix和opacity和index，bbox计算过程中生成，缓存给下面渲染过程用
   let parentIndexHash = {};
   let opacityHash = {};
@@ -861,7 +862,7 @@ function genTotalWebgl(gl, texCache, node, index, total, __structs, cache, limit
   // limitCache无cache需先绘制到统一的离屏画布上
   else if(limitCache) {
     let c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
-    node.render(mode.WEBGL, gl, 0, 0);
+    node.render(mode.CANVAS, c.ctx, 0, 0);
     let j = texCache.lockOneChannel();
     let texture = webgl.createTexture(gl, c.canvas, j);
     let mockCache = new MockCache(gl, texture, 0, 0, width, height, [0, 0, width, height]);
@@ -917,7 +918,8 @@ function genTotalWebgl(gl, texCache, node, index, total, __structs, cache, limit
         continue;
       }
       // mask和不可见不能被汇总到top上
-      if((visibility === 'hidden' || __isMask) && !node.hookGlRender) {
+      if((visibility === 'hidden' || __isMask)) {
+        node.render(renderMode, gl, dx, dy);
         continue;
       }
       if(transform && !isE(transform)) {
@@ -971,16 +973,14 @@ function genTotalWebgl(gl, texCache, node, index, total, __structs, cache, limit
             i += countMaskNum(__structs, i + 1, hasMask);
           }
         }
-      }
-      // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
-      if(node.hookGlRender) {
-        node.hookGlRender(gl, opacity, matrix, cx, cy, dx, dy, false);
+        else {
+          // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
+          node.render(renderMode, gl, dx, dy);
+        }
       }
     }
   }
-  if(node.hookGlRender) {
-    node.hookGlRender(gl, 1, null, cx, cy, dx, dy, false);
-  }
+  node.render(renderMode, gl, dx, dy);
   // 绘制到fbo的纹理对象上并删除fbo恢复
   texCache.refresh(gl, cx, cy);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -1761,7 +1761,7 @@ function renderSvg(renderMode, ctx, root, isFirst) {
       // >=REPAINT会调用render，重新生成defsCache，text没有这个东西
       if(!(node instanceof Text)) {
         node.__cacheDefs.splice(0);
-        node.__calCache(node.__currentStyle, node.__computedStyle, node.__cacheStyle);
+        node.__calStyle(node.__currentStyle, node.__computedStyle, node.__cacheStyle);
         let matrix = node.__matrix;
         if(parentMatrix) {
           matrix = multiply(parentMatrix, matrix);
@@ -1908,7 +1908,24 @@ function renderWebgl(renderMode, gl, root) {
     // Text特殊处理，webgl中先渲染为bitmap，再作为贴图绘制，缓存交由text内部判断，直接调用渲染纹理方法
     if(node instanceof Text) {
       if(lastRefreshLevel >= REPAINT) {
-        node.render(renderMode, gl, 0, 0);
+        let bbox = node.bbox, sx = node.__sx, sy = node.__sy;
+        let __cache = node.__cache;
+        if(__cache) {
+          __cache.reset(bbox, sx, sy);
+        }
+        else {
+          __cache = Cache.getInstance(bbox, sx, sy);
+        }
+        if(__cache && __cache.enabled) {
+          __cache.__bbox = bbox;
+          __cache.__available = true;
+          node.__cache = __cache;
+          node.render(mode.CANVAS, __cache.ctx, __cache.dx, __cache.dy);
+        }
+        else {
+          __cache && __cache.release();
+          node.__limitCache = true;
+        }
       }
       continue;
     }
@@ -1990,17 +2007,40 @@ function renderWebgl(renderMode, gl, root) {
      * Geom没有子节点无需汇总局部根，Dom中Img也是，它们的局部根等于自身的cache，其它符合条件的Dom需要生成
      */
     else {
-      node.__calCache(__currentStyle, __computedStyle, __cacheStyle);
-      node.__calContent(__currentStyle, __computedStyle);
+      node.__calStyle(__currentStyle, __computedStyle, __cacheStyle);
+      let hasContent = node.__calContent(__currentStyle, __computedStyle);
       node.__calPerspective(__currentStyle, __computedStyle, __cacheStyle);
-      let res = node.render(renderMode, gl, 0, 0);
-      // geom可返回texture纹理，替代原有xom的__cache纹理
-      if(res && inject.isWebGLTexture(res.texture)) {
-        let { __sx1: sx1, __sy1: sy1, __offsetWidth: w, __offsetHeight: h, bbox } = node;
-       node.__cache = new MockCache(gl, res.texture, sx1, sy1, w, h, bbox);
-        gl.viewport(0, 0, width, height);
-        gl.useProgram(gl.program);
+      // 有内容先以canvas模式绘制到离屏画布上，自定义渲染设置无内容不实现即可跳过
+      if(hasContent) {
+        let bbox = node.bbox, __cache = node.__cache, sx1 = node.__sx1, sy1 = node.__sy1;
+        if(__cache) {
+          __cache.reset(bbox, sx1, sy1);
+        }
+        else {
+          __cache = Cache.getInstance(bbox, sx1, sy1);
+        }
+        if(__cache && __cache.enabled) {
+          __cache.__bbox = bbox;
+          __cache.__available = true;
+          node.__cache = __cache;
+          node.render(mode.CANVAS, __cache.ctx, __cache.dx, __cache.dy);
+        }
+        else {
+          __cache && __cache.release();
+          node.__limitCache = true;
+        }
       }
+      else {
+        node.__limitCache = false;
+      }
+      // let res = node.render(renderMode, gl, 0, 0);
+      // // geom可返回texture纹理，替代原有xom的__cache纹理
+      // if(res && inject.isWebGLTexture(res.texture)) {
+      //   let { __sx1: sx1, __sy1: sy1, __offsetWidth: w, __offsetHeight: h, bbox } = node;
+      //  node.__cache = new MockCache(gl, res.texture, sx1, sy1, w, h, bbox);
+      //   gl.viewport(0, 0, width, height);
+      //   gl.useProgram(gl.program);
+      // }
       let {
         [OVERFLOW]: overflow,
         [FILTER]: filter,
@@ -2092,7 +2132,7 @@ function renderWebgl(renderMode, gl, root) {
       let needGen;
       // 可能没变化，比如被遮罩节点、filter变更等
       if(!__cacheTotal || !__cacheTotal.available) {
-        let [limit, res] = genTotalWebgl(gl, texCache, node, i, total || 0, __structs, __cache, __limitCache, width, height);
+        let [limit, res] = genTotalWebgl(renderMode, gl, texCache, node, i, total || 0, __structs, __cache, __limitCache, width, height);
         __cacheTotal = res;
         needGen = true;
         __limitCache = limit;
@@ -2172,10 +2212,10 @@ function renderWebgl(renderMode, gl, root) {
       if(__cache && __cache.available) {
         texCache.addTexAndDrawWhenLimit(gl, __cache, __opacity, __matrixEvent, cx, cy, 0, 0,true);
       }
-      // 超限特殊处理，先生成画布尺寸大小的纹理然后原始位置绘制
+      // 超限特殊处理，先生成画布尺寸大小的纹理然后原始位置绘制，超限一定有文字内容
       else if(node.__limitCache && __domParent.__computedStyle[VISIBILITY] !== 'hidden') {
         let c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
-        node.render(renderMode, gl, 0, 0);
+        node.render(mode.CANVAS, c.ctx, 0, 0);
         let j = texCache.lockOneChannel();
         let texture = webgl.createTexture(gl, c.canvas, j);
         let mockCache = new MockCache(gl, texture, 0, 0, width, height, [0, 0, width, height]);
@@ -2209,7 +2249,6 @@ function renderWebgl(renderMode, gl, root) {
       } = node;
       let {
         [OPACITY]: opacity,
-        [VISIBILITY]: visibility,
         [MIX_BLEND_MODE]: mixBlendMode,
       } = __computedStyle;
       let m = __matrix;
@@ -2250,6 +2289,10 @@ function renderWebgl(renderMode, gl, root) {
             i += countMaskNum(__structs, i + 1, hasMask);
           }
         }
+        else {
+          // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
+          node.render(renderMode, gl, 0, 0);
+        }
       }
       else if(limitHash.hasOwnProperty(i)) {
         let target = limitHash[i];
@@ -2270,13 +2313,14 @@ function renderWebgl(renderMode, gl, root) {
         if(hasMask) {
           i += countMaskNum(__structs, i + 1, hasMask);
         }
+        // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
+        node.render(renderMode, gl, 0, 0);
       }
       // 超限的情况，这里是普通单节点超限，没有合成total后再合成特殊cache如filter/mask/mbm之类的，
       // 直接按原始位置绘制到离屏canvas，再作为纹理绘制即可，特殊的在total那做过降级了
-      else if(node.__limitCache && visibility !== 'hidden') {
+      else if(node.__limitCache && node.__hasContent) {
         let c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
-        // let c = node.__limitCache;
-        node.render(renderMode, gl, 0, 0);
+        node.render(mode.CANVAS, c.ctx, 0, 0);
         let j = texCache.lockOneChannel();
         let texture = webgl.createTexture(gl, c.canvas, j);
         let mockCache = new MockCache(gl, texture, 0, 0, width, height, [0, 0, width, height]);
@@ -2287,11 +2331,11 @@ function renderWebgl(renderMode, gl, root) {
         c.ctx.clearRect(0, 0, width, height);
         mockCache.release();
         texCache.releaseLockChannel(j);
+        // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
+        node.render(renderMode, gl, 0, 0);
       }
       // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
-      if(node.hookGlRender) {
-        node.hookGlRender(gl, opacity, m, cx, cy, 0, 0, true);
-      }
+      // node.render(renderMode, gl, 0, 0);
     }
   }
   texCache.refresh(gl, cx, cy, true);
@@ -2417,7 +2461,7 @@ function renderCanvas(renderMode, ctx, root) {
       }
     }
     else {
-      node.__calCache(__currentStyle, __computedStyle, __cacheStyle);
+      node.__calStyle(__currentStyle, __computedStyle, __cacheStyle);
       if(node.__cacheAsBitmap) {
         mergeList.push({
           i,

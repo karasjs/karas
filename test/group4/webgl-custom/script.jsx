@@ -88,59 +88,36 @@ class $custom extends karas.Geom {
   render(renderMode, ctx, dx, dy) {
     let res = super.render(renderMode, ctx, dx, dy);
     if(renderMode === karas.mode.WEBGL) {
-      let { root, width, height } = this;
+      let { root } = this;
       let gl = ctx;
       let vSource = `attribute vec4 a_position;
-
 void main() {
   gl_Position = a_position;
 }`;
       let fSource = `precision mediump float;
-
 void main() {
   gl_FragColor = vec4(0.0, 0.0, 1.0, 1.0);
 }`;
       let p = initShaders(gl, vSource, fSource);
-      let fb = gl.getParameter(gl.FRAMEBUFFER_BINDING);
-      let n = root.texCache.lockOneChannel();
-      let texture = gl.createTexture();
-      gl.activeTexture(gl['TEXTURE' + n]);
-      gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      let frameBuffer = gl.createFramebuffer();
-      gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
-      let check = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
-      if(check === gl.FRAMEBUFFER_COMPLETE) {
-        gl.viewport(0, 0, width, height);
-        gl.clearColor(0, 0, 0, 0);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-        let pointBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-          -0.45, -0.45,
-          0.9, -0.9,
-          -0.9 ,0.9,
-          0.9, -0.9,
-          -0.9 ,0.9,
-          0.9, 0.9,
-        ]), gl.STATIC_DRAW);
-        let a_position = gl.getAttribLocation(p, 'a_position');
-        gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(a_position);
-        gl.drawArrays(gl.TRIANGLES, 0, 6);
-        res.texture = texture;
-        gl.deleteBuffer(pointBuffer);
-        gl.disableVertexAttribArray(a_position);
-        gl.deleteFramebuffer(frameBuffer);
-      }
-      root.texCache.releaseLockChannel(n);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+      let pointBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+        -0.45, -0.45,
+        0.9, -0.9,
+        -0.9 ,0.9,
+        0.9, -0.9,
+        -0.9 ,0.9,
+        0.9, 0.9,
+      ]), gl.STATIC_DRAW);
+      let a_position = gl.getAttribLocation(p, 'a_position');
+      gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(a_position);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+      gl.deleteBuffer(pointBuffer);
+      gl.disableVertexAttribArray(a_position);
+
+      gl.useProgram(gl.program);
+      gl.viewport(0, 0, root.width, root.height);
     }
     return res;
   }

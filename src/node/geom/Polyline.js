@@ -471,13 +471,10 @@ class Polyline extends Geom {
 
   render(renderMode, ctx, dx, dy) {
     let res = super.render(renderMode, ctx, dx, dy);
-    if(res.break) {
+    if(res.break || renderMode === mode.WEBGL) {
       return res;
     }
     this.buildCache(res.sx3, res.sy3);
-    if(renderMode === mode.WEBGL) {
-      ctx = res.ctx;
-    }
     this.__renderPolygon(renderMode, ctx, res);
     return res;
   }

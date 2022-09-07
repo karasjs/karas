@@ -132,8 +132,8 @@ class Geom extends Xom {
     this.__cacheProps = {};
   }
 
-  __calCache(__currentStyle, __computedStyle, __cacheStyle) {
-    let res = super.__calCache(__currentStyle, __computedStyle, __cacheStyle);
+  __calStyle(__currentStyle, __computedStyle, __cacheStyle) {
+    let res = super.__calStyle(__currentStyle, __computedStyle, __cacheStyle);
     if(isNil(__cacheStyle[STROKE_WIDTH])) {
       __cacheStyle[STROKE_WIDTH] = true;
       let strokeWidth = __currentStyle[STROKE_WIDTH] || [];
@@ -243,7 +243,7 @@ class Geom extends Xom {
       strokeMiterlimit,
       fill,
     } = res;
-    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+    if(renderMode === mode.CANVAS) {
       if(fill) {
         if(fill.k === 'linear') {
           ctx.fillStyle = fill.v;
@@ -302,7 +302,7 @@ class Geom extends Xom {
       this.virtualDom.type = 'geom';
     }
     // 无论canvas/svg，break可提前跳出省略计算
-    if(res.break) {
+    if(res.break || renderMode === mode.WEBGL) {
       return res;
     }
     // data在无cache时没有提前设置
@@ -439,7 +439,7 @@ class Geom extends Xom {
       dx,
       dy,
     } = res;
-    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+    if(renderMode === mode.CANVAS) {
       this.__preSetCanvas(renderMode, ctx, res);
       ctx.beginPath();
       if(isMulti) {
@@ -545,14 +545,12 @@ class Geom extends Xom {
     let t = mx.inverse(matrix);
     list = this.__inversePtList(list, isMulti, t, dx, dy);
     // 用正向matrix渲染
-    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+    if(renderMode === mode.CANVAS) {
       if(matrix) {
         ctx.save();
         // 临时解决方案，webgl和cacheCanvas的渲染忽略世界matrix
-        if(renderMode === mode.CANVAS) {
-          let me = this.matrixEvent;
-          matrix = mx.multiply(me, matrix);
-        }
+        let me = this.matrixEvent;
+        matrix = mx.multiply(me, matrix);
         ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
       }
       ctx.beginPath();
@@ -605,7 +603,7 @@ class Geom extends Xom {
       dy = 0,
     } = res;
     let color = fill.v;
-    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+    if(renderMode === mode.CANVAS) {
       let [x1, y1, x2, y2] = bbox;
       let w = x2 - x1, h = y2 - y1;
       let offscreen = inject.getCacheCanvas(w, h, '__$$CONIC_GRADIENT$$__');
@@ -704,9 +702,9 @@ class Geom extends Xom {
   }
 
   // geom的cache无内容也不清除，因为子类不清楚内容，除非看不见
-  __releaseWhenEmpty(cache, computedStyle) {
-    return computedStyle[VISIBILITY] === 'hidden';
-  }
+  // __releaseWhenEmpty(cache, computedStyle) {
+  //   return computedStyle[VISIBILITY] === 'hidden';
+  // }
 
   // offset/resize时要多一步清空props上记录的缓存
   __offsetX(diff, isLayout, lv) {

@@ -84,13 +84,10 @@ class Ellipse extends Geom {
 
   render(renderMode, ctx, dx, dy) {
     let res = super.render(renderMode, ctx, dx, dy);
-    if(res.break) {
+    if(res.break || renderMode === mode.WEBGL) {
       return res;
     }
     this.buildCache(res.cx, res.cy);
-    if(renderMode === mode.WEBGL) {
-      ctx = res.ctx;
-    }
     this.__renderPolygon(renderMode, ctx, res);
     return res;
   }

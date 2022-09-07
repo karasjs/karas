@@ -222,7 +222,7 @@ class Xom extends Node {
     let isClip = this.__isClip = !!this.props.clip;
     this.__isMask = isClip || !!this.props.mask;
     this.__refreshLevel = REFLOW;
-    this.__limitCache = null;
+    this.__limitCache = false;
     this.__isInline = false;
     this.__hasContent = false;
     this.__opacity = 1;
@@ -579,7 +579,7 @@ class Xom extends Node {
       this.clearCache();
       this.__cacheStyle = {};
       this.__refreshLevel = REFLOW;
-      this.__limitCache = null;
+      this.__limitCache = false;
       this.__isInline = false;
       let { next } = this;
       // mask关系只有布局才会变更，普通渲染关系不会改变，clip也是mask的一种
@@ -1053,7 +1053,7 @@ class Xom extends Node {
    * @returns {*[]}
    * @private
    */
-  __calCache(__currentStyle, __computedStyle, __cacheStyle) {
+  __calStyle(__currentStyle, __computedStyle, __cacheStyle) {
     let {
       __sx1,
       __sx2,
@@ -1648,9 +1648,9 @@ class Xom extends Node {
   render(renderMode, ctx, dx = 0, dy = 0) {
     let {
       __isDestroyed: isDestroyed,
-      root,
+      // root,
     } = this;
-    let __cache = this.__cache;
+    // let __cache = this.__cache;
     let cacheStyle = this.__cacheStyle;
     // let currentStyle = this.__currentStyle;
     let computedStyle = this.__computedStyle;
@@ -1683,6 +1683,9 @@ class Xom extends Node {
     // canvas返回信息，svg已经初始化好了vd
     if(display === 'none') {
       return { break: true };
+    }
+    if(renderMode === WEBGL) {
+      return {};
     }
     // 使用sx和sy渲染位置，考虑了relative和translate影响
     let {
@@ -1725,43 +1728,43 @@ class Xom extends Node {
     // cache的canvas模式已经提前计算好了，其它需要现在计算
     let matrix = this.__matrix;
     // webgl特殊申请离屏缓存
-    if(renderMode === WEBGL) {
-      // 无内容可释放并提前跳出，geom覆盖特殊判断，因为后面子类会绘制矢量，img也覆盖特殊判断，加载完肯定有内容
-      if(!this.__hasContent && this.__releaseWhenEmpty(__cache, computedStyle)) {
-        res.break = true;
-        this.__limitCache = null;
-      }
-      // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等，geom单独在dom里做
-      else {
-        let bbox = this.bbox;
-        if(__cache) {
-          __cache.reset(bbox, sx1, sy1);
-        }
-        else {
-          __cache = Cache.getInstance(bbox, sx1, sy1);
-        }
-        // cache成功设置坐标偏移，否则为超过最大尺寸限制不使用缓存
-        if(__cache && __cache.__enabled) {
-          __cache.__bbox = bbox;
-          __cache.__available = true;
-          ctx = __cache.ctx;
-          dx += __cache.dx;
-          dy += __cache.dy;
-          res.ctx = ctx;
-          res.dx = dx;
-          res.dy = dy;
-        }
-        else {
-          __cache && __cache.clear();
-          __cache = null;
-          let c = inject.getCacheCanvas(root.width, root.height, '__$$OVERSIZE$$__');
-          c.available = true;
-          res.ctx = ctx = c.ctx;
-          res.limitCache = this.__limitCache = c;
-        }
-        this.__cache = __cache;
-      }
-    }
+    // if(renderMode === WEBGL) {
+    //   // 无内容可释放并提前跳出，geom覆盖特殊判断，因为后面子类会绘制矢量，img也覆盖特殊判断，加载完肯定有内容
+    //   if(!this.__hasContent) {
+    //     res.break = true;
+    //     this.__limitCache = null;
+    //   }
+    //   // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等，geom单独在dom里做
+    //   else {
+    //     let bbox = this.bbox;
+    //     if(__cache) {
+    //       __cache.reset(bbox, sx1, sy1);
+    //     }
+    //     else {
+    //       __cache = Cache.getInstance(bbox, sx1, sy1);
+    //     }
+    //     // cache成功设置坐标偏移，否则为超过最大尺寸限制不使用缓存
+    //     if(__cache && __cache.__enabled) {
+    //       __cache.__bbox = bbox;
+    //       __cache.__available = true;
+    //       ctx = __cache.ctx;
+    //       dx += __cache.dx;
+    //       dy += __cache.dy;
+    //       res.ctx = ctx;
+    //       res.dx = dx;
+    //       res.dy = dy;
+    //     }
+    //     else {
+    //       __cache && __cache.clear();
+    //       __cache = null;
+    //       let c = inject.getCacheCanvas(root.width, root.height, '__$$OVERSIZE$$__');
+    //       c.available = true;
+    //       res.ctx = ctx = c.ctx;
+    //       res.limitCache = this.__limitCache = c;
+    //     }
+    //     this.__cache = __cache;
+    //   }
+    // }
     // 渲染样式
     let {
       [BACKGROUND_COLOR]: backgroundColor,
@@ -1876,9 +1879,9 @@ class Xom extends Node {
       return res;
     }
     // 仅webgl有用
-    if(renderMode === WEBGL && __cache && __cache.enabled) {
-      __cache.__available = true;
-    }
+    // if(renderMode === WEBGL && __cache && __cache.enabled) {
+    //   __cache.__available = true;
+    // }
     /**
      * inline的渲染同block/ib不一样，不是一个矩形区域
      * 它根据内部的contentBox渲染，contentBox是指lineBox中的内容，即TextBox/inline/ib元素
@@ -2697,7 +2700,7 @@ class Xom extends Node {
     this.__sx5 += diff;
     this.__sx6 += diff;
     if(diff < 0) {
-      this.__limitCache = null;
+      this.__limitCache = false;
     }
     if(lv !== undefined) {
       this.__refreshLevel |= lv;
@@ -2718,7 +2721,7 @@ class Xom extends Node {
     this.__sy5 += diff;
     this.__sy6 += diff;
     if(diff < 0) {
-      this.__limitCache = null;
+      this.__limitCache = false;
     }
     if(lv !== undefined) {
       this.__refreshLevel |= lv;
@@ -2726,12 +2729,12 @@ class Xom extends Node {
     this.clearCache();
   }
 
-  __releaseWhenEmpty(__cache) {
-    if(__cache && __cache.available) {
-      __cache.release();
-    }
-    return true;
-  }
+  // __releaseWhenEmpty(__cache) {
+  //   if(__cache && __cache.available) {
+  //     __cache.release();
+  //   }
+  //   return true;
+  // }
 
   getComputedStyle(key) {
     let computedStyle = this.computedStyle;

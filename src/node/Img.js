@@ -147,11 +147,6 @@ class Img extends Dom {
 
   render(renderMode, ctx, dx = 0, dy = 0) {
     let res = super.render(renderMode, ctx, dx, dy);
-    if(renderMode === mode.WEBGL) {
-      dx = res.dx;
-      dy = res.dy;
-      ctx = res.ctx;
-    }
     let {
       width, height, isDestroyed,
       props: {
@@ -174,7 +169,7 @@ class Img extends Dom {
     if(!loadImg.source && !loadImg.error && !loadImg.loading) {
       this.__loadAndRefresh(loadImg, root, ctx, placeholder, computedStyle, width, height);
     }
-    if(isDestroyed || display === 'none' || visibility === 'hidden') {
+    if(isDestroyed || display === 'none' || visibility === 'hidden' || renderMode === mode.WEBGL) {
       return res;
     }
     let originX, originY;
@@ -350,11 +345,11 @@ class Img extends Dom {
   }
 
   // img没加载时，清空，这样Xom就认为没内容不生成cache，防止img先绘制cache再绘制主屏，重复
-  __releaseWhenEmpty(__cache) {
-    if(!this.__loadImg.error && !this.__loadImg.source) {
-      return super.__releaseWhenEmpty(__cache);
-    }
-  }
+  // __releaseWhenEmpty(__cache) {
+  //   if(!this.__loadImg.error && !this.__loadImg.source) {
+  //     return super.__releaseWhenEmpty(__cache);
+  //   }
+  // }
 
   __isRealInline() {
     return false;

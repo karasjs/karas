@@ -150,13 +150,10 @@ class Sector extends Geom {
 
   render(renderMode, ctx, dx2, dy2) {
     let res = super.render(renderMode, ctx, dx2, dy2);
-    if(res.break) {
+    if(res.break || renderMode === mode.WEBGL) {
       return res;
     }
     this.buildCache(res.cx, res.cy);
-    if(renderMode === mode.WEBGL) {
-      ctx = res.ctx;
-    }
     let {
       fill: fills,
       fillRule: fillRules,

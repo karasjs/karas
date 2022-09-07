@@ -230,11 +230,8 @@ class Line extends Geom {
 
   render(renderMode, ctx, dx2, dy2) {
     let res = super.render(renderMode, ctx, dx2, dy2);
-    if(res.break) {
+    if(res.break || renderMode === mode.WEBGL) {
       return res;
-    }
-    if(renderMode === mode.WEBGL) {
-      ctx = res.ctx;
     }
     let {
       sx3,

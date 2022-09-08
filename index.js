@@ -41419,10 +41419,10 @@
         var ac = options.controller instanceof Controller ? options.controller : vd.animateController; // 第一次render，收集递归json里面的animateRecords，它在xom的__layout最后生成
 
         karas.render(vd, dom); // 由于vd首先生成的都是json，根parse要特殊处理将target指向真正的vd引用，json的vd在builder中赋值
-
-        animateRecords.forEach(function (item) {
-          item.target = item.target.vd;
-        }); // 直接的json里的animateRecords，再加上递归的parse的json的（第一次render布局时处理）动画一并播放
+        // animateRecords.forEach(item => {
+        //   item.target = item.target.vd;
+        // });
+        // 直接的json里的animateRecords，再加上递归的parse的json的（第一次render布局时处理）动画一并播放
 
         if (options.autoPlay !== false) {
           ac.__records = ac.__records.concat(animateRecords);

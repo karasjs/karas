@@ -16757,7 +16757,7 @@
     }, {
       key: "render",
       value: function render() {
-        inject.warn('Component must implement render()');
+        inject.warn('Component should implement render()');
       }
     }, {
       key: "__destroy",
@@ -25446,6 +25446,7 @@
           sr.__hostRoot = children;
           sr.__root = root;
           sr.__domParent = parent;
+          sr.__isDestroyed = false;
 
           children.__init();
         }
@@ -31101,6 +31102,10 @@
     }, {
       key: "getRegister",
       value: function getRegister(name) {
+        if (name && !util.isString(name) && name.prototype && name.prototype instanceof Geom) {
+          return name;
+        }
+
         if (!name || !util.isString(name) || name.charAt(0) !== '$') {
           throw new Error('Invalid param');
         }
@@ -41609,9 +41614,10 @@
         }
       } else if (tagName) {
         // 特殊的$匿名类
-        // if(tagName instanceof Geom) {
-        //   return this.createGm(tagName, props);
-        // }
+        if (tagName instanceof Geom) {
+          return this.createGm(tagName, props);
+        }
+
         return this.createCp(tagName, props, children);
       }
     },

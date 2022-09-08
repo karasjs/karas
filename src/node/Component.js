@@ -142,7 +142,7 @@ class Component extends Event {
   }
 
   render() {
-    inject.warn('Component must implement render()');
+    inject.warn('Component should implement render()');
   }
 
   __destroy() {

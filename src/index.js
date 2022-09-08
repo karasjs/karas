@@ -63,9 +63,9 @@ let karas = {
     }
     else if(tagName) {
       // 特殊的$匿名类
-      // if(tagName instanceof Geom) {
-      //   return this.createGm(tagName, props);
-      // }
+      if(tagName instanceof Geom) {
+        return this.createGm(tagName, props);
+      }
       return this.createCp(tagName, props, children);
     }
   },

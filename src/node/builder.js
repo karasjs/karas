@@ -103,6 +103,7 @@ function relation(root, host, parent, children, options = {}) {
         sr.__hostRoot = children;
         sr.__root = root;
         sr.__domParent = parent;
+        sr.__isDestroyed = false;
         children.__init();
       }
     }

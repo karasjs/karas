@@ -25412,44 +25412,49 @@
         relation(root, host, children, children.__children, {});
       } else if (children instanceof Component) {
         var sr = children.render();
+        var hoc = [];
 
-        if (sr) {
-          children.__shadow = sr;
-          sr.__host = children;
-          sr.__hostRoot = children;
-          sr.__root = root;
-          sr.__domParent = parent;
-        }
-
-        while (sr instanceof Component) {
+        while (sr && sr instanceof Component) {
+          hoc.push(sr);
           var res = sr.render();
 
           if (res) {
             sr.__shadow = res;
             res.__host = sr;
-            res.__hostRoot = children;
-            res.__root = root;
-            res.__domParent = parent;
           }
 
           sr = res;
         }
 
-        if (sr) {
-          if (sr instanceof Xom) {
-            relation(root, children, sr, sr.__children, {});
-          } else {
-            sr = new Text(sr);
-          }
-
-          children.__shadowRoot = sr;
-          sr.__hostRoot = children;
-          sr.__root = root;
-          sr.__domParent = parent;
-          sr.__isDestroyed = false;
-
-          children.__init();
+        if (hoc.length) {
+          children.__shadow = hoc[0];
+          hoc[0].__host = children;
+          hoc.forEach(function (item) {
+            item.__shadowRoot = sr;
+            item.__hostRoot = children;
+            item.__root = root;
+            item.__domParent = parent;
+          });
         }
+
+        if (sr instanceof Xom) {
+          relation(root, children, sr, sr.__children, {});
+        } else {
+          sr = new Text(sr);
+        }
+
+        if (!hoc.length) {
+          children.__shadow = sr;
+          sr.__host = children;
+        }
+
+        children.__shadowRoot = sr;
+        sr.__hostRoot = children;
+        sr.__root = root;
+        sr.__domParent = parent;
+        sr.__isDestroyed = false;
+
+        children.__init();
       }
     }
 

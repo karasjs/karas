@@ -1727,45 +1727,6 @@ class Xom extends Node {
     };
     // cache的canvas模式已经提前计算好了，其它需要现在计算
     let matrix = this.__matrix;
-    // webgl特殊申请离屏缓存
-    // if(renderMode === WEBGL) {
-    //   // 无内容可释放并提前跳出，geom覆盖特殊判断，因为后面子类会绘制矢量，img也覆盖特殊判断，加载完肯定有内容
-    //   if(!this.__hasContent) {
-    //     res.break = true;
-    //     this.__limitCache = null;
-    //   }
-    //   // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等，geom单独在dom里做
-    //   else {
-    //     let bbox = this.bbox;
-    //     if(__cache) {
-    //       __cache.reset(bbox, sx1, sy1);
-    //     }
-    //     else {
-    //       __cache = Cache.getInstance(bbox, sx1, sy1);
-    //     }
-    //     // cache成功设置坐标偏移，否则为超过最大尺寸限制不使用缓存
-    //     if(__cache && __cache.__enabled) {
-    //       __cache.__bbox = bbox;
-    //       __cache.__available = true;
-    //       ctx = __cache.ctx;
-    //       dx += __cache.dx;
-    //       dy += __cache.dy;
-    //       res.ctx = ctx;
-    //       res.dx = dx;
-    //       res.dy = dy;
-    //     }
-    //     else {
-    //       __cache && __cache.clear();
-    //       __cache = null;
-    //       let c = inject.getCacheCanvas(root.width, root.height, '__$$OVERSIZE$$__');
-    //       c.available = true;
-    //       res.ctx = ctx = c.ctx;
-    //       res.limitCache = this.__limitCache = c;
-    //     }
-    //     this.__cache = __cache;
-    //   }
-    // }
-    // 渲染样式
     let {
       [BACKGROUND_COLOR]: backgroundColor,
       [BORDER_TOP_COLOR]: borderTopColor,
@@ -2468,7 +2429,7 @@ class Xom extends Node {
   }
 
   // canvas清空自身cache，cacheTotal在Root的自底向上逻辑做，svg仅有cacheTotal
-  clearCache() {
+  clearCache(lookUp) {
     let __cacheTotal = this.__cacheTotal;
     let __cacheFilter = this.__cacheFilter;
     let __cacheMask = this.__cacheMask;
@@ -2488,6 +2449,28 @@ class Xom extends Node {
     }
     if(__cacheOverflow) {
       __cacheOverflow.release();
+    }
+    if(lookUp) {
+      let p = this.__domParent;
+      while(p) {
+        let __cacheTotal = p.__cacheTotal;
+        let __cacheFilter = p.__cacheFilter;
+        let __cacheMask = p.__cacheMask;
+        let __cacheOverflow = p.__cacheOverflow;
+        if(__cacheTotal) {
+          __cacheTotal.release();
+        }
+        if(__cacheFilter) {
+          __cacheFilter.release();
+        }
+        if(__cacheMask) {
+          __cacheMask.release();
+        }
+        if(__cacheOverflow) {
+          __cacheOverflow.release();
+        }
+        p = p.__domParent;
+      }
     }
   }
 
@@ -2804,7 +2787,7 @@ class Xom extends Node {
   remove(cb) {
     let self = this;
     if(self.isDestroyed) {
-      inject.warn('Remove target is destroyed.');
+      // inject.warn('Remove target is destroyed.');
       if(isFunction(cb)) {
         cb();
       }

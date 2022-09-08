@@ -217,6 +217,7 @@
       this.__virtualDom = null;
       this.__bbox = null;
       this.__filterBbox = null;
+      this.__isDestroyed = true;
     }
 
     _createClass(Node, [{
@@ -492,13 +493,13 @@
   };
 
   // 类型为引用防止json仿造
-  var TYPE_VD$4 = Symbol('Dom');
-  var TYPE_GM$4 = Symbol('Geom');
-  var TYPE_CP$4 = Symbol('Component');
+  var TYPE_VD$3 = Symbol('Dom');
+  var TYPE_GM$3 = Symbol('Geom');
+  var TYPE_CP$3 = Symbol('Component');
   var $$type = {
-    TYPE_VD: TYPE_VD$4,
-    TYPE_GM: TYPE_GM$4,
-    TYPE_CP: TYPE_CP$4
+    TYPE_VD: TYPE_VD$3,
+    TYPE_GM: TYPE_GM$3,
+    TYPE_CP: TYPE_CP$3
   };
 
   // 生成4*4单位矩阵
@@ -731,7 +732,7 @@
   var fnToString = hasOwn.toString;
   var ObjectFunctionString = fnToString.call(Object);
 
-  function isNil$g(v) {
+  function isNil$e(v) {
     return v === undefined || v === null;
   }
 
@@ -752,7 +753,7 @@
   }
 
   function stringify(s) {
-    if (isNil$g(s)) {
+    if (isNil$e(s)) {
       return '';
     }
 
@@ -910,7 +911,7 @@
       if (c) {
         res = [parseInt(c[1]), parseInt(c[2]), parseInt(c[3])];
 
-        if (!isNil$g(c[4])) {
+        if (!isNil$e(c[4])) {
           res[3] = parseFloat(c[4]);
         } else {
           res[3] = 1;
@@ -1001,8 +1002,8 @@
     return arr;
   }
 
-  function clone$4(obj) {
-    if (isNil$g(obj) || _typeof(obj) !== 'object') {
+  function clone$3(obj) {
+    if (isNil$e(obj) || _typeof(obj) !== 'object') {
       return obj;
     } // parse递归会出现内部先返回解析好的json，外部parse不能clone
 
@@ -1021,7 +1022,7 @@
 
     var n = Array.isArray(obj) ? [] : {};
     Object.keys(obj).forEach(function (i) {
-      n[i] = clone$4(obj[i]);
+      n[i] = clone$3(obj[i]);
     });
     return n;
   }
@@ -1300,13 +1301,13 @@
     isNumber: isNumber$1,
     isBoolean: isBoolean,
     isDate: isDate,
-    isNil: isNil$g,
+    isNil: isNil$e,
     isPrimitive: function isPrimitive(v) {
       return util.isNil(v) || util.isBoolean(v) || util.isString(v) || util.isNumber(v);
     },
     // css中常用undefined/null表示auto本身
     isAuto: function isAuto(v) {
-      return isNil$g(v) || v === 'auto';
+      return isNil$e(v) || v === 'auto';
     },
     isPlainObject: isPlainObject,
     stringify: stringify,
@@ -1322,7 +1323,7 @@
     int2invert: int2invert,
     arr2hash: arr2hash,
     hash2arr: hash2arr,
-    clone: clone$4,
+    clone: clone$3,
     equalArr: equalArr$2,
     equal: equal,
     extend: extend$3,
@@ -6315,7 +6316,7 @@
   };
 
   var rgba2int$2 = util.rgba2int,
-      isNil$f = util.isNil;
+      isNil$d = util.isNil;
   var PX$8 = o$4.PX,
       PERCENT$9 = o$4.PERCENT,
       DEG$4 = o$4.DEG,
@@ -6792,9 +6793,9 @@
 
           if (_points) {
             o.z = [parseFloat(_points[1]), parseFloat(_points[2]), parseFloat(_points[3]), parseFloat(_points[4])];
-            var i5 = !isNil$f(_points[5]),
-                i6 = !isNil$f(_points[6]),
-                i7 = !isNil$f(_points[7]); // 重载，567是偏移x/y和ratio，都可省略即不偏移和半径1，只有5是ratio，只有56是x/y
+            var i5 = !isNil$d(_points[5]),
+                i6 = !isNil$d(_points[6]),
+                i7 = !isNil$d(_points[7]); // 重载，567是偏移x/y和ratio，都可省略即不偏移和半径1，只有5是ratio，只有56是x/y
 
             if (i5 && i6 && i7) {
               o.z.push(parseFloat(_points[5]));
@@ -7094,18 +7095,18 @@
     renderConic: renderConic
   };
 
-  var isNil$e = util.isNil;
+  var isNil$c = util.isNil;
 
   function parseFlex(style, grow, shrink, basis) {
-    if (isNil$e(style.flexGrow)) {
+    if (isNil$c(style.flexGrow)) {
       style.flexGrow = grow || 0;
     }
 
-    if (isNil$e(style.flexShrink)) {
+    if (isNil$c(style.flexShrink)) {
       style.flexShrink = shrink || 0;
     }
 
-    if (isNil$e(style.flexBasis)) {
+    if (isNil$c(style.flexBasis)) {
       style.flexBasis = basis || 0;
     }
   }
@@ -7113,7 +7114,7 @@
   function parseMarginPadding(style, key, list) {
     var temp = style[key];
 
-    if (!isNil$e(temp)) {
+    if (!isNil$c(temp)) {
       var match = temp.toString().match(/([-+]?[\d.]+[pxremvwhina%]*)|(auto)/ig);
 
       if (match) {
@@ -7127,7 +7128,7 @@
         }
 
         list.forEach(function (k, i) {
-          if (isNil$e(style[k])) {
+          if (isNil$c(style[k])) {
             style[k] = match[i];
           }
         });
@@ -7138,22 +7139,22 @@
   function parseOneBorder(style, k) {
     var v = style[k];
 
-    if (isNil$e(v)) {
+    if (isNil$c(v)) {
       return;
     } // 后面会统一格式化处理
 
 
-    if (isNil$e(style[k + 'Width'])) {
+    if (isNil$c(style[k + 'Width'])) {
       var w = /\b[\d.]+[pxremvwhina%]*\b/i.exec(v);
       style[k + 'Width'] = w ? w[0] : 0;
     }
 
-    if (isNil$e(style[k + 'Style'])) {
+    if (isNil$c(style[k + 'Style'])) {
       var s = /\b(solid|dashed|dotted)\b/i.exec(v);
       style[k + 'Style'] = s ? s[1] : 'solid';
     }
 
-    if (isNil$e(style[k + 'Color'])) {
+    if (isNil$c(style[k + 'Color'])) {
       var c = /#[0-9a-f]{3,8}/i.exec(v);
 
       if (c && [4, 7, 9].indexOf(c[0].length) > -1) {
@@ -7199,7 +7200,7 @@
         if (Array.isArray(v)) {
           var length = v.length;
 
-          if (isNil$e(style.backgroundColor)) {
+          if (isNil$c(style.backgroundColor)) {
             var bgc = /^\s*((transparent)|(#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))/i.exec(v[length - 1]);
 
             if (bgc) {
@@ -7212,7 +7213,7 @@
           var bgr = [];
           var bgp = [];
           v.forEach(function (item) {
-            if (isNil$e(style.backgroundImage)) {
+            if (isNil$c(style.backgroundImage)) {
               var gd = reg.gradient.exec(item);
 
               if (gd) {
@@ -7228,7 +7229,7 @@
               }
             }
 
-            if (isNil$e(style.backgroundRepeat)) {
+            if (isNil$c(style.backgroundRepeat)) {
               var repeat = /(no-?)?repeat(-?[xy])?/i.exec(item);
 
               if (repeat) {
@@ -7236,7 +7237,7 @@
               }
             }
 
-            if (isNil$e(style.backgroundPosition)) {
+            if (isNil$c(style.backgroundPosition)) {
               var position = item.match(reg.position);
 
               if (position) {
@@ -7258,7 +7259,7 @@
             this.toFull(style, 'backgroundPosition');
           }
         } else {
-          if (isNil$e(style.backgroundImage)) {
+          if (isNil$c(style.backgroundImage)) {
             var gd = reg.gradient.exec(v);
 
             if (gd) {
@@ -7274,7 +7275,7 @@
             }
           }
 
-          if (isNil$e(style.backgroundRepeat)) {
+          if (isNil$c(style.backgroundRepeat)) {
             var repeat = /(no-?)?repeat(-?[xy])?/i.exec(v);
 
             if (repeat) {
@@ -7282,7 +7283,7 @@
             }
           }
 
-          if (isNil$e(style.backgroundColor)) {
+          if (isNil$c(style.backgroundColor)) {
             var _bgc = /^(transparent)|(#[0-9a-f]{3,8})|(rgba?\s*\(.+?\))/i.exec(v);
 
             if (_bgc) {
@@ -7291,7 +7292,7 @@
             }
           }
 
-          if (isNil$e(style.backgroundPosition)) {
+          if (isNil$c(style.backgroundPosition)) {
             var position = v.match(reg.position);
 
             if (position) {
@@ -7327,7 +7328,7 @@
         v = v.toString().split(/\s+/);
 
         if (v.length) {
-          if (isNil$e(style.flexDirection)) ;
+          if (isNil$c(style.flexDirection)) ;
 
           style.flexDirection = v[0];
 
@@ -7360,7 +7361,7 @@
         }
 
         this[k].forEach(function (k, i) {
-          if (isNil$e(style[k])) {
+          if (isNil$c(style[k])) {
             style[k] = v[0][i] + ' ' + v[1][i];
           }
         });
@@ -7370,7 +7371,7 @@
         }
 
         var isEmpty = this[k].map(function (k2) {
-          return isNil$e(style[k2]);
+          return isNil$c(style[k2]);
         });
         v.forEach(function (v2) {
           v2 = v2.toString().split(/\s+/);
@@ -7394,7 +7395,7 @@
         }
 
         this[k].forEach(function (k, i) {
-          if (isNil$e(style[k])) {
+          if (isNil$c(style[k])) {
             style[k] = _arr3[i];
           }
         });
@@ -7408,7 +7409,7 @@
         }
 
         this[k].forEach(function (k, i) {
-          if (isNil$e(style[k])) {
+          if (isNil$c(style[k])) {
             style[k] = _arr4[i];
           }
         });
@@ -7436,7 +7437,7 @@
         }
       } else if (this[k]) {
         this[k].forEach(function (k) {
-          if (isNil$e(style[k])) {
+          if (isNil$c(style[k])) {
             style[k] = v;
           }
         });
@@ -7723,7 +7724,7 @@
       VMIN$6 = o$4.VMIN,
       GRADIENT$3 = o$4.GRADIENT,
       calUnit$1 = o$4.calUnit;
-  var isNil$d = util.isNil,
+  var isNil$b = util.isNil,
       rgba2int$1 = util.rgba2int,
       equalArr$1 = util.equalArr,
       replaceRgba2Hex = util.replaceRgba2Hex;
@@ -7770,7 +7771,7 @@
   }
 
   function camel(v) {
-    if (isNil$d(v)) {
+    if (isNil$b(v)) {
       v = '';
     }
 
@@ -7858,7 +7859,7 @@
 
     temp = style.backgroundPosition;
 
-    if (!isNil$d(temp)) {
+    if (!isNil$b(temp)) {
       abbr$1.toFull(style, 'backgroundPosition');
     } // flex
 
@@ -7878,13 +7879,13 @@
 
     temp = style.margin;
 
-    if (!isNil$d(temp)) {
+    if (!isNil$b(temp)) {
       abbr$1.toFull(style, 'margin');
     }
 
     temp = style.padding;
 
-    if (!isNil$d(temp)) {
+    if (!isNil$b(temp)) {
       abbr$1.toFull(style, 'padding');
     }
 
@@ -7904,7 +7905,7 @@
     ['translate', 'scale', 'skew', 'translate3d', 'scale3d', 'rotate'].forEach(function (k) {
       temp = style[k];
 
-      if (!isNil$d(temp)) {
+      if (!isNil$b(temp)) {
         abbr$1.toFull(style, k);
       }
     }); // 扩展的不能和transform混用，给出警告
@@ -7921,7 +7922,7 @@
       var k = item.k,
           v = item.v;
 
-      if (isNil$d(style[k])) {
+      if (isNil$b(style[k])) {
         style[k] = v;
       }
     }); // 背景图
@@ -8347,7 +8348,7 @@
               }); // 不规范的写法变默认值50%
 
 
-              if (isNil$d(_arr9[i].v)) {
+              if (isNil$b(_arr9[i].v)) {
                 _arr9[i].v = 50;
               }
             }
@@ -16445,271 +16446,6 @@
     return Text;
   }(Node);
 
-  var TYPE_VD$3 = $$type.TYPE_VD,
-      TYPE_GM$3 = $$type.TYPE_GM,
-      TYPE_CP$3 = $$type.TYPE_CP;
-  /**
-   * 2. 打平children中的数组，变成一维
-   * 3. 合并相连的Text节点，即string内容
-   */
-
-  function flattenJson(parent) {
-    if (Array.isArray(parent)) {
-      return parent.map(function (item) {
-        return flattenJson(item);
-      });
-    } else if (!parent || [TYPE_VD$3, TYPE_GM$3, TYPE_CP$3].indexOf(parent.$$type) === -1 || !Array.isArray(parent.children)) {
-      return parent;
-    }
-
-    var list = [];
-    traverseJson(list, parent.children, {
-      lastText: null
-    });
-    parent.children = list;
-    return parent;
-  }
-
-  function traverseJson(list, children, options) {
-    if (Array.isArray(children)) {
-      children.forEach(function (item) {
-        traverseJson(list, item, options);
-      });
-    } else if (children && (children.$$type === TYPE_VD$3 || children.$$type === TYPE_GM$3)) {
-      if (['canvas', 'svg', 'webgl'].indexOf(children.tagName) > -1) {
-        throw new Error('Can not nest canvas/svg/webgl');
-      }
-
-      if (children.$$type === TYPE_VD$3) {
-        flattenJson(children);
-      }
-
-      list.push(children);
-      options.lastText = null;
-    } else if (children && children.$$type === TYPE_CP$3) {
-      list.push(children); // 强制component即便返回text也形成一个独立的节点，合并在layout布局中做
-
-      options.lastText = null;
-    } // 排除掉空的文本，连续的text合并
-    else if (!util.isNil(children) && children !== '') {
-      if (options.lastText !== null) {
-        list[list.length - 1] = options.lastText += children;
-      } else {
-        list.push(children);
-      }
-    }
-  }
-
-  var TYPE_VD$2 = $$type.TYPE_VD,
-      TYPE_GM$2 = $$type.TYPE_GM,
-      TYPE_CP$2 = $$type.TYPE_CP;
-  var Xom$1, Dom$1, Img$1, Geom$1, Component$1;
-
-  function initRoot(cd, root) {
-    var c = flattenJson({
-      tagName: root.tagName,
-      props: {},
-      children: cd,
-      $$type: TYPE_VD$2
-    });
-    root.__json = c;
-    root.__host = root;
-    var children = build(c.children, root, root);
-    return relation(root, children);
-  }
-
-  function initDom(json, root, host, parent) {
-    var vd = build(json, root, host);
-    return relation(parent, vd);
-  }
-
-  function initCp(json, root, host) {
-    if (util.isObject(json)) {
-      // cp的flatten在__init中自己做
-      return build(json, root, host);
-    } // text的relation会由上层如Root设置
-    else {
-      return new Text(json);
-    }
-  }
-
-  function initCp2(json, root, host, parent) {
-    var vd = new json.klass(json.props);
-    vd.__tagName = json.tagName || vd.__tagName;
-    vd.__root = root;
-    vd.__host = host;
-    vd.__json = json;
-
-    vd.__init();
-
-    return relation(parent, vd);
-  }
-  /**
-   * 将初始json文件生成virtualDom
-   * @param json
-   * @param root
-   * @param host
-   * @param hasP 出现过p标签
-   * @returns vd
-   */
-
-
-  function build(json, root, host, hasP) {
-    if (Array.isArray(json)) {
-      return json.map(function (item) {
-        return build(item, root, host, hasP);
-      });
-    }
-
-    var vd;
-
-    if (util.isObject(json) && json.$$type) {
-      var tagName = json.tagName,
-          props = json.props,
-          children = json.children,
-          klass = json.klass,
-          _$$type = json.$$type,
-          __inheritAnimate = json.__inheritAnimate,
-          __animateRecords = json.__animateRecords; // 更新过程中无变化的cp直接使用原来生成的
-
-      if (_$$type === TYPE_CP$2 && json.__placeholder) {
-        return json.__placeholder;
-      }
-
-      if (_$$type === TYPE_VD$2) {
-        if (tagName === 'img') {
-          vd = new Img$1(tagName, props);
-
-          if (Array.isArray(children) && children.length) {
-            throw new Error('Img can not contain children');
-          }
-        } else {
-          vd = new Dom$1(tagName, props);
-        } // 检查p不能包含div
-
-
-        if (tagName === 'p') {
-          hasP = true;
-        } else if (tagName === 'div' && hasP) {
-          throw new Error('Markup p can not contain div');
-        }
-
-        if (Array.isArray(children)) {
-          children = relation(vd, build(children, root, host, hasP));
-        } else {
-          children = [];
-        }
-
-        vd.__children = children;
-      } else if (_$$type === TYPE_GM$2) {
-        if (util.isString(tagName)) {
-          var _klass = Geom$1.getRegister(tagName);
-
-          vd = new _klass(tagName, props);
-        } else if (tagName) {
-          vd = new tagName('$', props);
-        }
-      } else if (_$$type === TYPE_CP$2) {
-        vd = new klass(props);
-        vd.__tagName = tagName || vd.__tagName;
-      } else {
-        return new Text(json);
-      } // 根parse需要用到真正的vd引用，然后vd也要引用json，用以做domApi
-
-
-      json.vd = vd;
-      vd.__json = json; // 递归parse中的动画记录需特殊处理，将target改为真正的vd引用
-
-      if (__animateRecords) {
-        vd.__animateRecords = __animateRecords;
-
-        __animateRecords.list.forEach(function (item) {
-          item.target = item.target.vd;
-        });
-
-        delete json.__animateRecords;
-      } // 更新过程中key相同或者普通相同的vd继承动画
-
-
-      if (__inheritAnimate) {
-        util.extendAnimate(__inheritAnimate, vd);
-        delete json.__inheritAnimate;
-      }
-
-      vd.__root = root;
-      vd.__host = host;
-
-      if (_$$type === TYPE_CP$2) {
-        vd.__init();
-      }
-
-      var ref = props.ref;
-
-      if (util.isString(ref) && ref || util.isNumber(ref)) {
-        host.ref[ref] = vd;
-      } else if (util.isFunction(ref)) {
-        ref(vd);
-      }
-
-      return vd;
-    }
-
-    return new Text(json);
-  }
-  /**
-   * 设置关系，父子和兄弟
-   * @param parent
-   * @param children
-   * @param options
-   * @returns {Xom|Text|Component}
-   */
-
-
-  function relation(parent, children) {
-    var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
-
-    if (Array.isArray(children)) {
-      children.forEach(function (item) {
-        relation(parent, item, options);
-      });
-    } else if (children instanceof Xom$1 || children instanceof Component$1 || children instanceof Text) {
-      children.__parent = parent;
-      children.__domParent = parent;
-
-      if (options.prev) {
-        options.prev.__next = children;
-        children.__prev = options.prev;
-      }
-
-      options.prev = children; // 文字视作为父节点的直接文字子节点
-
-      if (children instanceof Component$1) {
-        var sr = children.shadowRoot; // if(sr instanceof Text) {
-        //   sr.__parent = parent;
-        // }
-
-        sr.__domParent = parent;
-      }
-    }
-
-    return children;
-  }
-
-  var builder = {
-    ref: function ref(o) {
-      Xom$1 = o.Xom;
-      Dom$1 = o.Dom;
-      Img$1 = o.Img;
-      Geom$1 = o.Geom;
-      Component$1 = o.Component;
-    },
-    initRoot: initRoot,
-    initDom: initDom,
-    initCp: initCp,
-    initCp2: initCp2,
-    relation: relation
-  };
-
   var isFunction$9 = util.isFunction;
 
   var Event = /*#__PURE__*/function () {
@@ -16872,30 +16608,27 @@
 
   _defineProperty(Event, "END", 'end');
 
-  var isNil$c = util.isNil,
-      isFunction$8 = util.isFunction,
-      clone$3 = util.clone,
-      extend$2 = util.extend;
+  util.isNil;
+      var isFunction$8 = util.isFunction;
+      util.clone;
+      var extend$2 = util.extend;
   var REGISTER$1 = {};
   /**
    * 向上设置cp类型叶子节点，表明从root到本节点这条链路有更新，使得无链路更新的节约递归
    * 在check时树递归会用到，判断是否需要查找cp更新
    * @param cp
    */
-
-  function setUpdateFlag(cp) {
-    // 去重
-    if (cp.__hasCpUpdate) {
-      return;
-    }
-
-    cp.__hasCpUpdate = true;
-    var host = cp.host;
-
-    if (host) {
-      setUpdateFlag(host);
-    }
-  }
+  // function setUpdateFlag(cp) {
+  //   // 去重
+  //   if(cp.__hasCpUpdate) {
+  //     return;
+  //   }
+  //   cp.__hasCpUpdate = true;
+  //   let host = cp.host;
+  //   if(host) {
+  //     setUpdateFlag(host);
+  //   }
+  // }
 
   var Component = /*#__PURE__*/function (_Event) {
     _inherits(Component, _Event);
@@ -16916,88 +16649,76 @@
       _this.__parent = null;
       _this.__host = null;
       _this.__ref = {};
-      _this.state = {};
       _this.__isMounted = false;
       _this.__taskList = [];
       return _this;
-    }
+    } // setState(n, cb) {
+    //   let self = this;
+    //   if(isNil(n)) {
+    //     n = {};
+    //   }
+    //   else if(isFunction(n)) {
+    //     return;
+    //   }
+    //   else {
+    //     if(Object.keys(n).length === 0) {
+    //       if(isFunction(cb)) {
+    //         cb.call(self);
+    //       }
+    //       return;
+    //     }
+    //     let state = clone(self.state);
+    //     n = extend(state, n);
+    //   }
+    //   let root = self.root;
+    //   if(root && self.__isMounted) {
+    //     // 一帧之内多次调用，需合并
+    //     if(self.__nextState) {
+    //       Object.assign(self.__nextState, n);
+    //       self.__taskList.push(cb);
+    //     }
+    //     else {
+    //       self.__nextState = n;
+    //       self.__taskList = [cb];
+    //       // 回调更新列表，before执行时splice出来供after执行，防止中途产生的后续setState干扰
+    //       let list = [];
+    //       let t = self.__task = {
+    //         __before: () => {
+    //           list = self.__taskList.splice(0);
+    //           // 标识更新
+    //           setUpdateFlag(this);
+    //         },
+    //         __after: () => {
+    //           // self.__nextState = null; 由updater.js每次refresh前同步执行清空，这里不能异步清除，否则frame动画会乱序
+    //           list.forEach(cb => {
+    //             if(isFunction(cb)) {
+    //               cb.call(self);
+    //             }
+    //           });
+    //         },
+    //       };
+    //       root.addRefreshCp(t);
+    //     }
+    //   }
+    //   // 构造函数中调用还未render，
+    //   else if(isFunction(cb)) {
+    //     self.state = n;
+    //     cb.call(self);
+    //   }
+    // }
+
+    /**
+     * build中调用初始化，处理过flatten
+     */
+
 
     _createClass(Component, [{
-      key: "setState",
-      value: function setState(n, cb) {
+      key: "__init",
+      value: function __init() {
         var _this2 = this;
 
-        var self = this;
-
-        if (isNil$c(n)) {
-          n = {};
-        } else if (isFunction$8(n)) {
-          return;
-        } else {
-          if (Object.keys(n).length === 0) {
-            if (isFunction$8(cb)) {
-              cb.call(self);
-            }
-
-            return;
-          }
-
-          var state = clone$3(self.state);
-          n = extend$2(state, n);
-        }
-
-        var root = self.root;
-
-        if (root && self.__isMounted) {
-          // 一帧之内多次调用，需合并
-          if (self.__nextState) {
-            Object.assign(self.__nextState, n);
-
-            self.__taskList.push(cb);
-          } else {
-            self.__nextState = n;
-            self.__taskList = [cb]; // 回调更新列表，before执行时splice出来供after执行，防止中途产生的后续setState干扰
-
-            var list = [];
-            var t = self.__task = {
-              __before: function __before() {
-                list = self.__taskList.splice(0); // 标识更新
-
-                setUpdateFlag(_this2);
-              },
-              __after: function __after() {
-                // self.__nextState = null; 由updater.js每次refresh前同步执行清空，这里不能异步清除，否则frame动画会乱序
-                list.forEach(function (cb) {
-                  if (isFunction$8(cb)) {
-                    cb.call(self);
-                  }
-                });
-              }
-            };
-            root.addRefreshCp(t);
-          }
-        } // 构造函数中调用还未render，
-        else if (isFunction$8(cb)) {
-          self.state = n;
-          cb.call(self);
-        }
-      }
-      /**
-       * build中调用初始化，json有值时是update过程才有，且处理过flatten
-       * @param json
-       * @private
-       */
-
-    }, {
-      key: "__init",
-      value: function __init(json) {
-        var _this3 = this;
-
         this.__ref = {};
-        var root = this.root;
-        var cd = json || flattenJson(this.render());
-        var sr = builder.initCp(cd, root, this);
-        this.__cd = cd;
+        var sr = this.__shadowRoot;
 
         if (sr instanceof Text) ; else if (sr instanceof Node) {
           var style = css.normalize(this.props.style);
@@ -17006,51 +16727,32 @@
           extend$2(sr.currentStyle, style, keys); // 事件添加到sr
 
           Object.keys(this.props).forEach(function (k) {
-            var v = _this3.props[k];
+            var v = _this2.props[k];
 
             if (/^on[a-zA-Z]/.test(k)) {
               k = k.slice(2).toLowerCase();
               sr.listener[k] = v;
             }
           });
-        } else if (!(sr instanceof Component)) {
-          // 本身build是递归的，子cp已经初始化了
-          throw new Error('Component render() must return a dom/text: ' + this);
         } // 自定义事件无视返回强制添加
 
 
         Object.keys(this.props).forEach(function (k) {
-          var v = _this3.props[k];
+          var v = _this2.props[k];
 
           if (/^on-[a-zA-Z\d_$]/.test(k)) {
             k = k.slice(3);
 
-            _this3.on(k, v);
+            _this2.on(k, v);
           }
-        }); // shadow指向直接renderRoot，shadowRoot考虑到返回Component的递归即hoc高阶组件
-        // host是直接所属，hostRoot同考虑到高阶组件
-
-        this.__shadow = sr;
-        sr.__host = this; // 递归下去，多层级时执行顺序由里到外，最终会被最上层执行替换
-
-        while (sr instanceof Component) {
-          sr.__hostRoot = this;
-          sr.shadow.__host = sr;
-          sr = sr.shadow;
-        }
-
-        this.__shadowRoot = sr;
-        sr.__hostRoot = this;
-
-        if (!this.__isMounted) {
-          this.__isMounted = true;
-
-          if (isFunction$8(this.componentDidMount)) {
-            root.once(Event.REFRESH, function () {
-              _this3.componentDidMount();
-            });
-          }
-        }
+        }); // if(!this.__isMounted) {
+        //   this.__isMounted = true;
+        //   if(isFunction(this.componentDidMount)) {
+        //     root.once(Event.REFRESH, () => {
+        //       this.componentDidMount();
+        //     });
+        //   }
+        // }
       }
     }, {
       key: "render",
@@ -18013,8 +17715,6 @@
       this.__hookTask = []; // 动画刷新后，每个root注册的刷新回调执行
 
       this.__task = [];
-      this.__taskCp = []; // 区别于task，component专用，和animate等其它不同流水线，在最后执行，防止混了 #122
-
       this.__now = null;
     }
 
@@ -18022,8 +17722,7 @@
       key: "__init",
       value: function __init() {
         var self = this;
-        var task = self.task,
-            taskCp = self.taskCp;
+        var task = self.task;
         inject.cancelAnimationFrame(self.id);
         var last = self.__now = inject.now();
 
@@ -18031,7 +17730,7 @@
           // 必须清除，可能会发生重复，当动画finish回调中gotoAndPlay(0)，下方结束判断发现aTask还有值会继续，新的init也会进入再次执行
           inject.cancelAnimationFrame(self.id);
           self.id = inject.requestAnimationFrame(function () {
-            if (isPause || !task.length && !taskCp.length) {
+            if (isPause || !task.length) {
               return;
             }
 
@@ -18042,12 +17741,8 @@
             last = now; // 优先动画计算
 
             var clone = task.slice(0);
-            var cloneCp = taskCp.splice(0); // task要常驻，taskCp只1次直接splice清空
-
             var length = clone.length;
-            var lengthCp = cloneCp.length;
-            traversal(clone, length, diff, false);
-            traversal(cloneCp, lengthCp, diff, false); // 执行动画造成的每个Root的刷新并清空
+            traversal(clone, length, diff, false); // 执行动画造成的每个Root的刷新并清空
 
             var list = self.__hookTask.splice(0);
 
@@ -18057,10 +17752,9 @@
             } // 普通的before/after
 
 
-            traversal(clone, length, diff, true);
-            traversal(cloneCp, lengthCp, diff, true); // 还有则继续，没有则停止节省性能
+            traversal(clone, length, diff, true); // 还有则继续，没有则停止节省性能
 
-            if (task.length || taskCp.length) {
+            if (task.length) {
               cb();
             }
           });
@@ -18141,18 +17835,6 @@
         this.onFrame(cb);
       }
     }, {
-      key: "__nextFrameCp",
-      value: function __nextFrameCp(handle) {
-        var task = this.task,
-            taskCp = this.taskCp;
-
-        if (!task.length && !taskCp.length) {
-          this.__init();
-        }
-
-        taskCp.push(handle);
-      }
-    }, {
       key: "pause",
       value: function pause() {
         isPause = true;
@@ -18170,11 +17852,6 @@
       key: "task",
       get: function get() {
         return this.__task;
-      }
-    }, {
-      key: "taskCp",
-      get: function get() {
-        return this.__taskCp;
       }
     }]);
 
@@ -18386,7 +18063,7 @@
       VMIN$4 = o$4.VMIN,
       GRADIENT$2 = o$4.GRADIENT,
       calUnit = o$4.calUnit;
-  var isNil$b = util.isNil,
+  var isNil$a = util.isNil,
       isFunction$6 = util.isFunction,
       isNumber = util.isNumber,
       isObject$1 = util.isObject,
@@ -18440,7 +18117,7 @@
     frames.forEach(function (item) {
       var style = item.style;
       keys.forEach(function (k) {
-        if (!style.hasOwnProperty(k) || isNil$b(style[k])) {
+        if (!style.hasOwnProperty(k) || isNil$a(style[k])) {
           if (GEOM$1.hasOwnProperty(k)) {
             style[k] = target.getProps(k);
           } else {
@@ -18466,7 +18143,7 @@
       keys.forEach(function (k) {
         var v = style[k]; // geom的属性可能在帧中没有
 
-        if (isNil$b(v)) {
+        if (isNil$a(v)) {
           return;
         }
 
@@ -18735,7 +18412,7 @@
         var pv = p ? p[i] : null,
             nv = n ? n[i] : null; // 空或key不等都无变化
 
-        if (isNil$b(pv) || isNil$b(nv) || pv.k !== nv.k) {
+        if (isNil$a(pv) || isNil$a(nv) || pv.k !== nv.k) {
           v.push(null);
         } else {
           var _k = pv.k,
@@ -19118,7 +18795,7 @@
     } else if (GEOM$1.hasOwnProperty(k)) {
       var tagName = target.tagName;
 
-      if (isNil$b(p)) {
+      if (isNil$a(p)) {
         return;
       } else if (GEOM$1[k][tagName] && isFunction$6(GEOM$1[k][tagName].calDiff)) {
         var fn = GEOM$1[k][tagName].calDiff;
@@ -19137,7 +18814,7 @@
       } // 特殊处理multi
       else if (target.isMulti) {
         if (k === 'points' || k === 'controls') {
-          if (isNil$b(n) || !n.length || isNil$b(p) || !p.length || equalArr(p, n)) {
+          if (isNil$a(n) || !n.length || isNil$a(p) || !p.length || equalArr(p, n)) {
             return;
           }
 
@@ -19147,7 +18824,7 @@
             var _pv = p[_i9];
             var _nv = n[_i9];
 
-            if (isNil$b(_pv) || !_pv.length || isNil$b(_nv) || !_nv.length) {
+            if (isNil$a(_pv) || !_pv.length || isNil$a(_nv) || !_nv.length) {
               res.v.push(null);
             } else {
               var _v12 = [];
@@ -19156,7 +18833,7 @@
                 var pv2 = _pv[_j3];
                 var nv2 = _nv[_j3];
 
-                if (isNil$b(pv2) || isNil$b(nv2)) {
+                if (isNil$a(pv2) || isNil$a(nv2)) {
                   _v12.push(null);
                 } else {
                   var v3 = [];
@@ -19165,7 +18842,7 @@
                     var pv3 = pv2[_k4];
                     var nv3 = nv2[_k4]; // control由4点变2点
 
-                    if (isNil$b(pv3) || isNil$b(nv3)) {
+                    if (isNil$a(pv3) || isNil$a(nv3)) {
                       v3.push(0);
                     } else {
                       v3.push(nv3 - pv3);
@@ -19180,7 +18857,7 @@
             }
           }
         } else if (k === 'controlA' || k === 'controlB') {
-          if (isNil$b(n) || !n.length || isNil$b(p) || !p.length || equalArr(p, n)) {
+          if (isNil$a(n) || !n.length || isNil$a(p) || !p.length || equalArr(p, n)) {
             return;
           }
 
@@ -19190,7 +18867,7 @@
             var _pv2 = p[_i10];
             var _nv2 = n[_i10];
 
-            if (isNil$b(_pv2) || !_pv2.length || isNil$b(_nv2) || !_nv2.length) {
+            if (isNil$a(_pv2) || !_pv2.length || isNil$a(_nv2) || !_nv2.length) {
               res.v.push(null);
             } else {
               res.v.push([_nv2[0] - _pv2[0], _nv2[1] - _pv2[1]]);
@@ -19207,7 +18884,7 @@
             var _pv3 = p[_i11];
             var _nv3 = n[_i11];
 
-            if (isNil$b(_pv3) || isNil$b(_nv3)) {
+            if (isNil$a(_pv3) || isNil$a(_nv3)) {
               _v13.push(0);
             }
 
@@ -19218,7 +18895,7 @@
         }
       } // 非multi特殊处理这几类数组类型数据
       else if (k === 'points' || k === 'controls') {
-        if (isNil$b(n) || !n.length || isNil$b(p) || !p.length || equalArr(p, n)) {
+        if (isNil$a(n) || !n.length || isNil$a(p) || !p.length || equalArr(p, n)) {
           return;
         }
 
@@ -19228,7 +18905,7 @@
           var _pv4 = p[_i12];
           var _nv4 = n[_i12];
 
-          if (isNil$b(_pv4) || !_pv4.length || isNil$b(_nv4) || !_nv4.length) {
+          if (isNil$a(_pv4) || !_pv4.length || isNil$a(_nv4) || !_nv4.length) {
             res.v.push(null);
           } else {
             var _v14 = [];
@@ -19237,7 +18914,7 @@
               var _pv5 = _pv4[_j4];
               var _nv5 = _nv4[_j4]; // control由4点变2点
 
-              if (isNil$b(_pv5) || isNil$b(_nv5)) {
+              if (isNil$a(_pv5) || isNil$a(_nv5)) {
                 _v14.push(0);
               } else {
                 _v14.push(_nv5 - _pv5);
@@ -19248,7 +18925,7 @@
           }
         }
       } else if (k === 'controlA' || k === 'controlB') {
-        if (isNil$b(n) || !n.length || isNil$b(p) || !p.length || equalArr(p, n)) {
+        if (isNil$a(n) || !n.length || isNil$a(p) || !p.length || equalArr(p, n)) {
           return;
         }
 
@@ -19698,14 +19375,14 @@
               var o = _st[_i20];
               var n = v[_i20];
 
-              if (!isNil$b(o) && !isNil$b(n)) {
+              if (!isNil$a(o) && !isNil$a(n)) {
                 for (var _j6 = 0, len2 = Math.min(o.length, n.length); _j6 < len2; _j6++) {
                   var o2 = o[_j6];
                   var n2 = n[_j6];
 
-                  if (!isNil$b(o2) && !isNil$b(n2)) {
+                  if (!isNil$a(o2) && !isNil$a(n2)) {
                     for (var _k5 = 0, len3 = Math.min(o2.length, n2.length); _k5 < len3; _k5++) {
-                      if (!isNil$b(o2[_k5]) && !isNil$b(n2[_k5])) {
+                      if (!isNil$a(o2[_k5]) && !isNil$a(n2[_k5])) {
                         o2[_k5] += n2[_k5] * percent;
                       }
                     }
@@ -19717,12 +19394,12 @@
             v.forEach(function (item, i) {
               var st2 = _st[i];
 
-              if (!isNil$b(item) && !isNil$b(st2)) {
+              if (!isNil$a(item) && !isNil$a(st2)) {
                 for (var _i21 = 0, _len12 = Math.min(st2.length, item.length); _i21 < _len12; _i21++) {
                   var _o = st2[_i21];
                   var _n = item[_i21];
 
-                  if (!isNil$b(_o) && !isNil$b(_n)) {
+                  if (!isNil$a(_o) && !isNil$a(_n)) {
                     st2[_i21] += _n * percent;
                   }
                 }
@@ -19730,7 +19407,7 @@
             });
           } else {
             v.forEach(function (item, i) {
-              if (!isNil$b(item) && !isNil$b(_st[i])) {
+              if (!isNil$a(item) && !isNil$a(_st[i])) {
                 _st[i] += item * percent;
               }
             });
@@ -19741,24 +19418,24 @@
               var _o2 = _st[_i22];
               var _n2 = v[_i22];
 
-              if (!isNil$b(_o2) && !isNil$b(_n2)) {
+              if (!isNil$a(_o2) && !isNil$a(_n2)) {
                 for (var _j7 = 0, _len14 = Math.min(_o2.length, _n2.length); _j7 < _len14; _j7++) {
-                  if (!isNil$b(_o2[_j7]) && !isNil$b(_n2[_j7])) {
+                  if (!isNil$a(_o2[_j7]) && !isNil$a(_n2[_j7])) {
                     _o2[_j7] += _n2[_j7] * percent;
                   }
                 }
               }
             }
           } else if (k === 'controlA' || k === 'controlB') {
-            if (!isNil$b(_st[0]) && !isNil$b(v[0])) {
+            if (!isNil$a(_st[0]) && !isNil$a(v[0])) {
               _st[0] += v[0] * percent;
             }
 
-            if (!isNil$b(_st[1]) && !isNil$b(v[1])) {
+            if (!isNil$a(_st[1]) && !isNil$a(v[1])) {
               _st[1] += v[1] * percent;
             }
           } else {
-            if (!isNil$b(_st) && !isNil$b(v)) {
+            if (!isNil$a(_st) && !isNil$a(v)) {
               style[k] += v * percent;
             }
           }
@@ -21553,7 +21230,7 @@
   var int2rgba$1 = util.int2rgba,
       rgba2int = util.rgba2int,
       joinArr$1 = util.joinArr,
-      isNil$a = util.isNil,
+      isNil$9 = util.isNil,
       isFunction$5 = util.isFunction;
   var calRelative = css.calRelative,
       calNormalLineHeight = css.calNormalLineHeight,
@@ -21566,7 +21243,7 @@
   var point2d = mx.point2d;
   var contain$3 = o$1.contain,
       TF$1 = o$1.TRANSFORM,
-      REFLOW$2 = o$1.REFLOW,
+      REFLOW$1 = o$1.REFLOW,
       REPAINT$2 = o$1.REPAINT,
       TX = o$1.TRANSLATE_X,
       TY = o$1.TRANSLATE_Y,
@@ -21660,7 +21337,7 @@
 
       var isClip = _this.__isClip = !!_this.props.clip;
       _this.__isMask = isClip || !!_this.props.mask;
-      _this.__refreshLevel = REFLOW$2;
+      _this.__refreshLevel = REFLOW$1;
       _this.__limitCache = false;
       _this.__isInline = false;
       _this.__hasContent = false;
@@ -21941,14 +21618,14 @@
       value: function __ioSize(w, h) {
         var computedStyle = this.computedStyle; // 可能不传，在虚拟布局时用不到
 
-        if (!isNil$a(w)) {
+        if (!isNil$9(w)) {
           this.__width = computedStyle[WIDTH$4] = w;
           this.__clientWidth = w += computedStyle[PADDING_LEFT$5] + computedStyle[PADDING_RIGHT$4];
           this.__offsetWidth = w += computedStyle[BORDER_LEFT_WIDTH$5] + computedStyle[BORDER_RIGHT_WIDTH$4];
           this.__outerWidth = w + computedStyle[MARGIN_LEFT$5] + computedStyle[MARGIN_RIGHT$4];
         }
 
-        if (!isNil$a(h)) {
+        if (!isNil$9(h)) {
           this.__height = computedStyle[HEIGHT$5] = h;
           this.__clientHeight = h += computedStyle[PADDING_TOP$3] + computedStyle[PADDING_BOTTOM$3];
           this.__offsetHeight = h += computedStyle[BORDER_TOP_WIDTH$3] + computedStyle[BORDER_BOTTOM_WIDTH$3];
@@ -22021,7 +21698,7 @@
         if (!isAbs && !isColumn && !isRow) {
           this.clearCache();
           this.__cacheStyle = {};
-          this.__refreshLevel = REFLOW$2;
+          this.__refreshLevel = REFLOW$1;
           this.__limitCache = false;
           this.__isInline = false;
           var next = this.next; // mask关系只有布局才会变更，普通渲染关系不会改变，clip也是mask的一种
@@ -22360,7 +22037,7 @@
 
         var matrixCache = __cacheStyle[MATRIX$1]; // tx/ty变化特殊优化
 
-        if (matrixCache && lv < REFLOW$2 && !contain$3(lv, TF$1)) {
+        if (matrixCache && lv < REFLOW$1 && !contain$3(lv, TF$1)) {
           var x = 0,
               y = 0,
               z = 0;
@@ -22368,7 +22045,7 @@
           if (contain$3(lv, TX)) {
             var v = __currentStyle[TRANSLATE_X];
 
-            if (isNil$a(v)) {
+            if (isNil$9(v)) {
               v = 0;
             } else {
               v = this.__calSize(v, this.__offsetWidth, true);
@@ -22383,7 +22060,7 @@
           if (contain$3(lv, TY)) {
             var _v = __currentStyle[TRANSLATE_Y];
 
-            if (isNil$a(_v)) {
+            if (isNil$9(_v)) {
               _v = 0;
             } else if (_v.u === PX$5) {
               _v = _v.v;
@@ -22400,7 +22077,7 @@
           if (contain$3(lv, TZ)) {
             var _v2 = __currentStyle[TRANSLATE_Z];
 
-            if (isNil$a(_v2)) {
+            if (isNil$9(_v2)) {
               _v2 = 0;
             } else {
               _v2 = this.__calSize(_v2, this.__offsetWidth, true);
@@ -22438,7 +22115,7 @@
                 delete __computedStyle[k];
                 var v = __currentStyle[k];
 
-                if (isNil$a(v)) {
+                if (isNil$9(v)) {
                   return;
                 }
 
@@ -22558,15 +22235,15 @@
           __computedStyle[k] = __currentStyle[k];
         });
 
-        if (isNil$a(__cacheStyle[FILTER$3])) {
+        if (isNil$9(__cacheStyle[FILTER$3])) {
           this.__calFilter(__currentStyle, __computedStyle, __cacheStyle);
         }
 
-        if (isNil$a(__cacheStyle[MATRIX$1])) {
-          this.__calMatrix(REFLOW$2, __currentStyle, __computedStyle, __cacheStyle);
+        if (isNil$9(__cacheStyle[MATRIX$1])) {
+          this.__calMatrix(REFLOW$1, __currentStyle, __computedStyle, __cacheStyle);
         }
 
-        if (isNil$a(__cacheStyle[BACKGROUND_POSITION_X])) {
+        if (isNil$9(__cacheStyle[BACKGROUND_POSITION_X])) {
           __cacheStyle[BACKGROUND_POSITION_X] = true;
           var bgX = __currentStyle[BACKGROUND_POSITION_X];
           __computedStyle[BACKGROUND_POSITION_X] = (bgX || []).map(function (item) {
@@ -22578,7 +22255,7 @@
           });
         }
 
-        if (isNil$a(__cacheStyle[BACKGROUND_POSITION_Y])) {
+        if (isNil$9(__cacheStyle[BACKGROUND_POSITION_Y])) {
           __cacheStyle[BACKGROUND_POSITION_Y] = true;
           var bgY = __currentStyle[BACKGROUND_POSITION_Y];
           __computedStyle[BACKGROUND_POSITION_Y] = (bgY || []).map(function (item) {
@@ -22590,7 +22267,7 @@
           });
         }
 
-        if (isNil$a(__cacheStyle[BACKGROUND_SIZE])) {
+        if (isNil$9(__cacheStyle[BACKGROUND_SIZE])) {
           __cacheStyle[BACKGROUND_SIZE] = true;
           __computedStyle[BACKGROUND_SIZE] = (__currentStyle[BACKGROUND_SIZE] || []).map(function (item) {
             if (Array.isArray(item)) {
@@ -22608,7 +22285,7 @@
           });
         }
 
-        if (isNil$a(__cacheStyle[BACKGROUND_IMAGE])) {
+        if (isNil$9(__cacheStyle[BACKGROUND_IMAGE])) {
           var bgI = __currentStyle[BACKGROUND_IMAGE];
           __computedStyle[BACKGROUND_IMAGE] = bgI.map(function (item) {
             if (item) {
@@ -22674,7 +22351,7 @@
           });
         }
 
-        if (isNil$a(__cacheStyle[BOX_SHADOW])) {
+        if (isNil$9(__cacheStyle[BOX_SHADOW])) {
           __cacheStyle[BOX_SHADOW] = true;
           __computedStyle[BOX_SHADOW] = (__currentStyle[BOX_SHADOW] || []).map(function (item) {
             return item.map(function (item2, i) {
@@ -22688,12 +22365,12 @@
         }
 
         [BACKGROUND_COLOR, BORDER_TOP_COLOR, BORDER_RIGHT_COLOR, BORDER_BOTTOM_COLOR, BORDER_LEFT_COLOR].forEach(function (k) {
-          if (isNil$a(__cacheStyle[k])) {
+          if (isNil$9(__cacheStyle[k])) {
             __cacheStyle[k] = int2rgba$1(__computedStyle[k] = __currentStyle[k].v);
           }
         }); // 圆角边计算
 
-        if (isNil$a(__cacheStyle[BORDER_TOP_LEFT_RADIUS$1]) || isNil$a(__cacheStyle[BORDER_TOP_RIGHT_RADIUS$1]) || isNil$a(__cacheStyle[BORDER_BOTTOM_RIGHT_RADIUS$1]) || isNil$a(__cacheStyle[BORDER_BOTTOM_LEFT_RADIUS$1])) {
+        if (isNil$9(__cacheStyle[BORDER_TOP_LEFT_RADIUS$1]) || isNil$9(__cacheStyle[BORDER_TOP_RIGHT_RADIUS$1]) || isNil$9(__cacheStyle[BORDER_BOTTOM_RIGHT_RADIUS$1]) || isNil$9(__cacheStyle[BORDER_BOTTOM_LEFT_RADIUS$1])) {
           __cacheStyle[BORDER_TOP_LEFT_RADIUS$1] = __cacheStyle[BORDER_TOP_RIGHT_RADIUS$1] = __cacheStyle[BORDER_BOTTOM_RIGHT_RADIUS$1] = __cacheStyle[BORDER_BOTTOM_LEFT_RADIUS$1] = true; // 非替代的inline计算看contentBox首尾
 
           if (isInline) {
@@ -22719,17 +22396,17 @@
           var kw = STYLE_KEY[style2Upper(k + 'Width')];
           var ks = STYLE_KEY[style2Upper(k + 'Style')]; // width/style变更影响border重新计算
 
-          if (isNil$a(__cacheStyle[kw])) {
+          if (isNil$9(__cacheStyle[kw])) {
             __cacheStyle[kw] = true;
             __cacheStyle[k2] = undefined;
           }
 
-          if (isNil$a(__cacheStyle[ks])) {
+          if (isNil$9(__cacheStyle[ks])) {
             __cacheStyle[ks] = true;
             __cacheStyle[k2] = undefined;
           }
 
-          if (isNil$a(__cacheStyle[k2])) {
+          if (isNil$9(__cacheStyle[k2])) {
             if (k2 === BORDER_TOP) {
               if (borderTopWidth > 0) {
                 if (!isInline) {
@@ -22785,7 +22462,7 @@
 
         if (__currentStyle[FONT_STYLE].u === INHERIT$1) {
           __computedStyle[FONT_STYLE] = parent ? parentComputedStyle[FONT_STYLE] : 'normal';
-        } else if (isNil$a(__cacheStyle[FONT_STYLE])) {
+        } else if (isNil$9(__cacheStyle[FONT_STYLE])) {
           __computedStyle[FONT_STYLE] = __currentStyle[FONT_STYLE].v;
         }
 
@@ -22800,7 +22477,7 @@
           } else {
             __cacheStyle[COLOR$1] = int2rgba$1(__computedStyle[COLOR$1]);
           }
-        } else if (isNil$a(__cacheStyle[COLOR$1])) {
+        } else if (isNil$9(__cacheStyle[COLOR$1])) {
           if (color.u === GRADIENT$1) {
             __cacheStyle[COLOR$1] = __computedStyle[COLOR$1] = color.v;
           } else {
@@ -22818,7 +22495,7 @@
           } else {
             __cacheStyle[TEXT_STROKE_COLOR$1] = int2rgba$1(__computedStyle[TEXT_STROKE_COLOR$1]);
           }
-        } else if (isNil$a(__cacheStyle[TEXT_STROKE_COLOR$1])) {
+        } else if (isNil$9(__cacheStyle[TEXT_STROKE_COLOR$1])) {
           if (textStrokeColor.u === GRADIENT$1) {
             __cacheStyle[TEXT_STROKE_COLOR$1] = __computedStyle[TEXT_STROKE_COLOR$1] = textStrokeColor.v;
           } else if (textStrokeColor.u === RGBA$1) {
@@ -22829,7 +22506,7 @@
         if (__currentStyle[TEXT_STROKE_WIDTH$1].u === INHERIT$1) {
           __computedStyle[TEXT_STROKE_WIDTH$1] = parent ? parentComputedStyle[TEXT_STROKE_WIDTH$1] : reset.INHERIT.textStrokeWidth;
           __cacheStyle[TEXT_STROKE_WIDTH$1] = true;
-        } else if (isNil$a(__cacheStyle[TEXT_STROKE_WIDTH$1])) {
+        } else if (isNil$9(__cacheStyle[TEXT_STROKE_WIDTH$1])) {
           var _v4 = __currentStyle[TEXT_STROKE_WIDTH$1];
 
           if (_v4.u === REM$3) {
@@ -22858,7 +22535,7 @@
 
         if (__currentStyle[VISIBILITY$4].u === INHERIT$1) {
           __computedStyle[VISIBILITY$4] = parent ? parentComputedStyle[VISIBILITY$4] : 'visible';
-        } else if (isNil$a(__cacheStyle[VISIBILITY$4])) {
+        } else if (isNil$9(__cacheStyle[VISIBILITY$4])) {
           __computedStyle[VISIBILITY$4] = __currentStyle[VISIBILITY$4].v;
         }
 
@@ -22866,7 +22543,7 @@
 
         if (__currentStyle[POINTER_EVENTS$1].u === INHERIT$1) {
           __computedStyle[POINTER_EVENTS$1] = parent ? parentComputedStyle[POINTER_EVENTS$1] : 'auto';
-        } else if (isNil$a(__cacheStyle[POINTER_EVENTS$1])) {
+        } else if (isNil$9(__cacheStyle[POINTER_EVENTS$1])) {
           __computedStyle[POINTER_EVENTS$1] = __currentStyle[POINTER_EVENTS$1].v;
         }
 
@@ -22887,14 +22564,14 @@
         var __sx1 = this.__sx1,
             __sy1 = this.__sy1;
 
-        if (isNil$a(__cacheStyle[PERSPECTIVE$2])) {
+        if (isNil$9(__cacheStyle[PERSPECTIVE$2])) {
           __cacheStyle[PERSPECTIVE$2] = true;
           rebuild = true;
           var v = __currentStyle[PERSPECTIVE$2];
           __computedStyle[PERSPECTIVE$2] = this.__calSize(v, this.clientWidth, true);
         }
 
-        if (isNil$a(__cacheStyle[PERSPECTIVE_ORIGIN$1])) {
+        if (isNil$9(__cacheStyle[PERSPECTIVE_ORIGIN$1])) {
           __cacheStyle[PERSPECTIVE_ORIGIN$1] = true;
           rebuild = true;
           __computedStyle[PERSPECTIVE_ORIGIN$1] = __currentStyle[PERSPECTIVE_ORIGIN$1].map(function (item, i) {
@@ -23241,46 +22918,7 @@
           by2: by2
         }; // cache的canvas模式已经提前计算好了，其它需要现在计算
 
-        var matrix = this.__matrix; // webgl特殊申请离屏缓存
-        // if(renderMode === WEBGL) {
-        //   // 无内容可释放并提前跳出，geom覆盖特殊判断，因为后面子类会绘制矢量，img也覆盖特殊判断，加载完肯定有内容
-        //   if(!this.__hasContent) {
-        //     res.break = true;
-        //     this.__limitCache = null;
-        //   }
-        //   // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等，geom单独在dom里做
-        //   else {
-        //     let bbox = this.bbox;
-        //     if(__cache) {
-        //       __cache.reset(bbox, sx1, sy1);
-        //     }
-        //     else {
-        //       __cache = Cache.getInstance(bbox, sx1, sy1);
-        //     }
-        //     // cache成功设置坐标偏移，否则为超过最大尺寸限制不使用缓存
-        //     if(__cache && __cache.__enabled) {
-        //       __cache.__bbox = bbox;
-        //       __cache.__available = true;
-        //       ctx = __cache.ctx;
-        //       dx += __cache.dx;
-        //       dy += __cache.dy;
-        //       res.ctx = ctx;
-        //       res.dx = dx;
-        //       res.dy = dy;
-        //     }
-        //     else {
-        //       __cache && __cache.clear();
-        //       __cache = null;
-        //       let c = inject.getCacheCanvas(root.width, root.height, '__$$OVERSIZE$$__');
-        //       c.available = true;
-        //       res.ctx = ctx = c.ctx;
-        //       res.limitCache = this.__limitCache = c;
-        //     }
-        //     this.__cache = __cache;
-        //   }
-        // }
-        // 渲染样式
-
+        var matrix = this.__matrix;
         var backgroundColor = computedStyle[BACKGROUND_COLOR],
             borderTopColor = computedStyle[BORDER_TOP_COLOR],
             borderRightColor = computedStyle[BORDER_RIGHT_COLOR],
@@ -24055,7 +23693,7 @@
 
     }, {
       key: "clearCache",
-      value: function clearCache() {
+      value: function clearCache(lookUp) {
         var __cacheTotal = this.__cacheTotal;
         var __cacheFilter = this.__cacheFilter;
         var __cacheMask = this.__cacheMask;
@@ -24080,6 +23718,35 @@
 
         if (__cacheOverflow) {
           __cacheOverflow.release();
+        }
+
+        if (lookUp) {
+          var p = this.__domParent;
+
+          while (p) {
+            var _cacheTotal = p.__cacheTotal;
+            var _cacheFilter = p.__cacheFilter;
+            var _cacheMask = p.__cacheMask;
+            var _cacheOverflow = p.__cacheOverflow;
+
+            if (_cacheTotal) {
+              _cacheTotal.release();
+            }
+
+            if (_cacheFilter) {
+              _cacheFilter.release();
+            }
+
+            if (_cacheMask) {
+              _cacheMask.release();
+            }
+
+            if (_cacheOverflow) {
+              _cacheOverflow.release();
+            }
+
+            p = p.__domParent;
+          }
         }
       }
     }, {
@@ -24454,8 +24121,7 @@
         var self = this;
 
         if (self.isDestroyed) {
-          inject.warn('Remove target is destroyed.');
-
+          // inject.warn('Remove target is destroyed.');
           if (isFunction$5(cb)) {
             cb();
           }
@@ -24506,7 +24172,7 @@
 
             var res = {
               node: self,
-              focus: REFLOW$2,
+              focus: REFLOW$1,
               removeDom: true
             };
 
@@ -25496,7 +25162,7 @@
   var AUTO$4 = o$4.AUTO,
       PX$4 = o$4.PX,
       PERCENT$4 = o$4.PERCENT;
-  var REFLOW$1 = o$1.REFLOW;
+  var REFLOW = o$1.REFLOW;
 
   function offsetAndResizeByNodeOnY(node, root, reflowHash, dy, inDirectAbsList) {
     if (dy) {
@@ -25532,20 +25198,20 @@
 
               if (top.u === AUTO$4) {
                 if (bottom.u === AUTO$4 || bottom.u === PX$4) {
-                  next.__offsetY(dy, true, REFLOW$1);
+                  next.__offsetY(dy, true, REFLOW);
 
                   next.clearCache();
                 } else if (bottom.u === PERCENT$4) {
                   var v = (1 - bottom.v * 0.01) * dy;
 
-                  next.__offsetY(v, true, REFLOW$1);
+                  next.__offsetY(v, true, REFLOW);
 
                   next.clearCache();
                 }
               } else if (top.u === PERCENT$4) {
                 var _v = top.v * 0.01 * dy;
 
-                next.__offsetY(_v, true, REFLOW$1);
+                next.__offsetY(_v, true, REFLOW);
 
                 next.clearCache();
               } // 高度百分比需发生变化的重新布局，需要在容器内
@@ -25577,7 +25243,7 @@
                 }
               }
             } else {
-              next.__offsetY(dy, true, REFLOW$1);
+              next.__offsetY(dy, true, REFLOW);
 
               next.clearCache();
             }
@@ -25608,7 +25274,7 @@
         }
 
         if (need) {
-          node.__resizeY(dy, REFLOW$1);
+          node.__resizeY(dy, REFLOW);
 
           node.clearCache();
         } // abs或者高度不需要继续向上调整提前跳出
@@ -25672,6 +25338,136 @@
     getMergeMargin: getMergeMargin
   };
 
+  /**
+   * 打平children，并设置兄弟父子关系，合并并生成Text节点，
+   */
+
+  function buildChildren(parent, children) {
+    var list = [];
+    flatten(list, children, {
+      lastText: null
+    });
+    return list;
+  }
+
+  function flatten(list, children, options) {
+    if (Array.isArray(children)) {
+      children.forEach(function (item) {
+        flatten(list, item, options);
+      });
+    } else if (children instanceof Xom) {
+      if (['canvas', 'svg', 'webgl'].indexOf(children.tagName) > -1) {
+        throw new Error('Can not nest canvas/svg/webgl');
+      }
+
+      list.push(children);
+      options.lastText = null;
+    } else if (children instanceof Component) {
+      list.push(children);
+      options.lastText = null;
+    } else if (!util.isNil(children) && children !== '') {
+      if (options.lastText) {
+        options.lastText.__content += children;
+      } else {
+        list.push(options.lastText = new Text(children));
+      }
+    }
+  }
+  /**
+   * 设置关系，父子和兄弟
+   */
+
+
+  function relation(root, host, parent, children) {
+    var options = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {};
+
+    if (Array.isArray(children)) {
+      children.forEach(function (item) {
+        relation(root, host, parent, item, options);
+      });
+    } else if (children instanceof Xom || children instanceof Component || children instanceof Text) {
+      children.__root = root;
+      children.__parent = parent;
+      children.__domParent = parent;
+      children.__isDestroyed = false;
+
+      if (options.prev) {
+        options.prev.__next = children;
+        children.__prev = options.prev;
+      }
+
+      options.prev = children;
+
+      if (!(children instanceof Text)) {
+        var ref = children.props.ref;
+
+        if (util.isString(ref) && ref || util.isNumber(ref)) {
+          host.ref[ref] = children;
+        } else if (util.isFunction(ref)) {
+          ref(children);
+        }
+      }
+
+      if (children instanceof Xom && children.__children) {
+        relation(root, host, children, children.__children, {});
+      } else if (children instanceof Component) {
+        var sr = children.render();
+
+        if (sr) {
+          children.__shadow = sr;
+          sr.__host = children;
+          sr.__hostRoot = children;
+          sr.__root = root;
+          sr.__domParent = parent;
+        }
+
+        while (sr instanceof Component) {
+          var res = sr.render();
+
+          if (res) {
+            sr.__shadow = res;
+            res.__host = sr;
+            res.__hostRoot = children;
+            res.__root = root;
+            res.__domParent = parent;
+          }
+
+          sr = res;
+        }
+
+        if (sr) {
+          if (sr instanceof Xom) {
+            relation(root, children, sr, sr.__children, {});
+          } else {
+            sr = new Text(sr);
+          }
+
+          children.__shadowRoot = sr;
+          sr.__hostRoot = children;
+          sr.__root = root;
+          sr.__domParent = parent;
+
+          children.__init();
+        }
+      }
+    }
+
+    return children;
+  } // 设置每个节点root引用，组件初始化
+
+
+  function buildRoot(root, children) {
+    root.__root = root;
+    root.__host = root;
+    relation(root, root, root, children, {});
+  }
+
+  var builder = {
+    buildChildren: buildChildren,
+    buildRoot: buildRoot,
+    relation: relation
+  };
+
   var _enums$STYLE_KEY$4 = enums.STYLE_KEY,
       POSITION$1 = _enums$STYLE_KEY$4.POSITION,
       DISPLAY$3 = _enums$STYLE_KEY$4.DISPLAY,
@@ -25725,9 +25521,9 @@
   var isRelativeOrAbsolute$1 = css.isRelativeOrAbsolute,
       getBaseline = css.getBaseline,
       getVerticalBaseline = css.getVerticalBaseline;
-  var extend$1 = util.extend,
-      isNil$9 = util.isNil,
-      isFunction$4 = util.isFunction,
+  var extend$1 = util.extend;
+      util.isNil;
+      var isFunction$4 = util.isFunction,
       assignMatrix$1 = util.assignMatrix;
   var CANVAS = mode.CANVAS,
       SVG = mode.SVG,
@@ -25941,7 +25737,7 @@
       _this.__style = css.normalize(style, reset.DOM_ENTRY_SET); // currentStyle/currentProps不深度clone，继承一层即可，动画时也是extend这样只改一层引用不动原始静态style
 
       _this.__currentStyle = extend$1({}, _this.__style);
-      _this.__children = children || [];
+      _this.__children = builder.buildChildren(_assertThisInitialized(_this), children);
       _this.__flexLine = []; // flex布局多行模式时存储行
 
       _this.__ellipsis = null; // 虚拟节点，有的话渲染
@@ -29222,289 +29018,427 @@
       }
     }, {
       key: "appendChild",
-      value: function appendChild(json, cb) {
+      value: function appendChild(child, cb) {
         var self = this;
+        var root = self.root,
+            host = self.host;
 
-        if (!isNil$9(json) && !self.isDestroyed) {
-          var root = self.root,
-              host = self.host;
-
-          if ([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
-            if (json.vd) {
-              root.delRefreshTask(json.vd.__task);
-              json.vd.remove();
-            }
-
-            var vd;
-
-            if ($$type.TYPE_CP === json.$$type) {
-              vd = builder.initCp2(json, root, host, self);
-            } else {
-              vd = builder.initDom(json, root, host, self);
-            }
-
-            root.addRefreshTask(vd.__task = {
-              __before: function __before() {
-                vd.__task = null; // 清除在before，防止after的回调增加新的task误删
-
-                self.__json.children.push(json);
-
-                var len = self.children.length;
-
-                if (len) {
-                  var last = self.children[len - 1];
-                  last.__next = vd;
-                  vd.__prev = last;
-                }
-
-                self.children.push(vd);
-                self.__zIndexChildren = null; // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-
-                var res = {
-                  node: vd,
-                  focus: o$1.REFLOW,
-                  addDom: true
-                };
-
-                root.__addUpdate(vd, root, res);
-              },
-              __after: function __after(diff) {
-                if (isFunction$4(cb)) {
-                  cb.call(vd, diff);
-                }
-              }
-            });
-          } else {
-            throw new Error('Invalid parameter in appendChild.');
-          }
+        if (child && !(child instanceof Xom || child instanceof Component)) {
+          child = new Text(child);
         }
+
+        if (child instanceof Xom || child instanceof Component || child instanceof Text) {
+          root.delRefreshTask(child.__task);
+          child.remove();
+          root.addRefreshTask(child.__task = {
+            __before: function __before() {
+              child.__task = null; // 清除在before，防止after的回调增加新的task误删
+
+              var len = self.children.length;
+
+              if (len) {
+                var last = self.children[len - 1];
+                last.__next = child;
+                child.__prev = last;
+              }
+
+              self.children.push(child);
+              self.__zIndexChildren = null;
+              builder.relation(root, host, self, child, {}); // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+
+              var res = {
+                node: child,
+                focus: o$1.REFLOW,
+                addDom: true
+              };
+
+              root.__addUpdate(child, root, res);
+            },
+            __after: function __after(diff) {
+              if (isFunction$4(cb)) {
+                cb.call(child, diff);
+              }
+            }
+          });
+        } // if(!isNil(json) && !self.isDestroyed) {
+        //   let { root, host } = self;
+        //   if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
+        //     if(json.vd) {
+        //       root.delRefreshTask(json.vd.__task);
+        //       json.vd.remove();
+        //     }
+        //     let vd;
+        //     if($$type.TYPE_CP === json.$$type) {
+        //       vd = builder.initCp2(json, root, host, self);
+        //     }
+        //     else {
+        //       vd = builder.initDom(json, root, host, self);
+        //     }
+        //     root.addRefreshTask(vd.__task = {
+        //       __before() {
+        //         vd.__task = null; // 清除在before，防止after的回调增加新的task误删
+        //         self.__json.children.push(json);
+        //         let len = self.children.length;
+        //         if(len) {
+        //           let last = self.children[len - 1];
+        //           last.__next = vd;
+        //           vd.__prev = last;
+        //         }
+        //         self.children.push(vd);
+        //         self.__zIndexChildren = null;
+        //         // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+        //         let res = {
+        //           node: vd,
+        //           focus: level.REFLOW,
+        //           addDom: true,
+        //         };
+        //         root.__addUpdate(vd, root, res);
+        //       },
+        //       __after(diff) {
+        //         if(isFunction(cb)) {
+        //           cb.call(vd, diff);
+        //         }
+        //       },
+        //     });
+        //   }
+        //   else {
+        //     throw new Error('Invalid parameter in appendChild.');
+        //   }
+        // }
+
       }
     }, {
       key: "prependChild",
-      value: function prependChild(json, cb) {
+      value: function prependChild(child, cb) {
         var self = this;
+        var root = self.root,
+            host = self.host;
 
-        if (!isNil$9(json) && !self.isDestroyed) {
-          var root = self.root,
-              host = self.host;
-
-          if ([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
-            if (json.vd) {
-              root.delRefreshTask(json.vd.__task);
-              json.vd.remove();
-            }
-
-            var vd;
-
-            if ($$type.TYPE_CP === json.$$type) {
-              vd = builder.initCp2(json, root, host, self);
-            } else {
-              vd = builder.initDom(json, root, host, self);
-            }
-
-            root.addRefreshTask(vd.__task = {
-              __before: function __before() {
-                vd.__task = null;
-
-                self.__json.children.unshift(json);
-
-                var len = self.children.length;
-
-                if (len) {
-                  var first = self.children[0];
-                  first.__prev = vd;
-                  vd.__next = first;
-                }
-
-                self.children.unshift(vd);
-                self.__zIndexChildren = null; // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-
-                var res = {
-                  node: vd,
-                  focus: o$1.REFLOW,
-                  addDom: true
-                };
-
-                root.__addUpdate(vd, root, res);
-              },
-              __after: function __after(diff) {
-                if (isFunction$4(cb)) {
-                  cb.call(vd, diff);
-                }
-              }
-            });
-          } else {
-            throw new Error('Invalid parameter in prependChild.');
-          }
+        if (child && !(child instanceof Xom || child instanceof Component)) {
+          child = new Text(child);
         }
+
+        if (child instanceof Xom || child instanceof Component || child instanceof Text) {
+          root.delRefreshTask(child.__task);
+          child.remove();
+          root.addRefreshTask(child.__task = {
+            __before: function __before() {
+              child.__task = null;
+              var len = self.children.length;
+
+              if (len) {
+                var first = self.children[0];
+                first.__prev = child;
+                child.__next = child;
+              }
+
+              self.children.unshift(child);
+              self.__zIndexChildren = null;
+              builder.relation(root, host, self, child, {});
+              var res = {
+                node: child,
+                focus: o$1.REFLOW,
+                addDom: true
+              };
+
+              root.__addUpdate(child, root, res);
+            },
+            __after: function __after(diff) {
+              if (isFunction$4(cb)) {
+                cb.call(child, diff);
+              }
+            }
+          });
+        } // if(!isNil(json) && !self.isDestroyed) {
+        //   let { root, host } = self;
+        //   if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
+        //     if(json.vd) {
+        //       root.delRefreshTask(json.vd.__task);
+        //       json.vd.remove();
+        //     }
+        //     let vd;
+        //     if($$type.TYPE_CP === json.$$type) {
+        //       vd = builder.initCp2(json, root, host, self);
+        //     }
+        //     else {
+        //       vd = builder.initDom(json, root, host, self);
+        //     }
+        //     root.addRefreshTask(vd.__task = {
+        //       __before() {
+        //         vd.__task = null;
+        //         self.__json.children.unshift(json);
+        //         let len = self.children.length;
+        //         if(len) {
+        //           let first = self.children[0];
+        //           first.__prev = vd;
+        //           vd.__next = first;
+        //         }
+        //         self.children.unshift(vd);
+        //         self.__zIndexChildren = null;
+        //         // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+        //         let res = {
+        //           node: vd,
+        //           focus: level.REFLOW,
+        //           addDom: true,
+        //         };
+        //         root.__addUpdate(vd, root, res);
+        //       },
+        //       __after(diff) {
+        //         if(isFunction(cb)) {
+        //           cb.call(vd, diff);
+        //         }
+        //       },
+        //     });
+        //   }
+        //   else {
+        //     throw new Error('Invalid parameter in prependChild.');
+        //   }
+        // }
+
       }
     }, {
       key: "insertBefore",
-      value: function insertBefore(json, cb) {
+      value: function insertBefore(child, cb) {
         var self = this;
+        var root = self.root,
+            host = self.host,
+            domParent = self.domParent,
+            isDestroyed = self.isDestroyed;
 
-        if (!isNil$9(json) && !self.isDestroyed && self.domParent) {
-          var root = self.root,
-              domParent = self.domParent;
-          var host = domParent.hostRoot;
-
-          if ([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
-            if (json.vd) {
-              root.delRefreshTask(json.vd.__task);
-              json.vd.remove();
-            }
-
-            var vd;
-
-            if ($$type.TYPE_CP === json.$$type) {
-              vd = builder.initCp2(json, root, host, domParent);
-            } else {
-              vd = builder.initDom(json, root, host, domParent);
-            }
-
-            root.addRefreshTask(vd.__task = {
-              __before: function __before() {
-                vd.__task = null;
-                var i = 0,
-                    has,
-                    __json = domParent.__json,
-                    children = __json.children,
-                    len = children.length;
-                var pJson = self.isShadowRoot ? self.hostRoot.__json : self.__json;
-
-                for (; i < len; i++) {
-                  if (children[i] === pJson) {
-                    has = true;
-                    break;
-                  }
-                }
-
-                if (!has) {
-                  throw new Error('InsertBefore exception.');
-                } // 插入注意开头位置处理
-
-
-                if (i) {
-                  children.splice(i, 0, json);
-                  vd.__next = self;
-                  vd.__prev = self.__prev;
-                  self.__prev = vd;
-                  domParent.children.splice(i, 0, vd);
-                } else {
-                  if (len) {
-                    var first = domParent.children[0];
-                    first.__prev = vd;
-                    vd.__next = first;
-                  }
-
-                  children.unshift(json);
-                  domParent.children.unshift(vd);
-                }
-
-                domParent.__zIndexChildren = null; // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-
-                var res = {
-                  node: vd,
-                  focus: o$1.REFLOW,
-                  addDom: true
-                };
-
-                root.__addUpdate(vd, root, res);
-              },
-              __after: function __after(diff) {
-                if (isFunction$4(cb)) {
-                  cb.call(vd, diff);
-                }
-              }
-            });
-          } else {
-            throw new Error('Invalid parameter in insertBefore.');
-          }
+        if (isDestroyed) {
+          throw new Error('InsertBefore target is destroyed.');
         }
+
+        if (child && !(child instanceof Xom || child instanceof Component)) {
+          child = new Text(child);
+        }
+
+        if (child instanceof Xom || child instanceof Component || child instanceof Text) {
+          root.delRefreshTask(child.__task);
+          child.remove();
+          root.addRefreshTask(child.__task = {
+            __before: function __before() {
+              child.__task = null;
+              var children = domParent.children;
+              var i = children.indexOf(self);
+
+              if (i === -1) {
+                throw new Error('InsertBefore exception.');
+              }
+
+              if (i) {
+                children[i - 1].__next = child;
+                child.__prev = children[i - 1];
+              }
+
+              child.__next = self;
+              self.__prev = child;
+              children.splice(i, 0, child);
+              domParent.__zIndexChildren = null;
+              builder.relation(root, host, domParent, child, {});
+              var res = {
+                node: child,
+                focus: o$1.REFLOW,
+                addDom: true
+              };
+
+              root.__addUpdate(child, root, res);
+            },
+            __after: function __after(diff) {
+              if (isFunction$4(cb)) {
+                cb.call(child, diff);
+              }
+            }
+          });
+        } // if(!isNil(json) && !self.isDestroyed && self.domParent) {
+        //   let { root, domParent } = self;
+        //   let host = domParent.hostRoot;
+        //   if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
+        //     if(json.vd) {
+        //       root.delRefreshTask(json.vd.__task);
+        //       json.vd.remove();
+        //     }
+        //     let vd;
+        //     if($$type.TYPE_CP === json.$$type) {
+        //       vd = builder.initCp2(json, root, host, domParent);
+        //     }
+        //     else {
+        //       vd = builder.initDom(json, root, host, domParent);
+        //     }
+        //     root.addRefreshTask(vd.__task = {
+        //       __before() {
+        //         vd.__task = null;
+        //         let i = 0, has, __json = domParent.__json, children = __json.children, len = children.length;
+        //         let pJson = self.isShadowRoot ? self.hostRoot.__json : self.__json;
+        //         for(; i < len; i++) {
+        //           if(children[i] === pJson) {
+        //             has = true;
+        //             break;
+        //           }
+        //         }
+        //         if(!has) {
+        //           throw new Error('InsertBefore exception.');
+        //         }
+        //         // 插入注意开头位置处理
+        //         if(i) {
+        //           children.splice(i, 0, json);
+        //           vd.__next = self;
+        //           vd.__prev = self.__prev;
+        //           self.__prev = vd;
+        //           domParent.children.splice(i, 0, vd);
+        //         }
+        //         else {
+        //           if(len) {
+        //             let first = domParent.children[0];
+        //             first.__prev = vd;
+        //             vd.__next = first;
+        //           }
+        //           children.unshift(json);
+        //           domParent.children.unshift(vd);
+        //         }
+        //         domParent.__zIndexChildren = null;
+        //         // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+        //         let res = {
+        //           node: vd,
+        //           focus: level.REFLOW,
+        //           addDom: true,
+        //         };
+        //         root.__addUpdate(vd, root, res);
+        //       },
+        //       __after(diff) {
+        //         if(isFunction(cb)) {
+        //           cb.call(vd, diff);
+        //         }
+        //       },
+        //     });
+        //   }
+        //   else {
+        //     throw new Error('Invalid parameter in insertBefore.');
+        //   }
+        // }
+
       }
     }, {
       key: "insertAfter",
-      value: function insertAfter(json, cb) {
+      value: function insertAfter(child, cb) {
         var self = this;
+        var root = self.root,
+            host = self.host,
+            domParent = self.domParent,
+            isDestroyed = self.isDestroyed;
 
-        if (!isNil$9(json) && !self.isDestroyed && self.domParent) {
-          var root = self.root,
-              domParent = self.domParent;
-          var host = domParent.hostRoot;
-
-          if ([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
-            if (json.vd) {
-              root.delRefreshTask(json.vd.__task);
-              json.vd.remove();
-            }
-
-            var vd;
-
-            if ($$type.TYPE_CP === json.$$type) {
-              vd = builder.initCp2(json, root, host, domParent);
-            } else {
-              vd = builder.initDom(json, root, host, domParent);
-            }
-
-            root.addRefreshTask(vd.__task = {
-              __before: function __before() {
-                vd.__task = null;
-                var i = 0,
-                    has,
-                    __json = domParent.__json,
-                    children = __json.children,
-                    len = children.length;
-                var pJson = self.isShadowRoot ? self.hostRoot.__json : self.__json;
-
-                for (; i < len; i++) {
-                  if (children[i] === pJson) {
-                    has = true;
-                    break;
-                  }
-                }
-
-                if (!has) {
-                  throw new Error('insertAfter exception.');
-                } // 插入注意末尾位置处理
-
-
-                if (i < len - 1) {
-                  children.splice(i + 1, 0, json);
-                  vd.__prev = self;
-                  vd.__next = self.__next;
-                  self.__next = vd;
-                  domParent.children.splice(i + 1, 0, vd);
-                } else {
-                  if (len) {
-                    var last = domParent.children[len - 1];
-                    last.__next = vd;
-                    vd.__prev = last;
-                  }
-
-                  children.push(json);
-                  domParent.children.push(vd);
-                }
-
-                domParent.__zIndexChildren = null; // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-
-                var res = {
-                  node: vd,
-                  focus: o$1.REFLOW,
-                  addDom: true
-                };
-
-                root.__addUpdate(vd, root, res);
-              },
-              __after: function __after(diff) {
-                if (isFunction$4(cb)) {
-                  cb.call(vd, diff);
-                }
-              }
-            });
-          } else {
-            throw new Error('Invalid parameter in insertAfter.');
-          }
+        if (isDestroyed) {
+          throw new Error('InsertBefore target is destroyed.');
         }
+
+        if (child && !(child instanceof Xom || child instanceof Component)) {
+          child = new Text(child);
+        }
+
+        if (child instanceof Xom || child instanceof Component || child instanceof Text) {
+          root.delRefreshTask(child.__task);
+          child.remove();
+          root.addRefreshTask(child.__task = {
+            __before: function __before() {
+              child.__task = null;
+              var children = domParent.children;
+              var i = children.indexOf(self);
+
+              if (i === -1) {
+                throw new Error('InsertBefore exception.');
+              }
+
+              if (i < children.length - 1) {
+                children[i + 1].__prev = child;
+                child.__next = children[i + 1];
+              }
+
+              child.__prev = self;
+              self.__next = child;
+              children.splice(i + 1, 0, child);
+              domParent.__zIndexChildren = null;
+              builder.relation(root, host, domParent, child, {});
+              var res = {
+                node: child,
+                focus: o$1.REFLOW,
+                addDom: true
+              };
+
+              root.__addUpdate(child, root, res);
+            },
+            __after: function __after(diff) {
+              if (isFunction$4(cb)) {
+                cb.call(child, diff);
+              }
+            }
+          });
+        } // if(!isNil(json) && !self.isDestroyed && self.domParent) {
+        //   let { root, domParent } = self;
+        //   let host = domParent.hostRoot;
+        //   if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
+        //     if(json.vd) {
+        //       root.delRefreshTask(json.vd.__task);
+        //       json.vd.remove();
+        //     }
+        //     let vd;
+        //     if($$type.TYPE_CP === json.$$type) {
+        //       vd = builder.initCp2(json, root, host, domParent);
+        //     }
+        //     else {
+        //       vd = builder.initDom(json, root, host, domParent);
+        //     }
+        //     root.addRefreshTask(vd.__task = {
+        //       __before() {
+        //         vd.__task = null;
+        //         let i = 0, has, __json = domParent.__json, children = __json.children, len = children.length;
+        //         let pJson = self.isShadowRoot ? self.hostRoot.__json : self.__json;
+        //         for(; i < len; i++) {
+        //           if(children[i] === pJson) {
+        //             has = true;
+        //             break;
+        //           }
+        //         }
+        //         if(!has) {
+        //           throw new Error('insertAfter exception.');
+        //         }
+        //         // 插入注意末尾位置处理
+        //         if(i < len - 1) {
+        //           children.splice(i + 1, 0, json);
+        //           vd.__prev = self;
+        //           vd.__next = self.__next;
+        //           self.__next = vd;
+        //           domParent.children.splice(i + 1, 0, vd);
+        //         }
+        //         else {
+        //           if(len) {
+        //             let last = domParent.children[len - 1];
+        //             last.__next = vd;
+        //             vd.__prev = last;
+        //           }
+        //           children.push(json);
+        //           domParent.children.push(vd);
+        //         }
+        //         domParent.__zIndexChildren = null;
+        //         // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+        //         let res = {
+        //           node: vd,
+        //           focus: level.REFLOW,
+        //           addDom: true,
+        //         };
+        //         root.__addUpdate(vd, root, res);
+        //       },
+        //       __after(diff) {
+        //         if(isFunction(cb)) {
+        //           cb.call(vd, diff);
+        //         }
+        //       },
+        //     });
+        //   }
+        //   else {
+        //     throw new Error('Invalid parameter in insertAfter.');
+        //   }
+        // }
+
       }
     }, {
       key: "removeChild",
@@ -31206,6 +31140,61 @@
 
     return Geom;
   }(Xom);
+
+  var TYPE_VD$2 = $$type.TYPE_VD,
+      TYPE_GM$2 = $$type.TYPE_GM,
+      TYPE_CP$2 = $$type.TYPE_CP;
+  /**
+   * 2. 打平children中的数组，变成一维
+   * 3. 合并相连的Text节点，即string内容
+   */
+
+  function flattenJson(parent) {
+    if (Array.isArray(parent)) {
+      return parent.map(function (item) {
+        return flattenJson(item);
+      });
+    } else if (!parent || [TYPE_VD$2, TYPE_GM$2, TYPE_CP$2].indexOf(parent.$$type) === -1 || !Array.isArray(parent.children)) {
+      return parent;
+    }
+
+    var list = [];
+    traverseJson(list, parent.children, {
+      lastText: null
+    });
+    parent.children = list;
+    return parent;
+  }
+
+  function traverseJson(list, children, options) {
+    if (Array.isArray(children)) {
+      children.forEach(function (item) {
+        traverseJson(list, item, options);
+      });
+    } else if (children && (children.$$type === TYPE_VD$2 || children.$$type === TYPE_GM$2)) {
+      if (['canvas', 'svg', 'webgl'].indexOf(children.tagName) > -1) {
+        throw new Error('Can not nest canvas/svg/webgl');
+      }
+
+      if (children.$$type === TYPE_VD$2) {
+        flattenJson(children);
+      }
+
+      list.push(children);
+      options.lastText = null;
+    } else if (children && children.$$type === TYPE_CP$2) {
+      list.push(children); // 强制component即便返回text也形成一个独立的节点，合并在layout布局中做
+
+      options.lastText = null;
+    } // 排除掉空的文本，连续的text合并
+    else if (!util.isNil(children) && children !== '') {
+      if (options.lastText !== null) {
+        list[list.length - 1] = options.lastText += children;
+      } else {
+        list.push(children);
+      }
+    }
+  }
 
   var TYPE_VD$1 = $$type.TYPE_VD,
       TYPE_GM$1 = $$type.TYPE_GM,
@@ -36416,9 +36405,9 @@
       NONE = o$1.NONE,
       FILTER = o$1.FILTER,
       PERSPECTIVE = o$1.PERSPECTIVE,
-      REPAINT = o$1.REPAINT,
-      REFLOW = o$1.REFLOW,
-      REBUILD = o$1.REBUILD,
+      REPAINT = o$1.REPAINT;
+      o$1.REFLOW;
+      var REBUILD = o$1.REBUILD,
       CACHE = o$1.CACHE,
       TF = o$1.TRANSFORM;
   var isIgnore = o$2.isIgnore,
@@ -37038,8 +37027,9 @@
     function Root(tagName, props, children) {
       var _this;
 
-      _this = _Dom.call(this, tagName, props) || this;
-      _this.__cd = children || []; // 原始children，再初始化过程中生成真正的dom
+      _this = _Dom.call(this, tagName, props, children) || this; // this.__cd = children || []; // 原始children，再初始化过程中生成真正的dom
+      // this.__root = this;
+      // this.__host = this;
 
       _this.__dom = null; // 真实DOM引用
 
@@ -37049,7 +37039,6 @@
       // this.__scy = 1;
 
       _this.__taskUp = [];
-      _this.__taskCp = [];
       _this.__ref = {};
       _this.__reflowList = [{
         node: _assertThisInitialized(_this)
@@ -37061,6 +37050,7 @@
       _this.__uuid = uuid++;
       _this.__rlv = REBUILD; // 每次刷新最大lv
 
+      builder.buildRoot(_assertThisInitialized(_this), _this.__children);
       return _this;
     }
 
@@ -37186,12 +37176,12 @@
     }, {
       key: "appendTo",
       value: function appendTo(dom) {
-        dom = getDom(dom);
-        this.__children = builder.initRoot(this.__cd, this);
+        dom = getDom(dom); // this.__children = builder.initRoot(this.__cd, this);
+
+        this.__isDestroyed = false;
 
         this.__initProps();
 
-        this.__root = this;
         var tagName = this.tagName;
         var domName = ROOT_DOM_NAME[tagName]; // OffscreenCanvas兼容，包含worker的
 
@@ -37470,89 +37460,6 @@
           }
         }
       }
-      /**
-       * 为component的setState更新专门开辟个独立的流水线，root/frame中以taskCp存储更新列表
-       * 普通的动画、img加载等都走普通的refresh的task，component走这里，frame中的结构同样
-       * 在frame的每帧调用中，先执行普通的动画task，再执行component的task
-       * 这样动画执行完后，某个cp的sr及子节点依旧先进行了动画变更，进入__addUpdate()环节
-       * 然后此cp再更新sr及子节点，这样会被__addUpdate()添加到尾部，依赖目前浏览器默认实现
-       * 上一行cp更新过程中是updater.check()进行的，如果有新老交换且有动画，动画的assigning是true，进行继承
-       * root刷新parseUpdate()时，老的sr及子节点先进行，随后新的sr后进行且有component标识，sr子节点不会有更新
-       * @param cb
-       */
-
-    }, {
-      key: "addRefreshCp",
-      value: function addRefreshCp(cb) {
-        var _this4 = this;
-
-        var taskCp = this.taskCp,
-            isDestroyed = this.isDestroyed;
-
-        if (isDestroyed) {
-          return;
-        } // 每次只执行1次
-
-
-        if (!taskCp.length) {
-          var clone;
-
-          frame.__nextFrameCp({
-            __before: function __before(diff) {
-              if (_this4.isDestroyed) {
-                return;
-              }
-
-              clone = taskCp.splice(0);
-
-              if (clone.length) {
-                clone.forEach(function (item) {
-                  item.__before(diff);
-                });
-                updater.check(_this4);
-                var len = updater.updateList.length;
-
-                if (len) {
-                  updater.updateList.forEach(function (cp) {
-                    var root = cp.root; // 多个root并存时可能cp的引用不相同，需分别获取
-
-                    var sr = cp.shadowRoot; // 可能返回text，需视为其parentNode
-
-                    if (sr instanceof Text) {
-                      sr = sr.domParent;
-                    }
-
-                    var res = {};
-                    res.node = sr;
-                    res.style = sr.currentStyle;
-                    res.focus = REFLOW;
-                    res.component = cp;
-
-                    _this4.__addUpdate(sr, root, res);
-                  });
-                }
-              }
-            },
-            __after: function __after(diff) {
-              if (_this4.isDestroyed) {
-                return;
-              }
-
-              clone.forEach(function (item) {
-                item.__after(diff);
-              }); // 触发didUpdate
-
-              updater.did();
-            }
-          });
-
-          this.__frameHook();
-        }
-
-        if (taskCp.indexOf(cb) === -1) {
-          taskCp.push(cb);
-        }
-      }
     }, {
       key: "getTargetAtPoint",
       value: function getTargetAtPoint(x, y, includeIgnore) {
@@ -37800,7 +37707,7 @@
     }, {
       key: "__checkReflow",
       value: function __checkReflow(width, height) {
-        var _this5 = this;
+        var _this4 = this;
 
         var reflowList = this.__reflowList;
 
@@ -38005,7 +37912,7 @@
 
                   parent.__updateStruct(root.__structs);
 
-                  if (_this5.renderMode === mode.SVG) {
+                  if (_this4.renderMode === mode.SVG) {
                     cleanSvgCache(parent);
                   }
 
@@ -38021,7 +37928,7 @@
                     if (position !== cts[POSITION] && (position === 'static' || cts[POSITION] === 'static') || zIndex !== cts[Z_INDEX]) {
                       parent.__updateStruct(root.__structs);
 
-                      if (_this5.renderMode === mode.SVG) {
+                      if (_this4.renderMode === mode.SVG) {
                         cleanSvgCache(parent);
                       }
                     }
@@ -38040,7 +37947,7 @@
 
                 parent.__updateStruct(root.__structs);
 
-                if (_this5.renderMode === mode.SVG) {
+                if (_this4.renderMode === mode.SVG) {
                   cleanSvgCache(parent);
                 }
               } // 现在是普通流，不管之前是啥直接布局，排除remove删除的
@@ -38159,7 +38066,7 @@
               diffI += _arr3[1];
               diffList.push(_arr3);
 
-              if (_this5.renderMode === mode.SVG) {
+              if (_this4.renderMode === mode.SVG) {
                 cleanSvgCache(parent);
               }
             } // component未知dom变化，所以强制重新struct，text则为其父节点，同时防止zIndex变更影响父节点
@@ -38172,7 +38079,7 @@
               if (position !== cts[POSITION] && (position === 'static' || cts[POSITION] === 'static') || zIndex !== cts[Z_INDEX]) {
                 node.domParent.__updateStruct(root.__structs);
 
-                if (_this5.renderMode === mode.SVG) {
+                if (_this4.renderMode === mode.SVG) {
                   cleanSvgCache(node.domParent);
                 }
               }
@@ -38520,11 +38427,11 @@
     }, {
       key: "__frameHook",
       value: function __frameHook() {
-        var _this6 = this;
+        var _this5 = this;
 
         if (!this.__hookTask) {
           var r = this.__hookTask = function () {
-            _this6.refresh();
+            _this5.refresh();
           };
 
           frame.__hookTask.push(r);
@@ -38574,11 +38481,6 @@
       key: "taskUp",
       get: function get() {
         return this.__taskUp;
-      }
-    }, {
-      key: "taskCp",
-      get: function get() {
-        return this.__taskCp;
       }
     }, {
       key: "ref",
@@ -41707,10 +41609,9 @@
         }
       } else if (tagName) {
         // 特殊的$匿名类
-        if (tagName instanceof Geom) {
-          return this.createGm(tagName, props);
-        }
-
+        // if(tagName instanceof Geom) {
+        //   return this.createGm(tagName, props);
+        // }
         return this.createCp(tagName, props, children);
       }
     },
@@ -41722,31 +41623,37 @@
       }
 
       if (tag.TAG_NAME.hasOwnProperty(tagName)) {
-        return {
-          tagName: tagName,
-          props: props,
-          children: children,
-          $$type: $$type.TYPE_VD
-        };
+        if (tagName === 'img') {
+          return new Img(tagName, props);
+        } else {
+          return new Dom(tagName, props, children);
+        } // return {
+        //   tagName,
+        //   props,
+        //   children,
+        //   $$type: $$type.TYPE_VD,
+        // };
+
       }
 
       throw new Error("Can not use <".concat(tagName, ">"));
     },
     createGm: function createGm(tagName, props) {
-      return {
-        tagName: tagName,
-        props: props,
-        $$type: $$type.TYPE_GM
-      };
+      var klass = Geom.getRegister(tagName);
+      return new klass(tagName, props); // return {
+      //   tagName,
+      //   props,
+      //   $$type: $$type.TYPE_GM,
+      // };
     },
     createCp: function createCp(klass, props) {
       var children = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
       props.children = children;
-      return {
-        klass: klass,
-        props: props,
-        $$type: $$type.TYPE_CP
-      };
+      return new klass(props, children); // return {
+      //   klass,
+      //   props,
+      //   $$type: $$type.TYPE_CP,
+      // };
     },
     parse: function parse(json, dom, options) {
       return o.parse(this, json, dom, options);
@@ -41770,7 +41677,6 @@
     parser: o,
     animate: animate,
     math: math,
-    builder: builder,
     updater: updater,
     refresh: refresh,
     enums: enums,
@@ -41780,13 +41686,6 @@
     }
 
   };
-  builder.ref({
-    Xom: Xom,
-    Dom: Dom,
-    Img: Img,
-    Geom: Geom,
-    Component: Component
-  });
 
   if (typeof window !== 'undefined') {
     window.karas = karas$1;

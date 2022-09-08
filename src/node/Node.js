@@ -20,6 +20,7 @@ class Node {
     this.__virtualDom = null;
     this.__bbox = null;
     this.__filterBbox = null;
+    this.__isDestroyed = true;
   }
 
   __structure(i, lv, j) {

@@ -4,7 +4,7 @@ import Xom from './Xom';
 import Component from './Component';
 import Defs from './Defs';
 import Geom from './geom/Geom';
-import builder from '../util/builder';
+import builder from './builder';
 import updater from '../util/updater';
 import util from '../util/util';
 import domDiff from '../util/diff';
@@ -638,15 +638,16 @@ let uuid = 0;
 
 class Root extends Dom {
   constructor(tagName, props, children) {
-    super(tagName, props);
-    this.__cd = children || []; // 原始children，再初始化过程中生成真正的dom
+    super(tagName, props, children);
+    // this.__cd = children || []; // 原始children，再初始化过程中生成真正的dom
+    // this.__root = this;
+    // this.__host = this;
     this.__dom = null; // 真实DOM引用
     this.__mw = 0; // 记录最大宽高，防止尺寸变化清除不完全
     this.__mh = 0;
     // this.__scx = 1; // 默认缩放，css改变canvas/svg缩放后影响事件坐标，有值手动指定，否则自动计算
     // this.__scy = 1;
     this.__taskUp = [];
-    this.__taskCp = [];
     this.__ref = {};
     this.__reflowList = [{ node: this }]; // 初始化填自己，第一次布局时复用逻辑完全重新布局
     this.__animateController = new Controller();
@@ -654,6 +655,7 @@ class Root extends Dom {
     this.__updateHash = {};
     this.__uuid = uuid++;
     this.__rlv = REBUILD; // 每次刷新最大lv
+    builder.buildRoot(this, this.__children);
   }
 
   __initProps() {
@@ -748,9 +750,9 @@ class Root extends Dom {
    */
   appendTo(dom) {
     dom = getDom(dom);
-    this.__children = builder.initRoot(this.__cd, this);
+    // this.__children = builder.initRoot(this.__cd, this);
+    this.__isDestroyed = false;
     this.__initProps();
-    this.__root = this;
     let tagName = this.tagName;
     let domName = ROOT_DOM_NAME[tagName];
     // OffscreenCanvas兼容，包含worker的
@@ -983,72 +985,6 @@ class Root extends Dom {
         taskUp.splice(i, 1);
         break;
       }
-    }
-  }
-
-  /**
-   * 为component的setState更新专门开辟个独立的流水线，root/frame中以taskCp存储更新列表
-   * 普通的动画、img加载等都走普通的refresh的task，component走这里，frame中的结构同样
-   * 在frame的每帧调用中，先执行普通的动画task，再执行component的task
-   * 这样动画执行完后，某个cp的sr及子节点依旧先进行了动画变更，进入__addUpdate()环节
-   * 然后此cp再更新sr及子节点，这样会被__addUpdate()添加到尾部，依赖目前浏览器默认实现
-   * 上一行cp更新过程中是updater.check()进行的，如果有新老交换且有动画，动画的assigning是true，进行继承
-   * root刷新parseUpdate()时，老的sr及子节点先进行，随后新的sr后进行且有component标识，sr子节点不会有更新
-   * @param cb
-   */
-  addRefreshCp(cb) {
-    let { taskCp, isDestroyed } = this;
-    if(isDestroyed) {
-      return;
-    }
-    // 每次只执行1次
-    if(!taskCp.length) {
-      let clone;
-      frame.__nextFrameCp({
-        __before: diff => {
-          if(this.isDestroyed) {
-            return;
-          }
-          clone = taskCp.splice(0);
-          if(clone.length) {
-            clone.forEach(item => {
-              item.__before(diff);
-            });
-            updater.check(this);
-            let len = updater.updateList.length;
-            if(len) {
-              updater.updateList.forEach(cp => {
-                let root = cp.root; // 多个root并存时可能cp的引用不相同，需分别获取
-                let sr = cp.shadowRoot;
-                // 可能返回text，需视为其parentNode
-                if(sr instanceof Text) {
-                  sr = sr.domParent;
-                }
-                let res = {};
-                res.node = sr;
-                res.style = sr.currentStyle;
-                res.focus = REFLOW;
-                res.component = cp;
-                this.__addUpdate(sr, root, res);
-              });
-            }
-          }
-        },
-        __after: diff => {
-          if(this.isDestroyed) {
-            return;
-          }
-          clone.forEach(item => {
-            item.__after(diff);
-          });
-          // 触发didUpdate
-          updater.did();
-        },
-      });
-      this.__frameHook();
-    }
-    if(taskCp.indexOf(cb) === -1) {
-      taskCp.push(cb);
     }
   }
 
@@ -1893,10 +1829,6 @@ class Root extends Dom {
 
   get taskUp() {
     return this.__taskUp;
-  }
-
-  get taskCp() {
-    return this.__taskCp;
   }
 
   get ref() {

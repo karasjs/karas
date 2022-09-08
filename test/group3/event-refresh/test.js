@@ -11,9 +11,6 @@ module.exports = {
       .mouseButtonClick(0)
       .pause(20)
       .assert.value('input', '0')
-      .mouseButtonClick(0)
-      .pause(20)
-      .assert.value('input', '1')
       .end();
   }
 };

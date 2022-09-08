@@ -13,7 +13,7 @@ import enums from '../util/enums';
 import util from '../util/util';
 import inject from '../util/inject';
 import reflow from '../refresh/reflow';
-import builder from '../util/builder';
+import builder from './builder';
 import mode from '../refresh/mode';
 import level from '../refresh/level';
 import geom from '../math/geom';
@@ -252,7 +252,7 @@ class Dom extends Xom {
     this.__style = css.normalize(style, reset.DOM_ENTRY_SET);
     // currentStyle/currentProps不深度clone，继承一层即可，动画时也是extend这样只改一层引用不动原始静态style
     this.__currentStyle = extend({}, this.__style);
-    this.__children = children || [];
+    this.__children = builder.buildChildren(this, children);
     this.__flexLine = []; // flex布局多行模式时存储行
     this.__ellipsis = null; // 虚拟节点，有的话渲染
   }
@@ -3190,242 +3190,391 @@ class Dom extends Xom {
     });
   }
 
-  appendChild(json, cb) {
+  appendChild(child, cb) {
     let self = this;
-    if(!isNil(json) && !self.isDestroyed) {
-      let { root, host } = self;
-      if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
-        if(json.vd) {
-          root.delRefreshTask(json.vd.__task);
-          json.vd.remove();
-        }
-        let vd;
-        if($$type.TYPE_CP === json.$$type) {
-          vd = builder.initCp2(json, root, host, self);
-        }
-        else {
-          vd = builder.initDom(json, root, host, self);
-        }
-        root.addRefreshTask(vd.__task = {
-          __before() {
-            vd.__task = null; // 清除在before，防止after的回调增加新的task误删
-            self.__json.children.push(json);
-            let len = self.children.length;
-            if(len) {
-              let last = self.children[len - 1];
-              last.__next = vd;
-              vd.__prev = last;
-            }
-            self.children.push(vd);
-            self.__zIndexChildren = null;
-            // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-            let res = {
-              node: vd,
-              focus: level.REFLOW,
-              addDom: true,
-            };
-            root.__addUpdate(vd, root, res);
-          },
-          __after(diff) {
-            if(isFunction(cb)) {
-              cb.call(vd, diff);
-            }
-          },
-        });
-      }
-      else {
-        throw new Error('Invalid parameter in appendChild.');
-      }
+    let { root, host } = self;
+    if(child && !(child instanceof Xom || child instanceof Component)) {
+      child = new Text(child);
     }
+    if(child instanceof Xom || child instanceof Component || child instanceof Text) {
+      root.delRefreshTask(child.__task);
+      child.remove();
+      root.addRefreshTask(child.__task = {
+        __before() {
+          child.__task = null; // 清除在before，防止after的回调增加新的task误删
+          let len = self.children.length;
+          if(len) {
+            let last = self.children[len - 1];
+            last.__next = child;
+            child.__prev = last;
+          }
+          self.children.push(child);
+          self.__zIndexChildren = null;
+          builder.relation(root, host, self, child, {});
+          // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+          let res = {
+            node: child,
+            focus: level.REFLOW,
+            addDom: true,
+          };
+          root.__addUpdate(child, root, res);
+        },
+        __after(diff) {
+          if(isFunction(cb)) {
+            cb.call(child, diff);
+          }
+        },
+      });
+    }
+    // if(!isNil(json) && !self.isDestroyed) {
+    //   let { root, host } = self;
+    //   if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
+    //     if(json.vd) {
+    //       root.delRefreshTask(json.vd.__task);
+    //       json.vd.remove();
+    //     }
+    //     let vd;
+    //     if($$type.TYPE_CP === json.$$type) {
+    //       vd = builder.initCp2(json, root, host, self);
+    //     }
+    //     else {
+    //       vd = builder.initDom(json, root, host, self);
+    //     }
+    //     root.addRefreshTask(vd.__task = {
+    //       __before() {
+    //         vd.__task = null; // 清除在before，防止after的回调增加新的task误删
+    //         self.__json.children.push(json);
+    //         let len = self.children.length;
+    //         if(len) {
+    //           let last = self.children[len - 1];
+    //           last.__next = vd;
+    //           vd.__prev = last;
+    //         }
+    //         self.children.push(vd);
+    //         self.__zIndexChildren = null;
+    //         // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+    //         let res = {
+    //           node: vd,
+    //           focus: level.REFLOW,
+    //           addDom: true,
+    //         };
+    //         root.__addUpdate(vd, root, res);
+    //       },
+    //       __after(diff) {
+    //         if(isFunction(cb)) {
+    //           cb.call(vd, diff);
+    //         }
+    //       },
+    //     });
+    //   }
+    //   else {
+    //     throw new Error('Invalid parameter in appendChild.');
+    //   }
+    // }
   }
 
-  prependChild(json, cb) {
+  prependChild(child, cb) {
     let self = this;
-    if(!isNil(json) && !self.isDestroyed) {
-      let { root, host } = self;
-      if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
-        if(json.vd) {
-          root.delRefreshTask(json.vd.__task);
-          json.vd.remove();
-        }
-        let vd;
-        if($$type.TYPE_CP === json.$$type) {
-          vd = builder.initCp2(json, root, host, self);
-        }
-        else {
-          vd = builder.initDom(json, root, host, self);
-        }
-        root.addRefreshTask(vd.__task = {
-          __before() {
-            vd.__task = null;
-            self.__json.children.unshift(json);
-            let len = self.children.length;
-            if(len) {
-              let first = self.children[0];
-              first.__prev = vd;
-              vd.__next = first;
-            }
-            self.children.unshift(vd);
-            self.__zIndexChildren = null;
-            // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-            let res = {
-              node: vd,
-              focus: level.REFLOW,
-              addDom: true,
-            };
-            root.__addUpdate(vd, root, res);
-          },
-          __after(diff) {
-            if(isFunction(cb)) {
-              cb.call(vd, diff);
-            }
-          },
-        });
-      }
-      else {
-        throw new Error('Invalid parameter in prependChild.');
-      }
+    let { root, host } = self;
+    if(child && !(child instanceof Xom || child instanceof Component)) {
+      child = new Text(child);
     }
+    if(child instanceof Xom || child instanceof Component || child instanceof Text) {
+      root.delRefreshTask(child.__task);
+      child.remove();
+      root.addRefreshTask(child.__task = {
+        __before() {
+          child.__task = null;
+          let len = self.children.length;
+          if(len) {
+            let first = self.children[0];
+            first.__prev = child;
+            child.__next = child;
+          }
+          self.children.unshift(child);
+          self.__zIndexChildren = null;
+          builder.relation(root, host, self, child, {});
+          let res = {
+            node: child,
+            focus: level.REFLOW,
+            addDom: true,
+          };
+          root.__addUpdate(child, root, res);
+        },
+        __after(diff) {
+          if(isFunction(cb)) {
+            cb.call(child, diff);
+          }
+        },
+      });
+    }
+    // if(!isNil(json) && !self.isDestroyed) {
+    //   let { root, host } = self;
+    //   if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
+    //     if(json.vd) {
+    //       root.delRefreshTask(json.vd.__task);
+    //       json.vd.remove();
+    //     }
+    //     let vd;
+    //     if($$type.TYPE_CP === json.$$type) {
+    //       vd = builder.initCp2(json, root, host, self);
+    //     }
+    //     else {
+    //       vd = builder.initDom(json, root, host, self);
+    //     }
+    //     root.addRefreshTask(vd.__task = {
+    //       __before() {
+    //         vd.__task = null;
+    //         self.__json.children.unshift(json);
+    //         let len = self.children.length;
+    //         if(len) {
+    //           let first = self.children[0];
+    //           first.__prev = vd;
+    //           vd.__next = first;
+    //         }
+    //         self.children.unshift(vd);
+    //         self.__zIndexChildren = null;
+    //         // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+    //         let res = {
+    //           node: vd,
+    //           focus: level.REFLOW,
+    //           addDom: true,
+    //         };
+    //         root.__addUpdate(vd, root, res);
+    //       },
+    //       __after(diff) {
+    //         if(isFunction(cb)) {
+    //           cb.call(vd, diff);
+    //         }
+    //       },
+    //     });
+    //   }
+    //   else {
+    //     throw new Error('Invalid parameter in prependChild.');
+    //   }
+    // }
   }
 
-  insertBefore(json, cb) {
+  insertBefore(child, cb) {
     let self = this;
-    if(!isNil(json) && !self.isDestroyed && self.domParent) {
-      let { root, domParent } = self;
-      let host = domParent.hostRoot;
-      if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
-        if(json.vd) {
-          root.delRefreshTask(json.vd.__task);
-          json.vd.remove();
-        }
-        let vd;
-        if($$type.TYPE_CP === json.$$type) {
-          vd = builder.initCp2(json, root, host, domParent);
-        }
-        else {
-          vd = builder.initDom(json, root, host, domParent);
-        }
-        root.addRefreshTask(vd.__task = {
-          __before() {
-            vd.__task = null;
-            let i = 0, has, __json = domParent.__json, children = __json.children, len = children.length;
-            let pJson = self.isShadowRoot ? self.hostRoot.__json : self.__json;
-            for(; i < len; i++) {
-              if(children[i] === pJson) {
-                has = true;
-                break;
-              }
-            }
-            if(!has) {
-              throw new Error('InsertBefore exception.');
-            }
-            // 插入注意开头位置处理
-            if(i) {
-              children.splice(i, 0, json);
-              vd.__next = self;
-              vd.__prev = self.__prev;
-              self.__prev = vd;
-              domParent.children.splice(i, 0, vd);
-            }
-            else {
-              if(len) {
-                let first = domParent.children[0];
-                first.__prev = vd;
-                vd.__next = first;
-              }
-              children.unshift(json);
-              domParent.children.unshift(vd);
-            }
-            domParent.__zIndexChildren = null;
-            // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-            let res = {
-              node: vd,
-              focus: level.REFLOW,
-              addDom: true,
-            };
-            root.__addUpdate(vd, root, res);
-          },
-          __after(diff) {
-            if(isFunction(cb)) {
-              cb.call(vd, diff);
-            }
-          },
-        });
-      }
-      else {
-        throw new Error('Invalid parameter in insertBefore.');
-      }
+    let { root, host, domParent, isDestroyed } = self;
+    if(isDestroyed) {
+      throw new Error('InsertBefore target is destroyed.');
     }
+    if(child && !(child instanceof Xom || child instanceof Component)) {
+      child = new Text(child);
+    }
+    if(child instanceof Xom || child instanceof Component || child instanceof Text) {
+      root.delRefreshTask(child.__task);
+      child.remove();
+      root.addRefreshTask(child.__task = {
+        __before() {
+          child.__task = null;
+          let children = domParent.children;
+          let i = children.indexOf(self);
+          if(i === -1) {
+            throw new Error('InsertBefore exception.');
+          }
+          if(i) {
+            children[i - 1].__next = child;
+            child.__prev = children[i - 1];
+          }
+          child.__next = self;
+          self.__prev = child;
+          children.splice(i, 0, child);
+          domParent.__zIndexChildren = null;
+          builder.relation(root, host, domParent, child, {});
+          let res = {
+            node: child,
+            focus: level.REFLOW,
+            addDom: true,
+          };
+          root.__addUpdate(child, root, res);
+        },
+        __after(diff) {
+          if(isFunction(cb)) {
+            cb.call(child, diff);
+          }
+        },
+      });
+    }
+    // if(!isNil(json) && !self.isDestroyed && self.domParent) {
+    //   let { root, domParent } = self;
+    //   let host = domParent.hostRoot;
+    //   if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
+    //     if(json.vd) {
+    //       root.delRefreshTask(json.vd.__task);
+    //       json.vd.remove();
+    //     }
+    //     let vd;
+    //     if($$type.TYPE_CP === json.$$type) {
+    //       vd = builder.initCp2(json, root, host, domParent);
+    //     }
+    //     else {
+    //       vd = builder.initDom(json, root, host, domParent);
+    //     }
+    //     root.addRefreshTask(vd.__task = {
+    //       __before() {
+    //         vd.__task = null;
+    //         let i = 0, has, __json = domParent.__json, children = __json.children, len = children.length;
+    //         let pJson = self.isShadowRoot ? self.hostRoot.__json : self.__json;
+    //         for(; i < len; i++) {
+    //           if(children[i] === pJson) {
+    //             has = true;
+    //             break;
+    //           }
+    //         }
+    //         if(!has) {
+    //           throw new Error('InsertBefore exception.');
+    //         }
+    //         // 插入注意开头位置处理
+    //         if(i) {
+    //           children.splice(i, 0, json);
+    //           vd.__next = self;
+    //           vd.__prev = self.__prev;
+    //           self.__prev = vd;
+    //           domParent.children.splice(i, 0, vd);
+    //         }
+    //         else {
+    //           if(len) {
+    //             let first = domParent.children[0];
+    //             first.__prev = vd;
+    //             vd.__next = first;
+    //           }
+    //           children.unshift(json);
+    //           domParent.children.unshift(vd);
+    //         }
+    //         domParent.__zIndexChildren = null;
+    //         // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+    //         let res = {
+    //           node: vd,
+    //           focus: level.REFLOW,
+    //           addDom: true,
+    //         };
+    //         root.__addUpdate(vd, root, res);
+    //       },
+    //       __after(diff) {
+    //         if(isFunction(cb)) {
+    //           cb.call(vd, diff);
+    //         }
+    //       },
+    //     });
+    //   }
+    //   else {
+    //     throw new Error('Invalid parameter in insertBefore.');
+    //   }
+    // }
   }
 
-  insertAfter(json, cb) {
+  insertAfter(child, cb) {
     let self = this;
-    if(!isNil(json) && !self.isDestroyed && self.domParent) {
-      let { root, domParent } = self;
-      let host = domParent.hostRoot;
-      if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
-        if(json.vd) {
-          root.delRefreshTask(json.vd.__task);
-          json.vd.remove();
-        }
-        let vd;
-        if($$type.TYPE_CP === json.$$type) {
-          vd = builder.initCp2(json, root, host, domParent);
-        }
-        else {
-          vd = builder.initDom(json, root, host, domParent);
-        }
-        root.addRefreshTask(vd.__task = {
-          __before() {
-            vd.__task = null;
-            let i = 0, has, __json = domParent.__json, children = __json.children, len = children.length;
-            let pJson = self.isShadowRoot ? self.hostRoot.__json : self.__json;
-            for(; i < len; i++) {
-              if(children[i] === pJson) {
-                has = true;
-                break;
-              }
-            }
-            if(!has) {
-              throw new Error('insertAfter exception.');
-            }
-            // 插入注意末尾位置处理
-            if(i < len - 1) {
-              children.splice(i + 1, 0, json);
-              vd.__prev = self;
-              vd.__next = self.__next;
-              self.__next = vd;
-              domParent.children.splice(i + 1, 0, vd);
-            }
-            else {
-              if(len) {
-                let last = domParent.children[len - 1];
-                last.__next = vd;
-                vd.__prev = last;
-              }
-              children.push(json);
-              domParent.children.push(vd);
-            }
-            domParent.__zIndexChildren = null;
-            // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-            let res = {
-              node: vd,
-              focus: level.REFLOW,
-              addDom: true,
-            };
-            root.__addUpdate(vd, root, res);
-          },
-          __after(diff) {
-            if(isFunction(cb)) {
-              cb.call(vd, diff);
-            }
-          },
-        });
-      }
-      else {
-        throw new Error('Invalid parameter in insertAfter.');
-      }
+    let { root, host, domParent, isDestroyed } = self;
+    if(isDestroyed) {
+      throw new Error('InsertBefore target is destroyed.');
     }
+    if(child && !(child instanceof Xom || child instanceof Component)) {
+      child = new Text(child);
+    }
+    if(child instanceof Xom || child instanceof Component || child instanceof Text) {
+      root.delRefreshTask(child.__task);
+      child.remove();
+      root.addRefreshTask(child.__task = {
+        __before() {
+          child.__task = null;
+          let children = domParent.children;
+          let i = children.indexOf(self);
+          if(i === -1) {
+            throw new Error('InsertBefore exception.');
+          }
+          if(i < children.length - 1) {
+            children[i + 1].__prev = child;
+            child.__next = children[i + 1];
+          }
+          child.__prev = self;
+          self.__next = child;
+          children.splice(i + 1, 0, child);
+          domParent.__zIndexChildren = null;
+          builder.relation(root, host, domParent, child, {});
+          let res = {
+            node: child,
+            focus: level.REFLOW,
+            addDom: true,
+          };
+          root.__addUpdate(child, root, res);
+        },
+        __after(diff) {
+          if(isFunction(cb)) {
+            cb.call(child, diff);
+          }
+        },
+      });
+    }
+    // if(!isNil(json) && !self.isDestroyed && self.domParent) {
+    //   let { root, domParent } = self;
+    //   let host = domParent.hostRoot;
+    //   if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
+    //     if(json.vd) {
+    //       root.delRefreshTask(json.vd.__task);
+    //       json.vd.remove();
+    //     }
+    //     let vd;
+    //     if($$type.TYPE_CP === json.$$type) {
+    //       vd = builder.initCp2(json, root, host, domParent);
+    //     }
+    //     else {
+    //       vd = builder.initDom(json, root, host, domParent);
+    //     }
+    //     root.addRefreshTask(vd.__task = {
+    //       __before() {
+    //         vd.__task = null;
+    //         let i = 0, has, __json = domParent.__json, children = __json.children, len = children.length;
+    //         let pJson = self.isShadowRoot ? self.hostRoot.__json : self.__json;
+    //         for(; i < len; i++) {
+    //           if(children[i] === pJson) {
+    //             has = true;
+    //             break;
+    //           }
+    //         }
+    //         if(!has) {
+    //           throw new Error('insertAfter exception.');
+    //         }
+    //         // 插入注意末尾位置处理
+    //         if(i < len - 1) {
+    //           children.splice(i + 1, 0, json);
+    //           vd.__prev = self;
+    //           vd.__next = self.__next;
+    //           self.__next = vd;
+    //           domParent.children.splice(i + 1, 0, vd);
+    //         }
+    //         else {
+    //           if(len) {
+    //             let last = domParent.children[len - 1];
+    //             last.__next = vd;
+    //             vd.__prev = last;
+    //           }
+    //           children.push(json);
+    //           domParent.children.push(vd);
+    //         }
+    //         domParent.__zIndexChildren = null;
+    //         // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+    //         let res = {
+    //           node: vd,
+    //           focus: level.REFLOW,
+    //           addDom: true,
+    //         };
+    //         root.__addUpdate(vd, root, res);
+    //       },
+    //       __after(diff) {
+    //         if(isFunction(cb)) {
+    //           cb.call(vd, diff);
+    //         }
+    //       },
+    //     });
+    //   }
+    //   else {
+    //     throw new Error('Invalid parameter in insertAfter.');
+    //   }
+    // }
   }
 
   removeChild(target, cb) {

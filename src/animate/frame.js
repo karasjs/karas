@@ -24,20 +24,19 @@ class Frame {
   constructor() {
     this.__hookTask = []; // 动画刷新后，每个root注册的刷新回调执行
     this.__task = [];
-    this.__taskCp = []; // 区别于task，component专用，和animate等其它不同流水线，在最后执行，防止混了 #122
     this.__now = null;
   }
 
   __init() {
     let self = this;
-    let { task, taskCp } = self;
+    let { task } = self;
     inject.cancelAnimationFrame(self.id);
     let last = self.__now = inject.now();
     function cb() {
       // 必须清除，可能会发生重复，当动画finish回调中gotoAndPlay(0)，下方结束判断发现aTask还有值会继续，新的init也会进入再次执行
       inject.cancelAnimationFrame(self.id);
       self.id = inject.requestAnimationFrame(function() {
-        if(isPause || (!task.length && !taskCp.length)) {
+        if(isPause || !task.length) {
           return;
         }
         let now = self.__now = inject.now();
@@ -47,11 +46,8 @@ class Frame {
         last = now;
         // 优先动画计算
         let clone = task.slice(0);
-        let cloneCp = taskCp.splice(0); // task要常驻，taskCp只1次直接splice清空
         let length = clone.length;
-        let lengthCp = cloneCp.length;
         traversal(clone, length, diff, false);
-        traversal(cloneCp, lengthCp, diff, false);
         // 执行动画造成的每个Root的刷新并清空
         let list = self.__hookTask.splice(0);
         for(let i = 0, len = list.length; i < len; i++) {
@@ -60,9 +56,8 @@ class Frame {
         }
         // 普通的before/after
         traversal(clone, length, diff, true);
-        traversal(cloneCp, lengthCp, diff, true);
         // 还有则继续，没有则停止节省性能
-        if(task.length || taskCp.length) {
+        if(task.length) {
           cb();
         }
       });
@@ -127,14 +122,6 @@ class Frame {
     this.onFrame(cb);
   }
 
-  __nextFrameCp(handle) {
-    let { task, taskCp } = this;
-    if(!task.length && !taskCp.length) {
-      this.__init();
-    }
-    taskCp.push(handle);
-  }
-
   pause() {
     isPause = true;
   }
@@ -148,10 +135,6 @@ class Frame {
 
   get task() {
     return this.__task;
-  }
-
-  get taskCp() {
-    return this.__taskCp;
   }
 }
 

@@ -1,10 +1,8 @@
 import Node from './Node';
 import Text from './Text';
-import builder from '../util/builder';
 import Event from '../util/Event';
 import util from '../util/util';
 import inject from '../util/inject';
-import flatten from '../util/flatten';
 import css from '../style/css';
 import change from '../refresh/change';
 
@@ -17,17 +15,17 @@ const REGISTER = {};
  * 在check时树递归会用到，判断是否需要查找cp更新
  * @param cp
  */
-function setUpdateFlag(cp) {
-  // 去重
-  if(cp.__hasCpUpdate) {
-    return;
-  }
-  cp.__hasCpUpdate = true;
-  let host = cp.host;
-  if(host) {
-    setUpdateFlag(host);
-  }
-}
+// function setUpdateFlag(cp) {
+//   // 去重
+//   if(cp.__hasCpUpdate) {
+//     return;
+//   }
+//   cp.__hasCpUpdate = true;
+//   let host = cp.host;
+//   if(host) {
+//     setUpdateFlag(host);
+//   }
+// }
 
 class Component extends Event {
   constructor(props = {}) {
@@ -43,79 +41,73 @@ class Component extends Event {
     this.__parent = null;
     this.__host = null;
     this.__ref = {};
-    this.state = {};
     this.__isMounted = false;
     this.__taskList = [];
   }
 
-  setState(n, cb) {
-    let self = this;
-    if(isNil(n)) {
-      n = {};
-    }
-    else if(isFunction(n)) {
-      return;
-    }
-    else {
-      if(Object.keys(n).length === 0) {
-        if(isFunction(cb)) {
-          cb.call(self);
-        }
-        return;
-      }
-      let state = clone(self.state);
-      n = extend(state, n);
-    }
-    let root = self.root;
-    if(root && self.__isMounted) {
-      // 一帧之内多次调用，需合并
-      if(self.__nextState) {
-        Object.assign(self.__nextState, n);
-        self.__taskList.push(cb);
-      }
-      else {
-        self.__nextState = n;
-        self.__taskList = [cb];
-        // 回调更新列表，before执行时splice出来供after执行，防止中途产生的后续setState干扰
-        let list = [];
-        let t = self.__task = {
-          __before: () => {
-            list = self.__taskList.splice(0);
-            // 标识更新
-            setUpdateFlag(this);
-          },
-          __after: () => {
-            // self.__nextState = null; 由updater.js每次refresh前同步执行清空，这里不能异步清除，否则frame动画会乱序
-            list.forEach(cb => {
-              if(isFunction(cb)) {
-                cb.call(self);
-              }
-            });
-          },
-        };
-        root.addRefreshCp(t);
-      }
-    }
-    // 构造函数中调用还未render，
-    else if(isFunction(cb)) {
-      self.state = n;
-      cb.call(self);
-    }
-  }
+  // setState(n, cb) {
+  //   let self = this;
+  //   if(isNil(n)) {
+  //     n = {};
+  //   }
+  //   else if(isFunction(n)) {
+  //     return;
+  //   }
+  //   else {
+  //     if(Object.keys(n).length === 0) {
+  //       if(isFunction(cb)) {
+  //         cb.call(self);
+  //       }
+  //       return;
+  //     }
+  //     let state = clone(self.state);
+  //     n = extend(state, n);
+  //   }
+  //   let root = self.root;
+  //   if(root && self.__isMounted) {
+  //     // 一帧之内多次调用，需合并
+  //     if(self.__nextState) {
+  //       Object.assign(self.__nextState, n);
+  //       self.__taskList.push(cb);
+  //     }
+  //     else {
+  //       self.__nextState = n;
+  //       self.__taskList = [cb];
+  //       // 回调更新列表，before执行时splice出来供after执行，防止中途产生的后续setState干扰
+  //       let list = [];
+  //       let t = self.__task = {
+  //         __before: () => {
+  //           list = self.__taskList.splice(0);
+  //           // 标识更新
+  //           setUpdateFlag(this);
+  //         },
+  //         __after: () => {
+  //           // self.__nextState = null; 由updater.js每次refresh前同步执行清空，这里不能异步清除，否则frame动画会乱序
+  //           list.forEach(cb => {
+  //             if(isFunction(cb)) {
+  //               cb.call(self);
+  //             }
+  //           });
+  //         },
+  //       };
+  //       root.addRefreshCp(t);
+  //     }
+  //   }
+  //   // 构造函数中调用还未render，
+  //   else if(isFunction(cb)) {
+  //     self.state = n;
+  //     cb.call(self);
+  //   }
+  // }
 
   /**
-   * build中调用初始化，json有值时是update过程才有，且处理过flatten
-   * @param json
-   * @private
+   * build中调用初始化，处理过flatten
    */
-  __init(json) {
+  __init() {
     this.__ref = {};
-    let root = this.root;
-    let cd = json || flatten(this.render());
-    let sr = builder.initCp(cd, root, this);
-    this.__cd = cd;
+    let sr = this.__shadowRoot;
     if(sr instanceof Text) {
-      // 文字视作为父节点的直接文字子节点，在builder里做
+      // 文字视作为父节点的直接文字子节点
     }
     else if(sr instanceof Node) {
       let style = css.normalize(this.props.style);
@@ -131,10 +123,6 @@ class Component extends Event {
         }
       });
     }
-    else if(!(sr instanceof Component)) {
-      // 本身build是递归的，子cp已经初始化了
-      throw new Error('Component render() must return a dom/text: ' + this);
-    }
     // 自定义事件无视返回强制添加
     Object.keys(this.props).forEach(k => {
       let v = this.props[k];
@@ -143,26 +131,14 @@ class Component extends Event {
         this.on(k, v);
       }
     });
-    // shadow指向直接renderRoot，shadowRoot考虑到返回Component的递归即hoc高阶组件
-    // host是直接所属，hostRoot同考虑到高阶组件
-    this.__shadow = sr;
-    sr.__host = this;
-    // 递归下去，多层级时执行顺序由里到外，最终会被最上层执行替换
-    while(sr instanceof Component) {
-      sr.__hostRoot = this;
-      sr.shadow.__host = sr;
-      sr = sr.shadow;
-    }
-    this.__shadowRoot = sr;
-    sr.__hostRoot = this;
-    if(!this.__isMounted) {
-      this.__isMounted = true;
-      if(isFunction(this.componentDidMount)) {
-        root.once(Event.REFRESH, () => {
-          this.componentDidMount();
-        });
-      }
-    }
+    // if(!this.__isMounted) {
+    //   this.__isMounted = true;
+    //   if(isFunction(this.componentDidMount)) {
+    //     root.once(Event.REFRESH, () => {
+    //       this.componentDidMount();
+    //     });
+    //   }
+    // }
   }
 
   render() {

@@ -17,8 +17,6 @@ import Ellipse from './node/geom/Ellipse';
 import Component from './node/Component';
 import Event from './util/Event';
 import util from './util/util';
-import $$type from './util/$$type';
-import builder from './util/builder';
 import updater from './util/updater';
 import inject from './util/inject';
 import enums from './util/enums';
@@ -65,9 +63,9 @@ let karas = {
     }
     else if(tagName) {
       // 特殊的$匿名类
-      if(tagName instanceof Geom) {
-        return this.createGm(tagName, props);
-      }
+      // if(tagName instanceof Geom) {
+      //   return this.createGm(tagName, props);
+      // }
       return this.createCp(tagName, props, children);
     }
   },
@@ -76,29 +74,38 @@ let karas = {
       return new Root(tagName, props, children);
     }
     if(tag.TAG_NAME.hasOwnProperty(tagName)) {
-      return {
-        tagName,
-        props,
-        children,
-        $$type: $$type.TYPE_VD,
-      };
+      if(tagName === 'img') {
+        return new Img(tagName, props);
+      }
+      else {
+        return new Dom(tagName, props, children);
+      }
+      // return {
+      //   tagName,
+      //   props,
+      //   children,
+      //   $$type: $$type.TYPE_VD,
+      // };
     }
     throw new Error(`Can not use <${tagName}>`);
   },
   createGm(tagName, props) {
-    return {
-      tagName,
-      props,
-      $$type: $$type.TYPE_GM,
-    };
+    let klass = Geom.getRegister(tagName);
+    return new klass(tagName, props);
+    // return {
+    //   tagName,
+    //   props,
+    //   $$type: $$type.TYPE_GM,
+    // };
   },
   createCp(klass, props, children = []) {
     props.children = children;
-    return {
-      klass,
-      props,
-      $$type: $$type.TYPE_CP,
-    };
+    return new klass(props, children);
+    // return {
+    //   klass,
+    //   props,
+    //   $$type: $$type.TYPE_CP,
+    // };
   },
   parse(json, dom, options) {
     return parser.parse(this, json, dom, options);
@@ -122,7 +129,6 @@ let karas = {
   parser,
   animate,
   math,
-  builder,
   updater,
   refresh,
   enums,
@@ -130,14 +136,6 @@ let karas = {
     debug.flag = !!v;
   },
 };
-
-builder.ref({
-  Xom,
-  Dom,
-  Img,
-  Geom,
-  Component,
-});
 
 if(typeof window !== 'undefined') {
   window.karas = karas;

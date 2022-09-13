@@ -143,6 +143,7 @@ const {
   TRANSLATE_X: TX,
   TRANSLATE_Y: TY,
   TRANSLATE_Z: TZ,
+  TRANSFORM_ALL,
 } = level;
 
 function getFirstEmptyInlineWidth(xom) {
@@ -470,18 +471,8 @@ class Xom extends Node {
       if(item === fontFamily) {
         // 加载成功回调可能没注册信息，需要多判断一下
         if(font.hasRegister(item)) {
-          let self = this;
-          root.addRefreshTask({
-            __before() {
-              if(self.__isDestroyed) {
-                return;
-              }
-              let res = {
-                node,
-                focus: level.REFLOW,
-              };
-              root.__addUpdate(node, root, res);
-            },
+          root.__addUpdate(node, {
+            focus: level.REFLOW,
           });
         }
         // 后面低优先级的无需再看
@@ -895,7 +886,7 @@ class Xom extends Node {
       return __cacheStyle[MATRIX] = this.__matrix = mx.identity();
     }
     let matrixCache = __cacheStyle[MATRIX];
-    // tx/ty变化特殊优化
+    // tx/ty/tz变化特殊优化
     if(matrixCache && lv < REFLOW && !contain(lv, TF)) {
       let x = 0, y = 0, z = 0;
       if(contain(lv, TX)) {
@@ -1052,10 +1043,8 @@ class Xom extends Node {
 
   /**
    * 将currentStyle计算为computedStyle，同时存入cacheStyle可缓存的结果防止无变更重复计算，返回背景渲染范围
-   * @returns {*[]}
-   * @private
    */
-  __calStyle(__currentStyle, __computedStyle, __cacheStyle) {
+  __calStyle(lv, __currentStyle, __computedStyle, __cacheStyle) {
     let {
       __sx1,
       __sx2,
@@ -1109,8 +1098,9 @@ class Xom extends Node {
     if(isNil(__cacheStyle[FILTER])) {
       this.__calFilter(__currentStyle, __computedStyle, __cacheStyle);
     }
-    if(isNil(__cacheStyle[MATRIX])) {
-      this.__calMatrix(REFLOW, __currentStyle, __computedStyle, __cacheStyle);
+    // 特殊的判断，MATRIX不存在于样式key中，所有的transform共用一个
+    if(isNil(__cacheStyle[MATRIX]) || contain(lv, TRANSFORM_ALL)) {
+      this.__calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle);
     }
     if(isNil(__cacheStyle[BACKGROUND_POSITION_X])) {
       __cacheStyle[BACKGROUND_POSITION_X] = true;
@@ -1188,16 +1178,9 @@ class Xom extends Node {
                 loadBgi.source = data.source;
                 loadBgi.width = data.width;
                 loadBgi.height = data.height;
-                root.delRefreshTask(loadBgi.cb);
-                root.addRefreshTask(loadBgi.cb = {
-                  __before() {
-                    __cacheStyle[BACKGROUND_IMAGE] = undefined;
-                    let res = {
-                      node,
-                      focus: REPAINT,
-                    };
-                    root.__addUpdate(node, root, res);
-                  },
+                __cacheStyle[BACKGROUND_IMAGE] = undefined;
+                root.__addUpdate(node, {
+                  focus: REPAINT,
                 });
               }
             }, {
@@ -2481,43 +2464,8 @@ class Xom extends Node {
   }
 
   updateStyle(style) {
-    // let node = this;
-    // let root = node.__root;
     let formatStyle = normalize(style);
     this.updateFormatStyle(formatStyle);
-    // 有root说明被添加渲染过了
-    // if(root) {
-    //   root.addRefreshTask(node.__task = {
-    //     __before() {
-    //       node.__task = null;
-    //       if(node.__isDestroyed) {
-    //         return;
-    //       }
-    //       // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-    //       let res = {
-    //         node,
-    //         style: formatStyle,
-    //         overwrite: style, // 标识盖原有style样式不仅仅是修改currentStyle，不同于animate
-    //         keys: Object.keys(formatStyle).map(i => {
-    //           if(!GEOM.hasOwnProperty(i)) {
-    //             i = parseInt(i);
-    //           }
-    //           return i;
-    //         }),
-    //       };
-    //       root.__addUpdate(node, root, res);
-    //     },
-    //     __after(diff) {
-    //       if(isFunction(cb)) {
-    //         cb.call(node, diff);
-    //       }
-    //     },
-    //   });
-    // }
-    // // 没有是在如parse()还未添加的时候，可以直接同步覆盖
-    // else {
-    //   Object.assign(this.__currentStyle, formatStyle);
-    // }
   }
 
   // 传入格式化好key/value的样式
@@ -2536,35 +2484,11 @@ class Xom extends Node {
     if(!keys.length) {
       return;
     }
-    // 有root说明被添加渲染过了，没有是在如parse()还未添加的时候，可以直接同步覆盖
     if(root) {
       root.__addUpdate(this, {
+        style,
         keys,
       });
-      // root.addRefreshTask(node.__task = {
-      //   __before() {
-      //     node.__task = null; // 清除在before，防止after的回调增加新的task误删
-      //     if(node.__isDestroyed) {
-      //       return;
-      //     }
-      //     // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-      //     let res = {
-      //       node,
-      //       style,
-      //       keys: Object.keys(style).map(i => {
-      //         if(!GEOM.hasOwnProperty(i)) {
-      //           i = parseInt(i);
-      //         }
-      //         return i;
-      //       }),
-      //     };
-      //     root.__addUpdate(node, root, res);
-      //   },
-      // });
-    }
-    // 没有是在如parse()还未添加的时候，可以直接同步覆盖
-    else {
-      Object.assign(this.__currentStyle, style);
     }
   }
 

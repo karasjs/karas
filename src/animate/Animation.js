@@ -52,16 +52,15 @@ const {
 const { AUTO, PX, PERCENT, INHERIT, RGBA, STRING, NUMBER, REM, VW, VH, VMAX, VMIN, GRADIENT, calUnit } = unit;
 const { isNil, isFunction, isNumber, isObject, clone, equalArr } = util;
 const { linear } = easing;
-const { cloneStyle } = css;
+const { cloneStyle, equalStyle } = css;
 const { isGeom, GEOM } = change;
 
 const {
-  COLOR_HASH,
-  LENGTH_HASH,
-  RADIUS_HASH,
-  GRADIENT_HASH,
-  EXPAND_HASH,
-  GRADIENT_TYPE,
+  isColorKey,
+  isExpandKey,
+  isLengthKey,
+  isGradientKey,
+  isRadiusKey,
 } = key;
 
 function unify(frames, target) {
@@ -120,7 +119,7 @@ function unify(frames, target) {
 
 // 每次初始化时处理继承值，以及转换transform为单matrix矩阵
 function inherit(frames, keys, target) {
-  let computedStyle = target.computedStyle;
+  let computedStyle = target.__computedStyle;
   frames.forEach(item => {
     let style = item.style;
     keys.forEach(k => {
@@ -130,8 +129,8 @@ function inherit(frames, keys, target) {
         return;
       }
       if(k === TRANSFORM) {
-        let ow = target.outerWidth;
-        let oh = target.outerHeight;
+        let ow = target.__outerWidth;
+        let oh = target.__outerHeight;
         let m = tf.calMatrix(v, ow, oh);
         style[k] = [{ k: MATRIX, v: m }];
       }
@@ -139,7 +138,7 @@ function inherit(frames, keys, target) {
         if(k === COLOR || k === TEXT_STROKE_COLOR) {
           style[k] = { v: util.rgba2int(computedStyle[k]), u: RGBA };
         }
-        else if(LENGTH_HASH.hasOwnProperty(k)) {
+        else if(isLengthKey(k)) {
           style[k] = { v: computedStyle[k], u: PX };
         }
         else if(k === FONT_WEIGHT) {
@@ -157,32 +156,28 @@ function inherit(frames, keys, target) {
  * 通知root更新当前动画，需要根据frame的状态来决定是否是同步插入
  * 在异步时，因为动画本身是异步，需要addRefreshTask
  * 而如果此时frame在执行before过程中，说明帧动画本身是在before计算的，需要同步插入
- * @param animation
- * @param style
  * @param keys 样式所有的key
  * @param root
  * @param node
  */
-function genBeforeRefresh(animation, style, keys, root, node) {
-  let res = {
-    node,
-    style,
+function genBeforeRefresh(keys, root, node) {
+  root.__addUpdate(node, {
     keys,
-  };
-  root.__addUpdate(node, root, res);
-  animation.__style = style;
-  animation.__assigning = true;
+  });
+  // animation.__style = style;
+  // animation.__assigning = true;
   // frame每帧回调时，下方先执行计算好变更的样式，这里特殊插入一个hook，让root增加一个刷新操作
   // 多个动画调用因为相同root也只会插入一个，这样在所有动画执行完毕后frame里检查同步进行刷新，解决单异步问题
-  root.__frameHook();
+  // root.__frameHook();
 }
 
 /**
  * 将每帧的样式格式化，提取出offset属性并转化为时间，提取出缓动曲线easing
+ * 加好空数组transition/keys，后续计算两帧之间变化时存入
+ * 加好空数组fixed，后续计算无帧变化时存入
  * @param style 关键帧样式
  * @param duration 动画时间长度
  * @param es options的easing曲线控制，frame没有自定义则使用全局的
- * @returns {{style: *, time: number, easing: *, transition: []}}
  */
 function framing(style, duration, es) {
   let { offset, easing } = style;
@@ -203,10 +198,13 @@ function framing(style, duration, es) {
   }
   return {
     style,
+    clone: cloneStyle(style),
     time: offset * duration,
     easing: easing || es,
     timingFunction: getEasing(easing || es),
-    transition: [],
+    transition: [], // 变化的属性
+    keys: [], // 变化的k
+    fixed: [], // 不变的k
   };
 }
 
@@ -362,12 +360,16 @@ function calByUnit(p, n, container, root) {
  * @param next 下一帧样式
  * @param k 比较的样式名
  * @param target dom对象
- * @returns {{k: *, v: *}}
  */
 function calDiff(prev, next, k, target) {
-  let res = {k};
-  let p = prev[k];
-  let n = next[k];
+  let p = prev.style[k];
+  let n = next.style[k];
+  // 提前设置好引用，无需每帧计算时取引用，由于单位一定相同，可以简化直接引用到值v上无需单位u，有些直接量没有单位
+  let cl = prev.clone[k];
+  if(cl.hasOwnProperty('v')) {
+    cl = cl.v;
+  }
+  let res = { k, st: p, cl };
   if(k === TRANSFORM) {
     // transform不存在时需给默认矩阵，他只有1个matrix3d的值做动画
     if(!p && !n || !p.length && !n.length) {
@@ -464,7 +466,7 @@ function calDiff(prev, next, k, target) {
     }
     res.v = v;
   }
-  else if(k === TRANSFORM_ORIGIN || k === PERSPECTIVE_ORIGIN || RADIUS_HASH.hasOwnProperty(k)) {
+  else if(k === TRANSFORM_ORIGIN || k === PERSPECTIVE_ORIGIN || isRadiusKey(k)) {
     // x/y都相等无需
     if(n[0].v === p[0].v && n[0].u === p[0].u
       && n[1].v === p[1].v && n[1].u === p[1].u) {
@@ -641,7 +643,7 @@ function calDiff(prev, next, k, target) {
       }
     });
   }
-  else if(EXPAND_HASH.hasOwnProperty(k)) {
+  else if(isExpandKey(k)) {
     if(p.u === n.u) {
       let v = n.v - p.v;
       if(v === 0) {
@@ -657,7 +659,7 @@ function calDiff(prev, next, k, target) {
       res.v = v;
     }
   }
-  else if(LENGTH_HASH.hasOwnProperty(k)) {
+  else if(isLengthKey(k)) {
     // auto不做动画
     if(p.u === AUTO || n.u === AUTO) {
       return;
@@ -696,7 +698,7 @@ function calDiff(prev, next, k, target) {
     }
     res.v = diff;
   }
-  else if(GRADIENT_HASH.hasOwnProperty(k)) {
+  else if(isGradientKey(k)) {
     // backgroundImage发生了渐变色和图片的变化，fill发生渐变色和纯色的变化等
     res.v = [];
     let length = Math.min(p.length, n.length);
@@ -735,7 +737,7 @@ function calDiff(prev, next, k, target) {
       res.v.push(temp);
     }
   }
-  else if(COLOR_HASH.hasOwnProperty(k)) {
+  else if(isColorKey(k)) {
     if(n.u !== p.u) {
       return;
     }
@@ -912,7 +914,7 @@ function calDiff(prev, next, k, target) {
 
 // 渐变的差异计算
 function calDiffGradient(p, n, target) {
-  if(p.k !== n.k || !GRADIENT_TYPE.hasOwnProperty(p.k)) {
+  if(p.k !== n.k) {
     return;
   }
   let pv = p.v;
@@ -1027,13 +1029,20 @@ function calDiffGradient(p, n, target) {
   return temp;
 }
 
-// 计算两帧之间不相同的变化，存入transition，相同的忽略
+/**
+ * 计算两帧之间不相同的变化，存入transition，相同的忽略
+ * 同时不变化的key也得存入fixed
+ */
 function calFrame(prev, next, keys, target) {
   keys.forEach(k => {
-    let ts = calDiff(prev.style, next.style, k, target);
+    let ts = calDiff(prev, next, k, target);
     // 可以形成过渡的才会产生结果返回
     if(ts) {
       prev.transition.push(ts);
+      prev.keys.push(k);
+    }
+    else {
+      prev.fixed.push(k);
     }
   });
   return next;
@@ -1083,40 +1092,42 @@ function getEasing(ea) {
  * 根据百分比和缓动函数计算中间态样式
  * 当easing定义为steps时，优先计算
  * @param frame 当前帧
- * @param keys 所有样式key
  * @param percent 到下一帧时间的百分比
  * @param target vd
- * @returns {*}
+ * @return {[]} 发生变更的样式key
  */
-function calIntermediateStyle(frame, keys, percent, target) {
-  let { style, transition, timingFunction } = frame;
+function calIntermediateStyle(frame, percent, target) {
+  let style = frame.style;
+  let transition = frame.transition;
+  let timingFunction = frame.timingFunction;
   if(timingFunction && timingFunction !== linear) {
     percent = timingFunction(percent);
   }
-  style = cloneStyle(style, keys);
+  let currentStyle = target.__currentStyle, keys = frame.keys.slice(0);
   for(let i = 0, len = transition.length; i < len; i++) {
-    let { k, v } = transition[i];
-    let st = style[k];
+    let item = transition[i];
+    let k = item.k, v = item.v, st = item.st, cl = item.cl;
     // transform特殊处理，只有1个matrix，有可能不存在，需给默认矩阵
     if(k === TRANSFORM) {
-      if(!st) {
-        st = style[k] = [{ k: MATRIX, v: mx.identity() }];
+      if(!st || !st.length) {
+        st = style[k] = [{k: MATRIX, v: mx.identity()}];
+      }
+      if(!cl || !cl.length) {
+        cl = frame.clone[k] = [{k: MATRIX, v: mx.identity()}];
       }
       for(let i = 0; i < 16; i++) {
-        st[0].v[i] += v[i] * percent;
+        st[0].v[i] = cl[0].v[i] + v[i] * percent;
       }
+      currentStyle[k] = st;
     }
     else if(k === ROTATE_3D) {
-      st[0] += v[0] * percent;
-      st[1] += v[1] * percent;
-      st[2] += v[2] * percent;
-      st[3].v += v[3] * percent;
+      st[0] = cl[0] + v[0] * percent;
+      st[1] = cl[1] + v[1] * percent;
+      st[2] = cl[2] + v[2] * percent;
+      st[3].v = cl[3].v + v[3] * percent;
+      currentStyle[k] = st;
     }
     else if(k === FILTER) {
-      // 只有1个样式声明了filter另外一个为空，会造成无样式，需初始化数组并在下面计算出样式存入
-      if(!st) {
-        st = style[k] = [];
-      }
       for(let i = 0, len = v.length; i < len; i++) {
         let item = v[i];
         if(item) {
@@ -1139,21 +1150,24 @@ function calIntermediateStyle(frame, keys, percent, target) {
           }
         }
       }
+      currentStyle[k] = st;
     }
-    else if(k === TRANSFORM_ORIGIN || k === PERSPECTIVE_ORIGIN || RADIUS_HASH.hasOwnProperty(k)) {
+    else if(k === TRANSFORM_ORIGIN || k === PERSPECTIVE_ORIGIN || isRadiusKey(k)) {
       if(v[0] !== 0) {
-        st[0].v += v[0] * percent;
+        st[0].v = cl[0].v + v[0] * percent;
       }
       if(v[1] !== 0) {
-        st[1].v += v[1] * percent;
+        st[1].v = cl[1].v + v[1] * percent;
       }
+      currentStyle[k] = st;
     }
     else if(k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y || k === STROKE_WIDTH) {
       st.forEach((item, i) => {
         if(v[i]) {
-          item.v += v[i] * percent;
+          item.v = cl[i].v + v[i] * percent;
         }
       });
+      currentStyle[k] = st;
     }
     else if(k === BOX_SHADOW) {
       for(let i = 0, len = Math.min(st.length, v.length); i < len; i++) {
@@ -1162,47 +1176,50 @@ function calIntermediateStyle(frame, keys, percent, target) {
         }
         // x/y/blur/spread
         for(let j = 0; j < 4; j++) {
-          st[i][j].v += v[i][j] * percent;
+          st[i][j].v = cl[i][j].v + v[i][j] * percent;
         }
         // rgba
         for(let j = 0; j < 4; j++) {
-          st[i][4][j] += v[i][4][j] * percent;
+          st[i][4][j] = cl[i][4][j] + v[i][4][j] * percent;
         }
       }
+      currentStyle[k] = st;
     }
     else if(k === BACKGROUND_SIZE) {
       st.forEach((item, i) => {
         let o = v[i];
         if(o) {
-          item[0].v += o[0] * percent;
-          item[1].v += o[1] * percent;
+          item[0].v = cl[i][0] + o[0] * percent;
+          item[1].v = cl[i][1] + o[1] * percent;
         }
       });
+      currentStyle[k] = st;
     }
     else if(k === OPACITY || k === Z_INDEX) {
-      style[k] += v * percent;
+      st = cl + v * percent;
       // 精度问题可能会超过[0,1]区间
       if(k === OPACITY) {
-        if(style[k] < 0) {
-          style[k] = 0;
+        if(st < 0) {
+          st = 0;
         }
-        else if(style[k] > 1) {
-          style[k] = 1;
+        else if(st > 1) {
+          st = 1;
         }
       }
+      currentStyle[k] = st;
     }
     // 特殊的曲线运动计算，转换为translateXY，出现在最后一定会覆盖原本的translate防重
     else if(k === TRANSLATE_PATH) {
       let t = 1 - percent;
       if(v.length === 8) {
-        style[TRANSLATE_X] = {
+        currentStyle[TRANSLATE_X] = {
           v: v[0].v * t * t * t
             + 3 * v[2].v * percent * t * t
             + 3 * v[4].v * percent * percent * t
             + v[6].v * percent * percent * percent,
           u: PX,
         };
-        style[TRANSLATE_Y] = {
+        currentStyle[TRANSLATE_Y] = {
           v: v[1].v * t * t * t
             + 3 * v[3].v * percent * t * t
             + 3 * v[5].v * percent * percent * t
@@ -1211,13 +1228,13 @@ function calIntermediateStyle(frame, keys, percent, target) {
         };
       }
       else if(v.length === 6) {
-        style[TRANSLATE_X] = {
+        currentStyle[TRANSLATE_X] = {
           v: v[0].v * t * t
             + 2 * v[2].v * percent * t
             + v[4].v * percent * percent,
           u: PX,
         };
-        style[TRANSLATE_Y] = {
+        currentStyle[TRANSLATE_Y] = {
           v: v[1].v * t * t
             + 3 * v[3].v * percent * t
             + v[5].v * percent * percent,
@@ -1225,82 +1242,84 @@ function calIntermediateStyle(frame, keys, percent, target) {
         };
       }
     }
-    else if(LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {
-      if(v) {
-        st.v += v * percent;
-      }
+    else if(isLengthKey(k) || isExpandKey(k)) {
+      st.v = cl + v * percent;
+      currentStyle[k] = st;
     }
-    else if(GRADIENT_HASH.hasOwnProperty(k)) {
+    else if(isGradientKey(k)) {
       st.forEach((st2, i) => {
         let v2 = v[i];
         if(!v2) {
           return;
         }
-        if(st2.u === GRADIENT && GRADIENT_TYPE.hasOwnProperty(st2.v.k)) {
+        if(st2.u === GRADIENT) {
           st2 = st2.v;
+          let cli = cl[i].v;
           let [c, d, p, z] = v2;
-          for(let i = 0, len = Math.min(st2.v.length, c.length); i < len; i++) {
-            let a = st2.v[i];
-            let b = c[i];
-            a[0][0] += b[0][0] * percent;
-            a[0][1] += b[0][1] * percent;
-            a[0][2] += b[0][2] * percent;
-            a[0][3] += b[0][3] * percent;
+          for(let j = 0, len = Math.min(st2.v.length, c.length); j < len; j++) {
+            let a = st2.v[j];
+            let b = c[j];
+            a[0][0] = cli[j][0][0] + b[0][0] * percent;
+            a[0][1] = cli[j][0][1] + b[0][1] * percent;
+            a[0][2] = cli[j][0][2] + b[0][2] * percent;
+            a[0][3] = cli[j][0][3] + b[0][3] * percent;
             if(a[1] && b[1]) {
-              a[1].v += b[1] * percent;
+              a[1].v = cli[j][1].v + b[1] * percent;
             }
           }
           if(st2.k === 'linear' && st2.d !== undefined && d !== undefined) {
             if(Array.isArray(d)) {
-              st2.d[0] += d[0] * percent;
-              st2.d[1] += d[1] * percent;
-              st2.d[2] += d[2] * percent;
-              st2.d[3] += d[3] * percent;
+              st2.d[0] = cli.d[0] + d[0] * percent;
+              st2.d[1] = cli.d[1] + d[1] * percent;
+              st2.d[2] = cli.d[2] + d[2] * percent;
+              st2.d[3] = cli.d[3] + d[3] * percent;
             }
             else {
-              st2.d += d * percent;
+              st2.d = cl[i].d + d * percent;
             }
           }
-          if(st2.k === 'radial') {
+          else if(st2.k === 'radial') {
             if(st2.z !== undefined && z !== undefined) {
-              st2.z[0] += z[0] * percent;
-              st2.z[1] += z[1] * percent;
-              st2.z[2] += z[2] * percent;
-              st2.z[3] += z[3] * percent;
-              st2.z[4] += z[4] * percent;
+              st2.z[0] = cli.z[0] + z[0] * percent;
+              st2.z[1] = cli.z[1] + z[1] * percent;
+              st2.z[2] = cli.z[2] + z[2] * percent;
+              st2.z[3] = cli.z[3] + z[3] * percent;
+              st2.z[4] = cli.z[4] + z[4] * percent;
             }
             else if(st2.p !== undefined && p !== undefined) {
-              st2.p[0].v += p[0] * percent;
-              st2.p[1].v += p[1] * percent;
+              st2.p[0].v = cli.p[0].v + p[0] * percent;
+              st2.p[1].v = cli.p[1].v + p[1] * percent;
             }
           }
           else if(st2.k === 'conic' && st2.d !== undefined && d !== undefined) {
-            st2.d += d * percent;
-            st2.p[0][0] += p[0] * percent;
-            st2.p[1][0] += p[1] * percent;
+            st2.d = cli.d + d * percent;
+            st2.p[0][0] = cli.p[0] + p[0] * percent;
+            st2.p[1][0] = cli.p[1] + p[1] * percent;
           }
         }
         // fill纯色
         else {
           st2 = st2.v;
-          st2[0] += v2[0] * percent;
-          st2[1] += v2[1] * percent;
-          st2[2] += v2[2] * percent;
-          st2[3] += v2[3] * percent;
+          st2[0] = cl[0] + v2[0] * percent;
+          st2[1] = cl[1] + v2[1] * percent;
+          st2[2] = cl[2] + v2[2] * percent;
+          st2[3] = cl[3] + v2[3] * percent;
         }
       });
+      currentStyle[k] = st;
     }
     // color可能超限[0,255]，但浏览器已经做了限制，无需关心
-    else if(COLOR_HASH.hasOwnProperty(k)) {
+    else if(isColorKey(k)) {
       st = st.v;
-      st[0] += v[0] * percent;
-      st[1] += v[1] * percent;
-      st[2] += v[2] * percent;
-      st[3] += v[3] * percent;
+      st[0] = cl[0] + v[0] * percent;
+      st[1] = cl[1] + v[1] * percent;
+      st[2] = cl[2] + v[2] * percent;
+      st[3] = cl[3] + v[3] * percent;
+      currentStyle[k] = st;
     }
     else if(GEOM.hasOwnProperty(k)) {
-      let st = style[k];
       let tagName = target.tagName;
+      let style = frame.style;
       if(GEOM[k][tagName] && isFunction(GEOM[k][tagName].calIncrease)) {
         let fn = GEOM[k][tagName].calIncrease;
         if(target.isMulti) {
@@ -1382,9 +1401,23 @@ function calIntermediateStyle(frame, keys, percent, target) {
           }
         }
       }
+      currentStyle[k] = st;
+    }
+    // string的直接量
+    else {
+      currentStyle[k] = st;
     }
   }
-  return style;
+  // 无变化的也得检查是否和当前相等，防止跳到一个不变化的帧上，而前一帧有变化的情况
+  let fixed = frame.fixed;
+  for(let i = 0, len = fixed.length; i < len; i++) {
+    let k = fixed[i];
+    if(!equalStyle(k, style[k], currentStyle[k], target)) {
+      currentStyle[k] = style[k];
+      keys.push(k);
+    }
+  }
+  return keys;
 }
 
 function gotoOverload(options, cb) {
@@ -1729,7 +1762,7 @@ class Animation extends Event {
     let length = currentFrames.length;
     let playbackRate = this.__playbackRate;
     let spfLimit = this.__spfLimit;
-    this.__currentTime = this.__nextTime;
+    let currentTime = this.__currentTime = this.__nextTime;
     // 定帧限制每帧时间间隔最大为spf
     if(spfLimit) {
       if(spfLimit === true) {
@@ -1745,7 +1778,6 @@ class Animation extends Event {
     }
     // 用本帧和上帧时间差，计算累加运行时间currentTime，以便定位当前应该处于哪个时刻
     this.__nextTime += diff;
-    let currentTime = this.__currentTime;
     // 增加的fps功能，当<60时计算跳帧，每帧运行依旧累加时间，达到fps时重置，第一帧强制不跳
     if(!this.__firstEnter && fps < 60) {
       diff = this.__fpsTime += diff;
@@ -1834,15 +1866,16 @@ class Animation extends Event {
      * 8. 多次播放有endDelay且fill停留
      */
     let needClean;
+    let keys;
     if(isLastFrame) {
       inEndDelay = currentTime < duration + endDelay;
       // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
       if(stayEnd) {
-        current = cloneStyle(currentFrame.style, this.__keys);
+        current = currentFrame.style;
       }
       // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
       else {
-        current = cloneStyle(this.__originStyle, this.__keys);
+        current = this.__originStyle;
       }
       // 进入endDelay或结束阶段触发end事件，注意只触发一次，防重在触发的地方做
       this.__nextEnd = true;
@@ -1855,10 +1888,10 @@ class Animation extends Event {
       }
     }
     else {
-      current = calIntermediateStyle(currentFrame, this.__keys, percent, target);
+      keys = calIntermediateStyle(currentFrame, percent, target);
     }
     // 无论两帧之间是否有变化，都生成计算结果赋给style，去重在root做
-    genBeforeRefresh(this, current, this.__keys, root, target);
+    genBeforeRefresh(keys, root, target);
     if(needClean) {
       let playCb = this.__playCb;
       this.__clean(true);

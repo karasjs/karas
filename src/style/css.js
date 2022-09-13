@@ -53,22 +53,12 @@ const { STYLE_KEY, style2Upper, STYLE_KEY: {
   STROKE,
   STROKE_WIDTH,
   STROKE_DASHARRAY,
-  DISPLAY,
-  FLEX_DIRECTION,
-  FLEX_GROW,
-  FLEX_SHRINK,
   FLEX_BASIS,
-  JUSTIFY_CONTENT,
-  ALIGN_SELF,
-  ALIGN_ITEMS,
   MATRIX,
   LETTER_SPACING,
-  BACKGROUND_CLIP,
   WHITE_SPACE,
-  TEXT_OVERFLOW,
   LINE_CLAMP,
   ORDER,
-  FLEX_WRAP,
   TRANSLATE_PATH,
   TEXT_STROKE_COLOR,
   TEXT_STROKE_WIDTH,
@@ -81,13 +71,21 @@ const { isGeom, GEOM, GEOM_KEY_SET } = change;
 const { VALID_STRING_VALUE } = reset;
 
 const {
-  COLOR_HASH,
-  LENGTH_HASH,
-  RADIUS_HASH,
-  GRADIENT_HASH,
-  EXPAND_HASH,
-  GRADIENT_TYPE,
+  isColorKey,
+  isExpandKey,
+  isLengthKey,
+  isGradientKey,
+  isRadiusKey,
 } = key;
+
+function isGradient(s) {
+  if(reg.gradient.test(s)) {
+    let gradient = reg.gradient.exec(s);
+    if(gradient && ['linear', 'radial', 'conic'].indexOf(gradient[1][1]) > -1) {
+      return true;
+    }
+  }
+}
 
 const TRANSFORM_HASH = {
   translateX: TRANSLATE_X,
@@ -268,7 +266,7 @@ function normalize(style, resetList = []) {
         if(!item) {
           return null;
         }
-        if(reg.gradient.test(item)) {
+        if(isGradient(item)) {
           return {
             v: gradient.parseGradient(item),
             u: GRADIENT,
@@ -284,7 +282,7 @@ function normalize(style, resetList = []) {
       });
     }
     // 区分是渐变色还是图
-    else if(reg.gradient.test(temp)) {
+    else if(isGradient(temp)) {
       res[BACKGROUND_IMAGE] = [{ v: gradient.parseGradient(temp), u: GRADIENT }];
     }
     else if(reg.img.test(temp)) {
@@ -722,7 +720,7 @@ function normalize(style, resetList = []) {
     if(/inherit/i.test(temp)) {
       res[COLOR] = { u: INHERIT };
     }
-    else if(reg.gradient.test(temp)) {
+    else if(isGradient(temp)) {
       res[COLOR] = { v: gradient.parseGradient(temp), u: GRADIENT };
     }
     else {
@@ -734,7 +732,7 @@ function normalize(style, resetList = []) {
     if(/inherit/i.test(temp)) {
       res[TEXT_STROKE_COLOR] = { u: INHERIT };
     }
-    else if(reg.gradient.test(temp)) {
+    else if(isGradient(temp)) {
       res[TEXT_STROKE_COLOR] = { v: gradient.parseGradient(temp), u: GRADIENT };
     }
     else {
@@ -942,7 +940,7 @@ function normalize(style, resetList = []) {
         if(!item) {
           return { v: 'none', u: STRING };
         }
-        else if(reg.gradient.test(item)) {
+        else if(isGradient(item)) {
           return { v: gradient.parseGradient(item), u: GRADIENT };
         }
         else {
@@ -1363,7 +1361,7 @@ function equalStyle(k, a, b, target) {
       }
     }
   }
-  if(k === TRANSFORM_ORIGIN || k === PERSPECTIVE_ORIGIN || RADIUS_HASH.hasOwnProperty(k)) {
+  if(k === TRANSFORM_ORIGIN || k === PERSPECTIVE_ORIGIN || isRadiusKey(k)) {
     return a[0].v === b[0].v && a[0].u === b[0].u
       && a[1].v === b[1].v && a[1].u === b[1].u;
   }
@@ -1417,10 +1415,10 @@ function equalStyle(k, a, b, target) {
     return true;
   }
   // if(k === OPACITY || k === Z_INDEX) {} 原始数字无需判断
-  if(LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {
+  if(isLengthKey(k) || isExpandKey(k)) {
     return a.v === b.v && a.u === b.u;
   }
-  if(GRADIENT_HASH.hasOwnProperty(k)) {
+  if(isGradientKey(k)) {
     if(a.length !== b.length) {
       return false;
     }
@@ -1486,7 +1484,7 @@ function equalStyle(k, a, b, target) {
     }
     return true;
   }
-  if(COLOR_HASH.hasOwnProperty(k)) {
+  if(isColorKey(k)) {
     if(a.u !== b.u) {
       return false;
     }
@@ -1566,7 +1564,7 @@ function cloneStyle(style, keys) {
         res[k] = n;
       }
     }
-    else if(k === TRANSFORM_ORIGIN || k === PERSPECTIVE_ORIGIN || RADIUS_HASH.hasOwnProperty(k)) {
+    else if(k === TRANSFORM_ORIGIN || k === PERSPECTIVE_ORIGIN || isRadiusKey(k)) {
       if(v) {
         let n = new Array(2);
         for(let i = 0; i < 2; i++) {
@@ -1615,11 +1613,11 @@ function cloneStyle(style, keys) {
         }));
       }
     }
-    else if(EXPAND_HASH.hasOwnProperty(k) || LENGTH_HASH.hasOwnProperty(k)) {
+    else if(isLengthKey(k) || isExpandKey(k)) {
       res[k] = { v: v.v, u: v.u };
     }
     // 渐变特殊处理
-    else if(GRADIENT_HASH.hasOwnProperty(k)) {
+    else if(isGradientKey(k)) {
       res[k] = v.map(item => {
         if(!item) {
           return null;
@@ -1637,7 +1635,7 @@ function cloneStyle(style, keys) {
         }
       });
     }
-    else if(COLOR_HASH.hasOwnProperty(k)) {
+    else if(isColorKey(k)) {
       // 特殊增加支持有gradient的先判断，仅color和textStrokeColor支持
       if(v.u === GRADIENT) {
         res[k] = { v: util.clone(v.v), u: GRADIENT };

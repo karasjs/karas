@@ -1768,7 +1768,7 @@ function renderSvg(renderMode, ctx, root, isFirst) {
       // >=REPAINT会调用render，重新生成defsCache，text没有这个东西
       if(!(node instanceof Text)) {
         node.__cacheDefs.splice(0);
-        node.__calStyle(node.__currentStyle, node.__computedStyle, node.__cacheStyle);
+        node.__calStyle(__refreshLevel, node.__currentStyle, node.__computedStyle, node.__cacheStyle);
         let matrix = node.__matrix;
         if(parentMatrix) {
           matrix = multiply(parentMatrix, matrix);
@@ -2014,7 +2014,7 @@ function renderWebgl(renderMode, gl, root) {
      * Geom没有子节点无需汇总局部根，Dom中Img也是，它们的局部根等于自身的cache，其它符合条件的Dom需要生成
      */
     else {
-      node.__calStyle(__currentStyle, __computedStyle, __cacheStyle);
+      node.__calStyle(__refreshLevel, __currentStyle, __computedStyle, __cacheStyle);
       let hasContent = node.calContent(__currentStyle, __computedStyle);
       node.__calPerspective(__currentStyle, __computedStyle, __cacheStyle);
       // 有内容先以canvas模式绘制到离屏画布上，自定义渲染设置无内容不实现即可跳过
@@ -2465,7 +2465,7 @@ function renderCanvas(renderMode, ctx, root) {
       }
     }
     else {
-      node.__calStyle(__currentStyle, __computedStyle, __cacheStyle);
+      node.__calStyle(__refreshLevel, __currentStyle, __computedStyle, __cacheStyle);
       if(node.__cacheAsBitmap) {
         mergeList.push({
           i,

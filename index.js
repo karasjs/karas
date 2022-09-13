@@ -2998,8 +2998,8 @@
   var calPoint = mx.calPoint,
       isE$4 = mx.isE;
   var _enums$STYLE_KEY$k = enums.STYLE_KEY,
-      WIDTH$9 = _enums$STYLE_KEY$k.WIDTH,
-      HEIGHT$9 = _enums$STYLE_KEY$k.HEIGHT,
+      WIDTH$a = _enums$STYLE_KEY$k.WIDTH,
+      HEIGHT$a = _enums$STYLE_KEY$k.HEIGHT,
       TRANSFORM_ORIGIN$5 = _enums$STYLE_KEY$k.TRANSFORM_ORIGIN;
   /**
    * 圆弧拟合公式，根据角度求得3阶贝塞尔控制点比例长度，一般<=90，超过拆分
@@ -3452,8 +3452,8 @@
         matrix = _node$matrix === void 0 ? [1, 0, 0, 1, 0, 0] : _node$matrix,
         _node$computedStyle = node.computedStyle,
         computedStyle = _node$computedStyle === void 0 ? {} : _node$computedStyle;
-    var width = computedStyle[WIDTH$9],
-        height = computedStyle[HEIGHT$9],
+    var width = computedStyle[WIDTH$a],
+        height = computedStyle[HEIGHT$a],
         _computedStyle$TRANSF = computedStyle[TRANSFORM_ORIGIN$5];
     _computedStyle$TRANSF = _computedStyle$TRANSF === void 0 ? [width * 0.5, height * 0.5] : _computedStyle$TRANSF;
 
@@ -3472,8 +3472,8 @@
 
   function calPercentInNode(x, y, node) {
     var _node$computedStyle2 = node.computedStyle,
-        width = _node$computedStyle2[WIDTH$9],
-        height = _node$computedStyle2[HEIGHT$9],
+        width = _node$computedStyle2[WIDTH$a],
+        height = _node$computedStyle2[HEIGHT$a],
         _node$computedStyle2$ = _slicedToArray(_node$computedStyle2[TRANSFORM_ORIGIN$5], 2),
         ox = _node$computedStyle2$[0],
         oy = _node$computedStyle2$[1]; // 先求无旋转时右下角相对于原点的角度ds
@@ -3932,17 +3932,17 @@
   var canvasPolygon$6 = painter.canvasPolygon,
       svgPolygon$5 = painter.svgPolygon;
   var _enums$STYLE_KEY$j = enums.STYLE_KEY,
-      BORDER_LEFT_WIDTH$9 = _enums$STYLE_KEY$j.BORDER_LEFT_WIDTH,
-      BORDER_TOP_WIDTH$7 = _enums$STYLE_KEY$j.BORDER_TOP_WIDTH,
-      BORDER_BOTTOM_WIDTH$6 = _enums$STYLE_KEY$j.BORDER_BOTTOM_WIDTH,
-      PADDING_LEFT$9 = _enums$STYLE_KEY$j.PADDING_LEFT,
-      PADDING_BOTTOM$6 = _enums$STYLE_KEY$j.PADDING_BOTTOM,
-      PADDING_TOP$7 = _enums$STYLE_KEY$j.PADDING_TOP,
-      BORDER_TOP_LEFT_RADIUS$2 = _enums$STYLE_KEY$j.BORDER_TOP_LEFT_RADIUS,
+      BORDER_LEFT_WIDTH$a = _enums$STYLE_KEY$j.BORDER_LEFT_WIDTH,
+      BORDER_TOP_WIDTH$8 = _enums$STYLE_KEY$j.BORDER_TOP_WIDTH,
+      BORDER_BOTTOM_WIDTH$7 = _enums$STYLE_KEY$j.BORDER_BOTTOM_WIDTH,
+      PADDING_LEFT$a = _enums$STYLE_KEY$j.PADDING_LEFT,
+      PADDING_BOTTOM$7 = _enums$STYLE_KEY$j.PADDING_BOTTOM,
+      PADDING_TOP$8 = _enums$STYLE_KEY$j.PADDING_TOP,
+      BORDER_TOP_LEFT_RADIUS$3 = _enums$STYLE_KEY$j.BORDER_TOP_LEFT_RADIUS,
       BORDER_TOP_RIGHT_RADIUS$2 = _enums$STYLE_KEY$j.BORDER_TOP_RIGHT_RADIUS,
-      BORDER_BOTTOM_LEFT_RADIUS$2 = _enums$STYLE_KEY$j.BORDER_BOTTOM_LEFT_RADIUS,
-      BORDER_BOTTOM_RIGHT_RADIUS$2 = _enums$STYLE_KEY$j.BORDER_BOTTOM_RIGHT_RADIUS,
-      FONT_SIZE$a = _enums$STYLE_KEY$j.FONT_SIZE;
+      BORDER_BOTTOM_LEFT_RADIUS$3 = _enums$STYLE_KEY$j.BORDER_BOTTOM_LEFT_RADIUS,
+      BORDER_BOTTOM_RIGHT_RADIUS$3 = _enums$STYLE_KEY$j.BORDER_BOTTOM_RIGHT_RADIUS,
+      FONT_SIZE$b = _enums$STYLE_KEY$j.FONT_SIZE;
   /* 获取合适的虚线实体空白宽度ps/pd和数量n
    * 总长total，start边长bs，end边长be，内容长w，
    * 实体长范围[smin,smax]，空白长范围[dmin,dmax]
@@ -6171,7 +6171,7 @@
     }
   }
 
-  var BR_KS = [BORDER_TOP_LEFT_RADIUS$2, BORDER_TOP_RIGHT_RADIUS$2, BORDER_BOTTOM_RIGHT_RADIUS$2, BORDER_BOTTOM_LEFT_RADIUS$2];
+  var BR_KS = [BORDER_TOP_LEFT_RADIUS$3, BORDER_TOP_RIGHT_RADIUS$2, BORDER_BOTTOM_RIGHT_RADIUS$3, BORDER_BOTTOM_LEFT_RADIUS$3];
 
   function calBorderRadius(w, h, currentStyle, computedStyle, root) {
     var noRadius = true;
@@ -6188,7 +6188,7 @@
         } else if (item.u === PERCENT$a) {
           return Math.max(0, item.v * (i ? h : w) * 0.01);
         } else if (item.u === REM$8) {
-          return Math.max(0, item.v * root.computedStyle[FONT_SIZE$a]);
+          return Math.max(0, item.v * root.computedStyle[FONT_SIZE$b]);
         } else if (item.u === VW$8) {
           return Math.max(0, item.v * root.width * 0.01);
         } else if (item.u === VH$8) {
@@ -6244,9 +6244,9 @@
 
     var w = first ? first.outerWidth : 0,
         h = first ? first.outerHeight : 0;
-    w += computedStyle[BORDER_LEFT_WIDTH$9] + computedStyle[PADDING_LEFT$9];
-    h += computedStyle[BORDER_TOP_WIDTH$7] + computedStyle[BORDER_BOTTOM_WIDTH$6] + computedStyle[PADDING_TOP$7] + computedStyle[PADDING_BOTTOM$6];
-    [BORDER_TOP_LEFT_RADIUS$2, BORDER_BOTTOM_LEFT_RADIUS$2].forEach(function (k) {
+    w += computedStyle[BORDER_LEFT_WIDTH$a] + computedStyle[PADDING_LEFT$a];
+    h += computedStyle[BORDER_TOP_WIDTH$8] + computedStyle[BORDER_BOTTOM_WIDTH$7] + computedStyle[PADDING_TOP$8] + computedStyle[PADDING_BOTTOM$7];
+    [BORDER_TOP_LEFT_RADIUS$3, BORDER_BOTTOM_LEFT_RADIUS$3].forEach(function (k) {
       computedStyle[k] = currentStyle[k].map(function (item, i) {
         var v;
 
@@ -6264,7 +6264,7 @@
 
     w = last ? last.outerWidth : 0;
     h = last ? last.outerHeight : 0;
-    [BORDER_TOP_RIGHT_RADIUS$2, BORDER_BOTTOM_RIGHT_RADIUS$2].forEach(function (k) {
+    [BORDER_TOP_RIGHT_RADIUS$2, BORDER_BOTTOM_RIGHT_RADIUS$3].forEach(function (k) {
       computedStyle[k] = currentStyle[k].map(function (item, i) {
         var v;
 
@@ -6329,7 +6329,7 @@
       calUnit$2 = o$4.calUnit;
   var d2r$1 = geom$1.d2r;
   var canvasPolygon$5 = painter.canvasPolygon;
-  var FONT_SIZE$9 = enums.STYLE_KEY.FONT_SIZE;
+  var FONT_SIZE$a = enums.STYLE_KEY.FONT_SIZE;
 
   function getLinearDeg(v) {
     var deg = 180;
@@ -6397,7 +6397,7 @@
         if (p.u === PERCENT$9) {
           list.push([item[0], p.v * 0.01]);
         } else if (p.u === REM$7) {
-          list.push([item[0], p.v * root.computedStyle[FONT_SIZE$9] / length]);
+          list.push([item[0], p.v * root.computedStyle[FONT_SIZE$a] / length]);
         } else if (p.u === VW$7) {
           list.push([item[0], p.v * root.width / length]);
         } else if (p.u === VH$7) {
@@ -6587,7 +6587,7 @@
     if (positionX.u === PERCENT$9) {
       cx = x1 + positionX.v * iw * 0.01;
     } else if (positionX.u === REM$7) {
-      cx = x1 + positionX.v * root.computedStyle[FONT_SIZE$9];
+      cx = x1 + positionX.v * root.computedStyle[FONT_SIZE$a];
     } else if (positionX.u === VW$7) {
       cx = x1 + positionX.v * root.width * 0.01;
     } else if (positionX.u === VH$7) {
@@ -6603,7 +6603,7 @@
     if (positionY.u === PERCENT$9) {
       cy = y1 + positionY.v * ih * 0.01;
     } else if (positionY.u === REM$7) {
-      cy = y1 + positionY.v * root.computedStyle[FONT_SIZE$9];
+      cy = y1 + positionY.v * root.computedStyle[FONT_SIZE$a];
     } else if (positionY.u === VW$7) {
       cy = y1 + positionY.v * root.width * 0.01;
     } else if (positionY.u === VH$7) {
@@ -7448,49 +7448,84 @@
   };
 
   var STYLE_KEY$4 = enums.STYLE_KEY;
-  var KEY_COLOR = [[STYLE_KEY$4.BACKGROUND_COLOR], [STYLE_KEY$4.BORDER_BOTTOM_COLOR], [STYLE_KEY$4.BORDER_LEFT_COLOR], [STYLE_KEY$4.BORDER_RIGHT_COLOR], [STYLE_KEY$4.BORDER_TOP_COLOR], [STYLE_KEY$4.COLOR], // 这2个特殊，新增GRADIENT渐变色
-  [STYLE_KEY$4.TEXT_STROKE_COLOR]];
-  var KEY_LENGTH = [[STYLE_KEY$4.FONT_SIZE], [STYLE_KEY$4.BORDER_BOTTOM_WIDTH], [STYLE_KEY$4.BORDER_LEFT_WIDTH], [STYLE_KEY$4.BORDER_RIGHT_WIDTH], [STYLE_KEY$4.BORDER_TOP_WIDTH], [STYLE_KEY$4.LEFT], [STYLE_KEY$4.TOP], [STYLE_KEY$4.RIGHT], [STYLE_KEY$4.BOTTOM], [STYLE_KEY$4.FLEX_BASIS], [STYLE_KEY$4.WIDTH], [STYLE_KEY$4.HEIGHT], [STYLE_KEY$4.LINE_HEIGHT], [STYLE_KEY$4.MARGIN_BOTTOM], [STYLE_KEY$4.MARGIN_LEFT], [STYLE_KEY$4.MARGIN_TOP], [STYLE_KEY$4.MARGIN_RIGHT], [STYLE_KEY$4.PADDING_TOP], [STYLE_KEY$4.PADDING_RIGHT], [STYLE_KEY$4.PADDING_BOTTOM], [STYLE_KEY$4.PADDING_LEFT], [STYLE_KEY$4.STROKE_WIDTH], [STYLE_KEY$4.STROKE_MITERLIMIT], [STYLE_KEY$4.LETTER_SPACING], [STYLE_KEY$4.PERSPECTIVE], [STYLE_KEY$4.TEXT_STROKE_WIDTH]];
-  var KEY_GRADIENT = [[STYLE_KEY$4.BACKGROUND_IMAGE], [STYLE_KEY$4.FILL], [STYLE_KEY$4.STROKE]];
-  var KEY_RADIUS = [[STYLE_KEY$4.BORDER_TOP_LEFT_RADIUS], [STYLE_KEY$4.BORDER_TOP_RIGHT_RADIUS], [STYLE_KEY$4.BORDER_BOTTOM_RIGHT_RADIUS], [STYLE_KEY$4.BORDER_BOTTOM_LEFT_RADIUS]];
-  var COLOR_HASH$2 = {};
-  KEY_COLOR.forEach(function (k) {
-    COLOR_HASH$2[k] = true;
-  });
-  var LENGTH_HASH$2 = {};
-  KEY_LENGTH.forEach(function (k) {
-    LENGTH_HASH$2[k] = true;
-  });
-  var RADIUS_HASH$2 = {};
-  KEY_RADIUS.forEach(function (k) {
-    RADIUS_HASH$2[k] = true;
-  });
-  var GRADIENT_HASH$2 = {};
-  KEY_GRADIENT.forEach(function (k) {
-    GRADIENT_HASH$2[k] = true;
-  });
-  var GRADIENT_TYPE$1 = {
-    linear: true,
-    radial: true,
-    conic: true
-  };
-  var KEY_EXPAND = [[STYLE_KEY$4.TRANSLATE_X], [STYLE_KEY$4.TRANSLATE_Y], [STYLE_KEY$4.TRANSLATE_Z], [STYLE_KEY$4.SKEW_X], [STYLE_KEY$4.SKEW_Y], [STYLE_KEY$4.SCALE_X], [STYLE_KEY$4.SCALE_Y], [STYLE_KEY$4.SCALE_Z], [STYLE_KEY$4.ROTATE_X], [STYLE_KEY$4.ROTATE_Y], [STYLE_KEY$4.ROTATE_Z]];
-  var EXPAND_HASH$2 = {};
-  KEY_EXPAND.forEach(function (k) {
-    EXPAND_HASH$2[k] = true;
-  });
+  var BACKGROUND_COLOR$2 = STYLE_KEY$4.BACKGROUND_COLOR,
+      BORDER_BOTTOM_COLOR$1 = STYLE_KEY$4.BORDER_BOTTOM_COLOR,
+      BORDER_LEFT_COLOR$1 = STYLE_KEY$4.BORDER_LEFT_COLOR,
+      BORDER_RIGHT_COLOR$1 = STYLE_KEY$4.BORDER_RIGHT_COLOR,
+      BORDER_TOP_COLOR$1 = STYLE_KEY$4.BORDER_TOP_COLOR,
+      COLOR$7 = STYLE_KEY$4.COLOR,
+      TEXT_STROKE_COLOR$6 = STYLE_KEY$4.TEXT_STROKE_COLOR,
+      FONT_SIZE$9 = STYLE_KEY$4.FONT_SIZE,
+      BORDER_BOTTOM_WIDTH$6 = STYLE_KEY$4.BORDER_BOTTOM_WIDTH,
+      BORDER_LEFT_WIDTH$9 = STYLE_KEY$4.BORDER_LEFT_WIDTH,
+      BORDER_RIGHT_WIDTH$7 = STYLE_KEY$4.BORDER_RIGHT_WIDTH,
+      BORDER_TOP_WIDTH$7 = STYLE_KEY$4.BORDER_TOP_WIDTH,
+      LEFT$3 = STYLE_KEY$4.LEFT,
+      TOP$5 = STYLE_KEY$4.TOP,
+      RIGHT$3 = STYLE_KEY$4.RIGHT,
+      BOTTOM$5 = STYLE_KEY$4.BOTTOM,
+      FLEX_BASIS$5 = STYLE_KEY$4.FLEX_BASIS,
+      WIDTH$9 = STYLE_KEY$4.WIDTH,
+      HEIGHT$9 = STYLE_KEY$4.HEIGHT,
+      LINE_HEIGHT$8 = STYLE_KEY$4.LINE_HEIGHT,
+      MARGIN_BOTTOM$6 = STYLE_KEY$4.MARGIN_BOTTOM,
+      MARGIN_LEFT$9 = STYLE_KEY$4.MARGIN_LEFT,
+      MARGIN_TOP$7 = STYLE_KEY$4.MARGIN_TOP,
+      MARGIN_RIGHT$7 = STYLE_KEY$4.MARGIN_RIGHT,
+      PADDING_TOP$7 = STYLE_KEY$4.PADDING_TOP,
+      PADDING_RIGHT$7 = STYLE_KEY$4.PADDING_RIGHT,
+      PADDING_BOTTOM$6 = STYLE_KEY$4.PADDING_BOTTOM,
+      PADDING_LEFT$9 = STYLE_KEY$4.PADDING_LEFT,
+      STROKE_WIDTH$9 = STYLE_KEY$4.STROKE_WIDTH,
+      STROKE_MITERLIMIT$1 = STYLE_KEY$4.STROKE_MITERLIMIT,
+      LETTER_SPACING$4 = STYLE_KEY$4.LETTER_SPACING,
+      PERSPECTIVE$5 = STYLE_KEY$4.PERSPECTIVE,
+      TEXT_STROKE_WIDTH$5 = STYLE_KEY$4.TEXT_STROKE_WIDTH,
+      TRANSLATE_X$5 = STYLE_KEY$4.TRANSLATE_X,
+      TRANSLATE_Y$5 = STYLE_KEY$4.TRANSLATE_Y,
+      TRANSLATE_Z$5 = STYLE_KEY$4.TRANSLATE_Z,
+      SKEW_X$3 = STYLE_KEY$4.SKEW_X,
+      SKEW_Y$3 = STYLE_KEY$4.SKEW_Y,
+      SCALE_X$4 = STYLE_KEY$4.SCALE_X,
+      SCALE_Y$4 = STYLE_KEY$4.SCALE_Y,
+      SCALE_Z$3 = STYLE_KEY$4.SCALE_Z,
+      ROTATE_X$3 = STYLE_KEY$4.ROTATE_X,
+      ROTATE_Y$3 = STYLE_KEY$4.ROTATE_Y,
+      ROTATE_Z$5 = STYLE_KEY$4.ROTATE_Z,
+      BACKGROUND_IMAGE$2 = STYLE_KEY$4.BACKGROUND_IMAGE,
+      FILL$3 = STYLE_KEY$4.FILL,
+      STROKE$2 = STYLE_KEY$4.STROKE,
+      BORDER_TOP_LEFT_RADIUS$2 = STYLE_KEY$4.BORDER_TOP_LEFT_RADIUS;
+      STYLE_KEY$4.BORDER_TOP_RIGHT_RADIUS;
+      var BORDER_BOTTOM_RIGHT_RADIUS$2 = STYLE_KEY$4.BORDER_BOTTOM_RIGHT_RADIUS,
+      BORDER_BOTTOM_LEFT_RADIUS$2 = STYLE_KEY$4.BORDER_BOTTOM_LEFT_RADIUS;
+
+  function isColorKey$2(k) {
+    return k === BACKGROUND_COLOR$2 || k === BORDER_BOTTOM_COLOR$1 || k === BORDER_LEFT_COLOR$1 || k === BORDER_RIGHT_COLOR$1 || k === BORDER_TOP_COLOR$1 || k === COLOR$7 || k === TEXT_STROKE_COLOR$6;
+  }
+
+  function isLengthKey$2(k) {
+    return k === FONT_SIZE$9 || k === TEXT_STROKE_WIDTH$5 || k === BORDER_BOTTOM_WIDTH$6 || k === BORDER_LEFT_WIDTH$9 || k === BORDER_RIGHT_WIDTH$7 || k === BORDER_TOP_WIDTH$7 || k === LEFT$3 || k === TOP$5 || k === RIGHT$3 || k === BOTTOM$5 || k === FLEX_BASIS$5 || k === WIDTH$9 || k === HEIGHT$9 || k === LINE_HEIGHT$8 || k === MARGIN_BOTTOM$6 || k === MARGIN_TOP$7 || k === MARGIN_LEFT$9 || k === MARGIN_RIGHT$7 || k === PADDING_TOP$7 || k === PADDING_RIGHT$7 || k === PADDING_LEFT$9 || k === PADDING_BOTTOM$6 || k === STROKE_WIDTH$9 || k === STROKE_MITERLIMIT$1 || k === LETTER_SPACING$4 || k === PERSPECTIVE$5;
+  }
+
+  function isExpandKey$2(k) {
+    return k === TRANSLATE_X$5 || k === TRANSLATE_Y$5 || k === TRANSLATE_Z$5 || k === SKEW_X$3 || k === SKEW_Y$3 || k === SCALE_X$4 || k === SCALE_Y$4 || k === SCALE_Z$3 || k === ROTATE_X$3 || k === ROTATE_Y$3 || k === ROTATE_Z$5;
+  }
+
+  function isGradientKey$2(k) {
+    return k === BACKGROUND_IMAGE$2 || k === FILL$3 || k === STROKE$2;
+  }
+
+  function isRadiusKey$2(k) {
+    return k === BORDER_BOTTOM_LEFT_RADIUS$2 || k === BORDER_TOP_LEFT_RADIUS$2 || k === BORDER_TOP_LEFT_RADIUS$2 || k === BORDER_BOTTOM_RIGHT_RADIUS$2;
+  }
+
   var key = {
-    KEY_COLOR: KEY_COLOR,
-    KEY_EXPAND: KEY_EXPAND,
-    KEY_GRADIENT: KEY_GRADIENT,
-    KEY_LENGTH: KEY_LENGTH,
-    KEY_RADIUS: KEY_RADIUS,
-    COLOR_HASH: COLOR_HASH$2,
-    EXPAND_HASH: EXPAND_HASH$2,
-    GRADIENT_HASH: GRADIENT_HASH$2,
-    LENGTH_HASH: LENGTH_HASH$2,
-    RADIUS_HASH: RADIUS_HASH$2,
-    GRADIENT_TYPE: GRADIENT_TYPE$1
+    isColorKey: isColorKey$2,
+    isLengthKey: isLengthKey$2,
+    isExpandKey: isExpandKey$2,
+    isGradientKey: isGradientKey$2,
+    isRadiusKey: isRadiusKey$2
   };
 
   var _REPAINT;
@@ -7687,24 +7722,14 @@
       FILL$2 = _enums$STYLE_KEY$i.FILL,
       STROKE$1 = _enums$STYLE_KEY$i.STROKE,
       STROKE_WIDTH$8 = _enums$STYLE_KEY$i.STROKE_WIDTH,
-      STROKE_DASHARRAY$1 = _enums$STYLE_KEY$i.STROKE_DASHARRAY;
-      _enums$STYLE_KEY$i.DISPLAY;
-      _enums$STYLE_KEY$i.FLEX_DIRECTION;
-      _enums$STYLE_KEY$i.FLEX_GROW;
-      _enums$STYLE_KEY$i.FLEX_SHRINK;
-      var FLEX_BASIS$4 = _enums$STYLE_KEY$i.FLEX_BASIS;
-      _enums$STYLE_KEY$i.JUSTIFY_CONTENT;
-      _enums$STYLE_KEY$i.ALIGN_SELF;
-      _enums$STYLE_KEY$i.ALIGN_ITEMS;
-      var MATRIX$4 = _enums$STYLE_KEY$i.MATRIX,
-      LETTER_SPACING$3 = _enums$STYLE_KEY$i.LETTER_SPACING;
-      _enums$STYLE_KEY$i.BACKGROUND_CLIP;
-      var WHITE_SPACE$3 = _enums$STYLE_KEY$i.WHITE_SPACE;
-      _enums$STYLE_KEY$i.TEXT_OVERFLOW;
-      var LINE_CLAMP$2 = _enums$STYLE_KEY$i.LINE_CLAMP,
-      ORDER$2 = _enums$STYLE_KEY$i.ORDER;
-      _enums$STYLE_KEY$i.FLEX_WRAP;
-      var TRANSLATE_PATH$1 = _enums$STYLE_KEY$i.TRANSLATE_PATH,
+      STROKE_DASHARRAY$1 = _enums$STYLE_KEY$i.STROKE_DASHARRAY,
+      FLEX_BASIS$4 = _enums$STYLE_KEY$i.FLEX_BASIS,
+      MATRIX$4 = _enums$STYLE_KEY$i.MATRIX,
+      LETTER_SPACING$3 = _enums$STYLE_KEY$i.LETTER_SPACING,
+      WHITE_SPACE$3 = _enums$STYLE_KEY$i.WHITE_SPACE,
+      LINE_CLAMP$2 = _enums$STYLE_KEY$i.LINE_CLAMP,
+      ORDER$2 = _enums$STYLE_KEY$i.ORDER,
+      TRANSLATE_PATH$1 = _enums$STYLE_KEY$i.TRANSLATE_PATH,
       TEXT_STROKE_COLOR$5 = _enums$STYLE_KEY$i.TEXT_STROKE_COLOR,
       TEXT_STROKE_WIDTH$4 = _enums$STYLE_KEY$i.TEXT_STROKE_WIDTH,
       TEXT_STROKE_OVER$4 = _enums$STYLE_KEY$i.TEXT_STROKE_OVER,
@@ -7732,11 +7757,22 @@
       GEOM$2 = o$2.GEOM,
       GEOM_KEY_SET = o$2.GEOM_KEY_SET;
   var VALID_STRING_VALUE = reset.VALID_STRING_VALUE;
-  var COLOR_HASH$1 = key.COLOR_HASH,
-      LENGTH_HASH$1 = key.LENGTH_HASH,
-      RADIUS_HASH$1 = key.RADIUS_HASH,
-      GRADIENT_HASH$1 = key.GRADIENT_HASH,
-      EXPAND_HASH$1 = key.EXPAND_HASH;
+  var isColorKey$1 = key.isColorKey,
+      isExpandKey$1 = key.isExpandKey,
+      isLengthKey$1 = key.isLengthKey,
+      isGradientKey$1 = key.isGradientKey,
+      isRadiusKey$1 = key.isRadiusKey;
+
+  function isGradient(s) {
+    if (reg.gradient.test(s)) {
+      var _gradient = reg.gradient.exec(s);
+
+      if (_gradient && ['linear', 'radial', 'conic'].indexOf(_gradient[1][1]) > -1) {
+        return true;
+      }
+    }
+  }
+
   var TRANSFORM_HASH = {
     translateX: TRANSLATE_X$4,
     translateY: TRANSLATE_Y$4,
@@ -7938,7 +7974,7 @@
             return null;
           }
 
-          if (reg.gradient.test(item)) {
+          if (isGradient(item)) {
             return {
               v: gradient.parseGradient(item),
               u: GRADIENT$3
@@ -7955,7 +7991,7 @@
           return null;
         });
       } // 区分是渐变色还是图
-      else if (reg.gradient.test(temp)) {
+      else if (isGradient(temp)) {
         res[BACKGROUND_IMAGE$1] = [{
           v: gradient.parseGradient(temp),
           u: GRADIENT$3
@@ -8503,7 +8539,7 @@
         res[COLOR$6] = {
           u: INHERIT$3
         };
-      } else if (reg.gradient.test(temp)) {
+      } else if (isGradient(temp)) {
         res[COLOR$6] = {
           v: gradient.parseGradient(temp),
           u: GRADIENT$3
@@ -8523,7 +8559,7 @@
         res[TEXT_STROKE_COLOR$5] = {
           u: INHERIT$3
         };
-      } else if (reg.gradient.test(temp)) {
+      } else if (isGradient(temp)) {
         res[TEXT_STROKE_COLOR$5] = {
           v: gradient.parseGradient(temp),
           u: GRADIENT$3
@@ -8825,7 +8861,7 @@
               v: 'none',
               u: STRING$2
             };
-          } else if (reg.gradient.test(item)) {
+          } else if (isGradient(item)) {
             return {
               v: gradient.parseGradient(item),
               u: GRADIENT$3
@@ -9267,7 +9303,7 @@
     return position === 'relative' || position === 'absolute';
   }
 
-  function equalStyle$1(k, a, b, target) {
+  function equalStyle$2(k, a, b, target) {
     if (!a || !b) {
       return a === b;
     }
@@ -9310,7 +9346,7 @@
       }
     }
 
-    if (k === TRANSFORM_ORIGIN$4 || k === PERSPECTIVE_ORIGIN$4 || RADIUS_HASH$1.hasOwnProperty(k)) {
+    if (k === TRANSFORM_ORIGIN$4 || k === PERSPECTIVE_ORIGIN$4 || isRadiusKey$1(k)) {
       return a[0].v === b[0].v && a[0].u === b[0].u && a[1].v === b[1].v && a[1].u === b[1].u;
     }
 
@@ -9382,11 +9418,11 @@
     } // if(k === OPACITY || k === Z_INDEX) {} 原始数字无需判断
 
 
-    if (LENGTH_HASH$1.hasOwnProperty(k) || EXPAND_HASH$1.hasOwnProperty(k)) {
+    if (isLengthKey$1(k) || isExpandKey$1(k)) {
       return a.v === b.v && a.u === b.u;
     }
 
-    if (GRADIENT_HASH$1.hasOwnProperty(k)) {
+    if (isGradientKey$1(k)) {
       if (a.length !== b.length) {
         return false;
       }
@@ -9467,7 +9503,7 @@
       return true;
     }
 
-    if (COLOR_HASH$1.hasOwnProperty(k)) {
+    if (isColorKey$1(k)) {
       if (a.u !== b.u) {
         return false;
       }
@@ -9573,7 +9609,7 @@
 
           res[k] = _n;
         }
-      } else if (k === TRANSFORM_ORIGIN$4 || k === PERSPECTIVE_ORIGIN$4 || RADIUS_HASH$1.hasOwnProperty(k)) {
+      } else if (k === TRANSFORM_ORIGIN$4 || k === PERSPECTIVE_ORIGIN$4 || isRadiusKey$1(k)) {
         if (v) {
           var _n2 = new Array(2);
 
@@ -9638,13 +9674,13 @@
             };
           });
         }
-      } else if (EXPAND_HASH$1.hasOwnProperty(k) || LENGTH_HASH$1.hasOwnProperty(k)) {
+      } else if (isLengthKey$1(k) || isExpandKey$1(k)) {
         res[k] = {
           v: v.v,
           u: v.u
         };
       } // 渐变特殊处理
-      else if (GRADIENT_HASH$1.hasOwnProperty(k)) {
+      else if (isGradientKey$1(k)) {
         res[k] = v.map(function (item) {
           if (!item) {
             return null;
@@ -9669,7 +9705,7 @@
             };
           }
         });
-      } else if (COLOR_HASH$1.hasOwnProperty(k)) {
+      } else if (isColorKey$1(k)) {
         // 特殊增加支持有gradient的先判断，仅color和textStrokeColor支持
         if (v.u === GRADIENT$3) {
           res[k] = {
@@ -9797,7 +9833,7 @@
     getBaseline: getBaseline$1,
     getVerticalBaseline: getVerticalBaseline$1,
     calRelative: calRelative$1,
-    equalStyle: equalStyle$1,
+    equalStyle: equalStyle$2,
     isRelativeOrAbsolute: isRelativeOrAbsolute$3,
     cloneStyle: cloneStyle$1,
     calNormalLineHeight: calNormalLineHeight$1,
@@ -17545,15 +17581,15 @@
       clone$1 = util.clone,
       equalArr = util.equalArr;
   var linear = easing.linear;
-  var cloneStyle = css.cloneStyle;
+  var cloneStyle = css.cloneStyle,
+      equalStyle$1 = css.equalStyle;
   var isGeom$1 = o$2.isGeom,
       GEOM$1 = o$2.GEOM;
-  var COLOR_HASH = key.COLOR_HASH,
-      LENGTH_HASH = key.LENGTH_HASH,
-      RADIUS_HASH = key.RADIUS_HASH,
-      GRADIENT_HASH = key.GRADIENT_HASH,
-      EXPAND_HASH = key.EXPAND_HASH,
-      GRADIENT_TYPE = key.GRADIENT_TYPE;
+  var isColorKey = key.isColorKey,
+      isExpandKey = key.isExpandKey,
+      isLengthKey = key.isLengthKey,
+      isGradientKey = key.isGradientKey,
+      isRadiusKey = key.isRadiusKey;
 
   function unify(frames, target) {
     var hash = {};
@@ -17612,7 +17648,7 @@
 
 
   function inherit(frames, keys, target) {
-    var computedStyle = target.computedStyle;
+    var computedStyle = target.__computedStyle;
     frames.forEach(function (item) {
       var style = item.style;
       keys.forEach(function (k) {
@@ -17623,8 +17659,8 @@
         }
 
         if (k === TRANSFORM$4) {
-          var ow = target.outerWidth;
-          var oh = target.outerHeight;
+          var ow = target.__outerWidth;
+          var oh = target.__outerHeight;
           var m = transform.calMatrix(v, ow, oh);
           style[k] = [{
             k: MATRIX$2,
@@ -17636,7 +17672,7 @@
               v: util.rgba2int(computedStyle[k]),
               u: RGBA$2
             };
-          } else if (LENGTH_HASH.hasOwnProperty(k)) {
+          } else if (isLengthKey(k)) {
             style[k] = {
               v: computedStyle[k],
               u: PX$6
@@ -17660,35 +17696,29 @@
    * 通知root更新当前动画，需要根据frame的状态来决定是否是同步插入
    * 在异步时，因为动画本身是异步，需要addRefreshTask
    * 而如果此时frame在执行before过程中，说明帧动画本身是在before计算的，需要同步插入
-   * @param animation
-   * @param style
    * @param keys 样式所有的key
    * @param root
    * @param node
    */
 
 
-  function genBeforeRefresh(animation, style, keys, root, node) {
-    var res = {
-      node: node,
-      style: style,
+  function genBeforeRefresh(keys, root, node) {
+    root.__addUpdate(node, {
       keys: keys
-    };
-
-    root.__addUpdate(node, root, res);
-
-    animation.__style = style;
-    animation.__assigning = true; // frame每帧回调时，下方先执行计算好变更的样式，这里特殊插入一个hook，让root增加一个刷新操作
+    }); // animation.__style = style;
+    // animation.__assigning = true;
+    // frame每帧回调时，下方先执行计算好变更的样式，这里特殊插入一个hook，让root增加一个刷新操作
     // 多个动画调用因为相同root也只会插入一个，这样在所有动画执行完毕后frame里检查同步进行刷新，解决单异步问题
+    // root.__frameHook();
 
-    root.__frameHook();
   }
   /**
    * 将每帧的样式格式化，提取出offset属性并转化为时间，提取出缓动曲线easing
+   * 加好空数组transition/keys，后续计算两帧之间变化时存入
+   * 加好空数组fixed，后续计算无帧变化时存入
    * @param style 关键帧样式
    * @param duration 动画时间长度
    * @param es options的easing曲线控制，frame没有自定义则使用全局的
-   * @returns {{style: *, time: number, easing: *, transition: []}}
    */
 
 
@@ -17717,10 +17747,16 @@
 
     return {
       style: style,
+      clone: cloneStyle(style),
       time: offset * duration,
       easing: easing || es,
       timingFunction: getEasing(easing || es),
-      transition: []
+      transition: [],
+      // 变化的属性
+      keys: [],
+      // 变化的k
+      fixed: [] // 不变的k
+
     };
   }
 
@@ -17835,16 +17871,24 @@
    * @param next 下一帧样式
    * @param k 比较的样式名
    * @param target dom对象
-   * @returns {{k: *, v: *}}
    */
 
 
   function calDiff(prev, next, k, target) {
+    var p = prev.style[k];
+    var n = next.style[k]; // 提前设置好引用，无需每帧计算时取引用，由于单位一定相同，可以简化直接引用到值v上无需单位u，有些直接量没有单位
+
+    var cl = prev.clone[k];
+
+    if (cl.hasOwnProperty('v')) {
+      cl = cl.v;
+    }
+
     var res = {
-      k: k
+      k: k,
+      st: p,
+      cl: cl
     };
-    var p = prev[k];
-    var n = next[k];
 
     if (k === TRANSFORM$4) {
       // transform不存在时需给默认矩阵，他只有1个matrix3d的值做动画
@@ -17925,7 +17969,7 @@
       }
 
       res.v = v;
-    } else if (k === TRANSFORM_ORIGIN$3 || k === PERSPECTIVE_ORIGIN$2 || RADIUS_HASH.hasOwnProperty(k)) {
+    } else if (k === TRANSFORM_ORIGIN$3 || k === PERSPECTIVE_ORIGIN$2 || isRadiusKey(k)) {
       // x/y都相等无需
       if (n[0].v === p[0].v && n[0].u === p[0].u && n[1].v === p[1].v && n[1].u === p[1].u) {
         return;
@@ -18146,7 +18190,7 @@
           };
         }
       });
-    } else if (EXPAND_HASH.hasOwnProperty(k)) {
+    } else if (isExpandKey(k)) {
       if (p.u === n.u) {
         var _v10 = n.v - p.v;
 
@@ -18164,7 +18208,7 @@
 
         res.v = _v11;
       }
-    } else if (LENGTH_HASH.hasOwnProperty(k)) {
+    } else if (isLengthKey(k)) {
       // auto不做动画
       if (p.u === AUTO$6 || n.u === AUTO$6) {
         return;
@@ -18200,7 +18244,7 @@
       }
 
       res.v = diff;
-    } else if (GRADIENT_HASH.hasOwnProperty(k)) {
+    } else if (isGradientKey(k)) {
       // backgroundImage发生了渐变色和图片的变化，fill发生渐变色和纯色的变化等
       res.v = [];
 
@@ -18243,7 +18287,7 @@
 
         res.v.push(_temp);
       }
-    } else if (COLOR_HASH.hasOwnProperty(k)) {
+    } else if (isColorKey(k)) {
       if (n.u !== p.u) {
         return;
       } // 特殊增加支持有gradient的先判断，仅color和textStrokeColor支持
@@ -18423,7 +18467,7 @@
 
 
   function calDiffGradient(p, n, target) {
-    if (p.k !== n.k || !GRADIENT_TYPE.hasOwnProperty(p.k)) {
+    if (p.k !== n.k) {
       return;
     }
 
@@ -18549,15 +18593,22 @@
     }
 
     return temp;
-  } // 计算两帧之间不相同的变化，存入transition，相同的忽略
+  }
+  /**
+   * 计算两帧之间不相同的变化，存入transition，相同的忽略
+   * 同时不变化的key也得存入fixed
+   */
 
 
   function calFrame(prev, next, keys, target) {
     keys.forEach(function (k) {
-      var ts = calDiff(prev.style, next.style, k, target); // 可以形成过渡的才会产生结果返回
+      var ts = calDiff(prev, next, k, target); // 可以形成过渡的才会产生结果返回
 
       if (ts) {
         prev.transition.push(ts);
+        prev.keys.push(k);
+      } else {
+        prev.fixed.push(k);
       }
     });
     return next;
@@ -18611,153 +18662,168 @@
    * 根据百分比和缓动函数计算中间态样式
    * 当easing定义为steps时，优先计算
    * @param frame 当前帧
-   * @param keys 所有样式key
    * @param percent 到下一帧时间的百分比
    * @param target vd
-   * @returns {*}
+   * @return {[]} 发生变更的样式key
    */
 
 
-  function calIntermediateStyle(frame, keys, percent, target) {
-    var style = frame.style,
-        transition = frame.transition,
-        timingFunction = frame.timingFunction;
+  function calIntermediateStyle(frame, percent, target) {
+    var style = frame.style;
+    var transition = frame.transition;
+    var timingFunction = frame.timingFunction;
 
     if (timingFunction && timingFunction !== linear) {
       percent = timingFunction(percent);
     }
 
-    style = cloneStyle(style, keys);
+    var currentStyle = target.__currentStyle,
+        keys = frame.keys.slice(0);
 
     var _loop = function _loop(i, len) {
-      var _transition$i = transition[i],
-          k = _transition$i.k,
-          v = _transition$i.v;
-      var st = style[k]; // transform特殊处理，只有1个matrix，有可能不存在，需给默认矩阵
+      var item = transition[i];
+      var k = item.k,
+          v = item.v,
+          st = item.st,
+          cl = item.cl; // transform特殊处理，只有1个matrix，有可能不存在，需给默认矩阵
 
       if (k === TRANSFORM$4) {
-        if (!st) {
+        if (!st || !st.length) {
           st = style[k] = [{
             k: MATRIX$2,
             v: mx.identity()
           }];
         }
 
-        for (var _i16 = 0; _i16 < 16; _i16++) {
-          st[0].v[_i16] += v[_i16] * percent;
+        if (!cl || !cl.length) {
+          cl = frame.clone[k] = [{
+            k: MATRIX$2,
+            v: mx.identity()
+          }];
         }
+
+        for (var _i17 = 0; _i17 < 16; _i17++) {
+          st[0].v[_i17] = cl[0].v[_i17] + v[_i17] * percent;
+        }
+
+        currentStyle[k] = st;
       } else if (k === ROTATE_3D$1) {
-        st[0] += v[0] * percent;
-        st[1] += v[1] * percent;
-        st[2] += v[2] * percent;
-        st[3].v += v[3] * percent;
+        st[0] = cl[0] + v[0] * percent;
+        st[1] = cl[1] + v[1] * percent;
+        st[2] = cl[2] + v[2] * percent;
+        st[3].v = cl[3].v + v[3] * percent;
+        currentStyle[k] = st;
       } else if (k === FILTER$3) {
-        // 只有1个样式声明了filter另外一个为空，会造成无样式，需初始化数组并在下面计算出样式存入
-        if (!st) {
-          st = style[k] = [];
-        }
+        for (var _i18 = 0, _len9 = v.length; _i18 < _len9; _i18++) {
+          var _item = v[_i18];
 
-        for (var _i17 = 0, _len8 = v.length; _i17 < _len8; _i17++) {
-          var item = v[_i17];
-
-          if (item) {
-            var k2 = st[_i17].k,
-                v2 = st[_i17].v; // 只有dropShadow是多个数组，存放x/y/blur/spread/color
+          if (_item) {
+            var k2 = st[_i18].k,
+                v2 = st[_i18].v; // 只有dropShadow是多个数组，存放x/y/blur/spread/color
 
             if (k2 === 'dropShadow') {
-              v2[0].v += item[0] * percent;
-              v2[1].v += item[1] * percent;
-              v2[2].v += item[2] * percent;
-              v2[3].v += item[3] * percent;
+              v2[0].v += _item[0] * percent;
+              v2[1].v += _item[1] * percent;
+              v2[2].v += _item[2] * percent;
+              v2[3].v += _item[3] * percent;
               var c1 = v2[4],
-                  c2 = item[4];
+                  c2 = _item[4];
               c1[0] += c2[0] * percent;
               c1[1] += c2[1] * percent;
               c1[2] += c2[2] * percent;
               c1[3] += c2[3] * percent;
             } // 其它都是带单位单值
             else {
-              v2.v += item * percent;
+              v2.v += _item * percent;
             }
           }
         }
-      } else if (k === TRANSFORM_ORIGIN$3 || k === PERSPECTIVE_ORIGIN$2 || RADIUS_HASH.hasOwnProperty(k)) {
+
+        currentStyle[k] = st;
+      } else if (k === TRANSFORM_ORIGIN$3 || k === PERSPECTIVE_ORIGIN$2 || isRadiusKey(k)) {
         if (v[0] !== 0) {
-          st[0].v += v[0] * percent;
+          st[0].v = cl[0].v + v[0] * percent;
         }
 
         if (v[1] !== 0) {
-          st[1].v += v[1] * percent;
+          st[1].v = cl[1].v + v[1] * percent;
         }
+
+        currentStyle[k] = st;
       } else if (k === BACKGROUND_POSITION_X$1 || k === BACKGROUND_POSITION_Y$1 || k === STROKE_WIDTH$7) {
         st.forEach(function (item, i) {
           if (v[i]) {
-            item.v += v[i] * percent;
+            item.v = cl[i].v + v[i] * percent;
           }
         });
+        currentStyle[k] = st;
       } else if (k === BOX_SHADOW$1) {
-        for (var _i18 = 0, _len9 = Math.min(st.length, v.length); _i18 < _len9; _i18++) {
-          if (!v[_i18]) {
+        for (var _i19 = 0, _len10 = Math.min(st.length, v.length); _i19 < _len10; _i19++) {
+          if (!v[_i19]) {
             continue;
           } // x/y/blur/spread
 
 
           for (var j = 0; j < 4; j++) {
-            st[_i18][j].v += v[_i18][j] * percent;
+            st[_i19][j].v = cl[_i19][j].v + v[_i19][j] * percent;
           } // rgba
 
 
           for (var _j5 = 0; _j5 < 4; _j5++) {
-            st[_i18][4][_j5] += v[_i18][4][_j5] * percent;
+            st[_i19][4][_j5] = cl[_i19][4][_j5] + v[_i19][4][_j5] * percent;
           }
         }
+
+        currentStyle[k] = st;
       } else if (k === BACKGROUND_SIZE$1) {
         st.forEach(function (item, i) {
           var o = v[i];
 
           if (o) {
-            item[0].v += o[0] * percent;
-            item[1].v += o[1] * percent;
+            item[0].v = cl[i][0] + o[0] * percent;
+            item[1].v = cl[i][1] + o[1] * percent;
           }
         });
+        currentStyle[k] = st;
       } else if (k === OPACITY$3 || k === Z_INDEX$3) {
-        style[k] += v * percent; // 精度问题可能会超过[0,1]区间
+        st = cl + v * percent; // 精度问题可能会超过[0,1]区间
 
         if (k === OPACITY$3) {
-          if (style[k] < 0) {
-            style[k] = 0;
-          } else if (style[k] > 1) {
-            style[k] = 1;
+          if (st < 0) {
+            st = 0;
+          } else if (st > 1) {
+            st = 1;
           }
         }
+
+        currentStyle[k] = st;
       } // 特殊的曲线运动计算，转换为translateXY，出现在最后一定会覆盖原本的translate防重
       else if (k === TRANSLATE_PATH) {
         var t = 1 - percent;
 
         if (v.length === 8) {
-          style[TRANSLATE_X$1] = {
+          currentStyle[TRANSLATE_X$1] = {
             v: v[0].v * t * t * t + 3 * v[2].v * percent * t * t + 3 * v[4].v * percent * percent * t + v[6].v * percent * percent * percent,
             u: PX$6
           };
-          style[TRANSLATE_Y$1] = {
+          currentStyle[TRANSLATE_Y$1] = {
             v: v[1].v * t * t * t + 3 * v[3].v * percent * t * t + 3 * v[5].v * percent * percent * t + v[7].v * percent * percent * percent,
             u: PX$6
           };
         } else if (v.length === 6) {
-          style[TRANSLATE_X$1] = {
+          currentStyle[TRANSLATE_X$1] = {
             v: v[0].v * t * t + 2 * v[2].v * percent * t + v[4].v * percent * percent,
             u: PX$6
           };
-          style[TRANSLATE_Y$1] = {
+          currentStyle[TRANSLATE_Y$1] = {
             v: v[1].v * t * t + 3 * v[3].v * percent * t + v[5].v * percent * percent,
             u: PX$6
           };
         }
-      } else if (LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {
-        if (v) {
-          st.v += v * percent;
-        }
-      } else if (GRADIENT_HASH.hasOwnProperty(k)) {
+      } else if (isLengthKey(k) || isExpandKey(k)) {
+        st.v = cl + v * percent;
+        currentStyle[k] = st;
+      } else if (isGradientKey(k)) {
         st.forEach(function (st2, i) {
           var v2 = v[i];
 
@@ -18765,8 +18831,9 @@
             return;
           }
 
-          if (st2.u === GRADIENT$2 && GRADIENT_TYPE.hasOwnProperty(st2.v.k)) {
+          if (st2.u === GRADIENT$2) {
             st2 = st2.v;
+            var cli = cl[i].v;
 
             var _v19 = _slicedToArray(v2, 4),
                 c = _v19[0],
@@ -18774,86 +18841,86 @@
                 p = _v19[2],
                 z = _v19[3];
 
-            for (var _i19 = 0, _len10 = Math.min(st2.v.length, c.length); _i19 < _len10; _i19++) {
-              var a = st2.v[_i19];
-              var b = c[_i19];
-              a[0][0] += b[0][0] * percent;
-              a[0][1] += b[0][1] * percent;
-              a[0][2] += b[0][2] * percent;
-              a[0][3] += b[0][3] * percent;
+            for (var _j6 = 0, _len11 = Math.min(st2.v.length, c.length); _j6 < _len11; _j6++) {
+              var a = st2.v[_j6];
+              var b = c[_j6];
+              a[0][0] = cli[_j6][0][0] + b[0][0] * percent;
+              a[0][1] = cli[_j6][0][1] + b[0][1] * percent;
+              a[0][2] = cli[_j6][0][2] + b[0][2] * percent;
+              a[0][3] = cli[_j6][0][3] + b[0][3] * percent;
 
               if (a[1] && b[1]) {
-                a[1].v += b[1] * percent;
+                a[1].v = cli[_j6][1].v + b[1] * percent;
               }
             }
 
             if (st2.k === 'linear' && st2.d !== undefined && d !== undefined) {
               if (Array.isArray(d)) {
-                st2.d[0] += d[0] * percent;
-                st2.d[1] += d[1] * percent;
-                st2.d[2] += d[2] * percent;
-                st2.d[3] += d[3] * percent;
+                st2.d[0] = cli.d[0] + d[0] * percent;
+                st2.d[1] = cli.d[1] + d[1] * percent;
+                st2.d[2] = cli.d[2] + d[2] * percent;
+                st2.d[3] = cli.d[3] + d[3] * percent;
               } else {
-                st2.d += d * percent;
+                st2.d = cl[i].d + d * percent;
               }
-            }
-
-            if (st2.k === 'radial') {
+            } else if (st2.k === 'radial') {
               if (st2.z !== undefined && z !== undefined) {
-                st2.z[0] += z[0] * percent;
-                st2.z[1] += z[1] * percent;
-                st2.z[2] += z[2] * percent;
-                st2.z[3] += z[3] * percent;
-                st2.z[4] += z[4] * percent;
+                st2.z[0] = cli.z[0] + z[0] * percent;
+                st2.z[1] = cli.z[1] + z[1] * percent;
+                st2.z[2] = cli.z[2] + z[2] * percent;
+                st2.z[3] = cli.z[3] + z[3] * percent;
+                st2.z[4] = cli.z[4] + z[4] * percent;
               } else if (st2.p !== undefined && p !== undefined) {
-                st2.p[0].v += p[0] * percent;
-                st2.p[1].v += p[1] * percent;
+                st2.p[0].v = cli.p[0].v + p[0] * percent;
+                st2.p[1].v = cli.p[1].v + p[1] * percent;
               }
             } else if (st2.k === 'conic' && st2.d !== undefined && d !== undefined) {
-              st2.d += d * percent;
-              st2.p[0][0] += p[0] * percent;
-              st2.p[1][0] += p[1] * percent;
+              st2.d = cli.d + d * percent;
+              st2.p[0][0] = cli.p[0] + p[0] * percent;
+              st2.p[1][0] = cli.p[1] + p[1] * percent;
             }
           } // fill纯色
           else {
             st2 = st2.v;
-            st2[0] += v2[0] * percent;
-            st2[1] += v2[1] * percent;
-            st2[2] += v2[2] * percent;
-            st2[3] += v2[3] * percent;
+            st2[0] = cl[0] + v2[0] * percent;
+            st2[1] = cl[1] + v2[1] * percent;
+            st2[2] = cl[2] + v2[2] * percent;
+            st2[3] = cl[3] + v2[3] * percent;
           }
         });
+        currentStyle[k] = st;
       } // color可能超限[0,255]，但浏览器已经做了限制，无需关心
-      else if (COLOR_HASH.hasOwnProperty(k)) {
+      else if (isColorKey(k)) {
         st = st.v;
-        st[0] += v[0] * percent;
-        st[1] += v[1] * percent;
-        st[2] += v[2] * percent;
-        st[3] += v[3] * percent;
+        st[0] = cl[0] + v[0] * percent;
+        st[1] = cl[1] + v[1] * percent;
+        st[2] = cl[2] + v[2] * percent;
+        st[3] = cl[3] + v[3] * percent;
+        currentStyle[k] = st;
       } else if (GEOM$1.hasOwnProperty(k)) {
-        var _st = style[k];
         var tagName = target.tagName;
+        var _style2 = frame.style;
 
         if (GEOM$1[k][tagName] && isFunction$6(GEOM$1[k][tagName].calIncrease)) {
           var fn = GEOM$1[k][tagName].calIncrease;
 
           if (target.isMulti) {
-            style[k] = _st.map(function (item, i) {
+            _style2[k] = st.map(function (item, i) {
               return fn(item, v[i], percent);
             });
           } else {
-            style[k] = fn(_st, v, percent);
+            _style2[k] = fn(st, v, percent);
           }
         } else if (target.isMulti) {
           if (k === 'points' || k === 'controls') {
-            for (var _i20 = 0, _len11 = Math.min(_st.length, v.length); _i20 < _len11; _i20++) {
-              var o = _st[_i20];
+            for (var _i20 = 0, _len12 = Math.min(st.length, v.length); _i20 < _len12; _i20++) {
+              var o = st[_i20];
               var n = v[_i20];
 
               if (!isNil$a(o) && !isNil$a(n)) {
-                for (var _j6 = 0, len2 = Math.min(o.length, n.length); _j6 < len2; _j6++) {
-                  var o2 = o[_j6];
-                  var n2 = n[_j6];
+                for (var _j7 = 0, len2 = Math.min(o.length, n.length); _j7 < len2; _j7++) {
+                  var o2 = o[_j7];
+                  var n2 = n[_j7];
 
                   if (!isNil$a(o2) && !isNil$a(n2)) {
                     for (var _k5 = 0, len3 = Math.min(o2.length, n2.length); _k5 < len3; _k5++) {
@@ -18867,10 +18934,10 @@
             }
           } else if (k === 'controlA' || k === 'controlB') {
             v.forEach(function (item, i) {
-              var st2 = _st[i];
+              var st2 = st[i];
 
               if (!isNil$a(item) && !isNil$a(st2)) {
-                for (var _i21 = 0, _len12 = Math.min(st2.length, item.length); _i21 < _len12; _i21++) {
+                for (var _i21 = 0, _len13 = Math.min(st2.length, item.length); _i21 < _len13; _i21++) {
                   var _o = st2[_i21];
                   var _n = item[_i21];
 
@@ -18882,47 +18949,64 @@
             });
           } else {
             v.forEach(function (item, i) {
-              if (!isNil$a(item) && !isNil$a(_st[i])) {
-                _st[i] += item * percent;
+              if (!isNil$a(item) && !isNil$a(st[i])) {
+                st[i] += item * percent;
               }
             });
           }
         } else {
           if (k === 'points' || k === 'controls') {
-            for (var _i22 = 0, _len13 = Math.min(_st.length, v.length); _i22 < _len13; _i22++) {
-              var _o2 = _st[_i22];
+            for (var _i22 = 0, _len14 = Math.min(st.length, v.length); _i22 < _len14; _i22++) {
+              var _o2 = st[_i22];
               var _n2 = v[_i22];
 
               if (!isNil$a(_o2) && !isNil$a(_n2)) {
-                for (var _j7 = 0, _len14 = Math.min(_o2.length, _n2.length); _j7 < _len14; _j7++) {
-                  if (!isNil$a(_o2[_j7]) && !isNil$a(_n2[_j7])) {
-                    _o2[_j7] += _n2[_j7] * percent;
+                for (var _j8 = 0, _len15 = Math.min(_o2.length, _n2.length); _j8 < _len15; _j8++) {
+                  if (!isNil$a(_o2[_j8]) && !isNil$a(_n2[_j8])) {
+                    _o2[_j8] += _n2[_j8] * percent;
                   }
                 }
               }
             }
           } else if (k === 'controlA' || k === 'controlB') {
-            if (!isNil$a(_st[0]) && !isNil$a(v[0])) {
-              _st[0] += v[0] * percent;
+            if (!isNil$a(st[0]) && !isNil$a(v[0])) {
+              st[0] += v[0] * percent;
             }
 
-            if (!isNil$a(_st[1]) && !isNil$a(v[1])) {
-              _st[1] += v[1] * percent;
+            if (!isNil$a(st[1]) && !isNil$a(v[1])) {
+              st[1] += v[1] * percent;
             }
           } else {
-            if (!isNil$a(_st) && !isNil$a(v)) {
-              style[k] += v * percent;
+            if (!isNil$a(st) && !isNil$a(v)) {
+              _style2[k] += v * percent;
             }
           }
         }
+
+        currentStyle[k] = st;
+      } // string的直接量
+      else {
+        currentStyle[k] = st;
       }
     };
 
     for (var i = 0, len = transition.length; i < len; i++) {
       _loop(i);
+    } // 无变化的也得检查是否和当前相等，防止跳到一个不变化的帧上，而前一帧有变化的情况
+
+
+    var fixed = frame.fixed;
+
+    for (var _i16 = 0, _len8 = fixed.length; _i16 < _len8; _i16++) {
+      var k = fixed[_i16];
+
+      if (!equalStyle$1(k, style[k], currentStyle[k], target)) {
+        currentStyle[k] = style[k];
+        keys.push(k);
+      }
     }
 
-    return style;
+    return keys;
   }
 
   function gotoOverload(options, cb) {
@@ -19057,7 +19141,7 @@
 
         var offset = -1;
 
-        var _loop2 = function _loop2(_i23, _len15) {
+        var _loop2 = function _loop2(_i23, _len16) {
           var current = list[_i23];
 
           if (current.hasOwnProperty('offset')) {
@@ -19068,17 +19152,17 @@
             if (isNaN(current.offset) || current.offset < 0 || current.offset > 1) {
               list.splice(_i23, 1);
               _i23--;
-              _len15--;
+              _len16--;
               i = _i23;
-              len = _len15;
+              len = _len16;
               return "continue";
             } // <=前面的
             else if (current.offset <= offset) {
               list.splice(_i23, 1);
               _i23--;
-              _len15--;
+              _len16--;
               i = _i23;
-              len = _len15;
+              len = _len16;
               return "continue";
             }
           } // 缩写处理
@@ -19096,7 +19180,7 @@
             }
           });
           i = _i23;
-          len = _len15;
+          len = _len16;
         };
 
         for (var i = 0, len = list.length; i < len; i++) {
@@ -19149,14 +19233,14 @@
         } // 计算没有设置offset的时间
 
 
-        for (var _i24 = 1, _len16 = list.length; _i24 < _len16; _i24++) {
+        for (var _i24 = 1, _len17 = list.length; _i24 < _len17; _i24++) {
           var start = list[_i24]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
 
           if (!start.hasOwnProperty('offset')) {
             var end = void 0;
             var j = _i24 + 1;
 
-            for (; j < _len16; j++) {
+            for (; j < _len17; j++) {
               end = list[j];
 
               if (end.hasOwnProperty('offset')) {
@@ -19334,7 +19418,7 @@
         var length = currentFrames.length;
         var playbackRate = this.__playbackRate;
         var spfLimit = this.__spfLimit;
-        this.__currentTime = this.__nextTime; // 定帧限制每帧时间间隔最大为spf
+        var currentTime = this.__currentTime = this.__nextTime; // 定帧限制每帧时间间隔最大为spf
 
         if (spfLimit) {
           if (spfLimit === true) {
@@ -19350,8 +19434,7 @@
         } // 用本帧和上帧时间差，计算累加运行时间currentTime，以便定位当前应该处于哪个时刻
 
 
-        this.__nextTime += diff;
-        var currentTime = this.__currentTime; // 增加的fps功能，当<60时计算跳帧，每帧运行依旧累加时间，达到fps时重置，第一帧强制不跳
+        this.__nextTime += diff; // 增加的fps功能，当<60时计算跳帧，每帧运行依旧累加时间，达到fps时重置，第一帧强制不跳
 
         if (!this.__firstEnter && fps < 60) {
           diff = this.__fpsTime += diff;
@@ -19371,7 +19454,7 @@
             var _currentFrame = this.__currentFrame = currentFrames[0];
 
             var _current = _currentFrame.style;
-            genBeforeRefresh(this, _current, this.__keys, root, target);
+            genBeforeRefresh(this, _current, this.__keys);
           }
 
           this.__begin = false; // 默认是true，delay置false防触发
@@ -19437,8 +19520,7 @@
         }
 
         var inEndDelay,
-            currentFrame = currentFrames[i],
-            current;
+            currentFrame = currentFrames[i];
         this.__currentFrame = currentFrame;
         /** 这里要考虑全几种场景：
          * 1. 单次播放无endDelay且fill不停留（有/无差异，下同）
@@ -19452,15 +19534,16 @@
          */
 
         var needClean;
+        var keys;
 
         if (isLastFrame) {
           inEndDelay = currentTime < duration + endDelay; // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
 
           if (stayEnd) {
-            current = cloneStyle(currentFrame.style, this.__keys);
+            currentFrame.style;
           } // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
           else {
-            current = cloneStyle(this.__originStyle, this.__keys);
+            this.__originStyle;
           } // 进入endDelay或结束阶段触发end事件，注意只触发一次，防重在触发的地方做
 
 
@@ -19474,11 +19557,11 @@
             this.__nextTime = 0;
           }
         } else {
-          current = calIntermediateStyle(currentFrame, this.__keys, percent, target);
+          keys = calIntermediateStyle(currentFrame, percent, target);
         } // 无论两帧之间是否有变化，都生成计算结果赋给style，去重在root做
 
 
-        genBeforeRefresh(this, current, this.__keys, root, target);
+        genBeforeRefresh(keys, root, target);
 
         if (needClean) {
           var playCb = this.__playCb;
@@ -20724,7 +20807,8 @@
       REPAINT$3 = o$1.REPAINT,
       TX = o$1.TRANSLATE_X,
       TY = o$1.TRANSLATE_Y,
-      TZ = o$1.TRANSLATE_Z;
+      TZ = o$1.TRANSLATE_Z,
+      TRANSFORM_ALL$2 = o$1.TRANSFORM_ALL;
 
   function getFirstEmptyInlineWidth(xom) {
     var n = 0;
@@ -21031,8 +21115,6 @@
     }, {
       key: "__emitFontRegister",
       value: function __emitFontRegister(fontFamily) {
-        var _this4 = this;
-
         var node = this,
             fontRegister = node.__fontRegister;
 
@@ -21062,23 +21144,9 @@
           if (item === fontFamily) {
             // 加载成功回调可能没注册信息，需要多判断一下
             if (o$3.hasRegister(item)) {
-              (function () {
-                var self = _this4;
-                root.addRefreshTask({
-                  __before: function __before() {
-                    if (self.__isDestroyed) {
-                      return;
-                    }
-
-                    var res = {
-                      node: node,
-                      focus: o$1.REFLOW
-                    };
-
-                    root.__addUpdate(node, root, res);
-                  }
-                });
-              })();
+              root.__addUpdate(node, {
+                focus: o$1.REFLOW
+              });
             } // 后面低优先级的无需再看
 
 
@@ -21499,7 +21567,7 @@
     }, {
       key: "__calMatrix",
       value: function __calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle) {
-        var _this5 = this;
+        var _this4 = this;
 
         var __sx1 = this.__sx1,
             __sy1 = this.__sy1,
@@ -21511,7 +21579,7 @@
           return __cacheStyle[MATRIX$1] = this.__matrix = mx.identity();
         }
 
-        var matrixCache = __cacheStyle[MATRIX$1]; // tx/ty变化特殊优化
+        var matrixCache = __cacheStyle[MATRIX$1]; // tx/ty/tz变化特殊优化
 
         if (matrixCache && lv < REFLOW$1 && !contain$3(lv, TF$1)) {
           var x = 0,
@@ -21574,7 +21642,7 @@
             __cacheStyle[TRANSFORM_ORIGIN$2] = true;
             matrixCache = null;
             __computedStyle[TRANSFORM_ORIGIN$2] = __currentStyle[TRANSFORM_ORIGIN$2].map(function (item, i) {
-              return _this5.__calSize(item, i ? __offsetHeight : __offsetWidth, true);
+              return _this4.__calSize(item, i ? __offsetHeight : __offsetWidth, true);
             });
           }
 
@@ -21632,7 +21700,7 @@
                 }
 
                 var p = k === TRANSLATE_X || k === TRANSLATE_Z ? __offsetWidth : __offsetHeight;
-                __computedStyle[k] = _this5.__calSize(v, p, true);
+                __computedStyle[k] = _this4.__calSize(v, p, true);
                 temp.push({
                   k: k,
                   v: v
@@ -21662,14 +21730,12 @@
       }
       /**
        * 将currentStyle计算为computedStyle，同时存入cacheStyle可缓存的结果防止无变更重复计算，返回背景渲染范围
-       * @returns {*[]}
-       * @private
        */
 
     }, {
       key: "__calStyle",
-      value: function __calStyle(__currentStyle, __computedStyle, __cacheStyle) {
-        var _this6 = this;
+      value: function __calStyle(lv, __currentStyle, __computedStyle, __cacheStyle) {
+        var _this5 = this;
 
         var __sx1 = this.__sx1,
             __sx2 = this.__sx2,
@@ -21715,10 +21781,11 @@
 
         if (isNil$9(__cacheStyle[FILTER$2])) {
           this.__calFilter(__currentStyle, __computedStyle, __cacheStyle);
-        }
+        } // 特殊的判断，MATRIX不存在于样式key中，所有的transform共用一个
 
-        if (isNil$9(__cacheStyle[MATRIX$1])) {
-          this.__calMatrix(REFLOW$1, __currentStyle, __computedStyle, __cacheStyle);
+
+        if (isNil$9(__cacheStyle[MATRIX$1]) || contain$3(lv, TRANSFORM_ALL$2)) {
+          this.__calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle);
         }
 
         if (isNil$9(__cacheStyle[BACKGROUND_POSITION_X])) {
@@ -21729,7 +21796,7 @@
               return item.v + '%';
             }
 
-            return _this6.__calSize(item, bx2 - bx1, true);
+            return _this5.__calSize(item, bx2 - bx1, true);
           });
         }
 
@@ -21741,7 +21808,7 @@
               return item.v + '%';
             }
 
-            return _this6.__calSize(item, by2 - by1, true);
+            return _this5.__calSize(item, by2 - by1, true);
           });
         }
 
@@ -21757,7 +21824,7 @@
                   return item2.v === 'contain' ? -2 : -3;
                 }
 
-                return _this6.__calSize(item2, i ? by2 - by1 : bx2 - bx1, true);
+                return _this5.__calSize(item2, i ? by2 - by1 : bx2 - bx1, true);
               });
             }
           });
@@ -21779,7 +21846,7 @@
 
 
             if (bgi.u === STRING) {
-              var loadBgi = _this6.__loadBgi[i] = _this6.__loadBgi[i] || {};
+              var loadBgi = _this5.__loadBgi[i] = _this5.__loadBgi[i] || {};
               var cache = inject.IMG[bgi.v];
 
               if (cache && cache.state === inject.LOADED) {
@@ -21791,26 +21858,19 @@
                 // 可能改变导致多次加载，每次清空，成功后还要比对url是否相同
                 loadBgi.url = bgi.v;
                 loadBgi.source = null;
-                var node = _this6;
-                var root = _this6.__root;
-                var ctx = _this6.ctx;
+                var node = _this5;
+                var root = _this5.__root;
+                var ctx = _this5.ctx;
                 inject.measureImg(bgi.v, function (data) {
                   // 还需判断url，防止重复加载时老的替换新的，失败不绘制bgi
-                  if (data.success && data.url === loadBgi.url && !_this6.isDestroyed) {
+                  if (data.success && data.url === loadBgi.url && !_this5.isDestroyed) {
                     loadBgi.source = data.source;
                     loadBgi.width = data.width;
                     loadBgi.height = data.height;
-                    root.delRefreshTask(loadBgi.cb);
-                    root.addRefreshTask(loadBgi.cb = {
-                      __before: function __before() {
-                        __cacheStyle[BACKGROUND_IMAGE] = undefined;
-                        var res = {
-                          node: node,
-                          focus: REPAINT$3
-                        };
+                    __cacheStyle[BACKGROUND_IMAGE] = undefined;
 
-                        root.__addUpdate(node, root, res);
-                      }
+                    root.__addUpdate(node, {
+                      focus: REPAINT$3
                     });
                   }
                 }, {
@@ -21837,7 +21897,7 @@
                 return item2;
               }
 
-              return _this6.__calSize(item2, i === 0 ? bx2 - bx1 : by2 - by1, true);
+              return _this5.__calSize(item2, i === 0 ? bx2 - bx1 : by2 - by1, true);
             });
           });
         }
@@ -22035,7 +22095,7 @@
     }, {
       key: "__calPerspective",
       value: function __calPerspective(__currentStyle, __computedStyle, __cacheStyle) {
-        var _this7 = this;
+        var _this6 = this;
 
         this.__perspectiveMatrix = [];
         var rebuild;
@@ -22053,7 +22113,7 @@
           __cacheStyle[PERSPECTIVE_ORIGIN$1] = true;
           rebuild = true;
           __computedStyle[PERSPECTIVE_ORIGIN$1] = __currentStyle[PERSPECTIVE_ORIGIN$1].map(function (item, i) {
-            return _this7.__calSize(item, i ? _this7.__offsetHeight : _this7.__offsetWidth, true);
+            return _this6.__calSize(item, i ? _this6.__offsetHeight : _this6.__offsetWidth, true);
           });
         }
 
@@ -22072,7 +22132,7 @@
     }, {
       key: "__calFilter",
       value: function __calFilter(__currentStyle, __computedStyle, __cacheStyle) {
-        var _this8 = this;
+        var _this7 = this;
 
         __cacheStyle[FILTER$2] = true;
         this.__filterBbox = null;
@@ -22086,7 +22146,7 @@
                 return item2;
               }
 
-              return _this8.__calSize(item2, i === 0 ? _this8.__bx2 - _this8.__bx1 : _this8.__by2 - _this8.__by1, true);
+              return _this7.__calSize(item2, i === 0 ? _this7.__bx2 - _this7.__bx1 : _this7.__by2 - _this7.__by1, true);
             });
             return {
               k: k,
@@ -22097,7 +22157,7 @@
             if (v.u === DEG || v.u === NUMBER$1 || v.u === PERCENT$5) {
               v = v.v;
             } else {
-              v = _this8.__calSize(v, _this8.root.width, true);
+              v = _this7.__calSize(v, _this7.root.width, true);
             }
 
             return {
@@ -22295,7 +22355,7 @@
     }, {
       key: "render",
       value: function render(renderMode, ctx) {
-        var _this9 = this;
+        var _this8 = this;
 
         var dx = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
         var dy = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
@@ -22549,7 +22609,7 @@
                   svgBgSymbol = []; // bgi视作inline排满一行绘制，然后按分行拆开给每行
 
               if (hasBgi) {
-                iw = inline.getInlineWidth(_this9, contentBoxList, isUpright);
+                iw = inline.getInlineWidth(_this8, contentBoxList, isUpright);
                 ih = lineHeight; // 垂直模式互换，计算时始终按照宽度为主轴计算的
 
                 if (isUpright) {
@@ -22589,23 +22649,23 @@
                   i = _length - 1 - i;
 
                   if (util.isString(bgi)) {
-                    var loadBgi = _this9.__loadBgi[i];
+                    var loadBgi = _this8.__loadBgi[i];
 
                     if (loadBgi.url === bgi) {
-                      var uuid = bg.renderImage(_this9, renderMode, offscreen && offscreen.ctx || ctx, loadBgi, 0, 0, iw, ih, btlr, btrr, bbrr, bblr, computedStyle, i, backgroundSize, backgroundRepeat, true, dx, dy);
+                      var uuid = bg.renderImage(_this8, renderMode, offscreen && offscreen.ctx || ctx, loadBgi, 0, 0, iw, ih, btlr, btrr, bbrr, bblr, computedStyle, i, backgroundSize, backgroundRepeat, true, dx, dy);
 
                       if (renderMode === SVG$1 && uuid) {
                         svgBgSymbol.push(uuid);
                       }
                     }
                   } else if (bgi.k) {
-                    var gd = _this9.__gradient(renderMode, ctx, 0, 0, iw, ih, bgi, dx, dy);
+                    var gd = _this8.__gradient(renderMode, ctx, 0, 0, iw, ih, bgi, dx, dy);
 
                     if (gd) {
                       if (gd.k === 'conic') {
-                        gradient.renderConic(_this9, renderMode, offscreen && offscreen.ctx || ctx, gd.v, 0, 0, iw, lineHeight, btlr, btrr, bbrr, bblr, true);
+                        gradient.renderConic(_this8, renderMode, offscreen && offscreen.ctx || ctx, gd.v, 0, 0, iw, lineHeight, btlr, btrr, bbrr, bblr, true);
                       } else {
-                        var _uuid = bg.renderBgc(_this9, renderMode, offscreen && offscreen.ctx || ctx, gd.v, null, 0, 0, iw, ih, btlr, btrr, bbrr, bblr, 'fill', true);
+                        var _uuid = bg.renderBgc(_this8, renderMode, offscreen && offscreen.ctx || ctx, gd.v, null, 0, 0, iw, ih, btlr, btrr, bbrr, bblr, 'fill', true);
 
                         if (renderMode === SVG$1 && _uuid) {
                           svgBgSymbol.push(_uuid);
@@ -22633,7 +22693,7 @@
                 if (contentBox.parentLineBox !== lastLineBox) {
                   (function () {
                     // 上一行
-                    var _inline$getInlineBox = inline.getInlineBox(_this9, isUpright, contentBoxList, lastContentBox, contentBoxList[i - 1], lastLineBox, baseline, lineHeight, leading, isFirst, false, backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth),
+                    var _inline$getInlineBox = inline.getInlineBox(_this8, isUpright, contentBoxList, lastContentBox, contentBoxList[i - 1], lastLineBox, baseline, lineHeight, leading, isFirst, false, backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth),
                         _inline$getInlineBox2 = _slicedToArray(_inline$getInlineBox, 8),
                         ix1 = _inline$getInlineBox2[0],
                         iy1 = _inline$getInlineBox2[1],
@@ -22646,13 +22706,13 @@
 
 
                     if (isFirst) {
-                      var n = getFirstEmptyInlineWidth(_this9);
+                      var n = getFirstEmptyInlineWidth(_this8);
                       ix1 -= n;
                       bx1 -= n;
                     }
 
                     if (backgroundColor[3] > 0) {
-                      bg.renderBgc(_this9, renderMode, ctx, cacheStyle[BACKGROUND_COLOR], null, ix1, iy1, ix2 - ix1, iy2 - iy1, btlr, [0, 0], [0, 0], bblr, 'fill', false, dx, dy);
+                      bg.renderBgc(_this8, renderMode, ctx, cacheStyle[BACKGROUND_COLOR], null, ix1, iy1, ix2 - ix1, iy2 - iy1, btlr, [0, 0], [0, 0], bblr, 'fill', false, dx, dy);
                     }
 
                     var w = ix2 - ix1,
@@ -22679,7 +22739,7 @@
                           };
                           var clip = ctx.add(_v5);
 
-                          _this9.__cacheDefs.push(_v5);
+                          _this8.__cacheDefs.push(_v5);
 
                           virtualDom.bb.push({
                             type: 'item',
@@ -22694,7 +22754,7 @@
 
                     if (boxShadow) {
                       boxShadow.forEach(function (item) {
-                        bs.renderBoxShadow(_this9, renderMode, ctx, item, bx1, by1, bx2, by2, bx2 - bx1, by2 - by1, dx, dy);
+                        bs.renderBoxShadow(_this8, renderMode, ctx, item, bx1, by1, bx2, by2, bx2 - bx1, by2 - by1, dx, dy);
                       });
                     }
 
@@ -22702,7 +22762,7 @@
                       var deg1 = Math.atan(borderTopWidth / borderLeftWidth);
                       var deg2 = Math.atan(borderTopWidth / borderRightWidth);
                       var list = border.calPoints(borderTopWidth, computedStyle[BORDER_TOP_STYLE], deg1, deg2, bx1, bx1 + borderLeftWidth, bx2, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 0, isFirst ? btlr : [0, 0], [0, 0]);
-                      border.renderBorder(_this9, renderMode, ctx, list, cacheStyle[BORDER_TOP_COLOR], dx, dy);
+                      border.renderBorder(_this8, renderMode, ctx, list, cacheStyle[BORDER_TOP_COLOR], dx, dy);
                     }
 
                     if (borderBottomWidth > 0 && borderBottomColor[3] > 0) {
@@ -22712,7 +22772,7 @@
 
                       var _list = border.calPoints(borderBottomWidth, computedStyle[BORDER_BOTTOM_STYLE], _deg7, _deg8, bx1, bx1 + borderLeftWidth, bx2, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 2, isFirst ? btlr : [0, 0], [0, 0]);
 
-                      border.renderBorder(_this9, renderMode, ctx, _list, cacheStyle[BORDER_BOTTOM_COLOR], dx, dy);
+                      border.renderBorder(_this8, renderMode, ctx, _list, cacheStyle[BORDER_BOTTOM_COLOR], dx, dy);
                     }
 
                     if (isFirst && borderLeftWidth > 0 && borderLeftColor[3] > 0) {
@@ -22722,7 +22782,7 @@
 
                       var _list2 = border.calPoints(borderLeftWidth, computedStyle[BORDER_LEFT_STYLE], _deg9, _deg10, bx1, bx1 + borderLeftWidth, bx2 - borderRightWidth, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 3, btlr, btrr);
 
-                      border.renderBorder(_this9, renderMode, ctx, _list2, cacheStyle[BORDER_LEFT_COLOR], dx, dy);
+                      border.renderBorder(_this8, renderMode, ctx, _list2, cacheStyle[BORDER_LEFT_COLOR], dx, dy);
                     }
 
                     isFirst = false;
@@ -22734,7 +22794,7 @@
 
                 if (i === length - 1) {
                   (function () {
-                    var _inline$getInlineBox3 = inline.getInlineBox(_this9, isUpright, contentBoxList, lastContentBox, contentBoxList[i], lastLineBox, baseline, lineHeight, leading, isFirst, true, backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth),
+                    var _inline$getInlineBox3 = inline.getInlineBox(_this8, isUpright, contentBoxList, lastContentBox, contentBoxList[i], lastLineBox, baseline, lineHeight, leading, isFirst, true, backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth),
                         _inline$getInlineBox4 = _slicedToArray(_inline$getInlineBox3, 8),
                         ix1 = _inline$getInlineBox4[0],
                         iy1 = _inline$getInlineBox4[1],
@@ -22747,19 +22807,19 @@
 
 
                     if (isFirst) {
-                      var _n4 = getFirstEmptyInlineWidth(_this9);
+                      var _n4 = getFirstEmptyInlineWidth(_this8);
 
                       ix1 -= _n4;
                       bx1 -= _n4;
                     } // 要算上末尾空白inline，可能有多个和递归嵌套
 
 
-                    var n = getLastEmptyInlineWidth(_this9);
+                    var n = getLastEmptyInlineWidth(_this8);
                     ix2 += n;
                     bx2 += n;
 
                     if (backgroundColor[3] > 0) {
-                      bg.renderBgc(_this9, renderMode, ctx, cacheStyle[BACKGROUND_COLOR], null, ix1, iy1, ix2 - ix1, iy2 - iy1, isFirst ? btlr : [0, 0], btrr, bbrr, isFirst ? bblr : [0, 0], 'fill', false, dx, dy);
+                      bg.renderBgc(_this8, renderMode, ctx, cacheStyle[BACKGROUND_COLOR], null, ix1, iy1, ix2 - ix1, iy2 - iy1, isFirst ? btlr : [0, 0], btrr, bbrr, isFirst ? bblr : [0, 0], 'fill', false, dx, dy);
                     }
 
                     var w = ix2 - ix1,
@@ -22785,7 +22845,7 @@
                           };
                           var clip = ctx.add(_v6);
 
-                          _this9.__cacheDefs.push(_v6);
+                          _this8.__cacheDefs.push(_v6);
 
                           virtualDom.bb.push({
                             type: 'item',
@@ -22798,7 +22858,7 @@
 
                     if (boxShadow) {
                       boxShadow.forEach(function (item) {
-                        bs.renderBoxShadow(_this9, renderMode, ctx, item, bx1, by1, bx2, by2, bx2 - bx1, by2 - by1, dx, dy);
+                        bs.renderBoxShadow(_this8, renderMode, ctx, item, bx1, by1, bx2, by2, bx2 - bx1, by2 - by1, dx, dy);
                       });
                     }
 
@@ -22806,7 +22866,7 @@
                       var deg1 = Math.atan(borderTopWidth / borderLeftWidth);
                       var deg2 = Math.atan(borderTopWidth / borderRightWidth);
                       var list = border.calPoints(borderTopWidth, computedStyle[BORDER_TOP_STYLE], deg1, deg2, bx1, bx1, bx2 - borderRightWidth, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 0, isFirst ? btlr : [0, 0], btrr);
-                      border.renderBorder(_this9, renderMode, ctx, list, cacheStyle[BORDER_TOP_COLOR], dx, dy);
+                      border.renderBorder(_this8, renderMode, ctx, list, cacheStyle[BORDER_TOP_COLOR], dx, dy);
                     }
 
                     if (borderRightWidth > 0 && borderRightColor[3] > 0) {
@@ -22816,7 +22876,7 @@
 
                       var _list3 = border.calPoints(borderRightWidth, computedStyle[BORDER_RIGHT_STYLE], _deg11, _deg12, bx1, bx1 + borderLeftWidth, bx2 - borderRightWidth, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 1, btlr, btrr);
 
-                      border.renderBorder(_this9, renderMode, ctx, _list3, cacheStyle[BORDER_RIGHT_COLOR], dx, dy);
+                      border.renderBorder(_this8, renderMode, ctx, _list3, cacheStyle[BORDER_RIGHT_COLOR], dx, dy);
                     }
 
                     if (borderBottomWidth > 0 && borderBottomColor[3] > 0) {
@@ -22826,7 +22886,7 @@
 
                       var _list4 = border.calPoints(borderBottomWidth, computedStyle[BORDER_BOTTOM_STYLE], _deg13, _deg14, bx1, bx1, bx2 - borderRightWidth, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 2, isFirst ? btlr : [0, 0], btrr);
 
-                      border.renderBorder(_this9, renderMode, ctx, _list4, cacheStyle[BORDER_BOTTOM_COLOR], dx, dy);
+                      border.renderBorder(_this8, renderMode, ctx, _list4, cacheStyle[BORDER_BOTTOM_COLOR], dx, dy);
                     }
 
                     if (isFirst && borderLeftWidth > 0 && borderLeftColor[3] > 0) {
@@ -22836,7 +22896,7 @@
 
                       var _list5 = border.calPoints(borderLeftWidth, computedStyle[BORDER_LEFT_STYLE], _deg15, _deg16, bx1, bx1 + borderLeftWidth, bx2 - borderRightWidth, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 3, btlr, btrr);
 
-                      border.renderBorder(_this9, renderMode, ctx, _list5, cacheStyle[BORDER_LEFT_COLOR], dx, dy);
+                      border.renderBorder(_this8, renderMode, ctx, _list5, cacheStyle[BORDER_LEFT_COLOR], dx, dy);
                     }
                   })();
                 }
@@ -22874,19 +22934,19 @@
             i = _length2 - 1 - i;
 
             if (util.isString(bgi)) {
-              var loadBgi = _this9.__loadBgi[i];
+              var loadBgi = _this8.__loadBgi[i];
 
               if (loadBgi.url === bgi) {
-                bg.renderImage(_this9, renderMode, ctx, loadBgi, bx1, by1, bx2, by2, btlr, btrr, bbrr, bblr, computedStyle, i, backgroundSize, backgroundRepeat, false, dx, dy);
+                bg.renderImage(_this8, renderMode, ctx, loadBgi, bx1, by1, bx2, by2, btlr, btrr, bbrr, bblr, computedStyle, i, backgroundSize, backgroundRepeat, false, dx, dy);
               }
             } else if (bgi.k) {
-              var gd = _this9.__gradient(renderMode, ctx, bx1, by1, bx2, by2, bgi, dx, dy);
+              var gd = _this8.__gradient(renderMode, ctx, bx1, by1, bx2, by2, bgi, dx, dy);
 
               if (gd) {
                 if (gd.k === 'conic') {
-                  gradient.renderConic(_this9, renderMode, ctx, gd.v, bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
+                  gradient.renderConic(_this8, renderMode, ctx, gd.v, bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
                 } else {
-                  bg.renderBgc(_this9, renderMode, ctx, gd.v, borderList, bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr, 'fill', false, dx, dy);
+                  bg.renderBgc(_this8, renderMode, ctx, gd.v, borderList, bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr, 'fill', false, dx, dy);
                 }
               }
             }
@@ -22896,7 +22956,7 @@
 
         if (boxShadow) {
           boxShadow.forEach(function (item) {
-            bs.renderBoxShadow(_this9, renderMode, ctx, item, sx1, sy1, sx6, sy6, sx6 - sx1, sy6 - sy1, dx, dy);
+            bs.renderBoxShadow(_this8, renderMode, ctx, item, sx1, sy1, sx6, sy6, sx6 - sx1, sy6 - sy1, dx, dy);
           });
         } // 边框需考虑尖角，两条相交边平分45°夹角
 
@@ -23233,48 +23293,14 @@
     }, {
       key: "updateStyle",
       value: function updateStyle(style) {
-        // let node = this;
-        // let root = node.__root;
         var formatStyle = normalize(style);
-        this.updateFormatStyle(formatStyle); // 有root说明被添加渲染过了
-        // if(root) {
-        //   root.addRefreshTask(node.__task = {
-        //     __before() {
-        //       node.__task = null;
-        //       if(node.__isDestroyed) {
-        //         return;
-        //       }
-        //       // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-        //       let res = {
-        //         node,
-        //         style: formatStyle,
-        //         overwrite: style, // 标识盖原有style样式不仅仅是修改currentStyle，不同于animate
-        //         keys: Object.keys(formatStyle).map(i => {
-        //           if(!GEOM.hasOwnProperty(i)) {
-        //             i = parseInt(i);
-        //           }
-        //           return i;
-        //         }),
-        //       };
-        //       root.__addUpdate(node, root, res);
-        //     },
-        //     __after(diff) {
-        //       if(isFunction(cb)) {
-        //         cb.call(node, diff);
-        //       }
-        //     },
-        //   });
-        // }
-        // // 没有是在如parse()还未添加的时候，可以直接同步覆盖
-        // else {
-        //   Object.assign(this.__currentStyle, formatStyle);
-        // }
+        this.updateFormatStyle(formatStyle);
       } // 传入格式化好key/value的样式
 
     }, {
       key: "updateFormatStyle",
       value: function updateFormatStyle(style) {
-        var _this10 = this;
+        var _this9 = this;
 
         var root = this.__root,
             currentStyle = this.__currentStyle;
@@ -23284,7 +23310,7 @@
             i = parseInt(i);
           }
 
-          if (!equalStyle(i, currentStyle[i], style[i], _this10)) {
+          if (!equalStyle(i, currentStyle[i], style[i], _this9)) {
             currentStyle[i] = style[i];
             keys.push(i);
           }
@@ -23292,36 +23318,13 @@
 
         if (!keys.length) {
           return;
-        } // 有root说明被添加渲染过了，没有是在如parse()还未添加的时候，可以直接同步覆盖
-
+        }
 
         if (root) {
           root.__addUpdate(this, {
+            style: style,
             keys: keys
-          }); // root.addRefreshTask(node.__task = {
-          //   __before() {
-          //     node.__task = null; // 清除在before，防止after的回调增加新的task误删
-          //     if(node.__isDestroyed) {
-          //       return;
-          //     }
-          //     // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-          //     let res = {
-          //       node,
-          //       style,
-          //       keys: Object.keys(style).map(i => {
-          //         if(!GEOM.hasOwnProperty(i)) {
-          //           i = parseInt(i);
-          //         }
-          //         return i;
-          //       }),
-          //     };
-          //     root.__addUpdate(node, root, res);
-          //   },
-          // });
-
-        } // 没有是在如parse()还未添加的时候，可以直接同步覆盖
-        else {
-          Object.assign(this.__currentStyle, style);
+          });
         }
       }
     }, {
@@ -25567,10 +25570,8 @@
           var temp = child.__structure(lv + 1, i);
 
           if (Array.isArray(temp)) {
-            // i += temp.length;
             arr = arr.concat(temp);
           } else {
-            // i++;
             arr.push(temp);
           }
         });
@@ -25688,8 +25689,6 @@
       /**
        * 因为zIndex/abs的变化造成的更新，只需重排这一段顺序即可
        * 即便包含component造成的dom变化也不影响，component作为子节点reflow会再执行，这里重排老的vd
-       * @param structs
-       * @private
        */
       // __updateStruct(structs) {
       //   let { index, total } = this.__struct;
@@ -25741,7 +25740,6 @@
       //       list = list.concat(item.list);
       //     });
       //     list.forEach((struct, i) => {
-      //       // struct[STRUCT_INDEX] = index + i + 1;
       //       struct.index = index + i + 1;
       //     });
       //     structs.splice(index + 1, total, ...list);
@@ -35166,7 +35164,7 @@
         if (!(_node6 instanceof Text)) {
           _node6.__cacheDefs.splice(0);
 
-          _node6.__calStyle(_node6.__currentStyle, _node6.__computedStyle, _node6.__cacheStyle);
+          _node6.__calStyle(_refreshLevel, _node6.__currentStyle, _node6.__computedStyle, _node6.__cacheStyle);
 
           var _matrix2 = _node6.__matrix;
 
@@ -35462,7 +35460,7 @@
        * Geom没有子节点无需汇总局部根，Dom中Img也是，它们的局部根等于自身的cache，其它符合条件的Dom需要生成
        */
       else {
-        node.__calStyle(__currentStyle, __computedStyle, __cacheStyle);
+        node.__calStyle(__refreshLevel, __currentStyle, __computedStyle, __cacheStyle);
 
         var hasContent = node.calContent(__currentStyle, __computedStyle);
 
@@ -35984,7 +35982,7 @@
           }
         }
       } else {
-        node.__calStyle(__currentStyle, __computedStyle, __cacheStyle);
+        node.__calStyle(__refreshLevel, __currentStyle, __computedStyle, __cacheStyle);
 
         if (node.__cacheAsBitmap) {
           mergeList.push({
@@ -36612,7 +36610,6 @@
     return TexCache;
   }();
 
-  var _DIRECTION_HASH;
   var _enums$STYLE_KEY = enums.STYLE_KEY,
       TOP = _enums$STYLE_KEY.TOP,
       RIGHT = _enums$STYLE_KEY.RIGHT,
@@ -36641,7 +36638,6 @@
       TEXT_STROKE_OVER = _enums$STYLE_KEY.TEXT_STROKE_OVER,
       MATRIX = _enums$STYLE_KEY.MATRIX,
       TRANSFORM = _enums$STYLE_KEY.TRANSFORM;
-  (_DIRECTION_HASH = {}, _defineProperty(_DIRECTION_HASH, TOP, true), _defineProperty(_DIRECTION_HASH, RIGHT, true), _defineProperty(_DIRECTION_HASH, BOTTOM, true), _defineProperty(_DIRECTION_HASH, LEFT, true), _DIRECTION_HASH);
   var isNil$7 = util.isNil,
       isObject = util.isObject,
       isFunction$1 = util.isFunction;
@@ -37886,22 +37882,15 @@
               }
             }
           }
-        } // 没有变化，注意add/remove
+        } // 没有变化，注意排除add/remove
 
 
         if (lv === NONE && !addDom && !removeDom) {
           return;
-        } // 本身节点为none，变更无效，此时没有display变化
+        } // 本身节点为none，变更无效，此时没有display变化，add/remove在操作时已经判断不会进入
 
 
-        if (__computedStyle[DISPLAY] === 'none' && !hasDisplay && !removeDom) {
-          return;
-        } // 特殊情况，父节点display:none，子节点进行任意变更，应视为无效
-        // 如果父节点由none变block，这里也return，因为父节点会重新layout+render
-        // 如果父节点由block变none，同上，所以只要current/computed里有none就return
-
-
-        if (__domParent && (__domParent.__currentStyle[DISPLAY] === 'none' || __domParent.__computedStyle[DISPLAY] === 'none')) {
+        if (__computedStyle[DISPLAY] === 'none' && !hasDisplay) {
           return;
         } // transform变化清空重算
 
@@ -37913,6 +37902,8 @@
 
         if (hasZ && __domParent) {
           __domParent.__zIndexChildren = null;
+
+          __domParent.__modifyStruct();
         } // 影响子继承REPAINT的变化，如果被cache住需要清除
 
 
@@ -37981,8 +37972,6 @@
             if (this.renderMode === mode.SVG) {
               __domParent && cleanSvgCache(__domParent);
             }
-
-            node.__updateStruct(this.__structs);
           }
         } else {
           var top = reflow.checkTop(this, node, addDom, removeDom);
@@ -38883,14 +38872,16 @@
         if (!this.__task.length) {
           this.__task.push(cb);
 
-          frame.nextFrame(function () {
-            _this5.__task.splice(0).forEach(function (item) {
-              item && item();
-            });
-          });
+          if (!frame.__task.length) {
+            frame.nextFrame(function () {});
+          }
 
           frame.__rootTask.push(function () {
             _this5.refresh();
+
+            _this5.__task.splice(0).forEach(function (item) {
+              item && item();
+            });
           }); // let r = this.__task = (() => {
           //   this.refresh();
           // });

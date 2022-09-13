@@ -66,12 +66,6 @@ const {
     TRANSFORM,
   },
 } = enums;
-const DIRECTION_HASH = {
-  [TOP]: true,
-  [RIGHT]: true,
-  [BOTTOM]: true,
-  [LEFT]: true,
-};
 const { isNil, isObject, isFunction } = util;
 const { AUTO, PX, PERCENT, INHERIT } = unit;
 const { isRelativeOrAbsolute, equalStyle } = css;
@@ -1178,19 +1172,12 @@ class Root extends Dom {
         }
       }
     }
-    // 没有变化，注意add/remove
+    // 没有变化，注意排除add/remove
     if(lv === NONE && !addDom && !removeDom) {
       return;
     }
-    // 本身节点为none，变更无效，此时没有display变化
-    if(__computedStyle[DISPLAY] === 'none' && !hasDisplay && !removeDom) {
-      return;
-    }
-    // 特殊情况，父节点display:none，子节点进行任意变更，应视为无效
-    // 如果父节点由none变block，这里也return，因为父节点会重新layout+render
-    // 如果父节点由block变none，同上，所以只要current/computed里有none就return
-    if(__domParent
-      && (__domParent.__currentStyle[DISPLAY] === 'none' || __domParent.__computedStyle[DISPLAY] === 'none')) {
+    // 本身节点为none，变更无效，此时没有display变化，add/remove在操作时已经判断不会进入
+    if(__computedStyle[DISPLAY] === 'none' && !hasDisplay) {
       return;
     }
     // transform变化清空重算
@@ -1200,6 +1187,7 @@ class Root extends Dom {
     // 清除parent的zIndexChildren缓存
     if(hasZ && __domParent) {
       __domParent.__zIndexChildren = null;
+      __domParent.__modifyStruct();
     }
     // 影响子继承REPAINT的变化，如果被cache住需要清除
     if(hasVisibility || hasColor || hasTsColor || hasTsWidth || hasTsOver) {
@@ -1265,7 +1253,6 @@ class Root extends Dom {
         if(this.renderMode === mode.SVG) {
           __domParent && cleanSvgCache(__domParent);
         }
-        node.__updateStruct(this.__structs);
       }
     }
     else {
@@ -2016,13 +2003,15 @@ class Root extends Dom {
   __frameRefresh(cb) {
     if(!this.__task.length) {
       this.__task.push(cb);
-      frame.nextFrame(() => {
+      if(!frame.__task.length) {
+        frame.nextFrame(() => {
+        });
+      }
+      frame.__rootTask.push(() => {
+        this.refresh();
         this.__task.splice(0).forEach(item => {
           item && item();
         });
-      });
-      frame.__rootTask.push(() => {
-        this.refresh();
       });
       // let r = this.__task = (() => {
       //   this.refresh();

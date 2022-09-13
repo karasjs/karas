@@ -264,11 +264,9 @@ class Dom extends Xom {
     zIndexChildren.forEach((child, i) => {
       let temp = child.__structure(lv + 1, i);
       if(Array.isArray(temp)) {
-        // i += temp.length;
         arr = arr.concat(temp);
       }
       else {
-        // i++;
         arr.push(temp);
       }
     });
@@ -364,8 +362,6 @@ class Dom extends Xom {
   /**
    * 因为zIndex/abs的变化造成的更新，只需重排这一段顺序即可
    * 即便包含component造成的dom变化也不影响，component作为子节点reflow会再执行，这里重排老的vd
-   * @param structs
-   * @private
    */
   // __updateStruct(structs) {
   //   let { index, total } = this.__struct;
@@ -417,7 +413,6 @@ class Dom extends Xom {
   //       list = list.concat(item.list);
   //     });
   //     list.forEach((struct, i) => {
-  //       // struct[STRUCT_INDEX] = index + i + 1;
   //       struct.index = index + i + 1;
   //     });
   //     structs.splice(index + 1, total, ...list);

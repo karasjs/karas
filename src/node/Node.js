@@ -23,10 +23,10 @@ class Node {
     this.__isDestroyed = true;
   }
 
-  __structure(i, lv, j) {
+  __structure(lv, j) {
     return this.__struct = {
       node: this,
-      index: i,
+      // index: i,
       childIndex: j,
       lv,
     };

@@ -48,7 +48,10 @@ class Img extends Dom {
     }
     else {
       let ca = inject.IMG[src];
-      if(ca && ca.state === inject.LOADED) {
+      if(!ca) {
+        inject.measureImg(src, null);
+      }
+      else if(ca && ca.state === inject.LOADED) {
         loadImg.source = ca.source;
         loadImg.width = ca.width;
         loadImg.height = ca.height;
@@ -62,19 +65,18 @@ class Img extends Dom {
    * 只固定宽高一个时，加载完要计算缩放比，重新布局绘制
    * 都没有固定，按照图片尺寸，重新布局绘制
    * 这里计算非固定的情况，将其改为固定供布局渲染使用，未加载完成为0
-   * @param data
-   * @param isInline
-   * @returns {{fixedWidth: boolean, w: *, x: *, h: *, y: *, fixedHeight: boolean}}
-   * @private
    */
   __preLayout(data, isInline) {
     let res = super.__preLayout(data, false);
     let loadImg = this.__loadImg;
     // 可能已提前加载好了，或有缓存，为减少刷新直接使用
-    if(!loadImg.error) {
-      let src = loadImg.src;
+    let src = loadImg.src;
+    if(src) {
       let cache = inject.IMG[src];
-      if(cache && cache.state === inject.LOADED) {
+      if(!cache || cache.state === inject.LOADING) {
+        this.__loadAndRefresh(loadImg, null);
+      }
+      else if(cache && cache.state === inject.LOADED) {
         loadImg.source = cache.source;
         loadImg.width = cache.width;
         loadImg.height = cache.height;
@@ -130,9 +132,22 @@ class Img extends Dom {
     this.__task = null;
   }
 
-  // img强制有内容
-  __calContent(currentStyle, computedStyle) {
-    return computedStyle[VISIBILITY] !== 'hidden';
+  // img根据加载情况更新__hasContent
+  calContent(__currentStyle, __computedStyle) {
+    let res = super.calContent(__currentStyle, __computedStyle);
+    if(!res) {
+      let {
+        __loadImg: loadImg,
+      } = this;
+      if(loadImg.loading) {
+        this.__loadAndRefresh(loadImg, null);
+      }
+      if(__computedStyle[VISIBILITY] !== 'hidden' && (__computedStyle[WIDTH] || __computedStyle[HEIGHT])
+        && loadImg.source) {
+        res = true;
+      }
+    }
+    return res;
   }
 
   render(renderMode, ctx, dx = 0, dy = 0) {
@@ -142,8 +157,7 @@ class Img extends Dom {
       props: {
         placeholder,
       },
-      computedStyle,
-      computedStyle: {
+      __computedStyle: {
         [DISPLAY]: display,
         [BORDER_TOP_LEFT_RADIUS]: borderTopLeftRadius,
         [BORDER_TOP_RIGHT_RADIUS]: borderTopRightRadius,
@@ -153,12 +167,7 @@ class Img extends Dom {
       },
       virtualDom,
       __loadImg: loadImg,
-      root,
     } = this;
-    // 没source且不error时加载图片
-    if(!loadImg.source && !loadImg.error && !loadImg.loading) {
-      this.__loadAndRefresh(loadImg, root, ctx, placeholder, computedStyle, width, height);
-    }
     if(isDestroyed || display === 'none' || visibility === 'hidden' || renderMode === mode.WEBGL) {
       return res;
     }
@@ -334,13 +343,6 @@ class Img extends Dom {
     return res;
   }
 
-  // img没加载时，清空，这样Xom就认为没内容不生成cache，防止img先绘制cache再绘制主屏，重复
-  // __releaseWhenEmpty(__cache) {
-  //   if(!this.__loadImg.error && !this.__loadImg.source) {
-  //     return super.__releaseWhenEmpty(__cache);
-  //   }
-  // }
-
   __isRealInline() {
     return false;
   }
@@ -440,77 +442,34 @@ class Img extends Dom {
     return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], isDirectChild);
   }
 
-  __loadAndRefresh(loadImg, root, ctx, placeholder, computedStyle, width, height, cb) {
+  __loadAndRefresh(loadImg, cb) {
     let self = this;
     // 先清空之前可能的
     if(loadImg.source || loadImg.error) {
-      root.delRefreshTask(self.__task);
-      root.addRefreshTask(self.__task = {
-        __before() {
-          self.__task = null; // 清除在before，防止after的回调增加新的task误删
-          if(self.isDestroyed) {
-            return;
-          }
-          // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-          let res = {
-            node: self,
-            focus: level.REFLOW, // 没有样式变化但内容尺寸发生了变化强制执行
-          };
-          root.__addUpdate(self, root, res);
-        },
-      });
       loadImg.source = null;
     }
     loadImg.loading = true;
+    let root = this.__root, ctx = root.ctx;
+    let placeholder = this.props.placeholder, computedStyle = this.__computedStyle;
+    let width = computedStyle[WIDTH], height = computedStyle[HEIGHT];
     // 再测量，可能瞬间完成替换掉上面的
     inject.measureImg(loadImg.src, data => {
       // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
-      if(data.url === loadImg.src && !self.isDestroyed) {
+      if(data.url === loadImg.src) {
         loadImg.cache && (loadImg.cache.cache = false);
         loadImg.loading = false;
         function reload() {
-          let { currentStyle: { [WIDTH]: width, [HEIGHT]: height } } = self;
-          root.delRefreshTask(self.__task);
+          let { __currentStyle: { [WIDTH]: width, [HEIGHT]: height } } = self;
           if(width.u !== AUTO && height.u !== AUTO) {
-            root.addRefreshTask(self.__task = {
-              __before() {
-                self.__task = null;
-                if(self.isDestroyed) {
-                  return;
-                }
-                // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-                let res = {
-                  node: self,
-                  focus: level.REPAINT,
-                };
-                root.__addUpdate(self, root, res);
-              },
-              __after() {
-                if(isFunction(cb)) {
-                  cb.call(self);
-                }
-              },
+            root.__addUpdate(self, {
+              focus: level.REPAINT, // 已知宽高无需重新布局
+              cb,
             });
           }
           else {
-            root.addRefreshTask(self.__task = {
-              __before() {
-                self.__task = null;
-                if(self.isDestroyed) {
-                  return;
-                }
-                // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-                let res = {
-                  node: self,
-                  focus: level.REFLOW, // 没有样式变化但内容尺寸发生了变化强制执行
-                };
-                root.__addUpdate(self, root, res);
-              },
-              __after() {
-                if(isFunction(cb)) {
-                  cb.call(self);
-                }
-              },
+            root.__addUpdate(self, {
+              focus: level.REFLOW,
+              cb,
             });
           }
         }
@@ -540,7 +499,7 @@ class Img extends Dom {
           loadImg.error = true;
         }
         // 可见状态进行刷新操作，visibility某些情况需要刷新，可能宽高未定义要重新布局
-        if(computedStyle[DISPLAY] !== 'none') {
+        if(computedStyle[DISPLAY] !== 'none' && !self.__isDestroyed) {
           reload();
         }
       }
@@ -553,43 +512,46 @@ class Img extends Dom {
   }
 
   updateSrc(v, cb) {
-    let self = this;
-    let loadImg = self.__loadImg;
-    let root = this.root;
+    let loadImg = this.__loadImg;
     // 相等或空且当前error直接返回
-    if(v === loadImg.src || !v && loadImg.error) {
+    if(v === loadImg.src || this.__isDestroyed || !v && loadImg.error) {
+      loadImg.src = v;
+      inject.measureImg(v, null);
       if(isFunction(cb)) {
-        cb(-1);
+        cb();
       }
+      return;
     }
-    else if(v) {
-      loadImg.src = v;
-      self.__loadAndRefresh(loadImg, root, root.ctx, self.props.placeholder, self.computedStyle, self.width, self.height, cb);
-    }
-    else {
-      loadImg.src = v;
-      loadImg.source = null;
-      loadImg.error = true;
-      root.delRefreshTask(self.__task);
-      root.addRefreshTask(self.__task = {
-        __before() {
-          self.__task = null;
-          if(self.isDestroyed) {
-            return;
-          }
-          let res = {
-            node: self,
-            focus: level.REFLOW,
-          };
-          root.__addUpdate(self, root, res);
-        },
-        __after(diff) {
-          if(isFunction(cb)) {
-            cb(diff);
-          }
-        },
-      });
-    }
+    loadImg.src = v;
+    this.__loadAndRefresh(loadImg, cb)
+    // else if(v) {
+    //   loadImg.src = v;
+    //   self.__loadAndRefresh(loadImg, root, root.ctx, self.props.placeholder, self.computedStyle, self.width, self.height, cb);
+    // }
+    // else {
+    //   loadImg.src = v;
+    //   loadImg.source = null;
+    //   loadImg.error = true;
+    //   root.delRefreshTask(self.__task);
+    //   root.addRefreshTask(self.__task = {
+    //     __before() {
+    //       self.__task = null;
+    //       if(self.isDestroyed) {
+    //         return;
+    //       }
+    //       let res = {
+    //         node: self,
+    //         focus: level.REFLOW,
+    //       };
+    //       root.__addUpdate(self, root, res);
+    //     },
+    //     __after(diff) {
+    //       if(isFunction(cb)) {
+    //         cb(diff);
+    //       }
+    //     },
+    //   });
+    // }
   }
 
   appendChild() {

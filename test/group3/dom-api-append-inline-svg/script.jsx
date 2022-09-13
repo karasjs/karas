@@ -4,12 +4,9 @@ let root = karas.render(
   </svg>,
   '#test'
 );
-let span = <span>2</span>;
-root.appendChild(span, function() {
-  let span = <span>3</span>;
-  root.appendChild(span, function() {
-    let span = <span>4</span>;
-    root.children[0].appendChild(span, function() {
+root.appendChild(<span>2</span>, function() {
+  root.appendChild(<span>3</span>, function() {
+    root.children[0].appendChild(<span>4</span>, function() {
       let input = document.querySelector('input');
       input.value = document.querySelector('svg').innerHTML;
     });

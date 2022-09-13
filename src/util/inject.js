@@ -147,7 +147,7 @@ let inject = {
   measureImg(url, cb) {
     if(Array.isArray(url)) {
       if(!url.length) {
-        return cb();
+        return cb && cb();
       }
       let count = 0;
       let len = url.length;
@@ -156,7 +156,7 @@ let inject = {
         inject.measureImg(item, function(cache) {
           list[i] = cache;
           if(++count === len) {
-            cb(list);
+            cb && cb(list);
           }
         });
       });

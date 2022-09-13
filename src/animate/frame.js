@@ -22,7 +22,7 @@ let isPause;
 
 class Frame {
   constructor() {
-    this.__hookTask = []; // 动画刷新后，每个root注册的刷新回调执行
+    this.__rootTask = []; // 动画刷新后，每个root注册的刷新回调执行
     this.__task = [];
     this.__now = null;
   }
@@ -47,15 +47,16 @@ class Frame {
         // 优先动画计算
         let clone = task.slice(0);
         let length = clone.length;
+        // 普通的before/after，动画计算在before，所有回调在after
         traversal(clone, length, diff, false);
-        // 执行动画造成的每个Root的刷新并清空
-        let list = self.__hookTask.splice(0);
+        let list = self.__rootTask.splice(0);
         for(let i = 0, len = list.length; i < len; i++) {
           let item = list[i];
-          item && item();
+          item && item(diff);
         }
-        // 普通的before/after
+        // 刷新成功后调用after，确保图像生成
         traversal(clone, length, diff, true);
+        // 执行每个Root的刷新并清空
         // 还有则继续，没有则停止节省性能
         if(task.length) {
           cb();

@@ -257,18 +257,18 @@ class Dom extends Xom {
     this.__ellipsis = null; // 虚拟节点，有的话渲染
   }
 
-  __structure(i, lv, j) {
-    let res = super.__structure(i++, lv, j);
+  __structure(lv, j) {
+    let res = super.__structure(lv, j);
     let arr = [res];
     let zIndexChildren = this.__zIndexChildren = this.__zIndexChildren || genZIndexChildren(this);
-    zIndexChildren.forEach((child, j) => {
-      let temp = child.__structure(i, lv + 1, j);
+    zIndexChildren.forEach((child, i) => {
+      let temp = child.__structure(lv + 1, i);
       if(Array.isArray(temp)) {
-        i += temp.length;
+        // i += temp.length;
         arr = arr.concat(temp);
       }
       else {
-        i++;
+        // i++;
         arr.push(temp);
       }
     });
@@ -278,21 +278,87 @@ class Dom extends Xom {
     return arr;
   }
 
-  __modifyStruct(root, offset = 0) {
+  __modifyStruct() {
     let struct = this.__struct;
     let total = struct.total || 0;
+    let root = this.__root, __structs = root.__structs;
     // 新生成了struct，引用也变了
-    let nss = this.__structure(struct.index, struct.lv, struct.childIndex);
-    root.__structs.splice(struct.index + offset, total + 1, ...nss);
+    let nss = this.__structure(struct.lv, struct.childIndex);
+    let i = __structs.indexOf(struct);
+    root.__structs.splice(i, total + 1, ...nss);
     let d = 0;
     if(this !== root) {
       struct = this.__struct;
       d = (struct.total || 0) - total;
-      let ps = this.__domParent.__struct;
-      ps.total = ps.total || 0;
-      ps.total += d;
+      if(d) {
+        let p = this.__domParent;
+        while(p) {
+          p.__struct.total = p.__struct.total || 0;
+          p.__struct.total += d;
+          p = p.__domParent;
+        }
+      }
     }
-    return [struct, d];
+    // return [struct, d];
+  }
+
+  __insertStruct(child, childIndex) {
+    let struct = this.__struct;
+    let total = struct.total = struct.total || 0;
+    let cs = child.__structure(struct.lv + 1, childIndex);
+    let root = this.__root, structs = root.__structs;
+    // 根据是否有prev确定插入索引位置
+    let prev = child.__prev;
+    let i;
+    if(prev) {
+      let ps = prev.__struct;
+      let total = ps.total || 0;
+      i = structs.indexOf(ps) + total + 1;
+    }
+    else {
+      i = structs.indexOf(struct) + total + 1;
+    }
+    if(Array.isArray(cs)) {
+      structs.splice(i, 0, ...cs);
+    }
+    else {
+      structs.splice(i, 0, cs);
+    }
+    // 调整后面children的childIndex，+1
+    let next = child.__next;
+    while(next) {
+      next.__struct.childIndex++;
+      next = next.__next;
+    }
+    // 向上添加parent的total数量
+    total = (cs.total || 0) + 1;
+    struct.total += total;
+    let p = this.__domParent;
+    while(p) {
+      struct = p.__struct;
+      struct.total = struct.total || 0;
+      struct.total += total;
+      p = p.__domParent;
+    }
+  }
+
+  __deleteStruct(child) {
+    let cs = child.__struct;
+    let total = (cs.total || 0) + 1;
+    let root = this.__root, structs = root.__structs;
+    let i = structs.indexOf(cs);
+    structs.splice(i, total);
+    // 向上减少parent的total数量
+    let struct = this.__struct;
+    struct.total = struct.total || 0;
+    struct.total -= total;
+    let p = this.__domParent;
+    while(p) {
+      struct = p.__struct;
+      struct.total = struct.total || 0;
+      struct.total -= total;
+      p = p.__domParent;
+    }
   }
 
   /**
@@ -301,62 +367,62 @@ class Dom extends Xom {
    * @param structs
    * @private
    */
-  __updateStruct(structs) {
-    let { index, total } = this.__struct;
-    let zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
-    let length = zIndexChildren.length;
-    if(length === 1) {
-      return;
-    }
-    zIndexChildren.forEach((child, i) => {
-      if(child instanceof Component) {
-        child = child.shadowRoot;
-      }
-      let ns = child.__struct;
-      // 一般肯定有的，但是在zIndex更新和addChild同时发生时，新添加的尚无，zIndex更新会报错，临时解决
-      if(ns) {
-        ns.childIndex = i; // 仅后面排序用
-      }
-    });
-    // 按直接子节点划分为相同数量的若干段进行排序
-    let arr = [];
-    let source = [];
-    for(let i = index + 1; i <= index + total; i++) {
-      let child = structs[i];
-      // 同上防止
-      if(child) {
-        let o = {
-          child,
-          list: structs.slice(child.index, child.index + (child.total || 0) + 1),
-        };
-        arr.push(o);
-        source.push(o);
-        i += child.total || 0;
-      }
-    }
-    arr.sort(function(a, b) {
-      return a.child.childIndex - b.child.childIndex;
-    });
-    // 是否有变更，有才进行重新计算
-    let needSort;
-    for(let i = 0, len = source.length; i < len; i++) {
-      if(source[i] !== arr[i]) {
-        needSort = true;
-        break;
-      }
-    }
-    if(needSort) {
-      let list = [];
-      arr.forEach(item => {
-        list = list.concat(item.list);
-      });
-      list.forEach((struct, i) => {
-        // struct[STRUCT_INDEX] = index + i + 1;
-        struct.index = index + i + 1;
-      });
-      structs.splice(index + 1, total, ...list);
-    }
-  }
+  // __updateStruct(structs) {
+  //   let { index, total } = this.__struct;
+  //   let zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
+  //   let length = zIndexChildren.length;
+  //   if(length === 1) {
+  //     return;
+  //   }
+  //   zIndexChildren.forEach((child, i) => {
+  //     if(child instanceof Component) {
+  //       child = child.shadowRoot;
+  //     }
+  //     let ns = child.__struct;
+  //     // 一般肯定有的，但是在zIndex更新和addChild同时发生时，新添加的尚无，zIndex更新会报错，临时解决
+  //     if(ns) {
+  //       ns.childIndex = i; // 仅后面排序用
+  //     }
+  //   });
+  //   // 按直接子节点划分为相同数量的若干段进行排序
+  //   let arr = [];
+  //   let source = [];
+  //   for(let i = index + 1; i <= index + total; i++) {
+  //     let child = structs[i];
+  //     // 同上防止
+  //     if(child) {
+  //       let o = {
+  //         child,
+  //         list: structs.slice(child.index, child.index + (child.total || 0) + 1),
+  //       };
+  //       arr.push(o);
+  //       source.push(o);
+  //       i += child.total || 0;
+  //     }
+  //   }
+  //   arr.sort(function(a, b) {
+  //     return a.child.childIndex - b.child.childIndex;
+  //   });
+  //   // 是否有变更，有才进行重新计算
+  //   let needSort;
+  //   for(let i = 0, len = source.length; i < len; i++) {
+  //     if(source[i] !== arr[i]) {
+  //       needSort = true;
+  //       break;
+  //     }
+  //   }
+  //   if(needSort) {
+  //     let list = [];
+  //     arr.forEach(item => {
+  //       list = list.concat(item.list);
+  //     });
+  //     list.forEach((struct, i) => {
+  //       // struct[STRUCT_INDEX] = index + i + 1;
+  //       struct.index = index + i + 1;
+  //     });
+  //     structs.splice(index + 1, total, ...list);
+  //   }
+  // }
 
   /**
    * 给定父宽度情况下，尝试行内放下后的剩余宽度，为负数即放不下，这里只会出现行内级即inline(Block)
@@ -472,6 +538,9 @@ class Dom extends Xom {
   }
 
   __offsetY(diff, isLayout, lv) {
+    if(this.computedStyle[DISPLAY] === 'none') {
+      return;
+    }
     super.__offsetY(diff, isLayout, lv);
     let ep = this.__ellipsis;
     if(ep) {
@@ -3071,12 +3140,12 @@ class Dom extends Xom {
         }
       }
       if(item instanceof Dom) {
-        item.__layoutAbs(isRelativeOrAbsolute(item) ? item : container, data);
+        item.__layoutAbs(isRelativeOrAbsolute(item) ? item : container, data, null);
       }
       else if(item instanceof Component) {
         let sr = item.shadowRoot;
         if(sr instanceof Dom) {
-          sr.__layoutAbs(sr, data);
+          sr.__layoutAbs(sr, data, null);
         }
       }
     });
@@ -3191,405 +3260,207 @@ class Dom extends Xom {
   }
 
   appendChild(child, cb) {
-    let self = this;
-    let { root, host } = self;
-    if(child && !(child instanceof Xom || child instanceof Component)) {
+    let { __root: root, __host: host, __children: children } = this;
+    if(!(child instanceof Xom || child instanceof Component)) {
       child = new Text(child);
     }
-    if(child instanceof Xom || child instanceof Component || child instanceof Text) {
-      root.delRefreshTask(child.__task);
-      child.remove();
-      root.addRefreshTask(child.__task = {
-        __before() {
-          child.__task = null; // 清除在before，防止after的回调增加新的task误删
-          let len = self.children.length;
-          if(len) {
-            let last = self.children[len - 1];
-            last.__next = child;
-            child.__prev = last;
-          }
-          self.children.push(child);
-          self.__zIndexChildren = null;
-          builder.relation(root, host, self, child, {});
-          // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-          let res = {
-            node: child,
-            focus: level.REFLOW,
-            addDom: true,
-          };
-          root.__addUpdate(child, root, res);
-        },
-        __after(diff) {
-          if(isFunction(cb)) {
-            cb.call(child, diff);
-          }
-        },
-      });
+    child.remove();
+    // 只设兄弟/parent，children在relation做，离屏则等真实添加时机
+    let len = children.length;
+    if(len) {
+      let last = children[len - 1];
+      last.__next = child;
+      child.__prev = last;
     }
-    // if(!isNil(json) && !self.isDestroyed) {
-    //   let { root, host } = self;
-    //   if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
-    //     if(json.vd) {
-    //       root.delRefreshTask(json.vd.__task);
-    //       json.vd.remove();
-    //     }
-    //     let vd;
-    //     if($$type.TYPE_CP === json.$$type) {
-    //       vd = builder.initCp2(json, root, host, self);
-    //     }
-    //     else {
-    //       vd = builder.initDom(json, root, host, self);
-    //     }
-    //     root.addRefreshTask(vd.__task = {
-    //       __before() {
-    //         vd.__task = null; // 清除在before，防止after的回调增加新的task误删
-    //         self.__json.children.push(json);
-    //         let len = self.children.length;
-    //         if(len) {
-    //           let last = self.children[len - 1];
-    //           last.__next = vd;
-    //           vd.__prev = last;
-    //         }
-    //         self.children.push(vd);
-    //         self.__zIndexChildren = null;
-    //         // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-    //         let res = {
-    //           node: vd,
-    //           focus: level.REFLOW,
-    //           addDom: true,
-    //         };
-    //         root.__addUpdate(vd, root, res);
-    //       },
-    //       __after(diff) {
-    //         if(isFunction(cb)) {
-    //           cb.call(vd, diff);
-    //         }
-    //       },
-    //     });
-    //   }
-    //   else {
-    //     throw new Error('Invalid parameter in appendChild.');
-    //   }
-    // }
+    child.__parent = this;
+    children.push(child);
+    this.__zIndexChildren = null;
+    // 离屏情况，不刷新
+    if(this.__isDestroyed) {
+      if(isFunction(cb)) {
+        cb();
+      }
+      return;
+    }
+    // 在dom中则整体设置关系和struct，不可见提前跳出
+    builder.relation(root, host, this, child, {});
+    this.__insertStruct(child, len);
+    // 可能为component，不能用__currentStyle
+    if(child.currentStyle[DISPLAY] === 'none' || this.__computedStyle[DISPLAY] === 'none') {
+      child.__layoutNone();
+      if(isFunction(cb)) {
+        cb();
+      }
+      return;
+    }
+    // 在reflow过程中设置struct，text视为父变更
+    if(child instanceof Text) {
+      child = this;
+    }
+    root.__addUpdate(child, {
+      focus: level.REFLOW,
+      addDom: true,
+      cb,
+    });
   }
 
   prependChild(child, cb) {
-    let self = this;
-    let { root, host } = self;
-    if(child && !(child instanceof Xom || child instanceof Component)) {
+    let { __root: root, __host: host, __children: children } = this;
+    if(!(child instanceof Xom || child instanceof Component)) {
       child = new Text(child);
     }
-    if(child instanceof Xom || child instanceof Component || child instanceof Text) {
-      root.delRefreshTask(child.__task);
-      child.remove();
-      root.addRefreshTask(child.__task = {
-        __before() {
-          child.__task = null;
-          let len = self.children.length;
-          if(len) {
-            let first = self.children[0];
-            first.__prev = child;
-            child.__next = child;
-          }
-          self.children.unshift(child);
-          self.__zIndexChildren = null;
-          builder.relation(root, host, self, child, {});
-          let res = {
-            node: child,
-            focus: level.REFLOW,
-            addDom: true,
-          };
-          root.__addUpdate(child, root, res);
-        },
-        __after(diff) {
-          if(isFunction(cb)) {
-            cb.call(child, diff);
-          }
-        },
-      });
+    child.remove();
+    // 只设兄弟/parent，children在relation做，离屏则等真实添加时机
+    let len = children.length;
+    if(len) {
+      let first = children[0];
+      first.__prev = child;
+      child.__next = first;
     }
-    // if(!isNil(json) && !self.isDestroyed) {
-    //   let { root, host } = self;
-    //   if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
-    //     if(json.vd) {
-    //       root.delRefreshTask(json.vd.__task);
-    //       json.vd.remove();
-    //     }
-    //     let vd;
-    //     if($$type.TYPE_CP === json.$$type) {
-    //       vd = builder.initCp2(json, root, host, self);
-    //     }
-    //     else {
-    //       vd = builder.initDom(json, root, host, self);
-    //     }
-    //     root.addRefreshTask(vd.__task = {
-    //       __before() {
-    //         vd.__task = null;
-    //         self.__json.children.unshift(json);
-    //         let len = self.children.length;
-    //         if(len) {
-    //           let first = self.children[0];
-    //           first.__prev = vd;
-    //           vd.__next = first;
-    //         }
-    //         self.children.unshift(vd);
-    //         self.__zIndexChildren = null;
-    //         // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-    //         let res = {
-    //           node: vd,
-    //           focus: level.REFLOW,
-    //           addDom: true,
-    //         };
-    //         root.__addUpdate(vd, root, res);
-    //       },
-    //       __after(diff) {
-    //         if(isFunction(cb)) {
-    //           cb.call(vd, diff);
-    //         }
-    //       },
-    //     });
-    //   }
-    //   else {
-    //     throw new Error('Invalid parameter in prependChild.');
-    //   }
-    // }
+    child.__parent = this;
+    children.unshift(child);
+    this.__zIndexChildren = null;
+    // 离屏情况，不刷新
+    if(this.__isDestroyed) {
+      if(isFunction(cb)) {
+        cb();
+      }
+      return;
+    }
+    // 在dom中则整体设置关系和struct，不可见提前跳出
+    builder.relation(root, host, this, child, {});
+    this.__insertStruct(child, 0);
+    // 可能为component，不能用__currentStyle
+    if(child.currentStyle[DISPLAY] === 'none' || this.__computedStyle[DISPLAY] === 'none') {
+      child.__layoutNone();
+      if(isFunction(cb)) {
+        cb();
+      }
+      return;
+    }
+    // 可见在reflow过程中设置struct
+    if(child instanceof Text) {
+      child = this;
+    }
+    root.__addUpdate(child, {
+      focus: level.REFLOW,
+      addDom: true,
+      cb,
+    });
   }
 
   insertBefore(child, cb) {
-    let self = this;
-    let { root, host, domParent, isDestroyed } = self;
-    if(isDestroyed) {
-      throw new Error('InsertBefore target is destroyed.');
-    }
-    if(child && !(child instanceof Xom || child instanceof Component)) {
+    let { __root: root } = this;
+    if(!(child instanceof Xom || child instanceof Component)) {
       child = new Text(child);
     }
-    if(child instanceof Xom || child instanceof Component || child instanceof Text) {
-      root.delRefreshTask(child.__task);
-      child.remove();
-      root.addRefreshTask(child.__task = {
-        __before() {
-          child.__task = null;
-          let children = domParent.children;
-          let i = children.indexOf(self);
-          if(i === -1) {
-            throw new Error('InsertBefore exception.');
-          }
-          if(i) {
-            children[i - 1].__next = child;
-            child.__prev = children[i - 1];
-          }
-          child.__next = self;
-          self.__prev = child;
-          children.splice(i, 0, child);
-          domParent.__zIndexChildren = null;
-          builder.relation(root, host, domParent, child, {});
-          let res = {
-            node: child,
-            focus: level.REFLOW,
-            addDom: true,
-          };
-          root.__addUpdate(child, root, res);
-        },
-        __after(diff) {
-          if(isFunction(cb)) {
-            cb.call(child, diff);
-          }
-        },
-      });
+    child.remove();
+    let parent = this.isShadowRoot ? this.hostRoot.__parent: this.__parent;
+    let i;
+    // 即便没被添加到dom中，也有可能有父节点，除非是离屏根节点，注意组件
+    if(parent) {
+      let children = parent.__children;
+      let target = this.isShadowRoot ? this.hostRoot : this;
+      i = children.indexOf(target);
+      if(i === -1) {
+        throw new Error('Index exception of insertBefore()');
+      }
+      let prev = target.__prev;
+      if(prev) {
+        prev.__next = child;
+        child.__prev = prev;
+        child.__next = target;
+        target.__prev = child;
+      }
+      children.splice(i, 0, child);
+      parent.__zIndexChildren = null;
     }
-    // if(!isNil(json) && !self.isDestroyed && self.domParent) {
-    //   let { root, domParent } = self;
-    //   let host = domParent.hostRoot;
-    //   if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
-    //     if(json.vd) {
-    //       root.delRefreshTask(json.vd.__task);
-    //       json.vd.remove();
-    //     }
-    //     let vd;
-    //     if($$type.TYPE_CP === json.$$type) {
-    //       vd = builder.initCp2(json, root, host, domParent);
-    //     }
-    //     else {
-    //       vd = builder.initDom(json, root, host, domParent);
-    //     }
-    //     root.addRefreshTask(vd.__task = {
-    //       __before() {
-    //         vd.__task = null;
-    //         let i = 0, has, __json = domParent.__json, children = __json.children, len = children.length;
-    //         let pJson = self.isShadowRoot ? self.hostRoot.__json : self.__json;
-    //         for(; i < len; i++) {
-    //           if(children[i] === pJson) {
-    //             has = true;
-    //             break;
-    //           }
-    //         }
-    //         if(!has) {
-    //           throw new Error('InsertBefore exception.');
-    //         }
-    //         // 插入注意开头位置处理
-    //         if(i) {
-    //           children.splice(i, 0, json);
-    //           vd.__next = self;
-    //           vd.__prev = self.__prev;
-    //           self.__prev = vd;
-    //           domParent.children.splice(i, 0, vd);
-    //         }
-    //         else {
-    //           if(len) {
-    //             let first = domParent.children[0];
-    //             first.__prev = vd;
-    //             vd.__next = first;
-    //           }
-    //           children.unshift(json);
-    //           domParent.children.unshift(vd);
-    //         }
-    //         domParent.__zIndexChildren = null;
-    //         // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-    //         let res = {
-    //           node: vd,
-    //           focus: level.REFLOW,
-    //           addDom: true,
-    //         };
-    //         root.__addUpdate(vd, root, res);
-    //       },
-    //       __after(diff) {
-    //         if(isFunction(cb)) {
-    //           cb.call(vd, diff);
-    //         }
-    //       },
-    //     });
-    //   }
-    //   else {
-    //     throw new Error('Invalid parameter in insertBefore.');
-    //   }
-    // }
+    else {
+      throw new Error('InsertBefore() illegal');
+    }
+    // 离屏情况，不刷新
+    if(this.__isDestroyed) {
+      if(isFunction(cb)) {
+        cb();
+      }
+      return;
+    }
+    // 在dom中则整体设置关系和struct，不可见提前跳出
+    builder.relation(root, parent.__host, parent, child, {});
+    this.__insertStruct(child, i);
+    if(child.currentStyle[DISPLAY] === 'none' || parent.__computedStyle[DISPLAY] === 'none') {
+      child.__layoutNone();
+      if(isFunction(cb)) {
+        cb();
+      }
+      return;
+    }
+    if(child instanceof Text) {
+      child = parent;
+    }
+    root.__addUpdate(child, {
+      focus: level.REFLOW,
+      addDom: true,
+      cb,
+    });
   }
 
   insertAfter(child, cb) {
-    let self = this;
-    let { root, host, domParent, isDestroyed } = self;
-    if(isDestroyed) {
-      throw new Error('InsertBefore target is destroyed.');
-    }
+    let { __root: root } = this;
     if(child && !(child instanceof Xom || child instanceof Component)) {
       child = new Text(child);
     }
-    if(child instanceof Xom || child instanceof Component || child instanceof Text) {
-      root.delRefreshTask(child.__task);
-      child.remove();
-      root.addRefreshTask(child.__task = {
-        __before() {
-          child.__task = null;
-          let children = domParent.children;
-          let i = children.indexOf(self);
-          if(i === -1) {
-            throw new Error('InsertBefore exception.');
-          }
-          if(i < children.length - 1) {
-            children[i + 1].__prev = child;
-            child.__next = children[i + 1];
-          }
-          child.__prev = self;
-          self.__next = child;
-          children.splice(i + 1, 0, child);
-          domParent.__zIndexChildren = null;
-          builder.relation(root, host, domParent, child, {});
-          let res = {
-            node: child,
-            focus: level.REFLOW,
-            addDom: true,
-          };
-          root.__addUpdate(child, root, res);
-        },
-        __after(diff) {
-          if(isFunction(cb)) {
-            cb.call(child, diff);
-          }
-        },
-      });
+    child.remove();
+    let parent = this.isShadowRoot ? this.hostRoot.__parent: this.__parent;
+    let i;
+    // 即便没被添加到dom中，也有可能有父节点，除非是离屏根节点，注意组件
+    if(parent) {
+      let children = parent.__children;
+      let target = this.isShadowRoot ? this.hostRoot : this;
+      i = children.indexOf(target);
+      if(i === -1) {
+        throw new Error('Index exception of insertBefore()');
+      }
+      children.splice(i + 1, 0, child);
+      parent.__zIndexChildren = null;
     }
-    // if(!isNil(json) && !self.isDestroyed && self.domParent) {
-    //   let { root, domParent } = self;
-    //   let host = domParent.hostRoot;
-    //   if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
-    //     if(json.vd) {
-    //       root.delRefreshTask(json.vd.__task);
-    //       json.vd.remove();
-    //     }
-    //     let vd;
-    //     if($$type.TYPE_CP === json.$$type) {
-    //       vd = builder.initCp2(json, root, host, domParent);
-    //     }
-    //     else {
-    //       vd = builder.initDom(json, root, host, domParent);
-    //     }
-    //     root.addRefreshTask(vd.__task = {
-    //       __before() {
-    //         vd.__task = null;
-    //         let i = 0, has, __json = domParent.__json, children = __json.children, len = children.length;
-    //         let pJson = self.isShadowRoot ? self.hostRoot.__json : self.__json;
-    //         for(; i < len; i++) {
-    //           if(children[i] === pJson) {
-    //             has = true;
-    //             break;
-    //           }
-    //         }
-    //         if(!has) {
-    //           throw new Error('insertAfter exception.');
-    //         }
-    //         // 插入注意末尾位置处理
-    //         if(i < len - 1) {
-    //           children.splice(i + 1, 0, json);
-    //           vd.__prev = self;
-    //           vd.__next = self.__next;
-    //           self.__next = vd;
-    //           domParent.children.splice(i + 1, 0, vd);
-    //         }
-    //         else {
-    //           if(len) {
-    //             let last = domParent.children[len - 1];
-    //             last.__next = vd;
-    //             vd.__prev = last;
-    //           }
-    //           children.push(json);
-    //           domParent.children.push(vd);
-    //         }
-    //         domParent.__zIndexChildren = null;
-    //         // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-    //         let res = {
-    //           node: vd,
-    //           focus: level.REFLOW,
-    //           addDom: true,
-    //         };
-    //         root.__addUpdate(vd, root, res);
-    //       },
-    //       __after(diff) {
-    //         if(isFunction(cb)) {
-    //           cb.call(vd, diff);
-    //         }
-    //       },
-    //     });
-    //   }
-    //   else {
-    //     throw new Error('Invalid parameter in insertAfter.');
-    //   }
-    // }
+    else {
+      throw new Error('InsertAfter() illegal');
+    }
+    // 离屏情况，不刷新
+    if(this.__isDestroyed) {
+      if(isFunction(cb)) {
+        cb();
+      }
+      return;
+    }
+    // 在dom中则整体设置关系和struct，不可见提前跳出
+    builder.relation(root, parent.__host, parent, child, {});
+    this.__insertStruct(child, i + 1);
+    if(child.currentStyle[DISPLAY] === 'none' || parent.__computedStyle[DISPLAY] === 'none') {
+      child.__layoutNone();
+      if(isFunction(cb)) {
+        cb();
+      }
+      return;
+    }
+    if(child instanceof Text) {
+      child = parent;
+    }
+    root.__addUpdate(child, {
+      focus: level.REFLOW,
+      addDom: true,
+      cb,
+    });
   }
 
   removeChild(target, cb) {
-    if(target.parent === this && (target instanceof Xom || target instanceof Component)) {
-      if(this.isDestroyed) {
-        inject.warn('Remove parent is destroyed.');
-        if(isFunction(cb)) {
-          cb();
-        }
-        return;
-      }
+    if((target.__parent === this || target.__domParent === this)
+      && (target instanceof Text || target instanceof Xom || target instanceof Component)) {
       target.remove(cb);
     }
     else {
-      inject.error('Invalid parameter in removeChild.');
+      inject.error('Invalid parameter of removeChild()');
     }
   }
 
@@ -3598,20 +3469,20 @@ class Dom extends Xom {
   }
 
   get flowChildren() {
-    return this.children.filter(item => {
+    return this.__children.filter(item => {
       if(item instanceof Component) {
         item = item.shadowRoot;
       }
-      return item instanceof Text || item.currentStyle[POSITION] !== 'absolute';
+      return item instanceof Text || item.__currentStyle[POSITION] !== 'absolute';
     });
   }
 
   get absChildren() {
-    return this.children.filter(item => {
+    return this.__children.filter(item => {
       if(item instanceof Component) {
-        item = item.shadowRoot;
+        item = item.__shadowRoot;
       }
-      return item instanceof Xom && item.currentStyle[POSITION] === 'absolute';
+      return item instanceof Xom && item.__currentStyle[POSITION] === 'absolute';
     });
   }
 

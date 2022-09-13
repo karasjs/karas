@@ -33,7 +33,7 @@ const ENUM = {
   // 高位表示reflow
   REFLOW: 1024, //                           10000000000
 
-  // 特殊高位表示rebuild
+  // 特殊高位表示rebuild，节点发生变化
   REBUILD: 2048, //                         100000000000
 };
 
@@ -69,37 +69,34 @@ let o = Object.assign({
     if(k === TRANSLATE_X) {
       return ENUM.TRANSLATE_X;
     }
-    else if(k === TRANSLATE_Y) {
+    if(k === TRANSLATE_Y) {
       return ENUM.TRANSLATE_Y;
     }
-    else if(k === TRANSLATE_Z) {
+    if(k === TRANSLATE_Z) {
       return ENUM.TRANSLATE_Z;
     }
-    else if(TRANSFORMS.hasOwnProperty(k)) {
+    if(TRANSFORMS.hasOwnProperty(k)) {
       return ENUM.TRANSFORM;
     }
-    else if(k === OPACITY) {
+    if(k === OPACITY) {
       return ENUM.OPACITY;
     }
-    else if(k === FILTER) {
+    if(k === FILTER) {
       return ENUM.FILTER;
     }
-    else if(k === PERSPECTIVE || k === PERSPECTIVE_ORIGIN) {
+    if(k === PERSPECTIVE || k === PERSPECTIVE_ORIGIN) {
       return ENUM.PERSPECTIVE;
     }
-    else if(change.isRepaint(k)) {
+    if(change.isRepaint(k)) {
       return ENUM.REPAINT;
     }
     return ENUM.REFLOW;
   },
   isReflow(lv) {
-    return !this.isRepaint(lv);
+    return lv >= ENUM.REFLOW;
   },
   isRepaint(lv) {
     return lv < ENUM.REFLOW;
-  },
-  isRebuild(lv) {
-    return lv >= ENUM.REBUILD;
   },
 }, ENUM);
 o.TRANSFORMS = TRANSFORMS;

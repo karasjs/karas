@@ -2015,7 +2015,7 @@ function renderWebgl(renderMode, gl, root) {
      */
     else {
       node.__calStyle(__currentStyle, __computedStyle, __cacheStyle);
-      let hasContent = node.__calContent(__currentStyle, __computedStyle);
+      let hasContent = node.calContent(__currentStyle, __computedStyle);
       node.__calPerspective(__currentStyle, __computedStyle, __cacheStyle);
       // 有内容先以canvas模式绘制到离屏画布上，自定义渲染设置无内容不实现即可跳过
       if(hasContent) {

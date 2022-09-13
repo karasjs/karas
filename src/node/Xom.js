@@ -20,7 +20,6 @@ import geom from '../math/geom';
 import mode from '../refresh/mode';
 import change from '../refresh/change';
 import level from '../refresh/level';
-import Cache from '../refresh/Cache';
 import font from '../style/font';
 import bs from '../style/bs';
 import mbm from '../style/mbm';
@@ -28,6 +27,7 @@ import reset from '../style/reset';
 
 const { svgPolygon } = painter;
 const { CANVAS, SVG, WEBGL } = mode;
+const { normalize, equalStyle } = css;
 
 const {
   STYLE_KEY,
@@ -240,8 +240,8 @@ class Xom extends Node {
     this.__fontRegister = {}; // 优先级字体尚未加载时记录回调hash，销毁时删除回调
   }
 
-  __structure(i, lv, j) {
-    let res = super.__structure(i, lv, j);
+  __structure(lv, j) {
+    let res = super.__structure(lv, j);
     if(this.__hasMask) {
       res.hasMask = this.__hasMask;
     }
@@ -553,7 +553,6 @@ class Xom extends Node {
   // absolute且无尺寸时，isAbs标明先假布局一次计算尺寸，还有flex列计算时isColumn假布局，flex横计算时writingMode垂直假布局
   __layout(data, isAbs, isColumn, isRow) {
     this.__computeReflow();
-    let { w } = data;
     let { isDestroyed, currentStyle, computedStyle, __ellipsis } = this;
     // 虚拟省略号每次清除
     if(__ellipsis) {
@@ -568,7 +567,7 @@ class Xom extends Node {
     this.__layoutData = {
       x: data.x,
       y: data.y,
-      w,
+      w: data.y,
       h: data.h,
       lx: data.lx,
       ly: data.ly,
@@ -612,7 +611,7 @@ class Xom extends Node {
     }
     // absolute特殊，在自己布局时已计算相对于容器的mbp
     if(position !== 'absolute') {
-      this.__mp(currentStyle, computedStyle, w);
+      this.__mp(currentStyle, computedStyle, data.w);
     }
     // 只有inline会继承计算行数，其它都是原样返回
     let lineClampCount = data.lineClampCount || 0;
@@ -903,6 +902,9 @@ class Xom extends Node {
         let v = __currentStyle[TRANSLATE_X];
         if(isNil(v)) {
           v = 0;
+        }
+        else if(v.u === PX) {
+          v = v.v;
         }
         else {
           v = this.__calSize(v, this.__offsetWidth, true);
@@ -1595,7 +1597,8 @@ class Xom extends Node {
     };
   }
 
-  __calContent(__currentStyle, __computedStyle) {
+  // 自定义图形可能需要覆盖判断，所以是public方法
+  calContent(__currentStyle, __computedStyle) {
     let visibility = __currentStyle[VISIBILITY];
     if(visibility !== 'hidden') {
       let bgI = __currentStyle[BACKGROUND_IMAGE];
@@ -2234,6 +2237,9 @@ class Xom extends Node {
         font.offRegister(i, this);
       }
     }
+    this.__host = this.__hostRoot
+      = this.__prev = this.__next
+      = this.__parent = this.__domParent = null;
   }
 
   // 先查找到注册了事件的节点，再捕获冒泡判断增加性能
@@ -2474,85 +2480,91 @@ class Xom extends Node {
     }
   }
 
-  updateStyle(style, cb) {
-    let node = this;
-    let { root } = node;
-    let formatStyle = css.normalize(style);
+  updateStyle(style) {
+    // let node = this;
+    // let root = node.__root;
+    let formatStyle = normalize(style);
+    this.updateFormatStyle(formatStyle);
     // 有root说明被添加渲染过了
-    if(root) {
-      root.addRefreshTask(node.__task = {
-        __before() {
-          node.__task = null;
-          if(node.__isDestroyed) {
-            return;
-          }
-          // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-          let res = {
-            node,
-            style: formatStyle,
-            overwrite: style, // 标识盖原有style样式不仅仅是修改currentStyle，不同于animate
-            keys: Object.keys(formatStyle).map(i => {
-              if(!GEOM.hasOwnProperty(i)) {
-                i = parseInt(i);
-              }
-              return i;
-            }),
-          };
-          root.__addUpdate(node, root, res);
-        },
-        __after(diff) {
-          if(isFunction(cb)) {
-            cb.call(node, diff);
-          }
-        },
-      });
-    }
-    // 没有是在如parse()还未添加的时候，可以直接同步覆盖
-    else {
-      Object.assign(this.currentStyle, formatStyle);
-      if(isFunction(cb)) {
-        cb.call(node, -1);
-      }
-    }
+    // if(root) {
+    //   root.addRefreshTask(node.__task = {
+    //     __before() {
+    //       node.__task = null;
+    //       if(node.__isDestroyed) {
+    //         return;
+    //       }
+    //       // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+    //       let res = {
+    //         node,
+    //         style: formatStyle,
+    //         overwrite: style, // 标识盖原有style样式不仅仅是修改currentStyle，不同于animate
+    //         keys: Object.keys(formatStyle).map(i => {
+    //           if(!GEOM.hasOwnProperty(i)) {
+    //             i = parseInt(i);
+    //           }
+    //           return i;
+    //         }),
+    //       };
+    //       root.__addUpdate(node, root, res);
+    //     },
+    //     __after(diff) {
+    //       if(isFunction(cb)) {
+    //         cb.call(node, diff);
+    //       }
+    //     },
+    //   });
+    // }
+    // // 没有是在如parse()还未添加的时候，可以直接同步覆盖
+    // else {
+    //   Object.assign(this.__currentStyle, formatStyle);
+    // }
   }
 
   // 传入格式化好key/value的样式
-  updateFormatStyle(style, cb) {
-    let node = this;
-    let { root } = node;
+  updateFormatStyle(style) {
+    let root = this.__root, currentStyle = this.__currentStyle;
+    let keys = [];
+    Object.keys(style).forEach(i => {
+      if(!GEOM.hasOwnProperty(i)) {
+        i = parseInt(i);
+      }
+      if(!equalStyle(i, currentStyle[i], style[i], this)) {
+        currentStyle[i] = style[i];
+        keys.push(i);
+      }
+    });
+    if(!keys.length) {
+      return;
+    }
+    // 有root说明被添加渲染过了，没有是在如parse()还未添加的时候，可以直接同步覆盖
     if(root) {
-      root.addRefreshTask(node.__task = {
-        __before() {
-          node.__task = null; // 清除在before，防止after的回调增加新的task误删
-          if(node.__isDestroyed) {
-            return;
-          }
-          // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-          let res = {
-            node,
-            style,
-            keys: Object.keys(style).map(i => {
-              if(!GEOM.hasOwnProperty(i)) {
-                i = parseInt(i);
-              }
-              return i;
-            }),
-          };
-          root.__addUpdate(node, root, res);
-        },
-        __after(diff) {
-          if(isFunction(cb)) {
-            cb.call(node, diff);
-          }
-        },
+      root.__addUpdate(this, {
+        keys,
       });
+      // root.addRefreshTask(node.__task = {
+      //   __before() {
+      //     node.__task = null; // 清除在before，防止after的回调增加新的task误删
+      //     if(node.__isDestroyed) {
+      //       return;
+      //     }
+      //     // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+      //     let res = {
+      //       node,
+      //       style,
+      //       keys: Object.keys(style).map(i => {
+      //         if(!GEOM.hasOwnProperty(i)) {
+      //           i = parseInt(i);
+      //         }
+      //         return i;
+      //       }),
+      //     };
+      //     root.__addUpdate(node, root, res);
+      //   },
+      // });
     }
     // 没有是在如parse()还未添加的时候，可以直接同步覆盖
     else {
-      Object.assign(this.currentStyle, style);
-      if(isFunction(cb)) {
-        cb.call(node, -1);
-      }
+      Object.assign(this.__currentStyle, style);
     }
   }
 
@@ -2785,60 +2797,47 @@ class Xom extends Node {
   }
 
   remove(cb) {
-    let self = this;
-    if(self.isDestroyed) {
-      // inject.warn('Remove target is destroyed.');
+    let { __root: root } = this;
+    let parent = this.isShadowRoot ? this.hostRoot.__parent: this.__parent;
+    if(parent) {
+      // 移除component的shadowRoot视为移除component
+      let target = this.isShadowRoot ? this.hostRoot : this;
+      let i = parent.__children.indexOf(target);
+      if(i === -1) {
+        throw new Error('Index exception of remove()');
+      }
+      parent.__children.splice(i, 1);
+      parent.__zIndexChildren = null;
+      let { __prev, __next } = this;
+      if(__prev) {
+        __prev.__next = __next;
+      }
+      if(__next) {
+        __next.__prev = __prev;
+      }
+    }
+    if(this.__isDestroyed) {
       if(isFunction(cb)) {
         cb();
       }
       return;
     }
-    let { root, domParent } = self;
-    let target = self.isShadowRoot ? self.hostRoot : self;
-    // 特殊情况连续append/remove时候，还未被添加进来找不到所以无需删除
-    if(domParent.children.indexOf(target) === -1) {
+    parent.__deleteStruct(this);
+    // 不可见仅改变数据结构
+    if(this.__computedStyle[DISPLAY] === 'none' || parent.__computedStyle[DISPLAY] === 'none') {
+      this.__destroy();
       if(isFunction(cb)) {
         cb();
       }
       return;
     }
-    root.delRefreshTask(self.__task);
-    root.addRefreshTask(self.__task = {
-      __before() {
-        self.__task = null; // 清除在before，防止after的回调增加新的task误删
-        let pJson = domParent.__json;
-        let i = pJson.children.indexOf(self.isShadowRoot ? self.hostRoot.__json : self.__json);
-        if(i === -1) {
-          throw new Error('Remove index Exception.')
-        }
-        pJson.children.splice(i, 1);
-        domParent.children.splice(i, 1);
-        let zChildren = domParent.zIndexChildren;
-        // 可能appendChild会清空没有
-        if(zChildren) {
-          let j = zChildren.indexOf(self.isShadowRoot ? self.hostRoot : self);
-          if(j > -1) {
-            zChildren.splice(j, 1);
-          }
-        }
-        if(self.__prev) {
-          self.__prev.__next = self.__next;
-        }
-        // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-        let res = {
-          node: self,
-          focus: REFLOW,
-          removeDom: true,
-        };
-        root.__addUpdate(self, root, res);
-      },
-      __after(diff) {
-        self.isShadowRoot ? self.hostRoot.__destroy() : self.__destroy();
-        if(isFunction(cb)) {
-          cb.call(self, diff);
-        }
-      },
-    });
+    // 可见在reflow逻辑做结构关系等
+    let res = {
+      focus: REFLOW,
+      removeDom: true,
+      cb,
+    };
+    root.__addUpdate(this, res);
   }
 
   get tagName() {
@@ -2915,6 +2914,7 @@ class Xom extends Node {
   get matrixEvent() {
     let __domParent = this.__domParent, matrix = this.__matrix;
     while(__domParent) {
+      matrix = mx.multiply(__domParent.__perspectiveMatrix, matrix);
       matrix = mx.multiply(__domParent.__matrix, matrix);
       __domParent = __domParent.__domParent;
     }

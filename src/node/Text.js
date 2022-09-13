@@ -7,7 +7,6 @@ import unit from '../style/unit';
 import enums from '../util/enums';
 import util from '../util/util';
 import inject from '../util/inject';
-import Cache from '../refresh/Cache';
 import level from '../refresh/level';
 
 const {
@@ -47,6 +46,7 @@ const {
 
 const { AUTO } = unit;
 const { CANVAS, SVG, WEBGL } = mode;
+const { isFunction } = util;
 
 /**
  * 在给定宽度w的情况下，测量文字content多少个满足塞下，只支持水平书写，从start的索引开始，content长length
@@ -760,31 +760,61 @@ class Text extends Node {
   }
 
   updateContent(s, cb) {
-    let self = this;
-    if(s === self.__content) {
-      if(util.isFunction(cb)) {
-        cb(-1);
+    if(s === this.__content || this.__isDestroyed) {
+      this.__content = s;
+      if(isFunction(cb)) {
+        cb();
       }
       return;
     }
-    root.delRefreshTask(self.__task);
-    root.addRefreshTask(self.__task = {
-      __before() {
-        self.__content = s;
-        let vd = self.domParent;
-        let res = {
-          node: vd,
-          focus: level.REFLOW,
-        };
-        let root = vd.root;
-        root.__addUpdate(vd, root, res);
-      },
-      __after(diff) {
-        if(util.isFunction(cb)) {
-          cb(diff);
-        }
-      },
+    this.__content = s;
+    this.__root.__addUpdate(this.__domParent, {
+      focus: level.REFLOW,
+      cb,
     });
+  }
+
+  remove(cb) {
+    let { __root: root } = this;
+    let parent = this.isShadowRoot ? this.hostRoot.__parent: this.__parent;
+    if(parent) {
+      let target = this.isShadowRoot ? this.hostRoot : this;
+      let i = parent.__children.indexOf(target);
+      if(i === -1) {
+        throw new Error('Index exception of remove()');
+      }
+      parent.__children.splice(i, 1);
+      parent.__zIndexChildren = null;
+      let { __prev, __next } = this;
+      if(__prev) {
+        __prev.__next = __next;
+      }
+      if(__next) {
+        __next.__prev = __prev;
+      }
+    }
+    if(this.__isDestroyed) {
+      if(isFunction(cb)) {
+        cb();
+      }
+      return;
+    }
+    parent.__deleteStruct(this);
+    // 不可见仅改变数据结构
+    if(this.computedStyle[DISPLAY] === 'none') {
+      this.__destroy();
+      if(isFunction(cb)) {
+        cb();
+      }
+      return;
+    }
+    // 可见在reflow逻辑做结构关系等，text视为父变更
+    let res = {
+      focus: level.REFLOW,
+      removeDom: true,
+      cb,
+    };
+    root.__addUpdate(parent, res);
   }
 
   get content() {

@@ -184,7 +184,7 @@ class Geom extends Xom {
     return res;
   }
 
-  __calContent(currentStyle, computedStyle) {
+  calContent(currentStyle, computedStyle) {
     // Geom强制有内容
     return computedStyle[VISIBILITY] !== 'hidden';
   }

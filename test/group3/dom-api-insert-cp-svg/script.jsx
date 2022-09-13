@@ -11,7 +11,7 @@ let root = karas.render(
   </svg>,
   '#test'
 );
-let div = <div>3</div>;
+let div = <p>3</p>;
 root.children[0].insertBefore(div, function() {
   let input = document.querySelector('input');
   input.value = document.querySelector('svg').innerHTML;

@@ -4,10 +4,8 @@ let root = karas.render(
   </svg>,
   '#test'
 );
-let div = <div style={{position:'absolute'}}>2</div>;
-root.appendChild(div, function() {
-  let div = <div style={{position:'absolute'}}>3</div>;
-  root.children[0].appendChild(div, function() {
+root.appendChild(<div style={{position:'absolute'}}>2</div>, function() {
+  root.children[0].appendChild(<div style={{position:'absolute'}}>3</div>, function() {
     let input = document.querySelector('input');
     input.value = document.querySelector('svg').innerHTML;
   });

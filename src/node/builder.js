@@ -4,45 +4,40 @@ import Component from './Component';
 import util from '../util/util';
 
 /**
- * 打平children，并设置兄弟父子关系，合并并生成Text节点，
+ * 打平children，多维嵌套的数组变成一维
  */
 function buildChildren(parent, children) {
   let list = [];
-  flatten(list, children, {
-    lastText: null,
-  });
+  flatten(parent, children, list);
   return list;
 }
 
-function flatten(list, children, options) {
+function flatten(parent, children, list) {
   if(Array.isArray(children)) {
     children.forEach(item => {
-      flatten(list, item, options);
+      flatten(parent, item, list);
     });
   }
   else if(children instanceof Xom) {
     if(['canvas', 'svg', 'webgl'].indexOf(children.tagName) > -1) {
       throw new Error('Can not nest canvas/svg/webgl');
     }
+    children.__parent = parent;
     list.push(children);
-    options.lastText = null;
   }
   else if(children instanceof Component) {
+    children.__parent = parent;
     list.push(children);
-    options.lastText = null;
   }
   else if(!util.isNil(children) && children !== '') {
-    if(options.lastText) {
-      options.lastText.__content += children;
-    }
-    else {
-      list.push(options.lastText = new Text(children));
-    }
+    let t = new Text(children);
+    t.__parent = parent;
+    list.push(t);
   }
 }
 
 /**
- * 设置关系，父子和兄弟
+ * 设置关系，父子和兄弟，被添加到真实dom中前调用
  */
 function relation(root, host, parent, children, options = {}) {
   if(Array.isArray(children)) {
@@ -65,7 +60,7 @@ function relation(root, host, parent, children, options = {}) {
       if(util.isString(ref) && ref || util.isNumber(ref)) {
         host.ref[ref] = children;
       }
-      else if(util.isFunction(ref)) {
+      else if(ref && util.isFunction(ref)) {
         ref(children);
       }
     }

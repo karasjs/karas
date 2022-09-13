@@ -132,8 +132,8 @@ class Geom extends Xom {
     this.__cacheProps = {};
   }
 
-  __calStyle(__currentStyle, __computedStyle, __cacheStyle) {
-    let res = super.__calStyle(__currentStyle, __computedStyle, __cacheStyle);
+  __calStyle(lv, __currentStyle, __computedStyle, __cacheStyle) {
+    let res = super.__calStyle(lv, __currentStyle, __computedStyle, __cacheStyle);
     if(isNil(__cacheStyle[STROKE_WIDTH])) {
       __cacheStyle[STROKE_WIDTH] = true;
       let strokeWidth = __currentStyle[STROKE_WIDTH] || [];

@@ -2834,7 +2834,7 @@
     crossProduct: crossProduct$1
   };
 
-  var STYLE_KEY$5 = {
+  var STYLE_KEY$4 = {
     POSITION: 0,
     DISPLAY: 1,
     TOP: 2,
@@ -2972,15 +2972,15 @@
   var STYLE_R_KEY = {};
   var STYLE_RV_KEY$1 = {};
   var STYLE_V_KEY = {};
-  Object.keys(STYLE_KEY$5).forEach(function (k) {
-    var k2 = STYLE_KEY$5[k];
+  Object.keys(STYLE_KEY$4).forEach(function (k) {
+    var k2 = STYLE_KEY$4[k];
     STYLE_R_KEY[k2] = k;
     var l = style2Lower(k);
     STYLE_RV_KEY$1[k2] = l;
     STYLE_V_KEY[l] = k2;
   });
   var enums = {
-    STYLE_KEY: STYLE_KEY$5,
+    STYLE_KEY: STYLE_KEY$4,
     // 大写常量为k，数字为值
     STYLE_R_KEY: STYLE_R_KEY,
     // 数字为k，大写常量为值
@@ -3000,7 +3000,7 @@
   var _enums$STYLE_KEY$k = enums.STYLE_KEY,
       WIDTH$a = _enums$STYLE_KEY$k.WIDTH,
       HEIGHT$a = _enums$STYLE_KEY$k.HEIGHT,
-      TRANSFORM_ORIGIN$5 = _enums$STYLE_KEY$k.TRANSFORM_ORIGIN;
+      TRANSFORM_ORIGIN$6 = _enums$STYLE_KEY$k.TRANSFORM_ORIGIN;
   /**
    * 圆弧拟合公式，根据角度求得3阶贝塞尔控制点比例长度，一般<=90，超过拆分
    * @param deg
@@ -3454,7 +3454,7 @@
         computedStyle = _node$computedStyle === void 0 ? {} : _node$computedStyle;
     var width = computedStyle[WIDTH$a],
         height = computedStyle[HEIGHT$a],
-        _computedStyle$TRANSF = computedStyle[TRANSFORM_ORIGIN$5];
+        _computedStyle$TRANSF = computedStyle[TRANSFORM_ORIGIN$6];
     _computedStyle$TRANSF = _computedStyle$TRANSF === void 0 ? [width * 0.5, height * 0.5] : _computedStyle$TRANSF;
 
     var _computedStyle$TRANSF2 = _slicedToArray(_computedStyle$TRANSF, 2),
@@ -3474,7 +3474,7 @@
     var _node$computedStyle2 = node.computedStyle,
         width = _node$computedStyle2[WIDTH$a],
         height = _node$computedStyle2[HEIGHT$a],
-        _node$computedStyle2$ = _slicedToArray(_node$computedStyle2[TRANSFORM_ORIGIN$5], 2),
+        _node$computedStyle2$ = _slicedToArray(_node$computedStyle2[TRANSFORM_ORIGIN$6], 2),
         ox = _node$computedStyle2$[0],
         oy = _node$computedStyle2$[1]; // 先求无旋转时右下角相对于原点的角度ds
 
@@ -3938,10 +3938,10 @@
       PADDING_LEFT$a = _enums$STYLE_KEY$j.PADDING_LEFT,
       PADDING_BOTTOM$7 = _enums$STYLE_KEY$j.PADDING_BOTTOM,
       PADDING_TOP$8 = _enums$STYLE_KEY$j.PADDING_TOP,
-      BORDER_TOP_LEFT_RADIUS$3 = _enums$STYLE_KEY$j.BORDER_TOP_LEFT_RADIUS,
-      BORDER_TOP_RIGHT_RADIUS$2 = _enums$STYLE_KEY$j.BORDER_TOP_RIGHT_RADIUS,
-      BORDER_BOTTOM_LEFT_RADIUS$3 = _enums$STYLE_KEY$j.BORDER_BOTTOM_LEFT_RADIUS,
-      BORDER_BOTTOM_RIGHT_RADIUS$3 = _enums$STYLE_KEY$j.BORDER_BOTTOM_RIGHT_RADIUS,
+      BORDER_TOP_LEFT_RADIUS$4 = _enums$STYLE_KEY$j.BORDER_TOP_LEFT_RADIUS,
+      BORDER_TOP_RIGHT_RADIUS$3 = _enums$STYLE_KEY$j.BORDER_TOP_RIGHT_RADIUS,
+      BORDER_BOTTOM_LEFT_RADIUS$4 = _enums$STYLE_KEY$j.BORDER_BOTTOM_LEFT_RADIUS,
+      BORDER_BOTTOM_RIGHT_RADIUS$4 = _enums$STYLE_KEY$j.BORDER_BOTTOM_RIGHT_RADIUS,
       FONT_SIZE$b = _enums$STYLE_KEY$j.FONT_SIZE;
   /* 获取合适的虚线实体空白宽度ps/pd和数量n
    * 总长total，start边长bs，end边长be，内容长w，
@@ -6171,7 +6171,7 @@
     }
   }
 
-  var BR_KS = [BORDER_TOP_LEFT_RADIUS$3, BORDER_TOP_RIGHT_RADIUS$2, BORDER_BOTTOM_RIGHT_RADIUS$3, BORDER_BOTTOM_LEFT_RADIUS$3];
+  var BR_KS = [BORDER_TOP_LEFT_RADIUS$4, BORDER_TOP_RIGHT_RADIUS$3, BORDER_BOTTOM_RIGHT_RADIUS$4, BORDER_BOTTOM_LEFT_RADIUS$4];
 
   function calBorderRadius(w, h, currentStyle, computedStyle, root) {
     var noRadius = true;
@@ -6246,7 +6246,7 @@
         h = first ? first.outerHeight : 0;
     w += computedStyle[BORDER_LEFT_WIDTH$a] + computedStyle[PADDING_LEFT$a];
     h += computedStyle[BORDER_TOP_WIDTH$8] + computedStyle[BORDER_BOTTOM_WIDTH$7] + computedStyle[PADDING_TOP$8] + computedStyle[PADDING_BOTTOM$7];
-    [BORDER_TOP_LEFT_RADIUS$3, BORDER_BOTTOM_LEFT_RADIUS$3].forEach(function (k) {
+    [BORDER_TOP_LEFT_RADIUS$4, BORDER_BOTTOM_LEFT_RADIUS$4].forEach(function (k) {
       computedStyle[k] = currentStyle[k].map(function (item, i) {
         var v;
 
@@ -6264,7 +6264,7 @@
 
     w = last ? last.outerWidth : 0;
     h = last ? last.outerHeight : 0;
-    [BORDER_TOP_RIGHT_RADIUS$2, BORDER_BOTTOM_RIGHT_RADIUS$3].forEach(function (k) {
+    [BORDER_TOP_RIGHT_RADIUS$3, BORDER_BOTTOM_RIGHT_RADIUS$4].forEach(function (k) {
       computedStyle[k] = currentStyle[k].map(function (item, i) {
         var v;
 
@@ -7447,77 +7447,77 @@
     }
   };
 
-  var STYLE_KEY$4 = enums.STYLE_KEY;
-  var BACKGROUND_COLOR$2 = STYLE_KEY$4.BACKGROUND_COLOR,
-      BORDER_BOTTOM_COLOR$1 = STYLE_KEY$4.BORDER_BOTTOM_COLOR,
-      BORDER_LEFT_COLOR$1 = STYLE_KEY$4.BORDER_LEFT_COLOR,
-      BORDER_RIGHT_COLOR$1 = STYLE_KEY$4.BORDER_RIGHT_COLOR,
-      BORDER_TOP_COLOR$1 = STYLE_KEY$4.BORDER_TOP_COLOR,
-      COLOR$7 = STYLE_KEY$4.COLOR,
-      TEXT_STROKE_COLOR$6 = STYLE_KEY$4.TEXT_STROKE_COLOR,
-      FONT_SIZE$9 = STYLE_KEY$4.FONT_SIZE,
-      BORDER_BOTTOM_WIDTH$6 = STYLE_KEY$4.BORDER_BOTTOM_WIDTH,
-      BORDER_LEFT_WIDTH$9 = STYLE_KEY$4.BORDER_LEFT_WIDTH,
-      BORDER_RIGHT_WIDTH$7 = STYLE_KEY$4.BORDER_RIGHT_WIDTH,
-      BORDER_TOP_WIDTH$7 = STYLE_KEY$4.BORDER_TOP_WIDTH,
-      LEFT$3 = STYLE_KEY$4.LEFT,
-      TOP$5 = STYLE_KEY$4.TOP,
-      RIGHT$3 = STYLE_KEY$4.RIGHT,
-      BOTTOM$5 = STYLE_KEY$4.BOTTOM,
-      FLEX_BASIS$5 = STYLE_KEY$4.FLEX_BASIS,
-      WIDTH$9 = STYLE_KEY$4.WIDTH,
-      HEIGHT$9 = STYLE_KEY$4.HEIGHT,
-      LINE_HEIGHT$8 = STYLE_KEY$4.LINE_HEIGHT,
-      MARGIN_BOTTOM$6 = STYLE_KEY$4.MARGIN_BOTTOM,
-      MARGIN_LEFT$9 = STYLE_KEY$4.MARGIN_LEFT,
-      MARGIN_TOP$7 = STYLE_KEY$4.MARGIN_TOP,
-      MARGIN_RIGHT$7 = STYLE_KEY$4.MARGIN_RIGHT,
-      PADDING_TOP$7 = STYLE_KEY$4.PADDING_TOP,
-      PADDING_RIGHT$7 = STYLE_KEY$4.PADDING_RIGHT,
-      PADDING_BOTTOM$6 = STYLE_KEY$4.PADDING_BOTTOM,
-      PADDING_LEFT$9 = STYLE_KEY$4.PADDING_LEFT,
-      STROKE_WIDTH$9 = STYLE_KEY$4.STROKE_WIDTH,
-      STROKE_MITERLIMIT$1 = STYLE_KEY$4.STROKE_MITERLIMIT,
-      LETTER_SPACING$4 = STYLE_KEY$4.LETTER_SPACING,
-      PERSPECTIVE$5 = STYLE_KEY$4.PERSPECTIVE,
-      TEXT_STROKE_WIDTH$5 = STYLE_KEY$4.TEXT_STROKE_WIDTH,
-      TRANSLATE_X$5 = STYLE_KEY$4.TRANSLATE_X,
-      TRANSLATE_Y$5 = STYLE_KEY$4.TRANSLATE_Y,
-      TRANSLATE_Z$5 = STYLE_KEY$4.TRANSLATE_Z,
-      SKEW_X$3 = STYLE_KEY$4.SKEW_X,
-      SKEW_Y$3 = STYLE_KEY$4.SKEW_Y,
-      SCALE_X$4 = STYLE_KEY$4.SCALE_X,
-      SCALE_Y$4 = STYLE_KEY$4.SCALE_Y,
-      SCALE_Z$3 = STYLE_KEY$4.SCALE_Z,
-      ROTATE_X$3 = STYLE_KEY$4.ROTATE_X,
-      ROTATE_Y$3 = STYLE_KEY$4.ROTATE_Y,
-      ROTATE_Z$5 = STYLE_KEY$4.ROTATE_Z,
-      BACKGROUND_IMAGE$2 = STYLE_KEY$4.BACKGROUND_IMAGE,
-      FILL$3 = STYLE_KEY$4.FILL,
-      STROKE$2 = STYLE_KEY$4.STROKE,
-      BORDER_TOP_LEFT_RADIUS$2 = STYLE_KEY$4.BORDER_TOP_LEFT_RADIUS;
-      STYLE_KEY$4.BORDER_TOP_RIGHT_RADIUS;
-      var BORDER_BOTTOM_RIGHT_RADIUS$2 = STYLE_KEY$4.BORDER_BOTTOM_RIGHT_RADIUS,
-      BORDER_BOTTOM_LEFT_RADIUS$2 = STYLE_KEY$4.BORDER_BOTTOM_LEFT_RADIUS;
+  var STYLE_KEY$3 = enums.STYLE_KEY;
+  var BACKGROUND_COLOR$3 = STYLE_KEY$3.BACKGROUND_COLOR,
+      BORDER_BOTTOM_COLOR$2 = STYLE_KEY$3.BORDER_BOTTOM_COLOR,
+      BORDER_LEFT_COLOR$2 = STYLE_KEY$3.BORDER_LEFT_COLOR,
+      BORDER_RIGHT_COLOR$2 = STYLE_KEY$3.BORDER_RIGHT_COLOR,
+      BORDER_TOP_COLOR$2 = STYLE_KEY$3.BORDER_TOP_COLOR,
+      COLOR$8 = STYLE_KEY$3.COLOR,
+      TEXT_STROKE_COLOR$7 = STYLE_KEY$3.TEXT_STROKE_COLOR,
+      FONT_SIZE$9 = STYLE_KEY$3.FONT_SIZE,
+      BORDER_BOTTOM_WIDTH$6 = STYLE_KEY$3.BORDER_BOTTOM_WIDTH,
+      BORDER_LEFT_WIDTH$9 = STYLE_KEY$3.BORDER_LEFT_WIDTH,
+      BORDER_RIGHT_WIDTH$7 = STYLE_KEY$3.BORDER_RIGHT_WIDTH,
+      BORDER_TOP_WIDTH$7 = STYLE_KEY$3.BORDER_TOP_WIDTH,
+      LEFT$3 = STYLE_KEY$3.LEFT,
+      TOP$5 = STYLE_KEY$3.TOP,
+      RIGHT$3 = STYLE_KEY$3.RIGHT,
+      BOTTOM$5 = STYLE_KEY$3.BOTTOM,
+      FLEX_BASIS$5 = STYLE_KEY$3.FLEX_BASIS,
+      WIDTH$9 = STYLE_KEY$3.WIDTH,
+      HEIGHT$9 = STYLE_KEY$3.HEIGHT,
+      LINE_HEIGHT$8 = STYLE_KEY$3.LINE_HEIGHT,
+      MARGIN_BOTTOM$6 = STYLE_KEY$3.MARGIN_BOTTOM,
+      MARGIN_LEFT$9 = STYLE_KEY$3.MARGIN_LEFT,
+      MARGIN_TOP$7 = STYLE_KEY$3.MARGIN_TOP,
+      MARGIN_RIGHT$7 = STYLE_KEY$3.MARGIN_RIGHT,
+      PADDING_TOP$7 = STYLE_KEY$3.PADDING_TOP,
+      PADDING_RIGHT$7 = STYLE_KEY$3.PADDING_RIGHT,
+      PADDING_BOTTOM$6 = STYLE_KEY$3.PADDING_BOTTOM,
+      PADDING_LEFT$9 = STYLE_KEY$3.PADDING_LEFT,
+      STROKE_WIDTH$a = STYLE_KEY$3.STROKE_WIDTH,
+      STROKE_MITERLIMIT$2 = STYLE_KEY$3.STROKE_MITERLIMIT,
+      LETTER_SPACING$4 = STYLE_KEY$3.LETTER_SPACING,
+      PERSPECTIVE$5 = STYLE_KEY$3.PERSPECTIVE,
+      TEXT_STROKE_WIDTH$6 = STYLE_KEY$3.TEXT_STROKE_WIDTH,
+      TRANSLATE_X$5 = STYLE_KEY$3.TRANSLATE_X,
+      TRANSLATE_Y$5 = STYLE_KEY$3.TRANSLATE_Y,
+      TRANSLATE_Z$5 = STYLE_KEY$3.TRANSLATE_Z,
+      SKEW_X$4 = STYLE_KEY$3.SKEW_X,
+      SKEW_Y$4 = STYLE_KEY$3.SKEW_Y,
+      SCALE_X$5 = STYLE_KEY$3.SCALE_X,
+      SCALE_Y$5 = STYLE_KEY$3.SCALE_Y,
+      SCALE_Z$4 = STYLE_KEY$3.SCALE_Z,
+      ROTATE_X$4 = STYLE_KEY$3.ROTATE_X,
+      ROTATE_Y$4 = STYLE_KEY$3.ROTATE_Y,
+      ROTATE_Z$6 = STYLE_KEY$3.ROTATE_Z,
+      BACKGROUND_IMAGE$3 = STYLE_KEY$3.BACKGROUND_IMAGE,
+      FILL$4 = STYLE_KEY$3.FILL,
+      STROKE$3 = STYLE_KEY$3.STROKE,
+      BORDER_TOP_LEFT_RADIUS$3 = STYLE_KEY$3.BORDER_TOP_LEFT_RADIUS;
+      STYLE_KEY$3.BORDER_TOP_RIGHT_RADIUS;
+      var BORDER_BOTTOM_RIGHT_RADIUS$3 = STYLE_KEY$3.BORDER_BOTTOM_RIGHT_RADIUS,
+      BORDER_BOTTOM_LEFT_RADIUS$3 = STYLE_KEY$3.BORDER_BOTTOM_LEFT_RADIUS;
 
   function isColorKey$2(k) {
-    return k === BACKGROUND_COLOR$2 || k === BORDER_BOTTOM_COLOR$1 || k === BORDER_LEFT_COLOR$1 || k === BORDER_RIGHT_COLOR$1 || k === BORDER_TOP_COLOR$1 || k === COLOR$7 || k === TEXT_STROKE_COLOR$6;
+    return k === BACKGROUND_COLOR$3 || k === BORDER_BOTTOM_COLOR$2 || k === BORDER_LEFT_COLOR$2 || k === BORDER_RIGHT_COLOR$2 || k === BORDER_TOP_COLOR$2 || k === COLOR$8 || k === TEXT_STROKE_COLOR$7;
   }
 
   function isLengthKey$2(k) {
-    return k === FONT_SIZE$9 || k === TEXT_STROKE_WIDTH$5 || k === BORDER_BOTTOM_WIDTH$6 || k === BORDER_LEFT_WIDTH$9 || k === BORDER_RIGHT_WIDTH$7 || k === BORDER_TOP_WIDTH$7 || k === LEFT$3 || k === TOP$5 || k === RIGHT$3 || k === BOTTOM$5 || k === FLEX_BASIS$5 || k === WIDTH$9 || k === HEIGHT$9 || k === LINE_HEIGHT$8 || k === MARGIN_BOTTOM$6 || k === MARGIN_TOP$7 || k === MARGIN_LEFT$9 || k === MARGIN_RIGHT$7 || k === PADDING_TOP$7 || k === PADDING_RIGHT$7 || k === PADDING_LEFT$9 || k === PADDING_BOTTOM$6 || k === STROKE_WIDTH$9 || k === STROKE_MITERLIMIT$1 || k === LETTER_SPACING$4 || k === PERSPECTIVE$5;
+    return k === FONT_SIZE$9 || k === TEXT_STROKE_WIDTH$6 || k === BORDER_BOTTOM_WIDTH$6 || k === BORDER_LEFT_WIDTH$9 || k === BORDER_RIGHT_WIDTH$7 || k === BORDER_TOP_WIDTH$7 || k === LEFT$3 || k === TOP$5 || k === RIGHT$3 || k === BOTTOM$5 || k === FLEX_BASIS$5 || k === WIDTH$9 || k === HEIGHT$9 || k === LINE_HEIGHT$8 || k === MARGIN_BOTTOM$6 || k === MARGIN_TOP$7 || k === MARGIN_LEFT$9 || k === MARGIN_RIGHT$7 || k === PADDING_TOP$7 || k === PADDING_RIGHT$7 || k === PADDING_LEFT$9 || k === PADDING_BOTTOM$6 || k === STROKE_WIDTH$a || k === STROKE_MITERLIMIT$2 || k === LETTER_SPACING$4 || k === PERSPECTIVE$5;
   }
 
   function isExpandKey$2(k) {
-    return k === TRANSLATE_X$5 || k === TRANSLATE_Y$5 || k === TRANSLATE_Z$5 || k === SKEW_X$3 || k === SKEW_Y$3 || k === SCALE_X$4 || k === SCALE_Y$4 || k === SCALE_Z$3 || k === ROTATE_X$3 || k === ROTATE_Y$3 || k === ROTATE_Z$5;
+    return k === TRANSLATE_X$5 || k === TRANSLATE_Y$5 || k === TRANSLATE_Z$5 || k === SKEW_X$4 || k === SKEW_Y$4 || k === SCALE_X$5 || k === SCALE_Y$5 || k === SCALE_Z$4 || k === ROTATE_X$4 || k === ROTATE_Y$4 || k === ROTATE_Z$6;
   }
 
   function isGradientKey$2(k) {
-    return k === BACKGROUND_IMAGE$2 || k === FILL$3 || k === STROKE$2;
+    return k === BACKGROUND_IMAGE$3 || k === FILL$4 || k === STROKE$3;
   }
 
   function isRadiusKey$2(k) {
-    return k === BORDER_BOTTOM_LEFT_RADIUS$2 || k === BORDER_TOP_LEFT_RADIUS$2 || k === BORDER_TOP_LEFT_RADIUS$2 || k === BORDER_BOTTOM_RIGHT_RADIUS$2;
+    return k === BORDER_BOTTOM_LEFT_RADIUS$3 || k === BORDER_TOP_LEFT_RADIUS$3 || k === BORDER_TOP_LEFT_RADIUS$3 || k === BORDER_BOTTOM_RIGHT_RADIUS$3;
   }
 
   var key = {
@@ -7528,21 +7528,44 @@
     isRadiusKey: isRadiusKey$2
   };
 
-  var _REPAINT;
   var RESET_DOM = reset.DOM,
       RESET_GEOM = reset.GEOM;
-  var STYLE_KEY$3 = enums.STYLE_KEY;
+  var STYLE_KEY$2 = enums.STYLE_KEY;
+  var POINTER_EVENTS$3 = STYLE_KEY$2.POINTER_EVENTS,
+      COLOR$7 = STYLE_KEY$2.COLOR,
+      STROKE_WIDTH$9 = STYLE_KEY$2.STROKE_WIDTH,
+      FILL$3 = STYLE_KEY$2.FILL,
+      STROKE_DASHARRAY$2 = STYLE_KEY$2.STROKE_DASHARRAY,
+      STROKE_LINECAP$1 = STYLE_KEY$2.STROKE_LINECAP,
+      STROKE_LINEJOIN$1 = STYLE_KEY$2.STROKE_LINEJOIN,
+      STROKE_MITERLIMIT$1 = STYLE_KEY$2.STROKE_MITERLIMIT,
+      BACKGROUND_COLOR$2 = STYLE_KEY$2.BACKGROUND_COLOR,
+      BACKGROUND_IMAGE$2 = STYLE_KEY$2.BACKGROUND_IMAGE,
+      BACKGROUND_POSITION_X$4 = STYLE_KEY$2.BACKGROUND_POSITION_X,
+      BACKGROUND_POSITION_Y$4 = STYLE_KEY$2.BACKGROUND_POSITION_Y,
+      BACKGROUND_REPEAT$1 = STYLE_KEY$2.BACKGROUND_REPEAT,
+      BACKGROUND_SIZE$3 = STYLE_KEY$2.BACKGROUND_SIZE,
+      STROKE$2 = STYLE_KEY$2.STROKE,
+      BORDER_BOTTOM_COLOR$1 = STYLE_KEY$2.BORDER_BOTTOM_COLOR,
+      BORDER_LEFT_COLOR$1 = STYLE_KEY$2.BORDER_LEFT_COLOR,
+      BORDER_RIGHT_COLOR$1 = STYLE_KEY$2.BORDER_RIGHT_COLOR,
+      BORDER_TOP_COLOR$1 = STYLE_KEY$2.BORDER_TOP_COLOR,
+      BORDER_TOP_LEFT_RADIUS$2 = STYLE_KEY$2.BORDER_TOP_LEFT_RADIUS,
+      BORDER_TOP_RIGHT_RADIUS$2 = STYLE_KEY$2.BORDER_TOP_RIGHT_RADIUS,
+      BORDER_BOTTOM_RIGHT_RADIUS$2 = STYLE_KEY$2.BORDER_BOTTOM_RIGHT_RADIUS,
+      BORDER_BOTTOM_LEFT_RADIUS$2 = STYLE_KEY$2.BORDER_BOTTOM_LEFT_RADIUS,
+      VISIBILITY$7 = STYLE_KEY$2.VISIBILITY,
+      BOX_SHADOW$3 = STYLE_KEY$2.BOX_SHADOW,
+      OVERFLOW$4 = STYLE_KEY$2.OVERFLOW,
+      BACKGROUND_CLIP$2 = STYLE_KEY$2.BACKGROUND_CLIP,
+      TEXT_STROKE_WIDTH$5 = STYLE_KEY$2.TEXT_STROKE_WIDTH,
+      TEXT_STROKE_COLOR$6 = STYLE_KEY$2.TEXT_STROKE_COLOR,
+      TEXT_STROKE_OVER$5 = STYLE_KEY$2.TEXT_STROKE_OVER;
   var GEOM$3 = {};
   var GEOM_KEY_SET$1 = [];
-
-  var IGNORE = _defineProperty({}, STYLE_KEY$3.POINTER_EVENTS, true);
-
-  var REPAINT$4 = (_REPAINT = {}, _defineProperty(_REPAINT, STYLE_KEY$3.TRANSFORM, true), _defineProperty(_REPAINT, STYLE_KEY$3.TRANSLATE_X, true), _defineProperty(_REPAINT, STYLE_KEY$3.TRANSLATE_Y, true), _defineProperty(_REPAINT, STYLE_KEY$3.SKEW_X, true), _defineProperty(_REPAINT, STYLE_KEY$3.SKEW_Y, true), _defineProperty(_REPAINT, STYLE_KEY$3.SCALE_X, true), _defineProperty(_REPAINT, STYLE_KEY$3.SCALE_Y, true), _defineProperty(_REPAINT, STYLE_KEY$3.ROTATE_Z, true), _defineProperty(_REPAINT, STYLE_KEY$3.COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$3.FONT_STYLE, true), _defineProperty(_REPAINT, STYLE_KEY$3.STROKE_WIDTH, true), _defineProperty(_REPAINT, STYLE_KEY$3.FILL, true), _defineProperty(_REPAINT, STYLE_KEY$3.STROKE_DASHARRAY, true), _defineProperty(_REPAINT, STYLE_KEY$3.STROKE_LINECAP, true), _defineProperty(_REPAINT, STYLE_KEY$3.STROKE_LINEJOIN, true), _defineProperty(_REPAINT, STYLE_KEY$3.STROKE_MITERLIMIT, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_IMAGE, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_POSITION_X, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_POSITION_Y, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_REPEAT, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_SIZE, true), _defineProperty(_REPAINT, STYLE_KEY$3.STROKE, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_BOTTOM_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_LEFT_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_RIGHT_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_TOP_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_TOP_LEFT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_TOP_RIGHT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_BOTTOM_RIGHT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_BOTTOM_LEFT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$3.VISIBILITY, true), _defineProperty(_REPAINT, STYLE_KEY$3.OPACITY, true), _defineProperty(_REPAINT, STYLE_KEY$3.Z_INDEX, true), _defineProperty(_REPAINT, STYLE_KEY$3.FILTER, true), _defineProperty(_REPAINT, STYLE_KEY$3.BOX_SHADOW, true), _defineProperty(_REPAINT, STYLE_KEY$3.OVERFLOW, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_CLIP, true), _defineProperty(_REPAINT, STYLE_KEY$3.TEXT_STROKE_WIDTH, true), _defineProperty(_REPAINT, STYLE_KEY$3.TEXT_STROKE_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$3.TEXT_STROKE_OVER, true), _REPAINT);
   var o$2 = {
     GEOM: GEOM$3,
     GEOM_KEY_SET: GEOM_KEY_SET$1,
-    IGNORE: IGNORE,
-    REPAINT: REPAINT$4,
     addGeom: function addGeom(tagName, ks, cb) {
       if (Array.isArray(ks)) {
         ks.forEach(function (k) {
@@ -7558,13 +7581,13 @@
       }
     },
     isIgnore: function isIgnore(k) {
-      return IGNORE.hasOwnProperty(k);
+      return k === POINTER_EVENTS$3;
     },
     isGeom: function isGeom(tagName, k) {
       return tagName && k && GEOM$3.hasOwnProperty(k) && GEOM$3[k].hasOwnProperty(tagName);
     },
     isRepaint: function isRepaint(k, tagName) {
-      return REPAINT$4.hasOwnProperty(k) || o$2.isGeom(tagName, k);
+      return k === COLOR$7 || k === STROKE_WIDTH$9 || k === FILL$3 || k === STROKE_DASHARRAY$2 || k === STROKE_LINECAP$1 || k === STROKE_LINEJOIN$1 || k === STROKE_MITERLIMIT$1 || k === BACKGROUND_COLOR$2 || k === BACKGROUND_IMAGE$2 || k === BACKGROUND_POSITION_X$4 || k === BACKGROUND_POSITION_Y$4 || k === BACKGROUND_REPEAT$1 || k === BACKGROUND_SIZE$3 || k === STROKE$2 || k === BORDER_BOTTOM_COLOR$1 || k === BORDER_LEFT_COLOR$1 || k === BORDER_BOTTOM_COLOR$1 || k === BORDER_RIGHT_COLOR$1 || k === BORDER_TOP_COLOR$1 || k === BORDER_TOP_LEFT_RADIUS$2 || k === BORDER_TOP_RIGHT_RADIUS$2 || k === BORDER_BOTTOM_RIGHT_RADIUS$2 || k === BORDER_BOTTOM_LEFT_RADIUS$2 || k === VISIBILITY$7 || k === BOX_SHADOW$3 || k === OVERFLOW$4 || k === BACKGROUND_CLIP$2 || k === TEXT_STROKE_WIDTH$5 || k === TEXT_STROKE_COLOR$6 || k === TEXT_STROKE_OVER$5 || o$2.isGeom(tagName, k);
     },
     isValid: function isValid(tagName, k) {
       if (!k) {
@@ -7679,7 +7702,7 @@
     gaussianWeight: gaussianWeight
   };
 
-  var STYLE_KEY$2 = enums.STYLE_KEY,
+  var STYLE_KEY$1 = enums.STYLE_KEY,
       style2Upper$1 = enums.style2Upper,
       _enums$STYLE_KEY$i = enums.STYLE_KEY,
       POSITION$5 = _enums$STYLE_KEY$i.POSITION,
@@ -7688,26 +7711,26 @@
       TRANSLATE_X$4 = _enums$STYLE_KEY$i.TRANSLATE_X,
       TRANSLATE_Y$4 = _enums$STYLE_KEY$i.TRANSLATE_Y,
       TRANSLATE_Z$4 = _enums$STYLE_KEY$i.TRANSLATE_Z,
-      SCALE_X$3 = _enums$STYLE_KEY$i.SCALE_X,
-      SCALE_Y$3 = _enums$STYLE_KEY$i.SCALE_Y,
-      SCALE_Z$2 = _enums$STYLE_KEY$i.SCALE_Z,
-      SKEW_X$2 = _enums$STYLE_KEY$i.SKEW_X,
-      SKEW_Y$2 = _enums$STYLE_KEY$i.SKEW_Y,
-      ROTATE_X$2 = _enums$STYLE_KEY$i.ROTATE_X,
-      ROTATE_Y$2 = _enums$STYLE_KEY$i.ROTATE_Y,
-      ROTATE_Z$4 = _enums$STYLE_KEY$i.ROTATE_Z,
-      ROTATE_3D$3 = _enums$STYLE_KEY$i.ROTATE_3D,
+      SCALE_X$4 = _enums$STYLE_KEY$i.SCALE_X,
+      SCALE_Y$4 = _enums$STYLE_KEY$i.SCALE_Y,
+      SCALE_Z$3 = _enums$STYLE_KEY$i.SCALE_Z,
+      SKEW_X$3 = _enums$STYLE_KEY$i.SKEW_X,
+      SKEW_Y$3 = _enums$STYLE_KEY$i.SKEW_Y,
+      ROTATE_X$3 = _enums$STYLE_KEY$i.ROTATE_X,
+      ROTATE_Y$3 = _enums$STYLE_KEY$i.ROTATE_Y,
+      ROTATE_Z$5 = _enums$STYLE_KEY$i.ROTATE_Z,
+      ROTATE_3D$4 = _enums$STYLE_KEY$i.ROTATE_3D,
       PERSPECTIVE$4 = _enums$STYLE_KEY$i.PERSPECTIVE,
       PERSPECTIVE_ORIGIN$4 = _enums$STYLE_KEY$i.PERSPECTIVE_ORIGIN,
-      TRANSFORM$5 = _enums$STYLE_KEY$i.TRANSFORM,
-      TRANSFORM_ORIGIN$4 = _enums$STYLE_KEY$i.TRANSFORM_ORIGIN,
+      TRANSFORM$6 = _enums$STYLE_KEY$i.TRANSFORM,
+      TRANSFORM_ORIGIN$5 = _enums$STYLE_KEY$i.TRANSFORM_ORIGIN,
       BACKGROUND_IMAGE$1 = _enums$STYLE_KEY$i.BACKGROUND_IMAGE,
       BACKGROUND_COLOR$1 = _enums$STYLE_KEY$i.BACKGROUND_COLOR,
       BACKGROUND_POSITION_X$3 = _enums$STYLE_KEY$i.BACKGROUND_POSITION_X,
       BACKGROUND_POSITION_Y$3 = _enums$STYLE_KEY$i.BACKGROUND_POSITION_Y,
       BACKGROUND_SIZE$2 = _enums$STYLE_KEY$i.BACKGROUND_SIZE,
       OPACITY$5 = _enums$STYLE_KEY$i.OPACITY,
-      Z_INDEX$4 = _enums$STYLE_KEY$i.Z_INDEX,
+      Z_INDEX$5 = _enums$STYLE_KEY$i.Z_INDEX,
       COLOR$6 = _enums$STYLE_KEY$i.COLOR,
       FONT_SIZE$8 = _enums$STYLE_KEY$i.FONT_SIZE,
       FONT_FAMILY$6 = _enums$STYLE_KEY$i.FONT_FAMILY,
@@ -7729,7 +7752,7 @@
       WHITE_SPACE$3 = _enums$STYLE_KEY$i.WHITE_SPACE,
       LINE_CLAMP$2 = _enums$STYLE_KEY$i.LINE_CLAMP,
       ORDER$2 = _enums$STYLE_KEY$i.ORDER,
-      TRANSLATE_PATH$1 = _enums$STYLE_KEY$i.TRANSLATE_PATH,
+      TRANSLATE_PATH$2 = _enums$STYLE_KEY$i.TRANSLATE_PATH,
       TEXT_STROKE_COLOR$5 = _enums$STYLE_KEY$i.TEXT_STROKE_COLOR,
       TEXT_STROKE_WIDTH$4 = _enums$STYLE_KEY$i.TEXT_STROKE_WIDTH,
       TEXT_STROKE_OVER$4 = _enums$STYLE_KEY$i.TEXT_STROKE_OVER,
@@ -7777,19 +7800,19 @@
     translateX: TRANSLATE_X$4,
     translateY: TRANSLATE_Y$4,
     translateZ: TRANSLATE_Z$4,
-    scaleX: SCALE_X$3,
-    scaleY: SCALE_Y$3,
-    scaleZ: SCALE_Z$2,
-    skewX: SKEW_X$2,
-    skewY: SKEW_Y$2,
-    rotateX: ROTATE_X$2,
-    rotateY: ROTATE_Y$2,
-    rotateZ: ROTATE_Z$4,
-    rotate: ROTATE_Z$4
+    scaleX: SCALE_X$4,
+    scaleY: SCALE_Y$4,
+    scaleZ: SCALE_Z$3,
+    skewX: SKEW_X$3,
+    skewY: SKEW_Y$3,
+    rotateX: ROTATE_X$3,
+    rotateY: ROTATE_Y$3,
+    rotateZ: ROTATE_Z$5,
+    rotate: ROTATE_Z$5
   };
 
   function compatibleTransform(k, arr) {
-    if (k === SCALE_X$3 || k === SCALE_Y$3 || k === SCALE_Z$2) {
+    if (k === SCALE_X$4 || k === SCALE_Y$4 || k === SCALE_Z$3) {
       arr.u = NUMBER$4;
     } else if (k === TRANSLATE_X$4 || k === TRANSLATE_Y$4 || k === TRANSLATE_Z$4) {
       if (arr.u === NUMBER$4) {
@@ -8132,7 +8155,7 @@
       var v = style[k];
 
       if (v !== undefined) {
-        res[STYLE_KEY$2[style2Upper$1(k)]] = {
+        res[STYLE_KEY$1[style2Upper$1(k)]] = {
           v: rgba2int$1(v || 'transparent'),
           u: RGBA$3
         };
@@ -8174,13 +8197,13 @@
           }
         }
 
-        res[STYLE_KEY$2[style2Upper$1(k)]] = arr;
+        res[STYLE_KEY$1[style2Upper$1(k)]] = arr;
       }
     });
     temp = style.transform;
 
     if (temp !== undefined) {
-      var transform = res[TRANSFORM$5] = [];
+      var transform = res[TRANSFORM$6] = [];
       var match = (temp || '').toString().match(/\w+\(.+?\)/g);
 
       if (match) {
@@ -8239,13 +8262,13 @@
 
             if (_arr3.length === 4) {
               var deg = calUnit$1(_arr3[3]);
-              compatibleTransform(ROTATE_3D$3, deg);
+              compatibleTransform(ROTATE_3D$4, deg);
               _arr3[0] = parseFloat(_arr3[0].replace('(', ''));
               _arr3[1] = parseFloat(_arr3[1]);
               _arr3[2] = parseFloat(_arr3[2]);
               _arr3[3] = deg;
               transform.push({
-                k: ROTATE_3D$3,
+                k: ROTATE_3D$4,
                 v: _arr3
               });
             }
@@ -8271,8 +8294,8 @@
             }
 
             if (_arr5.length === 2) {
-              var k1 = STYLE_KEY$2[style2Upper$1(k + 'X')];
-              var _k = STYLE_KEY$2[style2Upper$1(k + 'Y')];
+              var k1 = STYLE_KEY$1[style2Upper$1(k + 'X')];
+              var _k = STYLE_KEY$1[style2Upper$1(k + 'Y')];
               var arr1 = calUnit$1(_arr5[0]);
               var arr2 = calUnit$1(_arr5[1]);
               compatibleTransform(k1, arr1);
@@ -8300,9 +8323,9 @@
             }
 
             if (_arr6.length === 3) {
-              var _k2 = STYLE_KEY$2[style2Upper$1(k + 'X')];
-              var _k3 = STYLE_KEY$2[style2Upper$1(k + 'Y')];
-              var k3 = STYLE_KEY$2[style2Upper$1(k + 'Z')];
+              var _k2 = STYLE_KEY$1[style2Upper$1(k + 'X')];
+              var _k3 = STYLE_KEY$1[style2Upper$1(k + 'Y')];
+              var k3 = STYLE_KEY$1[style2Upper$1(k + 'Z')];
 
               var _arr7 = calUnit$1(_arr6[0]);
 
@@ -8351,7 +8374,7 @@
           temp = '';
         }
 
-        var _arr9 = res[STYLE_KEY$2[style2Upper$1(k)]] = [];
+        var _arr9 = res[STYLE_KEY$1[style2Upper$1(k)]] = [];
 
         var _match = temp.toString().match(reg.position);
 
@@ -8430,14 +8453,14 @@
 
       if (_arr10.length === 4) {
         var deg = calUnit$1(_arr10[3]);
-        compatibleTransform(ROTATE_3D$3, deg);
+        compatibleTransform(ROTATE_3D$4, deg);
         _arr10[0] = parseFloat(_arr10[0].replace('(', ''));
         _arr10[1] = parseFloat(_arr10[1]);
         _arr10[2] = parseFloat(_arr10[2]);
         _arr10[3] = deg;
       }
 
-      res[ROTATE_3D$3] = _arr10;
+      res[ROTATE_3D$4] = _arr10;
     }
 
     temp = style.opacity;
@@ -8461,7 +8484,7 @@
     temp = style.zIndex;
 
     if (temp !== undefined) {
-      res[Z_INDEX$4] = parseInt(temp) || 0;
+      res[Z_INDEX$5] = parseInt(temp) || 0;
     } // 转化不同单位值为对象标准化，不写单位的变成number单位转化为px
 
 
@@ -8485,7 +8508,7 @@
         }
       }
 
-      var k2 = STYLE_KEY$2[style2Upper$1(k)];
+      var k2 = STYLE_KEY$1[style2Upper$1(k)];
       res[k2] = v; // 限制padding/border为正数
 
       if ({
@@ -9144,19 +9167,19 @@
 
     ['position', 'display', 'flexDirection', 'flexWrap', 'justifyContent', 'alignItems', 'alignSelf', 'alignContent', 'overflow', 'mixBlendMode', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundClip', 'textOverflow'].forEach(function (k) {
       if (style.hasOwnProperty(k)) {
-        res[STYLE_KEY$2[style2Upper$1(k)]] = convertStringValue(k, style[k]);
+        res[STYLE_KEY$1[style2Upper$1(k)]] = convertStringValue(k, style[k]);
       }
     }); // 直接赋值的number类型
 
     ['flexGrow', 'flexShrink'].forEach(function (k) {
       if (style.hasOwnProperty(k)) {
-        res[STYLE_KEY$2[style2Upper$1(k)]] = Math.max(parseFloat(style[k]) || 0, 0);
+        res[STYLE_KEY$1[style2Upper$1(k)]] = Math.max(parseFloat(style[k]) || 0, 0);
       }
     });
     temp = style.zIndex;
 
     if (temp !== undefined) {
-      res[Z_INDEX$4] = parseFloat(temp) || 0;
+      res[Z_INDEX$5] = parseFloat(temp) || 0;
     } // 这些支持多个的用数组表示
 
 
@@ -9176,7 +9199,7 @@
           });
         }
 
-        res[STYLE_KEY$2[style2Upper$1(k)]] = _v15;
+        res[STYLE_KEY$1[style2Upper$1(k)]] = _v15;
       }
     });
     GEOM_KEY_SET.forEach(function (k) {
@@ -9308,7 +9331,7 @@
       return a === b;
     }
 
-    if (k === TRANSFORM$5) {
+    if (k === TRANSFORM$6) {
       if (a.length !== b.length) {
         return false;
       }
@@ -9330,7 +9353,7 @@
       return true;
     }
 
-    if (k === ROTATE_3D$3) {
+    if (k === ROTATE_3D$4) {
       return a[0] === b[0] && a[1] === b[1] && a[2] === b[2] && a[3].v === b[3].v && a[3].u === b[3].u;
     }
 
@@ -9346,7 +9369,7 @@
       }
     }
 
-    if (k === TRANSFORM_ORIGIN$4 || k === PERSPECTIVE_ORIGIN$4 || isRadiusKey$1(k)) {
+    if (k === TRANSFORM_ORIGIN$5 || k === PERSPECTIVE_ORIGIN$4 || isRadiusKey$1(k)) {
       return a[0].v === b[0].v && a[0].u === b[0].u && a[1].v === b[1].v && a[1].u === b[1].u;
     }
 
@@ -9538,7 +9561,7 @@
       var k = keys[i];
       var v = style[k];
 
-      if (k === TRANSFORM$5) {
+      if (k === TRANSFORM$6) {
         if (v) {
           var _len6 = v.length;
           var n = new Array(_len6);
@@ -9564,7 +9587,7 @@
 
           res[k] = n;
         }
-      } else if (k === ROTATE_3D$3) {
+      } else if (k === ROTATE_3D$4) {
         res[k] = [v[0], v[1], v[2], {
           v: v[3].v,
           u: v[3].u
@@ -9609,7 +9632,7 @@
 
           res[k] = _n;
         }
-      } else if (k === TRANSFORM_ORIGIN$4 || k === PERSPECTIVE_ORIGIN$4 || isRadiusKey$1(k)) {
+      } else if (k === TRANSFORM_ORIGIN$5 || k === PERSPECTIVE_ORIGIN$4 || isRadiusKey$1(k)) {
         if (v) {
           var _n2 = new Array(2);
 
@@ -9663,9 +9686,9 @@
             }];
           });
         }
-      } else if (k === OPACITY$5 || k === Z_INDEX$4) {
+      } else if (k === OPACITY$5 || k === Z_INDEX$5) {
         res[k] = v;
-      } else if (k === TRANSLATE_PATH$1) {
+      } else if (k === TRANSLATE_PATH$2) {
         if (v) {
           res[k] = v.map(function (item) {
             return {
@@ -13782,15 +13805,15 @@
       TRANSLATE_X$3 = _enums$STYLE_KEY$h.TRANSLATE_X,
       TRANSLATE_Y$3 = _enums$STYLE_KEY$h.TRANSLATE_Y,
       TRANSLATE_Z$3 = _enums$STYLE_KEY$h.TRANSLATE_Z,
-      SCALE_X$2 = _enums$STYLE_KEY$h.SCALE_X,
-      SCALE_Y$2 = _enums$STYLE_KEY$h.SCALE_Y,
-      SCALE_Z$1 = _enums$STYLE_KEY$h.SCALE_Z,
-      SKEW_X$1 = _enums$STYLE_KEY$h.SKEW_X,
-      SKEW_Y$1 = _enums$STYLE_KEY$h.SKEW_Y,
-      ROTATE_X$1 = _enums$STYLE_KEY$h.ROTATE_X,
-      ROTATE_Y$1 = _enums$STYLE_KEY$h.ROTATE_Y,
-      ROTATE_Z$3 = _enums$STYLE_KEY$h.ROTATE_Z,
-      ROTATE_3D$2 = _enums$STYLE_KEY$h.ROTATE_3D,
+      SCALE_X$3 = _enums$STYLE_KEY$h.SCALE_X,
+      SCALE_Y$3 = _enums$STYLE_KEY$h.SCALE_Y,
+      SCALE_Z$2 = _enums$STYLE_KEY$h.SCALE_Z,
+      SKEW_X$2 = _enums$STYLE_KEY$h.SKEW_X,
+      SKEW_Y$2 = _enums$STYLE_KEY$h.SKEW_Y,
+      ROTATE_X$2 = _enums$STYLE_KEY$h.ROTATE_X,
+      ROTATE_Y$2 = _enums$STYLE_KEY$h.ROTATE_Y,
+      ROTATE_Z$4 = _enums$STYLE_KEY$h.ROTATE_Z,
+      ROTATE_3D$3 = _enums$STYLE_KEY$h.ROTATE_3D,
       PERSPECTIVE$3 = _enums$STYLE_KEY$h.PERSPECTIVE,
       MATRIX$3 = _enums$STYLE_KEY$h.MATRIX,
       FONT_SIZE$7 = _enums$STYLE_KEY$h.FONT_SIZE;
@@ -13814,26 +13837,26 @@
       t[13] = v;
     } else if (k === TRANSLATE_Z$3) {
       t[14] = v;
-    } else if (k === SCALE_X$2) {
+    } else if (k === SCALE_X$3) {
       t[0] = v;
-    } else if (k === SCALE_Y$2) {
+    } else if (k === SCALE_Y$3) {
       t[5] = v;
-    } else if (k === SCALE_Z$1) {
+    } else if (k === SCALE_Z$2) {
       t[10] = v;
-    } else if (k === SKEW_X$1) {
+    } else if (k === SKEW_X$2) {
       v = d2r(v);
       t[4] = Math.tan(v);
-    } else if (k === SKEW_Y$1) {
+    } else if (k === SKEW_Y$2) {
       v = d2r(v);
       t[1] = Math.tan(v);
-    } else if (k === ROTATE_X$1) {
+    } else if (k === ROTATE_X$2) {
       v = d2r(v);
       var sin = Math.sin(v);
       var cos = Math.cos(v);
       t[5] = t[10] = cos;
       t[6] = sin;
       t[9] = -sin;
-    } else if (k === ROTATE_Y$1) {
+    } else if (k === ROTATE_Y$2) {
       v = d2r(v);
 
       var _sin = Math.sin(v);
@@ -13843,7 +13866,7 @@
       t[0] = t[10] = _cos;
       t[8] = _sin;
       t[2] = -_sin;
-    } else if (k === ROTATE_Z$3) {
+    } else if (k === ROTATE_Z$4) {
       v = d2r(v);
 
       var _sin2 = Math.sin(v);
@@ -13853,7 +13876,7 @@
       t[0] = t[5] = _cos2;
       t[1] = _sin2;
       t[4] = -_sin2;
-    } else if (k === ROTATE_3D$2) {
+    } else if (k === ROTATE_3D$3) {
       var _v = v,
           _v2 = _slicedToArray(_v, 4),
           x = _v2[0],
@@ -13999,7 +14022,7 @@
       }
     } else if (k === MATRIX$3) {
       return v;
-    } else if (k === ROTATE_3D$2) {
+    } else if (k === ROTATE_3D$3) {
       return v;
     }
 
@@ -14073,7 +14096,7 @@
       TEXT_STROKE_COLOR$4 = _enums$STYLE_KEY$g.TEXT_STROKE_COLOR,
       TEXT_STROKE_WIDTH$3 = _enums$STYLE_KEY$g.TEXT_STROKE_WIDTH,
       TEXT_STROKE_OVER$3 = _enums$STYLE_KEY$g.TEXT_STROKE_OVER,
-      ROTATE_Z$2 = _enums$STYLE_KEY$g.ROTATE_Z,
+      ROTATE_Z$3 = _enums$STYLE_KEY$g.ROTATE_Z,
       LINE_HEIGHT$6 = _enums$STYLE_KEY$g.LINE_HEIGHT;
   var DEG$2 = o$4.DEG;
   var CANVAS$4 = mode.CANVAS,
@@ -14169,7 +14192,7 @@
 
           if (isUpright) {
             list = [{
-              k: ROTATE_Z$2,
+              k: ROTATE_Z$3,
               v: {
                 v: 90,
                 u: DEG$2
@@ -14517,7 +14540,7 @@
       FONT_STYLE$2 = _enums$STYLE_KEY$f.FONT_STYLE,
       COLOR$4 = _enums$STYLE_KEY$f.COLOR,
       LINE_HEIGHT$5 = _enums$STYLE_KEY$f.LINE_HEIGHT,
-      ROTATE_Z$1 = _enums$STYLE_KEY$f.ROTATE_Z;
+      ROTATE_Z$2 = _enums$STYLE_KEY$f.ROTATE_Z;
   var DEG$1 = o$4.DEG;
   var CANVAS$3 = mode.CANVAS,
       SVG$3 = mode.SVG,
@@ -14581,7 +14604,7 @@
           if (isUpright) {
             var me = parent.matrixEvent,
                 list = [{
-              k: ROTATE_Z$1,
+              k: ROTATE_Z$2,
               v: {
                 v: 90,
                 u: DEG$1
@@ -14638,51 +14661,83 @@
     return Ellipsis;
   }(Node);
 
-  var _TRANSFORMS;
-  var STYLE_KEY$1 = enums.STYLE_KEY,
-      _enums$STYLE_KEY$e = enums.STYLE_KEY,
-      TRANSLATE_X$2 = _enums$STYLE_KEY$e.TRANSLATE_X,
-      TRANSLATE_Y$2 = _enums$STYLE_KEY$e.TRANSLATE_Y,
-      TRANSLATE_Z$2 = _enums$STYLE_KEY$e.TRANSLATE_Z,
-      OPACITY$4 = _enums$STYLE_KEY$e.OPACITY,
-      FILTER$5 = _enums$STYLE_KEY$e.FILTER,
-      PERSPECTIVE$2 = _enums$STYLE_KEY$e.PERSPECTIVE,
-      PERSPECTIVE_ORIGIN$3 = _enums$STYLE_KEY$e.PERSPECTIVE_ORIGIN;
-  var ENUM = {
-    // 低位表示<repaint级别
-    NONE: 0,
-    //                                          0
-    // cacheTotal变化需重新生成的时候
-    CACHE: 1,
-    //                                         1
-    TRANSLATE_X: 2,
-    //                                  10
-    TRANSLATE_Y: 4,
-    //                                 100
-    TRANSLATE_Z: 8,
-    //                                1000
-    TRANSFORM: 16,
-    //                                10000
-    TRANSFORM_ALL: 30,
-    //                            11110
-    OPACITY: 32,
-    //                                 100000
-    FILTER: 64,
-    //                                 1000000
-    MIX_BLEND_MODE: 128,
-    //                       10000000
-    PERSPECTIVE: 256,
-    //                         100000000
-    REPAINT: 512,
-    //                            1000000000
-    // 高位表示reflow
-    REFLOW: 1024,
-    //                           10000000000
-    // 特殊高位表示rebuild，节点发生变化
-    REBUILD: 2048 //                         100000000000
+  enums.STYLE_KEY;
+      var _enums$STYLE_KEY$e = enums.STYLE_KEY,
+      TX$1 = _enums$STYLE_KEY$e.TRANSLATE_X,
+      TY$1 = _enums$STYLE_KEY$e.TRANSLATE_Y,
+      TZ$1 = _enums$STYLE_KEY$e.TRANSLATE_Z,
+      OP$1 = _enums$STYLE_KEY$e.OPACITY,
+      FT$1 = _enums$STYLE_KEY$e.FILTER,
+      PPT$1 = _enums$STYLE_KEY$e.PERSPECTIVE,
+      PERSPECTIVE_ORIGIN$3 = _enums$STYLE_KEY$e.PERSPECTIVE_ORIGIN,
+      Z_INDEX$4 = _enums$STYLE_KEY$e.Z_INDEX,
+      SCALE_X$2 = _enums$STYLE_KEY$e.SCALE_X,
+      SCALE_Y$2 = _enums$STYLE_KEY$e.SCALE_Y,
+      SCALE_Z$1 = _enums$STYLE_KEY$e.SCALE_Z,
+      ROTATE_X$1 = _enums$STYLE_KEY$e.ROTATE_X,
+      ROTATE_Y$1 = _enums$STYLE_KEY$e.ROTATE_Y,
+      ROTATE_Z$1 = _enums$STYLE_KEY$e.ROTATE_Z,
+      ROTATE_3D$2 = _enums$STYLE_KEY$e.ROTATE_3D,
+      SKEW_X$1 = _enums$STYLE_KEY$e.SKEW_X,
+      SKEW_Y$1 = _enums$STYLE_KEY$e.SKEW_Y,
+      TF$2 = _enums$STYLE_KEY$e.TRANSFORM,
+      TRANSFORM_ORIGIN$4 = _enums$STYLE_KEY$e.TRANSFORM_ORIGIN,
+      TRANSLATE_PATH$1 = _enums$STYLE_KEY$e.TRANSLATE_PATH;
+  var isIgnore = o$2.isIgnore,
+      isRepaint$1 = o$2.isRepaint; // 低位表示<repaint级别
 
+  var NONE$3 = 0; //                                          0
+  // cacheTotal变化需重新生成的时候
+
+  var CACHE$2 = 1; //                                         1
+
+  var TRANSLATE_X$2 = 2; //                                  10
+
+  var TRANSLATE_Y$2 = 4; //                                 100
+
+  var TRANSLATE_Z$2 = 8; //                                1000
+
+  var TRANSFORM$5 = 16; //                                10000
+
+  var TRANSFORM_ALL$3 = 30; //                            11110
+
+  var OPACITY$4 = 32; //                                 100000
+
+  var FILTER$5 = 64; //                                 1000000
+
+  var MIX_BLEND_MODE$3 = 128; //                       10000000
+
+  var PERSPECTIVE$2 = 256; //                         100000000
+
+  var REPAINT$4 = 512; //                            1000000000
+  // 高位表示reflow
+
+  var REFLOW$2 = 1024; //                           10000000000
+  // 特殊高位表示rebuild，节点发生变化
+
+  var REBUILD$1 = 2048; //                         100000000000
+
+  var ENUM = {
+    NONE: NONE$3,
+    CACHE: CACHE$2,
+    TRANSLATE_X: TRANSLATE_X$2,
+    TRANSLATE_Y: TRANSLATE_Y$2,
+    TRANSLATE_Z: TRANSLATE_Z$2,
+    TRANSFORM: TRANSFORM$5,
+    TRANSFORM_ALL: TRANSFORM_ALL$3,
+    OPACITY: OPACITY$4,
+    FILTER: FILTER$5,
+    MIX_BLEND_MODE: MIX_BLEND_MODE$3,
+    PERSPECTIVE: PERSPECTIVE$2,
+    REPAINT: REPAINT$4,
+    REFLOW: REFLOW$2,
+    REBUILD: REBUILD$1
   };
-  var TRANSFORMS = (_TRANSFORMS = {}, _defineProperty(_TRANSFORMS, STYLE_KEY$1.SCALE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.SCALE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.SCALE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.ROTATE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.ROTATE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.ROTATE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.SKEW_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.SKEW_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.ROTATE_3D, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.TRANSFORM, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.TRANSFORM_ORIGIN, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.TRANSLATE_PATH, true), _TRANSFORMS);
+
+  function isTransforms(k) {
+    return k === SCALE_X$2 || k === SCALE_Y$2 || k === SCALE_Z$1 || k === ROTATE_X$1 || k === ROTATE_Y$1 || k === ROTATE_Z$1 || k === ROTATE_3D$2 || k === SKEW_X$1 || k === SKEW_Y$1 || k === TF$2 || k === TRANSFORM_ORIGIN$4 || k === TRANSLATE_PATH$1;
+  }
+
   var o$1 = Object.assign({
     contain: function contain(lv, value) {
       return (lv & value) > 0;
@@ -14694,52 +14749,55 @@
      * @returns {number|*}
      */
     getLevel: function getLevel(k) {
-      if (o$2.isIgnore(k)) {
-        return ENUM.NONE;
+      if (isIgnore(k)) {
+        return NONE$3;
       }
 
-      if (k === TRANSLATE_X$2) {
-        return ENUM.TRANSLATE_X;
+      if (k === Z_INDEX$4) {
+        return CACHE$2;
       }
 
-      if (k === TRANSLATE_Y$2) {
-        return ENUM.TRANSLATE_Y;
+      if (k === TX$1) {
+        return TRANSLATE_X$2;
       }
 
-      if (k === TRANSLATE_Z$2) {
-        return ENUM.TRANSLATE_Z;
+      if (k === TY$1) {
+        return TRANSLATE_Y$2;
       }
 
-      if (TRANSFORMS.hasOwnProperty(k)) {
-        return ENUM.TRANSFORM;
+      if (k === TZ$1) {
+        return TRANSLATE_Z$2;
       }
 
-      if (k === OPACITY$4) {
-        return ENUM.OPACITY;
+      if (k === OP$1) {
+        return OPACITY$4;
       }
 
-      if (k === FILTER$5) {
-        return ENUM.FILTER;
+      if (k === FT$1) {
+        return FILTER$5;
       }
 
-      if (k === PERSPECTIVE$2 || k === PERSPECTIVE_ORIGIN$3) {
-        return ENUM.PERSPECTIVE;
+      if (k === PPT$1 || k === PERSPECTIVE_ORIGIN$3) {
+        return PERSPECTIVE$2;
       }
 
-      if (o$2.isRepaint(k)) {
-        return ENUM.REPAINT;
+      if (isTransforms(k)) {
+        return TRANSFORM$5;
       }
 
-      return ENUM.REFLOW;
+      if (isRepaint$1(k)) {
+        return REPAINT$4;
+      }
+
+      return REFLOW$2;
     },
     isReflow: function isReflow(lv) {
-      return lv >= ENUM.REFLOW;
+      return lv >= REFLOW$2;
     },
     isRepaint: function isRepaint(lv) {
-      return lv < ENUM.REFLOW;
+      return lv < REFLOW$2;
     }
   }, ENUM);
-  o$1.TRANSFORMS = TRANSFORMS;
 
   var _enums$STYLE_KEY$d = enums.STYLE_KEY,
       DISPLAY$7 = _enums$STYLE_KEY$d.DISPLAY,
@@ -30064,10 +30122,10 @@
       }
     }, {
       key: "__calStyle",
-      value: function __calStyle(__currentStyle, __computedStyle, __cacheStyle) {
+      value: function __calStyle(lv, __currentStyle, __computedStyle, __cacheStyle) {
         var _this2 = this;
 
-        var res = _get(_getPrototypeOf(Geom.prototype), "__calStyle", this).call(this, __currentStyle, __computedStyle, __cacheStyle);
+        var res = _get(_getPrototypeOf(Geom.prototype), "__calStyle", this).call(this, lv, __currentStyle, __computedStyle, __cacheStyle);
 
         if (isNil$8(__cacheStyle[STROKE_WIDTH$6])) {
           __cacheStyle[STROKE_WIDTH$6] = true;

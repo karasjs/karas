@@ -149,6 +149,7 @@ function inherit(frames, keys, target) {
         }
       }
     });
+    item.clone = cloneStyle(style);
   });
 }
 
@@ -199,7 +200,6 @@ function framing(style, duration, es) {
   }
   return {
     style,
-    clone: cloneStyle(style),
     time: offset * duration,
     easing: easing || es,
     timingFunction: getEasing(easing || es),
@@ -1311,11 +1311,11 @@ function calIntermediateStyle(frame, percent, target) {
     }
     // color可能超限[0,255]，但浏览器已经做了限制，无需关心
     else if(isColorKey(k)) {
-      st = st.v;
-      st[0] = cl[0] + v[0] * percent;
-      st[1] = cl[1] + v[1] * percent;
-      st[2] = cl[2] + v[2] * percent;
-      st[3] = cl[3] + v[3] * percent;
+      let t = st.v;
+      t[0] = cl[0] + v[0] * percent;
+      t[1] = cl[1] + v[1] * percent;
+      t[2] = cl[2] + v[2] * percent;
+      t[3] = cl[3] + v[3] * percent;
       currentStyle[k] = st;
     }
     else if(GEOM.hasOwnProperty(k)) {
@@ -1404,9 +1404,15 @@ function calIntermediateStyle(frame, percent, target) {
       }
       currentStyle[k] = st;
     }
-    // string的直接量
+    // string的直接量，在不同帧之间可能存在变化，同帧变化后不再改变
     else {
-      currentStyle[k] = st;
+      if(currentStyle[k] !== st) {
+        currentStyle[k] = st;
+      }
+      else {
+        let j = res.indexOf(k);
+        res.splice(j, 1);
+      }
     }
   }
   // 无变化的也得检查是否和当前相等，防止跳到一个不变化的帧上，而前一帧有变化的情况
@@ -1808,8 +1814,8 @@ class Animation extends Event {
     if(currentTime < delay) {
       if(stayBegin) {
         let currentFrame = this.__currentFrame = currentFrames[0];
-        let current = currentFrame.style;
-        genBeforeRefresh(this, current, this.__keys, root, target);
+        let keys = calLastStyle(currentFrame.style, this.__keys, target);
+        genBeforeRefresh(keys, root, target, null);
       }
       this.__begin = false; // 默认是true，delay置false防触发
       // 即便不刷新，依旧执行帧回调，同时标明让后续第一帧响应begin

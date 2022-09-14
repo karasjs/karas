@@ -17733,6 +17733,7 @@
           }
         }
       });
+      item.clone = cloneStyle(style);
     });
   }
   /**
@@ -17791,7 +17792,6 @@
 
     return {
       style: style,
-      clone: cloneStyle(style),
       time: offset * duration,
       easing: easing || es,
       timingFunction: getEasing(easing || es),
@@ -18935,11 +18935,11 @@
         currentStyle[k] = st;
       } // color可能超限[0,255]，但浏览器已经做了限制，无需关心
       else if (isColorKey(k)) {
-        st = st.v;
-        st[0] = cl[0] + v[0] * percent;
-        st[1] = cl[1] + v[1] * percent;
-        st[2] = cl[2] + v[2] * percent;
-        st[3] = cl[3] + v[3] * percent;
+        var _t = st.v;
+        _t[0] = cl[0] + v[0] * percent;
+        _t[1] = cl[1] + v[1] * percent;
+        _t[2] = cl[2] + v[2] * percent;
+        _t[3] = cl[3] + v[3] * percent;
         currentStyle[k] = st;
       } else if (GEOM$1.hasOwnProperty(k)) {
         var tagName = target.tagName;
@@ -19028,9 +19028,15 @@
         }
 
         currentStyle[k] = st;
-      } // string的直接量
+      } // string的直接量，在不同帧之间可能存在变化，同帧变化后不再改变
       else {
-        currentStyle[k] = st;
+        if (currentStyle[k] !== st) {
+          currentStyle[k] = st;
+        } else {
+          var _j9 = res.indexOf(k);
+
+          res.splice(_j9, 1);
+        }
       }
     };
 
@@ -19517,8 +19523,9 @@
           if (stayBegin) {
             var _currentFrame = this.__currentFrame = currentFrames[0];
 
-            var current = _currentFrame.style;
-            genBeforeRefresh(this, current, this.__keys, root);
+            var _keys = calLastStyle(_currentFrame.style, this.__keys, target);
+
+            genBeforeRefresh(_keys, root, target, null);
           }
 
           this.__begin = false; // 默认是true，delay置false防触发

@@ -159,13 +159,14 @@ function inherit(frames, keys, target) {
  * @param keys 样式所有的key
  * @param root
  * @param node
+ * @param cb
  */
-function genBeforeRefresh(keys, root, node) {
+function genBeforeRefresh(keys, root, node, cb) {
   root.__addUpdate(node, {
     keys,
+    cb,
   });
   // animation.__style = style;
-  // animation.__assigning = true;
   // frame每帧回调时，下方先执行计算好变更的样式，这里特殊插入一个hook，让root增加一个刷新操作
   // 多个动画调用因为相同root也只会插入一个，这样在所有动画执行完毕后frame里检查同步进行刷新，解决单异步问题
   // root.__frameHook();
@@ -1103,7 +1104,7 @@ function calIntermediateStyle(frame, percent, target) {
   if(timingFunction && timingFunction !== linear) {
     percent = timingFunction(percent);
   }
-  let currentStyle = target.__currentStyle, keys = frame.keys.slice(0);
+  let currentStyle = target.__currentStyle, res = frame.keys.slice(0);
   for(let i = 0, len = transition.length; i < len; i++) {
     let item = transition[i];
     let k = item.k, v = item.v, st = item.st, cl = item.cl;
@@ -1414,10 +1415,25 @@ function calIntermediateStyle(frame, percent, target) {
     let k = fixed[i];
     if(!equalStyle(k, style[k], currentStyle[k], target)) {
       currentStyle[k] = style[k];
-      keys.push(k);
+      res.push(k);
     }
   }
-  return keys;
+  return res;
+}
+
+/**
+ * 最后一帧无法计算transition，对整体keys的style进行对比
+ */
+function calLastStyle(style, target, keys) {
+  let currentStyle = target.__currentStyle, res = [];
+  for(let i = 0, len = keys.length; i < len; i++) {
+    let k = keys[i];
+    if(!equalStyle(k, style[k], currentStyle[k], target)) {
+      currentStyle[k] = style[k];
+      res.push(k);
+    }
+  }
+  return res;
 }
 
 function gotoOverload(options, cb) {
@@ -1642,7 +1658,7 @@ class Animation extends Event {
       }
       originStyle[k] = style[k];
     });
-    // 再计算两帧之间的变化，存入transition属性
+    // 再计算两帧之间的变化，存入transition/fixed属性
     let length = frames.length;
     let prev = frames[0];
     for(let i = 1; i < length; i++) {
@@ -1672,10 +1688,10 @@ class Animation extends Event {
     if(isFinish) {
       // gotoAndStop到一个很大的时间的话，也需要防止超过
       this.__currentTime = this.__delay + this.__duration * this.__iterations + this.__endDelay;
-      if(this.__playState === 'finish') {
+      if(this.__playState === 'finished') {
         return;
       }
-      this.__playState = 'finish';
+      this.__playState = 'finished';
       // cancel需要清除finish根据情况保留
       if(!this.__stayEnd) {
         this.__style = {};
@@ -1853,7 +1869,7 @@ class Animation extends Event {
       let total = currentFrames[i + 1].time - frameTime;
       percent = (currentTime - frameTime) / total;
     }
-    let inEndDelay, currentFrame = currentFrames[i], current;
+    let inEndDelay, currentFrame = currentFrames[i];
     this.__currentFrame = currentFrame;
     /** 这里要考虑全几种场景：
      * 1. 单次播放无endDelay且fill不停留（有/无差异，下同）
@@ -1869,13 +1885,14 @@ class Animation extends Event {
     let keys;
     if(isLastFrame) {
       inEndDelay = currentTime < duration + endDelay;
+      let style;
       // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
       if(stayEnd) {
-        current = currentFrame.style;
+        keys = calLastStyle(currentFrame.style, target, this.__keys);
       }
       // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
       else {
-        current = this.__originStyle;
+        keys = calLastStyle(this.__originStyle, target, this.__keys);
       }
       // 进入endDelay或结束阶段触发end事件，注意只触发一次，防重在触发的地方做
       this.__nextEnd = true;
@@ -1891,7 +1908,7 @@ class Animation extends Event {
       keys = calIntermediateStyle(currentFrame, percent, target);
     }
     // 无论两帧之间是否有变化，都生成计算结果赋给style，去重在root做
-    genBeforeRefresh(keys, root, target);
+    genBeforeRefresh(keys, root, target, null);
     if(needClean) {
       let playCb = this.__playCb;
       this.__clean(true);
@@ -1903,7 +1920,6 @@ class Animation extends Event {
   }
 
   __after(diff) {
-    this.__assigning = false;
     if(this.__inFps) {
       this.__inFps = false;
       return;
@@ -1953,85 +1969,116 @@ class Animation extends Event {
   }
 
   finish(cb) {
-    let self = this;
-    let isDestroyed = self.__isDestroyed;
-    let duration = self.__duration;
-    let playState = self.__playState;
-    let frames = self.__frames;
-    if(isDestroyed || duration <= 0 || frames.length < 1 || playState === 'finished' || playState === 'idle') {
-      return self;
+    let isDestroyed = this.__isDestroyed;
+    let duration = this.__duration;
+    let playState = this.__playState;
+    let frames = this.__frames;
+    if(isDestroyed || duration <= 0 || frames.length < 1 || playState === 'finished') {
+      return this;
     }
     // 先清除所有回调任务，多次调用finish也会清除只留最后一次
-    self.__cancelTask();
-    let root = self.__root;
-    let originStyle = self.__originStyle;
+    this.__cancelTask();
+    this.__begin = this.__end = this.__isDelay = this.__finished
+      = this.__inFps = this.__enterFrame = false;
+    this.__playState = 'finished';
+    let root = this.__root;
     if(root) {
-      let current;
-      // 停留在最后一帧
+      let target = this.__target;
+      let style;
+      // 是否停留在最后一帧
       if(this.__stayEnd) {
-        this.__currentFrame = frames[frames.length - 1];
-        current = frames[frames.length - 1].style;
+        let framesR = this.__framesR;
+        let direction = this.__direction;
+        let iterations = this.__iterations;
+        if('reverse'.indexOf(direction) > -1) {
+          [frames, framesR] = [framesR, frames];
+        }
+        if(iterations === Infinity || iterations % 2) {
+          style = frames[frames.length - 1];
+        }
+        else {
+          style = framesR[framesR.length - 1];
+        }
       }
       else {
-        current = originStyle;
+        style = this.__originStyle;
       }
-      root.addRefreshTask({
-        __before() {
-          self.__assigning = true;
-          genBeforeRefresh(self, current, self.__keys, root, self.__target);
-          self.__clean(true);
-        },
-        __after(diff) {
-          if(!self.__hasFin) {
-            self.__hasFin = true;
-            self.__assigning = false;
-            frameCb(self, diff, false);
-            self.__begin = self.__end = self.__isDelay = self.__finished
-              = self.__inFps = self.__enterFrame = false;
-            self.emit(Event.FINISH);
-          }
-          if(isFunction(cb)) {
-            cb.call(self, diff);
-          }
-        },
+      let keys = calLastStyle(style, this.__keys, target);
+      genBeforeRefresh(keys, root, target, diff => {
+        frameCb(this, diff, false);
+        this.emit(Event.FINISH);
+        if(isFunction(cb)) {
+          cb(diff);
+        }
       });
+      // root.addRefreshTask({
+      //   __before() {
+      //     self.__assigning = true;
+      //     genBeforeRefresh(self, current, self.__keys, root, self.__target);
+      //     self.__clean(true);
+      //   },
+      //   __after(diff) {
+      //     if(!self.__hasFin) {
+      //       self.__hasFin = true;
+      //       self.__assigning = false;
+      //       frameCb(self, diff, false);
+      //       self.__begin = self.__end = self.__isDelay = self.__finished
+      //         = self.__inFps = self.__enterFrame = false;
+      //       self.emit(Event.FINISH);
+      //     }
+      //     if(isFunction(cb)) {
+      //       cb.call(self, diff);
+      //     }
+      //   },
+      // });
     }
-    return self;
+    return this;
   }
 
   cancel(cb) {
     let self = this;
-    let isDestroyed = self.__isDestroyed;
-    let duration = self.__duration;
-    let playState = self.__playState;
-    let frames = self.__frames;
-    if(isDestroyed || duration <= 0 || playState === 'idle' || frames.length < 1) {
-      return self;
+    let isDestroyed = this.__isDestroyed;
+    let duration = this.__duration;
+    let playState = this.__playState;
+    let frames = this.__frames;
+    if(isDestroyed || duration <= 0 || frames.length < 1 || playState === 'idle') {
+      return this;
     }
-    self.__cancelTask();
-    let root = self.__root;
-    let originStyle = self.__originStyle;
+    this.__cancelTask();
+    this.__begin = this.__end = this.__isDelay = this.__finished
+      = this.__inFps = this.__enterFrame = false;
+    this.__playState = 'idle';
+    let root = this.__root;
     if(root) {
-      root.addRefreshTask({
-        __before() {
-          self.__assigning = true;
-          genBeforeRefresh(self, originStyle, self.__keys, root, self.__target);
-          self.__clean();
-        },
-        __after(diff) {
-          if(!self.__hasCancel) {
-            self.__hasCancel = true;
-            self.__assigning = false;
-            frameCb(self, diff, false);
-            self.__begin = self.__end = self.__isDelay = self.__finished
-              = self.__inFps = self.__enterFrame = false;
-            self.emit(Event.CANCEL);
-          }
-          if(isFunction(cb)) {
-            cb.call(self, diff);
-          }
-        },
+      let target = this.__target;
+      let keys = calLastStyle(this.__originStyle, this.__keys, target);
+      genBeforeRefresh(keys, root, target, diff => {
+        frameCb(this, diff, false);
+        this.emit(Event.CANCEL);
+        if(isFunction(cb)) {
+          cb(diff);
+        }
       });
+      // root.addRefreshTask({
+      //   __before() {
+      //     self.__assigning = true;
+      //     genBeforeRefresh(self, originStyle, self.__keys, root, self.__target);
+      //     self.__clean();
+      //   },
+      //   __after(diff) {
+      //     if(!self.__hasCancel) {
+      //       self.__hasCancel = true;
+      //       self.__assigning = false;
+      //       frameCb(self, diff, false);
+      //       self.__begin = self.__end = self.__isDelay = self.__finished
+      //         = self.__inFps = self.__enterFrame = false;
+      //       self.emit(Event.CANCEL);
+      //     }
+      //     if(isFunction(cb)) {
+      //       cb.call(self, diff);
+      //     }
+      //   },
+      // });
     }
     return self;
   }
@@ -2074,27 +2121,6 @@ class Animation extends Event {
       this.__cancelTask();
       if(isFunction(cb)) {
         cb.call(this, diff);
-      }
-    });
-  }
-
-  // 同步赋予，用在extendAnimate
-  assignCurrentStyle() {
-    let style = this.__style;
-    let target = this.__target;
-    let keys = this.__keys;
-    keys.forEach(i => {
-      if(style.hasOwnProperty(i)) {
-        let v = style[i];
-        // geom的属性变化
-        if(GEOM.hasOwnProperty(i)) {
-          target.currentProps[i] = v;
-        }
-        // 样式
-        else {
-          // 将动画样式直接赋给currentStyle
-          target.currentStyle[i] = v;
-        }
       }
     });
   }
@@ -2165,20 +2191,6 @@ class Animation extends Event {
       ac.remove(this);
     }
   }
-
-  // __stayBegin() {
-  //   return {
-  //     backwards: true,
-  //     both: true,
-  //   }.hasOwnProperty(this.fill);
-  // }
-  //
-  // __stayEnd() {
-  //   return {
-  //     forwards: true,
-  //     both: true,
-  //   }.hasOwnProperty(this.fill);
-  // }
 
   __setTarget(target) {
     this.__target = target;
@@ -2469,10 +2481,6 @@ class Animation extends Event {
       this.__spfLimit = v;
     }
     return v;
-  }
-
-  get assigning() {
-    return this.__assigning;
   }
 }
 

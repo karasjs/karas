@@ -255,6 +255,7 @@ class Dom extends Xom {
     this.__children = builder.buildChildren(this, children);
     this.__flexLine = []; // flex布局多行模式时存储行
     this.__ellipsis = null; // 虚拟节点，有的话渲染
+    this.__zIndexChildren = null;
   }
 
   __structure(lv, j) {
@@ -748,7 +749,6 @@ class Dom extends Xom {
    * @param isAbs abs无尺寸时提前虚拟布局计算尺寸
    * @param isColumn flex列无尺寸时提前虚拟布局计算尺寸
    * @param isRow flex行布局时出现writingMode垂直排版计算尺寸
-   * @private
    */
   __layoutBlock(data, isAbs, isColumn, isRow) {
     let { flowChildren, currentStyle, computedStyle } = this;

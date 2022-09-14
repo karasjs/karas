@@ -1146,7 +1146,7 @@ class Root extends Dom {
             && ['relative', 'absolute'].indexOf(__computedStyle[POSITION]) === -1) {
             continue;
           }
-          // repaint细化等级，reflow在checkReflow()
+          // 细化等级
           lv |= getLevel(k);
           if(k === DISPLAY) {
             hasDisplay = true;

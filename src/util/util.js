@@ -406,19 +406,6 @@ function joinArr(arr, split) {
   return s;
 }
 
-function extendAnimate(ovd, nvd) {
-  let list = nvd.__animationList = ovd.animationList.splice(0);
-  list.forEach(item => {
-    item.__setTarget(nvd);
-    // 事件队列的缘故，可能动画本帧刚执行过，然后再继承，就会缺失，需再次赋值一遍；也有可能停留最后
-    if(item.assigning || item.finished && item.__stayEnd) {
-      item.assignCurrentStyle();
-    }
-  });
-  // 帧动画继承
-  nvd.__frameAnimateList = ovd.__frameAnimateList.splice(0);
-}
-
 function transformBbox(bbox, matrix, dx = 0, dy = 0) {
   if(matrix && !mx.isE(matrix)) {
     let [x1, y1, x2, y2] = bbox;
@@ -549,7 +536,6 @@ let util = {
   equal,
   extend,
   joinArr,
-  extendAnimate,
   transformBbox,
   assignMatrix,
   prefixHex,

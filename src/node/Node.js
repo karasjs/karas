@@ -26,15 +26,9 @@ class Node {
   __structure(lv, j) {
     return this.__struct = {
       node: this,
-      // index: i,
       childIndex: j,
       lv,
     };
-  }
-
-  __modifyStruct(root, offset = 0) {
-    let struct = this.__struct;
-    return [struct, 0];
   }
 
   __offsetX(diff, isLayout) {

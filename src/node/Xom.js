@@ -232,7 +232,6 @@ class Xom extends Node {
     this.__perspectiveMatrix = [];
     this.__frameAnimateList = [];
     this.__contentBoxList = []; // inline存储内容用
-    // this.__json domApi需要获取生成时的json引用，builder过程添加，如appendChild时json也需要跟着变更
     this.__cacheAsBitmap = !!this.props.cacheAsBitmap;
     this.__cache = this.__cacheTotal = this.__cacheFilter = this.__cacheMask = this.__cacheOverflow = null;
     this.__layoutData = null; // 缓存上次布局x/y/w/h数据

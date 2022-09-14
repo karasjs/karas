@@ -1272,6 +1272,29 @@ class Root extends Dom {
     else {
       this.__rlv |= lv;
     }
+    // dom在>=REPAINT时total失效，svg的Geom比较特殊
+    let need = lv >= REPAINT || this.renderMode === mode.SVG && node instanceof Geom;
+    if(need) {
+      if(node.__cache) {
+        node.__cache.release();
+      }
+    }
+    // perspective也特殊只清空total的cache，和>=REPAINT清空total共用
+    if(need || contain(lv, PERSPECTIVE)) {
+      if(node.__cacheTotal) {
+        node.__cacheTotal.release();
+      }
+      if(node.__cacheMask) {
+        node.__cacheMask.release();
+      }
+      if(node.__cacheOverflow) {
+        node.__cacheOverflow.release();
+      }
+    }
+    // 特殊的filter清除cache
+    if((need || contain(lv, FILTER)) && node.__cacheFilter) {
+      node.__cacheFilter.release();
+    }
     // 向上清除cache汇总缓存信息，过程中可能会出现重复，根据refreshLevel判断
     while(__domParent) {
       if(contain(__domParent.__refreshLevel, CACHE)) {

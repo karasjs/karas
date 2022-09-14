@@ -563,11 +563,12 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
       let maskStartHash = {};
       let offscreenHash = {};
       let { dx, dy, dbx, dby, x: tx, y: ty, ctx, sx1, sy1 } = cacheMask;
+      let struct = item.__struct, root = item.__root, structs = root.__structs;
+      let index = structs.indexOf(struct);
       let {
-        index,
         total,
         lv,
-      } = item.__struct;
+      } = struct;
       let matrixList = [];
       let parentMatrix = null;
       let lastMatrix = null;

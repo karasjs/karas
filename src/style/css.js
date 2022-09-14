@@ -81,7 +81,7 @@ const {
 function isGradient(s) {
   if(reg.gradient.test(s)) {
     let gradient = reg.gradient.exec(s);
-    if(gradient && ['linear', 'radial', 'conic'].indexOf(gradient[1][1]) > -1) {
+    if(gradient && ['linear', 'radial', 'conic'].indexOf(gradient[1]) > -1) {
       return true;
     }
   }

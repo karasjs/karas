@@ -394,7 +394,7 @@ function checkNext(root, top, node, addDom, removeDom) {
     });
     top.__layout(ld, false, false, false);
     if(!addDom && !removeDom) {
-      parent.__zIndexChildren = null;
+      top.__zIndexChildren = null;
       top.__modifyStruct();
     }
     y += top.outerHeight;

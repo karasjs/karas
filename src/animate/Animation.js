@@ -1190,8 +1190,8 @@ function calIntermediateStyle(frame, percent, target) {
       st.forEach((item, i) => {
         let o = v[i];
         if(o) {
-          item[0].v = cl[i][0] + o[0] * percent;
-          item[1].v = cl[i][1] + o[1] * percent;
+          item[0].v = cl[i][0].v + o[0] * percent;
+          item[1].v = cl[i][1].v + o[1] * percent;
         }
       });
       currentStyle[k] = st;
@@ -1518,6 +1518,7 @@ class Animation extends Event {
     this.__framesR = framesR;
     this.__keys = keys;
     this.__originStyle = originStyle;
+    this.__isDelay = false;
     this.__outBeginDelay = false;
     this.__playCount = 0;
     this.__firstEnter = true;
@@ -1812,9 +1813,9 @@ class Animation extends Event {
     this.__firstEnter = false;
     // delay仅第一次生效等待
     if(currentTime < delay) {
-      if(stayBegin) {
+      if(stayBegin && !this.__isDelay) {
         let currentFrame = this.__currentFrame = currentFrames[0];
-        let keys = calLastStyle(currentFrame.style, this.__keys, target);
+        let keys = calLastStyle(currentFrame.style, target, this.__keys);
         genBeforeRefresh(keys, root, target, null);
       }
       this.__begin = false; // 默认是true，delay置false防触发
@@ -1823,6 +1824,7 @@ class Animation extends Event {
       this.__isDelay = true;
       return;
     }
+    this.__isDelay = false;
     // 减去delay，计算在哪一帧
     currentTime -= delay;
     if(this.__outBeginDelay) {
@@ -1931,7 +1933,6 @@ class Animation extends Event {
       return;
     }
     frameCb(this, diff, this.__isDelay);
-    this.__isDelay = false;
     if(this.__begin) {
       this.__begin = false;
       this.emit(Event.BEGIN, this.__playCount);
@@ -2042,7 +2043,6 @@ class Animation extends Event {
   }
 
   cancel(cb) {
-    let self = this;
     let isDestroyed = this.__isDestroyed;
     let duration = this.__duration;
     let playState = this.__playState;
@@ -2086,7 +2086,7 @@ class Animation extends Event {
       //   },
       // });
     }
-    return self;
+    return this;
   }
 
   gotoAndPlay(v, options, cb) {
@@ -2188,11 +2188,11 @@ class Animation extends Event {
   }
 
   removeControl() {
-    let root = this.root;
+    let root = this.__root;
     if(!root) {
       return;
     }
-    let ac = root.animateController;
+    let ac = root.__animateController;
     if(ac) {
       ac.remove(this);
     }
@@ -2207,25 +2207,26 @@ class Animation extends Event {
     this.__playCb = null;
   }
 
-  __destroy(sync) {
-    let self = this;
+  __destroy() {
     if(this.__isDestroyed) {
       return;
     }
-    self.removeControl();
+    this.removeControl();
+    this.__clean();
+    this.__target = this.__root = null;
     // clean异步执行，因为里面的样式还原需要等到下一帧，否则同步执行清除后，紧接着的新同步动画获取不到currentStyle
-    if(sync) {
-      self.__clean();
-      this.__target = null;
-    }
-    else {
-      frame.nextFrame({
-        __before() {
-          self.__clean();
-          this.__target = null;
-        },
-      });
-    }
+    // if(sync) {
+    //   this.__clean();
+    //   this.__target = null;
+    // }
+    // else {
+    //   frame.nextFrame({
+    //     __before() {
+    //       self.__clean();
+    //       this.__target = null;
+    //     },
+    //   });
+    // }
     this.__startTime = 0;
     this.__isDestroyed = true;
   }

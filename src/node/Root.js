@@ -1172,12 +1172,12 @@ class Root extends Dom {
         }
       }
     }
-    // 没有变化，注意排除add/remove
-    if(lv === NONE && !addDom && !removeDom) {
-      return;
-    }
+    // 没有变化，add/remove强制focus
     // 本身节点为none，变更无效，此时没有display变化，add/remove在操作时已经判断不会进入
-    if(__computedStyle[DISPLAY] === 'none' && !hasDisplay) {
+    if(lv === NONE || __computedStyle[DISPLAY] === 'none' && !hasDisplay) {
+      if(isFunction(o.cb)) {
+        o.cb();
+      }
       return;
     }
     // transform变化清空重算

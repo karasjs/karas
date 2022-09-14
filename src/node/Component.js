@@ -131,14 +131,11 @@ class Component extends Event {
         this.on(k, v);
       }
     });
-    // if(!this.__isMounted) {
-    //   this.__isMounted = true;
-    //   if(isFunction(this.componentDidMount)) {
-    //     root.once(Event.REFRESH, () => {
-    //       this.componentDidMount();
-    //     });
-    //   }
-    // }
+    if(isFunction(this.componentDidMount)) {
+      this.__root.once(Event.REFRESH, () => {
+        this.componentDidMount();
+      });
+    }
   }
 
   render() {
@@ -146,7 +143,7 @@ class Component extends Event {
   }
 
   __destroy() {
-    if(this.isDestroyed) {
+    if(this.__isDestroyed) {
       return;
     }
     this.__isDestroyed = true;
@@ -154,11 +151,13 @@ class Component extends Event {
     if(isFunction(this.componentWillUnmount)) {
       this.componentWillUnmount();
     }
-    this.root.delRefreshTask(this.__task);
-    if(this.shadowRoot) {
-      this.shadowRoot.__destroy();
+    if(this.__shadow) {
+      this.__shadow.__destroy();
     }
-    this.__parent = null;
+    this.__host = this.__hostRoot
+      = this.__shadow = this.__shadowRoot
+      = this.__prev = this.__next = this.__root
+      = this.__parent = this.__domParent = null;
   }
 
   __emitEvent(e, force) {

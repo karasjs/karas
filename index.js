@@ -16290,14 +16290,13 @@
 
             _this2.on(k, v);
           }
-        }); // if(!this.__isMounted) {
-        //   this.__isMounted = true;
-        //   if(isFunction(this.componentDidMount)) {
-        //     root.once(Event.REFRESH, () => {
-        //       this.componentDidMount();
-        //     });
-        //   }
-        // }
+        });
+
+        if (isFunction$8(this.componentDidMount)) {
+          this.__root.once(Event.REFRESH, function () {
+            _this2.componentDidMount();
+          });
+        }
       }
     }, {
       key: "render",
@@ -16307,7 +16306,7 @@
     }, {
       key: "__destroy",
       value: function __destroy() {
-        if (this.isDestroyed) {
+        if (this.__isDestroyed) {
           return;
         }
 
@@ -16318,13 +16317,11 @@
           this.componentWillUnmount();
         }
 
-        this.root.delRefreshTask(this.__task);
-
-        if (this.shadowRoot) {
-          this.shadowRoot.__destroy();
+        if (this.__shadow) {
+          this.__shadow.__destroy();
         }
 
-        this.__parent = null;
+        this.__host = this.__hostRoot = this.__shadow = this.__shadowRoot = this.__prev = this.__next = this.__root = this.__parent = this.__domParent = null;
       }
     }, {
       key: "__emitEvent",
@@ -18817,8 +18814,8 @@
           var o = v[i];
 
           if (o) {
-            item[0].v = cl[i][0] + o[0] * percent;
-            item[1].v = cl[i][1] + o[1] * percent;
+            item[0].v = cl[i][0].v + o[0] * percent;
+            item[1].v = cl[i][1].v + o[1] * percent;
           }
         });
         currentStyle[k] = st;
@@ -19167,6 +19164,7 @@
       _this.__framesR = framesR;
       _this.__keys = keys;
       _this.__originStyle = originStyle;
+      _this.__isDelay = false;
       _this.__outBeginDelay = false;
       _this.__playCount = 0;
       _this.__firstEnter = true;
@@ -19513,10 +19511,10 @@
         this.__firstEnter = false; // delay仅第一次生效等待
 
         if (currentTime < delay) {
-          if (stayBegin) {
+          if (stayBegin && !this.__isDelay) {
             var _currentFrame = this.__currentFrame = currentFrames[0];
 
-            var _keys = calLastStyle(_currentFrame.style, this.__keys, target);
+            var _keys = calLastStyle(_currentFrame.style, target, this.__keys);
 
             genBeforeRefresh(_keys, root, target, null);
           }
@@ -19527,8 +19525,9 @@
           this.__outBeginDelay = true;
           this.__isDelay = true;
           return;
-        } // 减去delay，计算在哪一帧
+        }
 
+        this.__isDelay = false; // 减去delay，计算在哪一帧
 
         currentTime -= delay;
 
@@ -19647,7 +19646,6 @@
         }
 
         frameCb(this, diff, this.__isDelay);
-        this.__isDelay = false;
 
         if (this.__begin) {
           this.__begin = false;
@@ -19783,7 +19781,6 @@
       value: function cancel(cb) {
         var _this3 = this;
 
-        var self = this;
         var isDestroyed = this.__isDestroyed;
         var duration = this.__duration;
         var playState = this.__playState;
@@ -19832,7 +19829,7 @@
           // });
         }
 
-        return self;
+        return this;
       }
     }, {
       key: "gotoAndPlay",
@@ -19972,13 +19969,13 @@
     }, {
       key: "removeControl",
       value: function removeControl() {
-        var root = this.root;
+        var root = this.__root;
 
         if (!root) {
           return;
         }
 
-        var ac = root.animateController;
+        var ac = root.__animateController;
 
         if (ac) {
           ac.remove(this);
@@ -19997,28 +19994,28 @@
       }
     }, {
       key: "__destroy",
-      value: function __destroy(sync) {
-        var self = this;
-
+      value: function __destroy() {
         if (this.__isDestroyed) {
           return;
         }
 
-        self.removeControl(); // clean异步执行，因为里面的样式还原需要等到下一帧，否则同步执行清除后，紧接着的新同步动画获取不到currentStyle
+        this.removeControl();
 
-        if (sync) {
-          self.__clean();
+        this.__clean();
 
-          this.__target = null;
-        } else {
-          frame.nextFrame({
-            __before: function __before() {
-              self.__clean();
-
-              this.__target = null;
-            }
-          });
-        }
+        this.__target = this.__root = null; // clean异步执行，因为里面的样式还原需要等到下一帧，否则同步执行清除后，紧接着的新同步动画获取不到currentStyle
+        // if(sync) {
+        //   this.__clean();
+        //   this.__target = null;
+        // }
+        // else {
+        //   frame.nextFrame({
+        //     __before() {
+        //       self.__clean();
+        //       this.__target = null;
+        //     },
+        //   });
+        // }
 
         this.__startTime = 0;
         this.__isDestroyed = true;
@@ -23393,7 +23390,7 @@
         var animation = new Animation(this, list, options);
 
         if (this.isDestroyed) {
-          animation.__destroy(true);
+          animation.__destroy();
 
           return animation;
         }
@@ -23589,7 +23586,7 @@
     }, {
       key: "getComputedStyle",
       value: function getComputedStyle(key) {
-        var computedStyle = this.computedStyle;
+        var computedStyle = this.__computedStyle;
         var res = {};
         var keys = [];
 
@@ -23634,9 +23631,9 @@
         } else {
           var __sx1 = this.__sx1,
               __sy1 = this.__sy1,
-              offsetWidth = this.offsetWidth,
-              offsetHeight = this.offsetHeight;
-          box = [__sx1, __sy1, __sx1 + offsetWidth, __sy1 + offsetHeight];
+              __offsetWidth = this.__offsetWidth,
+              __offsetHeight = this.__offsetHeight;
+          box = [__sx1, __sy1, __sx1 + __offsetWidth, __sy1 + __offsetHeight];
         }
 
         var matrixEvent = this.matrixEvent;
@@ -25131,7 +25128,7 @@
       top.__layout(ld, false, false, false);
 
       if (!addDom && !removeDom) {
-        parent.__zIndexChildren = null;
+        top.__zIndexChildren = null;
 
         top.__modifyStruct();
       }
@@ -37943,15 +37940,15 @@
               }
             }
           }
-        } // 没有变化，注意排除add/remove
+        } // 没有变化，add/remove强制focus
+        // 本身节点为none，变更无效，此时没有display变化，add/remove在操作时已经判断不会进入
 
 
-        if (lv === NONE && !addDom && !removeDom) {
-          return;
-        } // 本身节点为none，变更无效，此时没有display变化，add/remove在操作时已经判断不会进入
+        if (lv === NONE || __computedStyle[DISPLAY] === 'none' && !hasDisplay) {
+          if (isFunction$1(o.cb)) {
+            o.cb();
+          }
 
-
-        if (__computedStyle[DISPLAY] === 'none' && !hasDisplay) {
           return;
         } // transform变化清空重算
 

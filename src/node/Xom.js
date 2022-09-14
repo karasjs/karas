@@ -2495,7 +2495,7 @@ class Xom extends Node {
   animate(list, options = {}) {
     let animation = new Animation(this, list, options);
     if(this.isDestroyed) {
-      animation.__destroy(true);
+      animation.__destroy();
       return animation;
     }
     this.animationList.push(animation);
@@ -2656,7 +2656,7 @@ class Xom extends Node {
   // }
 
   getComputedStyle(key) {
-    let computedStyle = this.computedStyle;
+    let computedStyle = this.__computedStyle;
     let res = {};
     let keys = [];
     if(key) {
@@ -2698,8 +2698,8 @@ class Xom extends Node {
       box = this.bbox;
     }
     else {
-      let { __sx1, __sy1, offsetWidth, offsetHeight } = this;
-      box = [__sx1, __sy1, __sx1 + offsetWidth, __sy1 + offsetHeight];
+      let { __sx1, __sy1, __offsetWidth, __offsetHeight } = this;
+      box = [__sx1, __sy1, __sx1 + __offsetWidth, __sy1 + __offsetHeight];
     }
     let matrixEvent = this.matrixEvent;
     let p1 = point2d(mx.calPoint([box[0], box[1]], matrixEvent));

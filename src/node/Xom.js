@@ -2463,13 +2463,13 @@ class Xom extends Node {
     }
   }
 
-  updateStyle(style) {
+  updateStyle(style, cb) {
     let formatStyle = normalize(style);
-    this.updateFormatStyle(formatStyle);
+    this.updateFormatStyle(formatStyle, cb);
   }
 
   // 传入格式化好key/value的样式
-  updateFormatStyle(style) {
+  updateFormatStyle(style, cb) {
     let root = this.__root, currentStyle = this.__currentStyle;
     let keys = [];
     Object.keys(style).forEach(i => {
@@ -2488,6 +2488,7 @@ class Xom extends Node {
       root.__addUpdate(this, {
         style,
         keys,
+        cb,
       });
     }
   }

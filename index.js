@@ -23358,14 +23358,14 @@
       }
     }, {
       key: "updateStyle",
-      value: function updateStyle(style) {
+      value: function updateStyle(style, cb) {
         var formatStyle = normalize(style);
-        this.updateFormatStyle(formatStyle);
+        this.updateFormatStyle(formatStyle, cb);
       } // 传入格式化好key/value的样式
 
     }, {
       key: "updateFormatStyle",
-      value: function updateFormatStyle(style) {
+      value: function updateFormatStyle(style, cb) {
         var _this9 = this;
 
         var root = this.__root,
@@ -23389,7 +23389,8 @@
         if (root) {
           root.__addUpdate(this, {
             style: style,
-            keys: keys
+            keys: keys,
+            cb: cb
           });
         }
       }

@@ -378,9 +378,6 @@ function checkNext(root, top, node, addDom, removeDom) {
       parent.__zIndexChildren = null;
       parent.__modifyStruct();
     }
-    if(root.renderMode === mode.SVG) {
-      cleanSvgCache(parent);
-    }
     // 之前也是abs，可以跳出不会影响其它
     if(isLastAbs) {
       return;
@@ -453,4 +450,5 @@ export default {
   getMergeMargin,
   checkTop,
   checkNext,
+  cleanSvgCache,
 };

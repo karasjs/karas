@@ -19,8 +19,7 @@ let animation = t.animate([
 let input = document.querySelector('input');
 animation.on('finish', () => {
   input.value = JSON.stringify(t.currentStyle[karas.enums.STYLE_KEY.TRANSLATE_X]);
-  t.removeAnimate(animation);
-  animation = t.animate([
+  let a = t.animate([
     {},
     {
       translateX: 200,
@@ -29,7 +28,8 @@ animation.on('finish', () => {
     duration: 100,
     fill: 'forwards',
   });
-  animation.on('begin', () => {
+  a.on('begin', () => {
     input.value += '/' + JSON.stringify(t.currentStyle[karas.enums.STYLE_KEY.TRANSLATE_X]);
   });
+  t.removeAnimate(animation);
 });

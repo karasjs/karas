@@ -1650,19 +1650,6 @@ class Xom extends Node {
         children: [],
         visibility: 'visible',
       };
-      // svg mock，每次都生成，每个节点都是局部根，更新时自底向上清除
-      if(!this.__cacheTotal) {
-        this.__cacheTotal = {
-          available: true,
-          release() {
-            this.available = false;
-            delete virtualDom.cache;
-          },
-        };
-      }
-      else if(!this.__cacheTotal.available) {
-        this.__cacheTotal.available = true;
-      }
     }
     let display = computedStyle[DISPLAY];
     // canvas返回信息，svg已经初始化好了vd

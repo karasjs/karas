@@ -108,7 +108,7 @@ function unify(frames, target) {
             style[k] = style[TRANSLATE_PATH][1];
           }
           else {
-            style[k] = target.currentStyle[k];
+            style[k] = target.__currentStyle[k];
           }
         }
       }
@@ -1253,9 +1253,9 @@ function calIntermediateStyle(frame, percent, target) {
         if(!v2) {
           return;
         }
+        let cli = cl[i].v;
         if(st2.u === GRADIENT) {
           st2 = st2.v;
-          let cli = cl[i].v;
           let [c, d, p, z] = v2;
           for(let j = 0, len = Math.min(st2.v.length, c.length); j < len; j++) {
             let a = st2.v[j];
@@ -1301,10 +1301,10 @@ function calIntermediateStyle(frame, percent, target) {
         // fill纯色
         else {
           st2 = st2.v;
-          st2[0] = cl[0] + v2[0] * percent;
-          st2[1] = cl[1] + v2[1] * percent;
-          st2[2] = cl[2] + v2[2] * percent;
-          st2[3] = cl[3] + v2[3] * percent;
+          st2[0] = cli[0] + v2[0] * percent;
+          st2[1] = cli[1] + v2[1] * percent;
+          st2[2] = cli[2] + v2[2] * percent;
+          st2[3] = cli[3] + v2[3] * percent;
         }
       });
       currentStyle[k] = st;
@@ -1320,16 +1320,15 @@ function calIntermediateStyle(frame, percent, target) {
     }
     else if(GEOM.hasOwnProperty(k)) {
       let tagName = target.tagName;
-      let style = frame.style;
       if(GEOM[k][tagName] && isFunction(GEOM[k][tagName].calIncrease)) {
         let fn = GEOM[k][tagName].calIncrease;
         if(target.isMulti) {
-          style[k] = st.map((item, i) => {
+          st = st.map((item, i) => {
             return fn(item, v[i], percent);
           });
         }
         else {
-          style[k] = fn(st, v, percent);
+          st = fn(st, v, percent);
         }
       }
       else if(target.isMulti) {
@@ -1337,6 +1336,7 @@ function calIntermediateStyle(frame, percent, target) {
           for(let i = 0, len = Math.min(st.length, v.length); i < len; i++) {
             let o = st[i];
             let n = v[i];
+            let cli = cl[i];
             if(!isNil(o) && !isNil(n)) {
               for(let j = 0, len2 = Math.min(o.length, n.length); j < len2; j++) {
                 let o2 = o[j];
@@ -1344,7 +1344,7 @@ function calIntermediateStyle(frame, percent, target) {
                 if(!isNil(o2) && !isNil(n2)) {
                   for(let k = 0, len3 = Math.min(o2.length, n2.length); k < len3; k++) {
                     if(!isNil(o2[k]) && !isNil(n2[k])) {
-                      o2[k] += n2[k] * percent;
+                      o2[k] = cli[j][k] + n2[k] * percent;
                     }
                   }
                 }
@@ -1355,21 +1355,18 @@ function calIntermediateStyle(frame, percent, target) {
         else if(k === 'controlA' || k === 'controlB') {
           v.forEach((item, i) => {
             let st2 = st[i];
-            if(!isNil(item) && !isNil(st2)) {
-              for(let i = 0, len = Math.min(st2.length, item.length); i < len; i++) {
-                let o = st2[i];
-                let n = item[i];
-                if(!isNil(o) && !isNil(n)) {
-                  st2[i] += n * percent;
-                }
-              }
+            if(!isNil(item[0]) && !isNil(st2[0])) {
+              st2[0] = cl[i][0] + item[0] * percent;
+            }
+            if(!isNil(item[1]) && !isNil(st2[1])) {
+              st2[1] = cl[i][1] + item[1] * percent;
             }
           });
         }
         else {
           v.forEach((item, i) => {
             if(!isNil(item) && !isNil(st[i])) {
-              st[i] += item * percent;
+              st[i] = cl[i] + item * percent;
             }
           });
         }
@@ -1382,7 +1379,7 @@ function calIntermediateStyle(frame, percent, target) {
             if(!isNil(o) && !isNil(n)) {
               for(let j = 0, len2 = Math.min(o.length, n.length); j < len2; j++) {
                 if(!isNil(o[j]) && !isNil(n[j])) {
-                  o[j] += n[j] * percent;
+                  o[j] = cl[i][j] + n[j] * percent;
                 }
               }
             }
@@ -1390,19 +1387,19 @@ function calIntermediateStyle(frame, percent, target) {
         }
         else if(k === 'controlA' || k === 'controlB') {
           if(!isNil(st[0]) && !isNil(v[0])) {
-            st[0] += v[0] * percent;
+            st[0] = cl[0] + v[0] * percent;
           }
           if(!isNil(st[1]) && !isNil(v[1])) {
-            st[1] += v[1] * percent;
+            st[1] = cl[1] + v[1] * percent;
           }
         }
         else {
           if(!isNil(st) && !isNil(v)) {
-            style[k] += v * percent;
+            st = cl + v * percent;
           }
         }
       }
-      currentStyle[k] = st;
+      target.__currentProps[k] = st;
     }
     // string的直接量，在不同帧之间可能存在变化，同帧变化后不再改变
     else {
@@ -1431,11 +1428,16 @@ function calIntermediateStyle(frame, percent, target) {
  * 最后一帧无法计算transition，对整体keys的style进行对比
  */
 function calLastStyle(style, target, keys) {
-  let currentStyle = target.__currentStyle, res = [];
+  let currentStyle = target.__currentStyle, currentProps = target.__currentProps, res = [];
   for(let i = 0, len = keys.length; i < len; i++) {
     let k = keys[i];
     if(!equalStyle(k, style[k], currentStyle[k], target)) {
-      currentStyle[k] = style[k];
+      if(GEOM.hasOwnProperty(k)) {
+        currentProps[k] = style[k];
+      }
+      else {
+        currentStyle[k] = style[k];
+      }
       res.push(k);
     }
   }
@@ -1508,7 +1510,7 @@ class Animation extends Event {
     this.__playState = 'idle';
     this.__target = target;
     this.__root = target.root;
-    this.__style = {};
+    // this.__style = {};
     this.__firstPlay = true;
     this.__firstEnter = true;
     let iterations = this.iterations = op.iterations;
@@ -1689,46 +1691,46 @@ class Animation extends Event {
     this.__cancelTask();
     this.__nextTime = 0;
     let restore;
-    let style = this.__style;
-    let keys = this.__keys;
-    let target = this.__target;
+    // let style = this.__style;
+    // let keys = this.__keys;
+    // let target = this.__target;
     if(isFinish) {
       // gotoAndStop到一个很大的时间的话，也需要防止超过
       this.__currentTime = this.__delay + this.__duration * this.__iterations + this.__endDelay;
-      if(this.__playState === 'finished') {
-        return;
-      }
+      // if(this.__playState === 'finished') {
+      //   return;
+      // }
       this.__playState = 'finished';
       // cancel需要清除finish根据情况保留
-      if(!this.__stayEnd) {
-        this.__style = {};
-        restore = true;
-      }
+      // if(!this.__stayEnd) {
+      //   this.__style = {};
+      //   restore = true;
+      // }
     }
     else {
       this.__playCount = this.__currentTime = 0;
-      if(this.__playState === 'idle') {
-        return;
-      }
+      // if(this.__playState === 'idle') {
+      //   return;
+      // }
       this.__playState = 'idle';
-      this.__style = {};
-      restore = true;
+      // this.__style = {};
+      // restore = true;
     }
     // 动画取消结束不停留在最后一帧需要还原target原本的样式，需要对比目前是否是由本动画赋值的
-    if(restore) {
-      keys.forEach(k => {
-        if(GEOM.hasOwnProperty(k)) {
-          if(target.__currentProps[k] === style[k]) {
-            target.__currentProps[k] = target.props[k];
-          }
-        }
-        else {
-          if(target.__currentStyle[k] === style[k]) {
-            target.__currentStyle[k] = target.style[k];
-          }
-        }
-      });
-    }
+    // if(restore) {
+    //   keys.forEach(k => {
+    //     if(GEOM.hasOwnProperty(k)) {
+    //       if(target.__currentProps[k] === style[k]) {
+    //         target.__currentProps[k] = target.props[k];
+    //       }
+    //     }
+    //     else {
+    //       if(target.__currentStyle[k] === style[k]) {
+    //         target.__currentStyle[k] = target.style[k];
+    //       }
+    //     }
+    //   });
+    // }
   }
 
   play(cb) {
@@ -1893,7 +1895,6 @@ class Animation extends Event {
     let keys;
     if(isLastFrame) {
       inEndDelay = currentTime < duration + endDelay;
-      let style;
       // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
       if(stayEnd) {
         keys = calLastStyle(currentFrame.style, target, this.__keys);
@@ -1980,11 +1981,17 @@ class Animation extends Event {
     let duration = this.__duration;
     let playState = this.__playState;
     let frames = this.__frames;
-    if(isDestroyed || duration <= 0 || frames.length < 1 || playState === 'finished') {
+    if(isDestroyed || duration <= 0 || frames.length < 1) {
+      return this;
+    }
+    if(playState === 'finished') {
+      if(isFunction(cb)) {
+        cb();
+      }
       return this;
     }
     // 先清除所有回调任务，多次调用finish也会清除只留最后一次
-    this.__cancelTask();
+    this.__clean(true);
     this.__begin = this.__end = this.__isDelay = this.__finished
       = this.__inFps = this.__enterFrame = false;
     this.__playState = 'finished';
@@ -2018,26 +2025,6 @@ class Animation extends Event {
           cb(diff);
         }
       });
-      // root.addRefreshTask({
-      //   __before() {
-      //     self.__assigning = true;
-      //     genBeforeRefresh(self, current, self.__keys, root, self.__target);
-      //     self.__clean(true);
-      //   },
-      //   __after(diff) {
-      //     if(!self.__hasFin) {
-      //       self.__hasFin = true;
-      //       self.__assigning = false;
-      //       frameCb(self, diff, false);
-      //       self.__begin = self.__end = self.__isDelay = self.__finished
-      //         = self.__inFps = self.__enterFrame = false;
-      //       self.emit(Event.FINISH);
-      //     }
-      //     if(isFunction(cb)) {
-      //       cb.call(self, diff);
-      //     }
-      //   },
-      // });
     }
     return this;
   }
@@ -2047,10 +2034,16 @@ class Animation extends Event {
     let duration = this.__duration;
     let playState = this.__playState;
     let frames = this.__frames;
-    if(isDestroyed || duration <= 0 || frames.length < 1 || playState === 'idle') {
+    if(isDestroyed || duration <= 0 || frames.length < 1) {
       return this;
     }
-    this.__cancelTask();
+    if(playState === 'idle') {
+      if(isFunction(cb)) {
+        cb();
+      }
+      return this;
+    }
+    this.__clean();
     this.__begin = this.__end = this.__isDelay = this.__finished
       = this.__inFps = this.__enterFrame = false;
     this.__playState = 'idle';
@@ -2065,26 +2058,6 @@ class Animation extends Event {
           cb(diff);
         }
       });
-      // root.addRefreshTask({
-      //   __before() {
-      //     self.__assigning = true;
-      //     genBeforeRefresh(self, originStyle, self.__keys, root, self.__target);
-      //     self.__clean();
-      //   },
-      //   __after(diff) {
-      //     if(!self.__hasCancel) {
-      //       self.__hasCancel = true;
-      //       self.__assigning = false;
-      //       frameCb(self, diff, false);
-      //       self.__begin = self.__end = self.__isDelay = self.__finished
-      //         = self.__inFps = self.__enterFrame = false;
-      //       self.emit(Event.CANCEL);
-      //     }
-      //     if(isFunction(cb)) {
-      //       cb.call(self, diff);
-      //     }
-      //   },
-      // });
     }
     return this;
   }
@@ -2126,7 +2099,7 @@ class Animation extends Event {
       this.__playState = 'paused';
       this.__cancelTask();
       if(isFunction(cb)) {
-        cb.call(this, diff);
+        cb(diff);
       }
     });
   }
@@ -2253,9 +2226,9 @@ class Animation extends Event {
     return this.__keys;
   }
 
-  get style() {
-    return this.__style;
-  }
+  // get style() {
+  //   return this.__style;
+  // }
 
   get options() {
     return this.__options;

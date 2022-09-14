@@ -619,25 +619,6 @@ let uniqueUpdateId = 0;
 //   return true;
 // }
 
-function cleanSvgCache(node, child) {
-  if(child) {
-    node.__refreshLevel |= REPAINT;
-  }
-  else {
-    node.__cacheTotal.release();
-  }
-  if(Array.isArray(node.children)) {
-    node.children.forEach(child => {
-      if(child instanceof Component) {
-        child = child.shadowRoot;
-      }
-      if(!(child instanceof Text)) {
-        cleanSvgCache(child, true);
-      }
-    });
-  }
-}
-
 let uuid = 0;
 
 class Root extends Dom {
@@ -1249,11 +1230,11 @@ class Root extends Dom {
     let isRp = isRepaint(lv);
     if(isRp) {
       // zIndex变化需清空svg缓存
-      if(hasZ) {
-        if(this.renderMode === mode.SVG) {
-          __domParent && cleanSvgCache(__domParent);
-        }
-      }
+      // if(hasZ) {
+      //   if(this.renderMode === mode.SVG) {
+      //     __domParent && reflow.cleanSvgCache(__domParent);
+      //   }
+      // }
     }
     else {
       let top = reflow.checkTop(this, node, addDom, removeDom);
@@ -1273,7 +1254,7 @@ class Root extends Dom {
       this.__rlv |= lv;
     }
     // dom在>=REPAINT时total失效，svg的Geom比较特殊
-    let need = lv >= REPAINT || this.renderMode === mode.SVG && node instanceof Geom;
+    let need = lv >= REPAINT;
     if(need) {
       if(node.__cache) {
         node.__cache.release();

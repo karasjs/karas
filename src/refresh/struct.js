@@ -1778,6 +1778,17 @@ function renderSvg(renderMode, ctx, root, isFirst) {
       }
       node.render(renderMode, ctx, 0, 0);
       virtualDom = node.__virtualDom;
+      // svg mock，每次都生成，每个节点都是局部根，更新时自底向上清除
+      if(!(node instanceof Text)) {
+        node.__cacheTotal = node.__cacheTotal || {
+          available: true,
+          release() {
+            this.available = false;
+            delete virtualDom.cache;
+          },
+        };
+        node.__cacheTotal.available = true;
+      }
       // 渲染后更新取值
       display = computedStyle[DISPLAY];
       if(display === 'none') {

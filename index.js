@@ -24664,18 +24664,24 @@
       REFLOW = o$1.REFLOW;
   var isRelativeOrAbsolute$2 = css.isRelativeOrAbsolute;
 
-  function cleanSvgCache$1(node) {
-    node.__cacheTotal.release(); // if(Array.isArray(node.children)) {
-    //   node.children.forEach(child => {
-    //     if(child instanceof Component) {
-    //       child = child.shadowRoot;
-    //     }
-    //     if(!(child instanceof Text)) {
-    //       cleanSvgCache(child, true);
-    //     }
-    //   });
-    // }
+  function cleanSvgCache$1(node, child) {
+    if (child) {
+      node.__refreshLevel |= REPAINT$2;
+    } else {
+      node.__cacheTotal.release();
+    }
 
+    if (Array.isArray(node.children)) {
+      node.children.forEach(function (child) {
+        if (child instanceof Component) {
+          child = child.shadowRoot;
+        }
+
+        if (!(child instanceof Text)) {
+          cleanSvgCache$1(child, true);
+        }
+      });
+    }
   }
 
   function offsetAndResizeByNodeOnY(node, root, reflowHash, dy, inDirectAbsList) {
@@ -25063,7 +25069,9 @@
 
         parent.__modifyStruct();
       } // 之前也是abs，可以跳出不会影响其它
-      else if (isLastAbs) {
+
+
+      if (isLastAbs) {
         return;
       }
     } // 现在是普通流，不管之前是啥直接布局

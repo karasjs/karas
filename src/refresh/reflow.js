@@ -377,10 +377,10 @@ function checkNext(root, top, node, addDom, removeDom) {
     if(!addDom && !removeDom) {
       parent.__zIndexChildren = null;
       parent.__modifyStruct();
-    }
-    // 之前也是abs，可以跳出不会影响其它
-    if(isLastAbs) {
-      return;
+      // 之前也是abs，可以跳出不会影响其它
+      if(isLastAbs) {
+        return;
+      }
     }
   }
   // 现在是普通流，不管之前是啥直接布局

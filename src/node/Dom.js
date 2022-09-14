@@ -3269,7 +3269,7 @@ class Dom extends Xom {
     }
     child.__parent = this;
     children.push(child);
-    this.__zIndexChildren = null;
+    this.__zIndexChildren = genZIndexChildren(this);
     // 离屏情况，不刷新
     if(this.__isDestroyed) {
       if(isFunction(cb)) {
@@ -3314,7 +3314,7 @@ class Dom extends Xom {
     }
     child.__parent = this;
     children.unshift(child);
-    this.__zIndexChildren = null;
+    this.__zIndexChildren = genZIndexChildren(this);
     // 离屏情况，不刷新
     if(this.__isDestroyed) {
       if(isFunction(cb)) {
@@ -3368,7 +3368,7 @@ class Dom extends Xom {
         target.__prev = child;
       }
       children.splice(i, 0, child);
-      parent.__zIndexChildren = null;
+      parent.__zIndexChildren = genZIndexChildren(parent);
     }
     else {
       throw new Error('InsertBefore() illegal');
@@ -3417,7 +3417,7 @@ class Dom extends Xom {
         throw new Error('Index exception of insertBefore()');
       }
       children.splice(i + 1, 0, child);
-      parent.__zIndexChildren = null;
+      parent.__zIndexChildren = genZIndexChildren(parent);
     }
     else {
       throw new Error('InsertAfter() illegal');

@@ -25067,12 +25067,12 @@
       if (!addDom && !removeDom) {
         parent.__zIndexChildren = null;
 
-        parent.__modifyStruct();
-      } // 之前也是abs，可以跳出不会影响其它
+        parent.__modifyStruct(); // 之前也是abs，可以跳出不会影响其它
 
 
-      if (isLastAbs) {
-        return;
+        if (isLastAbs) {
+          return;
+        }
       }
     } // 现在是普通流，不管之前是啥直接布局
     else {
@@ -28935,7 +28935,7 @@
 
         child.__parent = this;
         children.push(child);
-        this.__zIndexChildren = null; // 离屏情况，不刷新
+        this.__zIndexChildren = genZIndexChildren(this); // 离屏情况，不刷新
 
         if (this.__isDestroyed) {
           if (isFunction$4(cb)) {
@@ -28995,7 +28995,7 @@
 
         child.__parent = this;
         children.unshift(child);
-        this.__zIndexChildren = null; // 离屏情况，不刷新
+        this.__zIndexChildren = genZIndexChildren(this); // 离屏情况，不刷新
 
         if (this.__isDestroyed) {
           if (isFunction$4(cb)) {
@@ -29064,7 +29064,7 @@
           }
 
           children.splice(i, 0, child);
-          parent.__zIndexChildren = null;
+          parent.__zIndexChildren = genZIndexChildren(parent);
         } else {
           throw new Error('InsertBefore() illegal');
         } // 离屏情况，不刷新
@@ -29126,7 +29126,7 @@
           }
 
           children.splice(i + 1, 0, child);
-          parent.__zIndexChildren = null;
+          parent.__zIndexChildren = genZIndexChildren(parent);
         } else {
           throw new Error('InsertAfter() illegal');
         } // 离屏情况，不刷新
@@ -38054,7 +38054,7 @@
           __domParent = __domParent.__domParent;
         }
 
-        if (!isFunction$1(o.cb)) {
+        if (o.cb && !isFunction$1(o.cb)) {
           o.cb = null;
         }
 
@@ -38905,16 +38905,15 @@
         var _this5 = this;
 
         if (!this.__task.length) {
-          this.__task.push(cb);
-
-          if (!frame.__task.length) {
-            frame.nextFrame(function () {});
-          }
+          frame.nextFrame(function () {});
 
           frame.__rootTask.push(function () {
+            // 需要先获得累积的刷新回调再刷新，防止refresh触发事件中再次调用刷新
+            var list = _this5.__task.splice(0);
+
             _this5.refresh();
 
-            _this5.__task.splice(0).forEach(function (item) {
+            list.forEach(function (item) {
               item && item();
             });
           }); // let r = this.__task = (() => {
@@ -38922,9 +38921,9 @@
           // });
           // frame.__hookTask.push(r);
 
-        } else {
-          this.__task.push(cb);
         }
+
+        this.__task.push(cb);
       }
     }, {
       key: "__clear",

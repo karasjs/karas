@@ -1296,7 +1296,7 @@ class Root extends Dom {
       }
       __domParent = __domParent.__domParent;
     }
-    if(!isFunction(o.cb)) {
+    if(o.cb && !isFunction(o.cb)) {
       o.cb = null;
     }
     this.__frameRefresh(o.cb);
@@ -2006,14 +2006,13 @@ class Root extends Dom {
   // 异步进行root刷新操作，多次调用缓存结果，刷新成功后回调
   __frameRefresh(cb) {
     if(!this.__task.length) {
-      this.__task.push(cb);
-      if(!frame.__task.length) {
-        frame.nextFrame(() => {
-        });
-      }
+      frame.nextFrame(() => {
+      });
       frame.__rootTask.push(() => {
+        // 需要先获得累积的刷新回调再刷新，防止refresh触发事件中再次调用刷新
+        let list = this.__task.splice(0);
         this.refresh();
-        this.__task.splice(0).forEach(item => {
+        list.forEach(item => {
           item && item();
         });
       });
@@ -2022,9 +2021,7 @@ class Root extends Dom {
       // });
       // frame.__hookTask.push(r);
     }
-    else {
-      this.__task.push(cb);
-    }
+    this.__task.push(cb);
   }
 
   __clear(ctx, renderMode) {

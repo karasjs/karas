@@ -18878,13 +18878,13 @@
             for (var _j6 = 0, _len11 = Math.min(st2.v.length, c.length); _j6 < _len11; _j6++) {
               var a = st2.v[_j6];
               var b = c[_j6];
-              a[0][0] = cli[_j6][0][0] + b[0][0] * percent;
-              a[0][1] = cli[_j6][0][1] + b[0][1] * percent;
-              a[0][2] = cli[_j6][0][2] + b[0][2] * percent;
-              a[0][3] = cli[_j6][0][3] + b[0][3] * percent;
+              a[0][0] = cli.v[_j6][0][0] + b[0][0] * percent;
+              a[0][1] = cli.v[_j6][0][1] + b[0][1] * percent;
+              a[0][2] = cli.v[_j6][0][2] + b[0][2] * percent;
+              a[0][3] = cli.v[_j6][0][3] + b[0][3] * percent;
 
               if (a[1] && b[1]) {
-                a[1].v = cli[_j6][1].v + b[1] * percent;
+                a[1].v = cli.v[_j6][1].v + b[1] * percent;
               }
             }
 
@@ -18895,7 +18895,7 @@
                 st2.d[2] = cli.d[2] + d[2] * percent;
                 st2.d[3] = cli.d[3] + d[3] * percent;
               } else {
-                st2.d = cl[i].d + d * percent;
+                st2.d = cli.d + d * percent;
               }
             } else if (st2.k === 'radial') {
               if (st2.z !== undefined && z !== undefined) {
@@ -19735,15 +19735,15 @@
             }
 
             if (iterations === Infinity || iterations % 2) {
-              style = frames[frames.length - 1];
+              style = frames[frames.length - 1].style;
             } else {
-              style = framesR[framesR.length - 1];
+              style = framesR[framesR.length - 1].style;
             }
           } else {
             style = this.__originStyle;
           }
 
-          var keys = calLastStyle(style, this.__keys, target);
+          var keys = calLastStyle(style, target, this.__keys);
           genBeforeRefresh(keys, root, target, function (diff) {
             frameCb(_this2, diff, false);
 
@@ -19798,7 +19798,7 @@
 
         if (root) {
           var target = this.__target;
-          var keys = calLastStyle(this.__originStyle, this.__keys, target);
+          var keys = calLastStyle(this.__originStyle, target, this.__keys);
           genBeforeRefresh(keys, root, target, function (diff) {
             frameCb(_this3, diff, false);
 
@@ -23389,13 +23389,13 @@
         var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
         var animation = new Animation(this, list, options);
 
-        if (this.isDestroyed) {
+        if (this.__isDestroyed) {
           animation.__destroy();
 
           return animation;
         }
 
-        this.animationList.push(animation);
+        this.__animationList.push(animation);
 
         if (options.autoPlay === false) {
           return animation;
@@ -23407,21 +23407,21 @@
       key: "removeAnimate",
       value: function removeAnimate(o) {
         if (o instanceof Animation) {
-          var i = this.animationList.indexOf(o);
+          var i = this.__animationList.indexOf(o);
 
           if (i > -1) {
             o.cancel();
 
             o.__destroy();
 
-            this.animationList.splice(i, 1);
+            this.__animationList.splice(i, 1);
           }
         }
       }
     }, {
       key: "clearAnimate",
       value: function clearAnimate() {
-        this.animationList.splice(0).forEach(function (o) {
+        this.__animationList.splice(0).forEach(function (o) {
           o.cancel();
 
           o.__destroy();

@@ -1260,12 +1260,12 @@ function calIntermediateStyle(frame, percent, target) {
           for(let j = 0, len = Math.min(st2.v.length, c.length); j < len; j++) {
             let a = st2.v[j];
             let b = c[j];
-            a[0][0] = cli[j][0][0] + b[0][0] * percent;
-            a[0][1] = cli[j][0][1] + b[0][1] * percent;
-            a[0][2] = cli[j][0][2] + b[0][2] * percent;
-            a[0][3] = cli[j][0][3] + b[0][3] * percent;
+            a[0][0] = cli.v[j][0][0] + b[0][0] * percent;
+            a[0][1] = cli.v[j][0][1] + b[0][1] * percent;
+            a[0][2] = cli.v[j][0][2] + b[0][2] * percent;
+            a[0][3] = cli.v[j][0][3] + b[0][3] * percent;
             if(a[1] && b[1]) {
-              a[1].v = cli[j][1].v + b[1] * percent;
+              a[1].v = cli.v[j][1].v + b[1] * percent;
             }
           }
           if(st2.k === 'linear' && st2.d !== undefined && d !== undefined) {
@@ -1276,7 +1276,7 @@ function calIntermediateStyle(frame, percent, target) {
               st2.d[3] = cli.d[3] + d[3] * percent;
             }
             else {
-              st2.d = cl[i].d + d * percent;
+              st2.d = cli.d + d * percent;
             }
           }
           else if(st2.k === 'radial') {
@@ -2001,16 +2001,16 @@ class Animation extends Event {
           [frames, framesR] = [framesR, frames];
         }
         if(iterations === Infinity || iterations % 2) {
-          style = frames[frames.length - 1];
+          style = frames[frames.length - 1].style;
         }
         else {
-          style = framesR[framesR.length - 1];
+          style = framesR[framesR.length - 1].style;
         }
       }
       else {
         style = this.__originStyle;
       }
-      let keys = calLastStyle(style, this.__keys, target);
+      let keys = calLastStyle(style, target, this.__keys);
       genBeforeRefresh(keys, root, target, diff => {
         frameCb(this, diff, false);
         this.emit(Event.FINISH);
@@ -2057,7 +2057,7 @@ class Animation extends Event {
     let root = this.__root;
     if(root) {
       let target = this.__target;
-      let keys = calLastStyle(this.__originStyle, this.__keys, target);
+      let keys = calLastStyle(this.__originStyle, target, this.__keys);
       genBeforeRefresh(keys, root, target, diff => {
         frameCb(this, diff, false);
         this.emit(Event.CANCEL);

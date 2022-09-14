@@ -2494,11 +2494,11 @@ class Xom extends Node {
 
   animate(list, options = {}) {
     let animation = new Animation(this, list, options);
-    if(this.isDestroyed) {
+    if(this.__isDestroyed) {
       animation.__destroy();
       return animation;
     }
-    this.animationList.push(animation);
+    this.__animationList.push(animation);
     if(options.autoPlay === false) {
       return animation;
     }
@@ -2507,17 +2507,17 @@ class Xom extends Node {
 
   removeAnimate(o) {
     if(o instanceof Animation) {
-      let i = this.animationList.indexOf(o);
+      let i = this.__animationList.indexOf(o);
       if(i > -1) {
         o.cancel();
         o.__destroy();
-        this.animationList.splice(i, 1);
+        this.__animationList.splice(i, 1);
       }
     }
   }
 
   clearAnimate() {
-    this.animationList.splice(0).forEach(o => {
+    this.__animationList.splice(0).forEach(o => {
       o.cancel();
       o.__destroy();
     });

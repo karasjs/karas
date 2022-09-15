@@ -1245,6 +1245,7 @@ class Root extends Dom {
       else {
         reflow.checkNext(this, top, node, addDom, removeDom);
       }
+      __domParent = top.__domParent;
       if(removeDom) {
         let temp = node;
         while(temp.isShadowRoot) {
@@ -1286,7 +1287,7 @@ class Root extends Dom {
     }
     // 向上清除cache汇总缓存信息，过程中可能会出现重复，根据refreshLevel判断
     while(__domParent) {
-      if(contain(__domParent.__refreshLevel, CACHE)) {
+      if(contain(__domParent.__refreshLevel, CACHE | REPAINT | REFLOW)) {
         break;
       }
       __domParent.__refreshLevel |= CACHE;

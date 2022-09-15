@@ -2625,10 +2625,10 @@ class Xom extends Node {
   }
 
   __resizeY(diff, lv) {
-    if(this.computedStyle[DISPLAY] === 'none') {
+    if(this.__computedStyle[DISPLAY] === 'none') {
       return;
     }
-    this.computedStyle.height = this.__height += diff;
+    this.__computedStyle.height = this.__height += diff;
     this.__clientHeight += diff;
     this.__offsetHeight += diff;
     this.__outerHeight += diff;

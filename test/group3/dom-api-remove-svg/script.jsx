@@ -1,10 +1,10 @@
 let root = karas.render(
   <svg width="360" height="360">
-    <div style={{background:'#F00'}}>
+    <p style={{background:'#F00'}}>
       <div>3</div>
       <div ref="div">1</div>
       <div>2</div>
-    </div>
+    </p>
   </svg>,
   '#test'
 );

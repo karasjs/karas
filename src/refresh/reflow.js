@@ -14,8 +14,8 @@ const {
     POSITION,
     WIDTH,
     HEIGHT,
-    Z_INDEX,
     MARGIN_TOP,
+    MARGIN_BOTTOM,
     MARGIN_LEFT,
     BORDER_TOP_WIDTH,
     PADDING_TOP,
@@ -24,7 +24,7 @@ const {
   },
 } = enums;
 const { AUTO, PX, PERCENT } = unit;
-const { REPAINT, REFLOW } = level;
+const { REPAINT, REFLOW, CACHE } = level;
 const { isRelativeOrAbsolute } = css;
 
 function cleanSvgCache(node, child) {
@@ -418,35 +418,62 @@ function checkNext(root, top, node, addDom, removeDom) {
     }
     p = p.__domParent;
   }
-  // 调整next的位置，offsetY，abs特殊处理，margin在merge中做
+  // 调整next的位置，offsetY，abs特殊处理，合并margin
   if(top.isShadowRoot) {
     top = top.__hostRoot;
   }
-  let next = top.__next, diff;
+  let next = top.__next;
+  let mergeMarginBottomList = [], mergeMarginTopList = [];
   while(next) {
-    let cs = next.currentStyle;
-    if(cs[POSITION] !== 'absolute' || cs[TOP].u === AUTO && cs[BOTTOM].u === AUTO) {
-      // 第一次计算，后面通用
-      if(diff === undefined) {
-        diff = y - next.y;
-      }
-      if(diff) {
-        next.__offsetY(diff, true, REPAINT);
-      }
-      else {
+    if(next instanceof Component) {
+      next = next.shadowRoot;
+    }
+    if(next instanceof Text) {
+      break;
+    }
+    let computedStyle = next.computedStyle;
+    // flow流的，空白需要一并考虑继续，非空白跳出
+    if(computedStyle[POSITION] !== 'absolute') {
+      mergeMarginBottomList.push(computedStyle[MARGIN_BOTTOM]);
+      mergeMarginTopList.push(computedStyle[MARGIN_TOP]);
+      if(next.offsetHeight > 0) {
         break;
       }
     }
     next = next.__next;
   }
+  next = top.__next;
+  let m = getMergeMargin(mergeMarginTopList, mergeMarginBottomList);
+  let diff = y - next.y + m;
   if(!diff) {
     return;
   }
+  while(next) {
+    let cs = next.currentStyle;
+    if(cs[POSITION] !== 'absolute' || cs[TOP].u === AUTO && cs[BOTTOM].u === AUTO) {
+      next.__offsetY(diff, true, REPAINT);
+    }
+    else if(cs[POSITION] === 'absolute' && (cs[TOP].u === PERCENT || cs[BOTTOM].u === PERCENT)) {
+      let v;
+      if(cs[TOP].u === PERCENT) {
+        v = cs[TOP].v;
+      }
+      else {
+        v = cs[BOTTOM].v;
+      }
+      next.__offsetY(diff * 0.01 * v, true, REPAINT);
+    }
+    next = next.__next;
+  }
   // 影响完next之后，向上递归，所有parent的next都影响
   while(parent) {
-    let p = parent.__domParent;
-    if(p) {}
-    parent = p;
+    if(isFixedSize(parent, false)) {
+      parent.clearCache(true);
+      parent.__refreshLevel |= CACHE;
+      return;
+    }
+    parent.__resizeY(diff, REPAINT);
+    parent = parent.__domParent;
   }
 }
 

@@ -17913,10 +17913,9 @@
     var p = prev.style[k];
     var n = next.style[k]; // 提前设置好引用，无需每帧计算时取引用，由于单位一定相同，可以简化直接引用到值v上无需单位u，有些直接量没有单位
 
-    var cl = prev.clone[k];
+    var cl = prev.clone[k]; // translatePath可能不存在
 
     if (cl && cl.hasOwnProperty('v')) {
-      // translatePath可能不存在
       cl = cl.v;
     }
 
@@ -19147,7 +19146,7 @@
     var cb = self.__playCb;
 
     if (isFunction$6(cb)) {
-      cb.call(self, diff, isDelay); // 清理要检查，gotoAndStop()这种cb回调中直接再次调用goto的话cb会不一致不能删除
+      cb(diff, self.__isChange); // 清理要检查，gotoAndStop()这种cb回调中直接再次调用goto的话cb会不一致不能删除
 
       if (self.__playCb === cb) {
         self.__playCb = null;
@@ -19720,7 +19719,7 @@
         if (this.__finished) {
           this.__begin = this.__end = this.__isDelay = this.__finished = this.__inFps = this.__enterFrame = false;
           this.__playState = 'finished';
-          this.emit(Event.FINISH);
+          this.emit(Event.FINISH, this.__isChange);
         }
       }
     }, {
@@ -19815,10 +19814,10 @@
           genBeforeRefresh(keys, root, target, function (diff) {
             frameCb(_this2, diff);
 
-            _this2.emit(Event.FINISH);
+            _this2.emit(Event.FINISH, _this2.__isChange);
 
             if (isFunction$6(cb)) {
-              cb(diff);
+              cb(diff, _this2.__isChange);
             }
           });
         }
@@ -19860,10 +19859,10 @@
           genBeforeRefresh(keys, root, target, function (diff) {
             frameCb(_this3, diff);
 
-            _this3.emit(Event.CANCEL);
+            _this3.emit(Event.CANCEL, _this3.__isChange);
 
             if (isFunction$6(cb)) {
-              cb(diff);
+              cb(diff, _this3.__isChange);
             }
           });
         }

@@ -1500,7 +1500,7 @@ function frameCb(self, diff) {
   }
   let cb = self.__playCb;
   if(isFunction(cb)) {
-    cb.call(self, diff, isDelay);
+    cb(diff, self.__isChange);
     // 清理要检查，gotoAndStop()这种cb回调中直接再次调用goto的话cb会不一致不能删除
     if(self.__playCb === cb) {
       self.__playCb = null;
@@ -1994,7 +1994,7 @@ class Animation extends Event {
       this.__begin = this.__end = this.__isDelay = this.__finished
         = this.__inFps = this.__enterFrame = false;
       this.__playState = 'finished';
-      this.emit(Event.FINISH);
+      this.emit(Event.FINISH, this.__isChange);
     }
   }
 
@@ -2068,9 +2068,9 @@ class Animation extends Event {
       this.__isChange = !keys.length;
       genBeforeRefresh(keys, root, target, diff => {
         frameCb(this, diff);
-        this.emit(Event.FINISH);
+        this.emit(Event.FINISH, this.__isChange);
         if(isFunction(cb)) {
-          cb(diff);
+          cb(diff, this.__isChange);
         }
       });
     }
@@ -2101,10 +2101,10 @@ class Animation extends Event {
       let keys = calLastStyle(this.__originStyle, target, this.__keys);
       this.__isChange = !keys.length;
       genBeforeRefresh(keys, root, target, diff => {
-        frameCb(this, diff, false);
-        this.emit(Event.CANCEL);
+        frameCb(this, diff);
+        this.emit(Event.CANCEL, this.__isChange);
         if(isFunction(cb)) {
-          cb(diff);
+          cb(diff, this.__isChange);
         }
       });
     }

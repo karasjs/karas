@@ -303,7 +303,6 @@ class Dom extends Xom {
 
   __insertStruct(child, childIndex) {
     let struct = this.__struct;
-    let total = struct.total = struct.total || 0;
     let cs = child.__structure(struct.lv + 1, childIndex);
     let root = this.__root, structs = root.__structs;
     // 根据是否有prev确定插入索引位置
@@ -315,13 +314,16 @@ class Dom extends Xom {
       i = structs.indexOf(ps) + total + 1;
     }
     else {
-      i = structs.indexOf(struct) + total + 1;
+      i = structs.indexOf(struct) + 1;
     }
+    let total;
     if(Array.isArray(cs)) {
       structs.splice(i, 0, ...cs);
+      total = (cs[0].total || 0) + 1;
     }
     else {
       structs.splice(i, 0, cs);
+      total = (cs.total || 0) + 1;
     }
     // 调整后面children的childIndex，+1
     let next = child.__next;
@@ -330,7 +332,6 @@ class Dom extends Xom {
       next = next.__next;
     }
     // 向上添加parent的total数量
-    total = (cs.total || 0) + 1;
     struct.total += total;
     let p = this.__domParent;
     while(p) {
@@ -2932,7 +2933,9 @@ class Dom extends Xom {
    * @private
    */
   __layoutAbs(container, data, target) {
-    let { sx: x, sy: y, clientWidth, clientHeight, computedStyle } = container;
+    let { sx: x, sy: y,
+      __clientWidth: clientWidth, __clientHeight: clientHeight,
+      __computedStyle: computedStyle } = container;
     let { isDestroyed, children, absChildren } = this;
     let {
       [DISPLAY]: display,
@@ -3077,14 +3080,14 @@ class Dom extends Xom {
       // 未声明y的找到之前的流布局child，紧随其下
       else {
         y2 = y + paddingTop;
-        let prev = item.prev;
+        let prev = item.__prev;
         while(prev) {
           // 以前面的flow的最近的prev末尾为准
           if(prev instanceof Text || prev.computedStyle[POSITION] !== 'absolute') {
             y2 = prev.y + prev.outerHeight;
             break;
           }
-          prev = prev.prev;
+          prev = prev.__prev;
         }
         if(height.u !== AUTO) {
           h2 = this.__calSize(height, clientHeight, true);
@@ -3364,9 +3367,9 @@ class Dom extends Xom {
       if(prev) {
         prev.__next = child;
         child.__prev = prev;
-        child.__next = target;
-        target.__prev = child;
       }
+      child.__next = target;
+      target.__prev = child;
       children.splice(i, 0, child);
       parent.__zIndexChildren = genZIndexChildren(parent);
     }
@@ -3382,7 +3385,7 @@ class Dom extends Xom {
     }
     // 在dom中则整体设置关系和struct，不可见提前跳出
     builder.relation(root, parent.__host, parent, child, {});
-    this.__insertStruct(child, i);
+    parent.__insertStruct(child, i);
     if(child.currentStyle[DISPLAY] === 'none' || parent.__computedStyle[DISPLAY] === 'none') {
       child.__layoutNone();
       if(isFunction(cb)) {
@@ -3416,6 +3419,8 @@ class Dom extends Xom {
       if(i === -1) {
         throw new Error('Index exception of insertBefore()');
       }
+      target.__next = child;
+      child.__prev = target;
       children.splice(i + 1, 0, child);
       parent.__zIndexChildren = genZIndexChildren(parent);
     }
@@ -3431,7 +3436,7 @@ class Dom extends Xom {
     }
     // 在dom中则整体设置关系和struct，不可见提前跳出
     builder.relation(root, parent.__host, parent, child, {});
-    this.__insertStruct(child, i + 1);
+    parent.__insertStruct(child, i + 1);
     if(child.currentStyle[DISPLAY] === 'none' || parent.__computedStyle[DISPLAY] === 'none') {
       child.__layoutNone();
       if(isFunction(cb)) {

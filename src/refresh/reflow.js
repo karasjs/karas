@@ -2,9 +2,9 @@ import enums from '../util/enums';
 import unit from '../style/unit';
 import level from './level';
 import css from '../style/css';
-import mode from './mode';
 import Component from '../node/Component';
 import Text from '../node/Text';
+import Geom from '../node/geom/Geom';
 
 const {
   STYLE_KEY: {
@@ -241,12 +241,12 @@ function checkTop(root, node, addDom, removeDom) {
     let { __prev, __next } = node;
     if(__prev
       && (__prev instanceof Text
-        || ['inline', 'inlineBlock'].indexOf(__prev.__computedStyle[DISPLAY]) > -1)) {
+        || ['inline', 'inlineBlock'].indexOf(__prev.computedStyle[DISPLAY]) > -1)) {
       isSiblingBlock = false;
     }
     else if(__next
       && (__next instanceof Text
-        || ['inline', 'inlineBlock'].indexOf(__next.__computedStyle[DISPLAY]) > -1)) {
+        || ['inline', 'inlineBlock'].indexOf(__next.computedStyle[DISPLAY]) > -1)) {
       isSiblingBlock = false;
     }
     if(!isSiblingBlock) {
@@ -351,7 +351,7 @@ function checkNext(root, top, node, addDom, removeDom) {
   x += __computedStyle[MARGIN_LEFT] + __computedStyle[BORDER_LEFT_WIDTH] + __computedStyle[PADDING_LEFT];
   // 特殊的如add/remove时为absolute和none的在调用时即检查提前跳出了，不触发reflow，这里一定是触发的
   // 找到最上层容器供absolute使用
-  let container = parent;
+  let container = top;
   while(container && container !== root) {
     if(isRelativeOrAbsolute(container)) {
       break;
@@ -395,7 +395,10 @@ function checkNext(root, top, node, addDom, removeDom) {
       top.__modifyStruct();
     }
     y += top.outerHeight;
-    top.__layoutAbs(container, ld, null);
+    // 防止Geom
+    if(!(top instanceof Geom)) {
+      top.__layoutAbs(container, ld, null);
+    }
   }
   // add/remove的情况在自身是abs时不影响next
   if(addDom && top === node && node.__currentStyle[POSITION] === 'absolute') {
@@ -418,7 +421,7 @@ function checkNext(root, top, node, addDom, removeDom) {
   // 调整next的位置，offsetY，abs特殊处理，margin在merge中做
   let next = top.__next, diff;
   while(next) {
-    let cs = next.__currentStyle;
+    let cs = next.currentStyle;
     if(cs[POSITION] !== 'absolute' || cs[TOP].u === AUTO && cs[BOTTOM].u === AUTO) {
       // 第一次计算，后面通用
       if(diff === undefined) {

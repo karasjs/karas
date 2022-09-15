@@ -16468,7 +16468,7 @@
   // '__sy4',
   // '__sy5',
   // '__sy6',
-  'width', 'height', 'outerWidth', 'outerHeight', 'clientWidth', 'clientHeight', 'offsetWidth', 'offsetHeight', 'style', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'currentProps', 'baseline', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', '__layoutData', 'availableAnimating', 'effectiveAnimating', 'displayAnimating', 'visibilityAnimating', 'bbox', 'contentBoxList', 'listener', 'matrix', 'matrixEvent']).forEach(function (fn) {
+  'width', 'height', 'outerWidth', 'outerHeight', 'clientWidth', 'clientHeight', 'offsetWidth', 'offsetHeight', 'style', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'currentProps', 'baseline', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', '__layoutData', '__struct', 'availableAnimating', 'effectiveAnimating', 'displayAnimating', 'visibilityAnimating', 'bbox', 'contentBoxList', 'listener', 'matrix', 'matrixEvent']).forEach(function (fn) {
     Object.defineProperty(Component.prototype, fn, {
       get: function get() {
         var sr = this.shadowRoot;
@@ -21025,7 +21025,10 @@
         }
 
         return res;
-      } // 设置margin/padding的实际值，layout时执行，inline的垂直方向仍然计算值，但在布局时被忽略
+      }
+    }, {
+      key: "__modifyStruct",
+      value: function __modifyStruct() {} // 设置margin/padding的实际值，layout时执行，inline的垂直方向仍然计算值，但在布局时被忽略
 
     }, {
       key: "__mp",
@@ -23383,15 +23386,24 @@
         var _this9 = this;
 
         var root = this.__root,
-            currentStyle = this.__currentStyle;
+            currentStyle = this.__currentStyle,
+            currentProps = this.__currentProps;
         var keys = [];
         Object.keys(style).forEach(function (i) {
+          var isGeom = true;
+
           if (!GEOM.hasOwnProperty(i)) {
             i = parseInt(i);
+            isGeom = false;
           }
 
           if (!equalStyle(i, currentStyle[i], style[i], _this9)) {
-            currentStyle[i] = style[i];
+            if (isGeom) {
+              currentProps[i] = style[i];
+            } else {
+              currentStyle[i] = style[i];
+            }
+
             keys.push(i);
           }
         });
@@ -23402,7 +23414,6 @@
 
         if (root) {
           root.__addUpdate(this, {
-            style: style,
             keys: keys,
             cb: cb
           });
@@ -24709,22 +24720,929 @@
   };
 
   var _enums$STYLE_KEY$6 = enums.STYLE_KEY,
-      DISPLAY$4 = _enums$STYLE_KEY$6.DISPLAY,
-      TOP$2 = _enums$STYLE_KEY$6.TOP,
-      BOTTOM$2 = _enums$STYLE_KEY$6.BOTTOM,
-      POSITION$2 = _enums$STYLE_KEY$6.POSITION,
-      WIDTH$4 = _enums$STYLE_KEY$6.WIDTH,
-      HEIGHT$4 = _enums$STYLE_KEY$6.HEIGHT;
-      _enums$STYLE_KEY$6.Z_INDEX;
-      var MARGIN_TOP$2 = _enums$STYLE_KEY$6.MARGIN_TOP,
+      MARGIN_RIGHT$2 = _enums$STYLE_KEY$6.MARGIN_RIGHT,
       MARGIN_LEFT$4 = _enums$STYLE_KEY$6.MARGIN_LEFT,
-      BORDER_TOP_WIDTH$2 = _enums$STYLE_KEY$6.BORDER_TOP_WIDTH,
-      PADDING_TOP$2 = _enums$STYLE_KEY$6.PADDING_TOP,
+      PADDING_RIGHT$2 = _enums$STYLE_KEY$6.PADDING_RIGHT,
+      PADDING_LEFT$4 = _enums$STYLE_KEY$6.PADDING_LEFT,
+      WIDTH$4 = _enums$STYLE_KEY$6.WIDTH,
+      HEIGHT$4 = _enums$STYLE_KEY$6.HEIGHT,
+      BORDER_RIGHT_WIDTH$2 = _enums$STYLE_KEY$6.BORDER_RIGHT_WIDTH,
       BORDER_LEFT_WIDTH$4 = _enums$STYLE_KEY$6.BORDER_LEFT_WIDTH,
-      PADDING_LEFT$4 = _enums$STYLE_KEY$6.PADDING_LEFT;
+      FILL$1 = _enums$STYLE_KEY$6.FILL,
+      STROKE = _enums$STYLE_KEY$6.STROKE,
+      STROKE_MITERLIMIT = _enums$STYLE_KEY$6.STROKE_MITERLIMIT,
+      STROKE_WIDTH$6 = _enums$STYLE_KEY$6.STROKE_WIDTH,
+      STROKE_LINECAP = _enums$STYLE_KEY$6.STROKE_LINECAP,
+      STROKE_LINEJOIN = _enums$STYLE_KEY$6.STROKE_LINEJOIN,
+      STROKE_DASHARRAY = _enums$STYLE_KEY$6.STROKE_DASHARRAY,
+      STROKE_DASHARRAY_STR = _enums$STYLE_KEY$6.STROKE_DASHARRAY_STR,
+      FILL_RULE = _enums$STYLE_KEY$6.FILL_RULE,
+      VISIBILITY$3 = _enums$STYLE_KEY$6.VISIBILITY,
+      FLEX_BASIS$2 = _enums$STYLE_KEY$6.FLEX_BASIS;
   var AUTO$4 = o$4.AUTO,
       PX$4 = o$4.PX,
-      PERCENT$4 = o$4.PERCENT;
+      PERCENT$4 = o$4.PERCENT,
+      REM$2 = o$4.REM,
+      VW$2 = o$4.VW,
+      VH$2 = o$4.VH,
+      VMAX$2 = o$4.VMAX,
+      VMIN$2 = o$4.VMIN,
+      RGBA = o$4.RGBA,
+      GRADIENT = o$4.GRADIENT;
+  var int2rgba = util.int2rgba,
+      isNil$8 = util.isNil,
+      joinArr = util.joinArr;
+  var canvasPolygon$2 = painter.canvasPolygon,
+      svgPolygon$1 = painter.svgPolygon;
+  var REGISTER = {};
+
+  var Geom = /*#__PURE__*/function (_Xom) {
+    _inherits(Geom, _Xom);
+
+    function Geom(tagName, props) {
+      var _this;
+
+      _this = _Xom.call(this, tagName, props) || this;
+      _this.__isMulti = !!_this.props.multi;
+      _this.__style = css.normalize(_this.style, reset.DOM_ENTRY_SET.concat(reset.GEOM_ENTRY_SET));
+      _this.__currentStyle = util.extend({}, _this.__style);
+      _this.__currentProps = util.clone(_this.props);
+      _this.__cacheProps = {};
+      return _this;
+    }
+
+    _createClass(Geom, [{
+      key: "__tryLayInline",
+      value: function __tryLayInline(w, total) {
+        this.__computeReflow(); // 无children，直接以style的width为宽度，不定义则为0
+
+
+        var _this$currentStyle = this.currentStyle,
+            width = _this$currentStyle[WIDTH$4],
+            marginLeft = _this$currentStyle[MARGIN_LEFT$4],
+            marginRight = _this$currentStyle[MARGIN_RIGHT$2],
+            paddingLeft = _this$currentStyle[PADDING_LEFT$4],
+            paddingRight = _this$currentStyle[PADDING_RIGHT$2],
+            _this$computedStyle = this.computedStyle,
+            borderLeftWidth = _this$computedStyle[BORDER_LEFT_WIDTH$4],
+            borderRightWidth = _this$computedStyle[BORDER_RIGHT_WIDTH$2];
+
+        if (width[1] !== AUTO$4) {
+          w -= this.__calSize(width, total, true);
+        } // 减去水平mbp
+
+
+        w -= this.__calSize(marginRight, total, true);
+        w -= this.__calSize(paddingRight, total, true);
+        w -= borderRightWidth;
+        w -= this.__calSize(marginLeft, total, true);
+        w -= this.__calSize(paddingLeft, total, true);
+        w -= borderLeftWidth;
+        return w;
+      }
+    }, {
+      key: "__calBasis",
+      value: function __calBasis(isDirectionRow, isAbs, isColumn, data, isDirectChild) {
+        this.__computeReflow();
+
+        var b = 0;
+        var min = 0;
+        var max = 0;
+        var currentStyle = this.currentStyle,
+            computedStyle = this.computedStyle;
+        var w = data.w,
+            h = data.h; // 计算需考虑style的属性
+
+        var flexBasis = currentStyle[FLEX_BASIS$2],
+            width = currentStyle[WIDTH$4],
+            height = currentStyle[HEIGHT$4];
+        var main = isDirectionRow ? width : height; // basis3种情况：auto、固定、content，只区分固定和其它
+
+        var isFixed = [PX$4, PERCENT$4, REM$2, VW$2, VH$2, VMAX$2, VMIN$2].indexOf(flexBasis.u) > -1;
+
+        if (isFixed) {
+          b = max = min = this.__calSize(flexBasis, isDirectionRow ? w : h, true);
+        } else if ([PX$4, PERCENT$4, REM$2, VW$2, VH$2, VMAX$2, VMIN$2].indexOf(main.u) > -1) {
+          b = max = min = this.__calSize(main, isDirectionRow ? w : h, true);
+        } // 直接item的mpb影响basis
+
+
+        return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], isDirectChild);
+      }
+    }, {
+      key: "__layoutBlock",
+      value: function __layoutBlock(data, isAbs, isColumn, isRow) {
+        var _this$__preLayout = this.__preLayout(data, false),
+            fixedWidth = _this$__preLayout.fixedWidth,
+            fixedHeight = _this$__preLayout.fixedHeight,
+            w = _this$__preLayout.w,
+            h = _this$__preLayout.h,
+            isParentVertical = _this$__preLayout.isParentVertical,
+            isUpright = _this$__preLayout.isUpright;
+
+        var tw = 0,
+            th = 0;
+
+        if (fixedWidth || !isAbs && !isParentVertical && !isUpright) {
+          tw = w;
+        }
+
+        if (fixedHeight || !isAbs && isParentVertical && isUpright) {
+          th = h;
+        }
+
+        this.__ioSize(tw, th);
+
+        if (isAbs || isColumn || isRow) {
+          return;
+        }
+
+        this.__marginAuto(this.currentStyle, data);
+
+        this.__cacheProps = {};
+      }
+    }, {
+      key: "__layoutFlex",
+      value: function __layoutFlex(data, isAbs, isColumn, isRow) {
+        // 无children所以等同于block
+        this.__layoutBlock(data, isAbs, isColumn, isRow);
+      }
+    }, {
+      key: "__layoutInline",
+      value: function __layoutInline(data, isAbs, isInline) {
+        var _this$__preLayout2 = this.__preLayout(data, false),
+            fixedWidth = _this$__preLayout2.fixedWidth,
+            fixedHeight = _this$__preLayout2.fixedHeight,
+            w = _this$__preLayout2.w,
+            h = _this$__preLayout2.h;
+
+        var tw = fixedWidth ? w : 0;
+        var th = fixedHeight ? h : 0;
+
+        this.__ioSize(tw, th);
+
+        this.__cacheProps = {};
+      }
+    }, {
+      key: "__calStyle",
+      value: function __calStyle(lv, __currentStyle, __computedStyle, __cacheStyle) {
+        var _this2 = this;
+
+        var res = _get(_getPrototypeOf(Geom.prototype), "__calStyle", this).call(this, lv, __currentStyle, __computedStyle, __cacheStyle);
+
+        if (isNil$8(__cacheStyle[STROKE_WIDTH$6])) {
+          __cacheStyle[STROKE_WIDTH$6] = true;
+          var strokeWidth = __currentStyle[STROKE_WIDTH$6] || [];
+          var w = this.width;
+          __computedStyle[STROKE_WIDTH$6] = strokeWidth.map(function (item) {
+            return _this2.__calSize(item, w, true);
+          });
+        }
+
+        if (isNil$8(__cacheStyle[STROKE_DASHARRAY])) {
+          __cacheStyle[STROKE_DASHARRAY] = true;
+          __computedStyle[STROKE_DASHARRAY] = __currentStyle[STROKE_DASHARRAY] || [];
+          __cacheStyle[STROKE_DASHARRAY_STR] = __computedStyle[STROKE_DASHARRAY].map(function (item) {
+            return joinArr(item, ',');
+          });
+        } // 直接赋值的
+
+
+        [STROKE_LINECAP, STROKE_LINEJOIN, STROKE_MITERLIMIT, FILL_RULE].forEach(function (k) {
+          __computedStyle[k] = __currentStyle[k];
+        }); // stroke/fll移至render里处理，因为cache涉及渐变坐标偏移
+
+        [FILL$1, STROKE].forEach(function (k) {
+          if (isNil$8(__cacheStyle[k])) {
+            var v = __currentStyle[k];
+            var cs = __computedStyle[k] = [];
+
+            var _res = __cacheStyle[k] = [];
+
+            if (Array.isArray(v)) {
+              v.forEach(function (item) {
+                if (item && item.u === GRADIENT) {
+                  // let t = this.__gradient(renderMode, ctx, x3, y3, x4, y4, item[0], 0, 0);
+                  cs.push(item.v);
+
+                  _res.push(true);
+                } else if (item && item.u === RGBA && item.v[3] > 0) {
+                  cs.push(item.v);
+
+                  _res.push(int2rgba(item.v));
+                } else {
+                  cs.push('none');
+
+                  _res.push('none');
+                }
+              });
+            }
+          }
+        });
+        return res;
+      }
+    }, {
+      key: "calContent",
+      value: function calContent(currentStyle, computedStyle) {
+        // Geom强制有内容
+        return computedStyle[VISIBILITY$3] !== 'hidden';
+      }
+    }, {
+      key: "__preSet",
+      value: function __preSet(renderMode, res) {
+        var _this3 = this;
+
+        var width = this.width,
+            height = this.height,
+            __cacheStyle = this.__cacheStyle,
+            computedStyle = this.computedStyle;
+        var cx = res.sx3 + width * 0.5;
+        var cy = res.sy3 + height * 0.5;
+        var strokeDasharrayStr = __cacheStyle[STROKE_DASHARRAY_STR];
+        var fill = computedStyle[FILL$1],
+            stroke = computedStyle[STROKE],
+            strokeWidth = computedStyle[STROKE_WIDTH$6],
+            strokeLinecap = computedStyle[STROKE_LINECAP],
+            strokeLinejoin = computedStyle[STROKE_LINEJOIN],
+            strokeMiterlimit = computedStyle[STROKE_MITERLIMIT],
+            strokeDasharray = computedStyle[STROKE_DASHARRAY],
+            fillRule = computedStyle[FILL_RULE];
+        stroke = stroke.map(function (item) {
+          if (item.k) {
+            return _this3.__gradient(renderMode, res.ctx, res.sx3, res.sy3, res.sx4, res.sy4, item, res.dx, res.dy);
+          }
+
+          return int2rgba(item);
+        });
+        fill = fill.map(function (item) {
+          if (item.k) {
+            return _this3.__gradient(renderMode, res.ctx, res.sx3, res.sy3, res.sx4, res.sy4, item, res.dx, res.dy);
+          }
+
+          return int2rgba(item);
+        });
+        return {
+          cx: cx,
+          cy: cy,
+          stroke: stroke,
+          strokeWidth: strokeWidth,
+          strokeDasharray: strokeDasharray,
+          strokeDasharrayStr: strokeDasharrayStr,
+          strokeLinecap: strokeLinecap,
+          strokeLinejoin: strokeLinejoin,
+          strokeMiterlimit: strokeMiterlimit,
+          fill: fill,
+          fillRule: fillRule
+        };
+      }
+    }, {
+      key: "__preSetCanvas",
+      value: function __preSetCanvas(renderMode, ctx, res) {
+        var stroke = res.stroke,
+            strokeWidth = res.strokeWidth,
+            strokeDasharray = res.strokeDasharray,
+            strokeLinecap = res.strokeLinecap,
+            strokeLinejoin = res.strokeLinejoin,
+            strokeMiterlimit = res.strokeMiterlimit,
+            fill = res.fill;
+
+        if (renderMode === mode.CANVAS) {
+          if (fill) {
+            if (fill.k === 'linear') {
+              ctx.fillStyle = fill.v;
+            } else if (fill.k === 'radial' && !Array.isArray(fill.v)) {
+              ctx.fillStyle = fill.v;
+            } else if (fill.k === 'conic') ; else if (!fill.k && ctx.fillStyle !== fill) {
+              ctx.fillStyle = fill;
+            }
+          }
+
+          if (stroke) {
+            if (stroke.k === 'linear') {
+              ctx.strokeStyle = stroke.v;
+            } else if (stroke.k === 'radial' && !Array.isArray(stroke.v)) {
+              ctx.strokeStyle = stroke.v;
+            } else if (stroke.k === 'conic') ; else if (!stroke.k && ctx.strokeStyle !== stroke) {
+              ctx.strokeStyle = stroke;
+            }
+          }
+
+          if (strokeWidth !== undefined && ctx.lineWidth !== strokeWidth) {
+            ctx.lineWidth = strokeWidth;
+          }
+
+          if (strokeLinecap !== undefined && ctx.lineCap !== strokeLinecap) {
+            ctx.lineCap = strokeLinecap;
+          }
+
+          if (strokeLinejoin !== undefined && ctx.lineJoin !== strokeLinejoin) {
+            ctx.lineJoin = strokeLinejoin;
+          }
+
+          if (strokeMiterlimit !== undefined && ctx.miterLimit !== strokeMiterlimit) {
+            ctx.miterLimit = strokeMiterlimit;
+          } // 小程序没这个方法
+
+
+          if (util.isFunction(ctx.getLineDash)) {
+            if (strokeDasharray && !util.equalArr(ctx.getLineDash(), strokeDasharray)) {
+              ctx.setLineDash(strokeDasharray);
+            }
+          } else if (strokeDasharray) {
+            ctx.setLineDash(strokeDasharray);
+          }
+        }
+      }
+    }, {
+      key: "render",
+      value: function render(renderMode, ctx, dx, dy) {
+        var res = _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode, ctx, dx, dy);
+
+        if (renderMode === mode.SVG) {
+          this.virtualDom.type = 'geom';
+        } // 无论canvas/svg，break可提前跳出省略计算
+
+
+        if (res["break"] || renderMode === mode.WEBGL) {
+          return res;
+        } // data在无cache时没有提前设置
+
+
+        var preData = this.__preSet(renderMode, res);
+
+        return Object.assign(res, preData);
+      }
+    }, {
+      key: "__renderPolygon",
+      value: function __renderPolygon(renderMode, ctx, res) {
+        var fills = res.fill,
+            fillRules = res.fillRule,
+            strokes = res.stroke,
+            strokeWidths = res.strokeWidth,
+            strokeDasharrays = res.strokeDasharray,
+            strokeDasharrayStrs = res.strokeDasharrayStr,
+            strokeLinecaps = res.strokeLinecap,
+            strokeLinejoins = res.strokeLinejoin,
+            strokeMiterlimits = res.strokeMiterlimit,
+            dx = res.dx,
+            dy = res.dy;
+        var list = this.__cacheProps.list,
+            isMulti = this.isMulti,
+            bbox = this.bbox; // 普通情况下只有1个，按普通情况走
+
+        if (fills.length <= 1 && strokes.length <= 1) {
+          var o = {
+            fill: fills[0],
+            fillRule: fillRules[0],
+            stroke: strokes[0],
+            strokeWidth: strokeWidths[0],
+            strokeDasharray: strokeDasharrays[0],
+            strokeDasharrayStr: strokeDasharrayStrs[0],
+            strokeLinecap: strokeLinecaps[0],
+            strokeLinejoin: strokeLinejoins[0],
+            strokeMiterlimit: strokeMiterlimits[0],
+            dx: dx,
+            dy: dy,
+            bbox: bbox
+          };
+
+          this.__renderOnePolygon(renderMode, ctx, isMulti, list, o);
+        } // 多个需要fill在下面，stroke在上面，依次循环
+        else {
+          for (var i = 0, len = fills.length; i < len; i++) {
+            var fill = fills[i];
+
+            if (fill) {
+              var _o = {
+                fill: fill,
+                fillRule: fillRules[i],
+                dx: dx,
+                dy: dy,
+                bbox: bbox
+              };
+
+              this.__renderOnePolygon(renderMode, ctx, isMulti, list, _o);
+            }
+          }
+
+          for (var _i = 0, _len = strokes.length; _i < _len; _i++) {
+            var stroke = strokes[_i];
+
+            if (stroke) {
+              var _o2 = {
+                stroke: stroke,
+                strokeWidth: strokeWidths[_i],
+                strokeDasharray: strokeDasharrays[_i],
+                strokeDasharrayStr: strokeDasharrayStrs[_i],
+                strokeLinecap: strokeLinecaps[_i],
+                strokeLinejoin: strokeLinejoins[_i],
+                strokeMiterlimit: strokeMiterlimits[_i],
+                dx: dx,
+                dy: dy,
+                bbox: bbox
+              };
+
+              this.__renderOnePolygon(renderMode, ctx, isMulti, list, _o2);
+            }
+          }
+        }
+      }
+    }, {
+      key: "__renderOnePolygon",
+      value: function __renderOnePolygon(renderMode, ctx, isMulti, list, res) {
+        var fill = res.fill,
+            stroke = res.stroke,
+            strokeWidth = res.strokeWidth;
+        var isFillCE = fill && fill.k === 'conic';
+        var isStrokeCE = stroke && stroke.k === 'conic'; // 椭圆是array
+
+        var isFillRE = fill && fill.k === 'radial' && Array.isArray(fill.v);
+        var isStrokeRE = strokeWidth && strokeWidth > 0 && stroke && stroke.k === 'radial' && Array.isArray(stroke.v);
+
+        if (isFillCE || isStrokeCE) {
+          if (isFillCE) {
+            this.__conicGradient(renderMode, ctx, list, isMulti, res);
+          } else if (fill !== 'none') {
+            this.__drawPolygon(renderMode, ctx, isMulti, list, res, true);
+          }
+
+          if (strokeWidth && strokeWidth > 0 && isStrokeCE) {
+            inject.warn('Stroke style can not use conic-gradient');
+          } else if (strokeWidth && strokeWidth > 0 && stroke !== 'none') {
+            this.__drawPolygon(renderMode, ctx, isMulti, list, res, false, true);
+          }
+        } else if (isFillRE || isStrokeRE) {
+          if (isFillRE) {
+            this.__radialEllipse(renderMode, ctx, list, isMulti, res, 'fill');
+          } else if (fill !== 'none') {
+            this.__drawPolygon(renderMode, ctx, isMulti, list, res, true);
+          } // stroke椭圆渐变matrix会变形，降级为圆
+
+
+          if (strokeWidth && strokeWidth > 0 && isStrokeRE) {
+            inject.warn('Stroke style can not use radial-gradient for ellipse');
+            res.stroke.v = res.stroke.v[0];
+
+            this.__drawPolygon(renderMode, ctx, isMulti, list, res, false, true);
+          } else if (strokeWidth && strokeWidth > 0 && stroke !== 'none') {
+            this.__drawPolygon(renderMode, ctx, isMulti, list, res, false, true);
+          }
+        } else {
+          this.__drawPolygon(renderMode, ctx, isMulti, list, res, true, true);
+        }
+      }
+    }, {
+      key: "__drawPolygon",
+      value: function __drawPolygon(renderMode, ctx, isMulti, list, res, isFill, isStroke) {
+        var fill = res.fill,
+            stroke = res.stroke,
+            strokeWidth = res.strokeWidth,
+            fillRule = res.fillRule,
+            strokeDasharrayStr = res.strokeDasharrayStr,
+            strokeLinecap = res.strokeLinecap,
+            strokeLinejoin = res.strokeLinejoin,
+            strokeMiterlimit = res.strokeMiterlimit,
+            dx = res.dx,
+            dy = res.dy;
+
+        if (renderMode === mode.CANVAS) {
+          this.__preSetCanvas(renderMode, ctx, res);
+
+          ctx.beginPath();
+
+          if (isMulti) {
+            list.forEach(function (item) {
+              return canvasPolygon$2(ctx, item, dx, dy);
+            });
+          } else {
+            canvasPolygon$2(ctx, list, dx, dy);
+          }
+
+          if (isFill && fill && fill !== 'none') {
+            ctx.fill(fillRule);
+          }
+
+          if (isStroke && stroke && stroke !== 'none' && strokeWidth && strokeWidth > 0) {
+            ctx.stroke();
+          }
+
+          ctx.closePath();
+        } else if (renderMode === mode.SVG) {
+          var d = '';
+
+          if (isMulti) {
+            list.forEach(function (item) {
+              return d += svgPolygon$1(item);
+            });
+          } else {
+            d = svgPolygon$1(list);
+          }
+
+          var props = [['d', d]]; // 2个都没有常出现在多fill/stroke时，也有可能特殊单个故意这样写的
+
+          if ((!fill || fill === 'none') && (!stroke || stroke === 'none')) {
+            return;
+          }
+
+          if (isFill && fill && fill !== 'none') {
+            props.push(['fill', fill.v || fill]);
+
+            if (fillRule && fillRule !== 'nonzero') {
+              // evenodd
+              props.push(['fill-rule', fillRule]);
+            }
+          } else {
+            props.push(['fill', 'none']);
+          }
+
+          if (isStroke && stroke && stroke !== 'none' && strokeWidth && strokeWidth > 0) {
+            props.push(['stroke', stroke.v || stroke]);
+            props.push(['stroke-width', strokeWidth]);
+
+            this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
+          } else {
+            props.push(['stroke-width', 0]);
+          }
+
+          this.addGeom('path', props);
+        }
+      }
+    }, {
+      key: "__inversePtList",
+      value: function __inversePtList(list, isMulti, t) {
+        var dx = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
+        var dy = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
+
+        if (isMulti) {
+          return list.map(function (item) {
+            if (!item || !item.length) {
+              return null;
+            }
+
+            return item.map(function (item) {
+              if (!item || !item.length) {
+                return null;
+              }
+
+              var arr = [];
+
+              for (var i = 0, len = item.length; i < len; i += 2) {
+                var p = mx.calPoint([item[i] + dx, item[i + 1] + dy], t);
+                arr.push(p[0]);
+                arr.push(p[1]);
+              }
+
+              return arr;
+            });
+          });
+        } else {
+          return list.map(function (item) {
+            if (!item || !item.length) {
+              return null;
+            }
+
+            var arr = [];
+
+            for (var i = 0, len = item.length; i < len; i += 2) {
+              var p = mx.calPoint([item[i] + dx, item[i + 1] + dy], t);
+              arr.push(p[0]);
+              arr.push(p[1]);
+            }
+
+            return arr;
+          });
+        }
+      }
+    }, {
+      key: "__radialEllipse",
+      value: function __radialEllipse(renderMode, ctx, list, isMulti, res, method) {
+        var strokeWidth = res.strokeWidth,
+            strokeDasharrayStr = res.strokeDasharrayStr,
+            strokeLinecap = res.strokeLinecap,
+            strokeLinejoin = res.strokeLinejoin,
+            strokeMiterlimit = res.strokeMiterlimit,
+            dx = res.dx,
+            dy = res.dy;
+
+        var _res$method$v = _slicedToArray(res[method].v, 4),
+            color = _res$method$v[0],
+            matrix = _res$method$v[1],
+            cx = _res$method$v[2],
+            cy = _res$method$v[3]; // 椭圆渐变的转换，顶点逆矩阵变换
+
+
+        var tfo = [cx, cy];
+        matrix = transform.calMatrixByOrigin(matrix, tfo);
+        var t = mx.inverse(matrix);
+        list = this.__inversePtList(list, isMulti, t, dx, dy); // 用正向matrix渲染
+
+        if (renderMode === mode.CANVAS) {
+          if (matrix) {
+            ctx.save(); // 获取当前matrix，在webgl中为E，在canvas中分无cache和有cache模式
+
+            var me = ctx.getTransform();
+            me = [me.a, me.b, 0, 0, me.c, me.d, 0, 0, 0, 0, 1, 0, me.e, me.f, 1, 0];
+            matrix = mx.multiply(me, matrix);
+            ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
+          }
+
+          ctx.beginPath();
+
+          if (ctx[method + 'Style'] !== color) {
+            ctx[method + 'Style'] = color;
+          }
+
+          if (isMulti) {
+            list.forEach(function (item) {
+              return painter.canvasPolygon(ctx, item);
+            });
+          } else {
+            canvasPolygon$2(ctx, list);
+          }
+
+          ctx[method]();
+          ctx.closePath();
+
+          if (matrix) {
+            ctx.restore();
+          }
+        } else if (renderMode === mode.SVG) {
+          var d = '';
+
+          if (isMulti) {
+            list.forEach(function (item) {
+              return d += svgPolygon$1(item);
+            });
+          } else {
+            d = svgPolygon$1(list);
+          }
+
+          var props = [['d', d]];
+
+          if (method === 'fill') {
+            props.push(['fill', color]);
+            props.push(['strokeWidth', 0]);
+          } else if (method === 'stroke') {
+            props.push(['fill', 'none']);
+            props.push(['stroke', color]);
+            props.push(['stroke-width', strokeWidth]);
+
+            this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
+          }
+
+          props.push(['transform', "matrix(".concat(joinArr(mx.m2m6(matrix), ','), ")")]);
+          this.addGeom('path', props);
+        }
+      }
+    }, {
+      key: "__conicGradient",
+      value: function __conicGradient(renderMode, ctx, list, isMulti, res) {
+        var _this4 = this;
+
+        var fill = res.fill,
+            bbox = res.bbox,
+            _res$dx = res.dx,
+            dx = _res$dx === void 0 ? 0 : _res$dx,
+            _res$dy = res.dy,
+            dy = _res$dy === void 0 ? 0 : _res$dy;
+        var color = fill.v;
+
+        if (renderMode === mode.CANVAS) {
+          var _bbox = _slicedToArray(bbox, 4),
+              x1 = _bbox[0],
+              y1 = _bbox[1],
+              x2 = _bbox[2],
+              y2 = _bbox[3];
+
+          var w = x2 - x1,
+              h = y2 - y1;
+          var offscreen = inject.getCacheCanvas(w, h, '__$$CONIC_GRADIENT$$__');
+          var imgData = offscreen.ctx.getImageData(0, 0, w, h);
+          gradient$1.getConicGradientImage(w * 0.5, h * 0.5, w, h, fill.v.stop, imgData.data);
+          offscreen.ctx.putImageData(imgData, 0, 0);
+
+          if (isMulti) {
+            list.forEach(function (item) {
+              ctx.save();
+              ctx.beginPath();
+              canvasPolygon$2(ctx, item, dx, dy);
+              ctx.clip();
+              ctx.closePath();
+              ctx.drawImage(offscreen.canvas, x1 + dx, y1 + dy);
+              ctx.restore();
+            });
+          } else {
+            ctx.save();
+            ctx.beginPath();
+            canvasPolygon$2(ctx, list, dx, dy);
+            ctx.clip();
+            ctx.closePath();
+            ctx.drawImage(offscreen.canvas, x1 + dx, y1 + dy);
+            ctx.restore();
+          }
+
+          offscreen.ctx.clearRect(0, 0, w, h);
+        } else if (renderMode === mode.SVG) {
+          if (isMulti) {
+            list.forEach(function (item) {
+              var v = {
+                tagName: 'clipPath',
+                children: [{
+                  tagName: 'path',
+                  props: [['d', svgPolygon$1(item)]]
+                }]
+              };
+              var clip = ctx.add(v);
+
+              _this4.__cacheDefs.push(v);
+
+              color.forEach(function (item) {
+                _this4.virtualDom.bb.push({
+                  type: 'item',
+                  tagName: 'path',
+                  props: [['d', svgPolygon$1(item[0])], ['fill', item[1]], ['clip-path', 'url(#' + clip + ')']]
+                });
+              });
+            });
+          } else {
+            var v = {
+              tagName: 'clipPath',
+              children: [{
+                tagName: 'path',
+                props: [['d', svgPolygon$1(list)]]
+              }]
+            };
+            var clip = ctx.add(v);
+
+            this.__cacheDefs.push(v);
+
+            color.forEach(function (item) {
+              _this4.virtualDom.bb.push({
+                type: 'item',
+                tagName: 'path',
+                props: [['d', svgPolygon$1(item[0])], ['fill', item[1]], ['clip-path', 'url(#' + clip + ')']]
+              });
+            });
+          }
+        }
+      }
+    }, {
+      key: "__propsStrokeStyle",
+      value: function __propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit) {
+        if (strokeDasharrayStr) {
+          props.push(['stroke-dasharray', strokeDasharrayStr]);
+        }
+
+        if (strokeLinecap && strokeLinecap !== 'butt') {
+          props.push(['stroke-linecap', strokeLinecap]);
+        }
+
+        if (strokeLinejoin && strokeLinejoin !== 'miter') {
+          props.push(['stroke-linejoin', strokeLinejoin]);
+        }
+
+        if (strokeMiterlimit && strokeMiterlimit !== 4) {
+          props.push(['stroke-miterlimit', strokeMiterlimit]);
+        }
+      } // geom的cache无内容也不清除，因为子类不清楚内容，除非看不见
+      // __releaseWhenEmpty(cache, computedStyle) {
+      //   return computedStyle[VISIBILITY] === 'hidden';
+      // }
+      // offset/resize时要多一步清空props上记录的缓存
+
+    }, {
+      key: "__offsetX",
+      value: function __offsetX(diff, isLayout, lv) {
+        _get(_getPrototypeOf(Geom.prototype), "__offsetX", this).call(this, diff, isLayout, lv);
+
+        this.__cacheProps = {};
+      }
+    }, {
+      key: "__offsetY",
+      value: function __offsetY(diff, isLayout, lv) {
+        _get(_getPrototypeOf(Geom.prototype), "__offsetY", this).call(this, diff, isLayout, lv);
+
+        this.__cacheProps = {};
+      }
+    }, {
+      key: "__resizeX",
+      value: function __resizeX(diff, lv) {
+        _get(_getPrototypeOf(Geom.prototype), "__resizeX", this).call(this, diff, lv);
+
+        this.__cacheProps = {};
+      }
+    }, {
+      key: "__resizeY",
+      value: function __resizeY(diff, lv) {
+        _get(_getPrototypeOf(Geom.prototype), "__resizeY", this).call(this, diff, lv);
+
+        this.__cacheProps = {};
+      }
+    }, {
+      key: "addGeom",
+      value: function addGeom(tagName, props) {
+        props = util.hash2arr(props);
+        this.virtualDom.children.push({
+          type: 'item',
+          tagName: tagName,
+          props: props
+        });
+      }
+    }, {
+      key: "getProps",
+      value: function getProps(k) {
+        var v = this.currentProps[k];
+
+        if (!isNil$8(v)) {
+          return v;
+        }
+
+        return this['__' + k];
+      }
+    }, {
+      key: "__isRealInline",
+      value: function __isRealInline() {
+        return false;
+      }
+    }, {
+      key: "isMulti",
+      get: function get() {
+        return this.__isMulti;
+      }
+    }, {
+      key: "currentProps",
+      get: function get() {
+        return this.__currentProps;
+      }
+    }], [{
+      key: "REGISTER",
+      get: function get() {
+        return REGISTER;
+      }
+    }, {
+      key: "getRegister",
+      value: function getRegister(name) {
+        if (name && !util.isString(name) && name.prototype && name.prototype instanceof Geom) {
+          return name;
+        }
+
+        if (!name || !util.isString(name) || name.charAt(0) !== '$') {
+          throw new Error('Invalid param');
+        }
+
+        if (!REGISTER.hasOwnProperty(name)) {
+          throw new Error("Geom has not register: ".concat(name));
+        }
+
+        return REGISTER[name];
+      }
+    }, {
+      key: "register",
+      value: function register(name, obj) {
+        if (!name || !util.isString(name) || name.charAt(0) !== '$' || !obj.prototype || !(obj.prototype instanceof Geom)) {
+          throw new Error('Invalid param');
+        }
+
+        if (Geom.hasRegister(name)) {
+          throw new Error("Geom has already register: ".concat(name));
+        }
+
+        REGISTER[name] = obj;
+      }
+    }, {
+      key: "hasRegister",
+      value: function hasRegister(name) {
+        return name && REGISTER.hasOwnProperty(name);
+      }
+    }, {
+      key: "delRegister",
+      value: function delRegister(name) {
+        if (Geom.hasRegister(name)) {
+          delete REGISTER[name];
+        }
+      }
+    }]);
+
+    return Geom;
+  }(Xom);
+
+  var _enums$STYLE_KEY$5 = enums.STYLE_KEY,
+      DISPLAY$4 = _enums$STYLE_KEY$5.DISPLAY,
+      TOP$2 = _enums$STYLE_KEY$5.TOP,
+      BOTTOM$2 = _enums$STYLE_KEY$5.BOTTOM,
+      POSITION$2 = _enums$STYLE_KEY$5.POSITION,
+      WIDTH$3 = _enums$STYLE_KEY$5.WIDTH,
+      HEIGHT$3 = _enums$STYLE_KEY$5.HEIGHT;
+      _enums$STYLE_KEY$5.Z_INDEX;
+      var MARGIN_TOP$2 = _enums$STYLE_KEY$5.MARGIN_TOP,
+      MARGIN_LEFT$3 = _enums$STYLE_KEY$5.MARGIN_LEFT,
+      BORDER_TOP_WIDTH$2 = _enums$STYLE_KEY$5.BORDER_TOP_WIDTH,
+      PADDING_TOP$2 = _enums$STYLE_KEY$5.PADDING_TOP,
+      BORDER_LEFT_WIDTH$3 = _enums$STYLE_KEY$5.BORDER_LEFT_WIDTH,
+      PADDING_LEFT$3 = _enums$STYLE_KEY$5.PADDING_LEFT;
+  var AUTO$3 = o$4.AUTO,
+      PX$3 = o$4.PX,
+      PERCENT$3 = o$4.PERCENT;
   var REPAINT$2 = o$1.REPAINT,
       REFLOW = o$1.REFLOW;
   var isRelativeOrAbsolute$2 = css.isRelativeOrAbsolute;
@@ -24779,21 +25697,21 @@
               var _next$currentStyle = next.currentStyle,
                   top = _next$currentStyle[TOP$2],
                   bottom = _next$currentStyle[BOTTOM$2],
-                  height = _next$currentStyle[HEIGHT$4];
+                  height = _next$currentStyle[HEIGHT$3];
 
-              if (top.u === AUTO$4) {
-                if (bottom.u === AUTO$4 || bottom.u === PX$4) {
+              if (top.u === AUTO$3) {
+                if (bottom.u === AUTO$3 || bottom.u === PX$3) {
                   next.__offsetY(dy, true, REFLOW);
 
                   next.clearCache();
-                } else if (bottom.u === PERCENT$4) {
+                } else if (bottom.u === PERCENT$3) {
                   var v = (1 - bottom.v * 0.01) * dy;
 
                   next.__offsetY(v, true, REFLOW);
 
                   next.clearCache();
                 }
-              } else if (top.u === PERCENT$4) {
+              } else if (top.u === PERCENT$3) {
                 var _v = top.v * 0.01 * dy;
 
                 next.__offsetY(_v, true, REFLOW);
@@ -24802,7 +25720,7 @@
               } // 高度百分比需发生变化的重新布局，需要在容器内
 
 
-              if (height.u === PERCENT$4) {
+              if (height.u === PERCENT$3) {
                 if (isContainer) {
                   parent.__layoutAbs(parent, parent.__layoutData, next);
                 } else {
@@ -24850,11 +25768,11 @@
         var need = void 0;
 
         if (isAbs) {
-          if (currentStyle[HEIGHT$4].u === AUTO$4 && (currentStyle[TOP$2].u === AUTO$4 || currentStyle[BOTTOM$2].u === AUTO$4)) {
+          if (currentStyle[HEIGHT$3].u === AUTO$3 && (currentStyle[TOP$2].u === AUTO$3 || currentStyle[BOTTOM$2].u === AUTO$3)) {
             need = true;
           }
         } // height不定则需要
-        else if (currentStyle[HEIGHT$4].u === AUTO$4) {
+        else if (currentStyle[HEIGHT$3].u === AUTO$3) {
           need = true;
         }
 
@@ -24920,12 +25838,12 @@
 
   function isFixedWidthOrHeight$1(node, k) {
     var c = node.__currentStyle[k];
-    return c.u !== AUTO$4;
+    return c.u !== AUTO$3;
   } // 除了固定尺寸，父级也不能是flex
 
 
   function isFixedSize$1(node, includeParentFlex) {
-    var res = isFixedWidthOrHeight$1(node, WIDTH$4) && isFixedWidthOrHeight$1(node, HEIGHT$4);
+    var res = isFixedWidthOrHeight$1(node, WIDTH$3) && isFixedWidthOrHeight$1(node, HEIGHT$3);
 
     if (res && includeParentFlex) {
       var parent = node.__domParent;
@@ -24975,9 +25893,9 @@
       var __prev = node.__prev,
           __next = node.__next;
 
-      if (__prev && (__prev instanceof Text || ['inline', 'inlineBlock'].indexOf(__prev.__computedStyle[DISPLAY$4]) > -1)) {
+      if (__prev && (__prev instanceof Text || ['inline', 'inlineBlock'].indexOf(__prev.computedStyle[DISPLAY$4]) > -1)) {
         isSiblingBlock = false;
-      } else if (__next && (__next instanceof Text || ['inline', 'inlineBlock'].indexOf(__next.__computedStyle[DISPLAY$4]) > -1)) {
+      } else if (__next && (__next instanceof Text || ['inline', 'inlineBlock'].indexOf(__next.computedStyle[DISPLAY$4]) > -1)) {
         isSiblingBlock = false;
       }
 
@@ -25099,10 +26017,10 @@
       y += __computedStyle[MARGIN_TOP$2] + __computedStyle[BORDER_TOP_WIDTH$2] + __computedStyle[PADDING_TOP$2];
     }
 
-    x += __computedStyle[MARGIN_LEFT$4] + __computedStyle[BORDER_LEFT_WIDTH$4] + __computedStyle[PADDING_LEFT$4]; // 特殊的如add/remove时为absolute和none的在调用时即检查提前跳出了，不触发reflow，这里一定是触发的
+    x += __computedStyle[MARGIN_LEFT$3] + __computedStyle[BORDER_LEFT_WIDTH$3] + __computedStyle[PADDING_LEFT$3]; // 特殊的如add/remove时为absolute和none的在调用时即检查提前跳出了，不触发reflow，这里一定是触发的
     // 找到最上层容器供absolute使用
 
-    var container = parent;
+    var container = top;
 
     while (container && container !== root) {
       if (isRelativeOrAbsolute$2(container)) {
@@ -25154,9 +26072,11 @@
         top.__modifyStruct();
       }
 
-      y += top.outerHeight;
+      y += top.outerHeight; // 防止Geom
 
-      top.__layoutAbs(container, ld, null);
+      if (!(top instanceof Geom)) {
+        top.__layoutAbs(container, ld, null);
+      }
     } // add/remove的情况在自身是abs时不影响next
 
 
@@ -25189,9 +26109,9 @@
         diff;
 
     while (next) {
-      var cs = next.__currentStyle;
+      var cs = next.currentStyle;
 
-      if (cs[POSITION$2] !== 'absolute' || cs[TOP$2].u === AUTO$4 && cs[BOTTOM$2].u === AUTO$4) {
+      if (cs[POSITION$2] !== 'absolute' || cs[TOP$2].u === AUTO$3 && cs[BOTTOM$2].u === AUTO$3) {
         // 第一次计算，后面通用
         if (diff === undefined) {
           diff = y - next.y;
@@ -25360,56 +26280,56 @@
     relation: relation
   };
 
-  var _enums$STYLE_KEY$5 = enums.STYLE_KEY,
-      POSITION$1 = _enums$STYLE_KEY$5.POSITION,
-      DISPLAY$3 = _enums$STYLE_KEY$5.DISPLAY,
-      MARGIN_LEFT$3 = _enums$STYLE_KEY$5.MARGIN_LEFT,
-      MARGIN_TOP$1 = _enums$STYLE_KEY$5.MARGIN_TOP,
-      MARGIN_RIGHT$2 = _enums$STYLE_KEY$5.MARGIN_RIGHT,
-      MARGIN_BOTTOM$1 = _enums$STYLE_KEY$5.MARGIN_BOTTOM,
-      PADDING_LEFT$3 = _enums$STYLE_KEY$5.PADDING_LEFT,
-      PADDING_BOTTOM$1 = _enums$STYLE_KEY$5.PADDING_BOTTOM,
-      PADDING_RIGHT$2 = _enums$STYLE_KEY$5.PADDING_RIGHT,
-      PADDING_TOP$1 = _enums$STYLE_KEY$5.PADDING_TOP,
-      BORDER_TOP_WIDTH$1 = _enums$STYLE_KEY$5.BORDER_TOP_WIDTH,
-      BORDER_BOTTOM_WIDTH$1 = _enums$STYLE_KEY$5.BORDER_BOTTOM_WIDTH,
-      BORDER_RIGHT_WIDTH$2 = _enums$STYLE_KEY$5.BORDER_RIGHT_WIDTH,
-      BORDER_LEFT_WIDTH$3 = _enums$STYLE_KEY$5.BORDER_LEFT_WIDTH,
-      TOP$1 = _enums$STYLE_KEY$5.TOP,
-      RIGHT$1 = _enums$STYLE_KEY$5.RIGHT,
-      BOTTOM$1 = _enums$STYLE_KEY$5.BOTTOM,
-      LEFT$1 = _enums$STYLE_KEY$5.LEFT,
-      WIDTH$3 = _enums$STYLE_KEY$5.WIDTH,
-      HEIGHT$3 = _enums$STYLE_KEY$5.HEIGHT,
-      TEXT_ALIGN = _enums$STYLE_KEY$5.TEXT_ALIGN,
-      FLEX_DIRECTION = _enums$STYLE_KEY$5.FLEX_DIRECTION,
-      FLEX_BASIS$2 = _enums$STYLE_KEY$5.FLEX_BASIS,
-      FLEX_SHRINK = _enums$STYLE_KEY$5.FLEX_SHRINK,
-      FLEX_GROW = _enums$STYLE_KEY$5.FLEX_GROW,
-      ALIGN_SELF = _enums$STYLE_KEY$5.ALIGN_SELF,
-      ALIGN_ITEMS = _enums$STYLE_KEY$5.ALIGN_ITEMS,
-      JUSTIFY_CONTENT = _enums$STYLE_KEY$5.JUSTIFY_CONTENT,
-      Z_INDEX$1 = _enums$STYLE_KEY$5.Z_INDEX,
-      WHITE_SPACE = _enums$STYLE_KEY$5.WHITE_SPACE,
-      LINE_HEIGHT = _enums$STYLE_KEY$5.LINE_HEIGHT,
-      LINE_CLAMP = _enums$STYLE_KEY$5.LINE_CLAMP,
-      ORDER = _enums$STYLE_KEY$5.ORDER,
-      FLEX_WRAP = _enums$STYLE_KEY$5.FLEX_WRAP,
-      ALIGN_CONTENT = _enums$STYLE_KEY$5.ALIGN_CONTENT,
-      OVERFLOW$1 = _enums$STYLE_KEY$5.OVERFLOW,
-      FONT_SIZE$1 = _enums$STYLE_KEY$5.FONT_SIZE,
-      FONT_FAMILY = _enums$STYLE_KEY$5.FONT_FAMILY,
-      FONT_WEIGHT = _enums$STYLE_KEY$5.FONT_WEIGHT,
-      WRITING_MODE$1 = _enums$STYLE_KEY$5.WRITING_MODE,
+  var _enums$STYLE_KEY$4 = enums.STYLE_KEY,
+      POSITION$1 = _enums$STYLE_KEY$4.POSITION,
+      DISPLAY$3 = _enums$STYLE_KEY$4.DISPLAY,
+      MARGIN_LEFT$2 = _enums$STYLE_KEY$4.MARGIN_LEFT,
+      MARGIN_TOP$1 = _enums$STYLE_KEY$4.MARGIN_TOP,
+      MARGIN_RIGHT$1 = _enums$STYLE_KEY$4.MARGIN_RIGHT,
+      MARGIN_BOTTOM$1 = _enums$STYLE_KEY$4.MARGIN_BOTTOM,
+      PADDING_LEFT$2 = _enums$STYLE_KEY$4.PADDING_LEFT,
+      PADDING_BOTTOM$1 = _enums$STYLE_KEY$4.PADDING_BOTTOM,
+      PADDING_RIGHT$1 = _enums$STYLE_KEY$4.PADDING_RIGHT,
+      PADDING_TOP$1 = _enums$STYLE_KEY$4.PADDING_TOP,
+      BORDER_TOP_WIDTH$1 = _enums$STYLE_KEY$4.BORDER_TOP_WIDTH,
+      BORDER_BOTTOM_WIDTH$1 = _enums$STYLE_KEY$4.BORDER_BOTTOM_WIDTH,
+      BORDER_RIGHT_WIDTH$1 = _enums$STYLE_KEY$4.BORDER_RIGHT_WIDTH,
+      BORDER_LEFT_WIDTH$2 = _enums$STYLE_KEY$4.BORDER_LEFT_WIDTH,
+      TOP$1 = _enums$STYLE_KEY$4.TOP,
+      RIGHT$1 = _enums$STYLE_KEY$4.RIGHT,
+      BOTTOM$1 = _enums$STYLE_KEY$4.BOTTOM,
+      LEFT$1 = _enums$STYLE_KEY$4.LEFT,
+      WIDTH$2 = _enums$STYLE_KEY$4.WIDTH,
+      HEIGHT$2 = _enums$STYLE_KEY$4.HEIGHT,
+      TEXT_ALIGN = _enums$STYLE_KEY$4.TEXT_ALIGN,
+      FLEX_DIRECTION = _enums$STYLE_KEY$4.FLEX_DIRECTION,
+      FLEX_BASIS$1 = _enums$STYLE_KEY$4.FLEX_BASIS,
+      FLEX_SHRINK = _enums$STYLE_KEY$4.FLEX_SHRINK,
+      FLEX_GROW = _enums$STYLE_KEY$4.FLEX_GROW,
+      ALIGN_SELF = _enums$STYLE_KEY$4.ALIGN_SELF,
+      ALIGN_ITEMS = _enums$STYLE_KEY$4.ALIGN_ITEMS,
+      JUSTIFY_CONTENT = _enums$STYLE_KEY$4.JUSTIFY_CONTENT,
+      Z_INDEX$1 = _enums$STYLE_KEY$4.Z_INDEX,
+      WHITE_SPACE = _enums$STYLE_KEY$4.WHITE_SPACE,
+      LINE_HEIGHT = _enums$STYLE_KEY$4.LINE_HEIGHT,
+      LINE_CLAMP = _enums$STYLE_KEY$4.LINE_CLAMP,
+      ORDER = _enums$STYLE_KEY$4.ORDER,
+      FLEX_WRAP = _enums$STYLE_KEY$4.FLEX_WRAP,
+      ALIGN_CONTENT = _enums$STYLE_KEY$4.ALIGN_CONTENT,
+      OVERFLOW$1 = _enums$STYLE_KEY$4.OVERFLOW,
+      FONT_SIZE$1 = _enums$STYLE_KEY$4.FONT_SIZE,
+      FONT_FAMILY = _enums$STYLE_KEY$4.FONT_FAMILY,
+      FONT_WEIGHT = _enums$STYLE_KEY$4.FONT_WEIGHT,
+      WRITING_MODE$1 = _enums$STYLE_KEY$4.WRITING_MODE,
       ELLIPSIS = enums.ELLIPSIS;
-  var AUTO$3 = o$4.AUTO,
-      PX$3 = o$4.PX,
-      PERCENT$3 = o$4.PERCENT,
-      REM$2 = o$4.REM,
-      VW$2 = o$4.VW,
-      VH$2 = o$4.VH,
-      VMAX$2 = o$4.VMAX,
-      VMIN$2 = o$4.VMIN;
+  var AUTO$2 = o$4.AUTO,
+      PX$2 = o$4.PX,
+      PERCENT$2 = o$4.PERCENT,
+      REM$1 = o$4.REM,
+      VW$1 = o$4.VW,
+      VH$1 = o$4.VH,
+      VMAX$1 = o$4.VMAX,
+      VMIN$1 = o$4.VMIN;
   var isRelativeOrAbsolute$1 = css.isRelativeOrAbsolute,
       getBaseline = css.getBaseline,
       getVerticalBaseline = css.getVerticalBaseline;
@@ -25697,7 +26617,6 @@
       key: "__insertStruct",
       value: function __insertStruct(child, childIndex) {
         var struct = this.__struct;
-        var total = struct.total = struct.total || 0;
 
         var cs = child.__structure(struct.lv + 1, childIndex);
 
@@ -25714,13 +26633,17 @@
 
           i = structs.indexOf(ps) + _total + 1;
         } else {
-          i = structs.indexOf(struct) + total + 1;
+          i = structs.indexOf(struct) + 1;
         }
+
+        var total;
 
         if (Array.isArray(cs)) {
           structs.splice.apply(structs, [i, 0].concat(_toConsumableArray(cs)));
+          total = (cs[0].total || 0) + 1;
         } else {
           structs.splice(i, 0, cs);
+          total = (cs.total || 0) + 1;
         } // 调整后面children的childIndex，+1
 
 
@@ -25732,7 +26655,6 @@
         } // 向上添加parent的total数量
 
 
-        total = (cs.total || 0) + 1;
         struct.total += total;
         var p = this.__domParent;
 
@@ -25844,19 +26766,19 @@
         var flowChildren = this.flowChildren,
             _this$currentStyle = this.currentStyle,
             display = _this$currentStyle[DISPLAY$3],
-            width = _this$currentStyle[WIDTH$3],
-            height = _this$currentStyle[HEIGHT$3],
-            marginLeft = _this$currentStyle[MARGIN_LEFT$3],
-            marginRight = _this$currentStyle[MARGIN_RIGHT$2],
+            width = _this$currentStyle[WIDTH$2],
+            height = _this$currentStyle[HEIGHT$2],
+            marginLeft = _this$currentStyle[MARGIN_LEFT$2],
+            marginRight = _this$currentStyle[MARGIN_RIGHT$1],
             marginTop = _this$currentStyle[MARGIN_TOP$1],
             marginBottom = _this$currentStyle[MARGIN_BOTTOM$1],
-            paddingLeft = _this$currentStyle[PADDING_LEFT$3],
-            paddingRight = _this$currentStyle[PADDING_RIGHT$2],
+            paddingLeft = _this$currentStyle[PADDING_LEFT$2],
+            paddingRight = _this$currentStyle[PADDING_RIGHT$1],
             paddingTop = _this$currentStyle[PADDING_TOP$1],
             paddingBottom = _this$currentStyle[PADDING_BOTTOM$1],
             _this$computedStyle = this.computedStyle,
-            borderLeftWidth = _this$computedStyle[BORDER_LEFT_WIDTH$3],
-            borderRightWidth = _this$computedStyle[BORDER_RIGHT_WIDTH$2],
+            borderLeftWidth = _this$computedStyle[BORDER_LEFT_WIDTH$2],
+            borderRightWidth = _this$computedStyle[BORDER_RIGHT_WIDTH$1],
             borderTopWidth = _this$computedStyle[BORDER_TOP_WIDTH$1],
             borderBottomWidth = _this$computedStyle[BORDER_BOTTOM_WIDTH$1]; // inline没w/h，并且尝试孩子第一个能放下即可，如果是文字就是第一个字符
 
@@ -25876,7 +26798,7 @@
           }
         } // inlineBlock尝试所有孩子在一行上
         else {
-          if (width.u !== AUTO$3) {
+          if (width.u !== AUTO$2) {
             free -= isUpright ? this.__calSize(height, total, true) : this.__calSize(width, total, true);
           } else {
             for (var i = 0; i < flowChildren.length; i++) {
@@ -26012,9 +26934,9 @@
             h = data.h; // 计算需考虑style的属性
 
         var flexDirection = currentStyle[FLEX_DIRECTION],
-            flexBasis = currentStyle[FLEX_BASIS$2],
-            width = currentStyle[WIDTH$3],
-            height = currentStyle[HEIGHT$3];
+            flexBasis = currentStyle[FLEX_BASIS$1],
+            width = currentStyle[WIDTH$2],
+            height = currentStyle[HEIGHT$2];
         var lineHeight = computedStyle[LINE_HEIGHT],
             display = computedStyle[DISPLAY$3],
             lineClamp = computedStyle[LINE_CLAMP],
@@ -26022,15 +26944,15 @@
         var isUpright = writingMode.indexOf('vertical') === 0;
         var main = isDirectionRow ? width : height; // basis3种情况：auto、固定、content
 
-        var isAuto = flexBasis.u === AUTO$3;
-        var isFixed = [PX$3, PERCENT$3, REM$2, VW$2, VH$2, VMAX$2, VMIN$2].indexOf(flexBasis.u) > -1;
+        var isAuto = flexBasis.u === AUTO$2;
+        var isFixed = [PX$2, PERCENT$2, REM$1, VW$1, VH$1, VMAX$1, VMIN$1].indexOf(flexBasis.u) > -1;
         var isContent = !isAuto && !isFixed;
         var fixedSize; // flex的item固定basis计算
 
         if (isFixed) {
           b = fixedSize = this.__calSize(flexBasis, isDirectionRow ? w : h, true);
         } // 已声明主轴尺寸的，当basis是auto时为main值
-        else if (isAuto && [PX$3, PERCENT$3, REM$2, VW$2, VH$2, VMAX$2, VMIN$2].indexOf(main.u) > -1) {
+        else if (isAuto && [PX$2, PERCENT$2, REM$1, VW$1, VH$1, VMAX$1, VMIN$1].indexOf(main.u) > -1) {
           b = fixedSize = this.__calSize(main, isDirectionRow ? w : h, true);
         } // 非固定尺寸的basis为auto时降级为content
         else if (isAuto) {
@@ -26523,19 +27445,19 @@
               if (!isNone && item.flowChildren && item.flowChildren.length === 0) {
                 var _item$computedStyle = item.computedStyle,
                     marginTop = _item$computedStyle[MARGIN_TOP$1],
-                    marginRight = _item$computedStyle[MARGIN_RIGHT$2],
+                    marginRight = _item$computedStyle[MARGIN_RIGHT$1],
                     marginBottom = _item$computedStyle[MARGIN_BOTTOM$1],
-                    marginLeft = _item$computedStyle[MARGIN_LEFT$3],
+                    marginLeft = _item$computedStyle[MARGIN_LEFT$2],
                     paddingTop = _item$computedStyle[PADDING_TOP$1],
-                    paddingRight = _item$computedStyle[PADDING_RIGHT$2],
+                    paddingRight = _item$computedStyle[PADDING_RIGHT$1],
                     paddingBottom = _item$computedStyle[PADDING_BOTTOM$1],
-                    paddingLeft = _item$computedStyle[PADDING_LEFT$3],
-                    width = _item$computedStyle[WIDTH$3],
-                    height = _item$computedStyle[HEIGHT$3],
+                    paddingLeft = _item$computedStyle[PADDING_LEFT$2],
+                    width = _item$computedStyle[WIDTH$2],
+                    height = _item$computedStyle[HEIGHT$2],
                     borderTopWidth = _item$computedStyle[BORDER_TOP_WIDTH$1],
-                    borderRightWidth = _item$computedStyle[BORDER_RIGHT_WIDTH$2],
+                    borderRightWidth = _item$computedStyle[BORDER_RIGHT_WIDTH$1],
                     borderBottomWidth = _item$computedStyle[BORDER_BOTTOM_WIDTH$1],
-                    borderLeftWidth = _item$computedStyle[BORDER_LEFT_WIDTH$3]; // 无内容高度为0的空block特殊情况，记录2个margin下来等后续循环判断处理
+                    borderLeftWidth = _item$computedStyle[BORDER_LEFT_WIDTH$2]; // 无内容高度为0的空block特殊情况，记录2个margin下来等后续循环判断处理
 
                 if (isUpright && paddingLeft <= 0 && paddingRight <= 0 && width <= 0 && borderLeftWidth <= 0 && borderRightWidth <= 0) {
                   mergeMarginEndList.push(marginRight);
@@ -26566,9 +27488,9 @@
               if (!isNone && !isEmptyBlock) {
                 var _item$computedStyle2 = item.computedStyle,
                     _marginTop = _item$computedStyle2[MARGIN_TOP$1],
-                    _marginRight = _item$computedStyle2[MARGIN_RIGHT$2],
+                    _marginRight = _item$computedStyle2[MARGIN_RIGHT$1],
                     _marginBottom = _item$computedStyle2[MARGIN_BOTTOM$1],
-                    _marginLeft = _item$computedStyle2[MARGIN_LEFT$3]; // 有bottom值说明之前有紧邻的block，任意个甚至空block，自己有个top所以无需判断top
+                    _marginLeft = _item$computedStyle2[MARGIN_LEFT$2]; // 有bottom值说明之前有紧邻的block，任意个甚至空block，自己有个top所以无需判断top
                 // 如果是只有紧邻的2个非空block，也被包含在情况内，取上下各1合并
 
                 if (mergeMarginEndList.length) {
@@ -26937,7 +27859,7 @@
 
             var flexGrow = _currentStyle[FLEX_GROW],
                 flexShrink = _currentStyle[FLEX_SHRINK];
-            _computedStyle[FLEX_BASIS$2] = b;
+            _computedStyle[FLEX_BASIS$1] = b;
             growList.push(flexGrow);
             shrinkList.push(flexShrink); // 根据basis不同，计算方式不同
 
@@ -27493,12 +28415,12 @@
             } else {
               var _item$currentStyle = item.currentStyle,
                   alignSelf = _item$currentStyle[ALIGN_SELF],
-                  width = _item$currentStyle[WIDTH$3]; // column的child真布局时，如果是stretch宽度，则可以直接生成animateRecord，否则自适应调整后才进行
+                  width = _item$currentStyle[WIDTH$2]; // column的child真布局时，如果是stretch宽度，则可以直接生成animateRecord，否则自适应调整后才进行
 
               if (!isAbs && !isColumn && !isRow) {
                 var needGenAr;
 
-                if (width.u !== AUTO$3 || alignSelf === 'stretch') {
+                if (width.u !== AUTO$2 || alignSelf === 'stretch') {
                   needGenAr = true;
                 } else if (alignSelf === 'auto' && alignItems === 'stretch') {
                   needGenAr = true;
@@ -27554,19 +28476,19 @@
               var currentStyle = item.currentStyle;
 
               if (isDirectionRow) {
-                if (currentStyle[MARGIN_LEFT$3].u === AUTO$3) {
+                if (currentStyle[MARGIN_LEFT$2].u === AUTO$2) {
                   marginAutoCount++;
                 }
 
-                if (currentStyle[MARGIN_RIGHT$2].u === AUTO$3) {
+                if (currentStyle[MARGIN_RIGHT$1].u === AUTO$2) {
                   marginAutoCount++;
                 }
               } else {
-                if (currentStyle[MARGIN_TOP$1].u === AUTO$3) {
+                if (currentStyle[MARGIN_TOP$1].u === AUTO$2) {
                   marginAutoCount++;
                 }
 
-                if (currentStyle[MARGIN_BOTTOM$1].u === AUTO$3) {
+                if (currentStyle[MARGIN_BOTTOM$1].u === AUTO$2) {
                   marginAutoCount++;
                 }
               }
@@ -27633,7 +28555,7 @@
             var currentStyle = child.currentStyle;
 
             if (isDirectionRow) {
-              if (currentStyle[MARGIN_LEFT$3].u === AUTO$3) {
+              if (currentStyle[MARGIN_LEFT$2].u === AUTO$2) {
                 count += per;
 
                 child.__offsetX(count, true);
@@ -27641,11 +28563,11 @@
                 child.__offsetX(count, true);
               }
 
-              if (currentStyle[MARGIN_RIGHT$2].u === AUTO$3) {
+              if (currentStyle[MARGIN_RIGHT$1].u === AUTO$2) {
                 count += per;
               }
             } else {
-              if (currentStyle[MARGIN_TOP$1].u === AUTO$3) {
+              if (currentStyle[MARGIN_TOP$1].u === AUTO$2) {
                 count += per;
 
                 child.__offsetY(count, true);
@@ -27653,7 +28575,7 @@
                 child.__offsetY(count, true);
               }
 
-              if (currentStyle[MARGIN_BOTTOM$1].u === AUTO$3) {
+              if (currentStyle[MARGIN_BOTTOM$1].u === AUTO$2) {
                 count += per;
               }
             }
@@ -27714,7 +28636,7 @@
               }
             } else if (alignSelf === 'stretch') {
               var computedStyle = item.computedStyle,
-                  height = item.currentStyle[HEIGHT$3];
+                  height = item.currentStyle[HEIGHT$2];
               var borderTopWidth = computedStyle[BORDER_TOP_WIDTH$1],
                   borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$1],
                   marginTop = computedStyle[MARGIN_TOP$1],
@@ -27722,9 +28644,9 @@
                   paddingTop = computedStyle[PADDING_TOP$1],
                   paddingBottom = computedStyle[PADDING_BOTTOM$1];
 
-              if (height.u === AUTO$3) {
+              if (height.u === AUTO$2) {
                 var old = item.height;
-                var v = item.__height = computedStyle[HEIGHT$3] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+                var v = item.__height = computedStyle[HEIGHT$2] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
                 var d = v - old;
                 item.__sy4 += d;
                 item.__sy5 += d;
@@ -27766,9 +28688,9 @@
                     _item$currentStyle2 = item.currentStyle,
                     display = _item$currentStyle2[DISPLAY$3],
                     flexDirection = _item$currentStyle2[FLEX_DIRECTION],
-                    _height = _item$currentStyle2[HEIGHT$3]; // row的孩子还是flex且column且不定高时，如果高度<侧轴拉伸高度则重新布局
+                    _height = _item$currentStyle2[HEIGHT$2]; // row的孩子还是flex且column且不定高时，如果高度<侧轴拉伸高度则重新布局
 
-                if (isDirectionRow && display === 'flex' && flexDirection === 'column' && _height.u === AUTO$3 && item.outerHeight < maxCross) {
+                if (isDirectionRow && display === 'flex' && flexDirection === 'column' && _height.u === AUTO$2 && item.outerHeight < maxCross) {
                   item.__layout(Object.assign(item.__layoutData, {
                     h3: maxCross
                   }));
@@ -27781,7 +28703,7 @@
                     _paddingTop = _computedStyle2[PADDING_TOP$1],
                     _paddingBottom = _computedStyle2[PADDING_BOTTOM$1];
 
-                if (_height.u === AUTO$3) {
+                if (_height.u === AUTO$2) {
                   var _old = item.height;
 
                   var _v = maxCross - _marginTop2 - _marginBottom2 - _paddingTop - _paddingBottom - _borderTopWidth - _borderBottomWidth;
@@ -27814,18 +28736,18 @@
               }
             } else if (alignSelf === 'stretch') {
               var _computedStyle3 = item.computedStyle,
-                  width = item.currentStyle[WIDTH$3];
-              var borderRightWidth = _computedStyle3[BORDER_RIGHT_WIDTH$2],
-                  borderLeftWidth = _computedStyle3[BORDER_LEFT_WIDTH$3],
-                  marginRight = _computedStyle3[MARGIN_RIGHT$2],
-                  marginLeft = _computedStyle3[MARGIN_LEFT$3],
-                  paddingRight = _computedStyle3[PADDING_RIGHT$2],
-                  paddingLeft = _computedStyle3[PADDING_LEFT$3];
+                  width = item.currentStyle[WIDTH$2];
+              var borderRightWidth = _computedStyle3[BORDER_RIGHT_WIDTH$1],
+                  borderLeftWidth = _computedStyle3[BORDER_LEFT_WIDTH$2],
+                  marginRight = _computedStyle3[MARGIN_RIGHT$1],
+                  marginLeft = _computedStyle3[MARGIN_LEFT$2],
+                  paddingRight = _computedStyle3[PADDING_RIGHT$1],
+                  paddingLeft = _computedStyle3[PADDING_LEFT$2];
 
-              if (width.u === AUTO$3) {
+              if (width.u === AUTO$2) {
                 var _old2 = item.width;
 
-                var _v2 = item.__width = _computedStyle3[WIDTH$3] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+                var _v2 = item.__width = _computedStyle3[WIDTH$2] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
 
                 var _d2 = _v2 - _old2;
 
@@ -27866,18 +28788,18 @@
               } // 默认stretch
               else {
                 var _computedStyle4 = item.computedStyle,
-                    _width = item.currentStyle[WIDTH$3];
-                var _borderRightWidth = _computedStyle4[BORDER_RIGHT_WIDTH$2],
-                    _borderLeftWidth = _computedStyle4[BORDER_LEFT_WIDTH$3],
-                    _marginRight2 = _computedStyle4[MARGIN_RIGHT$2],
-                    _marginLeft2 = _computedStyle4[MARGIN_LEFT$3],
-                    _paddingRight = _computedStyle4[PADDING_RIGHT$2],
-                    _paddingLeft = _computedStyle4[PADDING_LEFT$3];
+                    _width = item.currentStyle[WIDTH$2];
+                var _borderRightWidth = _computedStyle4[BORDER_RIGHT_WIDTH$1],
+                    _borderLeftWidth = _computedStyle4[BORDER_LEFT_WIDTH$2],
+                    _marginRight2 = _computedStyle4[MARGIN_RIGHT$1],
+                    _marginLeft2 = _computedStyle4[MARGIN_LEFT$2],
+                    _paddingRight = _computedStyle4[PADDING_RIGHT$1],
+                    _paddingLeft = _computedStyle4[PADDING_LEFT$2];
 
-                if (_width.u === AUTO$3) {
+                if (_width.u === AUTO$2) {
                   var _old3 = item.width;
 
-                  var _v3 = item.__width = _computedStyle4[WIDTH$3] = maxCross - _marginLeft2 - _marginRight2 - _paddingLeft - _paddingRight - _borderRightWidth - _borderLeftWidth;
+                  var _v3 = item.__width = _computedStyle4[WIDTH$2] = maxCross - _marginLeft2 - _marginRight2 - _paddingLeft - _paddingRight - _borderRightWidth - _borderLeftWidth;
 
                   var _d3 = _v3 - _old3;
 
@@ -27922,16 +28844,16 @@
             lineHeight = computedStyle[LINE_HEIGHT],
             marginTop = computedStyle[MARGIN_TOP$1],
             marginBottom = computedStyle[MARGIN_BOTTOM$1],
-            marginLeft = computedStyle[MARGIN_LEFT$3],
-            marginRight = computedStyle[MARGIN_RIGHT$2],
+            marginLeft = computedStyle[MARGIN_LEFT$2],
+            marginRight = computedStyle[MARGIN_RIGHT$1],
             borderTopWidth = computedStyle[BORDER_TOP_WIDTH$1],
             borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$1],
-            borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$3],
-            borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$2],
+            borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$2],
+            borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$1],
             paddingTop = computedStyle[PADDING_TOP$1],
             paddingBottom = computedStyle[PADDING_BOTTOM$1],
-            paddingLeft = computedStyle[PADDING_LEFT$3],
-            paddingRight = computedStyle[PADDING_RIGHT$2];
+            paddingLeft = computedStyle[PADDING_LEFT$2],
+            paddingRight = computedStyle[PADDING_RIGHT$1];
         var lineClampCount = data.lineClampCount || 0;
 
         var _this$__preLayout3 = this.__preLayout(data, isInline),
@@ -27959,8 +28881,8 @@
           return lineClampCount;
         }
 
-        var width = currentStyle[WIDTH$3],
-            height = currentStyle[HEIGHT$3];
+        var width = currentStyle[WIDTH$2],
+            height = currentStyle[HEIGHT$2];
 
         if (isInline && !this.__isRealInline()) {
           isInline = false;
@@ -28088,9 +29010,9 @@
               }
 
               if (item.__isIbFull && whiteSpace !== 'nowrap') {
-                if (isUpright && h.u === AUTO$3) {
+                if (isUpright && h.u === AUTO$2) {
                   isUprightIbFull = true;
-                } else if (!isUpright && w.u === AUTO$3) {
+                } else if (!isUpright && w.u === AUTO$2) {
                   isIbFull = true;
                 }
 
@@ -28230,11 +29152,11 @@
               y = lineBoxManager.lastY; // ib情况发生折行，且非定宽
 
               if (!isInline && lineBoxManager.size - n > 1) {
-                if (height.u === AUTO$3 && isUpright) {
+                if (height.u === AUTO$2 && isUpright) {
                   isUprightIbFull = true;
                 }
 
-                if (width.u === AUTO$3 && !isUpright) {
+                if (width.u === AUTO$2 && !isUpright) {
                   isIbFull = true;
                 }
               }
@@ -28311,11 +29233,11 @@
                 y = lineBoxManager.lastY; // ib情况发生折行
 
                 if (!isInline && lineBoxManager.size - n > 1) {
-                  if (height.u === AUTO$3 && isUpright) {
+                  if (height.u === AUTO$2 && isUpright) {
                     isUprightIbFull = true;
                   }
 
-                  if (width.u === AUTO$3 && !isUpright) {
+                  if (width.u === AUTO$2 && !isUpright) {
                     isIbFull = true;
                   }
                 }
@@ -28353,11 +29275,11 @@
 
           if (!flowChildren.length) {
             var _marginTop3 = computedStyle[MARGIN_TOP$1],
-                _marginLeft3 = computedStyle[MARGIN_LEFT$3],
+                _marginLeft3 = computedStyle[MARGIN_LEFT$2],
                 _paddingTop2 = computedStyle[PADDING_TOP$1],
-                _paddingLeft2 = computedStyle[PADDING_LEFT$3],
+                _paddingLeft2 = computedStyle[PADDING_LEFT$2],
                 _borderTopWidth2 = computedStyle[BORDER_TOP_WIDTH$1],
-                _borderLeftWidth2 = computedStyle[BORDER_LEFT_WIDTH$3];
+                _borderLeftWidth2 = computedStyle[BORDER_LEFT_WIDTH$2];
 
             if (isUpright) {
               lineBoxManager.addY(_marginTop3 + _paddingTop2 + _borderTopWidth2);
@@ -28444,17 +29366,17 @@
             __oy = this.__oy;
         var display = computedStyle[DISPLAY$3],
             marginTop = computedStyle[MARGIN_TOP$1],
-            marginRight = computedStyle[MARGIN_RIGHT$2],
+            marginRight = computedStyle[MARGIN_RIGHT$1],
             marginBottom = computedStyle[MARGIN_BOTTOM$1],
-            marginLeft = computedStyle[MARGIN_LEFT$3],
+            marginLeft = computedStyle[MARGIN_LEFT$2],
             paddingTop = computedStyle[PADDING_TOP$1],
-            paddingRight = computedStyle[PADDING_RIGHT$2],
+            paddingRight = computedStyle[PADDING_RIGHT$1],
             paddingBottom = computedStyle[PADDING_BOTTOM$1],
-            paddingLeft = computedStyle[PADDING_LEFT$3],
+            paddingLeft = computedStyle[PADDING_LEFT$2],
             borderTopWidth = computedStyle[BORDER_TOP_WIDTH$1],
-            borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$2],
+            borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$1],
             borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$1],
-            borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$3],
+            borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$2],
             lineHeight = computedStyle[LINE_HEIGHT]; // 可能因为Ellipsis回溯变成none
 
         if (display === 'none') {
@@ -28512,9 +29434,9 @@
           });
           this.__x = minOX;
           this.__y = minOY;
-          this.__width = computedStyle[WIDTH$3] = maxX - minX; // 防止比自己最小高度lineHeight还小，比如内容是个小字体
+          this.__width = computedStyle[WIDTH$2] = maxX - minX; // 防止比自己最小高度lineHeight还小，比如内容是个小字体
 
-          this.__height = computedStyle[HEIGHT$3] = Math.max(lineHeight, maxY - minY);
+          this.__height = computedStyle[HEIGHT$2] = Math.max(lineHeight, maxY - minY);
           this.__clientWidth = maxCX - minCX;
           this.__clientHeight = maxCY - minCY;
           this.__offsetWidth = maxFX - minFX;
@@ -28611,18 +29533,18 @@
 
         var x = container.sx,
             y = container.sy,
-            clientWidth = container.clientWidth,
-            clientHeight = container.clientHeight,
-            computedStyle = container.computedStyle;
+            clientWidth = container.__clientWidth,
+            clientHeight = container.__clientHeight,
+            computedStyle = container.__computedStyle;
         var isDestroyed = this.isDestroyed,
             children = this.children,
             absChildren = this.absChildren;
         var display = computedStyle[DISPLAY$3],
             borderTopWidth = computedStyle[BORDER_TOP_WIDTH$1],
-            borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$3],
+            borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$2],
             marginTop = computedStyle[MARGIN_TOP$1],
-            marginLeft = computedStyle[MARGIN_LEFT$3],
-            paddingLeft = computedStyle[PADDING_LEFT$3],
+            marginLeft = computedStyle[MARGIN_LEFT$2],
+            paddingLeft = computedStyle[PADDING_LEFT$2],
             paddingTop = computedStyle[PADDING_TOP$1];
 
         if (isDestroyed || display === 'none') {
@@ -28667,8 +29589,8 @@
               top = currentStyle[TOP$1],
               right = currentStyle[RIGHT$1],
               bottom = currentStyle[BOTTOM$1],
-              width = currentStyle[WIDTH$3],
-              height = currentStyle[HEIGHT$3];
+              width = currentStyle[WIDTH$2],
+              height = currentStyle[HEIGHT$2];
           var x2, y2, w2, h2;
           var onlyRight;
           var onlyBottom;
@@ -28677,28 +29599,28 @@
           var fixedBottom;
           var fixedLeft; // 判断何种方式的定位，比如左+宽度，左+右之类
 
-          if (left.u !== AUTO$3) {
+          if (left.u !== AUTO$2) {
             fixedLeft = true;
             computedStyle[LEFT$1] = _this6.__calSize(left, clientWidth, true);
           } else {
             computedStyle[LEFT$1] = 'auto';
           }
 
-          if (right.u !== AUTO$3) {
+          if (right.u !== AUTO$2) {
             fixedRight = true;
             computedStyle[RIGHT$1] = _this6.__calSize(right, clientWidth, true);
           } else {
             computedStyle[RIGHT$1] = 'auto';
           }
 
-          if (top.u !== AUTO$3) {
+          if (top.u !== AUTO$2) {
             fixedTop = true;
             computedStyle[TOP$1] = _this6.__calSize(top, clientHeight, true);
           } else {
             computedStyle[TOP$1] = 'auto';
           }
 
-          if (bottom.u !== AUTO$3) {
+          if (bottom.u !== AUTO$2) {
             fixedBottom = true;
             computedStyle[BOTTOM$1] = _this6.__calSize(bottom, clientHeight, true);
           } else {
@@ -28712,11 +29634,11 @@
           } else if (fixedLeft) {
             x2 = x + computedStyle[LEFT$1];
 
-            if (width.u !== AUTO$3) {
+            if (width.u !== AUTO$2) {
               w2 = _this6.__calSize(width, clientWidth, true);
             }
           } else if (fixedRight) {
-            if (width.u !== AUTO$3) {
+            if (width.u !== AUTO$2) {
               w2 = _this6.__calSize(width, clientWidth, true);
             } else {
               onlyRight = true;
@@ -28724,16 +29646,16 @@
 
             x2 = x + clientWidth - computedStyle[RIGHT$1] - (w2 || 0); // 右对齐有尺寸时还需减去margin/border/padding的
 
-            x2 -= computedStyle[MARGIN_LEFT$3];
-            x2 -= computedStyle[MARGIN_RIGHT$2];
-            x2 -= computedStyle[PADDING_LEFT$3];
-            x2 -= computedStyle[PADDING_RIGHT$2];
-            x2 -= computedStyle[BORDER_LEFT_WIDTH$3];
-            x2 -= computedStyle[BORDER_RIGHT_WIDTH$2];
+            x2 -= computedStyle[MARGIN_LEFT$2];
+            x2 -= computedStyle[MARGIN_RIGHT$1];
+            x2 -= computedStyle[PADDING_LEFT$2];
+            x2 -= computedStyle[PADDING_RIGHT$1];
+            x2 -= computedStyle[BORDER_LEFT_WIDTH$2];
+            x2 -= computedStyle[BORDER_RIGHT_WIDTH$1];
           } else {
             x2 = x + paddingLeft;
 
-            if (width.u !== AUTO$3) {
+            if (width.u !== AUTO$2) {
               w2 = _this6.__calSize(width, clientWidth, true);
             }
           } // top/bottom/height优先级同上
@@ -28745,11 +29667,11 @@
           } else if (fixedTop) {
             y2 = y + computedStyle[TOP$1];
 
-            if (height.u !== AUTO$3) {
+            if (height.u !== AUTO$2) {
               h2 = _this6.__calSize(height, clientHeight, true);
             }
           } else if (fixedBottom) {
-            if (height.u !== AUTO$3) {
+            if (height.u !== AUTO$2) {
               h2 = _this6.__calSize(height, clientHeight, true);
             } else {
               onlyBottom = true;
@@ -28766,7 +29688,7 @@
           } // 未声明y的找到之前的流布局child，紧随其下
           else {
             y2 = y + paddingTop;
-            var prev = item.prev;
+            var prev = item.__prev;
 
             while (prev) {
               // 以前面的flow的最近的prev末尾为准
@@ -28775,10 +29697,10 @@
                 break;
               }
 
-              prev = prev.prev;
+              prev = prev.__prev;
             }
 
-            if (height.u !== AUTO$3) {
+            if (height.u !== AUTO$2) {
               h2 = _this6.__calSize(height, clientHeight, true);
             }
           } // onlyRight时做的布局其实是以那个点位为left/top布局然后offset，limit要特殊计算，从本点向左侧为边界
@@ -29124,10 +30046,10 @@
           if (prev) {
             prev.__next = child;
             child.__prev = prev;
-            child.__next = target;
-            target.__prev = child;
           }
 
+          child.__next = target;
+          target.__prev = child;
           children.splice(i, 0, child);
           parent.__zIndexChildren = genZIndexChildren(parent);
         } else {
@@ -29146,7 +30068,7 @@
 
         builder.relation(root, parent.__host, parent, child, {});
 
-        this.__insertStruct(child, i);
+        parent.__insertStruct(child, i);
 
         if (child.currentStyle[DISPLAY$3] === 'none' || parent.__computedStyle[DISPLAY$3] === 'none') {
           child.__layoutNone();
@@ -29190,6 +30112,8 @@
             throw new Error('Index exception of insertBefore()');
           }
 
+          target.__next = child;
+          child.__prev = target;
           children.splice(i + 1, 0, child);
           parent.__zIndexChildren = genZIndexChildren(parent);
         } else {
@@ -29208,7 +30132,7 @@
 
         builder.relation(root, parent.__host, parent, child, {});
 
-        this.__insertStruct(child, i + 1);
+        parent.__insertStruct(child, i + 1);
 
         if (child.currentStyle[DISPLAY$3] === 'none' || parent.__computedStyle[DISPLAY$3] === 'none') {
           child.__layoutNone();
@@ -29312,9 +30236,9 @@
         }
 
         var _this$computedStyle4 = this.computedStyle,
-            marginLeft = _this$computedStyle4[MARGIN_LEFT$3],
-            borderLeftWidth = _this$computedStyle4[BORDER_LEFT_WIDTH$3],
-            paddingLeft = _this$computedStyle4[PADDING_LEFT$3],
+            marginLeft = _this$computedStyle4[MARGIN_LEFT$2],
+            borderLeftWidth = _this$computedStyle4[BORDER_LEFT_WIDTH$2],
+            paddingLeft = _this$computedStyle4[PADDING_LEFT$2],
             writingMode = _this$computedStyle4[WRITING_MODE$1];
 
         if (!this.lineBoxManager || !this.lineBoxManager.size || writingMode.indexOf('vertical') === -1) {
@@ -29328,33 +30252,33 @@
     return Dom;
   }(Xom);
 
-  var _enums$STYLE_KEY$4 = enums.STYLE_KEY,
-      WIDTH$2 = _enums$STYLE_KEY$4.WIDTH,
-      HEIGHT$2 = _enums$STYLE_KEY$4.HEIGHT,
-      DISPLAY$2 = _enums$STYLE_KEY$4.DISPLAY,
-      BORDER_RIGHT_WIDTH$1 = _enums$STYLE_KEY$4.BORDER_RIGHT_WIDTH,
-      BORDER_LEFT_WIDTH$2 = _enums$STYLE_KEY$4.BORDER_LEFT_WIDTH,
-      BORDER_TOP_LEFT_RADIUS = _enums$STYLE_KEY$4.BORDER_TOP_LEFT_RADIUS,
-      BORDER_TOP_RIGHT_RADIUS = _enums$STYLE_KEY$4.BORDER_TOP_RIGHT_RADIUS,
-      BORDER_BOTTOM_RIGHT_RADIUS = _enums$STYLE_KEY$4.BORDER_BOTTOM_RIGHT_RADIUS,
-      BORDER_BOTTOM_LEFT_RADIUS = _enums$STYLE_KEY$4.BORDER_BOTTOM_LEFT_RADIUS,
-      VISIBILITY$3 = _enums$STYLE_KEY$4.VISIBILITY,
-      MARGIN_RIGHT$1 = _enums$STYLE_KEY$4.MARGIN_RIGHT,
-      MARGIN_LEFT$2 = _enums$STYLE_KEY$4.MARGIN_LEFT,
-      PADDING_RIGHT$1 = _enums$STYLE_KEY$4.PADDING_RIGHT,
-      PADDING_LEFT$2 = _enums$STYLE_KEY$4.PADDING_LEFT,
-      FONT_SIZE = _enums$STYLE_KEY$4.FONT_SIZE,
-      FLEX_BASIS$1 = _enums$STYLE_KEY$4.FLEX_BASIS;
-  var AUTO$2 = o$4.AUTO,
-      PX$2 = o$4.PX,
-      PERCENT$2 = o$4.PERCENT,
-      REM$1 = o$4.REM,
-      VW$1 = o$4.VW,
-      VH$1 = o$4.VH,
-      VMAX$1 = o$4.VMAX,
-      VMIN$1 = o$4.VMIN;
-  var canvasPolygon$2 = painter.canvasPolygon,
-      svgPolygon$1 = painter.svgPolygon;
+  var _enums$STYLE_KEY$3 = enums.STYLE_KEY,
+      WIDTH$1 = _enums$STYLE_KEY$3.WIDTH,
+      HEIGHT$1 = _enums$STYLE_KEY$3.HEIGHT,
+      DISPLAY$2 = _enums$STYLE_KEY$3.DISPLAY,
+      BORDER_RIGHT_WIDTH = _enums$STYLE_KEY$3.BORDER_RIGHT_WIDTH,
+      BORDER_LEFT_WIDTH$1 = _enums$STYLE_KEY$3.BORDER_LEFT_WIDTH,
+      BORDER_TOP_LEFT_RADIUS = _enums$STYLE_KEY$3.BORDER_TOP_LEFT_RADIUS,
+      BORDER_TOP_RIGHT_RADIUS = _enums$STYLE_KEY$3.BORDER_TOP_RIGHT_RADIUS,
+      BORDER_BOTTOM_RIGHT_RADIUS = _enums$STYLE_KEY$3.BORDER_BOTTOM_RIGHT_RADIUS,
+      BORDER_BOTTOM_LEFT_RADIUS = _enums$STYLE_KEY$3.BORDER_BOTTOM_LEFT_RADIUS,
+      VISIBILITY$2 = _enums$STYLE_KEY$3.VISIBILITY,
+      MARGIN_RIGHT = _enums$STYLE_KEY$3.MARGIN_RIGHT,
+      MARGIN_LEFT$1 = _enums$STYLE_KEY$3.MARGIN_LEFT,
+      PADDING_RIGHT = _enums$STYLE_KEY$3.PADDING_RIGHT,
+      PADDING_LEFT$1 = _enums$STYLE_KEY$3.PADDING_LEFT,
+      FONT_SIZE = _enums$STYLE_KEY$3.FONT_SIZE,
+      FLEX_BASIS = _enums$STYLE_KEY$3.FLEX_BASIS;
+  var AUTO$1 = o$4.AUTO,
+      PX$1 = o$4.PX,
+      PERCENT$1 = o$4.PERCENT,
+      REM = o$4.REM,
+      VW = o$4.VW,
+      VH = o$4.VH,
+      VMAX = o$4.VMAX,
+      VMIN = o$4.VMIN;
+  var canvasPolygon$1 = painter.canvasPolygon,
+      svgPolygon = painter.svgPolygon;
   var isFunction$3 = util.isFunction;
 
   var Img = /*#__PURE__*/function (_Dom) {
@@ -29478,7 +30402,7 @@
             this.__loadAndRefresh(loadImg, null);
           }
 
-          if (__computedStyle[VISIBILITY$3] !== 'hidden' && (__computedStyle[WIDTH$2] || __computedStyle[HEIGHT$2]) && loadImg.source) {
+          if (__computedStyle[VISIBILITY$2] !== 'hidden' && (__computedStyle[WIDTH$1] || __computedStyle[HEIGHT$1]) && loadImg.source) {
             res = true;
           }
         }
@@ -29503,7 +30427,7 @@
             borderTopRightRadius = _this$__computedStyle[BORDER_TOP_RIGHT_RADIUS],
             borderBottomRightRadius = _this$__computedStyle[BORDER_BOTTOM_RIGHT_RADIUS],
             borderBottomLeftRadius = _this$__computedStyle[BORDER_BOTTOM_LEFT_RADIUS],
-            visibility = _this$__computedStyle[VISIBILITY$3],
+            visibility = _this$__computedStyle[VISIBILITY$2],
             virtualDom = this.virtualDom,
             loadImg = this.__loadImg;
 
@@ -29582,7 +30506,7 @@
             if (list) {
               ctx.save();
               ctx.beginPath();
-              canvasPolygon$2(ctx, list, dx, dy);
+              canvasPolygon$1(ctx, list, dx, dy);
               ctx.clip();
               ctx.closePath();
               ctx.drawImage(source, originX, originY, width, height);
@@ -29597,7 +30521,7 @@
               virtualDom.children = [loadImg.cache]; // 但是还是要校验是否有borderRadius变化，引发img的圆角遮罩
 
               if (!virtualDom.cache && list) {
-                var d = svgPolygon$1(list);
+                var d = svgPolygon(list);
                 var v = {
                   tagName: 'clipPath',
                   props: [],
@@ -29627,7 +30551,7 @@
             var props = [['xlink:href', loadImg.error ? placeholder : loadImg.src], ['x', originX], ['y', originY], ['width', loadImg.width], ['height', loadImg.height]];
 
             if (list) {
-              var _d = svgPolygon$1(list);
+              var _d = svgPolygon(list);
 
               var _v = {
                 tagName: 'clipPath',
@@ -29673,35 +30597,35 @@
       key: "__tryLayInline",
       value: function __tryLayInline(w, total) {
         var _this$currentStyle = this.currentStyle,
-            width = _this$currentStyle[WIDTH$2],
-            height = _this$currentStyle[HEIGHT$2],
-            marginLeft = _this$currentStyle[MARGIN_LEFT$2],
-            marginRight = _this$currentStyle[MARGIN_RIGHT$1],
-            paddingLeft = _this$currentStyle[PADDING_LEFT$2],
-            paddingRight = _this$currentStyle[PADDING_RIGHT$1],
+            width = _this$currentStyle[WIDTH$1],
+            height = _this$currentStyle[HEIGHT$1],
+            marginLeft = _this$currentStyle[MARGIN_LEFT$1],
+            marginRight = _this$currentStyle[MARGIN_RIGHT],
+            paddingLeft = _this$currentStyle[PADDING_LEFT$1],
+            paddingRight = _this$currentStyle[PADDING_RIGHT],
             _this$computedStyle = this.computedStyle,
-            borderLeftWidth = _this$computedStyle[BORDER_LEFT_WIDTH$2],
-            borderRightWidth = _this$computedStyle[BORDER_RIGHT_WIDTH$1];
+            borderLeftWidth = _this$computedStyle[BORDER_LEFT_WIDTH$1],
+            borderRightWidth = _this$computedStyle[BORDER_RIGHT_WIDTH];
 
-        if (width.u !== AUTO$2) {
+        if (width.u !== AUTO$1) {
           w -= this.__calSize(width, total, true);
         } else {
           var loadImg = this.__loadImg; // 加载成功计算缩放后的宽度
 
           if (loadImg.source) {
-            if (height.u === PX$2) {
+            if (height.u === PX$1) {
               w -= loadImg.width * height.v / loadImg.height;
-            } else if (height.u === PERCENT$2) {
+            } else if (height.u === PERCENT$1) {
               w -= loadImg.width * height.v * total * 0.01 / loadImg.height;
-            } else if (height.u === REM$1) {
+            } else if (height.u === REM) {
               w -= loadImg.width * height.v * this.root.computedStyle[FONT_SIZE] / loadImg.height;
-            } else if (height.u === VW$1) {
+            } else if (height.u === VW) {
               w -= loadImg.width * height.v * this.root.width * 0.01 / loadImg.height;
-            } else if (height.u === VH$1) {
+            } else if (height.u === VH) {
               w -= loadImg.width * height.v * this.root.height * 0.01 / loadImg.height;
-            } else if (height.u === VMAX$1) {
+            } else if (height.u === VMAX) {
               w -= height.v * Math.max(this.root.width, this.root.height) * 0.01 / loadImg.height;
-            } else if (height.u === VMIN$1) {
+            } else if (height.u === VMIN) {
               w -= height.v * Math.min(this.root.width, this.root.height) * 0.01 / loadImg.height;
             } else {
               w -= loadImg.width;
@@ -29732,23 +30656,23 @@
         var w = data.w,
             h = data.h; // 计算需考虑style的属性
 
-        var flexBasis = currentStyle[FLEX_BASIS$1],
-            width = currentStyle[WIDTH$2],
-            height = currentStyle[HEIGHT$2];
+        var flexBasis = currentStyle[FLEX_BASIS],
+            width = currentStyle[WIDTH$1],
+            height = currentStyle[HEIGHT$1];
         var main = isDirectionRow ? width : height;
         var cross = isDirectionRow ? height : width; // basis3种情况：auto、固定、content，只区分固定和其它
 
-        var isFixed = [PX$2, PERCENT$2, REM$1, VW$1, VH$1, VMAX$1, VMIN$1].indexOf(flexBasis.u) > -1;
+        var isFixed = [PX$1, PERCENT$1, REM, VW, VH, VMAX, VMIN].indexOf(flexBasis.u) > -1;
 
         if (isFixed) {
           b = max = min = this.__calSize(flexBasis, isDirectionRow ? w : h, true);
-        } else if ([PX$2, PERCENT$2, REM$1, VW$1, VH$1, VMAX$1, VMIN$1].indexOf(main.u) > -1) {
+        } else if ([PX$1, PERCENT$1, REM, VW, VH, VMAX, VMIN].indexOf(main.u) > -1) {
           b = max = min = this.__calSize(main, isDirectionRow ? w : h, true);
         } // auto和content固定尺寸比例计算
         else if (__loadImg.source || __loadImg.error) {
           var res = this.__preLayout(data);
 
-          if (cross.u !== AUTO$2) {
+          if (cross.u !== AUTO$1) {
             cross = this.__calSize(cross, isDirectionRow ? h : w, true);
             var ratio = res.w / res.h;
             b = max = min = isDirectionRow ? cross * ratio : cross / ratio;
@@ -29774,18 +30698,18 @@
             ctx = root.ctx;
         var placeholder = this.props.placeholder,
             computedStyle = this.__computedStyle;
-        var width = computedStyle[WIDTH$2],
-            height = computedStyle[HEIGHT$2]; // 再测量，可能瞬间完成替换掉上面的
+        var width = computedStyle[WIDTH$1],
+            height = computedStyle[HEIGHT$1]; // 再测量，可能瞬间完成替换掉上面的
 
         inject.measureImg(loadImg.src, function (data) {
           // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
           if (data.url === loadImg.src) {
             var reload = function reload() {
               var _self$__currentStyle = self.__currentStyle,
-                  width = _self$__currentStyle[WIDTH$2],
-                  height = _self$__currentStyle[HEIGHT$2];
+                  width = _self$__currentStyle[WIDTH$1],
+                  height = _self$__currentStyle[HEIGHT$1];
 
-              if (width.u !== AUTO$2 && height.u !== AUTO$2) {
+              if (width.u !== AUTO$1 && height.u !== AUTO$1) {
                 root.__addUpdate(self, {
                   focus: o$1.REPAINT,
                   // 已知宽高无需重新布局
@@ -29975,913 +30899,6 @@
 
     return Defs;
   }();
-
-  var _enums$STYLE_KEY$3 = enums.STYLE_KEY,
-      MARGIN_RIGHT = _enums$STYLE_KEY$3.MARGIN_RIGHT,
-      MARGIN_LEFT$1 = _enums$STYLE_KEY$3.MARGIN_LEFT,
-      PADDING_RIGHT = _enums$STYLE_KEY$3.PADDING_RIGHT,
-      PADDING_LEFT$1 = _enums$STYLE_KEY$3.PADDING_LEFT,
-      WIDTH$1 = _enums$STYLE_KEY$3.WIDTH,
-      HEIGHT$1 = _enums$STYLE_KEY$3.HEIGHT,
-      BORDER_RIGHT_WIDTH = _enums$STYLE_KEY$3.BORDER_RIGHT_WIDTH,
-      BORDER_LEFT_WIDTH$1 = _enums$STYLE_KEY$3.BORDER_LEFT_WIDTH,
-      FILL$1 = _enums$STYLE_KEY$3.FILL,
-      STROKE = _enums$STYLE_KEY$3.STROKE,
-      STROKE_MITERLIMIT = _enums$STYLE_KEY$3.STROKE_MITERLIMIT,
-      STROKE_WIDTH$6 = _enums$STYLE_KEY$3.STROKE_WIDTH,
-      STROKE_LINECAP = _enums$STYLE_KEY$3.STROKE_LINECAP,
-      STROKE_LINEJOIN = _enums$STYLE_KEY$3.STROKE_LINEJOIN,
-      STROKE_DASHARRAY = _enums$STYLE_KEY$3.STROKE_DASHARRAY,
-      STROKE_DASHARRAY_STR = _enums$STYLE_KEY$3.STROKE_DASHARRAY_STR,
-      FILL_RULE = _enums$STYLE_KEY$3.FILL_RULE,
-      VISIBILITY$2 = _enums$STYLE_KEY$3.VISIBILITY,
-      FLEX_BASIS = _enums$STYLE_KEY$3.FLEX_BASIS;
-  var AUTO$1 = o$4.AUTO,
-      PX$1 = o$4.PX,
-      PERCENT$1 = o$4.PERCENT,
-      REM = o$4.REM,
-      VW = o$4.VW,
-      VH = o$4.VH,
-      VMAX = o$4.VMAX,
-      VMIN = o$4.VMIN,
-      RGBA = o$4.RGBA,
-      GRADIENT = o$4.GRADIENT;
-  var int2rgba = util.int2rgba,
-      isNil$8 = util.isNil,
-      joinArr = util.joinArr;
-  var canvasPolygon$1 = painter.canvasPolygon,
-      svgPolygon = painter.svgPolygon;
-  var REGISTER = {};
-
-  var Geom = /*#__PURE__*/function (_Xom) {
-    _inherits(Geom, _Xom);
-
-    function Geom(tagName, props) {
-      var _this;
-
-      _this = _Xom.call(this, tagName, props) || this;
-      _this.__isMulti = !!_this.props.multi;
-      _this.__style = css.normalize(_this.style, reset.DOM_ENTRY_SET.concat(reset.GEOM_ENTRY_SET));
-      _this.__currentStyle = util.extend({}, _this.__style);
-      _this.__currentProps = util.clone(_this.props);
-      _this.__cacheProps = {};
-      return _this;
-    }
-
-    _createClass(Geom, [{
-      key: "__tryLayInline",
-      value: function __tryLayInline(w, total) {
-        this.__computeReflow(); // 无children，直接以style的width为宽度，不定义则为0
-
-
-        var _this$currentStyle = this.currentStyle,
-            width = _this$currentStyle[WIDTH$1],
-            marginLeft = _this$currentStyle[MARGIN_LEFT$1],
-            marginRight = _this$currentStyle[MARGIN_RIGHT],
-            paddingLeft = _this$currentStyle[PADDING_LEFT$1],
-            paddingRight = _this$currentStyle[PADDING_RIGHT],
-            _this$computedStyle = this.computedStyle,
-            borderLeftWidth = _this$computedStyle[BORDER_LEFT_WIDTH$1],
-            borderRightWidth = _this$computedStyle[BORDER_RIGHT_WIDTH];
-
-        if (width[1] !== AUTO$1) {
-          w -= this.__calSize(width, total, true);
-        } // 减去水平mbp
-
-
-        w -= this.__calSize(marginRight, total, true);
-        w -= this.__calSize(paddingRight, total, true);
-        w -= borderRightWidth;
-        w -= this.__calSize(marginLeft, total, true);
-        w -= this.__calSize(paddingLeft, total, true);
-        w -= borderLeftWidth;
-        return w;
-      }
-    }, {
-      key: "__calBasis",
-      value: function __calBasis(isDirectionRow, isAbs, isColumn, data, isDirectChild) {
-        this.__computeReflow();
-
-        var b = 0;
-        var min = 0;
-        var max = 0;
-        var currentStyle = this.currentStyle,
-            computedStyle = this.computedStyle;
-        var w = data.w,
-            h = data.h; // 计算需考虑style的属性
-
-        var flexBasis = currentStyle[FLEX_BASIS],
-            width = currentStyle[WIDTH$1],
-            height = currentStyle[HEIGHT$1];
-        var main = isDirectionRow ? width : height; // basis3种情况：auto、固定、content，只区分固定和其它
-
-        var isFixed = [PX$1, PERCENT$1, REM, VW, VH, VMAX, VMIN].indexOf(flexBasis.u) > -1;
-
-        if (isFixed) {
-          b = max = min = this.__calSize(flexBasis, isDirectionRow ? w : h, true);
-        } else if ([PX$1, PERCENT$1, REM, VW, VH, VMAX, VMIN].indexOf(main.u) > -1) {
-          b = max = min = this.__calSize(main, isDirectionRow ? w : h, true);
-        } // 直接item的mpb影响basis
-
-
-        return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], isDirectChild);
-      }
-    }, {
-      key: "__layoutBlock",
-      value: function __layoutBlock(data, isAbs, isColumn, isRow) {
-        var _this$__preLayout = this.__preLayout(data, false),
-            fixedWidth = _this$__preLayout.fixedWidth,
-            fixedHeight = _this$__preLayout.fixedHeight,
-            w = _this$__preLayout.w,
-            h = _this$__preLayout.h,
-            isParentVertical = _this$__preLayout.isParentVertical,
-            isUpright = _this$__preLayout.isUpright;
-
-        var tw = 0,
-            th = 0;
-
-        if (fixedWidth || !isAbs && !isParentVertical && !isUpright) {
-          tw = w;
-        }
-
-        if (fixedHeight || !isAbs && isParentVertical && isUpright) {
-          th = h;
-        }
-
-        this.__ioSize(tw, th);
-
-        if (isAbs || isColumn || isRow) {
-          return;
-        }
-
-        this.__marginAuto(this.currentStyle, data);
-
-        this.__cacheProps = {};
-      }
-    }, {
-      key: "__layoutFlex",
-      value: function __layoutFlex(data, isAbs, isColumn, isRow) {
-        // 无children所以等同于block
-        this.__layoutBlock(data, isAbs, isColumn, isRow);
-      }
-    }, {
-      key: "__layoutInline",
-      value: function __layoutInline(data, isAbs, isInline) {
-        var _this$__preLayout2 = this.__preLayout(data, false),
-            fixedWidth = _this$__preLayout2.fixedWidth,
-            fixedHeight = _this$__preLayout2.fixedHeight,
-            w = _this$__preLayout2.w,
-            h = _this$__preLayout2.h;
-
-        var tw = fixedWidth ? w : 0;
-        var th = fixedHeight ? h : 0;
-
-        this.__ioSize(tw, th);
-
-        this.__cacheProps = {};
-      }
-    }, {
-      key: "__calStyle",
-      value: function __calStyle(lv, __currentStyle, __computedStyle, __cacheStyle) {
-        var _this2 = this;
-
-        var res = _get(_getPrototypeOf(Geom.prototype), "__calStyle", this).call(this, lv, __currentStyle, __computedStyle, __cacheStyle);
-
-        if (isNil$8(__cacheStyle[STROKE_WIDTH$6])) {
-          __cacheStyle[STROKE_WIDTH$6] = true;
-          var strokeWidth = __currentStyle[STROKE_WIDTH$6] || [];
-          var w = this.width;
-          __computedStyle[STROKE_WIDTH$6] = strokeWidth.map(function (item) {
-            return _this2.__calSize(item, w, true);
-          });
-        }
-
-        if (isNil$8(__cacheStyle[STROKE_DASHARRAY])) {
-          __cacheStyle[STROKE_DASHARRAY] = true;
-          __computedStyle[STROKE_DASHARRAY] = __currentStyle[STROKE_DASHARRAY] || [];
-          __cacheStyle[STROKE_DASHARRAY_STR] = __computedStyle[STROKE_DASHARRAY].map(function (item) {
-            return joinArr(item, ',');
-          });
-        } // 直接赋值的
-
-
-        [STROKE_LINECAP, STROKE_LINEJOIN, STROKE_MITERLIMIT, FILL_RULE].forEach(function (k) {
-          __computedStyle[k] = __currentStyle[k];
-        }); // stroke/fll移至render里处理，因为cache涉及渐变坐标偏移
-
-        [FILL$1, STROKE].forEach(function (k) {
-          if (isNil$8(__cacheStyle[k])) {
-            var v = __currentStyle[k];
-            var cs = __computedStyle[k] = [];
-
-            var _res = __cacheStyle[k] = [];
-
-            if (Array.isArray(v)) {
-              v.forEach(function (item) {
-                if (item && item.u === GRADIENT) {
-                  // let t = this.__gradient(renderMode, ctx, x3, y3, x4, y4, item[0], 0, 0);
-                  cs.push(item.v);
-
-                  _res.push(true);
-                } else if (item && item.u === RGBA && item.v[3] > 0) {
-                  cs.push(item.v);
-
-                  _res.push(int2rgba(item.v));
-                } else {
-                  cs.push('none');
-
-                  _res.push('none');
-                }
-              });
-            }
-          }
-        });
-        return res;
-      }
-    }, {
-      key: "calContent",
-      value: function calContent(currentStyle, computedStyle) {
-        // Geom强制有内容
-        return computedStyle[VISIBILITY$2] !== 'hidden';
-      }
-    }, {
-      key: "__preSet",
-      value: function __preSet(renderMode, res) {
-        var _this3 = this;
-
-        var width = this.width,
-            height = this.height,
-            __cacheStyle = this.__cacheStyle,
-            computedStyle = this.computedStyle;
-        var cx = res.sx3 + width * 0.5;
-        var cy = res.sy3 + height * 0.5;
-        var strokeDasharrayStr = __cacheStyle[STROKE_DASHARRAY_STR];
-        var fill = computedStyle[FILL$1],
-            stroke = computedStyle[STROKE],
-            strokeWidth = computedStyle[STROKE_WIDTH$6],
-            strokeLinecap = computedStyle[STROKE_LINECAP],
-            strokeLinejoin = computedStyle[STROKE_LINEJOIN],
-            strokeMiterlimit = computedStyle[STROKE_MITERLIMIT],
-            strokeDasharray = computedStyle[STROKE_DASHARRAY],
-            fillRule = computedStyle[FILL_RULE];
-        stroke = stroke.map(function (item) {
-          if (item.k) {
-            return _this3.__gradient(renderMode, res.ctx, res.sx3, res.sy3, res.sx4, res.sy4, item, res.dx, res.dy);
-          }
-
-          return int2rgba(item);
-        });
-        fill = fill.map(function (item) {
-          if (item.k) {
-            return _this3.__gradient(renderMode, res.ctx, res.sx3, res.sy3, res.sx4, res.sy4, item, res.dx, res.dy);
-          }
-
-          return int2rgba(item);
-        });
-        return {
-          cx: cx,
-          cy: cy,
-          stroke: stroke,
-          strokeWidth: strokeWidth,
-          strokeDasharray: strokeDasharray,
-          strokeDasharrayStr: strokeDasharrayStr,
-          strokeLinecap: strokeLinecap,
-          strokeLinejoin: strokeLinejoin,
-          strokeMiterlimit: strokeMiterlimit,
-          fill: fill,
-          fillRule: fillRule
-        };
-      }
-    }, {
-      key: "__preSetCanvas",
-      value: function __preSetCanvas(renderMode, ctx, res) {
-        var stroke = res.stroke,
-            strokeWidth = res.strokeWidth,
-            strokeDasharray = res.strokeDasharray,
-            strokeLinecap = res.strokeLinecap,
-            strokeLinejoin = res.strokeLinejoin,
-            strokeMiterlimit = res.strokeMiterlimit,
-            fill = res.fill;
-
-        if (renderMode === mode.CANVAS) {
-          if (fill) {
-            if (fill.k === 'linear') {
-              ctx.fillStyle = fill.v;
-            } else if (fill.k === 'radial' && !Array.isArray(fill.v)) {
-              ctx.fillStyle = fill.v;
-            } else if (fill.k === 'conic') ; else if (!fill.k && ctx.fillStyle !== fill) {
-              ctx.fillStyle = fill;
-            }
-          }
-
-          if (stroke) {
-            if (stroke.k === 'linear') {
-              ctx.strokeStyle = stroke.v;
-            } else if (stroke.k === 'radial' && !Array.isArray(stroke.v)) {
-              ctx.strokeStyle = stroke.v;
-            } else if (stroke.k === 'conic') ; else if (!stroke.k && ctx.strokeStyle !== stroke) {
-              ctx.strokeStyle = stroke;
-            }
-          }
-
-          if (strokeWidth !== undefined && ctx.lineWidth !== strokeWidth) {
-            ctx.lineWidth = strokeWidth;
-          }
-
-          if (strokeLinecap !== undefined && ctx.lineCap !== strokeLinecap) {
-            ctx.lineCap = strokeLinecap;
-          }
-
-          if (strokeLinejoin !== undefined && ctx.lineJoin !== strokeLinejoin) {
-            ctx.lineJoin = strokeLinejoin;
-          }
-
-          if (strokeMiterlimit !== undefined && ctx.miterLimit !== strokeMiterlimit) {
-            ctx.miterLimit = strokeMiterlimit;
-          } // 小程序没这个方法
-
-
-          if (util.isFunction(ctx.getLineDash)) {
-            if (strokeDasharray && !util.equalArr(ctx.getLineDash(), strokeDasharray)) {
-              ctx.setLineDash(strokeDasharray);
-            }
-          } else if (strokeDasharray) {
-            ctx.setLineDash(strokeDasharray);
-          }
-        }
-      }
-    }, {
-      key: "render",
-      value: function render(renderMode, ctx, dx, dy) {
-        var res = _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode, ctx, dx, dy);
-
-        if (renderMode === mode.SVG) {
-          this.virtualDom.type = 'geom';
-        } // 无论canvas/svg，break可提前跳出省略计算
-
-
-        if (res["break"] || renderMode === mode.WEBGL) {
-          return res;
-        } // data在无cache时没有提前设置
-
-
-        var preData = this.__preSet(renderMode, res);
-
-        return Object.assign(res, preData);
-      }
-    }, {
-      key: "__renderPolygon",
-      value: function __renderPolygon(renderMode, ctx, res) {
-        var fills = res.fill,
-            fillRules = res.fillRule,
-            strokes = res.stroke,
-            strokeWidths = res.strokeWidth,
-            strokeDasharrays = res.strokeDasharray,
-            strokeDasharrayStrs = res.strokeDasharrayStr,
-            strokeLinecaps = res.strokeLinecap,
-            strokeLinejoins = res.strokeLinejoin,
-            strokeMiterlimits = res.strokeMiterlimit,
-            dx = res.dx,
-            dy = res.dy;
-        var list = this.__cacheProps.list,
-            isMulti = this.isMulti,
-            bbox = this.bbox; // 普通情况下只有1个，按普通情况走
-
-        if (fills.length <= 1 && strokes.length <= 1) {
-          var o = {
-            fill: fills[0],
-            fillRule: fillRules[0],
-            stroke: strokes[0],
-            strokeWidth: strokeWidths[0],
-            strokeDasharray: strokeDasharrays[0],
-            strokeDasharrayStr: strokeDasharrayStrs[0],
-            strokeLinecap: strokeLinecaps[0],
-            strokeLinejoin: strokeLinejoins[0],
-            strokeMiterlimit: strokeMiterlimits[0],
-            dx: dx,
-            dy: dy,
-            bbox: bbox
-          };
-
-          this.__renderOnePolygon(renderMode, ctx, isMulti, list, o);
-        } // 多个需要fill在下面，stroke在上面，依次循环
-        else {
-          for (var i = 0, len = fills.length; i < len; i++) {
-            var fill = fills[i];
-
-            if (fill) {
-              var _o = {
-                fill: fill,
-                fillRule: fillRules[i],
-                dx: dx,
-                dy: dy,
-                bbox: bbox
-              };
-
-              this.__renderOnePolygon(renderMode, ctx, isMulti, list, _o);
-            }
-          }
-
-          for (var _i = 0, _len = strokes.length; _i < _len; _i++) {
-            var stroke = strokes[_i];
-
-            if (stroke) {
-              var _o2 = {
-                stroke: stroke,
-                strokeWidth: strokeWidths[_i],
-                strokeDasharray: strokeDasharrays[_i],
-                strokeDasharrayStr: strokeDasharrayStrs[_i],
-                strokeLinecap: strokeLinecaps[_i],
-                strokeLinejoin: strokeLinejoins[_i],
-                strokeMiterlimit: strokeMiterlimits[_i],
-                dx: dx,
-                dy: dy,
-                bbox: bbox
-              };
-
-              this.__renderOnePolygon(renderMode, ctx, isMulti, list, _o2);
-            }
-          }
-        }
-      }
-    }, {
-      key: "__renderOnePolygon",
-      value: function __renderOnePolygon(renderMode, ctx, isMulti, list, res) {
-        var fill = res.fill,
-            stroke = res.stroke,
-            strokeWidth = res.strokeWidth;
-        var isFillCE = fill && fill.k === 'conic';
-        var isStrokeCE = stroke && stroke.k === 'conic'; // 椭圆是array
-
-        var isFillRE = fill && fill.k === 'radial' && Array.isArray(fill.v);
-        var isStrokeRE = strokeWidth && strokeWidth > 0 && stroke && stroke.k === 'radial' && Array.isArray(stroke.v);
-
-        if (isFillCE || isStrokeCE) {
-          if (isFillCE) {
-            this.__conicGradient(renderMode, ctx, list, isMulti, res);
-          } else if (fill !== 'none') {
-            this.__drawPolygon(renderMode, ctx, isMulti, list, res, true);
-          }
-
-          if (strokeWidth && strokeWidth > 0 && isStrokeCE) {
-            inject.warn('Stroke style can not use conic-gradient');
-          } else if (strokeWidth && strokeWidth > 0 && stroke !== 'none') {
-            this.__drawPolygon(renderMode, ctx, isMulti, list, res, false, true);
-          }
-        } else if (isFillRE || isStrokeRE) {
-          if (isFillRE) {
-            this.__radialEllipse(renderMode, ctx, list, isMulti, res, 'fill');
-          } else if (fill !== 'none') {
-            this.__drawPolygon(renderMode, ctx, isMulti, list, res, true);
-          } // stroke椭圆渐变matrix会变形，降级为圆
-
-
-          if (strokeWidth && strokeWidth > 0 && isStrokeRE) {
-            inject.warn('Stroke style can not use radial-gradient for ellipse');
-            res.stroke.v = res.stroke.v[0];
-
-            this.__drawPolygon(renderMode, ctx, isMulti, list, res, false, true);
-          } else if (strokeWidth && strokeWidth > 0 && stroke !== 'none') {
-            this.__drawPolygon(renderMode, ctx, isMulti, list, res, false, true);
-          }
-        } else {
-          this.__drawPolygon(renderMode, ctx, isMulti, list, res, true, true);
-        }
-      }
-    }, {
-      key: "__drawPolygon",
-      value: function __drawPolygon(renderMode, ctx, isMulti, list, res, isFill, isStroke) {
-        var fill = res.fill,
-            stroke = res.stroke,
-            strokeWidth = res.strokeWidth,
-            fillRule = res.fillRule,
-            strokeDasharrayStr = res.strokeDasharrayStr,
-            strokeLinecap = res.strokeLinecap,
-            strokeLinejoin = res.strokeLinejoin,
-            strokeMiterlimit = res.strokeMiterlimit,
-            dx = res.dx,
-            dy = res.dy;
-
-        if (renderMode === mode.CANVAS) {
-          this.__preSetCanvas(renderMode, ctx, res);
-
-          ctx.beginPath();
-
-          if (isMulti) {
-            list.forEach(function (item) {
-              return canvasPolygon$1(ctx, item, dx, dy);
-            });
-          } else {
-            canvasPolygon$1(ctx, list, dx, dy);
-          }
-
-          if (isFill && fill && fill !== 'none') {
-            ctx.fill(fillRule);
-          }
-
-          if (isStroke && stroke && stroke !== 'none' && strokeWidth && strokeWidth > 0) {
-            ctx.stroke();
-          }
-
-          ctx.closePath();
-        } else if (renderMode === mode.SVG) {
-          var d = '';
-
-          if (isMulti) {
-            list.forEach(function (item) {
-              return d += svgPolygon(item);
-            });
-          } else {
-            d = svgPolygon(list);
-          }
-
-          var props = [['d', d]]; // 2个都没有常出现在多fill/stroke时，也有可能特殊单个故意这样写的
-
-          if ((!fill || fill === 'none') && (!stroke || stroke === 'none')) {
-            return;
-          }
-
-          if (isFill && fill && fill !== 'none') {
-            props.push(['fill', fill.v || fill]);
-
-            if (fillRule && fillRule !== 'nonzero') {
-              // evenodd
-              props.push(['fill-rule', fillRule]);
-            }
-          } else {
-            props.push(['fill', 'none']);
-          }
-
-          if (isStroke && stroke && stroke !== 'none' && strokeWidth && strokeWidth > 0) {
-            props.push(['stroke', stroke.v || stroke]);
-            props.push(['stroke-width', strokeWidth]);
-
-            this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
-          } else {
-            props.push(['stroke-width', 0]);
-          }
-
-          this.addGeom('path', props);
-        }
-      }
-    }, {
-      key: "__inversePtList",
-      value: function __inversePtList(list, isMulti, t) {
-        var dx = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
-        var dy = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
-
-        if (isMulti) {
-          return list.map(function (item) {
-            if (!item || !item.length) {
-              return null;
-            }
-
-            return item.map(function (item) {
-              if (!item || !item.length) {
-                return null;
-              }
-
-              var arr = [];
-
-              for (var i = 0, len = item.length; i < len; i += 2) {
-                var p = mx.calPoint([item[i] + dx, item[i + 1] + dy], t);
-                arr.push(p[0]);
-                arr.push(p[1]);
-              }
-
-              return arr;
-            });
-          });
-        } else {
-          return list.map(function (item) {
-            if (!item || !item.length) {
-              return null;
-            }
-
-            var arr = [];
-
-            for (var i = 0, len = item.length; i < len; i += 2) {
-              var p = mx.calPoint([item[i] + dx, item[i + 1] + dy], t);
-              arr.push(p[0]);
-              arr.push(p[1]);
-            }
-
-            return arr;
-          });
-        }
-      }
-    }, {
-      key: "__radialEllipse",
-      value: function __radialEllipse(renderMode, ctx, list, isMulti, res, method) {
-        var strokeWidth = res.strokeWidth,
-            strokeDasharrayStr = res.strokeDasharrayStr,
-            strokeLinecap = res.strokeLinecap,
-            strokeLinejoin = res.strokeLinejoin,
-            strokeMiterlimit = res.strokeMiterlimit,
-            dx = res.dx,
-            dy = res.dy;
-
-        var _res$method$v = _slicedToArray(res[method].v, 4),
-            color = _res$method$v[0],
-            matrix = _res$method$v[1],
-            cx = _res$method$v[2],
-            cy = _res$method$v[3]; // 椭圆渐变的转换，顶点逆矩阵变换
-
-
-        var tfo = [cx, cy];
-        matrix = transform.calMatrixByOrigin(matrix, tfo);
-        var t = mx.inverse(matrix);
-        list = this.__inversePtList(list, isMulti, t, dx, dy); // 用正向matrix渲染
-
-        if (renderMode === mode.CANVAS) {
-          if (matrix) {
-            ctx.save(); // 获取当前matrix，在webgl中为E，在canvas中分无cache和有cache模式
-
-            var me = ctx.getTransform();
-            me = [me.a, me.b, 0, 0, me.c, me.d, 0, 0, 0, 0, 1, 0, me.e, me.f, 1, 0];
-            matrix = mx.multiply(me, matrix);
-            ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
-          }
-
-          ctx.beginPath();
-
-          if (ctx[method + 'Style'] !== color) {
-            ctx[method + 'Style'] = color;
-          }
-
-          if (isMulti) {
-            list.forEach(function (item) {
-              return painter.canvasPolygon(ctx, item);
-            });
-          } else {
-            canvasPolygon$1(ctx, list);
-          }
-
-          ctx[method]();
-          ctx.closePath();
-
-          if (matrix) {
-            ctx.restore();
-          }
-        } else if (renderMode === mode.SVG) {
-          var d = '';
-
-          if (isMulti) {
-            list.forEach(function (item) {
-              return d += svgPolygon(item);
-            });
-          } else {
-            d = svgPolygon(list);
-          }
-
-          var props = [['d', d]];
-
-          if (method === 'fill') {
-            props.push(['fill', color]);
-            props.push(['strokeWidth', 0]);
-          } else if (method === 'stroke') {
-            props.push(['fill', 'none']);
-            props.push(['stroke', color]);
-            props.push(['stroke-width', strokeWidth]);
-
-            this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
-          }
-
-          props.push(['transform', "matrix(".concat(joinArr(mx.m2m6(matrix), ','), ")")]);
-          this.addGeom('path', props);
-        }
-      }
-    }, {
-      key: "__conicGradient",
-      value: function __conicGradient(renderMode, ctx, list, isMulti, res) {
-        var _this4 = this;
-
-        var fill = res.fill,
-            bbox = res.bbox,
-            _res$dx = res.dx,
-            dx = _res$dx === void 0 ? 0 : _res$dx,
-            _res$dy = res.dy,
-            dy = _res$dy === void 0 ? 0 : _res$dy;
-        var color = fill.v;
-
-        if (renderMode === mode.CANVAS) {
-          var _bbox = _slicedToArray(bbox, 4),
-              x1 = _bbox[0],
-              y1 = _bbox[1],
-              x2 = _bbox[2],
-              y2 = _bbox[3];
-
-          var w = x2 - x1,
-              h = y2 - y1;
-          var offscreen = inject.getCacheCanvas(w, h, '__$$CONIC_GRADIENT$$__');
-          var imgData = offscreen.ctx.getImageData(0, 0, w, h);
-          gradient$1.getConicGradientImage(w * 0.5, h * 0.5, w, h, fill.v.stop, imgData.data);
-          offscreen.ctx.putImageData(imgData, 0, 0);
-
-          if (isMulti) {
-            list.forEach(function (item) {
-              ctx.save();
-              ctx.beginPath();
-              canvasPolygon$1(ctx, item, dx, dy);
-              ctx.clip();
-              ctx.closePath();
-              ctx.drawImage(offscreen.canvas, x1 + dx, y1 + dy);
-              ctx.restore();
-            });
-          } else {
-            ctx.save();
-            ctx.beginPath();
-            canvasPolygon$1(ctx, list, dx, dy);
-            ctx.clip();
-            ctx.closePath();
-            ctx.drawImage(offscreen.canvas, x1 + dx, y1 + dy);
-            ctx.restore();
-          }
-
-          offscreen.ctx.clearRect(0, 0, w, h);
-        } else if (renderMode === mode.SVG) {
-          if (isMulti) {
-            list.forEach(function (item) {
-              var v = {
-                tagName: 'clipPath',
-                children: [{
-                  tagName: 'path',
-                  props: [['d', svgPolygon(item)]]
-                }]
-              };
-              var clip = ctx.add(v);
-
-              _this4.__cacheDefs.push(v);
-
-              color.forEach(function (item) {
-                _this4.virtualDom.bb.push({
-                  type: 'item',
-                  tagName: 'path',
-                  props: [['d', svgPolygon(item[0])], ['fill', item[1]], ['clip-path', 'url(#' + clip + ')']]
-                });
-              });
-            });
-          } else {
-            var v = {
-              tagName: 'clipPath',
-              children: [{
-                tagName: 'path',
-                props: [['d', svgPolygon(list)]]
-              }]
-            };
-            var clip = ctx.add(v);
-
-            this.__cacheDefs.push(v);
-
-            color.forEach(function (item) {
-              _this4.virtualDom.bb.push({
-                type: 'item',
-                tagName: 'path',
-                props: [['d', svgPolygon(item[0])], ['fill', item[1]], ['clip-path', 'url(#' + clip + ')']]
-              });
-            });
-          }
-        }
-      }
-    }, {
-      key: "__propsStrokeStyle",
-      value: function __propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit) {
-        if (strokeDasharrayStr) {
-          props.push(['stroke-dasharray', strokeDasharrayStr]);
-        }
-
-        if (strokeLinecap && strokeLinecap !== 'butt') {
-          props.push(['stroke-linecap', strokeLinecap]);
-        }
-
-        if (strokeLinejoin && strokeLinejoin !== 'miter') {
-          props.push(['stroke-linejoin', strokeLinejoin]);
-        }
-
-        if (strokeMiterlimit && strokeMiterlimit !== 4) {
-          props.push(['stroke-miterlimit', strokeMiterlimit]);
-        }
-      } // geom的cache无内容也不清除，因为子类不清楚内容，除非看不见
-      // __releaseWhenEmpty(cache, computedStyle) {
-      //   return computedStyle[VISIBILITY] === 'hidden';
-      // }
-      // offset/resize时要多一步清空props上记录的缓存
-
-    }, {
-      key: "__offsetX",
-      value: function __offsetX(diff, isLayout, lv) {
-        _get(_getPrototypeOf(Geom.prototype), "__offsetX", this).call(this, diff, isLayout, lv);
-
-        this.__cacheProps = {};
-      }
-    }, {
-      key: "__offsetY",
-      value: function __offsetY(diff, isLayout, lv) {
-        _get(_getPrototypeOf(Geom.prototype), "__offsetY", this).call(this, diff, isLayout, lv);
-
-        this.__cacheProps = {};
-      }
-    }, {
-      key: "__resizeX",
-      value: function __resizeX(diff, lv) {
-        _get(_getPrototypeOf(Geom.prototype), "__resizeX", this).call(this, diff, lv);
-
-        this.__cacheProps = {};
-      }
-    }, {
-      key: "__resizeY",
-      value: function __resizeY(diff, lv) {
-        _get(_getPrototypeOf(Geom.prototype), "__resizeY", this).call(this, diff, lv);
-
-        this.__cacheProps = {};
-      }
-    }, {
-      key: "addGeom",
-      value: function addGeom(tagName, props) {
-        props = util.hash2arr(props);
-        this.virtualDom.children.push({
-          type: 'item',
-          tagName: tagName,
-          props: props
-        });
-      }
-    }, {
-      key: "getProps",
-      value: function getProps(k) {
-        var v = this.currentProps[k];
-
-        if (!isNil$8(v)) {
-          return v;
-        }
-
-        return this['__' + k];
-      }
-    }, {
-      key: "__isRealInline",
-      value: function __isRealInline() {
-        return false;
-      }
-    }, {
-      key: "isMulti",
-      get: function get() {
-        return this.__isMulti;
-      }
-    }, {
-      key: "currentProps",
-      get: function get() {
-        return this.__currentProps;
-      }
-    }], [{
-      key: "REGISTER",
-      get: function get() {
-        return REGISTER;
-      }
-    }, {
-      key: "getRegister",
-      value: function getRegister(name) {
-        if (name && !util.isString(name) && name.prototype && name.prototype instanceof Geom) {
-          return name;
-        }
-
-        if (!name || !util.isString(name) || name.charAt(0) !== '$') {
-          throw new Error('Invalid param');
-        }
-
-        if (!REGISTER.hasOwnProperty(name)) {
-          throw new Error("Geom has not register: ".concat(name));
-        }
-
-        return REGISTER[name];
-      }
-    }, {
-      key: "register",
-      value: function register(name, obj) {
-        if (!name || !util.isString(name) || name.charAt(0) !== '$' || !obj.prototype || !(obj.prototype instanceof Geom)) {
-          throw new Error('Invalid param');
-        }
-
-        if (Geom.hasRegister(name)) {
-          throw new Error("Geom has already register: ".concat(name));
-        }
-
-        REGISTER[name] = obj;
-      }
-    }, {
-      key: "hasRegister",
-      value: function hasRegister(name) {
-        return name && REGISTER.hasOwnProperty(name);
-      }
-    }, {
-      key: "delRegister",
-      value: function delRegister(name) {
-        if (Geom.hasRegister(name)) {
-          delete REGISTER[name];
-        }
-      }
-    }]);
-
-    return Geom;
-  }(Xom);
 
   var TYPE_VD$2 = $$type.TYPE_VD,
       TYPE_GM$2 = $$type.TYPE_GM,

@@ -248,6 +248,8 @@ class Xom extends Node {
     return res;
   }
 
+  __modifyStruct() {}
+
   // 设置margin/padding的实际值，layout时执行，inline的垂直方向仍然计算值，但在布局时被忽略
   __mp(currentStyle, computedStyle, w) {
     [
@@ -2456,14 +2458,21 @@ class Xom extends Node {
 
   // 传入格式化好key/value的样式
   updateFormatStyle(style, cb) {
-    let root = this.__root, currentStyle = this.__currentStyle;
+    let root = this.__root, currentStyle = this.__currentStyle, currentProps = this.__currentProps;
     let keys = [];
     Object.keys(style).forEach(i => {
+      let isGeom = true;
       if(!GEOM.hasOwnProperty(i)) {
         i = parseInt(i);
+        isGeom = false;
       }
       if(!equalStyle(i, currentStyle[i], style[i], this)) {
-        currentStyle[i] = style[i];
+        if(isGeom) {
+          currentProps[i] = style[i];
+        }
+        else {
+          currentStyle[i] = style[i];
+        }
         keys.push(i);
       }
     });
@@ -2472,7 +2481,6 @@ class Xom extends Node {
     }
     if(root) {
       root.__addUpdate(this, {
-        style,
         keys,
         cb,
       });

@@ -307,6 +307,7 @@ Object.keys(change.GEOM).concat([
   'charWidthList',
   'charWidth',
   '__layoutData',
+  '__struct',
   'availableAnimating',
   'effectiveAnimating',
   'displayAnimating',

@@ -715,25 +715,27 @@ class Xom extends Node {
   }
 
   __layoutNone() {
-    let { computedStyle } = this;
-    computedStyle[DISPLAY] = 'none';
-    computedStyle[MARGIN_TOP]
-      = computedStyle[MARGIN_RIGHT]
-      = computedStyle[MARGIN_BOTTOM]
-      = computedStyle[MARGIN_LEFT]
-      = computedStyle[BORDER_TOP_WIDTH]
-      = computedStyle[BORDER_RIGHT_WIDTH]
-      = computedStyle[BORDER_BOTTOM_WIDTH]
-      = computedStyle[BORDER_LEFT_WIDTH]
-      = computedStyle[PADDING_TOP]
-      = computedStyle[PADDING_RIGHT]
-      = computedStyle[PADDING_BOTTOM]
-      = computedStyle[PADDING_LEFT]
-      = computedStyle[WIDTH]
-      = computedStyle[HEIGHT]
+    this.__computeReflow();
+    let { __computedStyle } = this;
+    __computedStyle[DISPLAY] = 'none';
+    __computedStyle[MARGIN_TOP]
+      = __computedStyle[MARGIN_RIGHT]
+      = __computedStyle[MARGIN_BOTTOM]
+      = __computedStyle[MARGIN_LEFT]
+      = __computedStyle[BORDER_TOP_WIDTH]
+      = __computedStyle[BORDER_RIGHT_WIDTH]
+      = __computedStyle[BORDER_BOTTOM_WIDTH]
+      = __computedStyle[BORDER_LEFT_WIDTH]
+      = __computedStyle[PADDING_TOP]
+      = __computedStyle[PADDING_RIGHT]
+      = __computedStyle[PADDING_BOTTOM]
+      = __computedStyle[PADDING_LEFT]
+      = __computedStyle[WIDTH]
+      = __computedStyle[HEIGHT]
       = this.__width
       = this.__height
       = 0;
+    this.__hasComputeReflow = false;
   }
 
   // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding

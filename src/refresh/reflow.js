@@ -350,8 +350,8 @@ function checkNext(root, top, node, addDom, removeDom) {
   }
   x += __computedStyle[MARGIN_LEFT] + __computedStyle[BORDER_LEFT_WIDTH] + __computedStyle[PADDING_LEFT];
   // 特殊的如add/remove时为absolute和none的在调用时即检查提前跳出了，不触发reflow，这里一定是触发的
-  // 找到最上层容器供absolute使用
-  let container = parent;
+  // 找到最上层容器供absolute使用，注意top本身是否abs的区别，非abs可能为relative）
+  let container = isNowAbs ? parent : top;
   while(container && container !== root) {
     if(isRelativeOrAbsolute(container)) {
       break;

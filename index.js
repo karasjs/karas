@@ -21504,9 +21504,12 @@
     }, {
       key: "__layoutNone",
       value: function __layoutNone() {
-        var computedStyle = this.computedStyle;
-        computedStyle[DISPLAY$6] = 'none';
-        computedStyle[MARGIN_TOP$4] = computedStyle[MARGIN_RIGHT$4] = computedStyle[MARGIN_BOTTOM$3] = computedStyle[MARGIN_LEFT$6] = computedStyle[BORDER_TOP_WIDTH$4] = computedStyle[BORDER_RIGHT_WIDTH$4] = computedStyle[BORDER_BOTTOM_WIDTH$3] = computedStyle[BORDER_LEFT_WIDTH$6] = computedStyle[PADDING_TOP$4] = computedStyle[PADDING_RIGHT$4] = computedStyle[PADDING_BOTTOM$3] = computedStyle[PADDING_LEFT$6] = computedStyle[WIDTH$5] = computedStyle[HEIGHT$5] = this.__width = this.__height = 0;
+        this.__computeReflow();
+
+        var __computedStyle = this.__computedStyle;
+        __computedStyle[DISPLAY$6] = 'none';
+        __computedStyle[MARGIN_TOP$4] = __computedStyle[MARGIN_RIGHT$4] = __computedStyle[MARGIN_BOTTOM$3] = __computedStyle[MARGIN_LEFT$6] = __computedStyle[BORDER_TOP_WIDTH$4] = __computedStyle[BORDER_RIGHT_WIDTH$4] = __computedStyle[BORDER_BOTTOM_WIDTH$3] = __computedStyle[BORDER_LEFT_WIDTH$6] = __computedStyle[PADDING_TOP$4] = __computedStyle[PADDING_RIGHT$4] = __computedStyle[PADDING_BOTTOM$3] = __computedStyle[PADDING_LEFT$6] = __computedStyle[WIDTH$5] = __computedStyle[HEIGHT$5] = this.__width = this.__height = 0;
+        this.__hasComputeReflow = false;
       } // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
 
     }, {
@@ -26018,9 +26021,9 @@
     }
 
     x += __computedStyle[MARGIN_LEFT$3] + __computedStyle[BORDER_LEFT_WIDTH$3] + __computedStyle[PADDING_LEFT$3]; // 特殊的如add/remove时为absolute和none的在调用时即检查提前跳出了，不触发reflow，这里一定是触发的
-    // 找到最上层容器供absolute使用
+    // 找到最上层容器供absolute使用，注意top本身是否abs的区别，非abs可能为relative）
 
-    var container = parent;
+    var container = isNowAbs ? parent : top;
 
     while (container && container !== root) {
       if (isRelativeOrAbsolute$2(container)) {

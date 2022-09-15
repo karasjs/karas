@@ -2933,10 +2933,10 @@ class Dom extends Xom {
    * @private
    */
   __layoutAbs(container, data, target) {
-    let { sx: x, sy: y,
+    let { __sx: x, __sy: y,
       __clientWidth: clientWidth, __clientHeight: clientHeight,
       __computedStyle: computedStyle } = container;
-    let { isDestroyed, children, absChildren } = this;
+    let { __isDestroyed: isDestroyed, children, absChildren } = this;
     let {
       [DISPLAY]: display,
       [BORDER_TOP_WIDTH]: borderTopWidth,

@@ -26020,7 +26020,7 @@
     x += __computedStyle[MARGIN_LEFT$3] + __computedStyle[BORDER_LEFT_WIDTH$3] + __computedStyle[PADDING_LEFT$3]; // 特殊的如add/remove时为absolute和none的在调用时即检查提前跳出了，不触发reflow，这里一定是触发的
     // 找到最上层容器供absolute使用
 
-    var container = top;
+    var container = parent;
 
     while (container && container !== root) {
       if (isRelativeOrAbsolute$2(container)) {
@@ -29531,12 +29531,12 @@
       value: function __layoutAbs(container, data, target) {
         var _this6 = this;
 
-        var x = container.sx,
-            y = container.sy,
+        var x = container.__sx,
+            y = container.__sy,
             clientWidth = container.__clientWidth,
             clientHeight = container.__clientHeight,
             computedStyle = container.__computedStyle;
-        var isDestroyed = this.isDestroyed,
+        var isDestroyed = this.__isDestroyed,
             children = this.children,
             absChildren = this.absChildren;
         var display = computedStyle[DISPLAY$3],
@@ -30331,7 +30331,9 @@
           var cache = inject.IMG[src];
 
           if (!cache || cache.state === inject.LOADING) {
-            this.__loadAndRefresh(loadImg, null);
+            if (!loadImg.loading) {
+              this.__loadAndRefresh(loadImg, null);
+            }
           } else if (cache && cache.state === inject.LOADED) {
             loadImg.source = cache.source;
             loadImg.width = cache.width;
@@ -30396,11 +30398,9 @@
         var res = _get(_getPrototypeOf(Img.prototype), "calContent", this).call(this, __currentStyle, __computedStyle);
 
         if (!res) {
-          var loadImg = this.__loadImg;
-
-          if (loadImg.loading) {
-            this.__loadAndRefresh(loadImg, null);
-          }
+          var loadImg = this.__loadImg; // if(loadImg.loading) {
+          //   this.__loadAndRefresh(loadImg, null);
+          // }
 
           if (__computedStyle[VISIBILITY$2] !== 'hidden' && (__computedStyle[WIDTH$1] || __computedStyle[HEIGHT$1]) && loadImg.source) {
             res = true;

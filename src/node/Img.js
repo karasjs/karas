@@ -74,7 +74,9 @@ class Img extends Dom {
     if(src) {
       let cache = inject.IMG[src];
       if(!cache || cache.state === inject.LOADING) {
-        this.__loadAndRefresh(loadImg, null);
+        if(!loadImg.loading) {
+          this.__loadAndRefresh(loadImg, null);
+        }
       }
       else if(cache && cache.state === inject.LOADED) {
         loadImg.source = cache.source;
@@ -139,9 +141,9 @@ class Img extends Dom {
       let {
         __loadImg: loadImg,
       } = this;
-      if(loadImg.loading) {
-        this.__loadAndRefresh(loadImg, null);
-      }
+      // if(loadImg.loading) {
+      //   this.__loadAndRefresh(loadImg, null);
+      // }
       if(__computedStyle[VISIBILITY] !== 'hidden' && (__computedStyle[WIDTH] || __computedStyle[HEIGHT])
         && loadImg.source) {
         res = true;

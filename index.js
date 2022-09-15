@@ -7538,7 +7538,8 @@
       BACKGROUND_CLIP$2 = STYLE_KEY$2.BACKGROUND_CLIP,
       TEXT_STROKE_WIDTH$5 = STYLE_KEY$2.TEXT_STROKE_WIDTH,
       TEXT_STROKE_COLOR$6 = STYLE_KEY$2.TEXT_STROKE_COLOR,
-      TEXT_STROKE_OVER$5 = STYLE_KEY$2.TEXT_STROKE_OVER;
+      TEXT_STROKE_OVER$5 = STYLE_KEY$2.TEXT_STROKE_OVER,
+      TRANSLATE_PATH$2 = STYLE_KEY$2.TRANSLATE_PATH;
   var GEOM$3 = {};
   var GEOM_KEY_SET$1 = [];
   var o$2 = {
@@ -7559,7 +7560,7 @@
       }
     },
     isIgnore: function isIgnore(k) {
-      return k === POINTER_EVENTS$3;
+      return k === POINTER_EVENTS$3 || k === TRANSLATE_PATH$2;
     },
     isGeom: function isGeom(tagName, k) {
       return tagName && k && GEOM$3.hasOwnProperty(k) && GEOM$3[k].hasOwnProperty(tagName);
@@ -7730,7 +7731,7 @@
       WHITE_SPACE$3 = _enums$STYLE_KEY$i.WHITE_SPACE,
       LINE_CLAMP$2 = _enums$STYLE_KEY$i.LINE_CLAMP,
       ORDER$2 = _enums$STYLE_KEY$i.ORDER,
-      TRANSLATE_PATH$2 = _enums$STYLE_KEY$i.TRANSLATE_PATH,
+      TRANSLATE_PATH$1 = _enums$STYLE_KEY$i.TRANSLATE_PATH,
       TEXT_STROKE_COLOR$5 = _enums$STYLE_KEY$i.TEXT_STROKE_COLOR,
       TEXT_STROKE_WIDTH$4 = _enums$STYLE_KEY$i.TEXT_STROKE_WIDTH,
       TEXT_STROKE_OVER$4 = _enums$STYLE_KEY$i.TEXT_STROKE_OVER,
@@ -9666,7 +9667,7 @@
         }
       } else if (k === OPACITY$5 || k === Z_INDEX$5) {
         res[k] = v;
-      } else if (k === TRANSLATE_PATH$2) {
+      } else if (k === TRANSLATE_PATH$1) {
         if (v) {
           res[k] = v.map(function (item) {
             return {
@@ -14659,8 +14660,8 @@
       SKEW_X$1 = _enums$STYLE_KEY$e.SKEW_X,
       SKEW_Y$1 = _enums$STYLE_KEY$e.SKEW_Y,
       TF$2 = _enums$STYLE_KEY$e.TRANSFORM,
-      TRANSFORM_ORIGIN$4 = _enums$STYLE_KEY$e.TRANSFORM_ORIGIN,
-      TRANSLATE_PATH$1 = _enums$STYLE_KEY$e.TRANSLATE_PATH;
+      TRANSFORM_ORIGIN$4 = _enums$STYLE_KEY$e.TRANSFORM_ORIGIN;
+      _enums$STYLE_KEY$e.TRANSLATE_PATH;
   var isIgnore = o$2.isIgnore,
       isRepaint$1 = o$2.isRepaint; // 低位表示<repaint级别
 
@@ -14713,7 +14714,7 @@
   };
 
   function isTransforms(k) {
-    return k === SCALE_X$2 || k === SCALE_Y$2 || k === SCALE_Z$1 || k === ROTATE_X$1 || k === ROTATE_Y$1 || k === ROTATE_Z$1 || k === ROTATE_3D$2 || k === SKEW_X$1 || k === SKEW_Y$1 || k === TF$2 || k === TRANSFORM_ORIGIN$4 || k === TRANSLATE_PATH$1;
+    return k === SCALE_X$2 || k === SCALE_Y$2 || k === SCALE_Z$1 || k === ROTATE_X$1 || k === ROTATE_Y$1 || k === ROTATE_Z$1 || k === ROTATE_3D$2 || k === SKEW_X$1 || k === SKEW_Y$1 || k === TF$2 || k === TRANSFORM_ORIGIN$4;
   }
 
   var o$1 = Object.assign({
@@ -17663,14 +17664,14 @@
       keys.forEach(function (k) {
         if (!style.hasOwnProperty(k) || isNil$a(style[k])) {
           if (GEOM$1.hasOwnProperty(k)) {
-            style[k] = target.getProps(k);
+            style[k] = clone$1(target.getProps(k));
           } else {
             if (k === TRANSLATE_X$1 && style.hasOwnProperty(TRANSLATE_PATH)) {
-              style[k] = style[TRANSLATE_PATH][0];
+              style[k] = clone$1(style[TRANSLATE_PATH][0]);
             } else if (k === TRANSLATE_Y$1 && style.hasOwnProperty(TRANSLATE_PATH)) {
-              style[k] = style[TRANSLATE_PATH][1];
+              style[k] = clone$1(style[TRANSLATE_PATH][1]);
             } else {
-              style[k] = target.__currentStyle[k];
+              style[k] = clone$1(target.__currentStyle[k]);
             }
           }
         }
@@ -17763,7 +17764,7 @@
         easing = _style.easing; // 这两个特殊值提出来存储不干扰style
 
     delete style.offset;
-    delete style.easing; // translatePath特殊对待，ae的曲线运动动画
+    delete style.easing; // translatePath特殊对待，ae的曲线运动动画，普通css不包含，特殊处理并添加到style最后
 
     var translatePath = style.translatePath;
     style = css.normalize(style);
@@ -17914,7 +17915,8 @@
 
     var cl = prev.clone[k];
 
-    if (cl.hasOwnProperty('v')) {
+    if (cl && cl.hasOwnProperty('v')) {
+      // translatePath可能不存在
       cl = cl.v;
     }
 
@@ -18635,7 +18637,12 @@
 
 
   function calFrame(prev, next, keys, target) {
+    var hasTp;
     keys.forEach(function (k) {
+      if (k === TRANSLATE_PATH) {
+        hasTp = true;
+      }
+
       var ts = calDiff(prev, next, k, target); // 可以形成过渡的才会产生结果返回
 
       if (ts) {
@@ -18644,12 +18651,47 @@
       } else {
         prev.fixed.push(k);
       }
-    });
+    }); // translatePath需特殊处理translate，防止被覆盖
+
+    if (hasTp) {
+      var i = prev.keys.indexOf(TRANSLATE_X$1);
+
+      if (i === -1) {
+        prev.keys.push(TRANSLATE_X$1);
+      }
+
+      i = prev.keys.indexOf(TRANSLATE_Y$1);
+
+      if (i === -1) {
+        prev.keys.push(TRANSLATE_Y$1);
+      }
+
+      i = prev.fixed.indexOf(TRANSLATE_X$1);
+
+      if (i > -1) {
+        prev.fixed.splice(i, 1);
+      }
+
+      i = prev.fixed.indexOf(TRANSLATE_Y$1);
+
+      if (i > -1) {
+        prev.fixed.splice(i, 1);
+      }
+    }
+
     return next;
   }
 
   function binarySearch(i, j, time, frames) {
     while (i < j) {
+      if (i === j - 1) {
+        if (frames[j].time <= time) {
+          return j;
+        }
+
+        return i;
+      }
+
       var middle = i + (j - i >> 1);
       var _frame = frames[middle];
 
@@ -18660,7 +18702,7 @@
       if (_frame.time > time) {
         j = Math.max(middle - 1, i);
       } else {
-        i = Math.min(middle + 1, j);
+        i = Math.min(middle, j);
       }
     }
 
@@ -18709,8 +18751,14 @@
 
     if (timingFunction && timingFunction !== linear) {
       percent = timingFunction(percent);
+    } // 同一关键帧同一percent可以不刷新，比如diff为0时，或者steps情况
+
+
+    if (frame.lastPercent === percent) {
+      return [];
     }
 
+    frame.lastPercent = percent;
     var currentStyle = target.__currentStyle,
         res = frame.keys.slice(0);
 
@@ -19039,7 +19087,12 @@
       var k = fixed[_i16];
 
       if (!equalStyle$1(k, style[k], currentStyle[k], target)) {
-        currentStyle[k] = style[k];
+        if (GEOM$1.hasOwnProperty(k)) {
+          target.__currentProps[k] = style[k];
+        } else {
+          currentStyle[k] = style[k];
+        }
+
         res.push(k);
       }
     }
@@ -19057,13 +19110,14 @@
         res = [];
 
     for (var i = 0, len = keys.length; i < len; i++) {
-      var k = keys[i];
+      var k = keys[i],
+          v = style[k];
 
-      if (!equalStyle$1(k, style[k], currentStyle[k], target)) {
+      if (!equalStyle$1(k, v, currentStyle[k], target)) {
         if (GEOM$1.hasOwnProperty(k)) {
-          currentProps[k] = style[k];
+          currentProps[k] = v;
         } else {
-          currentStyle[k] = style[k];
+          currentStyle[k] = v;
         }
 
         res.push(k);
@@ -19082,8 +19136,8 @@
     return [options || {}, cb];
   }
 
-  function frameCb(self, diff, isDelay) {
-    self.emit(Event.FRAME, diff, isDelay);
+  function frameCb(self, diff) {
+    self.emit(Event.FRAME, diff, self.__isChange);
 
     if (self.__firstPlay) {
       self.__firstPlay = false;
@@ -19150,7 +19204,8 @@
       _this.__begin = true;
       _this.__playState = 'idle';
       _this.__target = target;
-      _this.__root = target.root; // this.__style = {};
+      _this.__root = target.root;
+      _this.__isChange = false; // 每帧是否有变化，无变化不刷新也会触发frame事件
 
       _this.__firstPlay = true;
       _this.__firstEnter = true;
@@ -19171,7 +19226,6 @@
       _this.__isDelay = false;
       _this.__outBeginDelay = false;
       _this.__playCount = 0;
-      _this.__firstEnter = true;
       var fps = parseInt(op.fps) || 0;
 
       if (fps <= 0) {
@@ -19434,7 +19488,9 @@
         this.__playCb = cb;
         this.__playState = 'running'; // 每次play调用标识第一次运行，需响应play事件和回调
 
-        this.__firstPlay = true; // 防止finish/cancel事件重复触发，每次播放重置
+        this.__firstPlay = true;
+        this.__firstEnter = true;
+        this.__playCount = 0; // 防止finish/cancel事件重复触发，每次播放重置
 
         this.__hasFin = false;
         this.__hasCancel = false; // 只有第一次调用会进初始化，另外finish/cancel视为销毁也会重新初始化
@@ -19512,6 +19568,7 @@
 
             var _keys = calLastStyle(_currentFrame.style, target, this.__keys);
 
+            this.__isChange = !_keys.length;
             genBeforeRefresh(_keys, root, target, null);
           }
 
@@ -19579,8 +19636,12 @@
         }
 
         var inEndDelay,
-            currentFrame = currentFrames[i];
-        this.__currentFrame = currentFrame;
+            currentFrame = currentFrames[i]; // 对比前后两帧是否为同一关键帧，不是则清除之前关键帧上的percent标识
+
+        if (this.__currentFrame !== currentFrame) {
+          this.__currentFrame && (this.__currentFrame.lastPercent = -1);
+          this.__currentFrame = currentFrame;
+        }
         /** 这里要考虑全几种场景：
          * 1. 单次播放无endDelay且fill不停留（有/无差异，下同）
          * 2. 单次播放无endDelay且fill停留
@@ -19591,6 +19652,7 @@
          * 7. 多次播放有endDelay且fill不停留
          * 8. 多次播放有endDelay且fill停留
          */
+
 
         var needClean;
         var keys;
@@ -19617,8 +19679,9 @@
           }
         } else {
           keys = calIntermediateStyle(currentFrame, percent, target);
-        } // 无论两帧之间是否有变化，都生成计算结果赋给style，去重在root做
+        }
 
+        this.__isChange = !keys.length; // 无论两帧之间是否有变化，都生成计算结果赋给style，去重在root做
 
         genBeforeRefresh(keys, root, target, null);
 
@@ -19641,7 +19704,7 @@
           return;
         }
 
-        frameCb(this, diff, this.__isDelay);
+        frameCb(this, diff);
 
         if (this.__begin) {
           this.__begin = false;
@@ -19748,8 +19811,9 @@
           }
 
           var keys = calLastStyle(style, target, this.__keys);
+          this.__isChange = !keys.length;
           genBeforeRefresh(keys, root, target, function (diff) {
-            frameCb(_this2, diff, false);
+            frameCb(_this2, diff);
 
             _this2.emit(Event.FINISH);
 
@@ -19792,8 +19856,9 @@
         if (root) {
           var target = this.__target;
           var keys = calLastStyle(this.__originStyle, target, this.__keys);
+          this.__isChange = !keys.length;
           genBeforeRefresh(keys, root, target, function (diff) {
-            frameCb(_this3, diff, false);
+            frameCb(_this3, diff);
 
             _this3.emit(Event.CANCEL);
 

@@ -70,8 +70,7 @@ const ENUM = {
 function isTransforms(k) {
   return k === SCALE_X || k === SCALE_Y || k === SCALE_Z
     || k === ROTATE_X || k === ROTATE_Y || k === ROTATE_Z || k === ROTATE_3D
-    || k === SKEW_X || k === SKEW_Y || k === TF || k === TRANSFORM_ORIGIN
-    || k === TRANSLATE_PATH;
+    || k === SKEW_X || k === SKEW_Y || k === TF || k === TRANSFORM_ORIGIN;
 }
 
 let o = Object.assign({

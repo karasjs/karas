@@ -34,6 +34,7 @@ const {
   TEXT_STROKE_WIDTH,
   TEXT_STROKE_COLOR,
   TEXT_STROKE_OVER,
+  TRANSLATE_PATH,
 } = STYLE_KEY;
 
 const GEOM = {};
@@ -57,7 +58,7 @@ let o = {
     }
   },
   isIgnore(k) {
-    return k === POINTER_EVENTS;
+    return k === POINTER_EVENTS || k === TRANSLATE_PATH;
   },
   isGeom(tagName, k) {
     return tagName && k && GEOM.hasOwnProperty(k) && GEOM[k].hasOwnProperty(tagName);

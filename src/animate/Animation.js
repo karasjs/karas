@@ -98,17 +98,17 @@ function unify(frames, target) {
     keys.forEach(k => {
       if(!style.hasOwnProperty(k) || isNil(style[k])) {
         if(GEOM.hasOwnProperty(k)) {
-          style[k] = target.getProps(k);
+          style[k] = clone(target.getProps(k));
         }
         else {
           if(k === TRANSLATE_X && style.hasOwnProperty(TRANSLATE_PATH)) {
-            style[k] = style[TRANSLATE_PATH][0];
+            style[k] = clone(style[TRANSLATE_PATH][0]);
           }
           else if(k === TRANSLATE_Y && style.hasOwnProperty(TRANSLATE_PATH)) {
-            style[k] = style[TRANSLATE_PATH][1];
+            style[k] = clone(style[TRANSLATE_PATH][1]);
           }
           else {
-            style[k] = target.__currentStyle[k];
+            style[k] = clone(target.__currentStyle[k]);
           }
         }
       }
@@ -186,7 +186,7 @@ function framing(style, duration, es) {
   // 这两个特殊值提出来存储不干扰style
   delete style.offset;
   delete style.easing;
-  // translatePath特殊对待，ae的曲线运动动画
+  // translatePath特殊对待，ae的曲线运动动画，普通css不包含，特殊处理并添加到style最后
   let translatePath = style.translatePath;
   style = css.normalize(style);
   if(Array.isArray(translatePath) && [6, 8].indexOf(translatePath.length) > -1) {
@@ -367,7 +367,8 @@ function calDiff(prev, next, k, target) {
   let n = next.style[k];
   // 提前设置好引用，无需每帧计算时取引用，由于单位一定相同，可以简化直接引用到值v上无需单位u，有些直接量没有单位
   let cl = prev.clone[k];
-  if(cl.hasOwnProperty('v')) {
+  // translatePath可能不存在
+  if(cl && cl.hasOwnProperty('v')) {
     cl = cl.v;
   }
   let res = { k, st: p, cl };
@@ -1035,7 +1036,11 @@ function calDiffGradient(p, n, target) {
  * 同时不变化的key也得存入fixed
  */
 function calFrame(prev, next, keys, target) {
+  let hasTp;
   keys.forEach(k => {
+    if(k === TRANSLATE_PATH) {
+      hasTp = true;
+    }
     let ts = calDiff(prev, next, k, target);
     // 可以形成过渡的才会产生结果返回
     if(ts) {
@@ -1046,11 +1051,36 @@ function calFrame(prev, next, keys, target) {
       prev.fixed.push(k);
     }
   });
+  // translatePath需特殊处理translate，防止被覆盖
+  if(hasTp) {
+    let i = prev.keys.indexOf(TRANSLATE_X);
+    if(i === -1) {
+      prev.keys.push(TRANSLATE_X);
+    }
+    i = prev.keys.indexOf(TRANSLATE_Y);
+    if(i === -1) {
+      prev.keys.push(TRANSLATE_Y);
+    }
+    i = prev.fixed.indexOf(TRANSLATE_X);
+    if(i > -1) {
+      prev.fixed.splice(i, 1);
+    }
+    i = prev.fixed.indexOf(TRANSLATE_Y);
+    if(i > -1) {
+      prev.fixed.splice(i, 1);
+    }
+  }
   return next;
 }
 
 function binarySearch(i, j, time, frames) {
   while(i < j) {
+    if(i === j - 1) {
+      if(frames[j].time <= time) {
+        return j;
+      }
+      return i;
+    }
     let middle = i + ((j - i) >> 1);
     let frame = frames[middle];
     if(frame.time === time) {
@@ -1060,7 +1090,7 @@ function binarySearch(i, j, time, frames) {
       j = Math.max(middle - 1, i);
     }
     else {
-      i = Math.min(middle + 1, j);
+      i = Math.min(middle, j);
     }
   }
   return i;
@@ -1104,6 +1134,11 @@ function calIntermediateStyle(frame, percent, target) {
   if(timingFunction && timingFunction !== linear) {
     percent = timingFunction(percent);
   }
+  // 同一关键帧同一percent可以不刷新，比如diff为0时，或者steps情况
+  if(frame.lastPercent === percent) {
+    return [];
+  }
+  frame.lastPercent = percent;
   let currentStyle = target.__currentStyle, res = frame.keys.slice(0);
   for(let i = 0, len = transition.length; i < len; i++) {
     let item = transition[i];
@@ -1417,7 +1452,12 @@ function calIntermediateStyle(frame, percent, target) {
   for(let i = 0, len = fixed.length; i < len; i++) {
     let k = fixed[i];
     if(!equalStyle(k, style[k], currentStyle[k], target)) {
-      currentStyle[k] = style[k];
+      if(GEOM.hasOwnProperty(k)) {
+        target.__currentProps[k] = style[k];
+      }
+      else {
+        currentStyle[k] = style[k];
+      }
       res.push(k);
     }
   }
@@ -1430,13 +1470,13 @@ function calIntermediateStyle(frame, percent, target) {
 function calLastStyle(style, target, keys) {
   let currentStyle = target.__currentStyle, currentProps = target.__currentProps, res = [];
   for(let i = 0, len = keys.length; i < len; i++) {
-    let k = keys[i];
-    if(!equalStyle(k, style[k], currentStyle[k], target)) {
+    let k = keys[i], v = style[k];
+    if(!equalStyle(k, v, currentStyle[k], target)) {
       if(GEOM.hasOwnProperty(k)) {
-        currentProps[k] = style[k];
+        currentProps[k] = v;
       }
       else {
-        currentStyle[k] = style[k];
+        currentStyle[k] = v;
       }
       res.push(k);
     }
@@ -1452,8 +1492,8 @@ function gotoOverload(options, cb) {
   return [options || {}, cb];
 }
 
-function frameCb(self, diff, isDelay) {
-  self.emit(Event.FRAME, diff, isDelay);
+function frameCb(self, diff) {
+  self.emit(Event.FRAME, diff, self.__isChange);
   if(self.__firstPlay) {
     self.__firstPlay = false;
     self.emit(Event.PLAY);
@@ -1510,7 +1550,7 @@ class Animation extends Event {
     this.__playState = 'idle';
     this.__target = target;
     this.__root = target.root;
-    // this.__style = {};
+    this.__isChange = false; // 每帧是否有变化，无变化不刷新也会触发frame事件
     this.__firstPlay = true;
     this.__firstEnter = true;
     let iterations = this.iterations = op.iterations;
@@ -1523,7 +1563,6 @@ class Animation extends Event {
     this.__isDelay = false;
     this.__outBeginDelay = false;
     this.__playCount = 0;
-    this.__firstEnter = true;
     let fps = parseInt(op.fps) || 0;
     if(fps <= 0) {
       fps = 60;
@@ -1749,6 +1788,8 @@ class Animation extends Event {
     this.__playState = 'running';
     // 每次play调用标识第一次运行，需响应play事件和回调
     this.__firstPlay = true;
+    this.__firstEnter = true;
+    this.__playCount = 0;
     // 防止finish/cancel事件重复触发，每次播放重置
     this.__hasFin = false;
     this.__hasCancel = false;
@@ -1818,6 +1859,7 @@ class Animation extends Event {
       if(stayBegin && !this.__isDelay) {
         let currentFrame = this.__currentFrame = currentFrames[0];
         let keys = calLastStyle(currentFrame.style, target, this.__keys);
+        this.__isChange = !keys.length;
         genBeforeRefresh(keys, root, target, null);
       }
       this.__begin = false; // 默认是true，delay置false防触发
@@ -1880,7 +1922,11 @@ class Animation extends Event {
       percent = (currentTime - frameTime) / total;
     }
     let inEndDelay, currentFrame = currentFrames[i];
-    this.__currentFrame = currentFrame;
+    // 对比前后两帧是否为同一关键帧，不是则清除之前关键帧上的percent标识
+    if(this.__currentFrame !== currentFrame) {
+      this.__currentFrame && (this.__currentFrame.lastPercent = -1);
+      this.__currentFrame = currentFrame;
+    }
     /** 这里要考虑全几种场景：
      * 1. 单次播放无endDelay且fill不停留（有/无差异，下同）
      * 2. 单次播放无endDelay且fill停留
@@ -1916,6 +1962,7 @@ class Animation extends Event {
     else {
       keys = calIntermediateStyle(currentFrame, percent, target);
     }
+    this.__isChange = !keys.length;
     // 无论两帧之间是否有变化，都生成计算结果赋给style，去重在root做
     genBeforeRefresh(keys, root, target, null);
     if(needClean) {
@@ -1933,7 +1980,7 @@ class Animation extends Event {
       this.__inFps = false;
       return;
     }
-    frameCb(this, diff, this.__isDelay);
+    frameCb(this, diff);
     if(this.__begin) {
       this.__begin = false;
       this.emit(Event.BEGIN, this.__playCount);
@@ -2018,8 +2065,9 @@ class Animation extends Event {
         style = this.__originStyle;
       }
       let keys = calLastStyle(style, target, this.__keys);
+      this.__isChange = !keys.length;
       genBeforeRefresh(keys, root, target, diff => {
-        frameCb(this, diff, false);
+        frameCb(this, diff);
         this.emit(Event.FINISH);
         if(isFunction(cb)) {
           cb(diff);
@@ -2051,6 +2099,7 @@ class Animation extends Event {
     if(root) {
       let target = this.__target;
       let keys = calLastStyle(this.__originStyle, target, this.__keys);
+      this.__isChange = !keys.length;
       genBeforeRefresh(keys, root, target, diff => {
         frameCb(this, diff, false);
         this.emit(Event.CANCEL);

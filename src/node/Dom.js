@@ -3353,12 +3353,12 @@ class Dom extends Xom {
       child = new Text(child);
     }
     child.remove();
-    let parent = this.isShadowRoot ? this.hostRoot.__parent: this.__parent;
+    let parent = this.isShadowRoot ? this.__hostRoot.__parent: this.__parent;
     let i;
     // 即便没被添加到dom中，也有可能有父节点，除非是离屏根节点，注意组件
     if(parent) {
       let children = parent.__children;
-      let target = this.isShadowRoot ? this.hostRoot : this;
+      let target = this.isShadowRoot ? this.__hostRoot : this;
       i = children.indexOf(target);
       if(i === -1) {
         throw new Error('Index exception of insertBefore()');
@@ -3409,12 +3409,12 @@ class Dom extends Xom {
       child = new Text(child);
     }
     child.remove();
-    let parent = this.isShadowRoot ? this.hostRoot.__parent: this.__parent;
+    let parent = this.isShadowRoot ? this.__hostRoot.__parent: this.__parent;
     let i;
     // 即便没被添加到dom中，也有可能有父节点，除非是离屏根节点，注意组件
     if(parent) {
       let children = parent.__children;
-      let target = this.isShadowRoot ? this.hostRoot : this;
+      let target = this.isShadowRoot ? this.__hostRoot : this;
       i = children.indexOf(target);
       if(i === -1) {
         throw new Error('Index exception of insertBefore()');

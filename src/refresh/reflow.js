@@ -419,6 +419,9 @@ function checkNext(root, top, node, addDom, removeDom) {
     p = p.__domParent;
   }
   // 调整next的位置，offsetY，abs特殊处理，margin在merge中做
+  if(top.isShadowRoot) {
+    top = top.__hostRoot;
+  }
   let next = top.__next, diff;
   while(next) {
     let cs = next.currentStyle;

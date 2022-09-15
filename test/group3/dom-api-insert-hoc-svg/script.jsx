@@ -12,7 +12,7 @@ class Component2 extends karas.Component {
 }
 let root = karas.render(
   <svg width="360" height="360">
-    <div>1</div>
+    <p>1</p>
   </svg>,
   '#test'
 );

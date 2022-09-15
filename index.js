@@ -26108,6 +26108,10 @@
     } // 调整next的位置，offsetY，abs特殊处理，margin在merge中做
 
 
+    if (top.isShadowRoot) {
+      top = top.__hostRoot;
+    }
+
     var next = top.__next,
         diff;
 
@@ -30032,12 +30036,12 @@
         }
 
         child.remove();
-        var parent = this.isShadowRoot ? this.hostRoot.__parent : this.__parent;
+        var parent = this.isShadowRoot ? this.__hostRoot.__parent : this.__parent;
         var i; // 即便没被添加到dom中，也有可能有父节点，除非是离屏根节点，注意组件
 
         if (parent) {
           var children = parent.__children;
-          var target = this.isShadowRoot ? this.hostRoot : this;
+          var target = this.isShadowRoot ? this.__hostRoot : this;
           i = children.indexOf(target);
 
           if (i === -1) {
@@ -30103,12 +30107,12 @@
         }
 
         child.remove();
-        var parent = this.isShadowRoot ? this.hostRoot.__parent : this.__parent;
+        var parent = this.isShadowRoot ? this.__hostRoot.__parent : this.__parent;
         var i; // 即便没被添加到dom中，也有可能有父节点，除非是离屏根节点，注意组件
 
         if (parent) {
           var children = parent.__children;
-          var target = this.isShadowRoot ? this.hostRoot : this;
+          var target = this.isShadowRoot ? this.__hostRoot : this;
           i = children.indexOf(target);
 
           if (i === -1) {

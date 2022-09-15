@@ -557,7 +557,7 @@ class Xom extends Node {
     this.__layoutData = {
       x: data.x,
       y: data.y,
-      w: data.y,
+      w: data.w,
       h: data.h,
       lx: data.lx,
       ly: data.ly,

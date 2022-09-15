@@ -1245,6 +1245,14 @@ class Root extends Dom {
       else {
         reflow.checkNext(this, top, node, addDom, removeDom);
       }
+      if(removeDom) {
+        let temp = node;
+        while(temp.isShadowRoot) {
+          temp = temp.__host;
+          temp.__destroy();
+        }
+        node.__destroy();
+      }
     }
     node.__refreshLevel |= lv;
     if(addDom || removeDom) {

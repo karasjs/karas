@@ -1492,15 +1492,15 @@ function gotoOverload(options, cb) {
   return [options || {}, cb];
 }
 
-function frameCb(self, diff) {
-  self.emit(Event.FRAME, diff, self.__isChange);
+function frameCb(self) {
+  self.emit(Event.FRAME, self.__isChange);
   if(self.__firstPlay) {
     self.__firstPlay = false;
     self.emit(Event.PLAY);
   }
   let cb = self.__playCb;
   if(isFunction(cb)) {
-    cb(diff, self.__isChange);
+    cb(self.__isChange);
     // 清理要检查，gotoAndStop()这种cb回调中直接再次调用goto的话cb会不一致不能删除
     if(self.__playCb === cb) {
       self.__playCb = null;
@@ -1829,6 +1829,7 @@ class Animation extends Event {
     let playbackRate = this.__playbackRate;
     let spfLimit = this.__spfLimit;
     let currentTime = this.__currentTime = this.__nextTime;
+    this.__isChange = false;
     // 定帧限制每帧时间间隔最大为spf
     if(spfLimit) {
       if(spfLimit === true) {
@@ -1859,7 +1860,7 @@ class Animation extends Event {
       if(stayBegin && !this.__isDelay) {
         let currentFrame = this.__currentFrame = currentFrames[0];
         let keys = calLastStyle(currentFrame.style, target, this.__keys);
-        this.__isChange = !keys.length;
+        this.__isChange = !!keys.length;
         genBeforeRefresh(keys, root, target, null);
       }
       this.__begin = false; // 默认是true，delay置false防触发
@@ -1975,12 +1976,12 @@ class Animation extends Event {
     }
   }
 
-  __after(diff) {
+  __after() {
     if(this.__inFps) {
       this.__inFps = false;
       return;
     }
-    frameCb(this, diff);
+    frameCb(this);
     if(this.__begin) {
       this.__begin = false;
       this.emit(Event.BEGIN, this.__playCount);
@@ -2066,11 +2067,11 @@ class Animation extends Event {
       }
       let keys = calLastStyle(style, target, this.__keys);
       this.__isChange = !keys.length;
-      genBeforeRefresh(keys, root, target, diff => {
-        frameCb(this, diff);
+      genBeforeRefresh(keys, root, target, () => {
+        frameCb(this);
         this.emit(Event.FINISH, this.__isChange);
         if(isFunction(cb)) {
-          cb(diff, this.__isChange);
+          cb(this.__isChange);
         }
       });
     }
@@ -2100,11 +2101,11 @@ class Animation extends Event {
       let target = this.__target;
       let keys = calLastStyle(this.__originStyle, target, this.__keys);
       this.__isChange = !keys.length;
-      genBeforeRefresh(keys, root, target, diff => {
-        frameCb(this, diff);
+      genBeforeRefresh(keys, root, target, () => {
+        frameCb(this);
         this.emit(Event.CANCEL, this.__isChange);
         if(isFunction(cb)) {
-          cb(diff, this.__isChange);
+          cb(this.__isChange);
         }
       });
     }
@@ -2144,11 +2145,11 @@ class Animation extends Event {
       return this.finish(cb);
     }
     // 先play一帧，回调里模拟暂停
-    return this.play(diff => {
+    return this.play(() => {
       this.__playState = 'paused';
       this.__cancelTask();
       if(isFunction(cb)) {
-        cb(diff);
+        cb();
       }
     });
   }

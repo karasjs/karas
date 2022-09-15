@@ -280,12 +280,12 @@ function checkTop(root, node, addDom, removeDom) {
     }
   }
   // 此时target指向node，如果是inline/absolute变化则是其最近的非inline父
-  let parent = target.__domParent;
+  let parent = target;
   // 向上检查flex/absolute/fixedSize，以最上层的flex视作其更改，node本身flex不进入
   let top;
   do {
     if(parent === root) {
-      return root;
+      break;
     }
     if(parent.__computedStyle[DISPLAY] === 'flex') {
       top = parent;

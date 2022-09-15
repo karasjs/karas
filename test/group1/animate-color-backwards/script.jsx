@@ -19,9 +19,9 @@ let animation = t.animate([
 });
 let input = document.querySelector('input');
 let n = 0;
-animation.on(karas.Event.FRAME, (diff, isDelay) => {
+animation.on(karas.Event.FRAME, (isChange) => {
   n++;
-  if(!isDelay) {
+  if(isChange) {
     input.value += n;
   }
   if(n === 1) {

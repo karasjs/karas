@@ -19135,8 +19135,8 @@
     return [options || {}, cb];
   }
 
-  function frameCb(self, diff) {
-    self.emit(Event.FRAME, diff, self.__isChange);
+  function frameCb(self) {
+    self.emit(Event.FRAME, self.__isChange);
 
     if (self.__firstPlay) {
       self.__firstPlay = false;
@@ -19146,7 +19146,7 @@
     var cb = self.__playCb;
 
     if (isFunction$6(cb)) {
-      cb(diff, self.__isChange); // 清理要检查，gotoAndStop()这种cb回调中直接再次调用goto的话cb会不一致不能删除
+      cb(self.__isChange); // 清理要检查，gotoAndStop()这种cb回调中直接再次调用goto的话cb会不一致不能删除
 
       if (self.__playCb === cb) {
         self.__playCb = null;
@@ -19530,7 +19530,8 @@
         var length = currentFrames.length;
         var playbackRate = this.__playbackRate;
         var spfLimit = this.__spfLimit;
-        var currentTime = this.__currentTime = this.__nextTime; // 定帧限制每帧时间间隔最大为spf
+        var currentTime = this.__currentTime = this.__nextTime;
+        this.__isChange = false; // 定帧限制每帧时间间隔最大为spf
 
         if (spfLimit) {
           if (spfLimit === true) {
@@ -19567,7 +19568,7 @@
 
             var _keys = calLastStyle(_currentFrame.style, target, this.__keys);
 
-            this.__isChange = !_keys.length;
+            this.__isChange = !!_keys.length;
             genBeforeRefresh(_keys, root, target, null);
           }
 
@@ -19697,13 +19698,13 @@
       }
     }, {
       key: "__after",
-      value: function __after(diff) {
+      value: function __after() {
         if (this.__inFps) {
           this.__inFps = false;
           return;
         }
 
-        frameCb(this, diff);
+        frameCb(this);
 
         if (this.__begin) {
           this.__begin = false;
@@ -19811,13 +19812,13 @@
 
           var keys = calLastStyle(style, target, this.__keys);
           this.__isChange = !keys.length;
-          genBeforeRefresh(keys, root, target, function (diff) {
-            frameCb(_this2, diff);
+          genBeforeRefresh(keys, root, target, function () {
+            frameCb(_this2);
 
             _this2.emit(Event.FINISH, _this2.__isChange);
 
             if (isFunction$6(cb)) {
-              cb(diff, _this2.__isChange);
+              cb(_this2.__isChange);
             }
           });
         }
@@ -19856,13 +19857,13 @@
           var target = this.__target;
           var keys = calLastStyle(this.__originStyle, target, this.__keys);
           this.__isChange = !keys.length;
-          genBeforeRefresh(keys, root, target, function (diff) {
-            frameCb(_this3, diff);
+          genBeforeRefresh(keys, root, target, function () {
+            frameCb(_this3);
 
             _this3.emit(Event.CANCEL, _this3.__isChange);
 
             if (isFunction$6(cb)) {
-              cb(diff, _this3.__isChange);
+              cb(_this3.__isChange);
             }
           });
         }
@@ -19926,13 +19927,13 @@
         } // 先play一帧，回调里模拟暂停
 
 
-        return this.play(function (diff) {
+        return this.play(function () {
           _this4.__playState = 'paused';
 
           _this4.__cancelTask();
 
           if (isFunction$6(cb)) {
-            cb(diff);
+            cb();
           }
         });
       } // 返回不包含delay且去除多轮的时间
@@ -25014,13 +25015,13 @@
     } // 此时target指向node，如果是inline/absolute变化则是其最近的非inline父
 
 
-    var parent = target.__domParent; // 向上检查flex/absolute/fixedSize，以最上层的flex视作其更改，node本身flex不进入
+    var parent = target; // 向上检查flex/absolute/fixedSize，以最上层的flex视作其更改，node本身flex不进入
 
     var top;
 
     do {
       if (parent === root) {
-        return root;
+        break;
       }
 
       if (parent.__computedStyle[DISPLAY$4] === 'flex') {
@@ -35100,6 +35101,7 @@
     var vdList = [];
     var parentVd;
     var lastLv = 0;
+    var lastRefreshLv = 0;
     var lastNode;
 
     var _loop = function _loop(_i8, _len4) {
@@ -35116,7 +35118,7 @@
 
       if (node instanceof Text) {
         computedStyle = node.computedStyle;
-        __refreshLevel = node.__domParent.__refreshLevel;
+        __refreshLevel = lastRefreshLv;
       } else {
         computedStyle = node.__computedStyle;
         __cacheDefs = node.__cacheDefs;
@@ -35124,6 +35126,7 @@
         __cacheTotal = node.__cacheTotal;
       }
 
+      lastRefreshLv = __refreshLevel;
       node.__refreshLevel = NONE$1;
       var display = computedStyle[DISPLAY$1]; // 将随后的若干个mask节点范围存下来
 
@@ -38051,6 +38054,18 @@
           } // 布局影响next的所有节点，重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
           else {
             reflow.checkNext(this, top, node, addDom, removeDom);
+          }
+
+          if (removeDom) {
+            var temp = node;
+
+            while (temp.isShadowRoot) {
+              temp = temp.__host;
+
+              temp.__destroy();
+            }
+
+            node.__destroy();
           }
         }
 

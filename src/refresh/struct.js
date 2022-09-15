@@ -1644,6 +1644,7 @@ function renderSvg(renderMode, ctx, root, isFirst) {
   let vdList = [];
   let parentVd;
   let lastLv = 0;
+  let lastRefreshLv = 0;
   let lastNode;
   for(let i = 0, len = __structs.length; i < len; i++) {
     let {
@@ -1655,7 +1656,7 @@ function renderSvg(renderMode, ctx, root, isFirst) {
     let computedStyle, __refreshLevel, __cacheDefs, __cacheTotal;
     if(node instanceof Text) {
       computedStyle = node.computedStyle;
-      __refreshLevel = node.__domParent.__refreshLevel;
+      __refreshLevel = lastRefreshLv;
     }
     else {
       computedStyle = node.__computedStyle;
@@ -1663,6 +1664,7 @@ function renderSvg(renderMode, ctx, root, isFirst) {
       __refreshLevel = node.__refreshLevel;
       __cacheTotal = node.__cacheTotal;
     }
+    lastRefreshLv = __refreshLevel;
     node.__refreshLevel = NONE;
     let display = computedStyle[DISPLAY];
     // 将随后的若干个mask节点范围存下来

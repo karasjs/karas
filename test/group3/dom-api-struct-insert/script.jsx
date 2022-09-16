@@ -14,7 +14,7 @@ let root = karas.render(
   '#test'
 );
 root.ref.span2.insertBefore(<div style={{
-  width:100,height:100,background:'#F00'
+  width:100,height:100,background:'#F00',
 }}>4</div>, function() {
   root.ref.span2.insertAfter(<Component/>, function() {
     let input = document.querySelector('input');

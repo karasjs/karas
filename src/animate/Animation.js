@@ -167,10 +167,6 @@ function genBeforeRefresh(keys, root, node, cb) {
     keys,
     cb,
   });
-  // animation.__style = style;
-  // frame每帧回调时，下方先执行计算好变更的样式，这里特殊插入一个hook，让root增加一个刷新操作
-  // 多个动画调用因为相同root也只会插入一个，这样在所有动画执行完毕后frame里检查同步进行刷新，解决单异步问题
-  // root.__frameHook();
 }
 
 /**
@@ -1729,47 +1725,15 @@ class Animation extends Event {
   __clean(isFinish) {
     this.__cancelTask();
     this.__nextTime = 0;
-    let restore;
-    // let style = this.__style;
-    // let keys = this.__keys;
-    // let target = this.__target;
     if(isFinish) {
       // gotoAndStop到一个很大的时间的话，也需要防止超过
       this.__currentTime = this.__delay + this.__duration * this.__iterations + this.__endDelay;
-      // if(this.__playState === 'finished') {
-      //   return;
-      // }
       this.__playState = 'finished';
-      // cancel需要清除finish根据情况保留
-      // if(!this.__stayEnd) {
-      //   this.__style = {};
-      //   restore = true;
-      // }
     }
     else {
       this.__playCount = this.__currentTime = 0;
-      // if(this.__playState === 'idle') {
-      //   return;
-      // }
       this.__playState = 'idle';
-      // this.__style = {};
-      // restore = true;
     }
-    // 动画取消结束不停留在最后一帧需要还原target原本的样式，需要对比目前是否是由本动画赋值的
-    // if(restore) {
-    //   keys.forEach(k => {
-    //     if(GEOM.hasOwnProperty(k)) {
-    //       if(target.__currentProps[k] === style[k]) {
-    //         target.__currentProps[k] = target.props[k];
-    //       }
-    //     }
-    //     else {
-    //       if(target.__currentStyle[k] === style[k]) {
-    //         target.__currentStyle[k] = target.style[k];
-    //       }
-    //     }
-    //   });
-    // }
   }
 
   play(cb) {
@@ -2237,19 +2201,6 @@ class Animation extends Event {
     this.removeControl();
     this.__clean();
     this.__target = this.__root = null;
-    // clean异步执行，因为里面的样式还原需要等到下一帧，否则同步执行清除后，紧接着的新同步动画获取不到currentStyle
-    // if(sync) {
-    //   this.__clean();
-    //   this.__target = null;
-    // }
-    // else {
-    //   frame.nextFrame({
-    //     __before() {
-    //       self.__clean();
-    //       this.__target = null;
-    //     },
-    //   });
-    // }
     this.__startTime = 0;
     this.__isDestroyed = true;
   }
@@ -2275,10 +2226,6 @@ class Animation extends Event {
   get keys() {
     return this.__keys;
   }
-
-  // get style() {
-  //   return this.__style;
-  // }
 
   get options() {
     return this.__options;

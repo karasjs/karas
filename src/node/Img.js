@@ -78,7 +78,7 @@ class Img extends Dom {
           this.__loadAndRefresh(loadImg, null);
         }
       }
-      else if(cache && cache.state === inject.LOADED) {
+      else if(cache && cache.state === inject.LOADED && cache.success) {
         loadImg.source = cache.source;
         loadImg.width = cache.width;
         loadImg.height = cache.height;
@@ -155,7 +155,7 @@ class Img extends Dom {
   render(renderMode, ctx, dx = 0, dy = 0) {
     let res = super.render(renderMode, ctx, dx, dy);
     let {
-      width, height, isDestroyed,
+      width, height, __isDestroyed,
       props: {
         placeholder,
       },
@@ -170,7 +170,7 @@ class Img extends Dom {
       virtualDom,
       __loadImg: loadImg,
     } = this;
-    if(isDestroyed || display === 'none' || visibility === 'hidden' || renderMode === mode.WEBGL) {
+    if(__isDestroyed || display === 'none' || visibility === 'hidden' || renderMode === mode.WEBGL) {
       return res;
     }
     let originX, originY;
@@ -481,13 +481,15 @@ class Img extends Dom {
           loadImg.height = data.height;
         }
         else if(placeholder) {
+          loadImg.error = true;
           inject.measureImg(placeholder, data => {
             if(data.success) {
-              loadImg.error = true;
               loadImg.source = data.source;
               loadImg.width = data.width;
               loadImg.height = data.height;
-              reload();
+              if(computedStyle[DISPLAY] !== 'none' && !self.__isDestroyed) {
+                reload();
+              }
             }
           }, {
             ctx,
@@ -525,35 +527,7 @@ class Img extends Dom {
       return;
     }
     loadImg.src = v;
-    this.__loadAndRefresh(loadImg, cb)
-    // else if(v) {
-    //   loadImg.src = v;
-    //   self.__loadAndRefresh(loadImg, root, root.ctx, self.props.placeholder, self.computedStyle, self.width, self.height, cb);
-    // }
-    // else {
-    //   loadImg.src = v;
-    //   loadImg.source = null;
-    //   loadImg.error = true;
-    //   root.delRefreshTask(self.__task);
-    //   root.addRefreshTask(self.__task = {
-    //     __before() {
-    //       self.__task = null;
-    //       if(self.isDestroyed) {
-    //         return;
-    //       }
-    //       let res = {
-    //         node: self,
-    //         focus: level.REFLOW,
-    //       };
-    //       root.__addUpdate(self, root, res);
-    //     },
-    //     __after(diff) {
-    //       if(isFunction(cb)) {
-    //         cb(diff);
-    //       }
-    //     },
-    //   });
-    // }
+    this.__loadAndRefresh(loadImg, cb);
   }
 
   appendChild() {

@@ -228,7 +228,7 @@ function checkNext(root, top, node, addDom, removeDom) {
   let isNowAbs = crs[POSITION] === 'absolute';
   let isLastNone = display === 'none';
   let isNowNone = crs[DISPLAY] === 'none';
-  let isLast0 = top.offsetHeight === 0;
+  let isLast0 = top.offsetHeight === 0;debugger;
   // none不可见布局无效可以无视
   if(isLastNone && isNowNone) {
     return;
@@ -372,6 +372,7 @@ function checkNext(root, top, node, addDom, removeDom) {
     top.clearCache(true);
     return;
   }
+  let nowH = top.offsetHeight;
   // 查看现在的上下margin合并情况，和之前的对比得出diff差值进行offsetY/resizeY
   if(top.isShadowRoot) {
     top = top.__hostRoot;
@@ -400,12 +401,20 @@ function checkNext(root, top, node, addDom, removeDom) {
     t4 = t.target;
     d4 = t.diff;
   }
+  if(removeDom) {
+    let temp = node;
+    while(temp.isShadowRoot) {
+      temp = temp.__host;
+      temp.__destroy();
+    }
+    nowH = 0;
+  }
   // 查看mergeMargin对top造成的偏移，和原来偏移对比
   if(!removeDom && d3 - d1) {
     top.__offsetY(d3 - d1, false, null);
   }
   // 差值计算注意考虑margin合并前的值，和合并后的差值，height使用offsetHeight不考虑margin
-  let diff = t3 + d3 + t4 + d4 - t1 - d1 - t2 - d2 + top.offsetHeight - oldH;
+  let diff = t3 + d3 + t4 + d4 - t1 - d1 - t2 - d2 + nowH - oldH;
   // console.log(t3, d3, t4, d4, t1, d1, t2, d2, top.offsetHeight, oldH, diff);
   if(!diff) {
     parent.clearCache(true);
@@ -416,9 +425,9 @@ function checkNext(root, top, node, addDom, removeDom) {
     parent.__resizeY(diff, REPAINT);
   }
   offsetNext(next, diff, parentFixed);
+  parent.clearCache(true);
+  parent.__refreshLevel |= CACHE;
   if(parentFixed) {
-    parent.clearCache(true);
-    parent.__refreshLevel |= CACHE;
     return;
   }
   // 影响完next之后，向上递归，所有parent的next都影响

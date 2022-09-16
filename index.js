@@ -14640,8 +14640,7 @@
     return Ellipsis;
   }(Node);
 
-  enums.STYLE_KEY;
-      var _enums$STYLE_KEY$e = enums.STYLE_KEY,
+  var _enums$STYLE_KEY$e = enums.STYLE_KEY,
       TX$1 = _enums$STYLE_KEY$e.TRANSLATE_X,
       TY$1 = _enums$STYLE_KEY$e.TRANSLATE_Y,
       TZ$1 = _enums$STYLE_KEY$e.TRANSLATE_Z,
@@ -14661,7 +14660,6 @@
       SKEW_Y$1 = _enums$STYLE_KEY$e.SKEW_Y,
       TF$2 = _enums$STYLE_KEY$e.TRANSFORM,
       TRANSFORM_ORIGIN$4 = _enums$STYLE_KEY$e.TRANSFORM_ORIGIN;
-      _enums$STYLE_KEY$e.TRANSLATE_PATH;
   var isIgnore = o$2.isIgnore,
       isRepaint$1 = o$2.isRepaint; // 低位表示<repaint级别
 
@@ -17742,11 +17740,7 @@
     root.__addUpdate(node, {
       keys: keys,
       cb: cb
-    }); // animation.__style = style;
-    // frame每帧回调时，下方先执行计算好变更的样式，这里特殊插入一个hook，让root增加一个刷新操作
-    // 多个动画调用因为相同root也只会插入一个，这样在所有动画执行完毕后frame里检查同步进行刷新，解决单异步问题
-    // root.__frameHook();
-
+    });
   }
   /**
    * 将每帧的样式格式化，提取出offset属性并转化为时间，提取出缓动曲线easing
@@ -19428,43 +19422,15 @@
         this.__cancelTask();
 
         this.__nextTime = 0;
-        // let keys = this.__keys;
-        // let target = this.__target;
 
         if (isFinish) {
           // gotoAndStop到一个很大的时间的话，也需要防止超过
-          this.__currentTime = this.__delay + this.__duration * this.__iterations + this.__endDelay; // if(this.__playState === 'finished') {
-          //   return;
-          // }
-
-          this.__playState = 'finished'; // cancel需要清除finish根据情况保留
-          // if(!this.__stayEnd) {
-          //   this.__style = {};
-          //   restore = true;
-          // }
+          this.__currentTime = this.__delay + this.__duration * this.__iterations + this.__endDelay;
+          this.__playState = 'finished';
         } else {
-          this.__playCount = this.__currentTime = 0; // if(this.__playState === 'idle') {
-          //   return;
-          // }
-
-          this.__playState = 'idle'; // this.__style = {};
-          // restore = true;
-        } // 动画取消结束不停留在最后一帧需要还原target原本的样式，需要对比目前是否是由本动画赋值的
-        // if(restore) {
-        //   keys.forEach(k => {
-        //     if(GEOM.hasOwnProperty(k)) {
-        //       if(target.__currentProps[k] === style[k]) {
-        //         target.__currentProps[k] = target.props[k];
-        //       }
-        //     }
-        //     else {
-        //       if(target.__currentStyle[k] === style[k]) {
-        //         target.__currentStyle[k] = target.style[k];
-        //       }
-        //     }
-        //   });
-        // }
-
+          this.__playCount = this.__currentTime = 0;
+          this.__playState = 'idle';
+        }
       }
     }, {
       key: "play",
@@ -20042,20 +20008,7 @@
 
         this.__clean();
 
-        this.__target = this.__root = null; // clean异步执行，因为里面的样式还原需要等到下一帧，否则同步执行清除后，紧接着的新同步动画获取不到currentStyle
-        // if(sync) {
-        //   this.__clean();
-        //   this.__target = null;
-        // }
-        // else {
-        //   frame.nextFrame({
-        //     __before() {
-        //       self.__clean();
-        //       this.__target = null;
-        //     },
-        //   });
-        // }
-
+        this.__target = this.__root = null;
         this.__startTime = 0;
         this.__isDestroyed = true;
       }
@@ -20085,10 +20038,7 @@
       key: "keys",
       get: function get() {
         return this.__keys;
-      } // get style() {
-      //   return this.__style;
-      // }
-
+      }
     }, {
       key: "options",
       get: function get() {
@@ -25886,7 +25836,8 @@
     var isNowAbs = crs[POSITION$2] === 'absolute';
     var isLastNone = display === 'none';
     var isNowNone = crs[DISPLAY$4] === 'none';
-    var isLast0 = top.offsetHeight === 0; // none不可见布局无效可以无视
+    var isLast0 = top.offsetHeight === 0;
+    debugger; // none不可见布局无效可以无视
 
     if (isLastNone && isNowNone) {
       return;
@@ -26064,8 +26015,9 @@
     if (addDom && isNow0 || removeDom && isLast0) {
       top.clearCache(true);
       return;
-    } // 查看现在的上下margin合并情况，和之前的对比得出diff差值进行offsetY/resizeY
+    }
 
+    var nowH = top.offsetHeight; // 查看现在的上下margin合并情况，和之前的对比得出diff差值进行offsetY/resizeY
 
     if (top.isShadowRoot) {
       top = top.__hostRoot;
@@ -26101,6 +26053,18 @@
       _t3 = getMergeMargin(mtList, mbList);
       t4 = _t3.target;
       d4 = _t3.diff;
+    }
+
+    if (removeDom) {
+      var temp = node;
+
+      while (temp.isShadowRoot) {
+        temp = temp.__host;
+
+        temp.__destroy();
+      }
+
+      nowH = 0;
     } // 查看mergeMargin对top造成的偏移，和原来偏移对比
 
 
@@ -26109,7 +26073,7 @@
     } // 差值计算注意考虑margin合并前的值，和合并后的差值，height使用offsetHeight不考虑margin
 
 
-    var diff = t3 + d3 + t4 + d4 - t1 - d1 - t2 - d2 + top.offsetHeight - oldH; // console.log(t3, d3, t4, d4, t1, d1, t2, d2, top.offsetHeight, oldH, diff);
+    var diff = t3 + d3 + t4 + d4 - t1 - d1 - t2 - d2 + nowH - oldH; // console.log(t3, d3, t4, d4, t1, d1, t2, d2, top.offsetHeight, oldH, diff);
 
     if (!diff) {
       parent.clearCache(true);
@@ -26123,10 +26087,10 @@
     }
 
     offsetNext(next, diff, parentFixed);
+    parent.clearCache(true);
+    parent.__refreshLevel |= CACHE$2;
 
     if (parentFixed) {
-      parent.clearCache(true);
-      parent.__refreshLevel |= CACHE$2;
       return;
     } // 影响完next之后，向上递归，所有parent的next都影响
 
@@ -26663,6 +26627,7 @@
         } // 向上添加parent的total数量
 
 
+        struct.num++;
         struct.total += total;
         var p = this.__domParent;
 
@@ -26685,6 +26650,7 @@
         structs.splice(i, total); // 向上减少parent的total数量
 
         var struct = this.__struct;
+        struct.num--;
         struct.total = struct.total || 0;
         struct.total -= total;
         var p = this.__domParent;
@@ -30341,7 +30307,7 @@
             if (!loadImg.loading) {
               this.__loadAndRefresh(loadImg, null);
             }
-          } else if (cache && cache.state === inject.LOADED) {
+          } else if (cache && cache.state === inject.LOADED && cache.success) {
             loadImg.source = cache.source;
             loadImg.width = cache.width;
             loadImg.height = cache.height;
@@ -30426,7 +30392,7 @@
 
         var width = this.width,
             height = this.height,
-            isDestroyed = this.isDestroyed,
+            __isDestroyed = this.__isDestroyed,
             placeholder = this.props.placeholder,
             _this$__computedStyle = this.__computedStyle,
             display = _this$__computedStyle[DISPLAY$2],
@@ -30438,7 +30404,7 @@
             virtualDom = this.virtualDom,
             loadImg = this.__loadImg;
 
-        if (isDestroyed || display === 'none' || visibility === 'hidden' || renderMode === mode.WEBGL) {
+        if (__isDestroyed || display === 'none' || visibility === 'hidden' || renderMode === mode.WEBGL) {
           return res;
         }
 
@@ -30738,13 +30704,16 @@
               loadImg.width = data.width;
               loadImg.height = data.height;
             } else if (placeholder) {
+              loadImg.error = true;
               inject.measureImg(placeholder, function (data) {
                 if (data.success) {
-                  loadImg.error = true;
                   loadImg.source = data.source;
                   loadImg.width = data.width;
                   loadImg.height = data.height;
-                  reload();
+
+                  if (computedStyle[DISPLAY$2] !== 'none' && !self.__isDestroyed) {
+                    reload();
+                  }
                 }
               }, {
                 ctx: ctx,
@@ -30787,35 +30756,7 @@
 
         loadImg.src = v;
 
-        this.__loadAndRefresh(loadImg, cb); // else if(v) {
-        //   loadImg.src = v;
-        //   self.__loadAndRefresh(loadImg, root, root.ctx, self.props.placeholder, self.computedStyle, self.width, self.height, cb);
-        // }
-        // else {
-        //   loadImg.src = v;
-        //   loadImg.source = null;
-        //   loadImg.error = true;
-        //   root.delRefreshTask(self.__task);
-        //   root.addRefreshTask(self.__task = {
-        //     __before() {
-        //       self.__task = null;
-        //       if(self.isDestroyed) {
-        //         return;
-        //       }
-        //       let res = {
-        //         node: self,
-        //         focus: level.REFLOW,
-        //       };
-        //       root.__addUpdate(self, root, res);
-        //     },
-        //     __after(diff) {
-        //       if(isFunction(cb)) {
-        //         cb(diff);
-        //       }
-        //     },
-        //   });
-        // }
-
+        this.__loadAndRefresh(loadImg, cb);
       }
     }, {
       key: "appendChild",
@@ -37141,21 +37082,19 @@
 
           if (top === this) {
             this.__reLayout();
+
+            if (removeDom) {
+              var temp = node;
+
+              while (temp.isShadowRoot) {
+                temp = temp.__host;
+
+                temp.__destroy();
+              }
+            }
           } // 布局影响next的所有节点，重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
           else {
             reflow.checkNext(this, top, node, addDom, removeDom);
-          }
-
-          if (removeDom) {
-            var temp = node;
-
-            while (temp.isShadowRoot) {
-              temp = temp.__host;
-
-              temp.__destroy();
-            }
-
-            node.__destroy();
           }
         }
 

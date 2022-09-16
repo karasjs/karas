@@ -333,6 +333,7 @@ class Dom extends Xom {
       next = next.__next;
     }
     // 向上添加parent的total数量
+    struct.num++;
     struct.total += total;
     let p = this.__domParent;
     while(p) {
@@ -352,6 +353,7 @@ class Dom extends Xom {
     structs.splice(i, total);
     // 向上减少parent的total数量
     let struct = this.__struct;
+    struct.num--;
     struct.total = struct.total || 0;
     struct.total -= total;
     let p = this.__domParent;

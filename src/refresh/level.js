@@ -1,7 +1,7 @@
 import change from './change';
 import enums from '../util/enums';
 
-const { STYLE_KEY, STYLE_KEY: {
+const { STYLE_KEY: {
   TRANSLATE_X: TX,
   TRANSLATE_Y: TY,
   TRANSLATE_Z: TZ,
@@ -21,7 +21,6 @@ const { STYLE_KEY, STYLE_KEY: {
   SKEW_Y,
   TRANSFORM: TF,
   TRANSFORM_ORIGIN,
-  TRANSLATE_PATH,
 } } = enums;
 
 const { isIgnore, isRepaint } = change;

@@ -25842,7 +25842,7 @@
    */
 
 
-  function checkNext(root, top, node, addDom, removeDom) {
+  function checkNext(root, top, node, hasZ, addDom, removeDom) {
     var cps = top.computedStyle,
         crs = top.currentStyle;
     var position = cps[POSITION$2],
@@ -25858,8 +25858,21 @@
     }
 
     var parent = top.__domParent,
-        oldH = top.offsetHeight; // 后续调整offsetY需要考虑mergeMargin各种情况（包含上下2个方向），之前合并前和合并后的差值都需记录
+        oldH = top.offsetHeight;
+
+    if (removeDom && top === node && node.computedStyle[POSITION$2] === 'absolute') {
+      top.clearCache(true);
+
+      if (root.renderMode === mode.SVG) {
+        parent.children.forEach(function (item) {
+          item.__refreshLevel |= REPAINT$2;
+        });
+      }
+
+      return;
+    } // 后续调整offsetY需要考虑mergeMargin各种情况（包含上下2个方向），之前合并前和合并后的差值都需记录
     // 先记录没更新前的，如果是空节点则m1作为整个，忽视m2
+
 
     var t1 = 0,
         d1 = 0,
@@ -25953,7 +25966,7 @@
 
         top.__modifyStruct();
 
-        if (root.renderMode === mode.SVG) {
+        if (root.renderMode === mode.SVG && hasZ && (isNowAbs || position === 'relative')) {
           parent.children.forEach(function (item) {
             item.__refreshLevel |= REPAINT$2;
           });
@@ -25966,18 +25979,25 @@
       if (!addDom && !removeDom) {
         parent.__zIndexChildren = null;
 
-        parent.__modifyStruct();
-
-        if (root.renderMode === mode.SVG) {
-          parent.children.forEach(function (item) {
-            item.__refreshLevel |= REPAINT$2;
-          });
-        } // 之前也是abs，可以跳出不会影响其它
+        parent.__modifyStruct(); // 之前也是abs，可以跳出不会影响其它
 
 
         if (isLastAbs) {
           top.clearCache(true);
+
+          if (hasZ) {
+            parent.children.forEach(function (item) {
+              item.__refreshLevel |= REPAINT$2;
+            });
+          }
+
           return;
+        }
+
+        if (root.renderMode === mode.SVG && hasZ && position === 'relative') {
+          parent.children.forEach(function (item) {
+            item.__refreshLevel |= REPAINT$2;
+          });
         }
       }
     } // 现在是普通流，不管之前是啥直接布局
@@ -25994,10 +26014,12 @@
 
         top.__modifyStruct();
 
-        if (root.renderMode === mode.SVG) {
-          parent.children.forEach(function (item) {
-            item.__refreshLevel |= REPAINT$2;
-          });
+        if (isLastAbs) {
+          if (root.renderMode === mode.SVG && hasZ) {
+            parent.children.forEach(function (item) {
+              item.__refreshLevel |= REPAINT$2;
+            });
+          }
         }
       } // 防止Geom
 
@@ -26009,11 +26031,6 @@
 
 
     if (addDom && top === node && node.currentStyle[POSITION$2] === 'absolute') {
-      top.clearCache(true);
-      return;
-    }
-
-    if (removeDom && top === node && node.computedStyle[POSITION$2] === 'absolute') {
       top.clearCache(true);
       return;
     } // 向上查找最近的relative的parent，获取ox/oy并赋值，无需继续向上递归，因为parent已经递归包含了
@@ -37115,7 +37132,7 @@
             __domParent = __domParent.__domParent;
           }
         } else {
-          var top = reflow.checkTop(this, node, addDom, removeDom);
+          var top = reflow.checkTop(this, node, hasZ, addDom, removeDom);
 
           if (top === this) {
             this.__reLayout();

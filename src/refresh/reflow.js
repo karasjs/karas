@@ -225,7 +225,7 @@ function checkTop(root, node, addDom, removeDom) {
  * checkReflow之后，节点重新布局对自己next的节点的offset影响，计算偏移量让所有next兄弟offsetY，
  * 以及递归向上父级resize和父级所有next兄弟offsetY
  */
-function checkNext(root, top, node, addDom, removeDom) {
+function checkNext(root, top, node, hasZ, addDom, removeDom) {
   let cps = top.computedStyle, crs = top.currentStyle;
   let position = cps[POSITION], display = cps[DISPLAY];
   let isLastAbs = position === 'absolute';
@@ -238,6 +238,15 @@ function checkNext(root, top, node, addDom, removeDom) {
     return;
   }
   let parent = top.__domParent, oldH = top.offsetHeight;
+  if(removeDom && top === node && node.computedStyle[POSITION] === 'absolute') {
+    top.clearCache(true);
+    if(root.renderMode === mode.SVG) {
+      parent.children.forEach(item => {
+        item.__refreshLevel |= REPAINT;
+      });
+    }
+    return;
+  }
   // 后续调整offsetY需要考虑mergeMargin各种情况（包含上下2个方向），之前合并前和合并后的差值都需记录
   // 先记录没更新前的，如果是空节点则m1作为整个，忽视m2
   let t1 = 0, d1 = 0, t2 = 0, d2 = 0;
@@ -313,7 +322,7 @@ function checkNext(root, top, node, addDom, removeDom) {
     if(!addDom && !removeDom) {
       parent.__zIndexChildren = null;
       top.__modifyStruct();
-      if(root.renderMode === mode.SVG) {
+      if(root.renderMode === mode.SVG && hasZ && (isNowAbs || position === 'relative')) {
         parent.children.forEach(item => {
           item.__refreshLevel |= REPAINT;
         });
@@ -326,15 +335,20 @@ function checkNext(root, top, node, addDom, removeDom) {
     if(!addDom && !removeDom) {
       parent.__zIndexChildren = null;
       parent.__modifyStruct();
-      if(root.renderMode === mode.SVG) {
-        parent.children.forEach(item => {
-          item.__refreshLevel |= REPAINT;
-        });
-      }
       // 之前也是abs，可以跳出不会影响其它
       if(isLastAbs) {
         top.clearCache(true);
+        if(hasZ) {
+          parent.children.forEach(item => {
+            item.__refreshLevel |= REPAINT;
+          });
+        }
         return;
+      }
+      if(root.renderMode === mode.SVG && hasZ && position === 'relative') {
+        parent.children.forEach(item => {
+          item.__refreshLevel |= REPAINT;
+        });
       }
     }
   }
@@ -348,10 +362,12 @@ function checkNext(root, top, node, addDom, removeDom) {
     if(!addDom && !removeDom) {
       top.__zIndexChildren = null;
       top.__modifyStruct();
-      if(root.renderMode === mode.SVG) {
-        parent.children.forEach(item => {
-          item.__refreshLevel |= REPAINT;
-        });
+      if(isLastAbs) {
+        if(root.renderMode === mode.SVG && hasZ) {
+          parent.children.forEach(item => {
+            item.__refreshLevel |= REPAINT;
+          });
+        }
       }
     }
     // 防止Geom
@@ -361,10 +377,6 @@ function checkNext(root, top, node, addDom, removeDom) {
   }
   // add/remove的情况在自身是abs时不影响next
   if(addDom && top === node && node.currentStyle[POSITION] === 'absolute') {
-    top.clearCache(true);
-    return;
-  }
-  if(removeDom && top === node && node.computedStyle[POSITION] === 'absolute') {
     top.clearCache(true);
     return;
   }

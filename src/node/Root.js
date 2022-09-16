@@ -793,7 +793,7 @@ class Root extends Dom {
       }
     }
     else {
-      let top = reflow.checkTop(this, node, addDom, removeDom);
+      let top = reflow.checkTop(this, node, hasZ, addDom, removeDom);
       if(top === this) {
         this.__reLayout();
         if(removeDom) {

@@ -4,6 +4,7 @@ import level from './level';
 import css from '../style/css';
 import Text from '../node/Text';
 import Geom from '../node/geom/Geom';
+import mode from './mode';
 
 const {
   STYLE_KEY: {
@@ -61,7 +62,7 @@ function getMergeMargin(topList, bottomList) {
 
 // 提取出对比节点尺寸是否固定非AUTO
 function isFixedWidthOrHeight(node, k) {
-  let c = node.__currentStyle[k];
+  let c = node.currentStyle[k];
   return c.u !== AUTO;
 }
 // 除了固定尺寸，父级也不能是flex
@@ -70,7 +71,7 @@ function isFixedSize(node, includeParentFlex) {
   if(res && includeParentFlex) {
     let parent = node.__domParent;
     if(parent) {
-      if(parent.__computedStyle[DISPLAY] === 'flex') {
+      if(parent.computedStyle[DISPLAY] === 'flex') {
         return false;
       }
     }
@@ -139,11 +140,14 @@ function checkTop(root, node, addDom, removeDom) {
   if(root === node) {
     return root;
   }
+  if(node instanceof Text) {
+    node = node.__domParent;
+  }
   // add/remove情况abs节点特殊对待不影响其它节点，不能判断display，因为inline会强制block
-  if(addDom && node.__currentStyle[POSITION] === 'absolute') {
+  if(addDom && node.currentStyle[POSITION] === 'absolute') {
     return node;
   }
-  if(removeDom && node.__computedStyle[POSITION] === 'absolute') {
+  if(removeDom && node.computedStyle[POSITION] === 'absolute') {
     return node;
   }
   let target = node;
@@ -169,13 +173,13 @@ function checkTop(root, node, addDom, removeDom) {
     }
   }
   // 如果一直是absolute，则不影响其它节点
-  if(target.__currentStyle[POSITION] === 'absolute' && target.__computedStyle[POSITION] === 'absolute') {
+  if(target.currentStyle[POSITION] === 'absolute' && target.computedStyle[POSITION] === 'absolute') {
     return target;
   }
   // inline节点变为最近的父非inline，自身可能会display变化前后状态都要看，
   // absolute不变会影响但被上面if排除，而absolute发生变化则也需要进入这里
-  if(['inline', 'inlineBlock'].indexOf(target.__currentStyle[DISPLAY]) > -1
-      || ['inline', 'inlineBlock'].indexOf(target.__computedStyle[DISPLAY]) > -1) {
+  if(['inline', 'inlineBlock'].indexOf(target.currentStyle[DISPLAY]) > -1
+      || ['inline', 'inlineBlock'].indexOf(target.computedStyle[DISPLAY]) > -1) {
     do {
       target = target.__domParent;
       if(target === root) {
@@ -183,8 +187,8 @@ function checkTop(root, node, addDom, removeDom) {
       }
     }
     // 父节点不会display变化，因为同步检测，只看computedStyle即可
-    while(['inline', 'inlineBlock'].indexOf(target.__computedStyle[DISPLAY]) > -1
-      && target.__computedStyle[POSITION] !== 'absolute');
+    while(['inline', 'inlineBlock'].indexOf(target.computedStyle[DISPLAY]) > -1
+      && target.computedStyle[POSITION] !== 'absolute');
     // target已不是inline，父固定宽高跳出直接父进行LAYOUT即可，不影响上下文，但不能是flex孩子，此时固定尺寸无用
     // root也会进这里，因为root强制固定size
     if(isFixedSize(target, true)) {
@@ -199,11 +203,11 @@ function checkTop(root, node, addDom, removeDom) {
     if(parent === root) {
       break;
     }
-    if(parent.__computedStyle[DISPLAY] === 'flex') {
+    if(parent.computedStyle[DISPLAY] === 'flex') {
       top = parent;
     }
     // 遇到固定size提前跳出，以及absolute也是
-    if(parent.__computedStyle[POSITION] === 'absolute' || isFixedSize(parent, true)) {
+    if(parent.computedStyle[POSITION] === 'absolute' || isFixedSize(parent, true)) {
       top = parent;
       break;
     }
@@ -222,13 +226,13 @@ function checkTop(root, node, addDom, removeDom) {
  * 以及递归向上父级resize和父级所有next兄弟offsetY
  */
 function checkNext(root, top, node, addDom, removeDom) {
-  let cps = top.__computedStyle, crs = top.__currentStyle;
+  let cps = top.computedStyle, crs = top.currentStyle;
   let position = cps[POSITION], display = cps[DISPLAY];
   let isLastAbs = position === 'absolute';
   let isNowAbs = crs[POSITION] === 'absolute';
   let isLastNone = display === 'none';
   let isNowNone = crs[DISPLAY] === 'none';
-  let isLast0 = top.offsetHeight === 0;debugger;
+  let isLast0 = top.offsetHeight === 0;
   // none不可见布局无效可以无视
   if(isLastNone && isNowNone) {
     return;
@@ -309,6 +313,11 @@ function checkNext(root, top, node, addDom, removeDom) {
     if(!addDom && !removeDom) {
       parent.__zIndexChildren = null;
       top.__modifyStruct();
+      if(root.renderMode === mode.SVG) {
+        parent.children.forEach(item => {
+          item.__refreshLevel |= REPAINT;
+        });
+      }
     }
   }
   // 现在是定位流，还要看之前是什么
@@ -317,6 +326,11 @@ function checkNext(root, top, node, addDom, removeDom) {
     if(!addDom && !removeDom) {
       parent.__zIndexChildren = null;
       parent.__modifyStruct();
+      if(root.renderMode === mode.SVG) {
+        parent.children.forEach(item => {
+          item.__refreshLevel |= REPAINT;
+        });
+      }
       // 之前也是abs，可以跳出不会影响其它
       if(isLastAbs) {
         top.clearCache(true);
@@ -334,19 +348,23 @@ function checkNext(root, top, node, addDom, removeDom) {
     if(!addDom && !removeDom) {
       top.__zIndexChildren = null;
       top.__modifyStruct();
+      if(root.renderMode === mode.SVG) {
+        parent.children.forEach(item => {
+          item.__refreshLevel |= REPAINT;
+        });
+      }
     }
-    y += top.outerHeight;
     // 防止Geom
     if(!(top instanceof Geom)) {
       top.__layoutAbs(container, ld, null);
     }
   }
   // add/remove的情况在自身是abs时不影响next
-  if(addDom && top === node && node.__currentStyle[POSITION] === 'absolute') {
+  if(addDom && top === node && node.currentStyle[POSITION] === 'absolute') {
     top.clearCache(true);
     return;
   }
-  if(removeDom && top === node && node.__computedStyle[POSITION] === 'absolute') {
+  if(removeDom && top === node && node.computedStyle[POSITION] === 'absolute') {
     top.clearCache(true);
     return;
   }
@@ -407,7 +425,12 @@ function checkNext(root, top, node, addDom, removeDom) {
       temp = temp.__host;
       temp.__destroy();
     }
-    nowH = 0;
+    if(top === node) {
+      nowH = 0;
+    }
+    else {
+      nowH = top.offsetHeight;
+    }
   }
   // 查看mergeMargin对top造成的偏移，和原来偏移对比
   if(!removeDom && d3 - d1) {
@@ -415,7 +438,7 @@ function checkNext(root, top, node, addDom, removeDom) {
   }
   // 差值计算注意考虑margin合并前的值，和合并后的差值，height使用offsetHeight不考虑margin
   let diff = t3 + d3 + t4 + d4 - t1 - d1 - t2 - d2 + nowH - oldH;
-  // console.log(t3, d3, t4, d4, t1, d1, t2, d2, top.offsetHeight, oldH, diff);
+  // console.log(t3, d3, t4, d4, t1, d1, t2, d2, nowH, oldH, diff);
   if(!diff) {
     parent.clearCache(true);
     return;

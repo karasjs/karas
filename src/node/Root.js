@@ -618,9 +618,9 @@ class Root extends Dom {
       removeDom,
     } = o;
     let {
-      __computedStyle,
-      __cacheStyle,
-      __cacheProps,
+      computedStyle,
+      cacheStyle,
+      cacheProps,
       __isMask,
       __domParent,
     } = node;
@@ -631,14 +631,14 @@ class Root extends Dom {
         let k = keys[i];
         if(node instanceof Geom && isGeom(node.tagName, k)) {
           lv |= REPAINT;
-          __cacheProps[k] = undefined;
+          cacheProps[k] = undefined;
         }
         else {
           // repaint置空，如果reflow会重新生成空的
-          __cacheStyle[k] = undefined;
+          cacheStyle[k] = undefined;
           // TRBL变化只对relative/absolute起作用，其它忽视
           if([TOP, RIGHT, BOTTOM, LEFT].indexOf(k) > -1
-            && ['relative', 'absolute'].indexOf(__computedStyle[POSITION]) === -1) {
+            && ['relative', 'absolute'].indexOf(computedStyle[POSITION]) === -1) {
             continue;
           }
           // 细化等级
@@ -647,7 +647,7 @@ class Root extends Dom {
             hasDisplay = true;
           }
           else if(k === Z_INDEX) {
-            hasZ = node !== this && ['relative', 'absolute'].indexOf(__computedStyle[POSITION]) > -1;
+            hasZ = node !== this && ['relative', 'absolute'].indexOf(computedStyle[POSITION]) > -1;
           }
           else if(k === VISIBILITY) {
             hasVisibility = true;
@@ -669,7 +669,7 @@ class Root extends Dom {
     }
     // 没有变化，add/remove强制focus
     // 本身节点为none，变更无效，此时没有display变化，add/remove在操作时已经判断不会进入
-    if(lv === NONE || __computedStyle[DISPLAY] === 'none' && !hasDisplay) {
+    if(lv === NONE || computedStyle[DISPLAY] === 'none' && !hasDisplay) {
       if(isFunction(o.cb)) {
         o.cb();
       }
@@ -677,7 +677,7 @@ class Root extends Dom {
     }
     // transform变化清空重算
     if(contain(lv, TF)) {
-      __cacheStyle[MATRIX] = __computedStyle[TRANSFORM] = undefined;
+      cacheStyle[MATRIX] = computedStyle[TRANSFORM] = undefined;
     }
     // 清除parent的zIndexChildren缓存，强制所有孩子重新渲染
     if(hasZ && __domParent) {
@@ -703,7 +703,7 @@ class Root extends Dom {
         if(node instanceof Text) {
           continue;
         }
-        let currentStyle = node.__currentStyle, cacheStyle = node.__cacheStyle;
+        let currentStyle = node.currentStyle, cacheStyle = node.cacheStyle;
         let need;
         if(hasVisibility && currentStyle[VISIBILITY].u === INHERIT) {
           need = true;

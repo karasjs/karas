@@ -814,7 +814,7 @@ class Text extends Node {
       removeDom: true,
       cb,
     };
-    root.__addUpdate(parent, res);
+    root.__addUpdate(this, res);
   }
 
   get content() {

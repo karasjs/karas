@@ -15783,7 +15783,7 @@
           cb: cb
         };
 
-        root.__addUpdate(parent, res);
+        root.__addUpdate(this, res);
       }
     }, {
       key: "content",
@@ -25649,7 +25649,7 @@
 
 
   function isFixedWidthOrHeight(node, k) {
-    var c = node.__currentStyle[k];
+    var c = node.currentStyle[k];
     return c.u !== AUTO$2;
   } // 除了固定尺寸，父级也不能是flex
 
@@ -25661,7 +25661,7 @@
       var parent = node.__domParent;
 
       if (parent) {
-        if (parent.__computedStyle[DISPLAY$4] === 'flex') {
+        if (parent.computedStyle[DISPLAY$4] === 'flex') {
           return false;
         }
       }
@@ -25734,14 +25734,18 @@
   function checkTop(root, node, addDom, removeDom) {
     if (root === node) {
       return root;
+    }
+
+    if (node instanceof Text) {
+      node = node.__domParent;
     } // add/remove情况abs节点特殊对待不影响其它节点，不能判断display，因为inline会强制block
 
 
-    if (addDom && node.__currentStyle[POSITION$2] === 'absolute') {
+    if (addDom && node.currentStyle[POSITION$2] === 'absolute') {
       return node;
     }
 
-    if (removeDom && node.__computedStyle[POSITION$2] === 'absolute') {
+    if (removeDom && node.computedStyle[POSITION$2] === 'absolute') {
       return node;
     }
 
@@ -25749,8 +25753,9 @@
 
     if (addDom || removeDom) {
       var isSiblingBlock = true;
-      var __prev = node.__prev,
-          __next = node.__next;
+      var _node = node,
+          __prev = _node.__prev,
+          __next = _node.__next;
 
       if (__prev && (__prev instanceof Text || ['inline', 'inlineBlock'].indexOf(__prev.computedStyle[DISPLAY$4]) > -1)) {
         isSiblingBlock = false;
@@ -25768,13 +25773,13 @@
     } // 如果一直是absolute，则不影响其它节点
 
 
-    if (target.__currentStyle[POSITION$2] === 'absolute' && target.__computedStyle[POSITION$2] === 'absolute') {
+    if (target.currentStyle[POSITION$2] === 'absolute' && target.computedStyle[POSITION$2] === 'absolute') {
       return target;
     } // inline节点变为最近的父非inline，自身可能会display变化前后状态都要看，
     // absolute不变会影响但被上面if排除，而absolute发生变化则也需要进入这里
 
 
-    if (['inline', 'inlineBlock'].indexOf(target.__currentStyle[DISPLAY$4]) > -1 || ['inline', 'inlineBlock'].indexOf(target.__computedStyle[DISPLAY$4]) > -1) {
+    if (['inline', 'inlineBlock'].indexOf(target.currentStyle[DISPLAY$4]) > -1 || ['inline', 'inlineBlock'].indexOf(target.computedStyle[DISPLAY$4]) > -1) {
       do {
         target = target.__domParent;
 
@@ -25782,7 +25787,7 @@
           return root;
         }
       } // 父节点不会display变化，因为同步检测，只看computedStyle即可
-      while (['inline', 'inlineBlock'].indexOf(target.__computedStyle[DISPLAY$4]) > -1 && target.__computedStyle[POSITION$2] !== 'absolute'); // target已不是inline，父固定宽高跳出直接父进行LAYOUT即可，不影响上下文，但不能是flex孩子，此时固定尺寸无用
+      while (['inline', 'inlineBlock'].indexOf(target.computedStyle[DISPLAY$4]) > -1 && target.computedStyle[POSITION$2] !== 'absolute'); // target已不是inline，父固定宽高跳出直接父进行LAYOUT即可，不影响上下文，但不能是flex孩子，此时固定尺寸无用
       // root也会进这里，因为root强制固定size
 
 
@@ -25801,12 +25806,12 @@
         break;
       }
 
-      if (parent.__computedStyle[DISPLAY$4] === 'flex') {
+      if (parent.computedStyle[DISPLAY$4] === 'flex') {
         top = parent;
       } // 遇到固定size提前跳出，以及absolute也是
 
 
-      if (parent.__computedStyle[POSITION$2] === 'absolute' || isFixedSize(parent, true)) {
+      if (parent.computedStyle[POSITION$2] === 'absolute' || isFixedSize(parent, true)) {
         top = parent;
         break;
       }
@@ -25828,16 +25833,15 @@
 
 
   function checkNext(root, top, node, addDom, removeDom) {
-    var cps = top.__computedStyle,
-        crs = top.__currentStyle;
+    var cps = top.computedStyle,
+        crs = top.currentStyle;
     var position = cps[POSITION$2],
         display = cps[DISPLAY$4];
     var isLastAbs = position === 'absolute';
     var isNowAbs = crs[POSITION$2] === 'absolute';
     var isLastNone = display === 'none';
     var isNowNone = crs[DISPLAY$4] === 'none';
-    var isLast0 = top.offsetHeight === 0;
-    debugger; // none不可见布局无效可以无视
+    var isLast0 = top.offsetHeight === 0; // none不可见布局无效可以无视
 
     if (isLastNone && isNowNone) {
       return;
@@ -25938,6 +25942,12 @@
         parent.__zIndexChildren = null;
 
         top.__modifyStruct();
+
+        if (root.renderMode === mode.SVG) {
+          parent.children.forEach(function (item) {
+            item.__refreshLevel |= REPAINT$2;
+          });
+        }
       }
     } // 现在是定位流，还要看之前是什么
     else if (isNowAbs) {
@@ -25946,7 +25956,13 @@
       if (!addDom && !removeDom) {
         parent.__zIndexChildren = null;
 
-        parent.__modifyStruct(); // 之前也是abs，可以跳出不会影响其它
+        parent.__modifyStruct();
+
+        if (root.renderMode === mode.SVG) {
+          parent.children.forEach(function (item) {
+            item.__refreshLevel |= REPAINT$2;
+          });
+        } // 之前也是abs，可以跳出不会影响其它
 
 
         if (isLastAbs) {
@@ -25967,9 +25983,14 @@
         top.__zIndexChildren = null;
 
         top.__modifyStruct();
-      }
 
-      y += top.outerHeight; // 防止Geom
+        if (root.renderMode === mode.SVG) {
+          parent.children.forEach(function (item) {
+            item.__refreshLevel |= REPAINT$2;
+          });
+        }
+      } // 防止Geom
+
 
       if (!(top instanceof Geom)) {
         top.__layoutAbs(container, ld, null);
@@ -25977,12 +25998,12 @@
     } // add/remove的情况在自身是abs时不影响next
 
 
-    if (addDom && top === node && node.__currentStyle[POSITION$2] === 'absolute') {
+    if (addDom && top === node && node.currentStyle[POSITION$2] === 'absolute') {
       top.clearCache(true);
       return;
     }
 
-    if (removeDom && top === node && node.__computedStyle[POSITION$2] === 'absolute') {
+    if (removeDom && top === node && node.computedStyle[POSITION$2] === 'absolute') {
       top.clearCache(true);
       return;
     } // 向上查找最近的relative的parent，获取ox/oy并赋值，无需继续向上递归，因为parent已经递归包含了
@@ -26064,7 +26085,11 @@
         temp.__destroy();
       }
 
-      nowH = 0;
+      if (top === node) {
+        nowH = 0;
+      } else {
+        nowH = top.offsetHeight;
+      }
     } // 查看mergeMargin对top造成的偏移，和原来偏移对比
 
 
@@ -26073,7 +26098,7 @@
     } // 差值计算注意考虑margin合并前的值，和合并后的差值，height使用offsetHeight不考虑margin
 
 
-    var diff = t3 + d3 + t4 + d4 - t1 - d1 - t2 - d2 + nowH - oldH; // console.log(t3, d3, t4, d4, t1, d1, t2, d2, top.offsetHeight, oldH, diff);
+    var diff = t3 + d3 + t4 + d4 - t1 - d1 - t2 - d2 + nowH - oldH; // console.log(t3, d3, t4, d4, t1, d1, t2, d2, nowH, oldH, diff);
 
     if (!diff) {
       parent.clearCache(true);
@@ -36888,9 +36913,9 @@
             addDom = o.addDom,
             removeDom = o.removeDom;
         var _node = node,
-            __computedStyle = _node.__computedStyle,
-            __cacheStyle = _node.__cacheStyle,
-            __cacheProps = _node.__cacheProps,
+            computedStyle = _node.computedStyle,
+            cacheStyle = _node.cacheStyle,
+            cacheProps = _node.cacheProps,
             __isMask = _node.__isMask,
             __domParent = _node.__domParent;
         var hasZ, hasVisibility, hasColor, hasDisplay, hasTsColor, hasTsWidth, hasTsOver;
@@ -36902,12 +36927,12 @@
 
             if (node instanceof Geom && isGeom(node.tagName, k)) {
               lv |= REPAINT;
-              __cacheProps[k] = undefined;
+              cacheProps[k] = undefined;
             } else {
               // repaint置空，如果reflow会重新生成空的
-              __cacheStyle[k] = undefined; // TRBL变化只对relative/absolute起作用，其它忽视
+              cacheStyle[k] = undefined; // TRBL变化只对relative/absolute起作用，其它忽视
 
-              if ([TOP, RIGHT, BOTTOM, LEFT].indexOf(k) > -1 && ['relative', 'absolute'].indexOf(__computedStyle[POSITION]) === -1) {
+              if ([TOP, RIGHT, BOTTOM, LEFT].indexOf(k) > -1 && ['relative', 'absolute'].indexOf(computedStyle[POSITION]) === -1) {
                 continue;
               } // 细化等级
 
@@ -36917,7 +36942,7 @@
               if (k === DISPLAY) {
                 hasDisplay = true;
               } else if (k === Z_INDEX) {
-                hasZ = node !== this && ['relative', 'absolute'].indexOf(__computedStyle[POSITION]) > -1;
+                hasZ = node !== this && ['relative', 'absolute'].indexOf(computedStyle[POSITION]) > -1;
               } else if (k === VISIBILITY) {
                 hasVisibility = true;
               } else if (k === COLOR) {
@@ -36935,7 +36960,7 @@
         // 本身节点为none，变更无效，此时没有display变化，add/remove在操作时已经判断不会进入
 
 
-        if (lv === NONE || __computedStyle[DISPLAY] === 'none' && !hasDisplay) {
+        if (lv === NONE || computedStyle[DISPLAY] === 'none' && !hasDisplay) {
           if (isFunction$1(o.cb)) {
             o.cb();
           }
@@ -36945,7 +36970,7 @@
 
 
         if (contain(lv, TF)) {
-          __cacheStyle[MATRIX] = __computedStyle[TRANSFORM] = undefined;
+          cacheStyle[MATRIX] = computedStyle[TRANSFORM] = undefined;
         } // 清除parent的zIndexChildren缓存，强制所有孩子重新渲染
 
 
@@ -36972,25 +36997,25 @@
               continue;
             }
 
-            var currentStyle = _node2.__currentStyle,
-                cacheStyle = _node2.__cacheStyle;
+            var currentStyle = _node2.currentStyle,
+                _cacheStyle = _node2.cacheStyle;
             var need = void 0;
 
             if (hasVisibility && currentStyle[VISIBILITY].u === INHERIT) {
               need = true;
-              cacheStyle[VISIBILITY] = undefined;
+              _cacheStyle[VISIBILITY] = undefined;
             } else if (hasColor && currentStyle[COLOR].u === INHERIT) {
               need = true;
-              cacheStyle[COLOR] = undefined;
+              _cacheStyle[COLOR] = undefined;
             } else if (hasTsColor && currentStyle[TEXT_STROKE_COLOR].u === INHERIT) {
               need = true;
-              cacheStyle[TEXT_STROKE_COLOR] = undefined;
+              _cacheStyle[TEXT_STROKE_COLOR] = undefined;
             } else if (hasTsWidth && currentStyle[TEXT_STROKE_WIDTH].u === INHERIT) {
               need = true;
-              cacheStyle[TEXT_STROKE_WIDTH] = undefined;
+              _cacheStyle[TEXT_STROKE_WIDTH] = undefined;
             } else if (hasTsOver && currentStyle[TEXT_STROKE_OVER].u === INHERIT) {
               need = true;
-              cacheStyle[TEXT_STROKE_OVER] = undefined;
+              _cacheStyle[TEXT_STROKE_OVER] = undefined;
             }
 
             if (need) {

@@ -17671,7 +17671,7 @@
             } else if (k === TRANSLATE_Y$1 && style.hasOwnProperty(TRANSLATE_PATH)) {
               style[k] = clone$1(style[TRANSLATE_PATH][1]);
             } else {
-              style[k] = clone$1(target.__currentStyle[k]);
+              style[k] = cloneStyle(target.__currentStyle[k], [k])[k];
             }
           }
         }
@@ -21076,11 +21076,11 @@
         }
 
         this.__hasComputeReflow = true;
-        var currentStyle = this.currentStyle,
-            computedStyle = this.computedStyle,
-            parent = this.domParent;
+        var currentStyle = this.__currentStyle,
+            computedStyle = this.__computedStyle,
+            parent = this.__domParent;
         var isRoot = !parent;
-        var parentComputedStyle = parent && parent.computedStyle; // 继承的特殊处理，根节点用默认值
+        var parentComputedStyle = parent && parent.__computedStyle; // 继承的特殊处理，根节点用默认值
 
         [FONT_SIZE$2, FONT_FAMILY$1, FONT_WEIGHT$1, WRITING_MODE$2].forEach(function (k) {
           var v = currentStyle[k]; // ff特殊处理
@@ -21209,6 +21209,17 @@
         } else {
           computedStyle[WHITE_SPACE$1] = whiteSpace.v;
         }
+
+        var width = currentStyle[WIDTH$5],
+            height = currentStyle[HEIGHT$5]; // 布局前固定尺寸的线设置好，子元素percent尺寸要用到
+
+        if (width.u !== AUTO$4) {
+          this.__width = computedStyle[WIDTH$5] = this.__calSize(width, isRoot ? this.__width : parent.__width, true);
+        }
+
+        if (height.u !== AUTO$4) {
+          this.__height = computedStyle[HEIGHT$5] = this.__calSize(height, isRoot ? this.__height : parent.__height, true);
+        }
       }
     }, {
       key: "__emitFontRegister",
@@ -21216,7 +21227,7 @@
         var node = this,
             fontRegister = node.__fontRegister;
 
-        if (node.isDestroyed) {
+        if (node.__isDestroyed) {
           return;
         }
 
@@ -21313,9 +21324,9 @@
       value: function __layout(data, isAbs, isColumn, isRow) {
         this.__computeReflow();
 
-        var isDestroyed = this.isDestroyed,
-            currentStyle = this.currentStyle,
-            computedStyle = this.computedStyle,
+        var __isDestroyed = this.__isDestroyed,
+            __currentStyle = this.__currentStyle,
+            __computedStyle = this.__computedStyle,
             __ellipsis = this.__ellipsis; // 虚拟省略号每次清除
 
         if (__ellipsis) {
@@ -21324,8 +21335,8 @@
 
         this.__parentLineBox = null;
         this.__isIbFull = this.__isUprightIbFull = false;
-        var display = computedStyle[DISPLAY$6],
-            position = computedStyle[POSITION$3];
+        var display = __computedStyle[DISPLAY$6],
+            position = __computedStyle[POSITION$3];
         this.__layoutData = {
           x: data.x,
           y: data.y,
@@ -21364,8 +21375,7 @@
 
         this.__ox = this.__oy = 0;
 
-        if (isDestroyed || display === 'none') {
-          this.__width = this.__height = this.__clientWidth = this.__clientHeight = this.__offsetWidth = this.__offsetHeight = this.__outerWidth = this.__outerHeight = computedStyle[WIDTH$5] = computedStyle[HEIGHT$5] = 0;
+        if (__isDestroyed || display === 'none') {
           this.__x = data.x;
           this.__y = data.y;
 
@@ -21377,7 +21387,7 @@
 
 
         if (position !== 'absolute') {
-          this.__mp(currentStyle, computedStyle, data.w);
+          this.__mp(__currentStyle, __computedStyle, data.w);
         } // 只有inline会继承计算行数，其它都是原样返回
 
 
@@ -21402,72 +21412,72 @@
 
         if (!isAbs && !isColumn && !isRow) {
           if (position === 'relative') {
-            var top = currentStyle[TOP$3],
-                right = currentStyle[RIGHT$2],
-                bottom = currentStyle[BOTTOM$3],
-                left = currentStyle[LEFT$2];
+            var top = __currentStyle[TOP$3],
+                right = __currentStyle[RIGHT$2],
+                bottom = __currentStyle[BOTTOM$3],
+                left = __currentStyle[LEFT$2];
             var parent = this.parent;
 
             if (top.u !== AUTO$4) {
-              var n = calRelative(currentStyle, TOP$3, top, parent);
+              var n = calRelative(__currentStyle, TOP$3, top, parent);
 
               this.__offsetY(n);
 
-              computedStyle[TOP$3] = n;
-              computedStyle[BOTTOM$3] = 'auto';
+              __computedStyle[TOP$3] = n;
+              __computedStyle[BOTTOM$3] = 'auto';
             } else if (bottom.u !== AUTO$4) {
-              var _n = calRelative(currentStyle, BOTTOM$3, bottom, parent);
+              var _n = calRelative(__currentStyle, BOTTOM$3, bottom, parent);
 
               this.__offsetY(-_n);
 
-              computedStyle[BOTTOM$3] = _n;
-              computedStyle[TOP$3] = 'auto';
+              __computedStyle[BOTTOM$3] = _n;
+              __computedStyle[TOP$3] = 'auto';
             } else {
-              computedStyle[TOP$3] = computedStyle[BOTTOM$3] = 'auto';
+              __computedStyle[TOP$3] = __computedStyle[BOTTOM$3] = 'auto';
             }
 
             if (left.u !== AUTO$4) {
-              var _n2 = calRelative(currentStyle, LEFT$2, left, parent, true);
+              var _n2 = calRelative(__currentStyle, LEFT$2, left, parent, true);
 
               this.__offsetX(_n2);
 
-              computedStyle[LEFT$2] = _n2;
-              computedStyle[RIGHT$2] = 'auto';
+              __computedStyle[LEFT$2] = _n2;
+              __computedStyle[RIGHT$2] = 'auto';
             } else if (right.u !== AUTO$4) {
-              var _n3 = calRelative(currentStyle, RIGHT$2, right, parent, true);
+              var _n3 = calRelative(__currentStyle, RIGHT$2, right, parent, true);
 
               this.__offsetX(-_n3);
 
-              computedStyle[RIGHT$2] = _n3;
-              computedStyle[LEFT$2] = 'auto';
+              __computedStyle[RIGHT$2] = _n3;
+              __computedStyle[LEFT$2] = 'auto';
             } else {
-              computedStyle[LEFT$2] = computedStyle[RIGHT$2] = 'auto';
+              __computedStyle[LEFT$2] = __computedStyle[RIGHT$2] = 'auto';
             }
           } else if (position !== 'absolute') {
-            computedStyle[TOP$3] = computedStyle[BOTTOM$3] = computedStyle[LEFT$2] = computedStyle[RIGHT$2] = 'auto';
+            __computedStyle[TOP$3] = __computedStyle[BOTTOM$3] = __computedStyle[LEFT$2] = __computedStyle[RIGHT$2] = 'auto';
           } // 计算结果存入computedStyle和6个坐标，inline在其inlineSize特殊处理
 
 
-          var x = this.__sx = this.x + this.ox;
-          var y = this.__sy = this.y + this.oy;
+          var x = this.__sx = this.__x + this.__ox;
+          var y = this.__sy = this.__y + this.__oy;
 
           if (!this.__isInline) {
-            x = this.__sx1 = x + computedStyle[MARGIN_LEFT$5];
-            x = this.__sx2 = x + computedStyle[BORDER_LEFT_WIDTH$5];
-            x = this.__sx3 = x + computedStyle[PADDING_LEFT$5];
-            x = this.__sx4 = x + this.width;
-            x = this.__sx5 = x + computedStyle[PADDING_RIGHT$4];
-            this.__sx6 = x + computedStyle[BORDER_RIGHT_WIDTH$4];
-            y = this.__sy1 = y + computedStyle[MARGIN_TOP$3];
-            y = this.__sy2 = y + computedStyle[BORDER_TOP_WIDTH$3];
-            y = this.__sy3 = y + computedStyle[PADDING_TOP$3];
-            y = this.__sy4 = y + this.height;
-            y = this.__sy5 = y + computedStyle[PADDING_BOTTOM$2];
-            this.__sy6 = y + computedStyle[BORDER_BOTTOM_WIDTH$2];
+            x = this.__sx1 = x + __computedStyle[MARGIN_LEFT$5];
+            x = this.__sx2 = x + __computedStyle[BORDER_LEFT_WIDTH$5];
+            x = this.__sx3 = x + __computedStyle[PADDING_LEFT$5];
+            x = this.__sx4 = x + this.__width;
+            x = this.__sx5 = x + __computedStyle[PADDING_RIGHT$4];
+            this.__sx6 = x + __computedStyle[BORDER_RIGHT_WIDTH$4];
+            y = this.__sy1 = y + __computedStyle[MARGIN_TOP$3];
+            y = this.__sy2 = y + __computedStyle[BORDER_TOP_WIDTH$3];
+            y = this.__sy3 = y + __computedStyle[PADDING_TOP$3];
+            y = this.__sy4 = y + this.__height;
+            y = this.__sy5 = y + __computedStyle[PADDING_BOTTOM$2];
+            this.__sy6 = y + __computedStyle[BORDER_BOTTOM_WIDTH$2];
           }
 
-          computedStyle[WIDTH$5] = this.width;
-          computedStyle[HEIGHT$5] = this.height; // abs为parse的根节点时特殊自己执行，前提是真布局
+          __computedStyle[WIDTH$5] = this.__width;
+          __computedStyle[HEIGHT$5] = this.__height; // abs为parse的根节点时特殊自己执行，前提是真布局
 
           if (position !== 'absolute') {
             this.__execAr();
@@ -21511,7 +21521,7 @@
 
         var __computedStyle = this.__computedStyle;
         __computedStyle[DISPLAY$6] = 'none';
-        __computedStyle[MARGIN_TOP$3] = __computedStyle[MARGIN_RIGHT$4] = __computedStyle[MARGIN_BOTTOM$3] = __computedStyle[MARGIN_LEFT$5] = __computedStyle[BORDER_TOP_WIDTH$3] = __computedStyle[BORDER_RIGHT_WIDTH$4] = __computedStyle[BORDER_BOTTOM_WIDTH$2] = __computedStyle[BORDER_LEFT_WIDTH$5] = __computedStyle[PADDING_TOP$3] = __computedStyle[PADDING_RIGHT$4] = __computedStyle[PADDING_BOTTOM$2] = __computedStyle[PADDING_LEFT$5] = __computedStyle[WIDTH$5] = __computedStyle[HEIGHT$5] = this.__width = this.__height = 0;
+        __computedStyle[MARGIN_TOP$3] = __computedStyle[MARGIN_RIGHT$4] = __computedStyle[MARGIN_BOTTOM$3] = __computedStyle[MARGIN_LEFT$5] = __computedStyle[BORDER_TOP_WIDTH$3] = __computedStyle[BORDER_RIGHT_WIDTH$4] = __computedStyle[BORDER_BOTTOM_WIDTH$2] = __computedStyle[BORDER_LEFT_WIDTH$5] = __computedStyle[PADDING_TOP$3] = __computedStyle[PADDING_RIGHT$4] = __computedStyle[PADDING_BOTTOM$2] = __computedStyle[PADDING_LEFT$5] = __computedStyle[WIDTH$5] = __computedStyle[HEIGHT$5] = this.__width = this.__height = this.__clientWidth = this.__clientHeight = this.__offsetWidth = this.__offsetHeight = this.__outerWidth = this.__outerHeight = 0;
         this.__hasComputeReflow = false;
       } // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
 
@@ -21581,7 +21591,7 @@
           if (height.u === PERCENT$4) {
             if (p.__currentStyle[HEIGHT$5].u !== AUTO$4) {
               fixedHeight = true;
-              h = this.__calSize(height, p.__clientHeight, true);
+              h = this.__calSize(height, p.height || 0, true);
             }
           } else {
             fixedHeight = true;
@@ -23087,13 +23097,9 @@
 
         _get(_getPrototypeOf(Xom.prototype), "__destroy", this).call(this);
 
-        var root = this.root;
+        this.root;
         this.clearAnimate();
-        this.clearFrameAnimate(); // root在没有初始化到真实dom渲染的情况下没有
-
-        root && root.delRefreshTask(this.__loadBgi.cb);
-        root && root.delRefreshTask(this.__task);
-        this.__task = null;
+        this.clearFrameAnimate();
         this.__root = null;
         this.clearCache();
         var fontRegister = this.__fontRegister;
@@ -23631,13 +23637,7 @@
         }
 
         this.clearCache();
-      } // __releaseWhenEmpty(__cache) {
-      //   if(__cache && __cache.available) {
-      //     __cache.release();
-      //   }
-      //   return true;
-      // }
-
+      }
     }, {
       key: "getComputedStyle",
       value: function getComputedStyle(key) {
@@ -26099,6 +26099,11 @@
       _t3 = getMergeMargin(mtList, mbList);
       t4 = _t3.target;
       d4 = _t3.diff;
+    } // 查看mergeMargin对top造成的偏移，和原来偏移对比
+
+
+    if (!removeDom && d3 - d1) {
+      top.__offsetY(d3 - d1, false, null);
     } // 差值计算注意考虑margin合并前的值，和合并后的差值，height使用offsetHeight不考虑margin
 
 
@@ -26106,11 +26111,6 @@
 
     if (!diff) {
       return;
-    } // 需要额外查看mergeMargin对top造成的偏移
-
-
-    if (!removeDom && t3 - t1) {
-      top.__offsetY(t3 - t1, false, null);
     }
 
     var parentFixed = isFixedSize(parent, false);

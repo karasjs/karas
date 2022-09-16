@@ -299,9 +299,9 @@ class Xom extends Node {
     }
     this.__hasComputeReflow = true;
 
-    let { currentStyle, computedStyle, domParent: parent } = this;
+    let { __currentStyle: currentStyle, __computedStyle: computedStyle, __domParent: parent } = this;
     let isRoot = !parent;
-    let parentComputedStyle = parent && parent.computedStyle;
+    let parentComputedStyle = parent && parent.__computedStyle;
     // 继承的特殊处理，根节点用默认值
     [FONT_SIZE, FONT_FAMILY, FONT_WEIGHT, WRITING_MODE].forEach(k => {
       let v = currentStyle[k];
@@ -453,11 +453,22 @@ class Xom extends Node {
     else {
       computedStyle[WHITE_SPACE] = whiteSpace.v;
     }
+    let {
+      [WIDTH]: width,
+      [HEIGHT]: height,
+    } = currentStyle;
+    // 布局前固定尺寸的线设置好，子元素percent尺寸要用到
+    if(width.u !== AUTO) {
+      this.__width = computedStyle[WIDTH] = this.__calSize(width, isRoot ? this.__width : parent.__width, true);
+    }
+    if(height.u !== AUTO) {
+      this.__height = computedStyle[HEIGHT] = this.__calSize(height, isRoot ? this.__height : parent.__height, true);
+    }
   }
 
   __emitFontRegister(fontFamily) {
     let node = this, fontRegister = node.__fontRegister;
-    if(node.isDestroyed) {
+    if(node.__isDestroyed) {
       return;
     }
     delete fontRegister[fontFamily];
@@ -548,7 +559,7 @@ class Xom extends Node {
   // absolute且无尺寸时，isAbs标明先假布局一次计算尺寸，还有flex列计算时isColumn假布局，flex横计算时writingMode垂直假布局
   __layout(data, isAbs, isColumn, isRow) {
     this.__computeReflow();
-    let { isDestroyed, currentStyle, computedStyle, __ellipsis } = this;
+    let { __isDestroyed, __currentStyle, __computedStyle, __ellipsis } = this;
     // 虚拟省略号每次清除
     if(__ellipsis) {
       this.__ellipsis = null;
@@ -558,7 +569,7 @@ class Xom extends Node {
     let {
       [DISPLAY]: display,
       [POSITION]: position,
-    } = computedStyle;
+    } = __computedStyle;
     this.__layoutData = {
       x: data.x,
       y: data.y,
@@ -592,12 +603,7 @@ class Xom extends Node {
       }
     }
     this.__ox = this.__oy = 0;
-    if(isDestroyed || display === 'none') {
-      this.__width = this.__height
-        = this.__clientWidth = this.__clientHeight
-        = this.__offsetWidth = this.__offsetHeight
-        = this.__outerWidth = this.__outerHeight
-        = computedStyle[WIDTH] = computedStyle[HEIGHT] = 0;
+    if(__isDestroyed || display === 'none') {
       this.__x = data.x;
       this.__y = data.y;
       this.__layoutNone();
@@ -606,7 +612,7 @@ class Xom extends Node {
     }
     // absolute特殊，在自己布局时已计算相对于容器的mbp
     if(position !== 'absolute') {
-      this.__mp(currentStyle, computedStyle, data.w);
+      this.__mp(__currentStyle, __computedStyle, data.w);
     }
     // 只有inline会继承计算行数，其它都是原样返回
     let lineClampCount = data.lineClampCount || 0;
@@ -629,61 +635,61 @@ class Xom extends Node {
     // relative渲染时做偏移，百分比基于父元素，若父元素没有定高则为0
     if(!isAbs && !isColumn && !isRow) {
       if(position === 'relative') {
-        let {[TOP]: top, [RIGHT]: right, [BOTTOM]: bottom, [LEFT]: left} = currentStyle;
+        let {[TOP]: top, [RIGHT]: right, [BOTTOM]: bottom, [LEFT]: left} = __currentStyle;
         let {parent} = this;
         if(top.u !== AUTO) {
-          let n = calRelative(currentStyle, TOP, top, parent);
+          let n = calRelative(__currentStyle, TOP, top, parent);
           this.__offsetY(n);
-          computedStyle[TOP] = n;
-          computedStyle[BOTTOM] = 'auto';
+          __computedStyle[TOP] = n;
+          __computedStyle[BOTTOM] = 'auto';
         }
         else if(bottom.u !== AUTO) {
-          let n = calRelative(currentStyle, BOTTOM, bottom, parent);
+          let n = calRelative(__currentStyle, BOTTOM, bottom, parent);
           this.__offsetY(-n);
-          computedStyle[BOTTOM] = n;
-          computedStyle[TOP] = 'auto';
+          __computedStyle[BOTTOM] = n;
+          __computedStyle[TOP] = 'auto';
         }
         else {
-          computedStyle[TOP] = computedStyle[BOTTOM] = 'auto';
+          __computedStyle[TOP] = __computedStyle[BOTTOM] = 'auto';
         }
         if(left.u !== AUTO) {
-          let n = calRelative(currentStyle, LEFT, left, parent, true);
+          let n = calRelative(__currentStyle, LEFT, left, parent, true);
           this.__offsetX(n);
-          computedStyle[LEFT] = n;
-          computedStyle[RIGHT] = 'auto';
+          __computedStyle[LEFT] = n;
+          __computedStyle[RIGHT] = 'auto';
         }
         else if (right.u !== AUTO) {
-          let n = calRelative(currentStyle, RIGHT, right, parent, true);
+          let n = calRelative(__currentStyle, RIGHT, right, parent, true);
           this.__offsetX(-n);
-          computedStyle[RIGHT] = n;
-          computedStyle[LEFT] = 'auto';
+          __computedStyle[RIGHT] = n;
+          __computedStyle[LEFT] = 'auto';
         }
         else {
-          computedStyle[LEFT] = computedStyle[RIGHT] = 'auto';
+          __computedStyle[LEFT] = __computedStyle[RIGHT] = 'auto';
         }
       }
       else if (position !== 'absolute') {
-        computedStyle[TOP] = computedStyle[BOTTOM] = computedStyle[LEFT] = computedStyle[RIGHT] = 'auto';
+        __computedStyle[TOP] = __computedStyle[BOTTOM] = __computedStyle[LEFT] = __computedStyle[RIGHT] = 'auto';
       }
       // 计算结果存入computedStyle和6个坐标，inline在其inlineSize特殊处理
-      let x = this.__sx = this.x + this.ox;
-      let y = this.__sy = this.y + this.oy;
+      let x = this.__sx = this.__x + this.__ox;
+      let y = this.__sy = this.__y + this.__oy;
       if(!this.__isInline) {
-        x = this.__sx1 = x + computedStyle[MARGIN_LEFT];
-        x = this.__sx2 = x + computedStyle[BORDER_LEFT_WIDTH];
-        x = this.__sx3 = x + computedStyle[PADDING_LEFT];
-        x = this.__sx4 = x + this.width;
-        x = this.__sx5 = x + computedStyle[PADDING_RIGHT];
-        this.__sx6 = x + computedStyle[BORDER_RIGHT_WIDTH];
-        y = this.__sy1 = y + computedStyle[MARGIN_TOP];
-        y = this.__sy2 = y + computedStyle[BORDER_TOP_WIDTH];
-        y = this.__sy3 = y + computedStyle[PADDING_TOP];
-        y = this.__sy4 = y + this.height;
-        y = this.__sy5 = y + computedStyle[PADDING_BOTTOM];
-        this.__sy6 = y + computedStyle[BORDER_BOTTOM_WIDTH];
+        x = this.__sx1 = x + __computedStyle[MARGIN_LEFT];
+        x = this.__sx2 = x + __computedStyle[BORDER_LEFT_WIDTH];
+        x = this.__sx3 = x + __computedStyle[PADDING_LEFT];
+        x = this.__sx4 = x + this.__width;
+        x = this.__sx5 = x + __computedStyle[PADDING_RIGHT];
+        this.__sx6 = x + __computedStyle[BORDER_RIGHT_WIDTH];
+        y = this.__sy1 = y + __computedStyle[MARGIN_TOP];
+        y = this.__sy2 = y + __computedStyle[BORDER_TOP_WIDTH];
+        y = this.__sy3 = y + __computedStyle[PADDING_TOP];
+        y = this.__sy4 = y + this.__height;
+        y = this.__sy5 = y + __computedStyle[PADDING_BOTTOM];
+        this.__sy6 = y + __computedStyle[BORDER_BOTTOM_WIDTH];
       }
-      computedStyle[WIDTH] = this.width;
-      computedStyle[HEIGHT] = this.height;
+      __computedStyle[WIDTH] = this.__width;
+      __computedStyle[HEIGHT] = this.__height;
       // abs为parse的根节点时特殊自己执行，前提是真布局
       if(position !== 'absolute') {
         this.__execAr();
@@ -737,6 +743,12 @@ class Xom extends Node {
       = __computedStyle[HEIGHT]
       = this.__width
       = this.__height
+      = this.__clientWidth
+      = this.__clientHeight
+      = this.__offsetWidth
+      = this.__offsetHeight
+      = this.__outerWidth
+      = this.__outerHeight
       = 0;
     this.__hasComputeReflow = false;
   }
@@ -798,7 +810,7 @@ class Xom extends Node {
       if(height.u === PERCENT) {
         if(p.__currentStyle[HEIGHT].u !== AUTO) {
           fixedHeight = true;
-          h = this.__calSize(height, p.__clientHeight, true);
+          h = this.__calSize(height, p.height || 0, true);
         }
       }
       else {
@@ -2211,10 +2223,6 @@ class Xom extends Node {
     let { root } = this;
     this.clearAnimate();
     this.clearFrameAnimate();
-    // root在没有初始化到真实dom渲染的情况下没有
-    root && root.delRefreshTask(this.__loadBgi.cb);
-    root && root.delRefreshTask(this.__task);
-    this.__task = null;
     this.__root = null;
     this.clearCache();
     let fontRegister = this.__fontRegister;
@@ -2659,13 +2667,6 @@ class Xom extends Node {
     }
     this.clearCache();
   }
-
-  // __releaseWhenEmpty(__cache) {
-  //   if(__cache && __cache.available) {
-  //     __cache.release();
-  //   }
-  //   return true;
-  // }
 
   getComputedStyle(key) {
     let computedStyle = this.__computedStyle;

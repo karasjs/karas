@@ -396,15 +396,15 @@ function checkNext(root, top, node, addDom, removeDom) {
     t4 = t.target;
     d4 = t.diff;
   }
+  // 查看mergeMargin对top造成的偏移，和原来偏移对比
+  if(!removeDom && d3 - d1) {
+    top.__offsetY(d3 - d1, false, null);
+  }
   // 差值计算注意考虑margin合并前的值，和合并后的差值，height使用offsetHeight不考虑margin
   let diff = t3 + d3 + t4 + d4 - t1 - d1 - t2 - d2 + top.offsetHeight - oldH;
   // console.log(t3, d3, t4, d4, t1, d1, t2, d2, top.offsetHeight, oldH, diff);
   if(!diff) {
     return;
-  }
-  // 需要额外查看mergeMargin对top造成的偏移
-  if(!removeDom && t3 - t1) {
-    top.__offsetY(t3 - t1, false, null);
   }
   let parentFixed = isFixedSize(parent, false);
   if(!parentFixed) {

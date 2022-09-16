@@ -2,7 +2,6 @@ import enums from '../util/enums';
 import unit from '../style/unit';
 import level from './level';
 import css from '../style/css';
-import Component from '../node/Component';
 import Text from '../node/Text';
 import Geom from '../node/geom/Geom';
 
@@ -27,146 +26,11 @@ const { AUTO, PX, PERCENT } = unit;
 const { REPAINT, REFLOW, CACHE } = level;
 const { isRelativeOrAbsolute } = css;
 
-function cleanSvgCache(node, child) {
-  if(child) {
-    node.__refreshLevel |= REPAINT;
-  }
-  else {
-    node.__cacheTotal.release();
-  }
-  if(Array.isArray(node.children)) {
-    node.children.forEach(child => {
-      if(child instanceof Component) {
-        child = child.shadowRoot;
-      }
-      if(!(child instanceof Text)) {
-        cleanSvgCache(child, true);
-      }
-    });
-  }
-}
-
-function offsetAndResizeByNodeOnY(node, root, reflowHash, dy, inDirectAbsList) {
-  if(dy) {
-    let last;
-    do {
-      // component的sr没有next兄弟，视为component的next
-      while(node.isShadowRoot) {
-        node = node.host;
-      }
-      last = node;
-      let isContainer, parent = node.domParent;
-      if(parent) {
-        let cs = parent.computedStyle;
-        let ps = cs[POSITION];
-        isContainer = parent === root || parent.isShadowRoot || ps === 'relative' || ps === 'absolute';
-      }
-      // 先偏移next，忽略有定位的absolute，本身非container也忽略
-      let next = node.next;
-      let container;
-      while(next) {
-        if(next.computedStyle[DISPLAY] !== 'none') {
-          if(next.currentStyle[POSITION] === 'absolute') {
-            let { [TOP]: top, [BOTTOM]: bottom, [HEIGHT]: height } = next.currentStyle;
-            if(top.u === AUTO) {
-              if(bottom.u === AUTO || bottom.u === PX) {
-                next.__offsetY(dy, true, REFLOW);
-                next.clearCache();
-              }
-              else if(bottom.u === PERCENT) {
-                let v = (1 - bottom.v * 0.01) * dy;
-                next.__offsetY(v, true, REFLOW);
-                next.clearCache();
-              }
-            }
-            else if(top.u === PERCENT) {
-              let v = top.v * 0.01 * dy;
-              next.__offsetY(v, true, REFLOW);
-              next.clearCache();
-            }
-            // 高度百分比需发生变化的重新布局，需要在容器内
-            if(height.u === PERCENT) {
-              if(isContainer) {
-                parent.__layoutAbs(parent, parent.__layoutData, next);
-              }
-              else {
-                if(!container) {
-                  container = parent;
-                  while(container) {
-                    if(container === root || container.isShadowRoot) {
-                      break;
-                    }
-                    let cs = container.currentStyle;
-                    if(cs[POSITION] === 'absolute' || cs[POSITION] === 'relative') {
-                      break;
-                    }
-                    container = container.domParent;
-                  }
-                }
-                inDirectAbsList.push([parent, container, next]);
-              }
-            }
-          }
-          else {
-            next.__offsetY(dy, true, REFLOW);
-            next.clearCache();
-          }
-        }
-        next = next.next;
-      }
-      // root本身没domParent
-      if(!parent) {
-        break;
-      }
-      node = parent;
-      // parent判断是否要resize
-      let { currentStyle } = node;
-      let isAbs = currentStyle[POSITION] === 'absolute';
-      let need;
-      if(isAbs) {
-        if(currentStyle[HEIGHT].u === AUTO
-          && (currentStyle[TOP].u === AUTO || currentStyle[BOTTOM].u === AUTO)) {
-          need = true;
-        }
-      }
-      // height不定则需要
-      else if(currentStyle[HEIGHT].u === AUTO) {
-        need = true;
-      }
-      if(need) {
-        node.__resizeY(dy, REFLOW);
-        node.clearCache();
-      }
-      // abs或者高度不需要继续向上调整提前跳出
-      else {
-        break;
-      }
-      if(node === root) {
-        break;
-      }
-    }
-    while(true);
-    // 最后一个递归向上取消总缓存，防止过程中重复next多次无用递归
-    while(last) {
-      last.clearCache();
-      last = last.domParent;
-    }
-  }
-}
-
-function clearUniqueReflowId(hash) {
-  for(let i in hash) {
-    if(hash.hasOwnProperty(i)) {
-      let { node } = hash[i];
-      delete node.__uniqueReflowId;
-    }
-  }
-}
-
+// 合并margin，和原本不合并情况下的差值
 function getMergeMargin(topList, bottomList) {
   let total = 0;
-  let max = topList[0];
-  let min = topList[0];
+  let max = topList[0] || 0;
+  let min = topList[0] || 0;
   topList.forEach(item => {
     total += item;
     max = Math.max(max, item);
@@ -178,17 +42,21 @@ function getMergeMargin(topList, bottomList) {
     min = Math.min(min, item);
   });
   // 正数取最大，负数取最小，正负则相加
-  let diff = 0;
+  let target;
   if(max > 0 && min > 0) {
-    diff = Math.max(max, min) - total;
+    target = Math.max(max, min);
   }
   else if(max < 0 && min < 0) {
-    diff = Math.min(max, min) - total;
+    target = Math.min(max, min);
   }
   else if(max !== 0 || min !== 0) {
-    diff = max + min - total;
+    target = max + min;
   }
-  return diff;
+  return {
+    target,
+    total,
+    diff: target - total,
+  };
 }
 
 // 提取出对比节点尺寸是否固定非AUTO
@@ -208,6 +76,50 @@ function isFixedSize(node, includeParentFlex) {
     }
   }
   return res;
+}
+
+function getPrevMergeMargin(prev, mtList, mbList) {
+  while(prev && !(prev instanceof Text) && ['block', 'flex'].indexOf(prev.computedStyle[DISPLAY]) > -1) {
+    mbList.push(prev.computedStyle[MARGIN_BOTTOM]);
+    if(prev.offsetHeight > 0) {
+      break;
+    }
+    mtList.push(prev.computedStyle[MARGIN_TOP]);
+    prev = prev.__prev;
+  }
+}
+
+function getNextMergeMargin(next, mtList, mbList) {
+  while(next && !(next instanceof Text) && ['block', 'flex'].indexOf(next.computedStyle[DISPLAY]) > -1) {
+    mtList.push(next.computedStyle[MARGIN_TOP]);
+    if(next.offsetHeight > 0) {
+      break;
+    }
+    mbList.push(next.computedStyle[MARGIN_BOTTOM]);
+    next = next.__next;
+  }
+}
+
+function offsetNext(next, diff, parentFixed) {
+  while(next) {
+    let cs = next.currentStyle;
+    // flow流和auto的absolute流需要偏移diff值
+    if(cs[POSITION] !== 'absolute' || cs[TOP].u === AUTO && cs[BOTTOM].u === AUTO) {
+      next.__offsetY(diff, true, REPAINT);
+    }
+    // absolute中百分比的特殊计算偏移，但要排除parent固定尺寸
+    else if(!parentFixed && cs[POSITION] === 'absolute'
+      && (cs[TOP].u === PERCENT || cs[BOTTOM].u === PERCENT)) {
+      if(cs[TOP].u === PERCENT) {
+        next.__offsetY(diff * 0.01 * cs[TOP].v, true, REPAINT);
+      }
+      else {
+        next.__offsetY(diff * (1 - 0.01 * cs[BOTTOM].v), true, REPAINT);
+      }
+    }
+    next = next.__next;
+  }
+  return diff;
 }
 
 /**
@@ -316,12 +228,40 @@ function checkNext(root, top, node, addDom, removeDom) {
   let isNowAbs = crs[POSITION] === 'absolute';
   let isLastNone = display === 'none';
   let isNowNone = crs[DISPLAY] === 'none';
+  let isLast0 = top.offsetHeight === 0;
   // none不可见布局无效可以无视
   if(isLastNone && isNowNone) {
     return;
   }
-  let parent = top.__domParent;
-  // __layoutData使用prev或者父节点，并重新计算y，因为display:none或add的无数据或不对
+  let parent = top.__domParent, oldH = top.offsetHeight;
+  // 后续调整offsetY需要考虑mergeMargin各种情况（包含上下2个方向），之前合并前和合并后的差值都需记录
+  // 先记录没更新前的，如果是空节点则m1作为整个，忽视m2
+  let t1, d1, t2, d2;
+  let mbList = [], mtList = [];
+  let prev = top.isShadowRoot ? top.__hostRoot.__prev : top.__prev;
+  let next = top.isShadowRoot ? top.__hostRoot.__next : top.__next;
+  if(addDom || isLast0) {
+    getPrevMergeMargin(prev, mtList, mbList);
+    getNextMergeMargin(next, mtList, mbList);
+    let t = getMergeMargin(mtList, mbList);
+    t1 = t.target;
+    d1 = t.diff;
+  }
+  else {
+    getPrevMergeMargin(prev, mtList, mbList);
+    mtList.push(cps[MARGIN_TOP]);
+    let t = getMergeMargin(mtList, mbList);
+    t1 = t.target;
+    d1 = t.diff;
+    mtList.splice(0);
+    mbList.splice(0);
+    getNextMergeMargin(next, mtList, mbList);
+    mbList.push(cps[MARGIN_BOTTOM]);
+    t = getMergeMargin(mtList, mbList);
+    t2 = t.target;
+    d2 = t.diff;
+  }
+  // __layoutData使用prev或者父节点，并重新计算y（不包含合并margin），因为display:none或add的无数据或不对
   let __layoutData = parent.__layoutData;
   let x = __layoutData.x;
   let y = __layoutData.y;
@@ -418,70 +358,81 @@ function checkNext(root, top, node, addDom, removeDom) {
     }
     p = p.__domParent;
   }
-  // 调整next的位置，offsetY，abs特殊处理，合并margin
+  // 高度不变一直0提前跳出，不影响包含margin合并，但需排除节点add/remove，因为空节点会上下穿透合并
+  let isNow0 = top.offsetHeight === 0;
+  if(isLast0 && isNow0 && !addDom && !removeDom) {
+    return;
+  }
+  // 其它几种忽略的情况
+  if(addDom && isNow0 || removeDom && isLast0) {
+    return;
+  }
+  // 查看现在的上下margin合并情况，和之前的对比得出diff差值进行offsetY/resizeY
   if(top.isShadowRoot) {
     top = top.__hostRoot;
   }
-  let next = top.__next;
-  let mergeMarginBottomList = [], mergeMarginTopList = [];
-  while(next) {
-    if(next instanceof Component) {
-      next = next.shadowRoot;
-    }
-    if(next instanceof Text) {
-      break;
-    }
-    let computedStyle = next.computedStyle;
-    // flow流的，空白需要一并考虑继续，非空白跳出
-    if(computedStyle[POSITION] !== 'absolute') {
-      mergeMarginBottomList.push(computedStyle[MARGIN_BOTTOM]);
-      mergeMarginTopList.push(computedStyle[MARGIN_TOP]);
-      if(next.offsetHeight > 0) {
-        break;
-      }
-    }
-    next = next.__next;
+  let t3, d3, t4, d4;
+  mbList.splice(0);
+  mtList.splice(0);
+  if(removeDom || isNow0) {
+    getPrevMergeMargin(prev, mtList, mbList);
+    getNextMergeMargin(next, mtList, mbList);
+    let t = getMergeMargin(mtList, mbList);
+    t3 = t.target;
+    d3 = t.diff;
   }
-  next = top.__next;
-  let m = getMergeMargin(mergeMarginTopList, mergeMarginBottomList);
-  let diff = y - next.y + m;
+  else {
+    getPrevMergeMargin(prev, mtList, mbList);
+    mtList.push(cps[MARGIN_TOP]);
+    let t = getMergeMargin(mtList, mbList);
+    t3 = t.target;
+    d3 = t.diff;
+    mtList.splice(0);
+    mbList.splice(0);
+    getNextMergeMargin(next, mtList, mbList);
+    mbList.push(cps[MARGIN_BOTTOM]);
+    t = getMergeMargin(mtList, mbList);
+    t4 = t.target;
+    d4 = t.diff;
+  }
+  // 差值计算注意考虑margin合并前的值，和合并后的差值，height使用offsetHeight不考虑margin
+  let diff = t3 + d3 + t4 + d4 - t1 - d1 - t2 - d2 + top.offsetHeight - oldH;
   if(!diff) {
     return;
   }
-  while(next) {
-    let cs = next.currentStyle;
-    if(cs[POSITION] !== 'absolute' || cs[TOP].u === AUTO && cs[BOTTOM].u === AUTO) {
-      next.__offsetY(diff, true, REPAINT);
-    }
-    else if(cs[POSITION] === 'absolute' && (cs[TOP].u === PERCENT || cs[BOTTOM].u === PERCENT)) {
-      let v;
-      if(cs[TOP].u === PERCENT) {
-        v = cs[TOP].v;
-      }
-      else {
-        v = cs[BOTTOM].v;
-      }
-      next.__offsetY(diff * 0.01 * v, true, REPAINT);
-    }
-    next = next.__next;
+  // 需要额外查看mergeMargin对top造成的偏移
+  if(!removeDom && t3 - t1) {
+    top.__offsetY(t3 - t1, false, null);
+  }
+  let parentFixed = isFixedSize(parent, false);
+  if(!parentFixed) {
+    parent.__resizeY(diff, REPAINT);
+  }
+  offsetNext(next, diff, parentFixed);
+  if(parentFixed) {
+    parent.clearCache(true);
+    parent.__refreshLevel |= CACHE;
+    return;
   }
   // 影响完next之后，向上递归，所有parent的next都影响
   while(parent) {
-    if(isFixedSize(parent, false)) {
+    next = parent.__next;
+    parent = parent.__domParent;
+    parentFixed = parent && isFixedSize(parent, false);
+    if(!parentFixed) {
+      parent.__resizeY(diff, REPAINT);
+    }
+    offsetNext(next, diff, parentFixed);
+    if(parentFixed) {
       parent.clearCache(true);
       parent.__refreshLevel |= CACHE;
       return;
     }
-    parent.__resizeY(diff, REPAINT);
-    parent = parent.__domParent;
   }
 }
 
 export default {
-  offsetAndResizeByNodeOnY,
-  clearUniqueReflowId,
   getMergeMargin,
   checkTop,
   checkNext,
-  cleanSvgCache,
 };

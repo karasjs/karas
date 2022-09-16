@@ -302,6 +302,7 @@ class Dom extends Xom {
   }
 
   __insertStruct(child, childIndex) {
+    this.__zIndexChildren = this.__zIndexChildren || genZIndexChildren(this);
     let struct = this.__struct;
     let cs = child.__structure(struct.lv + 1, childIndex);
     let root = this.__root, structs = root.__structs;
@@ -343,6 +344,7 @@ class Dom extends Xom {
   }
 
   __deleteStruct(child) {
+    this.__zIndexChildren = this.__zIndexChildren || genZIndexChildren(this);
     let cs = child.__struct;
     let total = (cs.total || 0) + 1;
     let root = this.__root, structs = root.__structs;
@@ -808,7 +810,7 @@ class Dom extends Xom {
       // 每次循环开始前，这次不是block的话，看之前遗留待合并margin，并重置
       if((!isXom || isInline || isInlineBlock)) {
         if(mergeMarginEndList.length && mergeMarginStartList.length) {
-          let diff = reflow.getMergeMargin(mergeMarginStartList, mergeMarginEndList);
+          let diff = reflow.getMergeMargin(mergeMarginStartList, mergeMarginEndList).diff;
           if(diff) {
             if(isUpright) {
               x += diff;
@@ -1086,7 +1088,7 @@ class Dom extends Xom {
             if(mergeMarginEndList.length) {
               if(isUpright) {
                 mergeMarginStartList.push(marginLeft);
-                let diff = reflow.getMergeMargin(mergeMarginStartList, mergeMarginEndList);
+                let diff = reflow.getMergeMargin(mergeMarginStartList, mergeMarginEndList).diff;
                 if(diff) {
                   item.__offsetX(diff, true);
                   x += diff;
@@ -1094,7 +1096,7 @@ class Dom extends Xom {
               }
               else {
                 mergeMarginStartList.push(marginTop);
-                let diff = reflow.getMergeMargin(mergeMarginStartList, mergeMarginEndList);
+                let diff = reflow.getMergeMargin(mergeMarginStartList, mergeMarginEndList).diff;
                 if(diff) {
                   item.__offsetY(diff, true);
                   y += diff;
@@ -1107,7 +1109,7 @@ class Dom extends Xom {
           }
           // 最后一个空block当是正正和负负时要处理，正负在outHeight处理了结果是0
           else if(i === length - 1) {
-            let diff = reflow.getMergeMargin(mergeMarginStartList, mergeMarginEndList);
+            let diff = reflow.getMergeMargin(mergeMarginStartList, mergeMarginEndList).diff;
             if(diff) {
               if(isUpright) {
                 x += diff;

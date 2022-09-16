@@ -269,23 +269,25 @@ class Xom extends Node {
     if(v.u === PX) {
       return v.v;
     }
-    else if(v.u === PERCENT && includePercent) {
-      return v.v * w * 0.01;
+    else if(v.u === PERCENT) {
+      if(includePercent) {
+        return v.v * w * 0.01;
+      }
     }
     else if(v.u === REM || v.u === REM) {
-      return v.v * this.root.computedStyle[FONT_SIZE];
+      return v.v * this.__root.computedStyle[FONT_SIZE];
     }
     else if(v.u === VW) {
-      return v.v * this.root.width * 0.01;
+      return v.v * this.__root.width * 0.01;
     }
     else if(v.u === VH) {
-      return v.v * this.root.height * 0.01;
+      return v.v * this.__root.height * 0.01;
     }
     else if(v.u === VMAX) {
-      return v.v * Math.max(this.root.width, this.root.height) * 0.01;
+      return v.v * Math.max(this.__root.width, this.__root.height) * 0.01;
     }
     else if(v.u === VMIN) {
-      return v.v * Math.min(this.root.width, this.root.height) * 0.01;
+      return v.v * Math.min(this.__root.width, this.__root.height) * 0.01;
     }
     return 0;
   }
@@ -789,9 +791,19 @@ class Xom extends Node {
       fixedHeight = true;
       h = h3;
     }
+    // height的百分比需要parent有值不能auto
     else if(height.u !== AUTO && !isInline) {
-      fixedHeight = true;
-      h = this.__calSize(height, h, true);
+      let p = this.__domParent;
+      if(height.u === PERCENT) {
+        if(p.__currentStyle[HEIGHT].u !== AUTO) {
+          fixedHeight = true;
+          h = this.__calSize(height, p.__clientHeight, true);
+        }
+      }
+      else {
+        fixedHeight = true;
+        h = this.__calSize(height, h, true);
+      }
     }
     // margin/border/padding影响x和y和尺寸，注意inline的y不受mpb影响（垂直模式则是x）
     if(!isInline) {

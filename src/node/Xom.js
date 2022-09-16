@@ -144,6 +144,7 @@ const {
   TRANSLATE_Y: TY,
   TRANSLATE_Z: TZ,
   TRANSFORM_ALL,
+  CACHE,
 } = level;
 
 function getFirstEmptyInlineWidth(xom) {
@@ -2441,6 +2442,7 @@ class Xom extends Node {
     if(__cacheOverflow) {
       __cacheOverflow.release();
     }
+    this.__refreshLevel |= CACHE;
     if(lookUp) {
       let p = this.__domParent;
       while(p) {
@@ -2448,6 +2450,7 @@ class Xom extends Node {
         let __cacheFilter = p.__cacheFilter;
         let __cacheMask = p.__cacheMask;
         let __cacheOverflow = p.__cacheOverflow;
+        p.__refreshLevel |= CACHE;
         if(__cacheTotal) {
           __cacheTotal.release();
         }

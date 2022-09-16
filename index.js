@@ -14668,7 +14668,7 @@
   var NONE$3 = 0; //                                          0
   // cacheTotal变化需重新生成的时候
 
-  var CACHE$3 = 1; //                                         1
+  var CACHE$4 = 1; //                                         1
 
   var TRANSLATE_X$2 = 2; //                                  10
 
@@ -14698,7 +14698,7 @@
 
   var ENUM = {
     NONE: NONE$3,
-    CACHE: CACHE$3,
+    CACHE: CACHE$4,
     TRANSLATE_X: TRANSLATE_X$2,
     TRANSLATE_Y: TRANSLATE_Y$2,
     TRANSLATE_Z: TRANSLATE_Z$2,
@@ -14733,7 +14733,7 @@
       }
 
       if (k === Z_INDEX$4) {
-        return CACHE$3;
+        return CACHE$4;
       }
 
       if (k === TX$1) {
@@ -20901,7 +20901,8 @@
       TX = o$1.TRANSLATE_X,
       TY = o$1.TRANSLATE_Y,
       TZ = o$1.TRANSLATE_Z,
-      TRANSFORM_ALL$2 = o$1.TRANSFORM_ALL;
+      TRANSFORM_ALL$2 = o$1.TRANSFORM_ALL,
+      CACHE$3 = o$1.CACHE;
 
   function getFirstEmptyInlineWidth(xom) {
     var n = 0;
@@ -23359,6 +23360,8 @@
           __cacheOverflow.release();
         }
 
+        this.__refreshLevel |= CACHE$3;
+
         if (lookUp) {
           var p = this.__domParent;
 
@@ -23367,6 +23370,7 @@
             var _cacheFilter = p.__cacheFilter;
             var _cacheMask = p.__cacheMask;
             var _cacheOverflow = p.__cacheOverflow;
+            p.__refreshLevel |= CACHE$3;
 
             if (_cacheTotal) {
               _cacheTotal.release();
@@ -25678,7 +25682,7 @@
       min = Math.min(min, item);
     }); // 正数取最大，负数取最小，正负则相加
 
-    var target;
+    var target = 0;
 
     if (max > 0 && min > 0) {
       target = Math.max(max, min);
@@ -25894,7 +25898,10 @@
         oldH = top.offsetHeight; // 后续调整offsetY需要考虑mergeMargin各种情况（包含上下2个方向），之前合并前和合并后的差值都需记录
     // 先记录没更新前的，如果是空节点则m1作为整个，忽视m2
 
-    var t1, d1, t2, d2;
+    var t1 = 0,
+        d1 = 0,
+        t2 = 0,
+        d2 = 0;
     var mbList = [],
         mtList = [];
     var prev = top.isShadowRoot ? top.__hostRoot.__prev : top.__prev;
@@ -25994,6 +26001,7 @@
 
 
         if (isLastAbs) {
+          top.clearCache(true);
           return;
         }
       }
@@ -26061,7 +26069,10 @@
       top = top.__hostRoot;
     }
 
-    var t3, d3, t4, d4;
+    var t3 = 0,
+        d3 = 0,
+        t4 = 0,
+        d4 = 0;
     mbList.splice(0);
     mtList.splice(0);
 
@@ -26091,7 +26102,7 @@
     } // 差值计算注意考虑margin合并前的值，和合并后的差值，height使用offsetHeight不考虑margin
 
 
-    var diff = t3 + d3 + t4 + d4 - t1 - d1 - t2 - d2 + top.offsetHeight - oldH;
+    var diff = t3 + d3 + t4 + d4 - t1 - d1 - t2 - d2 + top.offsetHeight - oldH; // console.log(t3, d3, t4, d4, t1, d1, t2, d2, top.offsetHeight, oldH, diff);
 
     if (!diff) {
       return;
@@ -26130,7 +26141,6 @@
 
       if (parentFixed) {
         parent.clearCache(true);
-        parent.__refreshLevel |= CACHE$2;
         return;
       }
     }

@@ -42,7 +42,7 @@ function getMergeMargin(topList, bottomList) {
     min = Math.min(min, item);
   });
   // 正数取最大，负数取最小，正负则相加
-  let target;
+  let target = 0;
   if(max > 0 && min > 0) {
     target = Math.max(max, min);
   }
@@ -236,7 +236,7 @@ function checkNext(root, top, node, addDom, removeDom) {
   let parent = top.__domParent, oldH = top.offsetHeight;
   // 后续调整offsetY需要考虑mergeMargin各种情况（包含上下2个方向），之前合并前和合并后的差值都需记录
   // 先记录没更新前的，如果是空节点则m1作为整个，忽视m2
-  let t1, d1, t2, d2;
+  let t1 = 0, d1 = 0, t2 = 0, d2 = 0;
   let mbList = [], mtList = [];
   let prev = top.isShadowRoot ? top.__hostRoot.__prev : top.__prev;
   let next = top.isShadowRoot ? top.__hostRoot.__next : top.__next;
@@ -319,6 +319,7 @@ function checkNext(root, top, node, addDom, removeDom) {
       parent.__modifyStruct();
       // 之前也是abs，可以跳出不会影响其它
       if(isLastAbs) {
+        top.clearCache(true);
         return;
       }
     }
@@ -371,7 +372,7 @@ function checkNext(root, top, node, addDom, removeDom) {
   if(top.isShadowRoot) {
     top = top.__hostRoot;
   }
-  let t3, d3, t4, d4;
+  let t3 = 0, d3 = 0, t4 = 0, d4 = 0;
   mbList.splice(0);
   mtList.splice(0);
   if(removeDom || isNow0) {
@@ -397,6 +398,7 @@ function checkNext(root, top, node, addDom, removeDom) {
   }
   // 差值计算注意考虑margin合并前的值，和合并后的差值，height使用offsetHeight不考虑margin
   let diff = t3 + d3 + t4 + d4 - t1 - d1 - t2 - d2 + top.offsetHeight - oldH;
+  // console.log(t3, d3, t4, d4, t1, d1, t2, d2, top.offsetHeight, oldH, diff);
   if(!diff) {
     return;
   }
@@ -425,7 +427,6 @@ function checkNext(root, top, node, addDom, removeDom) {
     offsetNext(next, diff, parentFixed);
     if(parentFixed) {
       parent.clearCache(true);
-      parent.__refreshLevel |= CACHE;
       return;
     }
   }

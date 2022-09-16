@@ -429,8 +429,11 @@ function checkNext(root, top, node, addDom, removeDom) {
       nowH = 0;
     }
     else {
-      nowH = top.offsetHeight;
+      nowH = node.offsetHeight;
     }
+  }
+  else {
+    nowH = top.offsetHeight;
   }
   // 查看mergeMargin对top造成的偏移，和原来偏移对比
   if(!removeDom && d3 - d1) {

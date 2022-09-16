@@ -620,7 +620,7 @@ class Root extends Dom {
     let {
       computedStyle,
       cacheStyle,
-      cacheProps,
+      __cacheProps,
       __isMask,
       __domParent,
     } = node;
@@ -631,7 +631,7 @@ class Root extends Dom {
         let k = keys[i];
         if(node instanceof Geom && isGeom(node.tagName, k)) {
           lv |= REPAINT;
-          cacheProps[k] = undefined;
+          __cacheProps[k] = undefined;
         }
         else {
           // repaint置空，如果reflow会重新生成空的

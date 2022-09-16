@@ -21471,8 +21471,16 @@
 
         var __computedStyle = this.__computedStyle;
         __computedStyle[DISPLAY$6] = 'none';
-        __computedStyle[MARGIN_TOP$3] = __computedStyle[MARGIN_RIGHT$4] = __computedStyle[MARGIN_BOTTOM$3] = __computedStyle[MARGIN_LEFT$5] = __computedStyle[BORDER_TOP_WIDTH$3] = __computedStyle[BORDER_RIGHT_WIDTH$4] = __computedStyle[BORDER_BOTTOM_WIDTH$2] = __computedStyle[BORDER_LEFT_WIDTH$5] = __computedStyle[PADDING_TOP$3] = __computedStyle[PADDING_RIGHT$4] = __computedStyle[PADDING_BOTTOM$2] = __computedStyle[PADDING_LEFT$5] = __computedStyle[WIDTH$5] = __computedStyle[HEIGHT$5] = this.__width = this.__height = this.__clientWidth = this.__clientHeight = this.__offsetWidth = this.__offsetHeight = this.__outerWidth = this.__outerHeight = 0;
+
+        this.__reset0();
+
         this.__hasComputeReflow = false;
+      }
+    }, {
+      key: "__reset0",
+      value: function __reset0() {
+        var __computedStyle = this.__computedStyle;
+        __computedStyle[MARGIN_TOP$3] = __computedStyle[MARGIN_RIGHT$4] = __computedStyle[MARGIN_BOTTOM$3] = __computedStyle[MARGIN_LEFT$5] = __computedStyle[BORDER_TOP_WIDTH$3] = __computedStyle[BORDER_RIGHT_WIDTH$4] = __computedStyle[BORDER_BOTTOM_WIDTH$2] = __computedStyle[BORDER_LEFT_WIDTH$5] = __computedStyle[PADDING_TOP$3] = __computedStyle[PADDING_RIGHT$4] = __computedStyle[PADDING_BOTTOM$2] = __computedStyle[PADDING_LEFT$5] = __computedStyle[WIDTH$5] = __computedStyle[HEIGHT$5] = this.__width = this.__height = this.__clientWidth = this.__clientHeight = this.__offsetWidth = this.__offsetHeight = this.__outerWidth = this.__outerHeight = 0;
       } // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
 
     }, {
@@ -23059,6 +23067,8 @@
         }
 
         this.__host = this.__hostRoot = this.__root = this.__prev = this.__next = this.__parent = this.__domParent = null;
+
+        this.__reset0();
       } // 先查找到注册了事件的节点，再捕获冒泡判断增加性能
 
     }, {
@@ -26088,8 +26098,10 @@
       if (top === node) {
         nowH = 0;
       } else {
-        nowH = top.offsetHeight;
+        nowH = node.offsetHeight;
       }
+    } else {
+      nowH = top.offsetHeight;
     } // 查看mergeMargin对top造成的偏移，和原来偏移对比
 
 
@@ -36915,7 +36927,7 @@
         var _node = node,
             computedStyle = _node.computedStyle,
             cacheStyle = _node.cacheStyle,
-            cacheProps = _node.cacheProps,
+            __cacheProps = _node.__cacheProps,
             __isMask = _node.__isMask,
             __domParent = _node.__domParent;
         var hasZ, hasVisibility, hasColor, hasDisplay, hasTsColor, hasTsWidth, hasTsOver;
@@ -36927,7 +36939,7 @@
 
             if (node instanceof Geom && isGeom(node.tagName, k)) {
               lv |= REPAINT;
-              cacheProps[k] = undefined;
+              __cacheProps[k] = undefined;
             } else {
               // repaint置空，如果reflow会重新生成空的
               cacheStyle[k] = undefined; // TRBL变化只对relative/absolute起作用，其它忽视

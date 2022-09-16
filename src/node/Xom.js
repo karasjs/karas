@@ -727,6 +727,12 @@ class Xom extends Node {
     this.__computeReflow();
     let { __computedStyle } = this;
     __computedStyle[DISPLAY] = 'none';
+    this.__reset0();
+    this.__hasComputeReflow = false;
+  }
+
+  __reset0() {
+    let { __computedStyle } = this;
     __computedStyle[MARGIN_TOP]
       = __computedStyle[MARGIN_RIGHT]
       = __computedStyle[MARGIN_BOTTOM]
@@ -750,7 +756,6 @@ class Xom extends Node {
       = this.__outerWidth
       = this.__outerHeight
       = 0;
-    this.__hasComputeReflow = false;
   }
 
   // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
@@ -2232,6 +2237,7 @@ class Xom extends Node {
     this.__host = this.__hostRoot = this.__root
       = this.__prev = this.__next
       = this.__parent = this.__domParent = null;
+    this.__reset0();
   }
 
   // 先查找到注册了事件的节点，再捕获冒泡判断增加性能

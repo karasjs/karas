@@ -343,9 +343,11 @@ function checkNext(root, top, node, addDom, removeDom) {
   }
   // add/remove的情况在自身是abs时不影响next
   if(addDom && top === node && node.__currentStyle[POSITION] === 'absolute') {
+    top.clearCache(true);
     return;
   }
   if(removeDom && top === node && node.__computedStyle[POSITION] === 'absolute') {
+    top.clearCache(true);
     return;
   }
   // 向上查找最近的relative的parent，获取ox/oy并赋值，无需继续向上递归，因为parent已经递归包含了
@@ -362,10 +364,12 @@ function checkNext(root, top, node, addDom, removeDom) {
   // 高度不变一直0提前跳出，不影响包含margin合并，但需排除节点add/remove，因为空节点会上下穿透合并
   let isNow0 = top.offsetHeight === 0;
   if(isLast0 && isNow0 && !addDom && !removeDom) {
+    top.clearCache(true);
     return;
   }
   // 其它几种忽略的情况
   if(addDom && isNow0 || removeDom && isLast0) {
+    top.clearCache(true);
     return;
   }
   // 查看现在的上下margin合并情况，和之前的对比得出diff差值进行offsetY/resizeY
@@ -404,6 +408,7 @@ function checkNext(root, top, node, addDom, removeDom) {
   let diff = t3 + d3 + t4 + d4 - t1 - d1 - t2 - d2 + top.offsetHeight - oldH;
   // console.log(t3, d3, t4, d4, t1, d1, t2, d2, top.offsetHeight, oldH, diff);
   if(!diff) {
+    parent.clearCache(true);
     return;
   }
   let parentFixed = isFixedSize(parent, false);

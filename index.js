@@ -26027,10 +26027,12 @@
 
 
     if (addDom && top === node && node.__currentStyle[POSITION$2] === 'absolute') {
+      top.clearCache(true);
       return;
     }
 
     if (removeDom && top === node && node.__computedStyle[POSITION$2] === 'absolute') {
+      top.clearCache(true);
       return;
     } // 向上查找最近的relative的parent，获取ox/oy并赋值，无需继续向上递归，因为parent已经递归包含了
 
@@ -26054,11 +26056,13 @@
     var isNow0 = top.offsetHeight === 0;
 
     if (isLast0 && isNow0 && !addDom && !removeDom) {
+      top.clearCache(true);
       return;
     } // 其它几种忽略的情况
 
 
     if (addDom && isNow0 || removeDom && isLast0) {
+      top.clearCache(true);
       return;
     } // 查看现在的上下margin合并情况，和之前的对比得出diff差值进行offsetY/resizeY
 
@@ -26108,6 +26112,7 @@
     var diff = t3 + d3 + t4 + d4 - t1 - d1 - t2 - d2 + top.offsetHeight - oldH; // console.log(t3, d3, t4, d4, t1, d1, t2, d2, top.offsetHeight, oldH, diff);
 
     if (!diff) {
+      parent.clearCache(true);
       return;
     }
 

@@ -238,6 +238,7 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
     return;
   }
   let parent = top.__domParent, oldH = top.offsetHeight;
+  // remove自身且abs时不影响其它，除了svg的zIndex
   if(removeDom && top === node && node.computedStyle[POSITION] === 'absolute') {
     top.clearCache(true);
     if(root.renderMode === mode.SVG) {
@@ -375,9 +376,14 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
       top.__layoutAbs(container, ld, null);
     }
   }
-  // add/remove的情况在自身是abs时不影响next
+  // add的情况在自身是abs时不影响next，除了svg的zIndex
   if(addDom && top === node && node.currentStyle[POSITION] === 'absolute') {
     top.clearCache(true);
+    if(root.renderMode === mode.SVG) {
+      parent.children.forEach(item => {
+        item.__refreshLevel |= REPAINT;
+      });
+    }
     return;
   }
   // 向上查找最近的relative的parent，获取ox/oy并赋值，无需继续向上递归，因为parent已经递归包含了
@@ -392,7 +398,7 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
     p = p.__domParent;
   }
   // 高度不变一直0提前跳出，不影响包含margin合并，但需排除节点add/remove，因为空节点会上下穿透合并
-  let isNow0 = top.offsetHeight === 0;
+  let isNow0 = removeDom && top === node || top.offsetHeight === 0;
   if(isLast0 && isNow0 && !addDom && !removeDom) {
     top.clearCache(true);
     return;
@@ -402,7 +408,6 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
     top.clearCache(true);
     return;
   }
-  let nowH = top.offsetHeight;
   // 查看现在的上下margin合并情况，和之前的对比得出diff差值进行offsetY/resizeY
   if(top.isShadowRoot) {
     top = top.__hostRoot;
@@ -431,6 +436,7 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
     t4 = t.target;
     d4 = t.diff;
   }
+  let nowH;
   if(removeDom) {
     let temp = node;
     while(temp.isShadowRoot) {

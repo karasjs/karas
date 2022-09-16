@@ -793,7 +793,7 @@ class Root extends Dom {
       }
     }
     else {
-      let top = reflow.checkTop(this, node, hasZ, addDom, removeDom);
+      let top = reflow.checkTop(this, node, addDom, removeDom);
       if(top === this) {
         this.__reLayout();
         if(removeDom) {
@@ -806,7 +806,7 @@ class Root extends Dom {
       }
       // 布局影响next的所有节点，重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
       else {
-        reflow.checkNext(this, top, node, addDom, removeDom);
+        reflow.checkNext(this, top, node, hasZ, addDom, removeDom);
       }
     }
     node.__refreshLevel |= lv;

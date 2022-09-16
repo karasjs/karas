@@ -25858,7 +25858,7 @@
     }
 
     var parent = top.__domParent,
-        oldH = top.offsetHeight;
+        oldH = top.offsetHeight; // remove自身且abs时不影响其它，除了svg的zIndex
 
     if (removeDom && top === node && node.computedStyle[POSITION$2] === 'absolute') {
       top.clearCache(true);
@@ -26027,11 +26027,18 @@
       if (!(top instanceof Geom)) {
         top.__layoutAbs(container, ld, null);
       }
-    } // add/remove的情况在自身是abs时不影响next
+    } // add的情况在自身是abs时不影响next，除了svg的zIndex
 
 
     if (addDom && top === node && node.currentStyle[POSITION$2] === 'absolute') {
       top.clearCache(true);
+
+      if (root.renderMode === mode.SVG) {
+        parent.children.forEach(function (item) {
+          item.__refreshLevel |= REPAINT$2;
+        });
+      }
+
       return;
     } // 向上查找最近的relative的parent，获取ox/oy并赋值，无需继续向上递归，因为parent已经递归包含了
 
@@ -26052,7 +26059,7 @@
     } // 高度不变一直0提前跳出，不影响包含margin合并，但需排除节点add/remove，因为空节点会上下穿透合并
 
 
-    var isNow0 = top.offsetHeight === 0;
+    var isNow0 = removeDom && top === node || top.offsetHeight === 0;
 
     if (isLast0 && isNow0 && !addDom && !removeDom) {
       top.clearCache(true);
@@ -26063,9 +26070,8 @@
     if (addDom && isNow0 || removeDom && isLast0) {
       top.clearCache(true);
       return;
-    }
+    } // 查看现在的上下margin合并情况，和之前的对比得出diff差值进行offsetY/resizeY
 
-    var nowH = top.offsetHeight; // 查看现在的上下margin合并情况，和之前的对比得出diff差值进行offsetY/resizeY
 
     if (top.isShadowRoot) {
       top = top.__hostRoot;
@@ -26102,6 +26108,8 @@
       t4 = _t3.target;
       d4 = _t3.diff;
     }
+
+    var nowH;
 
     if (removeDom) {
       var temp = node;
@@ -37132,7 +37140,7 @@
             __domParent = __domParent.__domParent;
           }
         } else {
-          var top = reflow.checkTop(this, node, hasZ, addDom, removeDom);
+          var top = reflow.checkTop(this, node, addDom, removeDom);
 
           if (top === this) {
             this.__reLayout();
@@ -37148,7 +37156,7 @@
             }
           } // 布局影响next的所有节点，重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
           else {
-            reflow.checkNext(this, top, node, addDom, removeDom);
+            reflow.checkNext(this, top, node, hasZ, addDom, removeDom);
           }
         }
 

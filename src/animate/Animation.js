@@ -108,7 +108,7 @@ function unify(frames, target) {
             style[k] = clone(style[TRANSLATE_PATH][1]);
           }
           else {
-            style[k] = cloneStyle(target.__currentStyle[k], [k])[k];
+            style[k] = cloneStyle(target.__currentStyle, [k])[k];
           }
         }
       }

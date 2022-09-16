@@ -17671,7 +17671,7 @@
             } else if (k === TRANSLATE_Y$1 && style.hasOwnProperty(TRANSLATE_PATH)) {
               style[k] = clone$1(style[TRANSLATE_PATH][1]);
             } else {
-              style[k] = cloneStyle(target.__currentStyle[k], [k])[k];
+              style[k] = cloneStyle(target.__currentStyle, [k])[k];
             }
           }
         }
@@ -23097,10 +23097,8 @@
 
         _get(_getPrototypeOf(Xom.prototype), "__destroy", this).call(this);
 
-        this.root;
         this.clearAnimate();
         this.clearFrameAnimate();
-        this.__root = null;
         this.clearCache();
         var fontRegister = this.__fontRegister;
 
@@ -23110,7 +23108,7 @@
           }
         }
 
-        this.__host = this.__hostRoot = this.__prev = this.__next = this.__parent = this.__domParent = null;
+        this.__host = this.__hostRoot = this.__root = this.__prev = this.__next = this.__parent = this.__domParent = null;
       } // 先查找到注册了事件的节点，再捕获冒泡判断增加性能
 
     }, {
@@ -36973,7 +36971,7 @@
               if (k === DISPLAY) {
                 hasDisplay = true;
               } else if (k === Z_INDEX) {
-                hasZ = node !== this;
+                hasZ = node !== this && ['relative', 'absolute'].indexOf(__computedStyle[POSITION]) > -1;
               } else if (k === VISIBILITY) {
                 hasVisibility = true;
               } else if (k === COLOR) {
@@ -37002,13 +37000,19 @@
 
         if (contain(lv, TF)) {
           __cacheStyle[MATRIX] = __computedStyle[TRANSFORM] = undefined;
-        } // 清除parent的zIndexChildren缓存
+        } // 清除parent的zIndexChildren缓存，强制所有孩子重新渲染
 
 
         if (hasZ && __domParent) {
           __domParent.__zIndexChildren = null;
 
           __domParent.__modifyStruct();
+
+          if (this.renderMode === mode.SVG) {
+            __domParent.children.forEach(function (item) {
+              item.__refreshLevel |= REPAINT;
+            });
+          }
         } // 影响子继承REPAINT的变化，如果被cache住需要清除
 
 

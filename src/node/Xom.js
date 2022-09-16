@@ -2220,10 +2220,8 @@ class Xom extends Node {
       return;
     }
     super.__destroy();
-    let { root } = this;
     this.clearAnimate();
     this.clearFrameAnimate();
-    this.__root = null;
     this.clearCache();
     let fontRegister = this.__fontRegister;
     for(let i in fontRegister) {
@@ -2231,7 +2229,7 @@ class Xom extends Node {
         font.offRegister(i, this);
       }
     }
-    this.__host = this.__hostRoot
+    this.__host = this.__hostRoot = this.__root
       = this.__prev = this.__next
       = this.__parent = this.__domParent = null;
   }

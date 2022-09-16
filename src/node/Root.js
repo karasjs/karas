@@ -647,7 +647,7 @@ class Root extends Dom {
             hasDisplay = true;
           }
           else if(k === Z_INDEX) {
-            hasZ = node !== this;
+            hasZ = node !== this && ['relative', 'absolute'].indexOf(__computedStyle[POSITION]) > -1;
           }
           else if(k === VISIBILITY) {
             hasVisibility = true;
@@ -679,10 +679,15 @@ class Root extends Dom {
     if(contain(lv, TF)) {
       __cacheStyle[MATRIX] = __computedStyle[TRANSFORM] = undefined;
     }
-    // 清除parent的zIndexChildren缓存
+    // 清除parent的zIndexChildren缓存，强制所有孩子重新渲染
     if(hasZ && __domParent) {
       __domParent.__zIndexChildren = null;
       __domParent.__modifyStruct();
+      if(this.renderMode === mode.SVG) {
+        __domParent.children.forEach(item => {
+          item.__refreshLevel |= REPAINT;
+        });
+      }
     }
     // 影响子继承REPAINT的变化，如果被cache住需要清除
     if(hasVisibility || hasColor || hasTsColor || hasTsWidth || hasTsOver) {

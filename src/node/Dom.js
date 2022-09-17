@@ -3319,7 +3319,7 @@ class Dom extends Xom {
     }
     // 在dom中则整体设置关系和struct，不可见提前跳出
     builder.relation(root, host, this, child, {});
-    this.__insertStruct(child, zIndexChildren.indexOf(this));
+    this.__insertStruct(child, zIndexChildren.indexOf(child));
     // 可能为component，不能用__currentStyle
     if(child.currentStyle[DISPLAY] === 'none' || this.__computedStyle[DISPLAY] === 'none') {
       child.__layoutNone();

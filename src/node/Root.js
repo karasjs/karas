@@ -738,14 +738,6 @@ class Root extends Dom {
     }
     let isRp = isRepaint(lv);
     if(isRp) {
-      // 清除parent的zIndexChildren缓存，强制所有孩子重新渲染
-      if(hasZ && __domParent) {
-        __domParent.__zIndexChildren = null;
-        __domParent.__updateStruct();
-        if(this.renderMode === mode.SVG) {
-          reflow.clearSvgCache(__domParent);
-        }
-      }
       // dom在>=REPAINT时total失效，svg的Geom比较特殊
       let need = lv >= REPAINT;
       if(need) {
@@ -770,24 +762,34 @@ class Root extends Dom {
         node.__cacheFilter.release();
       }
       // 向上清除cache汇总缓存信息，过程中可能会出现重复，根据refreshLevel判断，reflow已经自己清过了
-      while(__domParent) {
-        if(contain(__domParent.__refreshLevel, CACHE | REPAINT | REFLOW)) {
+      let p = __domParent;
+      while(p) {
+        if(contain(p.__refreshLevel, CACHE | REPAINT | REFLOW)) {
           break;
         }
-        __domParent.__refreshLevel |= CACHE;
-        if(__domParent.__cacheTotal) {
-          __domParent.__cacheTotal.release();
+        p.__refreshLevel |= CACHE;
+        if(p.__cacheTotal) {
+          p.__cacheTotal.release();
         }
-        if(__domParent.__cacheFilter) {
-          __domParent.__cacheFilter.release();
+        if(p.__cacheFilter) {
+          p.__cacheFilter.release();
         }
-        if(__domParent.__cacheMask) {
-          __domParent.__cacheMask.release();
+        if(p.__cacheMask) {
+          p.__cacheMask.release();
         }
-        if(__domParent.__cacheOverflow) {
-          __domParent.__cacheOverflow.release();
+        if(p.__cacheOverflow) {
+          p.__cacheOverflow.release();
         }
-        __domParent = __domParent.__domParent;
+        p = p.__domParent;
+      }
+      // 清除parent的zIndexChildren缓存，强制所有孩子重新渲染
+      if(hasZ && __domParent) {
+        __domParent.__zIndexChildren = null;
+        __domParent.__updateStruct();
+        if(this.renderMode === mode.SVG) {
+          node.__cacheTotal.release();
+          reflow.clearSvgCache(__domParent);
+        }
       }
     }
     else {

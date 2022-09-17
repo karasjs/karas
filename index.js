@@ -15730,19 +15730,18 @@
       value: function remove(cb) {
         var root = this.__root;
         var parent = this.isShadowRoot ? this.hostRoot.__parent : this.__parent;
+        var i;
 
         if (parent) {
           var target = this.isShadowRoot ? this.hostRoot : this;
-
-          var i = parent.__children.indexOf(target);
-
-          if (i === -1) {
-            throw new Error('Index exception of remove()');
-          }
+          i = parent.__children.indexOf(target);
 
           parent.__children.splice(i, 1);
 
-          parent.__zIndexChildren = null;
+          i = parent.__zIndexChildren.indexOf(target);
+
+          parent.__zIndexChildren.splice(i, 1);
+
           var __prev = this.__prev,
               __next = this.__next;
 
@@ -15763,7 +15762,7 @@
           return;
         }
 
-        parent.__deleteStruct(this); // 不可见仅改变数据结构
+        parent.__deleteStruct(this, i); // 不可见仅改变数据结构
 
 
         if (this.computedStyle[DISPLAY$7] === 'none') {
@@ -25668,7 +25667,9 @@
 
     return {
       target: target,
+      // 应该的目标margin
       total: total,
+      // 累计的margin
       diff: target - total
     };
   } // 提取出对比节点尺寸是否固定非AUTO
@@ -25902,9 +25903,7 @@
 
 
     var t1 = 0,
-        d1 = 0,
-        t2 = 0,
-        d2 = 0;
+        t2 = 0;
     var mbList = [],
         mtList = [];
     var prev = top.isShadowRoot ? top.__hostRoot.__prev : top.__prev;
@@ -25915,7 +25914,7 @@
       getNextMergeMargin(next, mtList, mbList);
       var t = getMergeMargin(mtList, mbList);
       t1 = t.target;
-      d1 = t.diff;
+      t.diff;
     } else {
       getPrevMergeMargin(prev, mtList, mbList);
       mtList.push(cps[MARGIN_TOP$1]);
@@ -25923,14 +25922,14 @@
       var _t = getMergeMargin(mtList, mbList);
 
       t1 = _t.target;
-      d1 = _t.diff;
+      _t.diff;
       mtList.splice(0);
       mbList.splice(0);
       getNextMergeMargin(next, mtList, mbList);
       mbList.push(cps[MARGIN_BOTTOM$1]);
       _t = getMergeMargin(mtList, mbList);
       t2 = _t.target;
-      d2 = _t.diff;
+      _t.diff;
     } // __layoutData使用prev或者父节点，并重新计算y（不包含合并margin），因为display:none或add的无数据或不对
 
 
@@ -26087,8 +26086,7 @@
 
     var t3 = 0,
         d3 = 0,
-        t4 = 0,
-        d4 = 0;
+        t4 = 0;
     mbList.splice(0);
     mtList.splice(0);
 
@@ -26114,7 +26112,7 @@
       mbList.push(cps[MARGIN_BOTTOM$1]);
       _t3 = getMergeMargin(mtList, mbList);
       t4 = _t3.target;
-      d4 = _t3.diff;
+      _t3.diff;
     }
 
     var nowH;
@@ -26137,15 +26135,15 @@
       nowH = 0;
     } else {
       nowH = top.offsetHeight;
-    } // 查看mergeMargin对top造成的偏移，和原来偏移对比
+    } // 查看mergeMargin对top造成的偏移
 
 
-    if (!removeDom && d3 - d1) {
-      top.__offsetY(d3 - d1, false, null);
+    if (!removeDom && d3) {
+      top.__offsetY(d3, false, null);
     } // 差值计算注意考虑margin合并前的值，和合并后的差值，height使用offsetHeight不考虑margin
 
 
-    var diff = t3 + d3 + t4 + d4 - t1 - d1 - t2 - d2 + nowH - oldH; // console.log(t3, d3, t4, d4, t1, d1, t2, d2, nowH, oldH, diff);
+    var diff = t3 + t4 - t1 - t2 + nowH - oldH; // console.log('t3', t3, 'd3', d3, 't4', t4, 'd4', d4, 't1', t1, 'd1', d1, 't2', t2, 'd2', d2, nowH, oldH, diff);
 
     if (!diff) {
       parent.clearCache(true);
@@ -30039,7 +30037,7 @@
 
         builder.relation(root, host, this, child, {});
 
-        this.__insertStruct(child, zIndexChildren.indexOf(this)); // 可能为component，不能用__currentStyle
+        this.__insertStruct(child, zIndexChildren.indexOf(child)); // 可能为component，不能用__currentStyle
 
 
         if (child.currentStyle[DISPLAY$3] === 'none' || this.__computedStyle[DISPLAY$3] === 'none') {
@@ -37080,18 +37078,7 @@
         var isRp = isRepaint(lv);
 
         if (isRp) {
-          // 清除parent的zIndexChildren缓存，强制所有孩子重新渲染
-          if (hasZ && __domParent) {
-            __domParent.__zIndexChildren = null;
-
-            __domParent.__updateStruct();
-
-            if (this.renderMode === mode.SVG) {
-              reflow.clearSvgCache(__domParent);
-            }
-          } // dom在>=REPAINT时total失效，svg的Geom比较特殊
-
-
+          // dom在>=REPAINT时total失效，svg的Geom比较特殊
           var _need = lv >= REPAINT;
 
           if (_need) {
@@ -37121,30 +37108,45 @@
           } // 向上清除cache汇总缓存信息，过程中可能会出现重复，根据refreshLevel判断，reflow已经自己清过了
 
 
-          while (__domParent) {
-            if (contain(__domParent.__refreshLevel, CACHE | REPAINT | REFLOW)) {
+          var p = __domParent;
+
+          while (p) {
+            if (contain(p.__refreshLevel, CACHE | REPAINT | REFLOW)) {
               break;
             }
 
-            __domParent.__refreshLevel |= CACHE;
+            p.__refreshLevel |= CACHE;
 
-            if (__domParent.__cacheTotal) {
-              __domParent.__cacheTotal.release();
+            if (p.__cacheTotal) {
+              p.__cacheTotal.release();
             }
 
-            if (__domParent.__cacheFilter) {
-              __domParent.__cacheFilter.release();
+            if (p.__cacheFilter) {
+              p.__cacheFilter.release();
             }
 
-            if (__domParent.__cacheMask) {
-              __domParent.__cacheMask.release();
+            if (p.__cacheMask) {
+              p.__cacheMask.release();
             }
 
-            if (__domParent.__cacheOverflow) {
-              __domParent.__cacheOverflow.release();
+            if (p.__cacheOverflow) {
+              p.__cacheOverflow.release();
             }
 
-            __domParent = __domParent.__domParent;
+            p = p.__domParent;
+          } // 清除parent的zIndexChildren缓存，强制所有孩子重新渲染
+
+
+          if (hasZ && __domParent) {
+            __domParent.__zIndexChildren = null;
+
+            __domParent.__updateStruct();
+
+            if (this.renderMode === mode.SVG) {
+              node.__cacheTotal.release();
+
+              reflow.clearSvgCache(__domParent);
+            }
           }
         } else {
           var top = reflow.checkTop(this, node, addDom, removeDom);

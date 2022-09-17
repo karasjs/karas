@@ -72,8 +72,8 @@ function getMergeMargin(topList, bottomList) {
     target = max + min;
   }
   return {
-    target,
-    total,
+    target, // 应该的目标margin
+    total, // 累计的margin
     diff: target - total,
   };
 }
@@ -473,13 +473,13 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
   else {
     nowH = top.offsetHeight;
   }
-  // 查看mergeMargin对top造成的偏移，和原来偏移对比
-  if(!removeDom && d3 - d1) {
-    top.__offsetY(d3 - d1, false, null);
+  // 查看mergeMargin对top造成的偏移
+  if(!removeDom && d3) {
+    top.__offsetY(d3, false, null);
   }
   // 差值计算注意考虑margin合并前的值，和合并后的差值，height使用offsetHeight不考虑margin
-  let diff = t3 + d3 + t4 + d4 - t1 - d1 - t2 - d2 + nowH - oldH;
-  // console.log(t3, d3, t4, d4, t1, d1, t2, d2, nowH, oldH, diff);
+  let diff = t3 + t4 - t1 - t2 + nowH - oldH;
+  // console.log('t3', t3, 'd3', d3, 't4', t4, 'd4', d4, 't1', t1, 'd1', d1, 't2', t2, 'd2', d2, nowH, oldH, diff);
   if(!diff) {
     parent.clearCache(true);
     return;

@@ -3,6 +3,7 @@ import unit from '../style/unit';
 import level from './level';
 import css from '../style/css';
 import Text from '../node/Text';
+import Component from '../node/Component';
 import Geom from '../node/geom/Geom';
 import mode from './mode';
 
@@ -252,15 +253,24 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
     return;
   }
   let parent = top.__domParent, oldH = top.offsetHeight;
+  // svg在特殊children顺序变化的情况需清除缓存以便diff运行
+  // add/remove都会触发，zIndex有效变化也触发，position变更static和非static触发
+  if(root.renderMode === mode.SVG) {
+    if(hasZ && position === 'static' && crs[POSITION] === 'static') {
+      hasZ = false;
+    }
+    else if(position !== crs[POSITION] && (position === 'static' || crs[POSITION] === 'static')) {
+      hasZ = true;
+    }
+    if(addDom || removeDom || hasZ) {
+      parent.__zIndexChildren = null;
+      parent.__modifyStruct();
+      clearSvgCache(parent, false);
+    }
+  }
   // remove自身且abs时不影响其它，除了svg的zIndex
   if(removeDom && top === node && node.computedStyle[POSITION] === 'absolute') {
     top.clearCache(true);
-    if(root.renderMode === mode.SVG) {
-      clearSvgCache(parent, false);
-      // parent.children.forEach(item => {
-      //   item.__refreshLevel |= REPAINT;
-      // });
-    }
     return;
   }
   // 后续调整offsetY需要考虑mergeMargin各种情况（包含上下2个方向），之前合并前和合并后的差值都需记录
@@ -338,9 +348,6 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
     if(!addDom && !removeDom) {
       parent.__zIndexChildren = null;
       top.__modifyStruct();
-      if(root.renderMode === mode.SVG && hasZ && (isNowAbs || position === 'relative')) {
-        clearSvgCache(parent, false);
-      }
     }
   }
   // 现在是定位流，还要看之前是什么
@@ -359,9 +366,6 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
         }
         return;
       }
-      if(root.renderMode === mode.SVG && hasZ && position === 'relative') {
-        clearSvgCache(parent, false);
-      }
     }
   }
   // 现在是普通流，不管之前是啥直接布局
@@ -374,11 +378,6 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
     if(!addDom && !removeDom) {
       top.__zIndexChildren = null;
       top.__modifyStruct();
-      if(isLastAbs) {
-        if(root.renderMode === mode.SVG && hasZ) {
-          clearSvgCache(parent, false);
-        }
-      }
     }
     // 防止Geom
     if(!(top instanceof Geom)) {
@@ -388,9 +387,6 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
   // add的情况在自身是abs时不影响next，除了svg的zIndex
   if(addDom && top === node && node.currentStyle[POSITION] === 'absolute') {
     top.clearCache(true);
-    if(root.renderMode === mode.SVG) {
-      clearSvgCache(parent, false);
-    }
     return;
   }
   // 向上查找最近的relative的parent，获取ox/oy并赋值，无需继续向上递归，因为parent已经递归包含了

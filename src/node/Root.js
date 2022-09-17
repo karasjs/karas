@@ -679,14 +679,6 @@ class Root extends Dom {
     if(contain(lv, TF)) {
       cacheStyle[MATRIX] = computedStyle[TRANSFORM] = undefined;
     }
-    // 清除parent的zIndexChildren缓存，强制所有孩子重新渲染
-    if(hasZ && __domParent) {
-      __domParent.__zIndexChildren = null;
-      __domParent.__modifyStruct();
-      if(this.renderMode === mode.SVG) {
-        reflow.clearSvgCache(__domParent);
-      }
-    }
     // 影响子继承REPAINT的变化，如果被cache住需要清除
     if(hasVisibility || hasColor || hasTsColor || hasTsWidth || hasTsOver) {
       for(let __structs = this.__structs,
@@ -746,6 +738,14 @@ class Root extends Dom {
     }
     let isRp = isRepaint(lv);
     if(isRp) {
+      // 清除parent的zIndexChildren缓存，强制所有孩子重新渲染
+      if(hasZ && __domParent) {
+        __domParent.__zIndexChildren = null;
+        __domParent.__modifyStruct();
+        if(this.renderMode === mode.SVG) {
+          reflow.clearSvgCache(__domParent);
+        }
+      }
       // dom在>=REPAINT时total失效，svg的Geom比较特殊
       let need = lv >= REPAINT;
       if(need) {

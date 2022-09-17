@@ -25994,7 +25994,7 @@
       }
     } // 现在是定位流，还要看之前是什么
     else if (isNowAbs) {
-      parent.__layoutAbs(container, parent.__layoutData, top);
+      parent.__layoutAbs(container, __layoutData, top);
 
       if (!addDom && !removeDom) {
         parent.__zIndexChildren = null;
@@ -26016,7 +26016,7 @@
       }
     } // 现在是普通流，不管之前是啥直接布局
     else {
-      var ld = Object.assign(__layoutData, {
+      var ld = Object.assign(top.__layoutData, {
         x: x,
         y: y
       });
@@ -26124,6 +26124,8 @@
       } else {
         nowH = node.offsetHeight;
       }
+    } else if (isNowAbs) {
+      nowH = 0;
     } else {
       nowH = top.offsetHeight;
     } // 查看mergeMargin对top造成的偏移，和原来偏移对比

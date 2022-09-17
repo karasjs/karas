@@ -23673,20 +23673,19 @@
       value: function remove(cb) {
         var root = this.__root;
         var parent = this.isShadowRoot ? this.hostRoot.__parent : this.__parent;
+        var i;
 
         if (parent) {
           // 移除component的shadowRoot视为移除component
           var target = this.isShadowRoot ? this.hostRoot : this;
-
-          var i = parent.__children.indexOf(target);
-
-          if (i === -1) {
-            throw new Error('Index exception of remove()');
-          }
+          i = parent.__children.indexOf(target);
 
           parent.__children.splice(i, 1);
 
-          parent.__zIndexChildren = null;
+          i = parent.__zIndexChildren.indexOf(target);
+
+          parent.__zIndexChildren.splice(i, 1);
+
           var __prev = this.__prev,
               __next = this.__next;
 
@@ -23707,7 +23706,7 @@
           return;
         }
 
-        parent.__deleteStruct(this); // 不可见仅改变数据结构
+        parent.__deleteStruct(this, i); // 不可见仅改变数据结构
 
 
         if (this.__computedStyle[DISPLAY$6] === 'none' || parent.__computedStyle[DISPLAY$6] === 'none') {
@@ -25868,7 +25867,7 @@
     var isNowAbs = crs[POSITION$2] === 'absolute';
     var isLastNone = display === 'none';
     var isNowNone = crs[DISPLAY$4] === 'none';
-    var isLast0 = top.offsetHeight === 0; // none不可见布局无效可以无视
+    var isLast0 = top.offsetHeight === 0; // none不可见布局无效可以无视，add/remove已提前判断，none时不会进来
 
     if (isLastNone && isNowNone) {
       return;
@@ -25876,29 +25875,27 @@
 
     var parent = top.__domParent,
         oldH = top.offsetHeight; // svg在特殊children顺序变化的情况需清除缓存以便diff运行
-    // add/remove都会触发，zIndex有效变化也触发，position变更static和非static触发
+    // add/remove已提前自己做好，zIndex有效变化也触发，position变更static和非static触发
 
-    if (root.renderMode === mode.SVG) {
+    var svg = root.renderMode === mode.SVG;
+
+    if (!addDom && !removeDom) {
       if (hasZ && position === 'static' && crs[POSITION$2] === 'static') {
         hasZ = false;
       } else if (position !== crs[POSITION$2] && (position === 'static' || crs[POSITION$2] === 'static')) {
         hasZ = true;
-      } else if (isLastNone !== isNowNone) {
-        hasZ = true;
+      } // 特殊，zIndexChildren不变化但影响svg的diff
+      else if (isLastNone !== isNowNone && !hasZ) {
+        svg && clearSvgCache(parent, false);
       }
-
-      if (addDom || removeDom || hasZ) {
-        parent.__zIndexChildren = null;
-
-        parent.__modifyStruct();
-
-        clearSvgCache(parent, false);
-      }
+    } else {
+      hasZ = false;
     } // remove自身且abs时不影响其它，除了svg的zIndex
 
 
     if (removeDom && top === node && node.computedStyle[POSITION$2] === 'absolute') {
       top.clearCache(true);
+      svg && clearSvgCache(parent, false);
       return;
     } // 后续调整offsetY需要考虑mergeMargin各种情况（包含上下2个方向），之前合并前和合并后的差值都需记录
     // 先记录没更新前的，如果是空节点则m1作为整个，忽视m2
@@ -25940,6 +25937,8 @@
     var __layoutData = parent.__layoutData;
     var x = __layoutData.x;
     var y = __layoutData.y;
+    var w = parent.__width;
+    var h = parent.__currentStyle[HEIGHT$3].u === AUTO$2 ? __layoutData.h : parent.__height;
     var current = top; // cp的shadowRoot要向上到cp本身，考虑高阶组件在内到真正的顶层cp
 
     if (current.isShadowRoot) {
@@ -25988,24 +25987,32 @@
     } // 删除的节点的影响top是自己，无需重新布局只要看next节点的offsetY
 
 
-    if (removeDom && top === node) ; else if (isNowNone) {
+    if (removeDom && top === node) ; // 一定不是add/remove，同步操作提前判断
+    else if (isNowNone) {
       top.__layoutNone();
 
-      if (!addDom && !removeDom) {
+      if (hasZ) {
         parent.__zIndexChildren = null;
 
-        top.__modifyStruct();
+        parent.__updateStruct();
+
+        svg && clearSvgCache(parent, false);
       }
     } // 现在是定位流，还要看之前是什么
     else if (isNowAbs) {
       parent.__layoutAbs(container, __layoutData, top);
 
-      if (!addDom && !removeDom) {
+      if (hasZ) {
         parent.__zIndexChildren = null;
 
-        parent.__modifyStruct(); // 之前也是abs，可以跳出不会影响其它
+        parent.__updateStruct();
+
+        svg && clearSvgCache(parent, false);
+      } // add/remove的zIndex已提前做好无需关心，只看普通变更
 
 
+      if (!addDom && !removeDom) {
+        // 之前也是abs，可以跳出不会影响其它只看zIndex即可
         if (isLastAbs) {
           top.clearCache(true);
           return;
@@ -26013,28 +26020,33 @@
       }
     } // 现在是普通流，不管之前是啥直接布局
     else {
-      var ld = Object.assign(addDom ? __layoutData : top.__layoutData, {
+      var ld = Object.assign({}, addDom ? __layoutData : top.__layoutData, {
         x: x,
-        y: y
+        y: y,
+        w: w,
+        h: h
       });
 
-      top.__layout(ld, false, false, false);
-
-      if (!addDom && !removeDom) {
-        top.__zIndexChildren = null;
-
-        top.__modifyStruct();
-      } // 防止Geom
+      top.__layout(ld, false, false, false); // 防止Geom
 
 
       if (!(top instanceof Geom)) {
         top.__layoutAbs(container, ld, null);
+      }
+
+      if (hasZ) {
+        parent.__zIndexChildren = null;
+
+        parent.__updateStruct();
+
+        svg && clearSvgCache(parent, false);
       }
     } // add的情况在自身是abs时不影响next，除了svg的zIndex
 
 
     if (addDom && top === node && node.currentStyle[POSITION$2] === 'absolute') {
       top.clearCache(true);
+      svg && clearSvgCache(parent, false);
       return;
     } // 向上查找最近的relative的parent，获取ox/oy并赋值，无需继续向上递归，因为parent已经递归包含了
 
@@ -26133,8 +26145,7 @@
     } // 差值计算注意考虑margin合并前的值，和合并后的差值，height使用offsetHeight不考虑margin
 
 
-    var diff = t3 + d3 + t4 + d4 - t1 - d1 - t2 - d2 + nowH - oldH;
-    console.log(t3, d3, t4, d4, t1, d1, t2, d2, nowH, oldH, diff);
+    var diff = t3 + d3 + t4 + d4 - t1 - d1 - t2 - d2 + nowH - oldH; // console.log(t3, d3, t4, d4, t1, d1, t2, d2, nowH, oldH, diff);
 
     if (!diff) {
       parent.clearCache(true);
@@ -26411,6 +26422,8 @@
             child.__aIndex = true;
             normal.push(child);
           } else {
+            // 之前遗留清除
+            child.__aIndex = undefined;
             normal.push(child);
           }
         } else {
@@ -26643,13 +26656,11 @@
               p = p.__domParent;
             }
           }
-        } // return [struct, d];
-
+        }
       }
     }, {
       key: "__insertStruct",
       value: function __insertStruct(child, childIndex) {
-        this.__zIndexChildren = this.__zIndexChildren || genZIndexChildren(this);
         var struct = this.__struct;
 
         var cs = child.__structure(struct.lv + 1, childIndex);
@@ -26657,11 +26668,11 @@
         var root = this.__root,
             structs = root.__structs; // 根据是否有prev确定插入索引位置
 
-        var prev = child.__prev;
+        var zIndexChildren = this.__zIndexChildren;
         var i;
 
-        if (prev) {
-          var ps = prev.__struct;
+        if (childIndex) {
+          var ps = zIndexChildren[childIndex - 1].__struct;
 
           var _total = ps.total || 0;
 
@@ -26681,11 +26692,10 @@
         } // 调整后面children的childIndex，+1
 
 
-        var next = child.__next;
+        i++;
 
-        while (next) {
-          next.__struct.childIndex++;
-          next = next.__next;
+        for (var len = zIndexChildren.length; i < len; i++) {
+          zIndexChildren[i].__struct.childIndex++;
         } // 向上添加parent的total数量
 
 
@@ -26702,14 +26712,20 @@
       }
     }, {
       key: "__deleteStruct",
-      value: function __deleteStruct(child) {
-        this.__zIndexChildren = this.__zIndexChildren || genZIndexChildren(this);
+      value: function __deleteStruct(child, childIndex) {
         var cs = child.__struct;
         var total = (cs.total || 0) + 1;
         var root = this.__root,
             structs = root.__structs;
         var i = structs.indexOf(cs);
-        structs.splice(i, total); // 向上减少parent的total数量
+        structs.splice(i, total); // zIndexChildren后面的childIndex偏移
+
+        var zIndexChildren = this.__zIndexChildren;
+
+        for (var _i2 = childIndex + 1, len = zIndexChildren.length; _i2 < len; _i2++) {
+          zIndexChildren[_i2].__struct.childIndex--;
+        } // 向上减少parent的total数量
+
 
         var struct = this.__struct;
         struct.num--;
@@ -26725,65 +26741,58 @@
         }
       }
       /**
-       * 因为zIndex/abs的变化造成的更新，只需重排这一段顺序即可
-       * 即便包含component造成的dom变化也不影响，component作为子节点reflow会再执行，这里重排老的vd
+       * 因为zIndex/abs/add的变化造成的更新，只需重排这一段顺序即可
        */
-      // __updateStruct(structs) {
-      //   let { index, total } = this.__struct;
-      //   let zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
-      //   let length = zIndexChildren.length;
-      //   if(length === 1) {
-      //     return;
-      //   }
-      //   zIndexChildren.forEach((child, i) => {
-      //     if(child instanceof Component) {
-      //       child = child.shadowRoot;
-      //     }
-      //     let ns = child.__struct;
-      //     // 一般肯定有的，但是在zIndex更新和addChild同时发生时，新添加的尚无，zIndex更新会报错，临时解决
-      //     if(ns) {
-      //       ns.childIndex = i; // 仅后面排序用
-      //     }
-      //   });
-      //   // 按直接子节点划分为相同数量的若干段进行排序
-      //   let arr = [];
-      //   let source = [];
-      //   for(let i = index + 1; i <= index + total; i++) {
-      //     let child = structs[i];
-      //     // 同上防止
-      //     if(child) {
-      //       let o = {
-      //         child,
-      //         list: structs.slice(child.index, child.index + (child.total || 0) + 1),
-      //       };
-      //       arr.push(o);
-      //       source.push(o);
-      //       i += child.total || 0;
-      //     }
-      //   }
-      //   arr.sort(function(a, b) {
-      //     return a.child.childIndex - b.child.childIndex;
-      //   });
-      //   // 是否有变更，有才进行重新计算
-      //   let needSort;
-      //   for(let i = 0, len = source.length; i < len; i++) {
-      //     if(source[i] !== arr[i]) {
-      //       needSort = true;
-      //       break;
-      //     }
-      //   }
-      //   if(needSort) {
-      //     let list = [];
-      //     arr.forEach(item => {
-      //       list = list.concat(item.list);
-      //     });
-      //     list.forEach((struct, i) => {
-      //       struct.index = index + i + 1;
-      //     });
-      //     structs.splice(index + 1, total, ...list);
-      //   }
-      // }
 
+    }, {
+      key: "__updateStruct",
+      value: function __updateStruct() {
+        var structs = this.__root.__structs;
+        var struct = this.__struct;
+        var total = struct.total || 0;
+        var index = structs.indexOf(struct);
+        var zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
+        var length = zIndexChildren.length;
+
+        if (length === 1) {
+          return;
+        }
+
+        var needSort;
+        zIndexChildren.forEach(function (child, i) {
+          var cs = child.__struct;
+          cs.childIndex = i; // 仅后面排序用
+        }); // 按之前的structs划分为相同数量的若干段进行排序
+
+        var source = [],
+            count = 0;
+
+        for (var i = index + 1; i <= index + total; i++) {
+          var cs = structs[i];
+          var o = {
+            cs: cs,
+            list: structs.slice(i, i + (cs.total || 0) + 1)
+          };
+
+          if (cs.childIndex !== count++) {
+            needSort = true;
+          }
+
+          source.push(o);
+          i += cs.total || 0;
+        }
+
+        if (needSort) {
+          var list = [];
+          source.sort(function (a, b) {
+            return a.cs.childIndex - b.cs.childIndex;
+          });
+          source.forEach(function (item) {
+            list = list.concat(item.list);
+          });
+          structs.splice.apply(structs, [index + 1, total].concat(_toConsumableArray(list)));
+        }
+      }
       /**
        * 给定父宽度情况下，尝试行内放下后的剩余宽度，为负数即放不下，这里只会出现行内级即inline(Block)
        * 调用前提是非行开头的inline尝试计算是否放得下，开头无需且禁止判断，防止出现永远放不下一个字符卡死
@@ -28617,37 +28626,37 @@
           }
         } else {
           if (justifyContent === 'flexEnd') {
-            for (var _i2 = 0; _i2 < len; _i2++) {
-              var _child = line[_i2];
+            for (var _i3 = 0; _i3 < len; _i3++) {
+              var _child = line[_i3];
               isDirectionRow ? _child.__offsetX(free, true) : _child.__offsetY(free, true);
             }
           } else if (justifyContent === 'center') {
             var center = free * 0.5;
 
-            for (var _i3 = 0; _i3 < len; _i3++) {
-              var _child2 = line[_i3];
+            for (var _i4 = 0; _i4 < len; _i4++) {
+              var _child2 = line[_i4];
               isDirectionRow ? _child2.__offsetX(center, true) : _child2.__offsetY(center, true);
             }
           } else if (justifyContent === 'spaceBetween') {
             var between = free / (len - 1);
 
-            for (var _i4 = 1; _i4 < len; _i4++) {
-              var _child3 = line[_i4];
-              isDirectionRow ? _child3.__offsetX(between * _i4, true) : _child3.__offsetY(between * _i4, true);
+            for (var _i5 = 1; _i5 < len; _i5++) {
+              var _child3 = line[_i5];
+              isDirectionRow ? _child3.__offsetX(between * _i5, true) : _child3.__offsetY(between * _i5, true);
             }
           } else if (justifyContent === 'spaceAround') {
             var around = free * 0.5 / len;
 
-            for (var _i5 = 0; _i5 < len; _i5++) {
-              var _child4 = line[_i5];
-              isDirectionRow ? _child4.__offsetX(around * (_i5 * 2 + 1), true) : _child4.__offsetY(around * (_i5 * 2 + 1), true);
+            for (var _i6 = 0; _i6 < len; _i6++) {
+              var _child4 = line[_i6];
+              isDirectionRow ? _child4.__offsetX(around * (_i6 * 2 + 1), true) : _child4.__offsetY(around * (_i6 * 2 + 1), true);
             }
           } else if (justifyContent === 'spaceEvenly') {
             var _around = free / (len + 1);
 
-            for (var _i6 = 0; _i6 < len; _i6++) {
-              var _child5 = line[_i6];
-              isDirectionRow ? _child5.__offsetX(_around * (_i6 + 1), true) : _child5.__offsetY(_around * (_i6 + 1), true);
+            for (var _i7 = 0; _i7 < len; _i7++) {
+              var _child5 = line[_i7];
+              isDirectionRow ? _child5.__offsetX(_around * (_i7 + 1), true) : _child5.__offsetY(_around * (_i7 + 1), true);
             }
           }
         } // 再侧轴
@@ -29957,7 +29966,7 @@
 
         child.__parent = this;
         children.push(child);
-        this.__zIndexChildren = genZIndexChildren(this); // 离屏情况，不刷新
+        var zIndexChildren = this.__zIndexChildren = genZIndexChildren(this); // 离屏情况，不刷新
 
         if (this.__isDestroyed) {
           if (isFunction$4(cb)) {
@@ -29970,7 +29979,7 @@
 
         builder.relation(root, host, this, child, {});
 
-        this.__insertStruct(child, len); // 可能为component，不能用__currentStyle
+        this.__insertStruct(child, zIndexChildren.indexOf(child)); // 可能为component，不能用__currentStyle
 
 
         if (child.currentStyle[DISPLAY$3] === 'none' || this.__computedStyle[DISPLAY$3] === 'none') {
@@ -30017,7 +30026,7 @@
 
         child.__parent = this;
         children.unshift(child);
-        this.__zIndexChildren = genZIndexChildren(this); // 离屏情况，不刷新
+        var zIndexChildren = this.__zIndexChildren = genZIndexChildren(this); // 离屏情况，不刷新
 
         if (this.__isDestroyed) {
           if (isFunction$4(cb)) {
@@ -30030,7 +30039,7 @@
 
         builder.relation(root, host, this, child, {});
 
-        this.__insertStruct(child, 0); // 可能为component，不能用__currentStyle
+        this.__insertStruct(child, zIndexChildren.indexOf(this)); // 可能为component，不能用__currentStyle
 
 
         if (child.currentStyle[DISPLAY$3] === 'none' || this.__computedStyle[DISPLAY$3] === 'none') {
@@ -30103,7 +30112,7 @@
 
         builder.relation(root, parent.__host, parent, child, {});
 
-        parent.__insertStruct(child, i);
+        parent.__insertStruct(child, parent.__zIndexChildren.indexOf(child));
 
         if (child.currentStyle[DISPLAY$3] === 'none' || parent.__computedStyle[DISPLAY$3] === 'none') {
           child.__layoutNone();
@@ -30167,7 +30176,7 @@
 
         builder.relation(root, parent.__host, parent, child, {});
 
-        parent.__insertStruct(child, i + 1);
+        parent.__insertStruct(child, parent.__zIndexChildren.indexOf(child));
 
         if (child.currentStyle[DISPLAY$3] === 'none' || parent.__computedStyle[DISPLAY$3] === 'none') {
           child.__layoutNone();
@@ -37075,7 +37084,7 @@
           if (hasZ && __domParent) {
             __domParent.__zIndexChildren = null;
 
-            __domParent.__modifyStruct();
+            __domParent.__updateStruct();
 
             if (this.renderMode === mode.SVG) {
               reflow.clearSvgCache(__domParent);

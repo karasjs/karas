@@ -741,7 +741,7 @@ class Root extends Dom {
       // 清除parent的zIndexChildren缓存，强制所有孩子重新渲染
       if(hasZ && __domParent) {
         __domParent.__zIndexChildren = null;
-        __domParent.__modifyStruct();
+        __domParent.__updateStruct();
         if(this.renderMode === mode.SVG) {
           reflow.clearSvgCache(__domParent);
         }

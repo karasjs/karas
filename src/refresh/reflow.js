@@ -251,32 +251,33 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
   let isLastNone = display === 'none';
   let isNowNone = crs[DISPLAY] === 'none';
   let isLast0 = top.offsetHeight === 0;
-  // none不可见布局无效可以无视
+  // none不可见布局无效可以无视，add/remove已提前判断，none时不会进来
   if(isLastNone && isNowNone) {
     return;
   }
   let parent = top.__domParent, oldH = top.offsetHeight;
   // svg在特殊children顺序变化的情况需清除缓存以便diff运行
-  // add/remove都会触发，zIndex有效变化也触发，position变更static和非static触发
-  if(root.renderMode === mode.SVG) {
+  // add/remove已提前自己做好，zIndex有效变化也触发，position变更static和非static触发
+  let svg = root.renderMode === mode.SVG;
+  if(!addDom && !removeDom) {
     if(hasZ && position === 'static' && crs[POSITION] === 'static') {
       hasZ = false;
     }
     else if(position !== crs[POSITION] && (position === 'static' || crs[POSITION] === 'static')) {
       hasZ = true;
     }
-    else if(isLastNone !== isNowNone) {
-      hasZ = true;
+    // 特殊，zIndexChildren不变化但影响svg的diff
+    else if(isLastNone !== isNowNone && !hasZ) {
+      svg && clearSvgCache(parent, false);
     }
-    if(addDom || removeDom || hasZ) {
-      parent.__zIndexChildren = null;
-      parent.__modifyStruct();
-      clearSvgCache(parent, false);
-    }
+  }
+  else {
+    hasZ = false;
   }
   // remove自身且abs时不影响其它，除了svg的zIndex
   if(removeDom && top === node && node.computedStyle[POSITION] === 'absolute') {
     top.clearCache(true);
+    svg && clearSvgCache(parent, false);
     return;
   }
   // 后续调整offsetY需要考虑mergeMargin各种情况（包含上下2个方向），之前合并前和合并后的差值都需记录
@@ -310,6 +311,8 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
   let __layoutData = parent.__layoutData;
   let x = __layoutData.x;
   let y = __layoutData.y;
+  let w = parent.__width;
+  let h = parent.__currentStyle[HEIGHT].u === AUTO ? __layoutData.h : parent.__height;
   let current = top;
   // cp的shadowRoot要向上到cp本身，考虑高阶组件在内到真正的顶层cp
   if(current.isShadowRoot) {
@@ -349,20 +352,26 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
   // 删除的节点的影响top是自己，无需重新布局只要看next节点的offsetY
   if(removeDom && top === node) {
   }
+  // 一定不是add/remove，同步操作提前判断
   else if(isNowNone) {
     top.__layoutNone();
-    if(!addDom && !removeDom) {
+    if(hasZ) {
       parent.__zIndexChildren = null;
-      top.__modifyStruct();
+      parent.__updateStruct();
+      svg && clearSvgCache(parent, false);
     }
   }
   // 现在是定位流，还要看之前是什么
   else if(isNowAbs) {
     parent.__layoutAbs(container, __layoutData, top);
-    if(!addDom && !removeDom) {
+    if(hasZ) {
       parent.__zIndexChildren = null;
-      parent.__modifyStruct();
-      // 之前也是abs，可以跳出不会影响其它
+      parent.__updateStruct();
+      svg && clearSvgCache(parent, false);
+    }
+    // add/remove的zIndex已提前做好无需关心，只看普通变更
+    if(!addDom && !removeDom) {
+      // 之前也是abs，可以跳出不会影响其它只看zIndex即可
       if(isLastAbs) {
         top.clearCache(true);
         return;
@@ -371,23 +380,27 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
   }
   // 现在是普通流，不管之前是啥直接布局
   else {
-    let ld = Object.assign(addDom ? __layoutData : top.__layoutData, {
+    let ld = Object.assign({}, addDom ? __layoutData : top.__layoutData, {
       x,
       y,
+      w,
+      h,
     });
     top.__layout(ld, false, false, false);
-    if(!addDom && !removeDom) {
-      top.__zIndexChildren = null;
-      top.__modifyStruct();
-    }
     // 防止Geom
     if(!(top instanceof Geom)) {
       top.__layoutAbs(container, ld, null);
+    }
+    if(hasZ) {
+      parent.__zIndexChildren = null;
+      parent.__updateStruct();
+      svg && clearSvgCache(parent, false);
     }
   }
   // add的情况在自身是abs时不影响next，除了svg的zIndex
   if(addDom && top === node && node.currentStyle[POSITION] === 'absolute') {
     top.clearCache(true);
+    svg && clearSvgCache(parent, false);
     return;
   }
   // 向上查找最近的relative的parent，获取ox/oy并赋值，无需继续向上递归，因为parent已经递归包含了
@@ -466,7 +479,7 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
   }
   // 差值计算注意考虑margin合并前的值，和合并后的差值，height使用offsetHeight不考虑margin
   let diff = t3 + d3 + t4 + d4 - t1 - d1 - t2 - d2 + nowH - oldH;
-  console.log(t3, d3, t4, d4, t1, d1, t2, d2, nowH, oldH, diff);
+  // console.log(t3, d3, t4, d4, t1, d1, t2, d2, nowH, oldH, diff);
   if(!diff) {
     parent.clearCache(true);
     return;

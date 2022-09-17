@@ -1,7 +1,7 @@
 let o = karas.render(
   <svg width="360" height="360">
     <div style={{position:'absolute',width:100,height:100,background:'#00F'}} ref="middle"/>
-    <div>next</div>
+    <p>next</p>
   </svg>,
   '#test'
 );

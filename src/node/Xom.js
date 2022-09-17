@@ -2740,15 +2740,14 @@ class Xom extends Node {
   remove(cb) {
     let { __root: root } = this;
     let parent = this.isShadowRoot ? this.hostRoot.__parent: this.__parent;
+    let i;
     if(parent) {
       // 移除component的shadowRoot视为移除component
       let target = this.isShadowRoot ? this.hostRoot : this;
-      let i = parent.__children.indexOf(target);
-      if(i === -1) {
-        throw new Error('Index exception of remove()');
-      }
+      i = parent.__children.indexOf(target);
       parent.__children.splice(i, 1);
-      parent.__zIndexChildren = null;
+      i = parent.__zIndexChildren.indexOf(target);
+      parent.__zIndexChildren.splice(i, 1);
       let { __prev, __next } = this;
       if(__prev) {
         __prev.__next = __next;
@@ -2763,7 +2762,7 @@ class Xom extends Node {
       }
       return;
     }
-    parent.__deleteStruct(this);
+    parent.__deleteStruct(this, i);
     // 不可见仅改变数据结构
     if(this.__computedStyle[DISPLAY] === 'none' || parent.__computedStyle[DISPLAY] === 'none') {
       this.__destroy();

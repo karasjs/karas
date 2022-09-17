@@ -232,7 +232,6 @@ function checkTop(root, node, addDom, removeDom) {
     }
     // 遇到固定size提前跳出，以及absolute也是
     if(parent.computedStyle[POSITION] === 'absolute' || isFixedSize(parent, true)) {
-      top = parent;
       break;
     }
     parent = parent.__domParent;
@@ -295,6 +294,10 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
   if(addDom || isLast0) {
     getPrevMergeMargin(prev, mtList, mbList);
     getNextMergeMargin(next, mtList, mbList);
+    if(!addDom) {
+      mtList.push(cps[MARGIN_TOP]);
+      mbList.push(cps[MARGIN_BOTTOM]);
+    }
     let t = getMergeMargin(mtList, mbList);
     t1 = t.target;
     d1 = t.diff;
@@ -422,11 +425,7 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
   }
   // 高度不变一直0提前跳出，不影响包含margin合并，但需排除节点add/remove，因为空节点会上下穿透合并
   let isNow0 = removeDom && top === node || top.offsetHeight === 0;
-  if(isLast0 && isNow0 && !addDom && !removeDom) {
-    top.clearCache(true);
-    return;
-  }
-  // 其它几种忽略的情况
+  // 几种忽略的情况
   if(addDom && isNow0 || removeDom && isLast0) {
     top.clearCache(true);
     return;
@@ -441,6 +440,10 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
   if(removeDom || isNow0) {
     getPrevMergeMargin(prev, mtList, mbList);
     getNextMergeMargin(next, mtList, mbList);
+    if(!removeDom) {
+      mtList.push(cps[MARGIN_TOP]);
+      mbList.push(cps[MARGIN_BOTTOM]);
+    }
     let t = getMergeMargin(mtList, mbList);
     t3 = t.target;
     d3 = t.diff;
@@ -498,12 +501,8 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
   let absList = [];
   offsetNext(next, diff, parentFixed, absList);
   parent.clearCache(true);
-  parent.__refreshLevel |= CACHE;
-  if(parentFixed) {
-    return;
-  }
-  // 影响完next之后，向上递归，所有parent的next都影响
-  while(parent && !parentFixed) {
+  // 影响完next之后，向上递归，所有parent的next都影响，遇到固定尺寸或absolute跳出
+  while(parent && !parentFixed && parent.__computedStyle[POSITION] !== 'absolute') {
     next = parent.__next;
     parent = parent.__domParent;
     parentFixed = parent && isFixedSize(parent, false);

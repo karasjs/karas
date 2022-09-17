@@ -25858,7 +25858,6 @@
 
 
       if (parent.computedStyle[POSITION$2] === 'absolute' || isFixedSize(parent, true)) {
-        top = parent;
         break;
       }
 
@@ -25931,6 +25930,12 @@
     if (addDom || isLast0) {
       getPrevMergeMargin(prev, mtList, mbList);
       getNextMergeMargin(next, mtList, mbList);
+
+      if (!addDom) {
+        mtList.push(cps[MARGIN_TOP$1]);
+        mbList.push(cps[MARGIN_BOTTOM$1]);
+      }
+
       var t = getMergeMargin(mtList, mbList);
       t1 = t.target;
       t.diff;
@@ -26085,13 +26090,7 @@
     } // 高度不变一直0提前跳出，不影响包含margin合并，但需排除节点add/remove，因为空节点会上下穿透合并
 
 
-    var isNow0 = removeDom && top === node || top.offsetHeight === 0;
-
-    if (isLast0 && isNow0 && !addDom && !removeDom) {
-      top.clearCache(true);
-      return;
-    } // 其它几种忽略的情况
-
+    var isNow0 = removeDom && top === node || top.offsetHeight === 0; // 几种忽略的情况
 
     if (addDom && isNow0 || removeDom && isLast0) {
       top.clearCache(true);
@@ -26112,6 +26111,11 @@
     if (removeDom || isNow0) {
       getPrevMergeMargin(prev, mtList, mbList);
       getNextMergeMargin(next, mtList, mbList);
+
+      if (!removeDom) {
+        mtList.push(cps[MARGIN_TOP$1]);
+        mbList.push(cps[MARGIN_BOTTOM$1]);
+      }
 
       var _t2 = getMergeMargin(mtList, mbList);
 
@@ -26178,15 +26182,9 @@
 
     var absList = [];
     offsetNext(next, diff, parentFixed, absList);
-    parent.clearCache(true);
-    parent.__refreshLevel |= CACHE$2;
+    parent.clearCache(true); // 影响完next之后，向上递归，所有parent的next都影响，遇到固定尺寸或absolute跳出
 
-    if (parentFixed) {
-      return;
-    } // 影响完next之后，向上递归，所有parent的next都影响
-
-
-    while (parent && !parentFixed) {
+    while (parent && !parentFixed && parent.__computedStyle[POSITION$2] !== 'absolute') {
       next = parent.__next;
       parent = parent.__domParent;
       parentFixed = parent && isFixedSize(parent, false);

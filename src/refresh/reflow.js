@@ -23,9 +23,23 @@ const {
     PADDING_LEFT,
   },
 } = enums;
-const { AUTO, PX, PERCENT } = unit;
-const { REPAINT, REFLOW, CACHE } = level;
+const { AUTO, PERCENT } = unit;
+const { REPAINT, CACHE } = level;
 const { isRelativeOrAbsolute } = css;
+
+function clearSvgCache(node, child) {
+  if(child) {
+    node.__refreshLevel |= REPAINT;
+  }
+  if(Array.isArray(node.children)) {
+    node.children.forEach(child => {
+      if(child instanceof Component) {
+        child = child.shadowRoot;
+      }
+      clearSvgCache(child, true);
+    });
+  }
+}
 
 // 合并margin，和原本不合并情况下的差值
 function getMergeMargin(topList, bottomList) {
@@ -242,9 +256,10 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
   if(removeDom && top === node && node.computedStyle[POSITION] === 'absolute') {
     top.clearCache(true);
     if(root.renderMode === mode.SVG) {
-      parent.children.forEach(item => {
-        item.__refreshLevel |= REPAINT;
-      });
+      clearSvgCache(parent, false);
+      // parent.children.forEach(item => {
+      //   item.__refreshLevel |= REPAINT;
+      // });
     }
     return;
   }
@@ -324,9 +339,7 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
       parent.__zIndexChildren = null;
       top.__modifyStruct();
       if(root.renderMode === mode.SVG && hasZ && (isNowAbs || position === 'relative')) {
-        parent.children.forEach(item => {
-          item.__refreshLevel |= REPAINT;
-        });
+        clearSvgCache(parent, false);
       }
     }
   }
@@ -347,9 +360,7 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
         return;
       }
       if(root.renderMode === mode.SVG && hasZ && position === 'relative') {
-        parent.children.forEach(item => {
-          item.__refreshLevel |= REPAINT;
-        });
+        clearSvgCache(parent, false);
       }
     }
   }
@@ -365,9 +376,7 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
       top.__modifyStruct();
       if(isLastAbs) {
         if(root.renderMode === mode.SVG && hasZ) {
-          parent.children.forEach(item => {
-            item.__refreshLevel |= REPAINT;
-          });
+          clearSvgCache(parent, false);
         }
       }
     }
@@ -380,9 +389,7 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
   if(addDom && top === node && node.currentStyle[POSITION] === 'absolute') {
     top.clearCache(true);
     if(root.renderMode === mode.SVG) {
-      parent.children.forEach(item => {
-        item.__refreshLevel |= REPAINT;
-      });
+      clearSvgCache(parent, false);
     }
     return;
   }
@@ -494,4 +501,5 @@ export default {
   getMergeMargin,
   checkTop,
   checkNext,
+  clearSvgCache,
 };

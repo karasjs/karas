@@ -16174,7 +16174,7 @@
   //   }
   // }
 
-  var Component = /*#__PURE__*/function (_Event) {
+  var Component$1 = /*#__PURE__*/function (_Event) {
     _inherits(Component, _Event);
 
     function Component() {
@@ -16467,7 +16467,7 @@
   // '__sy5',
   // '__sy6',
   'width', 'height', 'outerWidth', 'outerHeight', 'clientWidth', 'clientHeight', 'offsetWidth', 'offsetHeight', 'style', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'currentProps', 'baseline', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', '__layoutData', '__struct', 'availableAnimating', 'effectiveAnimating', 'displayAnimating', 'visibilityAnimating', 'bbox', 'contentBoxList', 'listener', 'matrix', 'matrixEvent']).forEach(function (fn) {
-    Object.defineProperty(Component.prototype, fn, {
+    Object.defineProperty(Component$1.prototype, fn, {
       get: function get() {
         var sr = this.shadowRoot;
 
@@ -16478,7 +16478,7 @@
     });
   });
   ['__layout', '__layoutAbs', '__layoutNone', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__computeReflow', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'frameAnimate', 'updateStyle', 'getBoundingClientRect', 'getComputedStyle', '__deepScan', 'clearCache', '__structure', '__modifyStruct', '__updateStruct', 'flowChildren', 'absChildren', '__isRealInline', '__calBasis', '__calMinMax', '__computeMeasure', 'appendChild', 'prependChild', 'insertBefore', 'insertAfter', 'removeChild', 'remove'].forEach(function (fn) {
-    Component.prototype[fn] = function () {
+    Component$1.prototype[fn] = function () {
       var sr = this.shadowRoot;
 
       if (sr && isFunction$8(sr[fn])) {
@@ -20862,7 +20862,7 @@
     for (var i = 0; i < length; i++) {
       var child = flowChildren[i];
 
-      if (child instanceof Xom || child instanceof Component && child.shadowRoot instanceof Xom) {
+      if (child instanceof Xom || child instanceof Component$1 && child.shadowRoot instanceof Xom) {
         if (child.flowChildren && child.flowChildren.length) {
           n += getFirstEmptyInlineWidth(child);
           break;
@@ -20885,7 +20885,7 @@
     for (var i = length - 1; i >= 0; i--) {
       var child = flowChildren[i];
 
-      if (child instanceof Xom || child instanceof Component && child.shadowRoot instanceof Xom) {
+      if (child instanceof Xom || child instanceof Component$1 && child.shadowRoot instanceof Xom) {
         if (child.flowChildren && child.flowChildren.length) {
           n += getLastEmptyInlineWidth(child);
           break;
@@ -25617,13 +25617,28 @@
       PADDING_TOP$1 = _enums$STYLE_KEY$5.PADDING_TOP,
       BORDER_LEFT_WIDTH$2 = _enums$STYLE_KEY$5.BORDER_LEFT_WIDTH,
       PADDING_LEFT$2 = _enums$STYLE_KEY$5.PADDING_LEFT;
-  var AUTO$2 = o$4.AUTO;
-      o$4.PX;
-      var PERCENT$2 = o$4.PERCENT;
-  var REPAINT$2 = o$1.REPAINT;
-      o$1.REFLOW;
-      var CACHE$2 = o$1.CACHE;
-  var isRelativeOrAbsolute$1 = css.isRelativeOrAbsolute; // 合并margin，和原本不合并情况下的差值
+  var AUTO$2 = o$4.AUTO,
+      PERCENT$2 = o$4.PERCENT;
+  var REPAINT$2 = o$1.REPAINT,
+      CACHE$2 = o$1.CACHE;
+  var isRelativeOrAbsolute$1 = css.isRelativeOrAbsolute;
+
+  function clearSvgCache(node, child) {
+    if (child) {
+      node.__refreshLevel |= REPAINT$2;
+    }
+
+    if (Array.isArray(node.children)) {
+      node.children.forEach(function (child) {
+        if (child instanceof Component) {
+          child = child.shadowRoot;
+        }
+
+        clearSvgCache(child, true);
+      });
+    }
+  } // 合并margin，和原本不合并情况下的差值
+
 
   function getMergeMargin(topList, bottomList) {
     var total = 0;
@@ -25864,9 +25879,9 @@
       top.clearCache(true);
 
       if (root.renderMode === mode.SVG) {
-        parent.children.forEach(function (item) {
-          item.__refreshLevel |= REPAINT$2;
-        });
+        clearSvgCache(parent, false); // parent.children.forEach(item => {
+        //   item.__refreshLevel |= REPAINT;
+        // });
       }
 
       return;
@@ -25967,9 +25982,7 @@
         top.__modifyStruct();
 
         if (root.renderMode === mode.SVG && hasZ && (isNowAbs || position === 'relative')) {
-          parent.children.forEach(function (item) {
-            item.__refreshLevel |= REPAINT$2;
-          });
+          clearSvgCache(parent, false);
         }
       }
     } // 现在是定位流，还要看之前是什么
@@ -25995,9 +26008,7 @@
         }
 
         if (root.renderMode === mode.SVG && hasZ && position === 'relative') {
-          parent.children.forEach(function (item) {
-            item.__refreshLevel |= REPAINT$2;
-          });
+          clearSvgCache(parent, false);
         }
       }
     } // 现在是普通流，不管之前是啥直接布局
@@ -26016,9 +26027,7 @@
 
         if (isLastAbs) {
           if (root.renderMode === mode.SVG && hasZ) {
-            parent.children.forEach(function (item) {
-              item.__refreshLevel |= REPAINT$2;
-            });
+            clearSvgCache(parent, false);
           }
         }
       } // 防止Geom
@@ -26034,9 +26043,7 @@
       top.clearCache(true);
 
       if (root.renderMode === mode.SVG) {
-        parent.children.forEach(function (item) {
-          item.__refreshLevel |= REPAINT$2;
-        });
+        clearSvgCache(parent, false);
       }
 
       return;
@@ -26178,7 +26185,8 @@
   var reflow = {
     getMergeMargin: getMergeMargin,
     checkTop: checkTop,
-    checkNext: checkNext
+    checkNext: checkNext,
+    clearSvgCache: clearSvgCache
   };
 
   /**
@@ -26203,7 +26211,7 @@
 
       children.__parent = parent;
       list.push(children);
-    } else if (children instanceof Component) {
+    } else if (children instanceof Component$1) {
       children.__parent = parent;
       list.push(children);
     } else if (!util.isNil(children) && children !== '') {
@@ -26224,7 +26232,7 @@
       children.forEach(function (item) {
         relation(root, host, parent, item, options);
       });
-    } else if (children instanceof Xom || children instanceof Component || children instanceof Text) {
+    } else if (children instanceof Xom || children instanceof Component$1 || children instanceof Text) {
       children.__root = root;
       children.__parent = parent;
       children.__domParent = parent;
@@ -26249,11 +26257,11 @@
 
       if (children instanceof Xom && children.__children) {
         relation(root, host, children, children.__children, {});
-      } else if (children instanceof Component) {
+      } else if (children instanceof Component$1) {
         var sr = children.render();
         var hoc = [];
 
-        while (sr && sr instanceof Component) {
+        while (sr && sr instanceof Component$1) {
           hoc.push(sr);
           var res = sr.render();
 
@@ -26385,7 +26393,7 @@
     children.forEach(function (item, i) {
       var child = item;
 
-      if (item instanceof Component) {
+      if (item instanceof Component$1) {
         item = item.shadowRoot;
       } // 遮罩单独保存后特殊排序
 
@@ -26458,7 +26466,7 @@
     flowChildren.forEach(function (item, i) {
       var child = item;
 
-      if (item instanceof Component) {
+      if (item instanceof Component$1) {
         item = item.shadowRoot;
       }
 
@@ -26823,7 +26831,7 @@
           if (flowChildren.length) {
             var first = flowChildren[0];
 
-            if (first instanceof Component) {
+            if (first instanceof Component$1) {
               first = first.shadowRoot;
             }
 
@@ -26846,7 +26854,7 @@
 
               var item = flowChildren[i];
 
-              if (item instanceof Component) {
+              if (item instanceof Component$1) {
                 item = item.shadowRoot;
               }
 
@@ -27006,7 +27014,7 @@
             var isR = ['column', 'columnReverse'].indexOf(flexDirection) === -1;
             flowChildren = genOrderChildren(flowChildren);
             flowChildren.forEach(function (item) {
-              if (item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
+              if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
                 var _item$__calBasis = item.__calBasis(isDirectionRow, isAbs, isColumn, {
                   x: x,
                   y: y,
@@ -27077,7 +27085,7 @@
             }
 
             flowChildren.forEach(function (item) {
-              if (item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
+              if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
                 var _item$__calBasis3 = item.__calBasis(isDirectionRow, isAbs, isColumn, {
                   x: x,
                   y: y,
@@ -27141,7 +27149,7 @@
 
         var children = this.children;
         children.forEach(function (item) {
-          if (item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
+          if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
             item.__layoutNone();
           }
         });
@@ -27225,7 +27233,7 @@
         var ignoreNextWrap; // whiteSpace单行超过后，后面的均忽略并置none，注意这也是跨block的会被隔断重计
 
         flowChildren.forEach(function (item, i) {
-          var isXom = item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom;
+          var isXom = item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom;
 
           if (isXom) {
             item.__computeReflow(); // writing-mode可能会造成inline改变为ib
@@ -27759,7 +27767,7 @@
             var isLastBlock = false,
                 hasStart = false;
             flowChildren.forEach(function (item) {
-              var isXom = item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom;
+              var isXom = item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom;
               var isBlock = isXom && ['block', 'flex'].indexOf(item.computedStyle[DISPLAY$3]) > -1;
 
               if (isBlock) {
@@ -27792,7 +27800,7 @@
               lineBoxManager.horizonAlign(isUpright ? th : tw, textAlign, isUpright); // 直接text需计算size
 
               flowChildren.forEach(function (item) {
-                if (item instanceof Component) {
+                if (item instanceof Component$1) {
                   item = item.shadowRoot;
                 }
 
@@ -27877,7 +27885,7 @@
         var minList = [];
         var orderChildren = genOrderChildren(flowChildren);
         orderChildren.forEach(function (item) {
-          if (item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
+          if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
             var _currentStyle = item.currentStyle,
                 _computedStyle = item.computedStyle;
 
@@ -28436,7 +28444,7 @@
         orderChildren.forEach(function (item, i) {
           var main = targetMainList[i];
 
-          if (item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
+          if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
             if (isDirectionRow) {
               item.__layout({
                 x: x,
@@ -28995,7 +29003,7 @@
             return;
           }
 
-          var isXom = item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom;
+          var isXom = item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom;
 
           if (isXom) {
             item.__computeReflow(); // writing-mode可能会造成inline改变为ib
@@ -29361,7 +29369,7 @@
               lineBoxManager.horizonAlign(isUpright ? th : tw, textAlign, isUpright); // 直接text需计算size
 
               flowChildren.forEach(function (item) {
-                if (item instanceof Component) {
+                if (item instanceof Component$1) {
                   item = item.shadowRoot;
                 }
 
@@ -29596,7 +29604,7 @@
             // 传入target局部布局更新，这时候如果是Component引发的，当setState时是Cp自身，当layout时是sr
             var node = item;
 
-            if (node instanceof Component) {
+            if (node instanceof Component$1) {
               node = item.shadowRoot;
             } // 所以得2个都对比
 
@@ -29783,7 +29791,7 @@
             // 传入target局部布局更新，这时候如果是Component引发的，当setState时是Cp自身，当layout时是sr
             var node = item;
 
-            if (node instanceof Component) {
+            if (node instanceof Component$1) {
               node = item.shadowRoot;
             } // 所以得2个都对比
 
@@ -29795,7 +29803,7 @@
 
           if (item instanceof Dom) {
             item.__layoutAbs(isRelativeOrAbsolute(item) ? item : container, data, null);
-          } else if (item instanceof Component) {
+          } else if (item instanceof Component$1) {
             var sr = item.shadowRoot;
 
             if (sr instanceof Dom) {
@@ -29903,7 +29911,7 @@
         for (var i = zIndexChildren.length - 1; i >= 0; i--) {
           var child = zIndexChildren[i];
 
-          if (child instanceof Xom || child instanceof Component && child.shadowRoot instanceof Xom) {
+          if (child instanceof Xom || child instanceof Component$1 && child.shadowRoot instanceof Xom) {
             if (child.__emitEvent(e, pm, false)) {
               // 孩子阻止冒泡
               if (e.__stopPropagation) {
@@ -29941,7 +29949,7 @@
             host = this.__host,
             children = this.__children;
 
-        if (!(child instanceof Xom || child instanceof Component)) {
+        if (!(child instanceof Node || child instanceof Component$1)) {
           child = new Text(child);
         }
 
@@ -30001,7 +30009,7 @@
             host = this.__host,
             children = this.__children;
 
-        if (!(child instanceof Xom || child instanceof Component)) {
+        if (!(child instanceof Node || child instanceof Component$1)) {
           child = new Text(child);
         }
 
@@ -30059,7 +30067,7 @@
       value: function insertBefore(child, cb) {
         var root = this.__root;
 
-        if (!(child instanceof Xom || child instanceof Component)) {
+        if (!(child instanceof Node || child instanceof Component$1)) {
           child = new Text(child);
         }
 
@@ -30130,7 +30138,7 @@
       value: function insertAfter(child, cb) {
         var root = this.__root;
 
-        if (child && !(child instanceof Xom || child instanceof Component)) {
+        if (child && !(child instanceof Node || child instanceof Component$1)) {
           child = new Text(child);
         }
 
@@ -30192,7 +30200,7 @@
     }, {
       key: "removeChild",
       value: function removeChild(target, cb) {
-        if ((target.__parent === this || target.__domParent === this) && (target instanceof Text || target instanceof Xom || target instanceof Component)) {
+        if ((target.__parent === this || target.__domParent === this) && (target instanceof Node || target instanceof Component$1)) {
           target.remove(cb);
         } else {
           inject.error('Invalid parameter of removeChild()');
@@ -30207,7 +30215,7 @@
       key: "flowChildren",
       get: function get() {
         return this.__children.filter(function (item) {
-          if (item instanceof Component) {
+          if (item instanceof Component$1) {
             item = item.shadowRoot;
           }
 
@@ -30218,7 +30226,7 @@
       key: "absChildren",
       get: function get() {
         return this.__children.filter(function (item) {
-          if (item instanceof Component) {
+          if (item instanceof Component$1) {
             item = item.__shadowRoot;
           }
 
@@ -36941,7 +36949,7 @@
     }, {
       key: "__addUpdate",
       value: function __addUpdate(node, o) {
-        if (node instanceof Component) {
+        if (node instanceof Component$1) {
           node = node.shadowRoot;
         }
 
@@ -37017,9 +37025,7 @@
           __domParent.__modifyStruct();
 
           if (this.renderMode === mode.SVG) {
-            __domParent.children.forEach(function (item) {
-              item.__refreshLevel |= REPAINT;
-            });
+            reflow.clearSvgCache(__domParent);
           }
         } // 影响子继承REPAINT的变化，如果被cache住需要清除
 
@@ -39596,13 +39602,13 @@
         if (child instanceof Dom) {
           check(child);
         } // 当组件有setState更新时，从叶子到根链路会标识__hasCpUpdate，以便节约遍历成本忽略那些没变化的链路
-        else if (child instanceof Component && child.__hasCpUpdate) {
+        else if (child instanceof Component$1 && child.__hasCpUpdate) {
           child.__hasCpUpdate = false;
           checkCp(child, child.props);
         }
       });
     } // 高阶组件会进入此分支，被父组件调用
-    else if (vd instanceof Component && vd.__hasCpUpdate) {
+    else if (vd instanceof Component$1 && vd.__hasCpUpdate) {
       vd.__hasCpUpdate = false;
       checkCp(vd, vd.props);
     }
@@ -40033,7 +40039,7 @@
    */
 
   function parse(karas, json, animateRecords, opt, offsetTime) {
-    if (isPrimitive$1(json) || json instanceof Node || json instanceof Component) {
+    if (isPrimitive$1(json) || json instanceof Node || json instanceof Component$1) {
       return json;
     }
 
@@ -40068,7 +40074,7 @@
     if (tagName.charAt(0) === '$') {
       vd = karas.createGm(tagName, props);
     } else if (/^[A-Z]/.test(tagName)) {
-      var cp = Component.getRegister(tagName);
+      var cp = Component$1.getRegister(tagName);
       vd = karas.createCp(cp, props, children.map(function (item) {
         if (item && [TYPE_VD, TYPE_GM, TYPE_CP].indexOf(item.$$type) > -1) {
           return item;
@@ -40483,7 +40489,7 @@
   }
 
   function apply(json, opt, hash) {
-    if (isPrimitive(json) || json instanceof Node || json instanceof Component) {
+    if (isPrimitive(json) || json instanceof Node || json instanceof Component$1) {
       return json;
     }
 
@@ -40914,7 +40920,7 @@
       return o.loadAndParse(this, json, dom, options);
     },
     mode: mode,
-    Component: Component,
+    Component: Component$1,
     Node: Node,
     Text: Text,
     Geom: Geom,

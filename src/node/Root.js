@@ -684,9 +684,7 @@ class Root extends Dom {
       __domParent.__zIndexChildren = null;
       __domParent.__modifyStruct();
       if(this.renderMode === mode.SVG) {
-        __domParent.children.forEach(item => {
-          item.__refreshLevel |= REPAINT;
-        });
+        reflow.clearSvgCache(__domParent);
       }
     }
     // 影响子继承REPAINT的变化，如果被cache住需要清除

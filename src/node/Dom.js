@@ -1,5 +1,6 @@
 import Xom from './Xom';
 import Text from './Text';
+import Node from './Node';
 import LineBoxManager from './LineBoxManager';
 import Component from './Component';
 import tag from './tag';
@@ -8,7 +9,6 @@ import Ellipsis from './Ellipsis';
 import reset from '../style/reset';
 import css from '../style/css';
 import unit from '../style/unit';
-import $$type from '../util/$$type';
 import enums from '../util/enums';
 import util from '../util/util';
 import inject from '../util/inject';
@@ -3263,7 +3263,7 @@ class Dom extends Xom {
 
   appendChild(child, cb) {
     let { __root: root, __host: host, __children: children } = this;
-    if(!(child instanceof Xom || child instanceof Component)) {
+    if(!(child instanceof Node || child instanceof Component)) {
       child = new Text(child);
     }
     child.remove();
@@ -3308,7 +3308,7 @@ class Dom extends Xom {
 
   prependChild(child, cb) {
     let { __root: root, __host: host, __children: children } = this;
-    if(!(child instanceof Xom || child instanceof Component)) {
+    if(!(child instanceof Node || child instanceof Component)) {
       child = new Text(child);
     }
     child.remove();
@@ -3353,7 +3353,7 @@ class Dom extends Xom {
 
   insertBefore(child, cb) {
     let { __root: root } = this;
-    if(!(child instanceof Xom || child instanceof Component)) {
+    if(!(child instanceof Node || child instanceof Component)) {
       child = new Text(child);
     }
     child.remove();
@@ -3409,7 +3409,7 @@ class Dom extends Xom {
 
   insertAfter(child, cb) {
     let { __root: root } = this;
-    if(child && !(child instanceof Xom || child instanceof Component)) {
+    if(child && !(child instanceof Node || child instanceof Component)) {
       child = new Text(child);
     }
     child.remove();
@@ -3460,7 +3460,7 @@ class Dom extends Xom {
 
   removeChild(target, cb) {
     if((target.__parent === this || target.__domParent === this)
-      && (target instanceof Text || target instanceof Xom || target instanceof Component)) {
+      && (target instanceof Node || target instanceof Component)) {
       target.remove(cb);
     }
     else {

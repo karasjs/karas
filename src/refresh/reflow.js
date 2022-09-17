@@ -32,6 +32,9 @@ function clearSvgCache(node, child) {
   if(child) {
     node.__refreshLevel |= REPAINT;
   }
+  else {
+    node.__refreshLevel |= CACHE;
+  }
   if(Array.isArray(node.children)) {
     node.children.forEach(child => {
       if(child instanceof Component) {
@@ -262,6 +265,9 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
     else if(position !== crs[POSITION] && (position === 'static' || crs[POSITION] === 'static')) {
       hasZ = true;
     }
+    else if(isLastNone !== isNowNone) {
+      hasZ = true;
+    }
     if(addDom || removeDom || hasZ) {
       parent.__zIndexChildren = null;
       parent.__modifyStruct();
@@ -359,18 +365,13 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
       // 之前也是abs，可以跳出不会影响其它
       if(isLastAbs) {
         top.clearCache(true);
-        if(hasZ) {
-          parent.children.forEach(item => {
-            item.__refreshLevel |= REPAINT;
-          });
-        }
         return;
       }
     }
   }
   // 现在是普通流，不管之前是啥直接布局
   else {
-    let ld = Object.assign(top.__layoutData, {
+    let ld = Object.assign(addDom ? __layoutData : top.__layoutData, {
       x,
       y,
     });
@@ -465,7 +466,7 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
   }
   // 差值计算注意考虑margin合并前的值，和合并后的差值，height使用offsetHeight不考虑margin
   let diff = t3 + d3 + t4 + d4 - t1 - d1 - t2 - d2 + nowH - oldH;
-  // console.log(t3, d3, t4, d4, t1, d1, t2, d2, nowH, oldH, diff);
+  console.log(t3, d3, t4, d4, t1, d1, t2, d2, nowH, oldH, diff);
   if(!diff) {
     parent.clearCache(true);
     return;

@@ -25626,6 +25626,8 @@
   function clearSvgCache(node, child) {
     if (child) {
       node.__refreshLevel |= REPAINT$2;
+    } else {
+      node.__refreshLevel |= CACHE$2;
     }
 
     if (Array.isArray(node.children)) {
@@ -25881,6 +25883,8 @@
         hasZ = false;
       } else if (position !== crs[POSITION$2] && (position === 'static' || crs[POSITION$2] === 'static')) {
         hasZ = true;
+      } else if (isLastNone !== isNowNone) {
+        hasZ = true;
       }
 
       if (addDom || removeDom || hasZ) {
@@ -26004,19 +26008,12 @@
 
         if (isLastAbs) {
           top.clearCache(true);
-
-          if (hasZ) {
-            parent.children.forEach(function (item) {
-              item.__refreshLevel |= REPAINT$2;
-            });
-          }
-
           return;
         }
       }
     } // 现在是普通流，不管之前是啥直接布局
     else {
-      var ld = Object.assign(top.__layoutData, {
+      var ld = Object.assign(addDom ? __layoutData : top.__layoutData, {
         x: x,
         y: y
       });
@@ -26136,7 +26133,8 @@
     } // 差值计算注意考虑margin合并前的值，和合并后的差值，height使用offsetHeight不考虑margin
 
 
-    var diff = t3 + d3 + t4 + d4 - t1 - d1 - t2 - d2 + nowH - oldH; // console.log(t3, d3, t4, d4, t1, d1, t2, d2, nowH, oldH, diff);
+    var diff = t3 + d3 + t4 + d4 - t1 - d1 - t2 - d2 + nowH - oldH;
+    console.log(t3, d3, t4, d4, t1, d1, t2, d2, nowH, oldH, diff);
 
     if (!diff) {
       parent.clearCache(true);

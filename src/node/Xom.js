@@ -578,6 +578,7 @@ class Xom extends Node {
       lx: data.lx,
       ly: data.ly,
       isUpright: data.isUpright, // 从Root开始，父级的书写模式需每层传递
+      container: data.container,
     };
     // 防止display:none不统计mask，isVirtual忽略，abs/flex布局后续会真正来走一遍
     if(!isAbs && !isColumn && !isRow) {
@@ -760,7 +761,7 @@ class Xom extends Node {
 
   // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
   __preLayout(data, isInline) {
-    let { x, y, w, h, w2, h2, w3, h3, lx, ly, lineBoxManager, endSpace = 0, isUpright: isParentVertical } = data;
+    let { x, y, w, h, w2, h2, w3, h3, lx, ly, lineBoxManager, endSpace = 0, isUpright: isParentVertical, container } = data;
     this.__x = x;
     this.__y = y;
     let { currentStyle, computedStyle } = this;
@@ -768,6 +769,7 @@ class Xom extends Node {
       [WIDTH]: width,
       [HEIGHT]: height,
     } = currentStyle;
+    let position = computedStyle[POSITION];
     let {
       [BORDER_TOP_WIDTH]: borderTopWidth,
       [BORDER_RIGHT_WIDTH]: borderRightWidth,
@@ -799,7 +801,13 @@ class Xom extends Node {
     }
     else if(width.u !== AUTO && !isInline) {
       fixedWidth = true;
-      w = this.__calSize(width, w, true);
+      // abs的百分比尺寸相对于container
+      if(position === 'absolute' && width.u === PERCENT) {
+        w = this.__calSize(width, container.__clientWidth, true);
+      }
+      else {
+        w = this.__calSize(width, w, true);
+      }
     }
     if(h2 !== undefined) {
       fixedHeight = true;
@@ -809,18 +817,23 @@ class Xom extends Node {
       fixedHeight = true;
       h = h3;
     }
-    // height的百分比需要parent有值不能auto
+    // height的百分比需要parent有值不能auto，abs的百分比相对于container
     else if(height.u !== AUTO && !isInline) {
-      let p = this.__domParent;
-      if(height.u === PERCENT) {
-        if(p.__currentStyle[HEIGHT].u !== AUTO) {
-          fixedHeight = true;
-          h = this.__calSize(height, p.height || 0, true);
-        }
+      if(position === 'absolute' && height.u === PERCENT) {
+        h = this.__calSize(height, container.__clientHeight, true);
       }
       else {
-        fixedHeight = true;
-        h = this.__calSize(height, h, true);
+        let p = this.__domParent;
+        if(height.u === PERCENT) {
+          if(p.__currentStyle[HEIGHT].u !== AUTO) {
+            fixedHeight = true;
+            h = this.__calSize(height, p.height || 0, true);
+          }
+        }
+        else {
+          fixedHeight = true;
+          h = this.__calSize(height, h, true);
+        }
       }
     }
     // margin/border/padding影响x和y和尺寸，注意inline的y不受mpb影响（垂直模式则是x）

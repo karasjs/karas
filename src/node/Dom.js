@@ -3097,6 +3097,7 @@ class Dom extends Xom {
           w: widthLimit,
           h: heightLimit,
           isUpright: data.isUpright, // 父亲的
+          container,
         }, true, false);
         widthLimit = item.outerWidth;
       }
@@ -3108,6 +3109,7 @@ class Dom extends Xom {
         w2, // left+right这种等于有宽度，但不能修改style，继续传入到__preLayout中特殊对待
         h2,
         isUpright: data.isUpright,
+        container,
       }, false, false);
       if(onlyRight) {
         item.__offsetX(-item.outerWidth, true);

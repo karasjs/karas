@@ -21293,8 +21293,9 @@
           h: data.h,
           lx: data.lx,
           ly: data.ly,
-          isUpright: data.isUpright // 从Root开始，父级的书写模式需每层传递
-
+          isUpright: data.isUpright,
+          // 从Root开始，父级的书写模式需每层传递
+          container: data.container
         }; // 防止display:none不统计mask，isVirtual忽略，abs/flex布局后续会真正来走一遍
 
         if (!isAbs && !isColumn && !isRow) {
@@ -21498,13 +21499,15 @@
             lineBoxManager = data.lineBoxManager,
             _data$endSpace = data.endSpace,
             endSpace = _data$endSpace === void 0 ? 0 : _data$endSpace,
-            isParentVertical = data.isUpright;
+            isParentVertical = data.isUpright,
+            container = data.container;
         this.__x = x;
         this.__y = y;
         var currentStyle = this.currentStyle,
             computedStyle = this.computedStyle;
         var width = currentStyle[WIDTH$5],
             height = currentStyle[HEIGHT$5];
+        var position = computedStyle[POSITION$3];
         var borderTopWidth = computedStyle[BORDER_TOP_WIDTH$3],
             borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$4],
             borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$2],
@@ -21531,8 +21534,13 @@
           fixedWidth = true;
           w = w3;
         } else if (width.u !== AUTO$4 && !isInline) {
-          fixedWidth = true;
-          w = this.__calSize(width, w, true);
+          fixedWidth = true; // abs的百分比尺寸相对于container
+
+          if (position === 'absolute' && width.u === PERCENT$4) {
+            w = this.__calSize(width, container.__clientWidth, true);
+          } else {
+            w = this.__calSize(width, w, true);
+          }
         }
 
         if (h2 !== undefined) {
@@ -21541,18 +21549,22 @@
         } else if (h3 !== undefined) {
           fixedHeight = true;
           h = h3;
-        } // height的百分比需要parent有值不能auto
+        } // height的百分比需要parent有值不能auto，abs的百分比相对于container
         else if (height.u !== AUTO$4 && !isInline) {
-          var p = this.__domParent;
-
-          if (height.u === PERCENT$4) {
-            if (p.__currentStyle[HEIGHT$5].u !== AUTO$4) {
-              fixedHeight = true;
-              h = this.__calSize(height, p.height || 0, true);
-            }
+          if (position === 'absolute' && height.u === PERCENT$4) {
+            h = this.__calSize(height, container.__clientHeight, true);
           } else {
-            fixedHeight = true;
-            h = this.__calSize(height, h, true);
+            var p = this.__domParent;
+
+            if (height.u === PERCENT$4) {
+              if (p.__currentStyle[HEIGHT$5].u !== AUTO$4) {
+                fixedHeight = true;
+                h = this.__calSize(height, p.height || 0, true);
+              }
+            } else {
+              fixedHeight = true;
+              h = this.__calSize(height, h, true);
+            }
           }
         } // margin/border/padding影响x和y和尺寸，注意inline的y不受mpb影响（垂直模式则是x）
 
@@ -25723,7 +25735,7 @@
     }
   }
 
-  function offsetNext(next, diff, parentFixed) {
+  function offsetNext(next, diff, parentFixed, absList) {
     while (next) {
       var cs = next.currentStyle; // flow流和auto的absolute流需要偏移diff值
 
@@ -25735,6 +25747,13 @@
           next.__offsetY(diff * 0.01 * cs[TOP$2].v, true, REPAINT$2);
         } else {
           next.__offsetY(diff * (1 - 0.01 * cs[BOTTOM$2].v), true, REPAINT$2);
+        }
+      } // abs的percent调整，记录
+
+
+      if (!(cs instanceof Text) && !(cs instanceof Component && cs.shadowRoot instanceof Text)) {
+        if (cs[POSITION$2] === 'absolute' && cs[HEIGHT$3].u === PERCENT$2) {
+          absList.push(next);
         }
       }
 
@@ -26154,9 +26173,11 @@
 
     if (!parentFixed) {
       parent.__resizeY(diff, REPAINT$2);
-    }
+    } // 调整的同时遇到百分比高度的abs需记录下来最后重新布局
 
-    offsetNext(next, diff, parentFixed);
+
+    var absList = [];
+    offsetNext(next, diff, parentFixed, absList);
     parent.clearCache(true);
     parent.__refreshLevel |= CACHE$2;
 
@@ -26165,7 +26186,7 @@
     } // 影响完next之后，向上递归，所有parent的next都影响
 
 
-    while (parent) {
+    while (parent && !parentFixed) {
       next = parent.__next;
       parent = parent.__domParent;
       parentFixed = parent && isFixedSize(parent, false);
@@ -26174,13 +26195,20 @@
         parent.__resizeY(diff, REPAINT$2);
       }
 
-      offsetNext(next, diff, parentFixed);
+      offsetNext(next, diff, parentFixed, absList);
 
       if (parentFixed) {
         parent.clearCache(true);
-        return;
       }
-    }
+    } // 记录的受影响的abs节点，都是百分比高度，需重新布局
+
+
+    absList.forEach(function (item) {
+      var ld = item.__layoutData,
+          container = ld.container;
+
+      item.__domParent.__layoutAbs(container, ld, item);
+    });
   }
 
   var reflow = {
@@ -29758,8 +29786,9 @@
               y: y2,
               w: widthLimit,
               h: heightLimit,
-              isUpright: data.isUpright // 父亲的
-
+              isUpright: data.isUpright,
+              // 父亲的
+              container: container
             }, true, false);
 
             widthLimit = item.outerWidth;
@@ -29773,7 +29802,8 @@
             w2: w2,
             // left+right这种等于有宽度，但不能修改style，继续传入到__preLayout中特殊对待
             h2: h2,
-            isUpright: data.isUpright
+            isUpright: data.isUpright,
+            container: container
           }, false, false);
 
           if (onlyRight) {

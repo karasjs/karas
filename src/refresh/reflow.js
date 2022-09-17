@@ -119,7 +119,7 @@ function getNextMergeMargin(next, mtList, mbList) {
   }
 }
 
-function offsetNext(next, diff, parentFixed) {
+function offsetNext(next, diff, parentFixed, absList) {
   while(next) {
     let cs = next.currentStyle;
     // flow流和auto的absolute流需要偏移diff值
@@ -134,6 +134,12 @@ function offsetNext(next, diff, parentFixed) {
       }
       else {
         next.__offsetY(diff * (1 - 0.01 * cs[BOTTOM].v), true, REPAINT);
+      }
+    }
+    // abs的percent调整，记录
+    if(!(cs instanceof Text) && !(cs instanceof Component && cs.shadowRoot instanceof Text)) {
+      if(cs[POSITION] === 'absolute' && cs[HEIGHT].u === PERCENT) {
+        absList.push(next);
       }
     }
     next = next.__next;
@@ -488,26 +494,32 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
   if(!parentFixed) {
     parent.__resizeY(diff, REPAINT);
   }
-  offsetNext(next, diff, parentFixed);
+  // 调整的同时遇到百分比高度的abs需记录下来最后重新布局
+  let absList = [];
+  offsetNext(next, diff, parentFixed, absList);
   parent.clearCache(true);
   parent.__refreshLevel |= CACHE;
   if(parentFixed) {
     return;
   }
   // 影响完next之后，向上递归，所有parent的next都影响
-  while(parent) {
+  while(parent && !parentFixed) {
     next = parent.__next;
     parent = parent.__domParent;
     parentFixed = parent && isFixedSize(parent, false);
     if(!parentFixed) {
       parent.__resizeY(diff, REPAINT);
     }
-    offsetNext(next, diff, parentFixed);
+    offsetNext(next, diff, parentFixed, absList);
     if(parentFixed) {
       parent.clearCache(true);
-      return;
     }
   }
+  // 记录的受影响的abs节点，都是百分比高度，需重新布局
+  absList.forEach(item => {
+    let ld = item.__layoutData, container = ld.container;
+    item.__domParent.__layoutAbs(container, ld, item);
+  });
 }
 
 export default {

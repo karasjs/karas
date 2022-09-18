@@ -1135,7 +1135,7 @@ function calIntermediateStyle(frame, percent, target) {
     return [];
   }
   frame.lastPercent = percent;
-  let currentStyle = target.__currentStyle, res = frame.keys.slice(0);
+  let currentStyle = target.__currentStyle, currentProps = target.__currentProps, res = frame.keys.slice(0);
   for(let i = 0, len = transition.length; i < len; i++) {
     let item = transition[i];
     let k = item.k, v = item.v, st = item.st, cl = item.cl;
@@ -1430,7 +1430,7 @@ function calIntermediateStyle(frame, percent, target) {
           }
         }
       }
-      target.__currentProps[k] = st;
+      currentProps[k] = st;
     }
     // string的直接量，在不同帧之间可能存在变化，同帧变化后不再改变
     else {
@@ -1447,9 +1447,10 @@ function calIntermediateStyle(frame, percent, target) {
   let fixed = frame.fixed;
   for(let i = 0, len = fixed.length; i < len; i++) {
     let k = fixed[i];
-    if(!equalStyle(k, style[k], currentStyle[k], target)) {
+    let isGeom = GEOM.hasOwnProperty(k);
+    if(!equalStyle(k, style[k], isGeom ? currentProps[k] : currentStyle[k], target)) {
       if(GEOM.hasOwnProperty(k)) {
-        target.__currentProps[k] = style[k];
+        currentProps[k] = style[k];
       }
       else {
         currentStyle[k] = style[k];
@@ -1467,7 +1468,8 @@ function calLastStyle(style, target, keys) {
   let currentStyle = target.__currentStyle, currentProps = target.__currentProps, res = [];
   for(let i = 0, len = keys.length; i < len; i++) {
     let k = keys[i], v = style[k];
-    if(!equalStyle(k, v, currentStyle[k], target)) {
+    let isGeom = GEOM.hasOwnProperty(k);
+    if(!equalStyle(k, v, isGeom ? currentProps[k] : currentStyle[k], target)) {
       if(GEOM.hasOwnProperty(k)) {
         currentProps[k] = v;
       }

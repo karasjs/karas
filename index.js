@@ -18782,6 +18782,7 @@
 
     frame.lastPercent = percent;
     var currentStyle = target.__currentStyle,
+        currentProps = target.__currentProps,
         res = frame.keys.slice(0);
 
     var _loop = function _loop(i, len) {
@@ -19085,7 +19086,7 @@
           }
         }
 
-        target.__currentProps[k] = st;
+        currentProps[k] = st;
       } // string的直接量，在不同帧之间可能存在变化，同帧变化后不再改变
       else {
         if (currentStyle[k] !== st) {
@@ -19108,9 +19109,11 @@
     for (var _i16 = 0, _len8 = fixed.length; _i16 < _len8; _i16++) {
       var k = fixed[_i16];
 
-      if (!equalStyle$1(k, style[k], currentStyle[k], target)) {
+      var _isGeom = GEOM$1.hasOwnProperty(k);
+
+      if (!equalStyle$1(k, style[k], _isGeom ? currentProps[k] : currentStyle[k], target)) {
         if (GEOM$1.hasOwnProperty(k)) {
-          target.__currentProps[k] = style[k];
+          currentProps[k] = style[k];
         } else {
           currentStyle[k] = style[k];
         }
@@ -19135,7 +19138,9 @@
       var k = keys[i],
           v = style[k];
 
-      if (!equalStyle$1(k, v, currentStyle[k], target)) {
+      var _isGeom2 = GEOM$1.hasOwnProperty(k);
+
+      if (!equalStyle$1(k, v, _isGeom2 ? currentProps[k] : currentStyle[k], target)) {
         if (GEOM$1.hasOwnProperty(k)) {
           currentProps[k] = v;
         } else {
@@ -23414,14 +23419,9 @@
             currentProps = this.__currentProps;
         var keys = [];
         Object.keys(style).forEach(function (i) {
-          var isGeom = true;
+          var isGeom = GEOM.hasOwnProperty(i);
 
-          if (!GEOM.hasOwnProperty(i)) {
-            i = parseInt(i);
-            isGeom = false;
-          }
-
-          if (!equalStyle(i, currentStyle[i], style[i], _this9)) {
+          if (!equalStyle(i, isGeom ? currentProps[i] : currentStyle[i], style[i], _this9)) {
             if (isGeom) {
               currentProps[i] = style[i];
             } else {

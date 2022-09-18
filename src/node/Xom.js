@@ -2503,12 +2503,8 @@ class Xom extends Node {
     let root = this.__root, currentStyle = this.__currentStyle, currentProps = this.__currentProps;
     let keys = [];
     Object.keys(style).forEach(i => {
-      let isGeom = true;
-      if(!GEOM.hasOwnProperty(i)) {
-        i = parseInt(i);
-        isGeom = false;
-      }
-      if(!equalStyle(i, currentStyle[i], style[i], this)) {
+      let isGeom = GEOM.hasOwnProperty(i);
+      if(!equalStyle(i, isGeom ? currentProps[i] : currentStyle[i], style[i], this)) {
         if(isGeom) {
           currentProps[i] = style[i];
         }

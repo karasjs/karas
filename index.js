@@ -26177,20 +26177,21 @@
     var nowH;
 
     if (removeDom) {
+      if (top === node) {
+        nowH = 0;
+      } // else if(isFixedWidthOrHeight(top, HEIGHT)) {
+      //   nowH = oldH;
+      // }
+      else {
+        nowH = top.offsetHeight;
+      }
+
       var temp = node;
 
       while (temp.isShadowRoot) {
         temp = temp.__host;
 
         temp.__destroy();
-      }
-
-      if (top === node) {
-        nowH = 0;
-      } else if (isFixedWidthOrHeight(top, HEIGHT$3)) {
-        nowH = oldH;
-      } else {
-        nowH = node.offsetHeight;
       }
     } else if (isNowAbs) {
       nowH = 0;

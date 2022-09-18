@@ -472,7 +472,15 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
   }
   let nowH;
   if(removeDom) {
-    if(top === node) {
+    // remove有没有向上影响，决定布局后的高度nowH
+    let isRemoveSelf = top === node || node.isShadowRoot && node.__hostRoot === top;
+    let temp = node;
+    while(temp.isShadowRoot) {
+      temp = temp.__host;
+      temp.__destroy();
+    }
+    node.__destroy();
+    if(isRemoveSelf) {
       nowH = 0;
     }
     // else if(isFixedWidthOrHeight(top, HEIGHT)) {
@@ -480,11 +488,6 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
     // }
     else {
       nowH = top.offsetHeight;
-    }
-    let temp = node;
-    while(temp.isShadowRoot) {
-      temp = temp.__host;
-      temp.__destroy();
     }
   }
   else if(isNowAbs) {
@@ -496,6 +499,9 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
   // 查看mergeMargin对top造成的偏移
   if(!removeDom && d3) {
     top.__offsetY(d3, false, null);
+  }
+  if(removeDom && !isLastNone && svg) {
+    clearSvgCache(parent, false);
   }
   // 差值计算注意考虑margin合并前的值，和合并后的差值，height使用offsetHeight不考虑margin
   let diff = t3 + t4 - t1 - t2 + nowH - oldH;

@@ -26177,21 +26177,25 @@
     var nowH;
 
     if (removeDom) {
-      if (top === node) {
-        nowH = 0;
-      } // else if(isFixedWidthOrHeight(top, HEIGHT)) {
-      //   nowH = oldH;
-      // }
-      else {
-        nowH = top.offsetHeight;
-      }
-
+      // remove有没有向上影响，决定布局后的高度nowH
+      var isRemoveSelf = top === node || node.isShadowRoot && node.__hostRoot === top;
       var temp = node;
 
       while (temp.isShadowRoot) {
         temp = temp.__host;
 
         temp.__destroy();
+      }
+
+      node.__destroy();
+
+      if (isRemoveSelf) {
+        nowH = 0;
+      } // else if(isFixedWidthOrHeight(top, HEIGHT)) {
+      //   nowH = oldH;
+      // }
+      else {
+        nowH = top.offsetHeight;
       }
     } else if (isNowAbs) {
       nowH = 0;
@@ -26202,6 +26206,10 @@
 
     if (!removeDom && d3) {
       top.__offsetY(d3, false, null);
+    }
+
+    if (removeDom && !isLastNone && svg) {
+      clearSvgCache(parent, false);
     } // 差值计算注意考虑margin合并前的值，和合并后的差值，height使用offsetHeight不考虑margin
 
 

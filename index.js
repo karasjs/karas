@@ -23421,7 +23421,11 @@
         Object.keys(style).forEach(function (i) {
           var isGeom = GEOM.hasOwnProperty(i);
 
-          if (!equalStyle(i, isGeom ? currentProps[i] : currentStyle[i], style[i], _this9)) {
+          if (!isGeom) {
+            i = parseInt(i);
+          }
+
+          if (!equalStyle(i, currentStyle[i], style[i], _this9)) {
             if (isGeom) {
               currentProps[i] = style[i];
             } else {

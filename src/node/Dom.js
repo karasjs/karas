@@ -3072,12 +3072,23 @@ class Dom extends Xom {
       // 未声明y的找到之前的流布局child，紧随其下
       else {
         y2 = y + paddingTop;
-        let prev = item.__prev;
+        let prev = item.__prev, mtList = [], mbList = [];
         while(prev) {
           // 以前面的flow的最近的prev末尾为准
-          if(prev instanceof Text || prev.computedStyle[POSITION] !== 'absolute') {
-            y2 = prev.y + prev.outerHeight;
-            break;
+          if(prev instanceof Text || (prev instanceof Component && prev.shadowRoot instanceof Text)
+            || prev.computedStyle[POSITION] !== 'absolute') {
+            // 当prev是空白节点时，还要考虑margin合并的影响
+            let cps = prev.computedStyle;
+            if(prev.clientHeight <= 0) {
+              mtList.push(cps[MARGIN_TOP]);
+              mbList.push(cps[MARGIN_BOTTOM]);
+            }
+            else {
+              mbList.push(cps[MARGIN_BOTTOM]);
+              let t = reflow.getMergeMargin(mtList, mbList);
+              y2 = prev.__sy1 + prev.offsetHeight + t.target;
+              break;
+            }
           }
           prev = prev.__prev;
         }

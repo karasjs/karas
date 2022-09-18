@@ -25710,7 +25710,7 @@
   }
 
   function getPrevMergeMargin(prev, mtList, mbList) {
-    while (prev && !(prev instanceof Text) && ['block', 'flex'].indexOf(prev.computedStyle[DISPLAY$4]) > -1) {
+    while (prev && !(prev instanceof Text) && !(prev instanceof Component && prev.shadowRoot instanceof Text) && ['block', 'flex'].indexOf(prev.computedStyle[DISPLAY$4]) > -1 && prev.computedStyle[POSITION$2] !== 'absolute') {
       mbList.push(prev.computedStyle[MARGIN_BOTTOM$1]);
 
       if (prev.offsetHeight > 0) {
@@ -25723,7 +25723,7 @@
   }
 
   function getNextMergeMargin(next, mtList, mbList) {
-    while (next && !(next instanceof Text) && ['block', 'flex'].indexOf(next.computedStyle[DISPLAY$4]) > -1) {
+    while (next && !(next instanceof Text) && !(next instanceof Component && next.shadowRoot instanceof Text) && ['block', 'flex'].indexOf(next.computedStyle[DISPLAY$4]) > -1 && next.computedStyle[POSITION$2] !== 'absolute') {
       mtList.push(next.computedStyle[MARGIN_TOP$1]);
 
       if (next.offsetHeight > 0) {
@@ -29756,13 +29756,25 @@
           } // 未声明y的找到之前的流布局child，紧随其下
           else {
             y2 = y + paddingTop;
-            var prev = item.__prev;
+            var prev = item.__prev,
+                mtList = [],
+                mbList = [];
 
             while (prev) {
               // 以前面的flow的最近的prev末尾为准
-              if (prev instanceof Text || prev.computedStyle[POSITION$1] !== 'absolute') {
-                y2 = prev.y + prev.outerHeight;
-                break;
+              if (prev instanceof Text || prev instanceof Component && prev.shadowRoot instanceof Text || prev.computedStyle[POSITION$1] !== 'absolute') {
+                // 当prev是空白节点时，还要考虑margin合并的影响
+                var cps = prev.computedStyle;
+
+                if (prev.clientHeight <= 0) {
+                  mtList.push(cps[MARGIN_TOP]);
+                  mbList.push(cps[MARGIN_BOTTOM]);
+                } else {
+                  mbList.push(cps[MARGIN_BOTTOM]);
+                  var t = reflow.getMergeMargin(mtList, mbList);
+                  y2 = prev.__sy1 + prev.offsetHeight + t.target;
+                  break;
+                }
               }
 
               prev = prev.__prev;

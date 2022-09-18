@@ -98,7 +98,10 @@ function isFixedSize(node, includeParentFlex) {
 }
 
 function getPrevMergeMargin(prev, mtList, mbList) {
-  while(prev && !(prev instanceof Text) && ['block', 'flex'].indexOf(prev.computedStyle[DISPLAY]) > -1) {
+  while(prev && !(prev instanceof Text)
+    && !(prev instanceof Component && prev.shadowRoot instanceof Text)
+    && ['block', 'flex'].indexOf(prev.computedStyle[DISPLAY]) > -1
+    && prev.computedStyle[POSITION] !== 'absolute') {
     mbList.push(prev.computedStyle[MARGIN_BOTTOM]);
     if(prev.offsetHeight > 0) {
       break;
@@ -109,7 +112,10 @@ function getPrevMergeMargin(prev, mtList, mbList) {
 }
 
 function getNextMergeMargin(next, mtList, mbList) {
-  while(next && !(next instanceof Text) && ['block', 'flex'].indexOf(next.computedStyle[DISPLAY]) > -1) {
+  while(next && !(next instanceof Text)
+    && !(next instanceof Component && next.shadowRoot instanceof Text)
+    && ['block', 'flex'].indexOf(next.computedStyle[DISPLAY]) > -1
+    && next.computedStyle[POSITION] !== 'absolute') {
     mtList.push(next.computedStyle[MARGIN_TOP]);
     if(next.offsetHeight > 0) {
       break;

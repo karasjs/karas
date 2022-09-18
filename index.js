@@ -26187,6 +26187,8 @@
 
       if (top === node) {
         nowH = 0;
+      } else if (isFixedWidthOrHeight(top, HEIGHT$3)) {
+        nowH = oldH;
       } else {
         nowH = node.offsetHeight;
       }
@@ -26209,7 +26211,7 @@
       return;
     }
 
-    var parentFixed = isFixedSize(parent, false);
+    var parentFixed = isFixedWidthOrHeight(parent, HEIGHT$3);
 
     if (!parentFixed) {
       parent.__resizeY(diff, REPAINT$2);
@@ -26223,7 +26225,7 @@
     while (parent && !parentFixed && parent.__computedStyle[POSITION$2] !== 'absolute') {
       next = parent.__next;
       parent = parent.__domParent;
-      parentFixed = parent && isFixedSize(parent, false);
+      parentFixed = parent && isFixedWidthOrHeight(parent, HEIGHT$3);
 
       if (!parentFixed) {
         parent.__resizeY(diff, REPAINT$2);

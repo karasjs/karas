@@ -480,6 +480,9 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
     if(top === node) {
       nowH = 0;
     }
+    else if(isFixedWidthOrHeight(top, HEIGHT)) {
+      nowH = oldH;
+    }
     else {
       nowH = node.offsetHeight;
     }
@@ -501,7 +504,7 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
     parent.clearCache(true);
     return;
   }
-  let parentFixed = isFixedSize(parent, false);
+  let parentFixed = isFixedWidthOrHeight(parent, HEIGHT);
   if(!parentFixed) {
     parent.__resizeY(diff, REPAINT);
   }
@@ -513,7 +516,7 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
   while(parent && !parentFixed && parent.__computedStyle[POSITION] !== 'absolute') {
     next = parent.__next;
     parent = parent.__domParent;
-    parentFixed = parent && isFixedSize(parent, false);
+    parentFixed = parent && isFixedWidthOrHeight(parent, HEIGHT);
     if(!parentFixed) {
       parent.__resizeY(diff, REPAINT);
     }

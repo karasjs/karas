@@ -24,7 +24,7 @@ const {
     PADDING_LEFT,
   },
 } = enums;
-const { AUTO, PERCENT } = unit;
+const { AUTO, PX, REM, VW, VH, VMAX, VMIN, PERCENT } = unit;
 const { REPAINT, CACHE } = level;
 const { isRelativeOrAbsolute } = css;
 
@@ -128,8 +128,10 @@ function getNextMergeMargin(next, mtList, mbList) {
 function offsetNext(next, diff, parentFixed, absList) {
   while(next) {
     let cs = next.currentStyle;
-    // flow流和auto的absolute流需要偏移diff值
-    if(cs[POSITION] !== 'absolute' || cs[TOP].u === AUTO && cs[BOTTOM].u === AUTO) {
+    // flow流和auto/px/rem的absolute流需要偏移diff值
+    if(cs[POSITION] !== 'absolute'
+      || (cs[TOP].u === AUTO && cs[BOTTOM].u === AUTO
+        || cs[TOP].u === AUTO && [PX, REM, VW, VH, VMAX, VMIN].indexOf(cs[BOTTOM].u) > -1)) {
       next.__offsetY(diff, true, REPAINT);
     }
     // absolute中百分比的特殊计算偏移，但要排除parent固定尺寸

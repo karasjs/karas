@@ -916,6 +916,30 @@ class Text extends Node {
     return o.textWidth;
   }
 
+  get clientWidth() {
+    return this.__width || 0;
+  }
+
+  get clientHeight() {
+    return this.__height || 0;
+  }
+
+  get offsetWidth() {
+    return this.__width || 0;
+  }
+
+  get offsetHeight() {
+    return this.__height || 0;
+  }
+
+  get outerWidth() {
+    return this.__width || 0;
+  }
+
+  get outerHeight() {
+    return this.__height || 0;
+  }
+
   get root() {
     return this.__domParent.__root;
   }

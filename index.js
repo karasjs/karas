@@ -381,35 +381,35 @@
   };
 
   var AUTO$8 = 0;
-  var PX$9 = 1;
+  var PX$a = 1;
   var PERCENT$a = 2;
   var NUMBER$6 = 3;
   var INHERIT$5 = 4;
   var DEG$5 = 5;
   var STRING$3 = 6;
   var RGBA$4 = 7;
-  var REM$9 = 8;
+  var REM$a = 8;
   var EM = 9;
-  var VW$9 = 10;
-  var VH$9 = 11;
-  var VMAX$9 = 12;
-  var VMIN$9 = 13;
+  var VW$a = 10;
+  var VH$a = 11;
+  var VMAX$a = 12;
+  var VMIN$a = 13;
   var GRADIENT$4 = 14;
   var o$4 = {
     AUTO: AUTO$8,
-    PX: PX$9,
+    PX: PX$a,
     PERCENT: PERCENT$a,
     NUMBER: NUMBER$6,
     INHERIT: INHERIT$5,
     DEG: DEG$5,
     STRING: STRING$3,
     RGBA: RGBA$4,
-    REM: REM$9,
+    REM: REM$a,
     EM: EM,
-    VW: VW$9,
-    VH: VH$9,
-    VMAX: VMAX$9,
-    VMIN: VMIN$9,
+    VW: VW$a,
+    VH: VH$a,
+    VMAX: VMAX$a,
+    VMIN: VMIN$a,
     GRADIENT: GRADIENT$4,
     // 特殊格式，color/fill/stroke用给ctx传值
 
@@ -429,7 +429,7 @@
       } else if (/px$/i.test(v)) {
         return {
           v: n,
-          u: PX$9
+          u: PX$a
         };
       } else if (/deg$/i.test(v)) {
         return {
@@ -439,17 +439,17 @@
       } else if (/rem$/i.test(v)) {
         return {
           v: n,
-          u: REM$9
+          u: REM$a
         };
       } else if (/vw$/i.test(v)) {
         return {
           v: n,
-          u: VW$9
+          u: VW$a
         };
       } else if (/vh$/i.test(v)) {
         return {
           v: n,
-          u: VH$9
+          u: VH$a
         };
       } else if (/em$/i.test(v)) {
         return {
@@ -459,22 +459,22 @@
       } else if (/vw$/i.test(v)) {
         return {
           v: n,
-          u: VW$9
+          u: VW$a
         };
       } else if (/vh$/i.test(v)) {
         return {
           v: n,
-          u: VH$9
+          u: VH$a
         };
       } else if (/vmax$/i.test(v)) {
         return {
           v: n,
-          u: VMAX$9
+          u: VMAX$a
         };
       } else if (/vmin$/i.test(v)) {
         return {
           v: n,
-          u: VMIN$9
+          u: VMIN$a
         };
       }
 
@@ -3900,13 +3900,13 @@
   };
 
   var H = geom$1.H;
-  var PX$8 = o$4.PX,
+  var PX$9 = o$4.PX,
       PERCENT$9 = o$4.PERCENT,
-      REM$8 = o$4.REM,
-      VW$8 = o$4.VW,
-      VH$8 = o$4.VH,
-      VMAX$8 = o$4.VMAX,
-      VMIN$8 = o$4.VMIN;
+      REM$9 = o$4.REM,
+      VW$9 = o$4.VW,
+      VH$9 = o$4.VH,
+      VMAX$9 = o$4.VMAX,
+      VMIN$9 = o$4.VMIN;
   var canvasPolygon$6 = painter.canvasPolygon,
       svgPolygon$5 = painter.svgPolygon;
   var _enums$STYLE_KEY$j = enums.STYLE_KEY,
@@ -6161,19 +6161,19 @@
           return 0;
         }
 
-        if (item.u === PX$8) {
+        if (item.u === PX$9) {
           return Math.max(0, item.v);
         } else if (item.u === PERCENT$9) {
           return Math.max(0, item.v * (i ? h : w) * 0.01);
-        } else if (item.u === REM$8) {
+        } else if (item.u === REM$9) {
           return Math.max(0, item.v * root.computedStyle[FONT_SIZE$b]);
-        } else if (item.u === VW$8) {
+        } else if (item.u === VW$9) {
           return Math.max(0, item.v * root.width * 0.01);
-        } else if (item.u === VH$8) {
+        } else if (item.u === VH$9) {
           return Math.max(0, item.v * root.height * 0.01);
-        } else if (item.u === VMAX$8) {
+        } else if (item.u === VMAX$9) {
           return Math.max(0, item.v * Math.max(root.width, root.height) * 0.01);
-        } else if (item.u === VMIN$8) {
+        } else if (item.u === VMIN$9) {
           return Math.max(0, item.v * Math.min(root.width, root.height) * 0.01);
         }
 
@@ -6228,7 +6228,7 @@
       computedStyle[k] = currentStyle[k].map(function (item, i) {
         var v;
 
-        if (item.u === PX$8) {
+        if (item.u === PX$9) {
           v = Math.max(0, item.v);
           v = Math.min(i ? h : w, v);
         } else {
@@ -6246,7 +6246,7 @@
       computedStyle[k] = currentStyle[k].map(function (item, i) {
         var v;
 
-        if (item.u === PX$8) {
+        if (item.u === PX$9) {
           v = Math.max(0, item.v);
           v = Math.min(i ? h : w, v);
         } else {
@@ -6295,15 +6295,15 @@
 
   var rgba2int$2 = util.rgba2int,
       isNil$d = util.isNil;
-  var PX$7 = o$4.PX,
+  var PX$8 = o$4.PX,
       PERCENT$8 = o$4.PERCENT,
       DEG$4 = o$4.DEG,
       NUMBER$5 = o$4.NUMBER,
-      REM$7 = o$4.REM,
-      VW$7 = o$4.VW,
-      VH$7 = o$4.VH,
-      VMAX$7 = o$4.VMAX,
-      VMIN$7 = o$4.VMIN,
+      REM$8 = o$4.REM,
+      VW$8 = o$4.VW,
+      VH$8 = o$4.VH,
+      VMAX$8 = o$4.VMAX,
+      VMIN$8 = o$4.VMIN,
       calUnit$2 = o$4.calUnit;
   var d2r$1 = geom$1.d2r;
   var canvasPolygon$5 = painter.canvasPolygon;
@@ -6343,7 +6343,7 @@
       var v = calUnit$2(data);
 
       if ([NUMBER$5, DEG$4].indexOf(v.u) > -1) {
-        v.v = PX$7;
+        v.v = PX$8;
       }
 
       return v;
@@ -6374,15 +6374,15 @@
 
         if (p.u === PERCENT$8) {
           list.push([item[0], p.v * 0.01]);
-        } else if (p.u === REM$7) {
+        } else if (p.u === REM$8) {
           list.push([item[0], p.v * root.computedStyle[FONT_SIZE$a] / length]);
-        } else if (p.u === VW$7) {
+        } else if (p.u === VW$8) {
           list.push([item[0], p.v * root.width / length]);
-        } else if (p.u === VH$7) {
+        } else if (p.u === VH$8) {
           list.push([item[0], p.v * root.height / length]);
-        } else if (p.u === VMAX$7) {
+        } else if (p.u === VMAX$8) {
           list.push([item[0], p.v * Math.max(root.width, root.height) / length]);
-        } else if (p.u === VMIN$7) {
+        } else if (p.u === VMIN$8) {
           list.push([item[0], p.v * Math.min(root.width, root.height) / length]);
         } else {
           list.push([item[0], p.v / length]);
@@ -6564,15 +6564,15 @@
 
     if (positionX.u === PERCENT$8) {
       cx = x1 + positionX.v * iw * 0.01;
-    } else if (positionX.u === REM$7) {
+    } else if (positionX.u === REM$8) {
       cx = x1 + positionX.v * root.computedStyle[FONT_SIZE$a];
-    } else if (positionX.u === VW$7) {
+    } else if (positionX.u === VW$8) {
       cx = x1 + positionX.v * root.width * 0.01;
-    } else if (positionX.u === VH$7) {
+    } else if (positionX.u === VH$8) {
       cx = x1 + positionX.v * root.height * 0.01;
-    } else if (positionX.u === VMAX$7) {
+    } else if (positionX.u === VMAX$8) {
       cx = x1 + positionX.v * Math.max(root.width, root.height) * 0.01;
-    } else if (positionX.u === VMIN$7) {
+    } else if (positionX.u === VMIN$8) {
       cx = x1 + positionX.v * Math.min(root.width, root.height) * 0.01;
     } else {
       cx = x1 + positionX.v;
@@ -6580,15 +6580,15 @@
 
     if (positionY.u === PERCENT$8) {
       cy = y1 + positionY.v * ih * 0.01;
-    } else if (positionY.u === REM$7) {
+    } else if (positionY.u === REM$8) {
       cy = y1 + positionY.v * root.computedStyle[FONT_SIZE$a];
-    } else if (positionY.u === VW$7) {
+    } else if (positionY.u === VW$8) {
       cy = y1 + positionY.v * root.width * 0.01;
-    } else if (positionY.u === VH$7) {
+    } else if (positionY.u === VH$8) {
       cy = y1 + positionY.v * root.height * 0.01;
-    } else if (positionY.u === VH$7) {
+    } else if (positionY.u === VH$8) {
       cy = y1 + positionY.v * Math.max(root.width, root.height) * 0.01;
-    } else if (positionY.u === VH$7) {
+    } else if (positionY.u === VH$8) {
       cy = y1 + positionY.v * Math.min(root.width, root.height) * 0.01;
     } else {
       cy = y1 + positionY.v;
@@ -6850,7 +6850,7 @@
           var _v = calUnit$2(percent[0]);
 
           if ([NUMBER$5, DEG$4].indexOf(_v.u) > -1) {
-            _v.v = PX$7;
+            _v.v = PX$8;
           }
 
           arr[1] = _v;
@@ -7737,18 +7737,18 @@
       TEXT_STROKE_OVER$4 = _enums$STYLE_KEY$i.TEXT_STROKE_OVER,
       WRITING_MODE$3 = _enums$STYLE_KEY$i.WRITING_MODE;
   var AUTO$7 = o$4.AUTO,
-      PX$6 = o$4.PX,
+      PX$7 = o$4.PX,
       PERCENT$7 = o$4.PERCENT,
       NUMBER$4 = o$4.NUMBER,
       INHERIT$3 = o$4.INHERIT,
       DEG$3 = o$4.DEG,
       RGBA$3 = o$4.RGBA,
       STRING$2 = o$4.STRING,
-      REM$6 = o$4.REM,
-      VW$6 = o$4.VW,
-      VH$6 = o$4.VH,
-      VMAX$6 = o$4.VMAX,
-      VMIN$6 = o$4.VMIN,
+      REM$7 = o$4.REM,
+      VW$7 = o$4.VW,
+      VH$7 = o$4.VH,
+      VMAX$7 = o$4.VMAX,
+      VMIN$7 = o$4.VMIN,
       GRADIENT$3 = o$4.GRADIENT,
       calUnit$1 = o$4.calUnit;
   var isNil$b = util.isNil,
@@ -7795,11 +7795,11 @@
       arr.u = NUMBER$4;
     } else if (k === TRANSLATE_X$4 || k === TRANSLATE_Y$4 || k === TRANSLATE_Z$4) {
       if (arr.u === NUMBER$4) {
-        arr.u = PX$6;
+        arr.u = PX$7;
       }
     } else if (k === PERSPECTIVE$5) {
       if ([NUMBER$4, PERCENT$7, DEG$3].indexOf(arr.u) > -1) {
-        arr.u = PX$6;
+        arr.u = PX$7;
       }
     } else {
       if (arr.u === NUMBER$4) {
@@ -8045,7 +8045,7 @@
             var v = calUnit$1(item);
 
             if ([NUMBER$4, DEG$3].indexOf(v.u) > -1) {
-              v.u = PX$6;
+              v.u = PX$7;
             }
 
             return v;
@@ -8101,7 +8101,7 @@
               var n = calUnit$1(_item);
 
               if ([NUMBER$4, DEG$3].indexOf(n.u) > -1) {
-                n.u = PX$6;
+                n.u = PX$7;
               }
 
               v.push(n);
@@ -8160,7 +8160,7 @@
             var n = calUnit$1(item);
 
             if ([NUMBER$4, DEG$3].indexOf(n.u) > -1) {
-              n.u = PX$6;
+              n.u = PX$7;
             }
 
             if (n.v < 0) {
@@ -8171,7 +8171,7 @@
           } else {
             arr[i] = {
               u: 0,
-              v: PX$6
+              v: PX$7
             };
           }
         }
@@ -8369,7 +8369,7 @@
               var n = calUnit$1(item);
 
               if ([NUMBER$4, DEG$3].indexOf(n.u) > -1) {
-                n.u = PX$6;
+                n.u = PX$7;
               }
 
               _arr9.push(n);
@@ -8483,7 +8483,7 @@
         v = calUnit$1(v || 0); // 无单位视为px
 
         if ([NUMBER$4, DEG$3].indexOf(v.u) > -1) {
-          v.u = PX$6;
+          v.u = PX$7;
         }
       }
 
@@ -8518,7 +8518,7 @@
         v.v = Math.max(v.v, 0); // 无单位视为px
 
         if ([NUMBER$4, DEG$3].indexOf(v.u) > -1) {
-          v.u = PX$6;
+          v.u = PX$7;
         }
       } else {
         res[FLEX_BASIS$4] = {
@@ -8591,7 +8591,7 @@
           };
         } else {
           if ([NUMBER$4, DEG$3].indexOf(_v.u) > -1) {
-            _v.u = PX$6;
+            _v.u = PX$7;
           }
 
           res[FONT_SIZE$8] = _v;
@@ -8616,7 +8616,7 @@
           };
         } else {
           if ([NUMBER$4, DEG$3, PERCENT$7].indexOf(_v2.u) > -1) {
-            _v2.u = PX$6;
+            _v2.u = PX$7;
           }
 
           res[TEXT_STROKE_WIDTH$4] = _v2;
@@ -8806,20 +8806,20 @@
       } else if (/normal/i.test(temp)) {
         res[LETTER_SPACING$3] = {
           v: 0,
-          u: PX$6
+          u: PX$7
         };
       } else if (/^[-+]?[\d.]/.test(temp)) {
         var _v8 = calUnit$1(temp);
 
         if ([NUMBER$4, DEG$3].indexOf(_v8.u) > -1) {
-          _v8.u = PX$6;
+          _v8.u = PX$7;
         }
 
         res[LETTER_SPACING$3] = _v8;
       } else {
         res[LETTER_SPACING$3] = {
           v: parseFloat(temp) || 0,
-          u: PX$6
+          u: PX$7
         };
       }
     }
@@ -8888,7 +8888,7 @@
         var v = calUnit$1(item);
 
         if ([NUMBER$4, DEG$3].indexOf(v.u) > -1) {
-          v.u = PX$6;
+          v.u = PX$7;
         }
 
         v.v = Math.max(v.v, 0);
@@ -8964,7 +8964,7 @@
                     var _v10 = calUnit$1(item2);
 
                     if ([NUMBER$4, DEG$3].indexOf(_v10.u) > -1) {
-                      _v10.u = PX$6;
+                      _v10.u = PX$7;
                     } // x/y可以负，blur和spread不行
 
 
@@ -8976,7 +8976,7 @@
                   } else {
                     _res.push({
                       v: 0,
-                      u: PX$6
+                      u: PX$7
                     });
                   }
                 }
@@ -9006,7 +9006,7 @@
                   }
 
                   if (_v11.u === NUMBER$4) {
-                    _v11.u = PX$6;
+                    _v11.u = PX$7;
                   }
 
                   _v11.v = Math.max(_v11.v, 0);
@@ -9108,7 +9108,7 @@
                 var _v14 = calUnit$1(item2);
 
                 if ([NUMBER$4, DEG$3].indexOf(_v14.u) > -1) {
-                  _v14.u = PX$6;
+                  _v14.u = PX$7;
                 } // x/y可以负，blur和spread不行
 
 
@@ -9120,7 +9120,7 @@
               } else {
                 _res2.push({
                   v: 0,
-                  u: PX$6
+                  u: PX$7
                 });
               }
             }
@@ -9253,20 +9253,20 @@
         } else {
           break;
         }
-      } else if (style.u === PX$6) {
+      } else if (style.u === PX$7) {
         return n * style.v;
       } else if (style.u === PERCENT$7) {
         n *= style.v * 0.01;
         parent = parent.domParent;
-      } else if (style.u === REM$6) {
+      } else if (style.u === REM$7) {
         return n * style.v * parent.root.computedStyle[FONT_SIZE$8];
-      } else if (style.u === VW$6) {
+      } else if (style.u === VW$7) {
         return n * style.v * parent.root.width * 0.01;
-      } else if (style.u === VH$6) {
+      } else if (style.u === VH$7) {
         return n * style.v * parent.root.height * 0.01;
-      } else if (style.u === VMAX$6) {
+      } else if (style.u === VMAX$7) {
         return n * style.v * Math.max(parent.root.width, parent.root.height) * 0.01;
-      } else if (style.u === VMIN$6) {
+      } else if (style.u === VMIN$7) {
         return n * style.v * Math.min(parent.root.width, parent.root.height) * 0.01;
       }
     }
@@ -9277,7 +9277,7 @@
   function calRelative$1(currentStyle, k, v, parent, isWidth) {
     if (v.u === AUTO$7) {
       v = 0;
-    } else if ([PX$6, NUMBER$4].indexOf(v.u) > -1) {
+    } else if ([PX$7, NUMBER$4].indexOf(v.u) > -1) {
       v = v.v;
     } else if (v.u === PERCENT$7) {
       if (isWidth) {
@@ -9285,15 +9285,15 @@
       } else {
         v = calRelativePercent(v.v, parent, HEIGHT$8);
       }
-    } else if (v.u === REM$6) {
+    } else if (v.u === REM$7) {
       v = v.v * parent.root.computedStyle[FONT_SIZE$8];
-    } else if (v.u === VW$6) {
+    } else if (v.u === VW$7) {
       v = v.v * parent.root.width * 0.01;
-    } else if (v.u === VH$6) {
+    } else if (v.u === VH$7) {
       v = v.v * parent.root.height * 0.01;
-    } else if (v.u === VMAX$6) {
+    } else if (v.u === VMAX$7) {
       v = v.v * Math.max(parent.root.width, parent.root.height) * 0.01;
-    } else if (v.u === VMIN$6) {
+    } else if (v.u === VMIN$7) {
       v = v.v * Math.min(parent.root.width, parent.root.height) * 0.01;
     }
 
@@ -13797,11 +13797,11 @@
       MATRIX$3 = _enums$STYLE_KEY$h.MATRIX,
       FONT_SIZE$7 = _enums$STYLE_KEY$h.FONT_SIZE;
   var PERCENT$6 = o$4.PERCENT,
-      REM$5 = o$4.REM,
-      VW$5 = o$4.VW,
-      VH$5 = o$4.VH,
-      VMAX$5 = o$4.VMAX,
-      VMIN$5 = o$4.VMIN;
+      REM$6 = o$4.REM,
+      VW$6 = o$4.VW,
+      VH$6 = o$4.VH,
+      VMAX$6 = o$4.VMAX,
+      VMIN$6 = o$4.VMIN;
   var matrix = math.matrix,
       geom = math.geom;
   var identity = matrix.identity,
@@ -13974,29 +13974,29 @@
     if (k === TRANSLATE_X$3 || k === TRANSLATE_Z$3) {
       if (v.u === PERCENT$6) {
         return v.v * ow * 0.01;
-      } else if (v.u === REM$5) {
+      } else if (v.u === REM$6) {
         return v.v * root.computedStyle[FONT_SIZE$7];
-      } else if (v.u === VW$5) {
+      } else if (v.u === VW$6) {
         return v.v * root.width * 0.01;
-      } else if (v.u === VH$5) {
+      } else if (v.u === VH$6) {
         return v.v * root.height * 0.01;
-      } else if (v.u === VMAX$5) {
+      } else if (v.u === VMAX$6) {
         return v.v * Math.max(root.width, root.height) * 0.01;
-      } else if (v.u === VMIN$5) {
+      } else if (v.u === VMIN$6) {
         return v.v * Math.min(root.width, root.height) * 0.01;
       }
     } else if (k === TRANSLATE_Y$3) {
       if (v.u === PERCENT$6) {
         return v.v * oh * 0.01;
-      } else if (v.u === REM$5) {
+      } else if (v.u === REM$6) {
         return v.v * root.computedStyle[FONT_SIZE$7];
-      } else if (v.u === VW$5) {
+      } else if (v.u === VW$6) {
         return v.v * root.width * 0.01;
-      } else if (v.u === VH$5) {
+      } else if (v.u === VH$6) {
         return v.v * root.height * 0.01;
-      } else if (v.u === VMAX$5) {
+      } else if (v.u === VMAX$6) {
         return v.v * Math.max(root.width, root.height) * 0.01;
-      } else if (v.u === VMIN$5) {
+      } else if (v.u === VMIN$6) {
         return v.v * Math.min(root.width, root.height) * 0.01;
       }
     } else if (k === MATRIX$3) {
@@ -15913,6 +15913,36 @@
         return o.textWidth;
       }
     }, {
+      key: "clientWidth",
+      get: function get() {
+        return this.__width || 0;
+      }
+    }, {
+      key: "clientHeight",
+      get: function get() {
+        return this.__height || 0;
+      }
+    }, {
+      key: "offsetWidth",
+      get: function get() {
+        return this.__width || 0;
+      }
+    }, {
+      key: "offsetHeight",
+      get: function get() {
+        return this.__height || 0;
+      }
+    }, {
+      key: "outerWidth",
+      get: function get() {
+        return this.__width || 0;
+      }
+    }, {
+      key: "outerHeight",
+      get: function get() {
+        return this.__height || 0;
+      }
+    }, {
       key: "root",
       get: function get() {
         return this.__domParent.__root;
@@ -17592,17 +17622,17 @@
       TEXT_STROKE_OVER$2 = _enums$STYLE_KEY$9.TEXT_STROKE_OVER,
       STROKE_WIDTH$7 = _enums$STYLE_KEY$9.STROKE_WIDTH;
   var AUTO$5 = o$4.AUTO,
-      PX$5 = o$4.PX,
+      PX$6 = o$4.PX,
       PERCENT$5 = o$4.PERCENT,
       INHERIT$2 = o$4.INHERIT,
       RGBA$2 = o$4.RGBA,
       STRING$1 = o$4.STRING,
       NUMBER$2 = o$4.NUMBER,
-      REM$4 = o$4.REM,
-      VW$4 = o$4.VW,
-      VH$4 = o$4.VH,
-      VMAX$4 = o$4.VMAX,
-      VMIN$4 = o$4.VMIN,
+      REM$5 = o$4.REM,
+      VW$5 = o$4.VW,
+      VH$5 = o$4.VH,
+      VMAX$5 = o$4.VMAX,
+      VMIN$5 = o$4.VMIN,
       GRADIENT$2 = o$4.GRADIENT,
       calUnit = o$4.calUnit;
   var isNil$a = util.isNil,
@@ -17706,7 +17736,7 @@
           } else if (isLengthKey(k)) {
             style[k] = {
               v: computedStyle[k],
-              u: PX$5
+              u: PX$6
             };
           } else if (k === FONT_WEIGHT$2) {
             style[k] = {
@@ -17767,7 +17797,7 @@
         var v = calUnit(item);
 
         if (v.u === NUMBER$2) {
-          v.u = PX$5;
+          v.u = PX$6;
         }
 
         return v;
@@ -17789,102 +17819,102 @@
   }
 
   function calByUnit(p, n, container, root) {
-    if (p.u === PX$5) {
+    if (p.u === PX$6) {
       if (n.u === PERCENT$5) {
         return n.v * 0.01 * container - p.v;
-      } else if (n.u === REM$4) {
+      } else if (n.u === REM$5) {
         return n.v * root.computedStyle[FONT_SIZE$3] - p.v;
-      } else if (n.u === VW$4) {
+      } else if (n.u === VW$5) {
         return n.v * root.width * 0.01 - p.v;
-      } else if (n.u === VH$4) {
+      } else if (n.u === VH$5) {
         return n.v * root.height * 0.01 - p.v;
-      } else if (n.u === VMAX$4) {
+      } else if (n.u === VMAX$5) {
         return n.v * Math.max(root.width, root.height) * 0.01 - p.v;
-      } else if (n.u === VMIN$4) {
+      } else if (n.u === VMIN$5) {
         return n.v * Math.min(root.width, root.height) * 0.01 - p.v;
       }
     } else if (p.u === PERCENT$5) {
-      if (n.u === PX$5) {
+      if (n.u === PX$6) {
         return n.v * 100 / container - p.v;
-      } else if (n.u === REM$4) {
+      } else if (n.u === REM$5) {
         return n.v * root.computedStyle[FONT_SIZE$3] * 100 / container - p.v;
-      } else if (n.u === VW$4) {
+      } else if (n.u === VW$5) {
         return n.v * root.width / container - p.v;
-      } else if (n.u === VH$4) {
+      } else if (n.u === VH$5) {
         return n.v * root.height / container - p.v;
-      } else if (n.u === VMAX$4) {
+      } else if (n.u === VMAX$5) {
         return n.v * Math.max(root.width, root.height) / container - p.v;
-      } else if (n.u === VMIN$4) {
+      } else if (n.u === VMIN$5) {
         return n.v * Math.min(root.width, root.height) / container - p.v;
       }
-    } else if (p.u === REM$4) {
-      if (n.u === PX$5) {
+    } else if (p.u === REM$5) {
+      if (n.u === PX$6) {
         return n.v / root.computedStyle[FONT_SIZE$3] - p.v;
       } else if (n.u === PERCENT$5) {
         return n.v * 0.01 * container / root.computedStyle[FONT_SIZE$3] - p.v;
-      } else if (n.u === VW$4) {
+      } else if (n.u === VW$5) {
         return n.v * root.width * 0.01 / root.computedStyle[FONT_SIZE$3] - p.v;
-      } else if (n.u === VH$4) {
+      } else if (n.u === VH$5) {
         return n.v * root.height * 0.01 / root.computedStyle[FONT_SIZE$3] - p.v;
-      } else if (n.u === VMAX$4) {
+      } else if (n.u === VMAX$5) {
         return n.v * Math.max(root.width, root.height) * 0.01 / root.computedStyle[FONT_SIZE$3] - p.v;
-      } else if (n.u === VMIN$4) {
+      } else if (n.u === VMIN$5) {
         return n.v * Math.min(root.width, root.height) * 0.01 / root.computedStyle[FONT_SIZE$3] - p.v;
       }
-    } else if (p.u === VW$4) {
-      if (n.u === PX$5) {
+    } else if (p.u === VW$5) {
+      if (n.u === PX$6) {
         return n.v * 100 / root.width - p.v;
-      } else if (n.u === REM$4) {
+      } else if (n.u === REM$5) {
         return n.v * 100 * root.computedStyle[FONT_SIZE$3] / root.width - p.v;
       } else if (n.u === PERCENT$5) {
         return n.v * container / root.width - p.v;
-      } else if (n.u === VH$4) {
+      } else if (n.u === VH$5) {
         return n.v * root.height / root.width - p.v;
-      } else if (n.u === VMAX$4) {
+      } else if (n.u === VMAX$5) {
         return n.v * Math.max(root.width, root.height) / root.width - p.v;
-      } else if (n.u === VMIN$4) {
+      } else if (n.u === VMIN$5) {
         return n.v * Math.min(root.width, root.height) / root.width - p.v;
       }
-    } else if (p.u === VH$4) {
-      if (n.u === PX$5) {
+    } else if (p.u === VH$5) {
+      if (n.u === PX$6) {
         return n.v * 100 / root.height - p.v;
-      } else if (n.u === REM$4) {
+      } else if (n.u === REM$5) {
         return n.v * 100 * root.computedStyle[FONT_SIZE$3] / root.height - p.v;
-      } else if (n.u === VW$4) {
+      } else if (n.u === VW$5) {
         return n.v * root.width / root.height - p.v;
       } else if (n.u === PERCENT$5) {
         return n.v * container / root.height - p.v;
-      } else if (n.u === VMAX$4) {
+      } else if (n.u === VMAX$5) {
         return n.v * Math.max(root.width, root.height) / root.height - p.v;
-      } else if (n.u === VMIN$4) {
+      } else if (n.u === VMIN$5) {
         return n.v * Math.min(root.width, root.height) / root.height - p.v;
       }
-    } else if (p.u === VMAX$4) {
-      if (n.u === PX$5) {
+    } else if (p.u === VMAX$5) {
+      if (n.u === PX$6) {
         return n.v * 100 / Math.max(root.width, root.height) - p.v;
-      } else if (n.u === REM$4) {
+      } else if (n.u === REM$5) {
         return n.v * 100 * root.computedStyle[FONT_SIZE$3] / Math.max(root.width, root.height) - p.v;
       } else if (n.u === PERCENT$5) {
         return n.v * container / Math.max(root.width, root.height) - p.v;
-      } else if (n.u === VW$4) {
+      } else if (n.u === VW$5) {
         return n.v * root.width / Math.max(root.width, root.height) - p.v;
-      } else if (n.u === VH$4) {
+      } else if (n.u === VH$5) {
         return n.v * root.height / Math.max(root.width, root.height) - p.v;
-      } else if (n.u === VMIN$4) {
+      } else if (n.u === VMIN$5) {
         return n.v * Math.min(root.width, root.height) / Math.max(root.width, root.height) - p.v;
       }
-    } else if (p.u === VMIN$4) {
-      if (n.u === PX$5) {
+    } else if (p.u === VMIN$5) {
+      if (n.u === PX$6) {
         return n.v * 100 / Math.min(root.width, root.height) - p.v;
-      } else if (n.u === REM$4) {
+      } else if (n.u === REM$5) {
         return n.v * 100 * root.computedStyle[FONT_SIZE$3] / Math.min(root.width, root.height) - p.v;
       } else if (n.u === PERCENT$5) {
         return n.v * container / Math.min(root.width, root.height) - p.v;
-      } else if (n.u === VW$4) {
+      } else if (n.u === VW$5) {
         return n.v * root.width / Math.min(root.width, root.height) - p.v;
-      } else if (n.u === VH$4) {
+      } else if (n.u === VH$5) {
         return n.v * root.height / Math.min(root.width, root.height) - p.v;
-      } else if (n.u === VMAX$4) {
+      } else if (n.u === VMAX$5) {
         return n.v * Math.max(root.width, root.height) / Math.min(root.width, root.height) - p.v;
       }
     }
@@ -18178,43 +18208,43 @@
           if (i % 2 === 0) {
             return {
               v: (parseFloat(v) || 0) * 0.01 * target[k1],
-              u: PX$5
+              u: PX$6
             };
           } else {
             return {
               v: (parseFloat(v) || 0) * 0.01 * target[_k3],
-              u: PX$5
+              u: PX$6
             };
           }
-        } else if (u === REM$4) {
+        } else if (u === REM$5) {
           return {
             v: (parseFloat(v) || 0) * target.root.computedStyle[FONT_SIZE$3] * 100,
-            u: PX$5
+            u: PX$6
           };
-        } else if (u === VW$4) {
+        } else if (u === VW$5) {
           return {
             v: (parseFloat(v) || 0) * 0.01 * target.root.width,
-            u: PX$5
+            u: PX$6
           };
-        } else if (u === VH$4) {
+        } else if (u === VH$5) {
           return {
             v: (parseFloat(v) || 0) * 0.01 * target.root.height,
-            u: PX$5
+            u: PX$6
           };
-        } else if (u === VMAX$4) {
+        } else if (u === VMAX$5) {
           return {
             v: (parseFloat(v) || 0) * 0.01 * Math.max(target.root.width, target.root.height),
-            u: PX$5
+            u: PX$6
           };
-        } else if (u === VMIN$4) {
+        } else if (u === VMIN$5) {
           return {
             v: (parseFloat(v) || 0) * 0.01 * Math.min(target.root.width, target.root.height),
-            u: PX$5
+            u: PX$6
           };
         } else {
           return {
             v: parseFloat(v) || 0,
-            u: PX$5
+            u: PX$6
           };
         }
       });
@@ -18878,20 +18908,20 @@
         if (v.length === 8) {
           currentStyle[TRANSLATE_X$1] = {
             v: v[0].v * t * t * t + 3 * v[2].v * percent * t * t + 3 * v[4].v * percent * percent * t + v[6].v * percent * percent * percent,
-            u: PX$5
+            u: PX$6
           };
           currentStyle[TRANSLATE_Y$1] = {
             v: v[1].v * t * t * t + 3 * v[3].v * percent * t * t + 3 * v[5].v * percent * percent * t + v[7].v * percent * percent * percent,
-            u: PX$5
+            u: PX$6
           };
         } else if (v.length === 6) {
           currentStyle[TRANSLATE_X$1] = {
             v: v[0].v * t * t + 2 * v[2].v * percent * t + v[4].v * percent * percent,
-            u: PX$5
+            u: PX$6
           };
           currentStyle[TRANSLATE_Y$1] = {
             v: v[1].v * t * t + 3 * v[3].v * percent * t + v[5].v * percent * percent,
-            u: PX$5
+            u: PX$6
           };
         }
       } else if (isLengthKey(k) || isExpandKey(k)) {
@@ -20816,17 +20846,17 @@
       WHITE_SPACE$1 = _enums$STYLE_KEY$8.WHITE_SPACE,
       WRITING_MODE$2 = _enums$STYLE_KEY$8.WRITING_MODE;
   var AUTO$4 = o$4.AUTO,
-      PX$4 = o$4.PX,
+      PX$5 = o$4.PX,
       PERCENT$4 = o$4.PERCENT,
       INHERIT$1 = o$4.INHERIT,
       NUMBER$1 = o$4.NUMBER,
       RGBA$1 = o$4.RGBA,
       STRING = o$4.STRING,
-      REM$3 = o$4.REM,
-      VW$3 = o$4.VW,
-      VH$3 = o$4.VH,
-      VMAX$3 = o$4.VMAX,
-      VMIN$3 = o$4.VMIN,
+      REM$4 = o$4.REM,
+      VW$4 = o$4.VW,
+      VH$4 = o$4.VH,
+      VMAX$4 = o$4.VMAX,
+      VMIN$4 = o$4.VMIN,
       DEG = o$4.DEG,
       GRADIENT$1 = o$4.GRADIENT;
   var int2rgba$1 = util.int2rgba,
@@ -20995,21 +21025,21 @@
     }, {
       key: "__calSize",
       value: function __calSize(v, w, includePercent) {
-        if (v.u === PX$4) {
+        if (v.u === PX$5) {
           return v.v;
         } else if (v.u === PERCENT$4) {
           if (includePercent) {
             return v.v * w * 0.01;
           }
-        } else if (v.u === REM$3 || v.u === REM$3) {
+        } else if (v.u === REM$4 || v.u === REM$4) {
           return v.v * this.__root.computedStyle[FONT_SIZE$2];
-        } else if (v.u === VW$3) {
+        } else if (v.u === VW$4) {
           return v.v * this.__root.width * 0.01;
-        } else if (v.u === VH$3) {
+        } else if (v.u === VH$4) {
           return v.v * this.__root.height * 0.01;
-        } else if (v.u === VMAX$3) {
+        } else if (v.u === VMAX$4) {
           return v.v * Math.max(this.__root.width, this.__root.height) * 0.01;
-        } else if (v.u === VMIN$3) {
+        } else if (v.u === VMIN$4) {
           return v.v * Math.min(this.__root.width, this.__root.height) * 0.01;
         }
 
@@ -21061,15 +21091,15 @@
           } // 只有fontSize会有%
           else if (v.u === PERCENT$4) {
             computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : parentComputedStyle[k] * v.v * 0.01;
-          } else if (v.u === REM$3) {
+          } else if (v.u === REM$4) {
             computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : _this3.root.computedStyle[FONT_SIZE$2] * v.v;
-          } else if (v.u === VW$3) {
+          } else if (v.u === VW$4) {
             computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : _this3.root.width * 0.01 * v.v;
-          } else if (v.u === VH$3) {
+          } else if (v.u === VH$4) {
             computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : _this3.root.height * 0.01 * v.v;
-          } else if (v.u === VMAX$3) {
+          } else if (v.u === VMAX$4) {
             computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : Math.max(_this3.root.width, _this3.root.height) * 0.01 * v.v;
-          } else if (v.u === VMIN$3) {
+          } else if (v.u === VMIN$4) {
             computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : Math.min(_this3.root.width, _this3.root.height) * 0.01 * v.v;
           } else {
             computedStyle[k] = v.v;
@@ -21681,7 +21711,7 @@
 
             if (isNil$9(v)) {
               v = 0;
-            } else if (v.u === PX$4) {
+            } else if (v.u === PX$5) {
               v = v.v;
             } else {
               v = this.__calSize(v, this.__offsetWidth, true);
@@ -21698,7 +21728,7 @@
 
             if (isNil$9(_v)) {
               _v = 0;
-            } else if (_v.u === PX$4) {
+            } else if (_v.u === PX$5) {
               _v = _v.v;
             } else {
               _v = this.__calSize(_v, this.__offsetHeight, true);
@@ -22137,15 +22167,15 @@
         } else if (isNil$9(__cacheStyle[TEXT_STROKE_WIDTH$1])) {
           var _v4 = __currentStyle[TEXT_STROKE_WIDTH$1];
 
-          if (_v4.u === REM$3) {
+          if (_v4.u === REM$4) {
             _v4 = _v4.v * this.__root.__computedStyle[FONT_SIZE$2];
-          } else if (_v4.u === VW$3) {
+          } else if (_v4.u === VW$4) {
             _v4 = _v4.v * this.__root.width * 0.01;
-          } else if (_v4.u === VH$3) {
+          } else if (_v4.u === VH$4) {
             _v4 = _v4.v * this.__root.height * 0.01;
-          } else if (_v4.u === VMAX$3) {
+          } else if (_v4.u === VMAX$4) {
             _v4 = _v4.v * Math.max(this.__root.width, this.__root.height) * 0.01;
-          } else if (_v4.u === VMIN$3) {
+          } else if (_v4.u === VMIN$4) {
             _v4 = _v4.v * Math.min(this.__root.width, this.__root.height) * 0.01;
           } else {
             _v4 = _v4.v;
@@ -24727,13 +24757,13 @@
       VISIBILITY$3 = _enums$STYLE_KEY$6.VISIBILITY,
       FLEX_BASIS$2 = _enums$STYLE_KEY$6.FLEX_BASIS;
   var AUTO$3 = o$4.AUTO,
-      PX$3 = o$4.PX,
+      PX$4 = o$4.PX,
       PERCENT$3 = o$4.PERCENT,
-      REM$2 = o$4.REM,
-      VW$2 = o$4.VW,
-      VH$2 = o$4.VH,
-      VMAX$2 = o$4.VMAX,
-      VMIN$2 = o$4.VMIN,
+      REM$3 = o$4.REM,
+      VW$3 = o$4.VW,
+      VH$3 = o$4.VH,
+      VMAX$3 = o$4.VMAX,
+      VMIN$3 = o$4.VMIN,
       RGBA = o$4.RGBA,
       GRADIENT = o$4.GRADIENT;
   var int2rgba = util.int2rgba,
@@ -24805,11 +24835,11 @@
             height = currentStyle[HEIGHT$4];
         var main = isDirectionRow ? width : height; // basis3种情况：auto、固定、content，只区分固定和其它
 
-        var isFixed = [PX$3, PERCENT$3, REM$2, VW$2, VH$2, VMAX$2, VMIN$2].indexOf(flexBasis.u) > -1;
+        var isFixed = [PX$4, PERCENT$3, REM$3, VW$3, VH$3, VMAX$3, VMIN$3].indexOf(flexBasis.u) > -1;
 
         if (isFixed) {
           b = max = min = this.__calSize(flexBasis, isDirectionRow ? w : h, true);
-        } else if ([PX$3, PERCENT$3, REM$2, VW$2, VH$2, VMAX$2, VMIN$2].indexOf(main.u) > -1) {
+        } else if ([PX$4, PERCENT$3, REM$3, VW$3, VH$3, VMAX$3, VMIN$3].indexOf(main.u) > -1) {
           b = max = min = this.__calSize(main, isDirectionRow ? w : h, true);
         } // 直接item的mpb影响basis
 
@@ -25628,6 +25658,12 @@
       BORDER_LEFT_WIDTH$2 = _enums$STYLE_KEY$5.BORDER_LEFT_WIDTH,
       PADDING_LEFT$2 = _enums$STYLE_KEY$5.PADDING_LEFT;
   var AUTO$2 = o$4.AUTO,
+      PX$3 = o$4.PX,
+      REM$2 = o$4.REM,
+      VW$2 = o$4.VW,
+      VH$2 = o$4.VH,
+      VMAX$2 = o$4.VMAX,
+      VMIN$2 = o$4.VMIN,
       PERCENT$2 = o$4.PERCENT;
   var REPAINT$2 = o$1.REPAINT,
       CACHE$2 = o$1.CACHE;
@@ -25737,9 +25773,9 @@
 
   function offsetNext(next, diff, parentFixed, absList) {
     while (next) {
-      var cs = next.currentStyle; // flow流和auto的absolute流需要偏移diff值
+      var cs = next.currentStyle; // flow流和auto/px/rem的absolute流需要偏移diff值
 
-      if (cs[POSITION$2] !== 'absolute' || cs[TOP$2].u === AUTO$2 && cs[BOTTOM$2].u === AUTO$2) {
+      if (cs[POSITION$2] !== 'absolute' || cs[TOP$2].u === AUTO$2 && cs[BOTTOM$2].u === AUTO$2 || cs[TOP$2].u === AUTO$2 && [PX$3, REM$2, VW$2, VH$2, VMAX$2, VMIN$2].indexOf(cs[BOTTOM$2].u) > -1) {
         next.__offsetY(diff, true, REPAINT$2);
       } // absolute中百分比的特殊计算偏移，但要排除parent固定尺寸
       else if (!parentFixed && cs[POSITION$2] === 'absolute' && (cs[TOP$2].u === PERCENT$2 || cs[BOTTOM$2].u === PERCENT$2)) {

@@ -2519,6 +2519,9 @@ class Xom extends Node {
       }
     });
     if(!keys.length) {
+      if(isFunction(cb)) {
+        cb();
+      }
       return;
     }
     if(root) {

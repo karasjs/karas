@@ -23433,6 +23433,10 @@
         });
 
         if (!keys.length) {
+          if (isFunction$5(cb)) {
+            cb();
+          }
+
           return;
         }
 
@@ -26206,10 +26210,6 @@
 
     if (!removeDom && d3) {
       top.__offsetY(d3, false, null);
-    }
-
-    if (removeDom && !isLastNone && svg) {
-      clearSvgCache(parent, false);
     } // 差值计算注意考虑margin合并前的值，和合并后的差值，height使用offsetHeight不考虑margin
 
 

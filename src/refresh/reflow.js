@@ -500,9 +500,6 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
   if(!removeDom && d3) {
     top.__offsetY(d3, false, null);
   }
-  if(removeDom && !isLastNone && svg) {
-    clearSvgCache(parent, false);
-  }
   // 差值计算注意考虑margin合并前的值，和合并后的差值，height使用offsetHeight不考虑margin
   let diff = t3 + t4 - t1 - t2 + nowH - oldH;
   // console.log('t3', t3, 'd3', d3, 't4', t4, 'd4', d4, 't1', t1, 'd1', d1, 't2', t2, 'd2', d2, nowH, oldH, diff);

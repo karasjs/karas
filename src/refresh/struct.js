@@ -1299,12 +1299,10 @@ function genMaskWebgl(gl, texCache, node, cache, W, H, lv, __structs) {
     let parentOpacity = 1;
     let lastOpacity;
     let lastLv = lv;
-    let {
-      index,
-      total,
-    } = item.__struct;
+    let struct = item.__struct;
+    let index = __structs.indexOf(struct);
     // 可以忽略mbm，因为只有透明遮罩
-    for(let i = index, len = index + (total || 0) + 1; i < len; i++) {
+    for(let i = index, len = index + (struct.total || 0) + 1; i < len; i++) {
       let {
         node,
         lv,

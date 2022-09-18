@@ -2507,7 +2507,7 @@ class Xom extends Node {
       if(!isGeom) {
         i = parseInt(i);
       }
-      if(!equalStyle(i, currentStyle[i], style[i], this)) {
+      if(!equalStyle(i, isGeom ? currentProps[i] : currentStyle[i], style[i], this)) {
         if(isGeom) {
           currentProps[i] = style[i];
         }
@@ -2517,7 +2517,7 @@ class Xom extends Node {
         keys.push(i);
       }
     });
-    if(!keys.length) {
+    if(!keys.length || this.__isDestroyed) {
       if(isFunction(cb)) {
         cb();
       }

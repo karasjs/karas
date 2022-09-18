@@ -6,26 +6,9 @@ import inject from '../util/inject';
 import css from '../style/css';
 import change from '../refresh/change';
 
-const { isNil, isFunction, clone, extend } = util;
+const { isFunction, extend } = util;
 
 const REGISTER = {};
-
-/**
- * 向上设置cp类型叶子节点，表明从root到本节点这条链路有更新，使得无链路更新的节约递归
- * 在check时树递归会用到，判断是否需要查找cp更新
- * @param cp
- */
-// function setUpdateFlag(cp) {
-//   // 去重
-//   if(cp.__hasCpUpdate) {
-//     return;
-//   }
-//   cp.__hasCpUpdate = true;
-//   let host = cp.host;
-//   if(host) {
-//     setUpdateFlag(host);
-//   }
-// }
 
 class Component extends Event {
   constructor(props = {}) {
@@ -44,61 +27,6 @@ class Component extends Event {
     this.__isMounted = false;
     this.__taskList = [];
   }
-
-  // setState(n, cb) {
-  //   let self = this;
-  //   if(isNil(n)) {
-  //     n = {};
-  //   }
-  //   else if(isFunction(n)) {
-  //     return;
-  //   }
-  //   else {
-  //     if(Object.keys(n).length === 0) {
-  //       if(isFunction(cb)) {
-  //         cb.call(self);
-  //       }
-  //       return;
-  //     }
-  //     let state = clone(self.state);
-  //     n = extend(state, n);
-  //   }
-  //   let root = self.root;
-  //   if(root && self.__isMounted) {
-  //     // 一帧之内多次调用，需合并
-  //     if(self.__nextState) {
-  //       Object.assign(self.__nextState, n);
-  //       self.__taskList.push(cb);
-  //     }
-  //     else {
-  //       self.__nextState = n;
-  //       self.__taskList = [cb];
-  //       // 回调更新列表，before执行时splice出来供after执行，防止中途产生的后续setState干扰
-  //       let list = [];
-  //       let t = self.__task = {
-  //         __before: () => {
-  //           list = self.__taskList.splice(0);
-  //           // 标识更新
-  //           setUpdateFlag(this);
-  //         },
-  //         __after: () => {
-  //           // self.__nextState = null; 由updater.js每次refresh前同步执行清空，这里不能异步清除，否则frame动画会乱序
-  //           list.forEach(cb => {
-  //             if(isFunction(cb)) {
-  //               cb.call(self);
-  //             }
-  //           });
-  //         },
-  //       };
-  //       root.addRefreshCp(t);
-  //     }
-  //   }
-  //   // 构造函数中调用还未render，
-  //   else if(isFunction(cb)) {
-  //     self.state = n;
-  //     cb.call(self);
-  //   }
-  // }
 
   /**
    * build中调用初始化，处理过flatten

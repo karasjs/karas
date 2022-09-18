@@ -16181,27 +16181,9 @@
 
   _defineProperty(Event, "END", 'end');
 
-  util.isNil;
-      var isFunction$8 = util.isFunction;
-      util.clone;
-      var extend$2 = util.extend;
+  var isFunction$8 = util.isFunction,
+      extend$2 = util.extend;
   var REGISTER$1 = {};
-  /**
-   * 向上设置cp类型叶子节点，表明从root到本节点这条链路有更新，使得无链路更新的节约递归
-   * 在check时树递归会用到，判断是否需要查找cp更新
-   * @param cp
-   */
-  // function setUpdateFlag(cp) {
-  //   // 去重
-  //   if(cp.__hasCpUpdate) {
-  //     return;
-  //   }
-  //   cp.__hasCpUpdate = true;
-  //   let host = cp.host;
-  //   if(host) {
-  //     setUpdateFlag(host);
-  //   }
-  // }
 
   var Component = /*#__PURE__*/function (_Event) {
     _inherits(Component, _Event);
@@ -16225,61 +16207,7 @@
       _this.__isMounted = false;
       _this.__taskList = [];
       return _this;
-    } // setState(n, cb) {
-    //   let self = this;
-    //   if(isNil(n)) {
-    //     n = {};
-    //   }
-    //   else if(isFunction(n)) {
-    //     return;
-    //   }
-    //   else {
-    //     if(Object.keys(n).length === 0) {
-    //       if(isFunction(cb)) {
-    //         cb.call(self);
-    //       }
-    //       return;
-    //     }
-    //     let state = clone(self.state);
-    //     n = extend(state, n);
-    //   }
-    //   let root = self.root;
-    //   if(root && self.__isMounted) {
-    //     // 一帧之内多次调用，需合并
-    //     if(self.__nextState) {
-    //       Object.assign(self.__nextState, n);
-    //       self.__taskList.push(cb);
-    //     }
-    //     else {
-    //       self.__nextState = n;
-    //       self.__taskList = [cb];
-    //       // 回调更新列表，before执行时splice出来供after执行，防止中途产生的后续setState干扰
-    //       let list = [];
-    //       let t = self.__task = {
-    //         __before: () => {
-    //           list = self.__taskList.splice(0);
-    //           // 标识更新
-    //           setUpdateFlag(this);
-    //         },
-    //         __after: () => {
-    //           // self.__nextState = null; 由updater.js每次refresh前同步执行清空，这里不能异步清除，否则frame动画会乱序
-    //           list.forEach(cb => {
-    //             if(isFunction(cb)) {
-    //               cb.call(self);
-    //             }
-    //           });
-    //         },
-    //       };
-    //       root.addRefreshCp(t);
-    //     }
-    //   }
-    //   // 构造函数中调用还未render，
-    //   else if(isFunction(cb)) {
-    //     self.state = n;
-    //     cb.call(self);
-    //   }
-    // }
-
+    }
     /**
      * build中调用初始化，处理过flatten
      */
@@ -19141,7 +19069,7 @@
       var _isGeom2 = GEOM$1.hasOwnProperty(k);
 
       if (!equalStyle$1(k, v, _isGeom2 ? currentProps[k] : currentStyle[k], target)) {
-        if (GEOM$1.hasOwnProperty(k)) {
+        if (_isGeom2) {
           currentProps[k] = v;
         } else {
           currentStyle[k] = v;
@@ -23425,7 +23353,7 @@
             i = parseInt(i);
           }
 
-          if (!equalStyle(i, currentStyle[i], style[i], _this9)) {
+          if (!equalStyle(i, isGeom ? currentProps[i] : currentStyle[i], style[i], _this9)) {
             if (isGeom) {
               currentProps[i] = style[i];
             } else {
@@ -23436,7 +23364,7 @@
           }
         });
 
-        if (!keys.length) {
+        if (!keys.length || this.__isDestroyed) {
           if (isFunction$5(cb)) {
             cb();
           }
@@ -26351,6 +26279,10 @@
           sr = res;
         }
 
+        if (!(sr instanceof Node)) {
+          sr = new Text(sr);
+        }
+
         if (hoc.length) {
           children.__shadow = hoc[0];
           hoc[0].__host = children;
@@ -26360,15 +26292,7 @@
             item.__root = root;
             item.__domParent = parent;
           });
-        }
-
-        if (sr instanceof Xom) {
-          relation(root, children, sr, sr.__children, {});
         } else {
-          sr = new Text(sr);
-        }
-
-        if (!hoc.length) {
           children.__shadow = sr;
           sr.__host = children;
         }
@@ -26380,6 +26304,10 @@
         sr.__isDestroyed = false;
 
         children.__init();
+
+        if (sr instanceof Xom && sr.__children) {
+          relation(root, children, sr, sr.__children, {});
+        }
       }
     }
 
@@ -30228,7 +30156,7 @@
       value: function insertAfter(child, cb) {
         var root = this.__root;
 
-        if (child && !(child instanceof Node || child instanceof Component)) {
+        if (!(child instanceof Node || child instanceof Component)) {
           child = new Text(child);
         }
 
@@ -34349,22 +34277,23 @@
       var parentOpacity = 1;
       var lastOpacity = void 0;
       var lastLv = lv;
-      var _item$__struct = item.__struct,
-          index = _item$__struct.index,
-          total = _item$__struct.total; // 可以忽略mbm，因为只有透明遮罩
+      var struct = item.__struct;
 
-      for (var _i6 = index, _len3 = index + (total || 0) + 1; _i6 < _len3; _i6++) {
+      var index = __structs.indexOf(struct); // 可以忽略mbm，因为只有透明遮罩
+
+
+      for (var _i6 = index, _len3 = index + (struct.total || 0) + 1; _i6 < _len3; _i6++) {
         var _structs$_i3 = __structs[_i6],
             _node5 = _structs$_i3.node,
             _lv3 = _structs$_i3.lv,
-            _total9 = _structs$_i3.total,
+            total = _structs$_i3.total,
             hasMask = _structs$_i3.hasMask;
         var __cache = _node5.__cache;
         var __limitCache = _node5.__limitCache;
         var computedStyle = _node5.__computedStyle; // 跳过display:none元素和它的所有子节点和mask
 
         if (computedStyle[DISPLAY$1] === 'none') {
-          _i6 += _total9 || 0;
+          _i6 += total || 0;
 
           if (hasMask) {
             _i6 += countMaskNum(__structs, _i6 + 1, hasMask);
@@ -34443,7 +34372,7 @@
             texCache.addTexAndDrawWhenLimit(gl, target, lastOpacity, m, cx, cy, dx, dy, true);
 
             if (target !== _cache2) {
-              _i6 += _total9 || 0;
+              _i6 += total || 0;
 
               if (hasMask) {
                 _i6 += countMaskNum(__structs, _i6 + 1, hasMask);
@@ -35409,7 +35338,7 @@
     for (var _i10 = 0, _len8 = __structs.length; _i10 < _len8; _i10++) {
       var _structs$_i5 = __structs[_i10],
           _node7 = _structs$_i5.node,
-          _total10 = _structs$_i5.total,
+          _total9 = _structs$_i5.total,
           _hasMask6 = _structs$_i5.hasMask; // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
 
       if (_node7 instanceof Text) {
@@ -35444,7 +35373,7 @@
         var _computedStyle3 = _node7.__computedStyle; // none跳过这棵子树，判断下最后一个节点的离屏应用即可
 
         if (_computedStyle3[DISPLAY$1] === 'none') {
-          _i10 += _total10 || 0;
+          _i10 += _total9 || 0;
 
           if (_hasMask6) {
             _i10 += countMaskNum(__structs, _i10 + 1, _hasMask6);
@@ -35511,7 +35440,7 @@
           }
 
           if (target !== _cache5) {
-            _i10 += _total10 || 0;
+            _i10 += _total9 || 0;
 
             if (_hasMask6) {
               _i10 += countMaskNum(__structs, _i10 + 1, _hasMask6);
@@ -35551,7 +35480,7 @@
             texCache.addTexAndDrawWhenLimit(gl, _target5, opacity, m, cx, cy, 0, 0, true);
           }
 
-          _i10 += _total10 || 0;
+          _i10 += _total9 || 0;
 
           if (_hasMask6) {
             _i10 += countMaskNum(__structs, _i10 + 1, _hasMask6);
@@ -35776,7 +35705,7 @@
       var _structs$_i6 = __structs[_i11],
           _node8 = _structs$_i6.node,
           _lv4 = _structs$_i6.lv,
-          _total11 = _structs$_i6.total,
+          _total10 = _structs$_i6.total,
           _hasMask7 = _structs$_i6.hasMask; // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
 
       if (_node8 instanceof Text) {
@@ -35789,7 +35718,7 @@
         var _computedStyle4 = _node8.__computedStyle; // none跳过这棵子树，判断下最后一个节点的离屏应用即可
 
         if (_computedStyle4[DISPLAY$1] === 'none') {
-          _i11 += _total11 || 0;
+          _i11 += _total10 || 0;
 
           if (_hasMask7) {
             _i11 += countMaskNum(__structs, _i11 + 1, _hasMask7);
@@ -35823,11 +35752,11 @@
 
           offscreenMask.isClip = _node8.__isClip; // 定位到最后一个mask元素上的末尾
 
-          var j = _i11 + (_total11 || 0) + 1;
+          var j = _i11 + (_total10 || 0) + 1;
 
           while (--_hasMask8) {
-            var _total12 = __structs[j].total;
-            j += (_total12 || 0) + 1;
+            var _total11 = __structs[j].total;
+            j += (_total11 || 0) + 1;
           }
 
           j--;
@@ -35866,7 +35795,7 @@
         var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, _cacheTotal5]);
 
         if (target) {
-          _i11 += _total11 || 0;
+          _i11 += _total10 || 0;
 
           if (_hasMask7) {
             _i11 += countMaskNum(__structs, _i11 + 1, _hasMask7);
@@ -35922,7 +35851,7 @@
 
 
           if (offscreenBlend) {
-            var _j11 = _i11 + (_total11 || 0);
+            var _j11 = _i11 + (_total10 || 0);
 
             if (_hasMask7) {
               _j11 += countMaskNum(__structs, _j11 + 1, _hasMask7);
@@ -35941,7 +35870,7 @@
 
 
           if (_offscreenMask3) {
-            var _j12 = _i11 + (_total11 || 0);
+            var _j12 = _i11 + (_total10 || 0);
 
             maskStartHash[_j12 + 1] = {
               idx: _i11,
@@ -35952,7 +35881,7 @@
 
 
           if (offscreenFilter) {
-            var _j13 = _i11 + (_total11 || 0);
+            var _j13 = _i11 + (_total10 || 0);
 
             if (_hasMask7) {
               _j13 += countMaskNum(__structs, _j13 + 1, _hasMask7);
@@ -35970,7 +35899,7 @@
 
 
           if (offscreenOverflow) {
-            var _j14 = _i11 + (_total11 || 0);
+            var _j14 = _i11 + (_total10 || 0);
 
             if (_hasMask7) {
               _j14 += countMaskNum(__structs, _j14 + 1, _hasMask7);

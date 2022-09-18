@@ -1,4 +1,5 @@
 import Xom from './Xom';
+import Node from './Node';
 import Text from './Text';
 import Component from './Component';
 import util from '../util/util';
@@ -79,6 +80,9 @@ function relation(root, host, parent, children, options = {}) {
         }
         sr = res;
       }
+      if(!(sr instanceof Node)) {
+        sr = new Text(sr);
+      }
       if(hoc.length) {
         children.__shadow = hoc[0];
         hoc[0].__host = children;
@@ -89,13 +93,7 @@ function relation(root, host, parent, children, options = {}) {
           item.__domParent = parent;
         });
       }
-      if(sr instanceof Xom) {
-        relation(root, children, sr, sr.__children, {});
-      }
       else {
-        sr = new Text(sr);
-      }
-      if(!hoc.length) {
         children.__shadow = sr;
         sr.__host = children;
       }
@@ -105,6 +103,9 @@ function relation(root, host, parent, children, options = {}) {
       sr.__domParent = parent;
       sr.__isDestroyed = false;
       children.__init();
+      if(sr instanceof Xom && sr.__children) {
+        relation(root, children, sr, sr.__children, {});
+      }
     }
   }
   return children;

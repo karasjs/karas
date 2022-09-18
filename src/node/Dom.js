@@ -3410,7 +3410,7 @@ class Dom extends Xom {
 
   insertAfter(child, cb) {
     let { __root: root } = this;
-    if(child && !(child instanceof Node || child instanceof Component)) {
+    if(!(child instanceof Node || child instanceof Component)) {
       child = new Text(child);
     }
     child.remove();

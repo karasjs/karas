@@ -1470,7 +1470,7 @@ function calLastStyle(style, target, keys) {
     let k = keys[i], v = style[k];
     let isGeom = GEOM.hasOwnProperty(k);
     if(!equalStyle(k, v, isGeom ? currentProps[k] : currentStyle[k], target)) {
-      if(GEOM.hasOwnProperty(k)) {
+      if(isGeom) {
         currentProps[k] = v;
       }
       else {

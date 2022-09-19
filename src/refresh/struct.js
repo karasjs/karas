@@ -1918,12 +1918,14 @@ function renderWebgl(renderMode, gl, root) {
    * 同时过程中计算出哪些节点要生成局部根，存下来
    */
   for(let i = 0, len = __structs.length; i < len; i++) {
+    let item = __structs[i];
     let {
       node,
       lv,
       total,
       hasMask,
-    } = __structs[i];
+    } = item;
+    item.index = i;
     // Text特殊处理，webgl中先渲染为bitmap，再作为贴图绘制，缓存交由text内部判断，直接调用渲染纹理方法
     if(node instanceof Text) {
       if(lastRefreshLevel >= REPAINT) {
@@ -2052,7 +2054,6 @@ function renderWebgl(renderMode, gl, root) {
       else {
         node.__limitCache = false;
       }
-      // }
       let {
         [OVERFLOW]: overflow,
         [FILTER]: filter,
@@ -2092,7 +2093,7 @@ function renderWebgl(renderMode, gl, root) {
       }
       return b.lv - a.lv;
     });
-    // ppt只有嵌套才需要生成，最下面的孩子节点的ppt无需，因此记录一个hash存index，
+    // ppt只有嵌套才需要生成，最上层的节点的ppt无需，因此记录一个hash存index，
     // 同时因为是后序遍历，孩子先存所有父亲的index即可保证父亲才能生成cacheTotal
     let pptHash = {};
     mergeList.forEach(item => {

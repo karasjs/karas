@@ -35000,11 +35000,12 @@
      */
 
     for (var i = 0, len = __structs.length; i < len; i++) {
-      var _structs$i5 = __structs[i],
-          node = _structs$i5.node,
-          lv = _structs$i5.lv,
-          total = _structs$i5.total,
-          hasMask = _structs$i5.hasMask; // Text特殊处理，webgl中先渲染为bitmap，再作为贴图绘制，缓存交由text内部判断，直接调用渲染纹理方法
+      var item = __structs[i];
+      var node = item.node,
+          lv = item.lv,
+          total = item.total,
+          hasMask = item.hasMask;
+      item.index = i; // Text特殊处理，webgl中先渲染为bitmap，再作为贴图绘制，缓存交由text内部判断，直接调用渲染纹理方法
 
       if (node instanceof Text) {
         if (lastRefreshLevel >= REPAINT$1) {
@@ -35152,8 +35153,7 @@
           }
         } else {
           node.__limitCache = false;
-        } // }
-
+        }
 
         var overflow = __computedStyle[OVERFLOW],
             filter = __computedStyle[FILTER$1],
@@ -35194,7 +35194,7 @@
         }
 
         return b.lv - a.lv;
-      }); // ppt只有嵌套才需要生成，最下面的孩子节点的ppt无需，因此记录一个hash存index，
+      }); // ppt只有嵌套才需要生成，最上层的节点的ppt无需，因此记录一个hash存index，
       // 同时因为是后序遍历，孩子先存所有父亲的index即可保证父亲才能生成cacheTotal
 
       var pptHash = {};
@@ -35576,11 +35576,11 @@
      */
 
     for (var i = 0, len = __structs.length; i < len; i++) {
-      var _structs$i6 = __structs[i],
-          node = _structs$i6.node,
-          lv = _structs$i6.lv,
-          total = _structs$i6.total,
-          hasMask = _structs$i6.hasMask; // 排除Text，要么根节点直接绘制，要么被局部根节点汇总，自身并不缓存（fillText比位图更快）
+      var _structs$i5 = __structs[i],
+          node = _structs$i5.node,
+          lv = _structs$i5.lv,
+          total = _structs$i5.total,
+          hasMask = _structs$i5.hasMask; // 排除Text，要么根节点直接绘制，要么被局部根节点汇总，自身并不缓存（fillText比位图更快）
 
       if (node instanceof Text) {
         continue;

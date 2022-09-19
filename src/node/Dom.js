@@ -3129,7 +3129,7 @@ class Dom extends Xom {
         widthLimit = item.outerWidth;
       }
       // 这里用包裹方法标明要递归计算computedStyle
-      item.__layout({
+      item.__layoutFlow({
         x: x2,
         y: y2,
         w: widthLimit,
@@ -3145,6 +3145,7 @@ class Dom extends Xom {
       if(onlyBottom) {
         item.__offsetY(-item.outerHeight, true);
       }
+      item.__layoutStyle();
     });
     // 递归进行，遇到absolute/relative/component的设置新容器
     children.forEach(item => {

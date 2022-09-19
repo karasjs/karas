@@ -752,7 +752,7 @@ class Root extends Dom {
         if(node.__cache) {
           node.__cache.release();
         }
-        node.__calStyle(lv, computedStyle, cacheStyle);
+        node.__calStyle(lv, currentStyle, computedStyle, cacheStyle);
         node.__calPerspective(currentStyle, computedStyle, cacheStyle);
       }
       // < REPAINT特殊的优化computedStyle计算

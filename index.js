@@ -29811,7 +29811,7 @@
           } // 这里用包裹方法标明要递归计算computedStyle
 
 
-          item.__layout({
+          item.__layoutFlow({
             x: x2,
             y: y2,
             w: widthLimit,
@@ -29830,6 +29830,8 @@
           if (onlyBottom) {
             item.__offsetY(-item.outerHeight, true);
           }
+
+          item.__layoutStyle();
         }); // 递归进行，遇到absolute/relative/component的设置新容器
 
         children.forEach(function (item) {
@@ -37144,7 +37146,7 @@
               node.__cache.release();
             }
 
-            node.__calStyle(lv, computedStyle, cacheStyle);
+            node.__calStyle(lv, currentStyle, computedStyle, cacheStyle);
 
             node.__calPerspective(currentStyle, computedStyle, cacheStyle);
           } // < REPAINT特殊的优化computedStyle计算

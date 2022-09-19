@@ -10,6 +10,7 @@ import transform from '../../style/transform';
 import mx from '../../math/matrix';
 import inject from '../../util/inject';
 import gradient from '../../math/gradient';
+import level from '../../refresh/level';
 
 const {
   STYLE_KEY: {
@@ -710,22 +711,30 @@ class Geom extends Xom {
   // offset/resize时要多一步清空props上记录的缓存
   __offsetX(diff, isLayout, lv) {
     super.__offsetX(diff, isLayout, lv);
-    this.__cacheProps = {};
+    if(lv && lv >= level.REFLOW) {
+      this.__cacheProps = {};
+    }
   }
 
   __offsetY(diff, isLayout, lv) {
     super.__offsetY(diff, isLayout, lv);
-    this.__cacheProps = {};
+    if(lv && lv >= level.REFLOW) {
+      this.__cacheProps = {};
+    }
   }
 
   __resizeX(diff, lv) {
     super.__resizeX(diff, lv);
-    this.__cacheProps = {};
+    if(lv && lv >= level.REFLOW) {
+      this.__cacheProps = {};
+    }
   }
 
   __resizeY(diff, lv) {
     super.__resizeY(diff, lv);
-    this.__cacheProps = {};
+    if(lv && lv >= level.REFLOW) {
+      this.__cacheProps = {};
+    }
   }
 
   addGeom(tagName, props) {

@@ -14689,7 +14689,7 @@
   var REPAINT$4 = 512; //                            1000000000
   // 高位表示reflow
 
-  var REFLOW$2 = 1024; //                           10000000000
+  var REFLOW$3 = 1024; //                           10000000000
   // 特殊高位表示rebuild，节点发生变化
 
   var REBUILD$1 = 2048; //                         100000000000
@@ -14707,7 +14707,7 @@
     MIX_BLEND_MODE: MIX_BLEND_MODE$4,
     PERSPECTIVE: PERSPECTIVE$2,
     REPAINT: REPAINT$4,
-    REFLOW: REFLOW$2,
+    REFLOW: REFLOW$3,
     REBUILD: REBUILD$1
   };
 
@@ -14766,13 +14766,13 @@
         return REPAINT$4;
       }
 
-      return REFLOW$2;
+      return REFLOW$3;
     },
     isReflow: function isReflow(lv) {
-      return lv >= REFLOW$2;
+      return lv >= REFLOW$3;
     },
     isRepaint: function isRepaint(lv) {
-      return lv < REFLOW$2;
+      return lv < REFLOW$3;
     }
   }, ENUM);
 
@@ -20808,7 +20808,7 @@
   var point2d = mx.point2d;
   var contain$3 = o$1.contain,
       TF$1 = o$1.TRANSFORM,
-      REFLOW$1 = o$1.REFLOW,
+      REFLOW$2 = o$1.REFLOW,
       REPAINT$3 = o$1.REPAINT,
       TX = o$1.TRANSLATE_X,
       TY = o$1.TRANSLATE_Y,
@@ -20904,7 +20904,7 @@
 
       var isClip = _this.__isClip = !!_this.props.clip;
       _this.__isMask = isClip || !!_this.props.mask;
-      _this.__refreshLevel = REFLOW$1;
+      _this.__refreshLevel = REFLOW$2;
       _this.__limitCache = false;
       _this.__isInline = false;
       _this.__hasContent = false;
@@ -21269,7 +21269,7 @@
         if (!isAbs && !isColumn && !isRow) {
           this.clearCache();
           this.__cacheStyle = {};
-          this.__refreshLevel = REFLOW$1;
+          this.__refreshLevel = REFLOW$2;
           this.__limitCache = false;
           this.__isInline = false;
           var next = this.next; // mask关系只有布局才会变更，普通渲染关系不会改变，clip也是mask的一种
@@ -21340,14 +21340,14 @@
             if (top.u !== AUTO$4) {
               var n = calRelative(__currentStyle, TOP$3, top, parent);
 
-              this.__offsetY(n);
+              this.__offsetY(n, false, null);
 
               __computedStyle[TOP$3] = n;
               __computedStyle[BOTTOM$3] = 'auto';
             } else if (bottom.u !== AUTO$4) {
               var _n = calRelative(__currentStyle, BOTTOM$3, bottom, parent);
 
-              this.__offsetY(-_n);
+              this.__offsetY(-_n, false, null);
 
               __computedStyle[BOTTOM$3] = _n;
               __computedStyle[TOP$3] = 'auto';
@@ -21358,14 +21358,14 @@
             if (left.u !== AUTO$4) {
               var _n2 = calRelative(__currentStyle, LEFT$2, left, parent, true);
 
-              this.__offsetX(_n2);
+              this.__offsetX(_n2, false, null);
 
               __computedStyle[LEFT$2] = _n2;
               __computedStyle[RIGHT$2] = 'auto';
             } else if (right.u !== AUTO$4) {
               var _n3 = calRelative(__currentStyle, RIGHT$2, right, parent, true);
 
-              this.__offsetX(-_n3);
+              this.__offsetX(-_n3, false, null);
 
               __computedStyle[RIGHT$2] = _n3;
               __computedStyle[LEFT$2] = 'auto';
@@ -21620,7 +21620,7 @@
               var oh = this.outerHeight;
 
               if (oh < data.h) {
-                this.__offsetY((data.h - oh) * 0.5, true);
+                this.__offsetY((data.h - oh) * 0.5, false, null);
               }
             }
           } else {
@@ -21628,7 +21628,7 @@
               var ow = this.outerWidth;
 
               if (ow < data.w) {
-                this.__offsetX((data.w - ow) * 0.5, true);
+                this.__offsetX((data.w - ow) * 0.5, false, null);
               }
             }
           }
@@ -21651,7 +21651,7 @@
 
         var matrixCache = __cacheStyle[MATRIX$1]; // tx/ty/tz变化特殊优化
 
-        if (matrixCache && lv < REFLOW$1 && !contain$3(lv, TF$1)) {
+        if (matrixCache && lv < REFLOW$2 && !contain$3(lv, TF$1)) {
           var x = 0,
               y = 0,
               z = 0;
@@ -23479,7 +23479,8 @@
       key: "__deepScan",
       value: function __deepScan(cb, options) {
         return cb(this, options);
-      } // isLayout为false时，为relative/margin/flex/vertical等
+      } // isLayout为false时，为relative，true则是absolute等直接改layoutData数据的
+      // lv是reflow偏移时传入，需要清除cacheStyle
       // 注意所有的offset/resize都要避免display:none的，比如合并margin导致block的孩子inline因clamp为none时没有layoutData
 
     }, {
@@ -23503,10 +23504,12 @@
         this.__sx5 += diff;
         this.__sx6 += diff;
 
-        if (lv !== undefined) {
+        if (lv) {
           this.__refreshLevel |= lv;
 
-          if (lv >= REPAINT$3) {
+          if (lv >= REFLOW$2) {
+            this.__cacheStyle = {};
+
             this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
           }
         }
@@ -23532,10 +23535,12 @@
         this.__sy5 += diff;
         this.__sy6 += diff;
 
-        if (lv !== undefined) {
+        if (lv) {
           this.__refreshLevel |= lv;
 
-          if (lv >= REPAINT$3) {
+          if (lv >= REFLOW$2) {
+            this.__cacheStyle = {};
+
             this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
           }
         }
@@ -23560,10 +23565,12 @@
           this.__limitCache = false;
         }
 
-        if (lv !== undefined) {
+        if (lv) {
           this.__refreshLevel |= lv;
 
-          if (lv >= REPAINT$3) {
+          if (lv >= REFLOW$2) {
+            this.__cacheStyle = {};
+
             this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
           }
         }
@@ -23590,10 +23597,12 @@
           this.__limitCache = false;
         }
 
-        if (lv !== undefined) {
+        if (lv) {
           this.__refreshLevel |= lv;
 
-          if (lv >= REPAINT$3) {
+          if (lv >= REFLOW$2) {
+            this.__cacheStyle = {};
+
             this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
           }
         }
@@ -23725,7 +23734,7 @@
 
 
         var res = {
-          focus: REFLOW$1,
+          focus: REFLOW$2,
           removeDom: true,
           cb: cb
         };
@@ -25498,28 +25507,36 @@
       value: function __offsetX(diff, isLayout, lv) {
         _get(_getPrototypeOf(Geom.prototype), "__offsetX", this).call(this, diff, isLayout, lv);
 
-        this.__cacheProps = {};
+        if (lv && lv >= o$1.REFLOW) {
+          this.__cacheProps = {};
+        }
       }
     }, {
       key: "__offsetY",
       value: function __offsetY(diff, isLayout, lv) {
         _get(_getPrototypeOf(Geom.prototype), "__offsetY", this).call(this, diff, isLayout, lv);
 
-        this.__cacheProps = {};
+        if (lv && lv >= o$1.REFLOW) {
+          this.__cacheProps = {};
+        }
       }
     }, {
       key: "__resizeX",
       value: function __resizeX(diff, lv) {
         _get(_getPrototypeOf(Geom.prototype), "__resizeX", this).call(this, diff, lv);
 
-        this.__cacheProps = {};
+        if (lv && lv >= o$1.REFLOW) {
+          this.__cacheProps = {};
+        }
       }
     }, {
       key: "__resizeY",
       value: function __resizeY(diff, lv) {
         _get(_getPrototypeOf(Geom.prototype), "__resizeY", this).call(this, diff, lv);
 
-        this.__cacheProps = {};
+        if (lv && lv >= o$1.REFLOW) {
+          this.__cacheProps = {};
+        }
       }
     }, {
       key: "addGeom",
@@ -25632,6 +25649,7 @@
       VMIN$2 = o$4.VMIN,
       PERCENT$2 = o$4.PERCENT;
   var REPAINT$2 = o$1.REPAINT,
+      REFLOW$1 = o$1.REFLOW,
       CACHE$2 = o$1.CACHE;
   var isRelativeOrAbsolute$1 = css.isRelativeOrAbsolute;
 
@@ -25742,13 +25760,13 @@
       var cs = next.currentStyle; // flow流和auto/px/rem的absolute流需要偏移diff值
 
       if (cs[POSITION$2] !== 'absolute' || cs[TOP$2].u === AUTO$2 && cs[BOTTOM$2].u === AUTO$2 || cs[TOP$2].u === AUTO$2 && [PX$3, REM$2, VW$2, VH$2, VMAX$2, VMIN$2].indexOf(cs[BOTTOM$2].u) > -1) {
-        next.__offsetY(diff, true, REPAINT$2);
+        next.__offsetY(diff, true, REFLOW$1);
       } // absolute中百分比的特殊计算偏移，但要排除parent固定尺寸
       else if (!parentFixed && cs[POSITION$2] === 'absolute' && (cs[TOP$2].u === PERCENT$2 || cs[BOTTOM$2].u === PERCENT$2)) {
         if (cs[TOP$2].u === PERCENT$2) {
-          next.__offsetY(diff * 0.01 * cs[TOP$2].v, true, REPAINT$2);
+          next.__offsetY(diff * 0.01 * cs[TOP$2].v, true, REFLOW$1);
         } else {
-          next.__offsetY(diff * (1 - 0.01 * cs[BOTTOM$2].v), true, REPAINT$2);
+          next.__offsetY(diff * (1 - 0.01 * cs[BOTTOM$2].v), true, REFLOW$1);
         }
       } // abs的percent调整，记录
 
@@ -26083,8 +26101,8 @@
         var _p = p,
             ox = _p.ox,
             oy = _p.oy;
-        ox && top.__offsetX(ox);
-        oy && top.__offsetY(oy);
+        ox && top.__offsetX(ox, false, null);
+        oy && top.__offsetY(oy, false, null);
         break;
       }
 
@@ -26168,7 +26186,7 @@
 
 
     if (!removeDom && d3) {
-      top.__offsetY(d3, false, REPAINT$2);
+      top.__offsetY(d3, true, null);
     } // 差值计算注意考虑margin合并前的值，和合并后的差值，height使用offsetHeight不考虑margin
 
 
@@ -26182,7 +26200,7 @@
     var parentFixed = isFixedWidthOrHeight(parent, HEIGHT$3);
 
     if (!parentFixed) {
-      parent.__resizeY(diff, REPAINT$2);
+      parent.__resizeY(diff, REFLOW$1);
     } // 调整的同时遇到百分比高度的abs需记录下来最后重新布局
 
 
@@ -26196,7 +26214,7 @@
       parentFixed = parent && isFixedWidthOrHeight(parent, HEIGHT$3);
 
       if (!parentFixed) {
-        parent.__resizeY(diff, REPAINT$2);
+        parent.__resizeY(diff, REFLOW$1);
       }
 
       offsetNext(next, diff, parentFixed, absList);
@@ -27595,7 +27613,7 @@
                     var _diff = reflow.getMergeMargin(mergeMarginStartList, mergeMarginEndList).diff;
 
                     if (_diff) {
-                      item.__offsetX(_diff, true);
+                      item.__offsetX(_diff, true, null);
 
                       x += _diff;
                     }
@@ -27604,7 +27622,7 @@
                     var _diff2 = reflow.getMergeMargin(mergeMarginStartList, mergeMarginEndList).diff;
 
                     if (_diff2) {
-                      item.__offsetY(_diff2, true);
+                      item.__offsetY(_diff2, true, null);
 
                       y += _diff2;
                     }
@@ -27800,9 +27818,9 @@
 
           if (spread) {
             if (isUpright && !fixedWidth) {
-              this.__resizeX(spread);
+              this.__resizeX(spread, null);
             } else if (!isUpright && !fixedHeight) {
-              this.__resizeY(spread);
+              this.__resizeY(spread, null);
             }
             /**
              * parent以及parent的next无需处理，因为深度遍历后面还会进行，
@@ -27829,9 +27847,9 @@
                 isLastBlock = true;
 
                 if (isUpright) {
-                  item.__offsetX(spreadList[count], true);
+                  item.__offsetX(spreadList[count], true, null);
                 } else {
-                  item.__offsetY(spreadList[count], true);
+                  item.__offsetY(spreadList[count], true, null);
                 }
               } else {
                 hasStart = true;
@@ -28154,7 +28172,7 @@
               var diff = tw - item.outerWidth - (item.x - data.x) * 2;
 
               if (diff) {
-                item.__offsetX(diff, true);
+                item.__offsetX(diff, true, null);
               }
             });
           });
@@ -28165,7 +28183,7 @@
               var diff = th - item.outerHeight - (item.y - data.y) * 2;
 
               if (diff) {
-                item.__offsetY(diff, true);
+                item.__offsetY(diff, true, null);
               }
             });
           });
@@ -28191,9 +28209,9 @@
             if (diff) {
               line.forEach(function (item) {
                 if (isDirectionRow) {
-                  item.__offsetY(diff, true);
+                  item.__offsetY(diff, true, null);
                 } else {
-                  item.__offsetX(diff, true);
+                  item.__offsetX(diff, true, null);
                 }
               });
             }
@@ -28221,17 +28239,17 @@
 
               orderChildren.forEach(function (item) {
                 if (isDirectionRow) {
-                  item.__offsetY(_per, true);
+                  item.__offsetY(_per, true, null);
                 } else {
-                  item.__offsetX(_per, true);
+                  item.__offsetX(_per, true, null);
                 }
               });
             } else if (alignContent === 'flexStart') ; else if (alignContent === 'flexEnd') {
               orderChildren.forEach(function (item) {
                 if (isDirectionRow) {
-                  item.__offsetY(diff, true);
+                  item.__offsetY(diff, true, null);
                 } else {
-                  item.__offsetX(diff, true);
+                  item.__offsetX(diff, true, null);
                 }
               });
             } else if (alignContent === 'spaceBetween') {
@@ -28241,9 +28259,9 @@
                 if (i) {
                   item.forEach(function (item) {
                     if (isDirectionRow) {
-                      item.__offsetY(between, true);
+                      item.__offsetY(between, true, null);
                     } else {
-                      item.__offsetX(between, true);
+                      item.__offsetX(between, true, null);
                     }
                   });
                 }
@@ -28254,9 +28272,9 @@
               __flexLine.forEach(function (item, i) {
                 item.forEach(function (item) {
                   if (isDirectionRow) {
-                    item.__offsetY(around * (i + 1), true);
+                    item.__offsetY(around * (i + 1), true, null);
                   } else {
-                    item.__offsetX(around * (i + 1), true);
+                    item.__offsetX(around * (i + 1), true, null);
                   }
                 });
               });
@@ -28268,9 +28286,9 @@
                 if (i) {
                   item.forEach(function (item) {
                     if (isDirectionRow) {
-                      item.__offsetY(per * i, true);
+                      item.__offsetY(per * i, true, null);
                     } else {
-                      item.__offsetX(per * i, true);
+                      item.__offsetX(per * i, true, null);
                     }
                   });
                 }
@@ -28652,9 +28670,9 @@
               if (currentStyle[MARGIN_LEFT$1].u === AUTO$1) {
                 count += per;
 
-                child.__offsetX(count, true);
+                child.__offsetX(count, true, null);
               } else if (count) {
-                child.__offsetX(count, true);
+                child.__offsetX(count, true, null);
               }
 
               if (currentStyle[MARGIN_RIGHT$1].u === AUTO$1) {
@@ -28664,9 +28682,9 @@
               if (currentStyle[MARGIN_TOP].u === AUTO$1) {
                 count += per;
 
-                child.__offsetY(count, true);
+                child.__offsetY(count, true, null);
               } else if (count) {
-                child.__offsetY(count, true);
+                child.__offsetY(count, true, null);
               }
 
               if (currentStyle[MARGIN_BOTTOM].u === AUTO$1) {
@@ -28678,35 +28696,35 @@
           if (justifyContent === 'flexEnd') {
             for (var _i3 = 0; _i3 < len; _i3++) {
               var _child = line[_i3];
-              isDirectionRow ? _child.__offsetX(free, true) : _child.__offsetY(free, true);
+              isDirectionRow ? _child.__offsetX(free, true, null) : _child.__offsetY(free, true, null);
             }
           } else if (justifyContent === 'center') {
             var center = free * 0.5;
 
             for (var _i4 = 0; _i4 < len; _i4++) {
               var _child2 = line[_i4];
-              isDirectionRow ? _child2.__offsetX(center, true) : _child2.__offsetY(center, true);
+              isDirectionRow ? _child2.__offsetX(center, true, null) : _child2.__offsetY(center, true, null);
             }
           } else if (justifyContent === 'spaceBetween') {
             var between = free / (len - 1);
 
             for (var _i5 = 1; _i5 < len; _i5++) {
               var _child3 = line[_i5];
-              isDirectionRow ? _child3.__offsetX(between * _i5, true) : _child3.__offsetY(between * _i5, true);
+              isDirectionRow ? _child3.__offsetX(between * _i5, true, null) : _child3.__offsetY(between * _i5, true, null);
             }
           } else if (justifyContent === 'spaceAround') {
             var around = free * 0.5 / len;
 
             for (var _i6 = 0; _i6 < len; _i6++) {
               var _child4 = line[_i6];
-              isDirectionRow ? _child4.__offsetX(around * (_i6 * 2 + 1), true) : _child4.__offsetY(around * (_i6 * 2 + 1), true);
+              isDirectionRow ? _child4.__offsetX(around * (_i6 * 2 + 1), true, null) : _child4.__offsetY(around * (_i6 * 2 + 1), true, null);
             }
           } else if (justifyContent === 'spaceEvenly') {
             var _around = free / (len + 1);
 
             for (var _i7 = 0; _i7 < len; _i7++) {
               var _child5 = line[_i7];
-              isDirectionRow ? _child5.__offsetX(_around * (_i7 + 1), true) : _child5.__offsetY(_around * (_i7 + 1), true);
+              isDirectionRow ? _child5.__offsetX(_around * (_i7 + 1), true, null) : _child5.__offsetY(_around * (_i7 + 1), true, null);
             }
           }
         } // 再侧轴
@@ -28720,13 +28738,13 @@
               var diff = maxCross - item.outerHeight;
 
               if (diff !== 0) {
-                item.__offsetY(diff, true);
+                item.__offsetY(diff, true, null);
               }
             } else if (alignSelf === 'center') {
               var _diff4 = maxCross - item.outerHeight;
 
               if (_diff4 !== 0) {
-                item.__offsetY(_diff4 * 0.5, true);
+                item.__offsetY(_diff4 * 0.5, true, null);
               }
             } else if (alignSelf === 'stretch') {
               var computedStyle = item.computedStyle,
@@ -28754,7 +28772,7 @@
               var _diff5 = baseline - item.firstBaseline;
 
               if (_diff5 !== 0) {
-                item.__offsetY(_diff5, true);
+                item.__offsetY(_diff5, true, null);
               }
             } // 默认auto，取alignItems
             else {
@@ -28762,19 +28780,19 @@
                 var _diff6 = maxCross - item.outerHeight;
 
                 if (_diff6 !== 0) {
-                  item.__offsetY(_diff6 * 0.5, true);
+                  item.__offsetY(_diff6 * 0.5, true, null);
                 }
               } else if (alignItems === 'flexEnd') {
                 var _diff7 = maxCross - item.outerHeight;
 
                 if (_diff7 !== 0) {
-                  item.__offsetY(_diff7, true);
+                  item.__offsetY(_diff7, true, null);
                 }
               } else if (alignItems === 'baseline') {
                 var _diff8 = baseline - item.firstBaseline;
 
                 if (_diff8 !== 0) {
-                  item.__offsetY(_diff8, true);
+                  item.__offsetY(_diff8, true, null);
                 }
               } // 默认stretch
               else {
@@ -28820,13 +28838,13 @@
               var _diff9 = maxCross - item.outerWidth;
 
               if (_diff9 !== 0) {
-                item.__offsetX(_diff9, true);
+                item.__offsetX(_diff9, true, null);
               }
             } else if (alignSelf === 'center') {
               var _diff10 = maxCross - item.outerWidth;
 
               if (_diff10 !== 0) {
-                item.__offsetX(_diff10 * 0.5, true);
+                item.__offsetX(_diff10 * 0.5, true, null);
               }
             } else if (alignSelf === 'stretch') {
               var _computedStyle3 = item.computedStyle,
@@ -28857,7 +28875,7 @@
               var _diff11 = baseline - item.firstBaseline;
 
               if (_diff11 !== 0) {
-                item.__offsetX(_diff11, true);
+                item.__offsetX(_diff11, true, null);
               }
             } // 默认auto，取alignItems
             else {
@@ -28865,19 +28883,19 @@
                 var _diff12 = maxCross - item.outerWidth;
 
                 if (_diff12 !== 0) {
-                  item.__offsetX(_diff12 * 0.5, true);
+                  item.__offsetX(_diff12 * 0.5, true, null);
                 }
               } else if (alignItems === 'flexEnd') {
                 var _diff13 = maxCross - item.outerWidth;
 
                 if (_diff13 !== 0) {
-                  item.__offsetX(_diff13, true);
+                  item.__offsetX(_diff13, true, null);
                 }
               } else if (alignItems === 'baseline') {
                 var _diff14 = baseline - item.firstBaseline;
 
                 if (_diff14 !== 0) {
-                  item.__offsetX(_diff14, true);
+                  item.__offsetX(_diff14, true, null);
                 }
               } // 默认stretch
               else {
@@ -29409,9 +29427,9 @@
 
           if (spread) {
             if (isUpright && !fixedWidth) {
-              this.__resizeX(spread);
+              this.__resizeX(spread, null);
             } else if (!isUpright && !fixedHeight) {
-              this.__resizeY(spread);
+              this.__resizeY(spread, null);
             }
           }
 
@@ -29573,9 +29591,9 @@
 
             if (diff > 0) {
               if (isUpright) {
-                this.__offsetY(diff, true);
+                this.__offsetY(diff, true, null);
               } else {
-                this.__offsetX(diff, true);
+                this.__offsetX(diff, true, null);
               }
             }
           }
@@ -29844,11 +29862,11 @@
           }, false, false);
 
           if (onlyRight) {
-            item.__offsetX(-item.outerWidth, true);
+            item.__offsetX(-item.outerWidth, true, null);
           }
 
           if (onlyBottom) {
-            item.__offsetY(-item.outerHeight, true);
+            item.__offsetY(-item.outerHeight, true, null);
           }
 
           item.__layoutStyle();

@@ -645,13 +645,13 @@ class Xom extends Node {
         let {parent} = this;
         if(top.u !== AUTO) {
           let n = calRelative(__currentStyle, TOP, top, parent);
-          this.__offsetY(n);
+          this.__offsetY(n, false, null);
           __computedStyle[TOP] = n;
           __computedStyle[BOTTOM] = 'auto';
         }
         else if(bottom.u !== AUTO) {
           let n = calRelative(__currentStyle, BOTTOM, bottom, parent);
-          this.__offsetY(-n);
+          this.__offsetY(-n, false, null);
           __computedStyle[BOTTOM] = n;
           __computedStyle[TOP] = 'auto';
         }
@@ -660,13 +660,13 @@ class Xom extends Node {
         }
         if(left.u !== AUTO) {
           let n = calRelative(__currentStyle, LEFT, left, parent, true);
-          this.__offsetX(n);
+          this.__offsetX(n, false, null);
           __computedStyle[LEFT] = n;
           __computedStyle[RIGHT] = 'auto';
         }
         else if (right.u !== AUTO) {
           let n = calRelative(__currentStyle, RIGHT, right, parent, true);
-          this.__offsetX(-n);
+          this.__offsetX(-n, false, null);
           __computedStyle[RIGHT] = n;
           __computedStyle[LEFT] = 'auto';
         }
@@ -918,7 +918,7 @@ class Xom extends Node {
         if((height.u !== AUTO || this.isReplaced) && marginTop.u === AUTO && marginBottom.u === AUTO) {
           let oh = this.outerHeight;
           if(oh < data.h) {
-            this.__offsetY((data.h - oh) * 0.5, true);
+            this.__offsetY((data.h - oh) * 0.5, false, null);
           }
         }
       }
@@ -926,7 +926,7 @@ class Xom extends Node {
         if((width.u !== AUTO || this.isReplaced) && marginLeft.u === AUTO && marginRight.u === AUTO) {
           let ow = this.outerWidth;
           if(ow < data.w) {
-            this.__offsetX((data.w - ow) * 0.5, true);
+            this.__offsetX((data.w - ow) * 0.5, false, null);
           }
         }
       }
@@ -2609,7 +2609,8 @@ class Xom extends Node {
     return cb(this, options);
   }
 
-  // isLayout为false时，为relative/margin/flex/vertical等
+  // isLayout为false时，为relative，true则是absolute等直接改layoutData数据的
+  // lv是reflow偏移时传入，需要清除cacheStyle
   // 注意所有的offset/resize都要避免display:none的，比如合并margin导致block的孩子inline因clamp为none时没有layoutData
   __offsetX(diff, isLayout, lv) {
     if(this.computedStyle[DISPLAY] === 'none') {
@@ -2626,9 +2627,10 @@ class Xom extends Node {
     this.__sx4 += diff;
     this.__sx5 += diff;
     this.__sx6 += diff;
-    if(lv !== undefined) {
+    if(lv) {
       this.__refreshLevel |= lv;
-      if(lv >= REPAINT) {
+      if(lv >= REFLOW) {
+        this.__cacheStyle = {};
         this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
       }
     }
@@ -2649,9 +2651,10 @@ class Xom extends Node {
     this.__sy4 += diff;
     this.__sy5 += diff;
     this.__sy6 += diff;
-    if(lv !== undefined) {
+    if(lv) {
       this.__refreshLevel |= lv;
-      if(lv >= REPAINT) {
+      if(lv >= REFLOW) {
+        this.__cacheStyle = {};
         this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
       }
     }
@@ -2672,9 +2675,10 @@ class Xom extends Node {
     if(diff < 0) {
       this.__limitCache = false;
     }
-    if(lv !== undefined) {
+    if(lv) {
       this.__refreshLevel |= lv;
-      if(lv >= REPAINT) {
+      if(lv >= REFLOW) {
+        this.__cacheStyle = {};
         this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
       }
     }
@@ -2696,9 +2700,10 @@ class Xom extends Node {
     if(diff < 0) {
       this.__limitCache = false;
     }
-    if(lv !== undefined) {
+    if(lv) {
       this.__refreshLevel |= lv;
-      if(lv >= REPAINT) {
+      if(lv >= REFLOW) {
+        this.__cacheStyle = {};
         this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
       }
     }

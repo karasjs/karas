@@ -1096,7 +1096,7 @@ class Dom extends Xom {
                 mergeMarginStartList.push(marginLeft);
                 let diff = reflow.getMergeMargin(mergeMarginStartList, mergeMarginEndList).diff;
                 if(diff) {
-                  item.__offsetX(diff, true);
+                  item.__offsetX(diff, true, null);
                   x += diff;
                 }
               }
@@ -1104,7 +1104,7 @@ class Dom extends Xom {
                 mergeMarginStartList.push(marginTop);
                 let diff = reflow.getMergeMargin(mergeMarginStartList, mergeMarginEndList).diff;
                 if(diff) {
-                  item.__offsetY(diff, true);
+                  item.__offsetY(diff, true, null);
                   y += diff;
                 }
               }
@@ -1293,10 +1293,10 @@ class Dom extends Xom {
       let spread = lineBoxManager.verticalAlign(isUpright);
       if(spread) {
         if(isUpright && !fixedWidth) {
-          this.__resizeX(spread);
+          this.__resizeX(spread, null);
         }
         else if(!isUpright && !fixedHeight) {
-          this.__resizeY(spread);
+          this.__resizeY(spread, null);
         }
         /**
          * parent以及parent的next无需处理，因为深度遍历后面还会进行，
@@ -1316,10 +1316,10 @@ class Dom extends Xom {
             }
             isLastBlock = true;
             if(isUpright) {
-              item.__offsetX(spreadList[count], true);
+              item.__offsetX(spreadList[count], true, null);
             }
             else {
-              item.__offsetY(spreadList[count], true);
+              item.__offsetY(spreadList[count], true, null);
             }
           }
           else {
@@ -1578,7 +1578,7 @@ class Dom extends Xom {
           // 一个矩形内的子矩形进行镜像移动，用外w减去内w再减去开头空白的2倍即可
           let diff = tw - item.outerWidth - (item.x - data.x) * 2;
           if(diff) {
-            item.__offsetX(diff, true);
+            item.__offsetX(diff, true, null);
           }
         });
       });
@@ -1589,7 +1589,7 @@ class Dom extends Xom {
           // 一个矩形内的子矩形进行镜像移动，用外w减去内w再减去开头空白的2倍即可
           let diff = th - item.outerHeight - (item.y - data.y) * 2;
           if(diff) {
-            item.__offsetY(diff, true);
+            item.__offsetY(diff, true, null);
           }
         });
       });
@@ -1610,10 +1610,10 @@ class Dom extends Xom {
         if(diff) {
           line.forEach(item => {
             if(isDirectionRow) {
-              item.__offsetY(diff, true);
+              item.__offsetY(diff, true, null);
             }
             else {
-              item.__offsetX(diff, true);
+              item.__offsetX(diff, true, null);
             }
           });
         }
@@ -1632,10 +1632,10 @@ class Dom extends Xom {
           let per = diff * 0.5;
           orderChildren.forEach(item => {
             if(isDirectionRow) {
-              item.__offsetY(per, true);
+              item.__offsetY(per, true, null);
             }
             else {
-              item.__offsetX(per, true);
+              item.__offsetX(per, true, null);
             }
           });
         }
@@ -1643,10 +1643,10 @@ class Dom extends Xom {
         else if(alignContent === 'flexEnd') {
           orderChildren.forEach(item => {
             if(isDirectionRow) {
-              item.__offsetY(diff, true);
+              item.__offsetY(diff, true, null);
             }
             else {
-              item.__offsetX(diff, true);
+              item.__offsetX(diff, true, null);
             }
           });
         }
@@ -1657,10 +1657,10 @@ class Dom extends Xom {
             if(i) {
               item.forEach(item => {
                 if(isDirectionRow) {
-                  item.__offsetY(between, true);
+                  item.__offsetY(between, true, null);
                 }
                 else {
-                  item.__offsetX(between, true);
+                  item.__offsetX(between, true, null);
                 }
               });
             }
@@ -1671,10 +1671,10 @@ class Dom extends Xom {
           __flexLine.forEach((item, i) => {
             item.forEach(item => {
               if(isDirectionRow) {
-                item.__offsetY(around * (i + 1), true);
+                item.__offsetY(around * (i + 1), true, null);
               }
               else {
-                item.__offsetX(around * (i + 1), true);
+                item.__offsetX(around * (i + 1), true, null);
               }
             });
           });
@@ -1687,10 +1687,10 @@ class Dom extends Xom {
             if(i) {
               item.forEach(item => {
                 if(isDirectionRow) {
-                  item.__offsetY(per * i, true);
+                  item.__offsetY(per * i, true, null);
                 }
                 else {
-                  item.__offsetX(per * i, true);
+                  item.__offsetX(per * i, true, null);
                 }
               });
             }
@@ -2028,10 +2028,10 @@ class Dom extends Xom {
         if(isDirectionRow) {
           if(currentStyle[MARGIN_LEFT].u === AUTO) {
             count += per;
-            child.__offsetX(count, true);
+            child.__offsetX(count, true, null);
           }
           else if(count) {
-            child.__offsetX(count, true);
+            child.__offsetX(count, true, null);
           }
           if(currentStyle[MARGIN_RIGHT].u === AUTO) {
             count += per;
@@ -2040,10 +2040,10 @@ class Dom extends Xom {
         else {
           if(currentStyle[MARGIN_TOP].u === AUTO) {
             count += per;
-            child.__offsetY(count, true);
+            child.__offsetY(count, true, null);
           }
           else if(count) {
-            child.__offsetY(count, true);
+            child.__offsetY(count, true, null);
           }
           if(currentStyle[MARGIN_BOTTOM].u === AUTO) {
             count += per;
@@ -2055,35 +2055,35 @@ class Dom extends Xom {
       if(justifyContent === 'flexEnd') {
         for(let i = 0; i < len; i++) {
           let child = line[i];
-          isDirectionRow ? child.__offsetX(free, true) : child.__offsetY(free, true);
+          isDirectionRow ? child.__offsetX(free, true, null) : child.__offsetY(free, true, null);
         }
       }
       else if(justifyContent === 'center') {
         let center = free * 0.5;
         for(let i = 0; i < len; i++) {
           let child = line[i];
-          isDirectionRow ? child.__offsetX(center, true) : child.__offsetY(center, true);
+          isDirectionRow ? child.__offsetX(center, true, null) : child.__offsetY(center, true, null);
         }
       }
       else if(justifyContent === 'spaceBetween') {
         let between = free / (len - 1);
         for(let i = 1; i < len; i++) {
           let child = line[i];
-          isDirectionRow ? child.__offsetX(between * i, true) : child.__offsetY(between * i, true);
+          isDirectionRow ? child.__offsetX(between * i, true, null) : child.__offsetY(between * i, true, null);
         }
       }
       else if(justifyContent === 'spaceAround') {
         let around = free * 0.5 / len;
         for(let i = 0; i < len; i++) {
           let child = line[i];
-          isDirectionRow ? child.__offsetX(around * (i * 2 + 1), true) : child.__offsetY(around * (i * 2 + 1), true);
+          isDirectionRow ? child.__offsetX(around * (i * 2 + 1), true, null) : child.__offsetY(around * (i * 2 + 1), true, null);
         }
       }
       else if(justifyContent === 'spaceEvenly') {
         let around = free / (len + 1);
         for(let i = 0; i < len; i++) {
           let child = line[i];
-          isDirectionRow ? child.__offsetX(around * (i + 1), true) : child.__offsetY(around * (i + 1), true);
+          isDirectionRow ? child.__offsetX(around * (i + 1), true, null) : child.__offsetY(around * (i + 1), true, null);
         }
       }
     }
@@ -2095,13 +2095,13 @@ class Dom extends Xom {
         else if(alignSelf === 'flexEnd') {
           let diff = maxCross - item.outerHeight;
           if(diff !== 0) {
-            item.__offsetY(diff, true);
+            item.__offsetY(diff, true, null);
           }
         }
         else if(alignSelf === 'center') {
           let diff = maxCross - item.outerHeight;
           if(diff !== 0) {
-            item.__offsetY(diff * 0.5, true);
+            item.__offsetY(diff * 0.5, true, null);
           }
         }
         else if(alignSelf === 'stretch') {
@@ -2130,7 +2130,7 @@ class Dom extends Xom {
         else if(alignSelf === 'baseline') {
           let diff = baseline - item.firstBaseline;
           if(diff !== 0) {
-            item.__offsetY(diff, true);
+            item.__offsetY(diff, true, null);
           }
         }
         // 默认auto，取alignItems
@@ -2139,19 +2139,19 @@ class Dom extends Xom {
           else if(alignItems === 'center') {
             let diff = maxCross - item.outerHeight;
             if(diff !== 0) {
-              item.__offsetY(diff * 0.5, true);
+              item.__offsetY(diff * 0.5, true, null);
             }
           }
           else if(alignItems === 'flexEnd') {
             let diff = maxCross - item.outerHeight;
             if(diff !== 0) {
-              item.__offsetY(diff, true);
+              item.__offsetY(diff, true, null);
             }
           }
           else if(alignItems === 'baseline') {
             let diff = baseline - item.firstBaseline;
             if(diff !== 0) {
-              item.__offsetY(diff, true);
+              item.__offsetY(diff, true, null);
             }
           }
           // 默认stretch
@@ -2194,13 +2194,13 @@ class Dom extends Xom {
         else if(alignSelf === 'flexEnd') {
           let diff = maxCross - item.outerWidth;
           if(diff !== 0) {
-            item.__offsetX(diff, true);
+            item.__offsetX(diff, true, null);
           }
         }
         else if(alignSelf === 'center') {
           let diff = maxCross - item.outerWidth;
           if(diff !== 0) {
-            item.__offsetX(diff * 0.5, true);
+            item.__offsetX(diff * 0.5, true, null);
           }
         }
         else if(alignSelf === 'stretch') {
@@ -2229,7 +2229,7 @@ class Dom extends Xom {
         else if(alignItems === 'baseline') {
           let diff = baseline - item.firstBaseline;
           if(diff !== 0) {
-            item.__offsetX(diff, true);
+            item.__offsetX(diff, true, null);
           }
         }
         // 默认auto，取alignItems
@@ -2238,19 +2238,19 @@ class Dom extends Xom {
           else if(alignItems === 'center') {
             let diff = maxCross - item.outerWidth;
             if(diff !== 0) {
-              item.__offsetX(diff * 0.5, true);
+              item.__offsetX(diff * 0.5, true, null);
             }
           }
           else if(alignItems === 'flexEnd') {
             let diff = maxCross - item.outerWidth;
             if(diff !== 0) {
-              item.__offsetX(diff, true);
+              item.__offsetX(diff, true, null);
             }
           }
           else if(alignItems === 'baseline') {
             let diff = baseline - item.firstBaseline;
             if(diff !== 0) {
-              item.__offsetX(diff, true);
+              item.__offsetX(diff, true, null);
             }
           }
           // 默认stretch
@@ -2744,10 +2744,10 @@ class Dom extends Xom {
       let spread = lineBoxManager.verticalAlign(isUpright);
       if(spread) {
         if(isUpright && !fixedWidth) {
-          this.__resizeX(spread);
+          this.__resizeX(spread, null);
         }
         else if(!isUpright && !fixedHeight) {
-          this.__resizeY(spread);
+          this.__resizeY(spread, null);
         }
       }
       if(!isColumn && !isRow) {
@@ -2897,10 +2897,10 @@ class Dom extends Xom {
         }
         if(diff > 0) {
           if(isUpright) {
-            this.__offsetY(diff, true);
+            this.__offsetY(diff, true, null);
           }
           else {
-            this.__offsetX(diff, true);
+            this.__offsetX(diff, true, null);
           }
         }
       }
@@ -3140,10 +3140,10 @@ class Dom extends Xom {
         container,
       }, false, false);
       if(onlyRight) {
-        item.__offsetX(-item.outerWidth, true);
+        item.__offsetX(-item.outerWidth, true, null);
       }
       if(onlyBottom) {
-        item.__offsetY(-item.outerHeight, true);
+        item.__offsetY(-item.outerHeight, true, null);
       }
       item.__layoutStyle();
     });

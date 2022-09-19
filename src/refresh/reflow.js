@@ -25,7 +25,7 @@ const {
   },
 } = enums;
 const { AUTO, PX, REM, VW, VH, VMAX, VMIN, PERCENT } = unit;
-const { REPAINT, CACHE } = level;
+const { REPAINT, REFLOW, CACHE } = level;
 const { isRelativeOrAbsolute } = css;
 
 function clearSvgCache(node, child) {
@@ -132,16 +132,16 @@ function offsetNext(next, diff, parentFixed, absList) {
     if(cs[POSITION] !== 'absolute'
       || (cs[TOP].u === AUTO && cs[BOTTOM].u === AUTO
         || cs[TOP].u === AUTO && [PX, REM, VW, VH, VMAX, VMIN].indexOf(cs[BOTTOM].u) > -1)) {
-      next.__offsetY(diff, true, REPAINT);
+      next.__offsetY(diff, true, REFLOW);
     }
     // absolute中百分比的特殊计算偏移，但要排除parent固定尺寸
     else if(!parentFixed && cs[POSITION] === 'absolute'
       && (cs[TOP].u === PERCENT || cs[BOTTOM].u === PERCENT)) {
       if(cs[TOP].u === PERCENT) {
-        next.__offsetY(diff * 0.01 * cs[TOP].v, true, REPAINT);
+        next.__offsetY(diff * 0.01 * cs[TOP].v, true, REFLOW);
       }
       else {
-        next.__offsetY(diff * (1 - 0.01 * cs[BOTTOM].v), true, REPAINT);
+        next.__offsetY(diff * (1 - 0.01 * cs[BOTTOM].v), true, REFLOW);
       }
     }
     // abs的percent调整，记录
@@ -425,8 +425,8 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
   while(p) {
     if(p.__computedStyle[POSITION] === 'relative') {
       let { ox, oy } = p;
-      ox && top.__offsetX(ox);
-      oy && top.__offsetY(oy);
+      ox && top.__offsetX(ox, false, null);
+      oy && top.__offsetY(oy, false, null);
       break;
     }
     p = p.__domParent;
@@ -495,7 +495,7 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
   }
   // 查看mergeMargin对top造成的偏移
   if(!removeDom && d3) {
-    top.__offsetY(d3, false, REPAINT);
+    top.__offsetY(d3, true, null);
   }
   // 差值计算注意考虑margin合并前的值，和合并后的差值，height使用offsetHeight不考虑margin
   let diff = t3 + t4 - t1 - t2 + nowH - oldH;
@@ -506,7 +506,7 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
   }
   let parentFixed = isFixedWidthOrHeight(parent, HEIGHT);
   if(!parentFixed) {
-    parent.__resizeY(diff, REPAINT);
+    parent.__resizeY(diff, REFLOW);
   }
   // 调整的同时遇到百分比高度的abs需记录下来最后重新布局
   let absList = [];
@@ -518,7 +518,7 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
     parent = parent.__domParent;
     parentFixed = parent && isFixedWidthOrHeight(parent, HEIGHT);
     if(!parentFixed) {
-      parent.__resizeY(diff, REPAINT);
+      parent.__resizeY(diff, REFLOW);
     }
     offsetNext(next, diff, parentFixed, absList);
     if(parentFixed) {

@@ -26186,7 +26186,7 @@
 
 
     if (!removeDom && d3) {
-      top.__offsetY(d3, true, null);
+      top.__offsetY(d3, true, REFLOW$1);
     } // 差值计算注意考虑margin合并前的值，和合并后的差值，height使用offsetHeight不考虑margin
 
 

@@ -1342,7 +1342,12 @@ function equalStyle(k, a, b, target) {
         return false;
       }
       let av = oa.v, bv = ob.v;
-      if(av.u !== bv.u || av.v !== bv.v) {
+      if(oa.k === MATRIX) {
+        if(!equalArr(av, bv)) {
+          return false;
+        }
+      }
+      else if(av.u !== bv.u || av.v !== bv.v) {
         return false;
       }
     }

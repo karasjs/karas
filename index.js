@@ -9367,7 +9367,11 @@
         var av = oa.v,
             bv = ob.v;
 
-        if (av.u !== bv.u || av.v !== bv.v) {
+        if (oa.k === MATRIX$4) {
+          if (!equalArr$1(av, bv)) {
+            return false;
+          }
+        } else if (av.u !== bv.u || av.v !== bv.v) {
           return false;
         }
       }

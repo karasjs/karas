@@ -24794,6 +24794,13 @@
         return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], isDirectChild);
       }
     }, {
+      key: "__layout",
+      value: function __layout(data, isAbs, isColumn, isRow) {
+        _get(_getPrototypeOf(Geom.prototype), "__layout", this).call(this, data, isAbs, isColumn, isRow);
+
+        this.__layoutStyle();
+      }
+    }, {
       key: "__layoutBlock",
       value: function __layoutBlock(data, isAbs, isColumn, isRow) {
         var _this$__preLayout = this.__preLayout(data, false),
@@ -37073,51 +37080,6 @@
 
         if (contain(lv, TF)) {
           cacheStyle[MATRIX] = computedStyle[TRANSFORM] = undefined;
-        } // 影响子继承REPAINT的变化，如果被cache住需要清除
-
-
-        if (hasVisibility || hasColor || hasTsColor || hasTsWidth || hasTsOver) {
-          for (var __structs = this.__structs, __struct = node.__struct, _i2 = __structs.indexOf(__struct) + 1, _len = _i2 + (__struct.total || 0); _i2 < _len; _i2++) {
-            var _structs$_i = __structs[_i2],
-                _node2 = _structs$_i.node,
-                total = _structs$_i.total; // text的style指向parent，不用管
-
-            if (_node2 instanceof Text) {
-              continue;
-            }
-
-            var _currentStyle = _node2.__currentStyle,
-                _cacheStyle = _node2.__cacheStyle;
-            var need = void 0;
-
-            if (hasVisibility && _currentStyle[VISIBILITY].u === INHERIT) {
-              need = true;
-              _cacheStyle[VISIBILITY] = undefined;
-            } else if (hasColor && _currentStyle[COLOR].u === INHERIT) {
-              need = true;
-              _cacheStyle[COLOR] = undefined;
-            } else if (hasTsColor && _currentStyle[TEXT_STROKE_COLOR].u === INHERIT) {
-              need = true;
-              _cacheStyle[TEXT_STROKE_COLOR] = undefined;
-            } else if (hasTsWidth && _currentStyle[TEXT_STROKE_WIDTH].u === INHERIT) {
-              need = true;
-              _cacheStyle[TEXT_STROKE_WIDTH] = undefined;
-            } else if (hasTsOver && _currentStyle[TEXT_STROKE_OVER].u === INHERIT) {
-              need = true;
-              _cacheStyle[TEXT_STROKE_OVER] = undefined;
-            }
-
-            if (need) {
-              _node2.__refreshLevel |= REPAINT;
-
-              _node2.clearCache();
-
-              _node2.__calStyle(REPAINT, _currentStyle, _node2.__computedStyle, _cacheStyle);
-            } // 不为inherit此子树可跳过，因为不影响
-            else {
-              _i2 += total || 0;
-            }
-          }
         } // mask需清除遮罩对象的缓存
 
 
@@ -37139,9 +37101,9 @@
 
         if (isRp) {
           // dom在>=REPAINT时total失效，svg的Geom比较特殊
-          var _need = lv >= REPAINT;
+          var need = lv >= REPAINT;
 
-          if (_need) {
+          if (need) {
             if (node.__cache) {
               node.__cache.release();
             }
@@ -37170,10 +37132,56 @@
             if (contain(lv, MBM)) {
               computedStyle[MIX_BLEND_MODE] = currentStyle[MIX_BLEND_MODE];
             }
+          } // 影响子继承REPAINT的变化，如果被cache住需要清除
+
+
+          if (hasVisibility || hasColor || hasTsColor || hasTsWidth || hasTsOver) {
+            for (var __structs = this.__structs, __struct = node.__struct, _i2 = __structs.indexOf(__struct) + 1, _len = _i2 + (__struct.total || 0); _i2 < _len; _i2++) {
+              var _structs$_i = __structs[_i2],
+                  _node2 = _structs$_i.node,
+                  total = _structs$_i.total; // text的style指向parent，不用管
+
+              if (_node2 instanceof Text) {
+                continue;
+              }
+
+              var _currentStyle = _node2.__currentStyle,
+                  _cacheStyle = _node2.__cacheStyle;
+
+              var _need = void 0;
+
+              if (hasVisibility && _currentStyle[VISIBILITY].u === INHERIT) {
+                _need = true;
+                _cacheStyle[VISIBILITY] = undefined;
+              } else if (hasColor && _currentStyle[COLOR].u === INHERIT) {
+                _need = true;
+                _cacheStyle[COLOR] = undefined;
+              } else if (hasTsColor && _currentStyle[TEXT_STROKE_COLOR].u === INHERIT) {
+                _need = true;
+                _cacheStyle[TEXT_STROKE_COLOR] = undefined;
+              } else if (hasTsWidth && _currentStyle[TEXT_STROKE_WIDTH].u === INHERIT) {
+                _need = true;
+                _cacheStyle[TEXT_STROKE_WIDTH] = undefined;
+              } else if (hasTsOver && _currentStyle[TEXT_STROKE_OVER].u === INHERIT) {
+                _need = true;
+                _cacheStyle[TEXT_STROKE_OVER] = undefined;
+              }
+
+              if (_need) {
+                _node2.__refreshLevel |= REPAINT;
+
+                _node2.clearCache();
+
+                _node2.__calStyle(REPAINT, _currentStyle, _node2.__computedStyle, _cacheStyle);
+              } // 不为inherit此子树可跳过，因为不影响
+              else {
+                _i2 += total || 0;
+              }
+            }
           } // perspective也特殊只清空total的cache，和>=REPAINT清空total共用，TODO:优化判断ppt
 
 
-          if (_need || contain(lv, PPT)) {
+          if (need || contain(lv, PPT)) {
             if (node.__cacheTotal) {
               node.__cacheTotal.release();
             }
@@ -37188,7 +37196,7 @@
           } // 特殊的filter清除cache
 
 
-          if ((_need || contain(lv, FT)) && node.__cacheFilter) {
+          if ((need || contain(lv, FT)) && node.__cacheFilter) {
             node.__cacheFilter.release();
           } // 向上清除cache汇总缓存信息，过程中可能会出现重复，根据refreshLevel判断，reflow已经自己清过了
 

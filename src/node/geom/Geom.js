@@ -102,6 +102,11 @@ class Geom extends Xom {
     return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], isDirectChild);
   }
 
+  __layout(data, isAbs, isColumn, isRow) {
+    super.__layout(data, isAbs, isColumn, isRow);
+    this.__layoutStyle();
+  }
+
   __layoutBlock(data, isAbs, isColumn, isRow) {
     let { fixedWidth, fixedHeight, w, h, isParentVertical, isUpright } = this.__preLayout(data, false);
     let tw = 0, th = 0;

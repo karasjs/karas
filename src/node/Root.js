@@ -686,53 +686,6 @@ class Root extends Dom {
     if(contain(lv, TF)) {
       cacheStyle[MATRIX] = computedStyle[TRANSFORM] = undefined;
     }
-    // 影响子继承REPAINT的变化，如果被cache住需要清除
-    if(hasVisibility || hasColor || hasTsColor || hasTsWidth || hasTsOver) {
-      for(let __structs = this.__structs,
-            __struct = node.__struct,
-            i = __structs.indexOf(__struct) + 1,
-            len = i + (__struct.total || 0); i < len; i++) {
-        let {
-          node,
-          total,
-        } = __structs[i];
-        // text的style指向parent，不用管
-        if(node instanceof Text) {
-          continue;
-        }
-        let currentStyle = node.__currentStyle, cacheStyle = node.__cacheStyle;
-        let need;
-        if(hasVisibility && currentStyle[VISIBILITY].u === INHERIT) {
-          need = true;
-          cacheStyle[VISIBILITY] = undefined;
-        }
-        else if(hasColor && currentStyle[COLOR].u === INHERIT) {
-          need = true;
-          cacheStyle[COLOR] = undefined;
-        }
-        else if(hasTsColor && currentStyle[TEXT_STROKE_COLOR].u === INHERIT) {
-          need = true;
-          cacheStyle[TEXT_STROKE_COLOR] = undefined;
-        }
-        else if(hasTsWidth && currentStyle[TEXT_STROKE_WIDTH].u === INHERIT) {
-          need = true;
-          cacheStyle[TEXT_STROKE_WIDTH] = undefined;
-        }
-        else if(hasTsOver && currentStyle[TEXT_STROKE_OVER].u === INHERIT) {
-          need = true;
-          cacheStyle[TEXT_STROKE_OVER] = undefined;
-        }
-        if(need) {
-          node.__refreshLevel |= REPAINT;
-          node.clearCache();
-          node.__calStyle(REPAINT, currentStyle, node.__computedStyle, cacheStyle);
-        }
-        // 不为inherit此子树可跳过，因为不影响
-        else {
-          i += total || 0;
-        }
-      }
-    }
     // mask需清除遮罩对象的缓存
     if(__isMask) {
       let prev = node.__prev;
@@ -771,6 +724,53 @@ class Root extends Dom {
         }
         if(contain(lv, MBM)) {
           computedStyle[MIX_BLEND_MODE] = currentStyle[MIX_BLEND_MODE];
+        }
+      }
+      // 影响子继承REPAINT的变化，如果被cache住需要清除
+      if(hasVisibility || hasColor || hasTsColor || hasTsWidth || hasTsOver) {
+        for(let __structs = this.__structs,
+              __struct = node.__struct,
+              i = __structs.indexOf(__struct) + 1,
+              len = i + (__struct.total || 0); i < len; i++) {
+          let {
+            node,
+            total,
+          } = __structs[i];
+          // text的style指向parent，不用管
+          if(node instanceof Text) {
+            continue;
+          }
+          let currentStyle = node.__currentStyle, cacheStyle = node.__cacheStyle;
+          let need;
+          if(hasVisibility && currentStyle[VISIBILITY].u === INHERIT) {
+            need = true;
+            cacheStyle[VISIBILITY] = undefined;
+          }
+          else if(hasColor && currentStyle[COLOR].u === INHERIT) {
+            need = true;
+            cacheStyle[COLOR] = undefined;
+          }
+          else if(hasTsColor && currentStyle[TEXT_STROKE_COLOR].u === INHERIT) {
+            need = true;
+            cacheStyle[TEXT_STROKE_COLOR] = undefined;
+          }
+          else if(hasTsWidth && currentStyle[TEXT_STROKE_WIDTH].u === INHERIT) {
+            need = true;
+            cacheStyle[TEXT_STROKE_WIDTH] = undefined;
+          }
+          else if(hasTsOver && currentStyle[TEXT_STROKE_OVER].u === INHERIT) {
+            need = true;
+            cacheStyle[TEXT_STROKE_OVER] = undefined;
+          }
+          if(need) {
+            node.__refreshLevel |= REPAINT;
+            node.clearCache();
+            node.__calStyle(REPAINT, currentStyle, node.__computedStyle, cacheStyle);
+          }
+          // 不为inherit此子树可跳过，因为不影响
+          else {
+            i += total || 0;
+          }
         }
       }
       // perspective也特殊只清空total的cache，和>=REPAINT清空total共用，TODO:优化判断ppt

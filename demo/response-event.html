@@ -34,8 +34,8 @@
       }
     }
 
-    render(renderMode, refreshLevel, ctx, defs) {
-      super.render(renderMode, refreshLevel, ctx, defs);
+    render(renderMode, ctx, dx, dy) {
+      super.render(renderMode, ctx, dx, dy);
       let { x, y, width, height } = this;
       let cx = x + width * 0.5;
       let cy = y + height * 0.5;

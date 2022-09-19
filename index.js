@@ -1063,7 +1063,7 @@
    */
 
 
-  function equal(a, b) {
+  function equal$1(a, b) {
     if (a === b) {
       return true;
     }
@@ -1074,7 +1074,7 @@
       for (var i = 0, arr = Object.keys(a), len = arr.length; i < len; i++) {
         var k = arr[i];
 
-        if (!b.hasOwnProperty(k) || !equal(a[k], b[k])) {
+        if (!b.hasOwnProperty(k) || !equal$1(a[k], b[k])) {
           return false;
         }
 
@@ -1097,7 +1097,7 @@
       }
 
       for (var _i2 = 0, _len2 = a.length; _i2 < _len2; _i2++) {
-        if (!equal(a[_i2], b[_i2])) {
+        if (!equal$1(a[_i2], b[_i2])) {
           return false;
         }
       }
@@ -1304,7 +1304,7 @@
     hash2arr: hash2arr,
     clone: clone$3,
     equalArr: equalArr$2,
-    equal: equal,
+    equal: equal$1,
     extend: extend$3,
     joinArr: joinArr$3,
     transformBbox: transformBbox$1,
@@ -7794,6 +7794,7 @@
   var isNil$b = util.isNil,
       rgba2int$1 = util.rgba2int,
       equalArr$1 = util.equalArr,
+      equal = util.equal,
       replaceRgba2Hex = util.replaceRgba2Hex;
   var isGeom$2 = o$2.isGeom,
       GEOM$2 = o$2.GEOM,
@@ -9361,10 +9362,12 @@
 
         if (oa.k !== ob.k) {
           return false;
-        } // translate/matrix等都是数组
+        }
 
+        var av = oa.v,
+            bv = ob.v;
 
-        if (!equalArr$1(oa.v, ob.v)) {
+        if (av.u !== bv.u || av.v !== bv.v) {
           return false;
         }
       }
@@ -9382,10 +9385,35 @@
       }
 
       for (var _i = 0, _len = a.length; _i < _len; _i++) {
-        if (!equalArr$1(a[_i], b[_i])) {
+        var _oa = a[_i];
+        var _ob = b[_i];
+
+        if (_oa.k !== _ob.k) {
+          return false;
+        }
+
+        var _av = _oa.v,
+            _bv = _ob.v;
+
+        if (_oa.k === 'dropShadow' || _oa.k === 'drop-shadow') {
+          if (_av.length !== _bv.length) {
+            return false;
+          }
+
+          for (var j = 0; j < 4; j++) {
+            var avj = _av[j],
+                bvj = _bv[j];
+
+            if (avj.u !== bvj.u || avj.v !== bvj.v) {
+              return false;
+            }
+          }
+        } else if (_av.u !== _bv.u || _av.v !== _bv.v) {
           return false;
         }
       }
+
+      return true;
     }
 
     if (k === TRANSFORM_ORIGIN$5 || k === PERSPECTIVE_ORIGIN$4 || isRadiusKey$1(k)) {
@@ -9422,14 +9450,14 @@
           return false;
         }
 
-        for (var j = 0; j < 4; j++) {
-          if (_aa[j].v !== _bb[j].v || _aa[j].u !== _bb[j].u) {
+        for (var _j = 0; _j < 4; _j++) {
+          if (_aa[_j].v !== _bb[_j].v || _aa[_j].u !== _bb[_j].u) {
             return false;
           }
         }
 
-        for (var _j = 0; _j < 4; _j++) {
-          if (_aa[4][_j] !== _bb[4][_j]) {
+        for (var _j2 = 0; _j2 < 4; _j2++) {
+          if (_aa[4][_j2] !== _bb[4][_j2]) {
             return false;
           }
         }
@@ -9477,17 +9505,17 @@
           return false;
         }
 
-        var av = ai.v,
-            bv = bi.v;
+        var _av2 = ai.v,
+            _bv2 = bi.v;
 
         if (ai.u === GRADIENT$3) {
-          if (av.k !== bv.k || av.d !== bv.d || av.s !== bv.s || av.z !== bv.z) {
+          if (_av2.k !== _bv2.k || _av2.d !== _bv2.d || _av2.s !== _bv2.s || _av2.z !== _bv2.z) {
             return false;
           }
 
-          if (av.k === 'linear') {
-            var ad = av.d,
-                bd = bv.d;
+          if (_av2.k === 'linear') {
+            var ad = _av2.d,
+                bd = _bv2.d;
             var isArrayD1 = Array.isArray(ad);
             var isArrayD2 = Array.isArray(bd);
 
@@ -9502,22 +9530,22 @@
             } else if (ad !== bd) {
               return false;
             }
-          } else if (av.k === 'conic' && av.d !== bv.d) {
+          } else if (_av2.k === 'conic' && _av2.d !== _bv2.d) {
             return false;
           }
 
-          if (av.k === 'radial' || av.k === 'conic') {
-            var ap = av.p,
-                bp = bv.p;
+          if (_av2.k === 'radial' || _av2.k === 'conic') {
+            var ap = _av2.p,
+                bp = _bv2.p;
 
             if (ap[0].u !== bp[0].u || ap[0].v !== bp[0].v || ap[1].u !== bp[1].u || ap[1].v !== bp[1].v) {
               return false;
             }
           }
 
-          for (var _j2 = 0; _j2 < 2; _j2++) {
-            var aj = av.v[_j2],
-                bj = bv.v[_j2];
+          for (var _j3 = 0; _j3 < 2; _j3++) {
+            var aj = _av2.v[_j3],
+                bj = _bv2.v[_j3];
             var ac = aj[0],
                 bc = bj[0];
 
@@ -9534,10 +9562,10 @@
             }
           }
         } else if (ai.u === RGBA$3) {
-          if (!equalArr$1(av, bv)) {
+          if (!equalArr$1(_av2, _bv2)) {
             return false;
           }
-        } else if (av !== bv) {
+        } else if (_av2 !== _bv2) {
           return false;
         }
       }
@@ -9557,7 +9585,7 @@
 
 
     if (isGeom$2(target.tagName, k) && (target.isMulti || Array.isArray(a) && Array.isArray(b))) {
-      return equalArr$1(a, b);
+      return equal(a, b);
     }
 
     return a === b;
@@ -40925,7 +40953,7 @@
     Cache: Cache
   };
 
-  var version = "0.79.0";
+  var version = "0.79.1";
 
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);

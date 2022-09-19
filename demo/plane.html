@@ -109,33 +109,35 @@
   class Plane extends karas.Component {
     constructor(props) {
       super(props);
-      this.state = {
-        left: 150,
-        top: 300,
-      };
-      var self = this;
+      let left = this.left = 150;
+      let top = this.top = 300;
+      let self = this;
       document.body.addEventListener('keydown', function(e) {
-        var left = self.state.left;
-        var top = self.state.top;
+        // var left = self.state.left;
+        // var top = self.state.top;
         switch(e.keyCode) {
           case 87:
-            self.setState({
-              top: Math.max(top - 10, 0),
+            top = self.top = Math.max(top - 10, 0);
+            self.updateStyle({
+              top,
             });
           break;
           case 65:
-            self.setState({
-              left: Math.max(left - 10, 0),
+            left = self.left = Math.max(left - 10, 0);
+            self.updateStyle({
+              left,
             });
           break;
           case 83:
-            self.setState({
-              top: Math.min(top + 10, 310),
+            top = self.top = Math.min(top + 10, 310);
+            self.updateStyle({
+              top,
             });
           break;
           case 68:
-            self.setState({
-              left: Math.min(left + 10, 310),
+            left = self.left = Math.min(left + 10, 310);
+            self.updateStyle({
+              left,
             });
           break;
         }
@@ -145,8 +147,8 @@
     render() {
       return <div style={{
         position: 'absolute',
-        left: this.state.left,
-        top: this.state.top,
+        left: 150,
+        top: 300,
         width: 50,
         height: 50,
       }}>
@@ -199,11 +201,11 @@
       delay: i * 400,
       iterations: Infinity,
     });
-    a.on('end', function() {
+    a.on('begin', function() {
       let plane = root.children[0];
       item.updateStyle({
-        left: plane.state.left + 24,
-        top: plane.state.top,
+        left: plane.left + 24,
+        top: plane.top,
       });
     });
   });

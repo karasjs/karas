@@ -66,7 +66,7 @@ const { STYLE_KEY, style2Upper, STYLE_KEY: {
   WRITING_MODE,
 } } = enums;
 const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING, REM, VW, VH, VMAX, VMIN, GRADIENT, calUnit } = unit;
-const { isNil, rgba2int, equalArr, replaceRgba2Hex } = util;
+const { isNil, rgba2int, equalArr, equal, replaceRgba2Hex } = util;
 const { isGeom, GEOM, GEOM_KEY_SET } = change;
 const { VALID_STRING_VALUE } = reset;
 
@@ -1341,8 +1341,8 @@ function equalStyle(k, a, b, target) {
       if(oa.k !== ob.k) {
         return false;
       }
-      // translate/matrix等都是数组
-      if(!equalArr(oa.v, ob.v)) {
+      let av = oa.v, bv = ob.v;
+      if(av.u !== bv.u || av.v !== bv.v) {
         return false;
       }
     }
@@ -1356,10 +1356,28 @@ function equalStyle(k, a, b, target) {
       return false;
     }
     for(let i = 0, len = a.length; i < len; i++) {
-      if(!equalArr(a[i], b[i])) {
+      let oa = a[i];
+      let ob = b[i];
+      if(oa.k !== ob.k) {
+        return false;
+      }
+      let av = oa.v, bv = ob.v;
+      if(oa.k === 'dropShadow' || oa.k === 'drop-shadow') {
+        if(av.length !== bv.length) {
+          return false;
+        }
+        for(let j = 0; j < 4; j++) {
+          let avj = av[j], bvj = bv[j];
+          if(avj.u !== bvj.u || avj.v !== bvj.v) {
+            return false;
+          }
+        }
+      }
+      else if(av.u !== bv.u || av.v !== bv.v) {
         return false;
       }
     }
+    return true;
   }
   if(k === TRANSFORM_ORIGIN || k === PERSPECTIVE_ORIGIN || isRadiusKey(k)) {
     return a[0].v === b[0].v && a[0].u === b[0].u
@@ -1495,7 +1513,7 @@ function equalStyle(k, a, b, target) {
   }
   // multi都是纯值数组，equalArr本身即递归，非multi根据类型判断
   if(isGeom(target.tagName, k) && (target.isMulti || Array.isArray(a) && Array.isArray(b))) {
-    return equalArr(a, b);
+    return equal(a, b);
   }
   return a === b;
 }

@@ -18,8 +18,8 @@
       super(tagName, props);
     }
 
-    render(renderMode, refreshLevel, ctx, cache, dx, dy) {
-      super.render(renderMode, refreshLevel, ctx, cache, dx, dy);
+    render(renderMode, ctx, dx, dy) {
+      super.render(renderMode, ctx, dx, dy);
       let { sx: x, sy: y, width, height } = this;
       let percent = parseFloat(this.props.percent) || 1;
       let h = height - 20;

@@ -13,8 +13,7 @@
 <pre><code class="brush:csx"></code></pre>
 <script type="text/jsx">
   class Fg extends karas.Component {
-    render() {
-      let { i } = this.props;
+    setI(i) {
       let transform = [
         'scaleY(0.9) translateY(5%)',
         'scaleY(0.8) translateY(10%)',
@@ -51,22 +50,32 @@
         begin = 360;
       }
       begin = Math.max(begin, 90);
+      this.ref.circle.updateStyle({
+        transform: transform[i],
+      });
+      this.ref.sector.updateStyle({
+        transform: transform[i],
+        begin,
+      });
+    }
+    render() {
       return (
         <div>
           <$circle
+            ref="circle"
             r="0.2"
             style={{
               width:'100%',
               height:'100%',
               strokeWidth:0,
               fill:'#FFF',
-              transform: transform[i],
             }}
           />
           <$sector
             r="0.15"
-            begin={begin}
-            end="360"
+            ref="sector"
+            begin={0}
+            end={360}
             style={{
               position:'absolute',
               left:0,
@@ -75,7 +84,6 @@
               height:'100%',
               strokeWidth:0,
               fill:'#108ee9',
-              transform: transform[i],
             }}
           />
         </div>
@@ -83,8 +91,7 @@
     }
   }
   class Bg extends karas.Component {
-    render() {
-      let { i } = this.props;
+    setI(i) {
       let transform = [
         'scaleY(0.9) translateY(5%)',
         'scaleY(0.8) translateY(10%)',
@@ -109,6 +116,11 @@
         'scaleY(0.8) translateY(10%)',
         'scaleY(0.9) translateY(5%)',
       ];
+      this.shadowRoot.updateStyle({
+        transform: transform[i],
+      });
+    }
+    render() {
       return (
         <$polygon
           points={[
@@ -121,7 +133,6 @@
           style={{
             fill:'#108ee9',
             strokeWidth:0,
-            transform:transform[i]
           }}
         />
       );
@@ -130,31 +141,30 @@
   class Component extends karas.Component {
     constructor(...data) {
       super(...data);
-      this.state = {
-        i: 0,
-      };
+    }
+    componentDidMount() {
+      this.i = 0;
       setInterval(() => this.frame(), 30);
     }
     frame() {
-      let { i } = this.state;
+      let i = this.i;
       i++;
       if(i > 80) {
         i = 0;
       }
-      this.setState({
-        i,
-      });
+      this.i = i;
+      this.ref.bg.setI(i);
+      this.ref.fg.setI(i);
     }
     render() {
-      let { i } = this.state;
       return <div>
-        <Bg i={i}
+        <Bg ref="bg"
             style={{
               width:'100%',
               height:'100%'
             }}
         />
-        <Fg i={i}
+        <Fg ref="fg"
             style={{
               position:'absolute',
               left:0,

@@ -14,22 +14,18 @@
 <pre><code class="brush:csx"></code></pre>
 <script type="text/jsx">
   class $ extends karas.Geom {
-    render(renderMode, lv, ctx, cache, dx, dy) {
-      let res = super.render(renderMode, lv, ctx, cache, dx, dy);
-      if(renderMode === karas.mode.WEBGL) {
-        ctx = res.ctx;
+    render(renderMode, ctx, dx, dy) {
+      super.render(renderMode, ctx, dx, dy);
+      if(renderMode === karas.mode.CANVAS) {
+        ctx.beginPath();
+        ctx.fillStyle = '#F00';
+        ctx.moveTo(0, 0);
+        ctx.lineTo(100, 0);
+        ctx.lineTo(100, 100);
+        ctx.lineTo(0, 0);
+        ctx.fill();
+        ctx.closePath();
       }
-      ctx.beginPath();
-      ctx.fillStyle = '#F00';
-      ctx.moveTo(0, 0);
-      ctx.lineTo(100, 0);
-      ctx.lineTo(100, 100);
-      ctx.lineTo(0, 0);
-      ctx.fill();
-      ctx.closePath();
-    }
-    __hookGlRender(gl, opacity, cx, cy, dx, dy, revertY) {
-      this.root.texCache.addTexAndDrawWhenLimit(gl, this.__cache, opacity, this.matrixEvent, cx, cy, dx, dy, revertY);
     }
   }
 

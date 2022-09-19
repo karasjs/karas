@@ -258,6 +258,8 @@ Object.keys(change.GEOM).concat([
 
 [
   '__layout',
+  '__layoutFlow',
+  '__layoutStyle',
   '__layoutAbs',
   '__layoutNone',
   '__tryLayInline',

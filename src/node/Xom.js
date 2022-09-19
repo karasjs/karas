@@ -2620,15 +2620,18 @@ class Xom extends Node {
       this.__layoutData.x += diff;
       this.clearCache();
     }
-    if(lv !== undefined) {
-      this.__refreshLevel |= lv;
-    }
     this.__sx1 += diff;
     this.__sx2 += diff;
     this.__sx3 += diff;
     this.__sx4 += diff;
     this.__sx5 += diff;
     this.__sx6 += diff;
+    if(lv !== undefined) {
+      this.__refreshLevel |= lv;
+      if(lv >= REPAINT) {
+        this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
+      }
+    }
   }
 
   __offsetY(diff, isLayout, lv) {
@@ -2640,15 +2643,18 @@ class Xom extends Node {
       this.__layoutData && (this.__layoutData.y += diff);
       this.clearCache();
     }
-    if(lv !== undefined) {
-      this.__refreshLevel |= lv;
-    }
     this.__sy1 += diff;
     this.__sy2 += diff;
     this.__sy3 += diff;
     this.__sy4 += diff;
     this.__sy5 += diff;
     this.__sy6 += diff;
+    if(lv !== undefined) {
+      this.__refreshLevel |= lv;
+      if(lv >= REPAINT) {
+        this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
+      }
+    }
   }
 
   __resizeX(diff, lv) {
@@ -2668,6 +2674,9 @@ class Xom extends Node {
     }
     if(lv !== undefined) {
       this.__refreshLevel |= lv;
+      if(lv >= REPAINT) {
+        this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
+      }
     }
     this.clearCache();
   }
@@ -2689,6 +2698,9 @@ class Xom extends Node {
     }
     if(lv !== undefined) {
       this.__refreshLevel |= lv;
+      if(lv >= REPAINT) {
+        this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
+      }
     }
     this.clearCache();
   }

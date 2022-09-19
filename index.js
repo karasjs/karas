@@ -23496,16 +23496,20 @@
           this.clearCache();
         }
 
-        if (lv !== undefined) {
-          this.__refreshLevel |= lv;
-        }
-
         this.__sx1 += diff;
         this.__sx2 += diff;
         this.__sx3 += diff;
         this.__sx4 += diff;
         this.__sx5 += diff;
         this.__sx6 += diff;
+
+        if (lv !== undefined) {
+          this.__refreshLevel |= lv;
+
+          if (lv >= REPAINT$3) {
+            this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
+          }
+        }
       }
     }, {
       key: "__offsetY",
@@ -23521,16 +23525,20 @@
           this.clearCache();
         }
 
-        if (lv !== undefined) {
-          this.__refreshLevel |= lv;
-        }
-
         this.__sy1 += diff;
         this.__sy2 += diff;
         this.__sy3 += diff;
         this.__sy4 += diff;
         this.__sy5 += diff;
         this.__sy6 += diff;
+
+        if (lv !== undefined) {
+          this.__refreshLevel |= lv;
+
+          if (lv >= REPAINT$3) {
+            this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
+          }
+        }
       }
     }, {
       key: "__resizeX",
@@ -23554,6 +23562,10 @@
 
         if (lv !== undefined) {
           this.__refreshLevel |= lv;
+
+          if (lv >= REPAINT$3) {
+            this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
+          }
         }
 
         this.clearCache();
@@ -23580,6 +23592,10 @@
 
         if (lv !== undefined) {
           this.__refreshLevel |= lv;
+
+          if (lv >= REPAINT$3) {
+            this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
+          }
         }
 
         this.clearCache();

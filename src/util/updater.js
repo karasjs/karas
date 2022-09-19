@@ -5,19 +5,7 @@ import util from './util';
 import inject from './inject';
 import flatten from './flatten';
 import $$type from './$$type';
-import enums from './enums';
 
-const {
-  NODE_KEY: {
-    NODE_STYLE,
-    NODE_CURRENT_STYLE,
-    NODE_COMPUTED_STYLE,
-    NODE_DOM_PARENT,
-    NODE_MATRIX,
-    NODE_MATRIX_EVENT,
-    NODE_STRUCT,
-  },
-} = enums;
 const { TYPE_VD, TYPE_GM, TYPE_CP } = $$type;
 
 let updateList = [];
@@ -118,19 +106,7 @@ function updateCp(cp, props, state) {
     ].forEach(k => {
       sr[k] = oldSr[k];
     });
-    sr.__computedStyle = sr.__config[NODE_COMPUTED_STYLE] = oldSr.computedStyle;
-  }
-  else {
-    let domParent = cp.domParent;
-    [
-      NODE_STYLE,
-      NODE_CURRENT_STYLE,
-      NODE_COMPUTED_STYLE,
-      NODE_MATRIX,
-      NODE_MATRIX_EVENT,
-    ].forEach(k => {
-      sr.__config[k] = domParent.__config[k];
-    });
+    sr.__computedStyle = oldSr.computedStyle;
   }
   [
     '__x',
@@ -145,8 +121,8 @@ function updateCp(cp, props, state) {
   ].forEach(k => {
     sr[k] = oldSr[k];
   });
-  sr.__config[NODE_DOM_PARENT] = oldSr.domParent;
-  sr.__config[NODE_STRUCT] = oldSr.__config[NODE_STRUCT];
+  sr.__domParent = oldSr.__domParent;
+  sr.__struct = oldSr.__struct;
   updateList.push(cp);
   // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
   if(!util.isObject(json) || !json.__placeholder) {

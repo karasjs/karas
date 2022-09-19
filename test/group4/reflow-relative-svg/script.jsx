@@ -7,10 +7,10 @@ let o = karas.render(
   </svg>,
   '#test'
 );
-o.ref.inner.updateStyle({
+o.ref.middle.updateStyle({
   left: 30,
 });
-o.ref.middle.updateStyle({
+o.ref.inner.updateStyle({
   left: 30,
 }, function() {
   let input = document.querySelector('#base64');

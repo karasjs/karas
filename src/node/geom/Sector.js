@@ -3,6 +3,7 @@ import util from '../../util/util';
 import enums from '../../util/enums';
 import geom from '../../math/geom';
 import inject from '../../util/inject';
+import mode from '../../refresh/mode';
 
 const { STYLE_KEY: {
   STROKE_WIDTH,
@@ -147,13 +148,12 @@ class Sector extends Geom {
     return rebuild;
   }
 
-  render(renderMode, lv, ctx, cache, dx2, dy2) {
-    let res = super.render(renderMode, lv, ctx, cache, dx2, dy2);
-    if(res.break) {
+  render(renderMode, ctx, dx2, dy2) {
+    let res = super.render(renderMode, ctx, dx2, dy2);
+    if(res.break || renderMode === mode.WEBGL) {
       return res;
     }
     this.buildCache(res.cx, res.cy);
-    ctx = res.ctx;
     let {
       fill: fills,
       fillRule: fillRules,

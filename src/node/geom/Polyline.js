@@ -3,6 +3,7 @@ import util from '../../util/util';
 import enums from '../../util/enums';
 import bezier from '../../math/bezier';
 import bo from '../../math/bo/index';
+import mode from '../../refresh/mode';
 
 let { intersect, union, subtract, subtract2, xor, chain } = bo;
 
@@ -468,13 +469,12 @@ class Polyline extends Geom {
     return rebuild || rebuildSE;
   }
 
-  render(renderMode, lv, ctx, cache, dx, dy) {
-    let res = super.render(renderMode, lv, ctx, cache, dx, dy);
-    if(res.break) {
+  render(renderMode, ctx, dx, dy) {
+    let res = super.render(renderMode, ctx, dx, dy);
+    if(res.break || renderMode === mode.WEBGL) {
       return res;
     }
     this.buildCache(res.sx3, res.sy3);
-    ctx = res.ctx;
     this.__renderPolygon(renderMode, ctx, res);
     return res;
   }

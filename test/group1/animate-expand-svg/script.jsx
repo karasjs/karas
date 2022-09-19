@@ -7,7 +7,7 @@ let o = karas.render(
 let t = o.ref.t;
 let animation = t.animate([
   {
-    translateX: 0,
+    translateX: 10,
   },
   {
     translateX: 100,

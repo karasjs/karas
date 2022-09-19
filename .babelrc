@@ -1,5 +1,6 @@
 {
   "assumptions": {
+    "noClassCalls": true,
     "superIsCallableConstructor": true
   },
   "plugins": [

@@ -13,7 +13,7 @@ class Component extends karas.Component {
   }
 }
 let o = karas.render(
-  <svg width="360" height="360" cache="1">
+  <svg width="360" height="360">
     <div style={{width:50,height:20,background:'#000'}}/>
     <Component/>
   </svg>,

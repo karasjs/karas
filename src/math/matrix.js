@@ -5,6 +5,9 @@ function identity() {
 
 // 矩阵a*b，固定两个matrix都是长度16
 function multiply(a, b) {
+  if(!a && !b) {
+    return identity();
+  }
   if(isE(a)) {
     return b;
   }

@@ -1,5 +1,6 @@
 import Xom from './Xom';
 import Text from './Text';
+import Node from './Node';
 import LineBoxManager from './LineBoxManager';
 import Component from './Component';
 import tag from './tag';
@@ -8,14 +9,15 @@ import Ellipsis from './Ellipsis';
 import reset from '../style/reset';
 import css from '../style/css';
 import unit from '../style/unit';
-import $$type from '../util/$$type';
 import enums from '../util/enums';
 import util from '../util/util';
 import inject from '../util/inject';
 import reflow from '../refresh/reflow';
-import builder from '../util/builder';
+import builder from './builder';
 import mode from '../refresh/mode';
 import level from '../refresh/level';
+import geom from '../math/geom';
+import mx from '../math/matrix';
 
 const {
   STYLE_KEY: {
@@ -60,32 +62,13 @@ const {
     FONT_WEIGHT,
     WRITING_MODE,
   },
-  NODE_KEY: {
-    NODE_CURRENT_STYLE,
-    NODE_STYLE,
-    NODE_STRUCT,
-    NODE_DOM_PARENT,
-    NODE_IS_INLINE,
-  },
-  UPDATE_KEY: {
-    UPDATE_NODE,
-    UPDATE_FOCUS,
-    UPDATE_ADD_DOM,
-    UPDATE_CONFIG,
-  },
-  STRUCT_KEY: {
-    STRUCT_NUM,
-    STRUCT_LV,
-    STRUCT_TOTAL,
-    STRUCT_CHILD_INDEX,
-    STRUCT_INDEX,
-  },
   ELLIPSIS,
 } = enums;
 const { AUTO, PX, PERCENT, REM, VW, VH, VMAX, VMIN } = unit;
 const { isRelativeOrAbsolute, getBaseline, getVerticalBaseline } = css;
-const { extend, isNil, isFunction } = util;
+const { extend, isNil, isFunction, assignMatrix } = util;
 const { CANVAS, SVG, WEBGL } = mode;
+const { isE, multiply } = mx;
 
 // 渲染获取zIndex顺序
 function genZIndexChildren(dom) {
@@ -100,7 +83,7 @@ function genZIndexChildren(dom) {
       item = item.shadowRoot;
     }
     // 遮罩单独保存后特殊排序
-    if(item instanceof Xom && item.isMask) {
+    if(item instanceof Xom && item.__isMask) {
       // 开头的mc忽略，后续的连续mc以第一次出现为准
       if(lastMaskIndex !== undefined) {
         mcHash[lastMaskIndex].push(item);
@@ -122,6 +105,8 @@ function genZIndexChildren(dom) {
           normal.push(child);
         }
         else {
+          // 之前遗留清除
+          child.__aIndex = undefined;
           normal.push(child);
         }
       }
@@ -269,107 +254,160 @@ class Dom extends Xom {
     this.__style = css.normalize(style, reset.DOM_ENTRY_SET);
     // currentStyle/currentProps不深度clone，继承一层即可，动画时也是extend这样只改一层引用不动原始静态style
     this.__currentStyle = extend({}, this.__style);
-    this.__children = children || [];
+    this.__children = builder.buildChildren(this, children);
     this.__flexLine = []; // flex布局多行模式时存储行
     this.__ellipsis = null; // 虚拟节点，有的话渲染
-    let config = this.__config;
-    config[NODE_CURRENT_STYLE] = this.__currentStyle;
-    config[NODE_STYLE] = this.__style;
+    this.__zIndexChildren = null;
   }
 
-  __structure(i, lv, j) {
-    let res = super.__structure(i++, lv, j);
+  __structure(lv, j) {
+    let res = super.__structure(lv, j);
     let arr = [res];
     let zIndexChildren = this.__zIndexChildren = this.__zIndexChildren || genZIndexChildren(this);
-    zIndexChildren.forEach((child, j) => {
-      let temp = child.__structure(i, lv + 1, j);
+    zIndexChildren.forEach((child, i) => {
+      let temp = child.__structure(lv + 1, i);
       if(Array.isArray(temp)) {
-        i += temp.length;
         arr = arr.concat(temp);
       }
       else {
-        i++;
         arr.push(temp);
       }
     });
     let total = arr.length - 1;
-    res[STRUCT_NUM] = zIndexChildren.length;
-    res[STRUCT_TOTAL] = total;
+    res.num = zIndexChildren.length;
+    res.total = total;
     return arr;
   }
 
-  __modifyStruct(root, offset = 0) {
-    let __config = this.__config;
-    let struct = __config[NODE_STRUCT];
-    let total = struct[STRUCT_TOTAL] || 0;
+  __modifyStruct() {
+    let struct = this.__struct;
+    let total = struct.total || 0;
+    let root = this.__root, __structs = root.__structs;
     // 新生成了struct，引用也变了
-    let nss = this.__structure(struct[STRUCT_INDEX], struct[STRUCT_LV], struct[STRUCT_CHILD_INDEX]);
-    root.__structs.splice(struct[STRUCT_INDEX] + offset, total + 1, ...nss);
+    let nss = this.__structure(struct.lv, struct.childIndex);
+    let i = __structs.indexOf(struct);
+    root.__structs.splice(i, total + 1, ...nss);
     let d = 0;
     if(this !== root) {
-      struct = __config[NODE_STRUCT];
-      d = (struct[STRUCT_TOTAL] || 0) - total;
-      let ps = __config[NODE_DOM_PARENT].__config[NODE_STRUCT];
-      ps[STRUCT_TOTAL] = ps[STRUCT_TOTAL] || 0;
-      ps[STRUCT_TOTAL] += d;
+      struct = this.__struct;
+      d = (struct.total || 0) - total;
+      if(d) {
+        let p = this.__domParent;
+        while(p) {
+          p.__struct.total = p.__struct.total || 0;
+          p.__struct.total += d;
+          p = p.__domParent;
+        }
+      }
     }
-    return [struct, d];
+  }
+
+  __insertStruct(child, childIndex) {
+    let struct = this.__struct;
+    let cs = child.__structure(struct.lv + 1, childIndex);
+    let root = this.__root, structs = root.__structs;
+    // 根据是否有prev确定插入索引位置
+    let zIndexChildren = this.__zIndexChildren;
+    let i;
+    if(childIndex) {
+      let ps = zIndexChildren[childIndex - 1].__struct;
+      let total = ps.total || 0;
+      i = structs.indexOf(ps) + total + 1;
+    }
+    else {
+      i = structs.indexOf(struct) + 1;
+    }
+    let total;
+    if(Array.isArray(cs)) {
+      structs.splice(i, 0, ...cs);
+      total = (cs[0].total || 0) + 1;
+    }
+    else {
+      structs.splice(i, 0, cs);
+      total = (cs.total || 0) + 1;
+    }
+    // 调整后面children的childIndex，+1
+    i++;
+    for(let len = zIndexChildren.length; i < len; i++) {
+      zIndexChildren[i].__struct.childIndex++;
+    }
+    // 向上添加parent的total数量
+    struct.num++;
+    struct.total += total;
+    let p = this.__domParent;
+    while(p) {
+      struct = p.__struct;
+      struct.total = struct.total || 0;
+      struct.total += total;
+      p = p.__domParent;
+    }
+  }
+
+  __deleteStruct(child, childIndex) {
+    let cs = child.__struct;
+    let total = (cs.total || 0) + 1;
+    let root = this.__root, structs = root.__structs;
+    let i = structs.indexOf(cs);
+    structs.splice(i, total);
+    // zIndexChildren后面的childIndex偏移
+    let zIndexChildren = this.__zIndexChildren;
+    for(let i = childIndex + 1, len = zIndexChildren.length; i < len; i++) {
+      zIndexChildren[i].__struct.childIndex--;
+    }
+    // 向上减少parent的total数量
+    let struct = this.__struct;
+    struct.num--;
+    struct.total = struct.total || 0;
+    struct.total -= total;
+    let p = this.__domParent;
+    while(p) {
+      struct = p.__struct;
+      struct.total = struct.total || 0;
+      struct.total -= total;
+      p = p.__domParent;
+    }
   }
 
   /**
-   * 因为zIndex/abs的变化造成的更新，只需重排这一段顺序即可
-   * 即便包含component造成的dom变化也不影响，component作为子节点reflow会再执行，这里重排老的vd
-   * @param structs
-   * @private
+   * 因为zIndex/abs/add的变化造成的更新，只需重排这一段顺序即可
    */
-  __updateStruct(structs) {
-    let { [STRUCT_INDEX]: index, [STRUCT_TOTAL]: total = 0 } = this.__config[NODE_STRUCT];
+  __updateStruct() {
+    let structs = this.__root.__structs;
+    let struct = this.__struct;
+    let total = struct.total || 0;
+    let index = structs.indexOf(struct);
     let zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
     let length = zIndexChildren.length;
     if(length === 1) {
       return;
     }
-    zIndexChildren.forEach((child, i) => {
-      let ns = child.__config[NODE_STRUCT];
-      // 一般肯定有的，但是在zIndex更新和addChild同时发生时，新添加的尚无，zIndex更新会报错，临时解决
-      if(ns) {
-        ns[STRUCT_CHILD_INDEX] = i; // 仅后面排序用
-      }
-    });
-    // 按直接子节点划分为相同数量的若干段进行排序
-    let arr = [];
-    let source = [];
-    for(let i = index + 1; i <= index + total; i++) {
-      let child = structs[i];
-      // 同上防止
-      if(child) {
-        let o = {
-          child,
-          list: structs.slice(child[STRUCT_INDEX], child[STRUCT_INDEX] + (child[STRUCT_TOTAL] || 0) + 1),
-        };
-        arr.push(o);
-        source.push(o);
-        i += child[STRUCT_TOTAL] || 0;
-      }
-    }
-    arr.sort(function(a, b) {
-      return a.child[STRUCT_CHILD_INDEX] - b.child[STRUCT_CHILD_INDEX];
-    });
-    // 是否有变更，有才进行重新计算
     let needSort;
-    for(let i = 0, len = source.length; i < len; i++) {
-      if(source[i] !== arr[i]) {
+    zIndexChildren.forEach((child, i) => {
+      let cs = child.__struct;
+      cs.childIndex = i; // 仅后面排序用
+    });
+    // 按之前的structs划分为相同数量的若干段进行排序
+    let source = [], arr = [], count = 0;
+    for(let i = index + 1; i <= index + total; i++) {
+      let cs = structs[i];
+      let o = {
+        cs,
+        list: structs.slice(i, i + (cs.total || 0) + 1),
+      };
+      if(cs.childIndex !== count++) {
         needSort = true;
-        break;
       }
+      source.push(o);
+      i += cs.total || 0;
     }
+
     if(needSort) {
       let list = [];
-      arr.forEach(item => {
-        list = list.concat(item.list);
+      source.sort(function(a, b) {
+        return a.cs.childIndex - b.cs.childIndex;
       });
-      list.forEach((struct, i) => {
-        struct[STRUCT_INDEX] = index + i + 1;
+      source.forEach(item => {
+        list = list.concat(item.list);
       });
       structs.splice(index + 1, total, ...list);
     }
@@ -422,7 +460,7 @@ class Dom extends Xom {
     }
     // inlineBlock尝试所有孩子在一行上
     else {
-      if(width[1] !== AUTO) {
+      if(width.u !== AUTO) {
         free -= isUpright ? this.__calSize(height, total, true) : this.__calSize(width, total, true);
       }
       else {
@@ -478,7 +516,7 @@ class Dom extends Xom {
       ep.__offsetX(diff, isLayout);
     }
     // 记得偏移LineBox
-    if(isLayout && !this.__config[NODE_IS_INLINE] && this.lineBoxManager) {
+    if(isLayout && !this.__isInline && this.lineBoxManager) {
       this.lineBoxManager.__offsetX(diff);
     }
     this.flowChildren.forEach(item => {
@@ -489,12 +527,15 @@ class Dom extends Xom {
   }
 
   __offsetY(diff, isLayout, lv) {
+    if(this.computedStyle[DISPLAY] === 'none') {
+      return;
+    }
     super.__offsetY(diff, isLayout, lv);
     let ep = this.__ellipsis;
     if(ep) {
       ep.__offsetY(diff, isLayout);
     }
-    if(isLayout && !this.__config[NODE_IS_INLINE] && this.lineBoxManager) {
+    if(isLayout && !this.__isInline && this.lineBoxManager) {
       this.lineBoxManager.__offsetY(diff);
     }
     this.flowChildren.forEach(item => {
@@ -547,8 +588,8 @@ class Dom extends Xom {
     let isUpright = writingMode.indexOf('vertical') === 0;
     let main = isDirectionRow ? width : height;
     // basis3种情况：auto、固定、content
-    let isAuto = flexBasis[1] === AUTO;
-    let isFixed = [PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(flexBasis[1]) > -1;
+    let isAuto = flexBasis.u === AUTO;
+    let isFixed = [PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(flexBasis.u) > -1;
     let isContent = !isAuto && !isFixed;
     let fixedSize;
     // flex的item固定basis计算
@@ -556,7 +597,7 @@ class Dom extends Xom {
       b = fixedSize = this.__calSize(flexBasis, isDirectionRow ? w : h, true);
     }
     // 已声明主轴尺寸的，当basis是auto时为main值
-    else if(isAuto && ([PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(main[1]) > -1)) {
+    else if(isAuto && ([PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(main.u) > -1)) {
       b = fixedSize = this.__calSize(main, isDirectionRow ? w : h, true);
     }
     // 非固定尺寸的basis为auto时降级为content
@@ -588,7 +629,7 @@ class Dom extends Xom {
             if(isUpright) {
               let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight,
                 isUpright ? getVerticalBaseline(computedStyle) : getBaseline(computedStyle), isUpright);
-              item.__layout({
+              item.__layoutFlow({
                 x,
                 y,
                 w,
@@ -616,7 +657,7 @@ class Dom extends Xom {
       else if(isUpright) {
         let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight,
           isUpright ? getVerticalBaseline(computedStyle) : getBaseline(computedStyle), isUpright);
-        this.__layout({
+        this.__layoutFlow({
           x,
           y,
           w,
@@ -669,7 +710,7 @@ class Dom extends Xom {
     }
     // column的flex时，每个child做一次虚拟布局，获取到每个child的高度和宽度
     else {
-      this.__layout({
+      this.__layoutFlow({
         x,
         y,
         w,
@@ -680,6 +721,22 @@ class Dom extends Xom {
     }
     // 直接item的mpb影响basis
     return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], isDirectChild);
+  }
+
+  // flow的layout包裹方法，布局后递归计算computedStyle，abs节点在__layoutAbs中做
+  __layout(data, isAbs, isColumn, isRow) {
+    super.__layout(data, isAbs, isColumn, isRow);
+    this.__layoutStyle();
+  }
+
+  // 布局结束后递归向下计算computedStyle，父级必须先算因为有inherit
+  __layoutStyle() {
+    super.__layoutStyle();
+    this.flowChildren.forEach(child => {
+      if(!(child instanceof Text)) {
+        child.__layoutStyle();
+      }
+    });
   }
 
   __layoutNone() {
@@ -701,7 +758,6 @@ class Dom extends Xom {
    * @param isAbs abs无尺寸时提前虚拟布局计算尺寸
    * @param isColumn flex列无尺寸时提前虚拟布局计算尺寸
    * @param isRow flex行布局时出现writingMode垂直排版计算尺寸
-   * @private
    */
   __layoutBlock(data, isAbs, isColumn, isRow) {
     let { flowChildren, currentStyle, computedStyle } = this;
@@ -760,7 +816,7 @@ class Dom extends Xom {
       // 每次循环开始前，这次不是block的话，看之前遗留待合并margin，并重置
       if((!isXom || isInline || isInlineBlock)) {
         if(mergeMarginEndList.length && mergeMarginStartList.length) {
-          let diff = reflow.getMergeMargin(mergeMarginStartList, mergeMarginEndList);
+          let diff = reflow.getMergeMargin(mergeMarginStartList, mergeMarginEndList).diff;
           if(diff) {
             if(isUpright) {
               x += diff;
@@ -784,7 +840,7 @@ class Dom extends Xom {
           }
           // x开头或者nowrap单行的非block，不用考虑是否放得下直接放
           if((isUpright && y === ly) || (!isUpright && x === lx) || !i || whiteSpace === 'nowrap') {
-            lineClampCount = item.__layout({
+            lineClampCount = item.__layoutFlow({
               x,
               y,
               w,
@@ -847,7 +903,7 @@ class Dom extends Xom {
             let free = item.__tryLayInline(isUpright ? (h + ly - y) : (w + lx - x), isUpright ? h : w, isUpright);
             // 放得下继续，奇怪的精度问题，加上阈值
             if(free >= (-1e-10)) {
-              lineClampCount = item.__layout({
+              lineClampCount = item.__layoutFlow({
                 x,
                 y,
                 w,
@@ -901,7 +957,7 @@ class Dom extends Xom {
                 backtrack(this, lineBoxManager, lineBox, isUpright ? h : w, 0, isUpright);
                 return;
               }
-              lineClampCount = item.__layout({
+              lineClampCount = item.__layoutFlow({
                 x,
                 y,
                 w,
@@ -973,7 +1029,7 @@ class Dom extends Xom {
             lineBoxManager.setNotEnd();
             lineBoxManager.setNewLine();
           }
-          item.__layout({
+          item.__layoutFlow({
             x,
             y,
             w,
@@ -1038,17 +1094,17 @@ class Dom extends Xom {
             if(mergeMarginEndList.length) {
               if(isUpright) {
                 mergeMarginStartList.push(marginLeft);
-                let diff = reflow.getMergeMargin(mergeMarginStartList, mergeMarginEndList);
+                let diff = reflow.getMergeMargin(mergeMarginStartList, mergeMarginEndList).diff;
                 if(diff) {
-                  item.__offsetX(diff, true);
+                  item.__offsetX(diff, true, null);
                   x += diff;
                 }
               }
               else {
                 mergeMarginStartList.push(marginTop);
-                let diff = reflow.getMergeMargin(mergeMarginStartList, mergeMarginEndList);
+                let diff = reflow.getMergeMargin(mergeMarginStartList, mergeMarginEndList).diff;
                 if(diff) {
-                  item.__offsetY(diff, true);
+                  item.__offsetY(diff, true, null);
                   y += diff;
                 }
               }
@@ -1059,7 +1115,7 @@ class Dom extends Xom {
           }
           // 最后一个空block当是正正和负负时要处理，正负在outHeight处理了结果是0
           else if(i === length - 1) {
-            let diff = reflow.getMergeMargin(mergeMarginStartList, mergeMarginEndList);
+            let diff = reflow.getMergeMargin(mergeMarginStartList, mergeMarginEndList).diff;
             if(diff) {
               if(isUpright) {
                 x += diff;
@@ -1079,7 +1135,7 @@ class Dom extends Xom {
         }
         // x开头，不用考虑是否放得下直接放
         if((isUpright && y === ly) || (!isUpright && x === lx) || !i || whiteSpace === 'nowrap') {
-          lineClampCount = item.__layout({
+          lineClampCount = item.__layoutFlow({
             x,
             y,
             w,
@@ -1121,7 +1177,7 @@ class Dom extends Xom {
           let free = item.__tryLayInline(isUpright ? (h + ly - y) : (w + lx - x));
           // 放得下继续
           if(free >= (-1e-10)) {
-            lineClampCount = item.__layout({
+            lineClampCount = item.__layoutFlow({
               x,
               y,
               w,
@@ -1172,7 +1228,7 @@ class Dom extends Xom {
               backtrack(this, lineBoxManager, lineBox, isUpright ? h : w, 0, isUpright);
               return;
             }
-            lineClampCount = item.__layout({
+            lineClampCount = item.__layoutFlow({
               x,
               y,
               w,
@@ -1237,10 +1293,10 @@ class Dom extends Xom {
       let spread = lineBoxManager.verticalAlign(isUpright);
       if(spread) {
         if(isUpright && !fixedWidth) {
-          this.__resizeX(spread);
+          this.__resizeX(spread, null);
         }
         else if(!isUpright && !fixedHeight) {
-          this.__resizeY(spread);
+          this.__resizeY(spread, null);
         }
         /**
          * parent以及parent的next无需处理，因为深度遍历后面还会进行，
@@ -1260,10 +1316,10 @@ class Dom extends Xom {
             }
             isLastBlock = true;
             if(isUpright) {
-              item.__offsetX(spreadList[count], true);
+              item.__offsetX(spreadList[count], true, null);
             }
             else {
-              item.__offsetY(spreadList[count], true);
+              item.__offsetY(spreadList[count], true, null);
             }
           }
           else {
@@ -1363,7 +1419,7 @@ class Dom extends Xom {
         if(isDirectionRow && isUpright || !isDirectionRow && !isUpright) {
           let lineBoxManager = new LineBoxManager(x, y, lineHeight,
             isUpright ? getVerticalBaseline(computedStyle) : getBaseline(computedStyle), isUpright);
-          item.__layout({
+          item.__layoutFlow({
             x,
             y,
             w,
@@ -1522,7 +1578,7 @@ class Dom extends Xom {
           // 一个矩形内的子矩形进行镜像移动，用外w减去内w再减去开头空白的2倍即可
           let diff = tw - item.outerWidth - (item.x - data.x) * 2;
           if(diff) {
-            item.__offsetX(diff, true);
+            item.__offsetX(diff, true, null);
           }
         });
       });
@@ -1533,7 +1589,7 @@ class Dom extends Xom {
           // 一个矩形内的子矩形进行镜像移动，用外w减去内w再减去开头空白的2倍即可
           let diff = th - item.outerHeight - (item.y - data.y) * 2;
           if(diff) {
-            item.__offsetY(diff, true);
+            item.__offsetY(diff, true, null);
           }
         });
       });
@@ -1554,10 +1610,10 @@ class Dom extends Xom {
         if(diff) {
           line.forEach(item => {
             if(isDirectionRow) {
-              item.__offsetY(diff, true);
+              item.__offsetY(diff, true, null);
             }
             else {
-              item.__offsetX(diff, true);
+              item.__offsetX(diff, true, null);
             }
           });
         }
@@ -1576,10 +1632,10 @@ class Dom extends Xom {
           let per = diff * 0.5;
           orderChildren.forEach(item => {
             if(isDirectionRow) {
-              item.__offsetY(per, true);
+              item.__offsetY(per, true, null);
             }
             else {
-              item.__offsetX(per, true);
+              item.__offsetX(per, true, null);
             }
           });
         }
@@ -1587,10 +1643,10 @@ class Dom extends Xom {
         else if(alignContent === 'flexEnd') {
           orderChildren.forEach(item => {
             if(isDirectionRow) {
-              item.__offsetY(diff, true);
+              item.__offsetY(diff, true, null);
             }
             else {
-              item.__offsetX(diff, true);
+              item.__offsetX(diff, true, null);
             }
           });
         }
@@ -1601,10 +1657,10 @@ class Dom extends Xom {
             if(i) {
               item.forEach(item => {
                 if(isDirectionRow) {
-                  item.__offsetY(between, true);
+                  item.__offsetY(between, true, null);
                 }
                 else {
-                  item.__offsetX(between, true);
+                  item.__offsetX(between, true, null);
                 }
               });
             }
@@ -1615,10 +1671,10 @@ class Dom extends Xom {
           __flexLine.forEach((item, i) => {
             item.forEach(item => {
               if(isDirectionRow) {
-                item.__offsetY(around * (i + 1), true);
+                item.__offsetY(around * (i + 1), true, null);
               }
               else {
-                item.__offsetX(around * (i + 1), true);
+                item.__offsetX(around * (i + 1), true, null);
               }
             });
           });
@@ -1631,10 +1687,10 @@ class Dom extends Xom {
             if(i) {
               item.forEach(item => {
                 if(isDirectionRow) {
-                  item.__offsetY(per * i, true);
+                  item.__offsetY(per * i, true, null);
                 }
                 else {
-                  item.__offsetX(per * i, true);
+                  item.__offsetX(per * i, true, null);
                 }
               });
             }
@@ -1830,7 +1886,7 @@ class Dom extends Xom {
       let main = targetMainList[i];
       if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
         if(isDirectionRow) {
-          item.__layout({
+          item.__layoutFlow({
             x,
             y,
             w: main,
@@ -1847,14 +1903,14 @@ class Dom extends Xom {
           // column的child真布局时，如果是stretch宽度，则可以直接生成animateRecord，否则自适应调整后才进行
           if(!isAbs && !isColumn && !isRow) {
             let needGenAr;
-            if(width[1] !== AUTO || alignSelf === 'stretch') {
+            if(width.u !== AUTO || alignSelf === 'stretch') {
               needGenAr = true;
             }
             else if(alignSelf === 'auto' && alignItems === 'stretch') {
               needGenAr = true;
             }
             if(needGenAr) {
-              item.__layout({
+              item.__layoutFlow({
                 x,
                 y,
                 w,
@@ -1864,7 +1920,7 @@ class Dom extends Xom {
               }, isAbs, isColumn, isRow);
             }
             else {
-              item.__layout({
+              item.__layoutFlow({
                 x,
                 y,
                 w,
@@ -1872,7 +1928,7 @@ class Dom extends Xom {
                 h3: main, // 同w2
                 isUpright,
               }, true, isColumn, isRow);
-              item.__layout({
+              item.__layoutFlow({
                 x,
                 y,
                 w,
@@ -1884,7 +1940,7 @@ class Dom extends Xom {
             }
           }
           else {
-            item.__layout({
+            item.__layoutFlow({
               x,
               y,
               w,
@@ -1898,18 +1954,18 @@ class Dom extends Xom {
         if(!isAbs && !isColumn && !isRow) {
           let currentStyle = item.currentStyle;
           if(isDirectionRow) {
-            if(currentStyle[MARGIN_LEFT][1] === AUTO) {
+            if(currentStyle[MARGIN_LEFT].u === AUTO) {
               marginAutoCount++;
             }
-            if(currentStyle[MARGIN_RIGHT][1] === AUTO) {
+            if(currentStyle[MARGIN_RIGHT].u === AUTO) {
               marginAutoCount++;
             }
           }
           else {
-            if(currentStyle[MARGIN_TOP][1] === AUTO) {
+            if(currentStyle[MARGIN_TOP].u === AUTO) {
               marginAutoCount++;
             }
-            if(currentStyle[MARGIN_BOTTOM][1] === AUTO) {
+            if(currentStyle[MARGIN_BOTTOM].u === AUTO) {
               marginAutoCount++;
             }
           }
@@ -1920,7 +1976,7 @@ class Dom extends Xom {
         let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight,
           isUpright ? getVerticalBaseline(computedStyle) : getBaseline(computedStyle), isUpright);
         lbmList.push(lineBoxManager);
-        item.__layout({
+        item.__layoutFlow({
           x,
           y,
           w: isDirectionRow ? main : w,
@@ -1970,26 +2026,26 @@ class Dom extends Xom {
         let child = line[i];
         let currentStyle = child.currentStyle;
         if(isDirectionRow) {
-          if(currentStyle[MARGIN_LEFT][1] === AUTO) {
+          if(currentStyle[MARGIN_LEFT].u === AUTO) {
             count += per;
-            child.__offsetX(count, true);
+            child.__offsetX(count, true, null);
           }
           else if(count) {
-            child.__offsetX(count, true);
+            child.__offsetX(count, true, null);
           }
-          if(currentStyle[MARGIN_RIGHT][1] === AUTO) {
+          if(currentStyle[MARGIN_RIGHT].u === AUTO) {
             count += per;
           }
         }
         else {
-          if(currentStyle[MARGIN_TOP][1] === AUTO) {
+          if(currentStyle[MARGIN_TOP].u === AUTO) {
             count += per;
-            child.__offsetY(count, true);
+            child.__offsetY(count, true, null);
           }
           else if(count) {
-            child.__offsetY(count, true);
+            child.__offsetY(count, true, null);
           }
-          if(currentStyle[MARGIN_BOTTOM][1] === AUTO) {
+          if(currentStyle[MARGIN_BOTTOM].u === AUTO) {
             count += per;
           }
         }
@@ -1999,35 +2055,35 @@ class Dom extends Xom {
       if(justifyContent === 'flexEnd') {
         for(let i = 0; i < len; i++) {
           let child = line[i];
-          isDirectionRow ? child.__offsetX(free, true) : child.__offsetY(free, true);
+          isDirectionRow ? child.__offsetX(free, true, null) : child.__offsetY(free, true, null);
         }
       }
       else if(justifyContent === 'center') {
         let center = free * 0.5;
         for(let i = 0; i < len; i++) {
           let child = line[i];
-          isDirectionRow ? child.__offsetX(center, true) : child.__offsetY(center, true);
+          isDirectionRow ? child.__offsetX(center, true, null) : child.__offsetY(center, true, null);
         }
       }
       else if(justifyContent === 'spaceBetween') {
         let between = free / (len - 1);
         for(let i = 1; i < len; i++) {
           let child = line[i];
-          isDirectionRow ? child.__offsetX(between * i, true) : child.__offsetY(between * i, true);
+          isDirectionRow ? child.__offsetX(between * i, true, null) : child.__offsetY(between * i, true, null);
         }
       }
       else if(justifyContent === 'spaceAround') {
         let around = free * 0.5 / len;
         for(let i = 0; i < len; i++) {
           let child = line[i];
-          isDirectionRow ? child.__offsetX(around * (i * 2 + 1), true) : child.__offsetY(around * (i * 2 + 1), true);
+          isDirectionRow ? child.__offsetX(around * (i * 2 + 1), true, null) : child.__offsetY(around * (i * 2 + 1), true, null);
         }
       }
       else if(justifyContent === 'spaceEvenly') {
         let around = free / (len + 1);
         for(let i = 0; i < len; i++) {
           let child = line[i];
-          isDirectionRow ? child.__offsetX(around * (i + 1), true) : child.__offsetY(around * (i + 1), true);
+          isDirectionRow ? child.__offsetX(around * (i + 1), true, null) : child.__offsetY(around * (i + 1), true, null);
         }
       }
     }
@@ -2039,13 +2095,13 @@ class Dom extends Xom {
         else if(alignSelf === 'flexEnd') {
           let diff = maxCross - item.outerHeight;
           if(diff !== 0) {
-            item.__offsetY(diff, true);
+            item.__offsetY(diff, true, null);
           }
         }
         else if(alignSelf === 'center') {
           let diff = maxCross - item.outerHeight;
           if(diff !== 0) {
-            item.__offsetY(diff * 0.5, true);
+            item.__offsetY(diff * 0.5, true, null);
           }
         }
         else if(alignSelf === 'stretch') {
@@ -2058,7 +2114,7 @@ class Dom extends Xom {
             [PADDING_TOP]: paddingTop,
             [PADDING_BOTTOM]: paddingBottom,
           } = computedStyle;
-          if(height[1] === AUTO) {
+          if(height.u === AUTO) {
             let old = item.height;
             let v = item.__height = computedStyle[HEIGHT] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
             let d = v - old;
@@ -2074,7 +2130,7 @@ class Dom extends Xom {
         else if(alignSelf === 'baseline') {
           let diff = baseline - item.firstBaseline;
           if(diff !== 0) {
-            item.__offsetY(diff, true);
+            item.__offsetY(diff, true, null);
           }
         }
         // 默认auto，取alignItems
@@ -2083,19 +2139,19 @@ class Dom extends Xom {
           else if(alignItems === 'center') {
             let diff = maxCross - item.outerHeight;
             if(diff !== 0) {
-              item.__offsetY(diff * 0.5, true);
+              item.__offsetY(diff * 0.5, true, null);
             }
           }
           else if(alignItems === 'flexEnd') {
             let diff = maxCross - item.outerHeight;
             if(diff !== 0) {
-              item.__offsetY(diff, true);
+              item.__offsetY(diff, true, null);
             }
           }
           else if(alignItems === 'baseline') {
             let diff = baseline - item.firstBaseline;
             if(diff !== 0) {
-              item.__offsetY(diff, true);
+              item.__offsetY(diff, true, null);
             }
           }
           // 默认stretch
@@ -2106,8 +2162,8 @@ class Dom extends Xom {
               [HEIGHT]: height,
             } } = item;
             // row的孩子还是flex且column且不定高时，如果高度<侧轴拉伸高度则重新布局
-            if(isDirectionRow && display === 'flex' && flexDirection === 'column' && height[1] === AUTO && item.outerHeight < maxCross) {
-              item.__layout(Object.assign(item.__layoutData, { h3: maxCross }));
+            if(isDirectionRow && display === 'flex' && flexDirection === 'column' && height.u === AUTO && item.outerHeight < maxCross) {
+              item.__layoutFlow(Object.assign(item.__layoutData, { h3: maxCross }));
             }
             let {
               [BORDER_TOP_WIDTH]: borderTopWidth,
@@ -2117,7 +2173,7 @@ class Dom extends Xom {
               [PADDING_TOP]: paddingTop,
               [PADDING_BOTTOM]: paddingBottom,
             } = computedStyle;
-            if(height[1] === AUTO) {
+            if(height.u === AUTO) {
               let old = item.height;
               let v = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
               let d = v - old;
@@ -2138,13 +2194,13 @@ class Dom extends Xom {
         else if(alignSelf === 'flexEnd') {
           let diff = maxCross - item.outerWidth;
           if(diff !== 0) {
-            item.__offsetX(diff, true);
+            item.__offsetX(diff, true, null);
           }
         }
         else if(alignSelf === 'center') {
           let diff = maxCross - item.outerWidth;
           if(diff !== 0) {
-            item.__offsetX(diff * 0.5, true);
+            item.__offsetX(diff * 0.5, true, null);
           }
         }
         else if(alignSelf === 'stretch') {
@@ -2157,7 +2213,7 @@ class Dom extends Xom {
             [PADDING_RIGHT]: paddingRight,
             [PADDING_LEFT]: paddingLeft,
           } = computedStyle;
-          if(width[1] === AUTO) {
+          if(width.u === AUTO) {
             let old = item.width;
             let v = item.__width = computedStyle[WIDTH] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
             let d = v - old;
@@ -2173,7 +2229,7 @@ class Dom extends Xom {
         else if(alignItems === 'baseline') {
           let diff = baseline - item.firstBaseline;
           if(diff !== 0) {
-            item.__offsetX(diff, true);
+            item.__offsetX(diff, true, null);
           }
         }
         // 默认auto，取alignItems
@@ -2182,19 +2238,19 @@ class Dom extends Xom {
           else if(alignItems === 'center') {
             let diff = maxCross - item.outerWidth;
             if(diff !== 0) {
-              item.__offsetX(diff * 0.5, true);
+              item.__offsetX(diff * 0.5, true, null);
             }
           }
           else if(alignItems === 'flexEnd') {
             let diff = maxCross - item.outerWidth;
             if(diff !== 0) {
-              item.__offsetX(diff, true);
+              item.__offsetX(diff, true, null);
             }
           }
           else if(alignItems === 'baseline') {
             let diff = baseline - item.firstBaseline;
             if(diff !== 0) {
-              item.__offsetX(diff, true);
+              item.__offsetX(diff, true, null);
             }
           }
           // 默认stretch
@@ -2210,7 +2266,7 @@ class Dom extends Xom {
               [PADDING_RIGHT]: paddingRight,
               [PADDING_LEFT]: paddingLeft,
             } = computedStyle;
-            if(width[1] === AUTO) {
+            if(width.u === AUTO) {
               let old = item.width;
               let v = item.__width = computedStyle[WIDTH] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
               let d = v - old;
@@ -2297,7 +2353,7 @@ class Dom extends Xom {
     // 只有inline的孩子需要考虑换行后从行首开始，而ib不需要，因此重置行首标识lx为x，末尾空白为0
     // 而inline的LineBoxManager复用最近非inline父dom的，ib需要重新生成，末尾空白叠加
     if(isInline) {
-      this.__config[NODE_IS_INLINE] = true;
+      this.__isInline = true;
       this.__lineBoxManager = lineBoxManager;
       let baseline = isUpright ? getVerticalBaseline(computedStyle) : getBaseline(computedStyle);
       // 特殊inline调用，有内容的话（如左右mbp），默认生成一个lineBox，即便是空，也要形成占位，只有开头时需要
@@ -2372,7 +2428,7 @@ class Dom extends Xom {
         }
         // x开头或者nowrap单行，不用考虑是否放得下直接放，因为有beginSpace所以要多判断i为0
         if((isUpright && y === ly) || (!isUpright && x === lx) || !i || whiteSpace === 'nowrap') {
-          lineClampCount = item.__layout({
+          lineClampCount = item.__layoutFlow({
             x,
             y,
             w,
@@ -2390,10 +2446,10 @@ class Dom extends Xom {
             lineClampCount++;
           }
           if(item.__isIbFull && whiteSpace !== 'nowrap') {
-            if(isUpright && h[1] === AUTO) {
+            if(isUpright && h.u === AUTO) {
               isUprightIbFull = true;
             }
-            else if(!isUpright && w[1] === AUTO) {
+            else if(!isUpright && w.u === AUTO) {
               isIbFull = true;
             }
             lineBoxManager.addItem(item, true);
@@ -2427,7 +2483,7 @@ class Dom extends Xom {
           let free = item.__tryLayInline(isUpright ? (h + ly - y - endSpace) : (w + lx - x - endSpace), isUpright ? h : w, isUpright);
           // 放得下继续
           if(free >= (-1e-10)) {
-            lineClampCount = item.__layout({
+            lineClampCount = item.__layoutFlow({
               x,
               y,
               w,
@@ -2469,7 +2525,7 @@ class Dom extends Xom {
               backtrack(bp, lineBoxManager, lineBox, w, endSpace, isUpright);
               return;
             }
-            lineClampCount = item.__layout({
+            lineClampCount = item.__layoutFlow({
               x,
               y,
               w,
@@ -2514,7 +2570,7 @@ class Dom extends Xom {
         let n = lineBoxManager.size;
         // i为0时强制不换行
         if((isUpright && y === ly) || (!isUpright && x === lx) || !i || whiteSpace === 'nowrap') {
-          lineClampCount = item.__layout({
+          lineClampCount = item.__layoutFlow({
             x,
             y,
             w,
@@ -2531,10 +2587,10 @@ class Dom extends Xom {
           y = lineBoxManager.lastY;
           // ib情况发生折行，且非定宽
           if(!isInline && (lineBoxManager.size - n) > 1) {
-            if(height[1] === AUTO && isUpright) {
+            if(height.u === AUTO && isUpright) {
               isUprightIbFull = true;
             }
-            if(width[1] === AUTO && !isUpright) {
+            if(width.u === AUTO && !isUpright) {
               isIbFull = true;
             }
           }
@@ -2552,7 +2608,7 @@ class Dom extends Xom {
           let free = item.__tryLayInline(isUpright ? (h + ly - y - endSpace) : (w + lx - x - endSpace));
           // 放得下继续
           if(free >= (-1e-10)) {
-            lineClampCount = item.__layout({
+            lineClampCount = item.__layoutFlow({
               x,
               y,
               w,
@@ -2593,7 +2649,7 @@ class Dom extends Xom {
               backtrack(bp, lineBoxManager, lineBox, w, endSpace, isUpright);
               return;
             }
-            lineClampCount = item.__layout({
+            lineClampCount = item.__layoutFlow({
               x,
               y,
               w,
@@ -2610,10 +2666,10 @@ class Dom extends Xom {
             y = lineBoxManager.lastY;
             // ib情况发生折行
             if(!isInline && (lineBoxManager.size - n) > 1) {
-              if(height[1] === AUTO && isUpright) {
+              if(height.u === AUTO && isUpright) {
                 isUprightIbFull = true;
               }
-              if(width[1] === AUTO && !isUpright) {
+              if(width.u === AUTO && !isUpright) {
                 isIbFull = true;
               }
             }
@@ -2688,10 +2744,10 @@ class Dom extends Xom {
       let spread = lineBoxManager.verticalAlign(isUpright);
       if(spread) {
         if(isUpright && !fixedWidth) {
-          this.__resizeX(spread);
+          this.__resizeX(spread, null);
         }
         else if(!isUpright && !fixedHeight) {
-          this.__resizeY(spread);
+          this.__resizeY(spread, null);
         }
       }
       if(!isColumn && !isRow) {
@@ -2841,10 +2897,10 @@ class Dom extends Xom {
         }
         if(diff > 0) {
           if(isUpright) {
-            this.__offsetY(diff, true);
+            this.__offsetY(diff, true, null);
           }
           else {
-            this.__offsetX(diff, true);
+            this.__offsetX(diff, true, null);
           }
         }
       }
@@ -2885,8 +2941,10 @@ class Dom extends Xom {
    * @private
    */
   __layoutAbs(container, data, target) {
-    let { sx: x, sy: y, clientWidth, clientHeight, computedStyle } = container;
-    let { isDestroyed, children, absChildren } = this;
+    let { __sx: x, __sy: y,
+      __clientWidth: clientWidth, __clientHeight: clientHeight,
+      __computedStyle: computedStyle } = container;
+    let { __isDestroyed: isDestroyed, children, absChildren } = this;
     let {
       [DISPLAY]: display,
       [BORDER_TOP_WIDTH]: borderTopWidth,
@@ -2939,28 +2997,28 @@ class Dom extends Xom {
       let fixedBottom;
       let fixedLeft;
       // 判断何种方式的定位，比如左+宽度，左+右之类
-      if(left[1] !== AUTO) {
+      if(left.u !== AUTO) {
         fixedLeft = true;
         computedStyle[LEFT] = this.__calSize(left, clientWidth, true);
       }
       else {
         computedStyle[LEFT] = 'auto';
       }
-      if(right[1] !== AUTO) {
+      if(right.u !== AUTO) {
         fixedRight = true;
         computedStyle[RIGHT] = this.__calSize(right, clientWidth, true);
       }
       else {
         computedStyle[RIGHT] = 'auto';
       }
-      if(top[1] !== AUTO) {
+      if(top.u !== AUTO) {
         fixedTop = true;
         computedStyle[TOP] = this.__calSize(top, clientHeight, true);
       }
       else {
         computedStyle[TOP] = 'auto';
       }
-      if(bottom[1] !== AUTO) {
+      if(bottom.u !== AUTO) {
         fixedBottom = true;
         computedStyle[BOTTOM] = this.__calSize(bottom, clientHeight, true);
       }
@@ -2974,12 +3032,12 @@ class Dom extends Xom {
       }
       else if(fixedLeft) {
         x2 = x + computedStyle[LEFT];
-        if(width[1] !== AUTO) {
+        if(width.u !== AUTO) {
           w2 = this.__calSize(width, clientWidth, true);
         }
       }
       else if(fixedRight) {
-        if(width[1] !== AUTO) {
+        if(width.u !== AUTO) {
           w2 = this.__calSize(width, clientWidth, true);
         }
         else {
@@ -2996,7 +3054,7 @@ class Dom extends Xom {
       }
       else {
         x2 = x + paddingLeft;
-        if(width[1] !== AUTO) {
+        if(width.u !== AUTO) {
           w2 = this.__calSize(width, clientWidth, true);
         }
       }
@@ -3007,12 +3065,12 @@ class Dom extends Xom {
       }
       else if(fixedTop) {
         y2 = y + computedStyle[TOP];
-        if(height[1] !== AUTO) {
+        if(height.u !== AUTO) {
           h2 = this.__calSize(height, clientHeight, true);
         }
       }
       else if(fixedBottom) {
-        if(height[1] !== AUTO) {
+        if(height.u !== AUTO) {
           h2 = this.__calSize(height, clientHeight, true);
         }
         else {
@@ -3030,16 +3088,27 @@ class Dom extends Xom {
       // 未声明y的找到之前的流布局child，紧随其下
       else {
         y2 = y + paddingTop;
-        let prev = item.prev;
+        let prev = item.__prev, mtList = [], mbList = [];
         while(prev) {
           // 以前面的flow的最近的prev末尾为准
-          if(prev instanceof Text || prev.computedStyle[POSITION] !== 'absolute') {
-            y2 = prev.y + prev.outerHeight;
-            break;
+          if(prev instanceof Text || (prev instanceof Component && prev.shadowRoot instanceof Text)
+            || prev.computedStyle[POSITION] !== 'absolute') {
+            // 当prev是空白节点时，还要考虑margin合并的影响
+            let cps = prev.computedStyle;
+            if(prev.clientHeight <= 0) {
+              mtList.push(cps[MARGIN_TOP]);
+              mbList.push(cps[MARGIN_BOTTOM]);
+            }
+            else {
+              mbList.push(cps[MARGIN_BOTTOM]);
+              let t = reflow.getMergeMargin(mtList, mbList);
+              y2 = prev.__sy1 + prev.offsetHeight + t.target;
+              break;
+            }
           }
-          prev = prev.prev;
+          prev = prev.__prev;
         }
-        if(height[1] !== AUTO) {
+        if(height.u !== AUTO) {
           h2 = this.__calSize(height, clientHeight, true);
         }
       }
@@ -3049,16 +3118,18 @@ class Dom extends Xom {
       let heightLimit = onlyBottom ? y2 - y : clientHeight + y - y2;
       // 未直接或间接定义尺寸，取特殊孩子宽度的最大值，同时不能超限
       if(w2 === undefined) {
-        item.__layout({
+        item.__layoutFlow({
           x: x2,
           y: y2,
           w: widthLimit,
           h: heightLimit,
           isUpright: data.isUpright, // 父亲的
+          container,
         }, true, false);
         widthLimit = item.outerWidth;
       }
-      item.__layout({
+      // 这里用包裹方法标明要递归计算computedStyle
+      item.__layoutFlow({
         x: x2,
         y: y2,
         w: widthLimit,
@@ -3066,13 +3137,15 @@ class Dom extends Xom {
         w2, // left+right这种等于有宽度，但不能修改style，继续传入到__preLayout中特殊对待
         h2,
         isUpright: data.isUpright,
+        container,
       }, false, false);
       if(onlyRight) {
-        item.__offsetX(-item.outerWidth, true);
+        item.__offsetX(-item.outerWidth, true, null);
       }
       if(onlyBottom) {
-        item.__offsetY(-item.outerHeight, true);
+        item.__offsetY(-item.outerHeight, true, null);
       }
+      item.__layoutStyle();
     });
     // 递归进行，遇到absolute/relative/component的设置新容器
     children.forEach(item => {
@@ -3088,12 +3161,12 @@ class Dom extends Xom {
         }
       }
       if(item instanceof Dom) {
-        item.__layoutAbs(isRelativeOrAbsolute(item) ? item : container, data);
+        item.__layoutAbs(isRelativeOrAbsolute(item) ? item : container, data, null);
       }
       else if(item instanceof Component) {
         let sr = item.shadowRoot;
         if(sr instanceof Dom) {
-          sr.__layoutAbs(sr, data);
+          sr.__layoutAbs(sr, data, null);
         }
       }
     });
@@ -3101,11 +3174,11 @@ class Dom extends Xom {
     this.__execAr();
   }
 
-  render(renderMode, lv, ctx, cache, dx, dy) {
-    let res = super.render(renderMode, lv, ctx, cache, dx, dy);
+  render(renderMode, ctx, dx, dy) {
+    let res = super.render(renderMode, ctx, dx, dy);
     let ep = this.__ellipsis;
     if(ep) {
-      ep.render(renderMode, lv, res.ctx, cache, dx, dy)
+      ep.render(renderMode, res.ctx, dx, dy)
     }
     if(renderMode === SVG) {
       this.virtualDom.type = 'dom';
@@ -3129,12 +3202,12 @@ class Dom extends Xom {
     super.__destroy();
   }
 
-  __emitEvent(e, force) {
+  __emitEvent(e, pm, force) {
     if(force) {
       return super.__emitEvent(e, force);
     }
-    let { isDestroyed, computedStyle, isMask } = this;
-    if(isDestroyed || computedStyle[DISPLAY] === 'none' || e.__stopPropagation || isMask) {
+    let { __isDestroyed, __computedStyle: computedStyle, __isMask, __cacheTotal } = this;
+    if(__isDestroyed || computedStyle[DISPLAY] === 'none' || e.__stopPropagation || __isMask) {
       return;
     }
     // 检查perspective嵌套状态，自身有perspective则设置10位，自身有transform的p矩阵则设置01位
@@ -3148,6 +3221,27 @@ class Dom extends Xom {
     if(computedStyle[OVERFLOW] === 'hidden' && !this.willResponseEvent(e, true)) {
       return;
     }
+    // __cacheTotal可提前判断是否在bbox范围内，防止svg进入判断bbox
+    if(__cacheTotal && __cacheTotal.available && __cacheTotal.bbox) {
+      // 不是E的话，因为缓存缘故影响cache的子元素，先左乘可能的父matrix（嵌套cache），再赋值给pm递归传下去
+      if(!isE(this.__matrix)) {
+        pm = multiply(pm, this.__matrix);
+        assignMatrix(this.__matrixEvent, pm);
+      }
+      let bbox = __cacheTotal.bbox;
+      if(!geom.pointInQuadrilateral(
+        e.x, e.y,
+        bbox[0], bbox[1],
+        bbox[2], bbox[1],
+        bbox[2], bbox[3],
+        bbox[0], bbox[3], this.__matrixEvent)) {
+        return;
+      }
+    }
+    // 递归传下来的pm如果有说明是cache的子元素且需要重新计算matrix
+    else if(!mx.isE(pm)) {
+      util.assignMatrix(this.__matrixEvent, mx.multiply(pm, this.__matrix));
+    }
     // 找到对应的callback
     let { event: { type } } = e;
     let { listener, zIndexChildren } = this;
@@ -3160,7 +3254,7 @@ class Dom extends Xom {
       let child = zIndexChildren[i];
       if(child instanceof Xom
         || child instanceof Component && child.shadowRoot instanceof Xom) {
-        if(child.__emitEvent(e)) {
+        if(child.__emitEvent(e, pm, false)) {
           // 孩子阻止冒泡
           if(e.__stopPropagation) {
             return;
@@ -3173,7 +3267,7 @@ class Dom extends Xom {
       }
     }
     // child不触发再看自己
-    return super.__emitEvent(e);
+    return super.__emitEvent(e, false);
   }
 
   // 深度遍历执行所有子节点，包含自己，如果cb返回true，提前跳出不继续深度遍历
@@ -3186,257 +3280,210 @@ class Dom extends Xom {
     });
   }
 
-  appendChild(json, cb) {
-    let self = this;
-    if(!isNil(json) && !self.isDestroyed) {
-      let { root, host } = self;
-      if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
-        if(json.vd) {
-          root.delRefreshTask(json.vd.__task);
-          json.vd.remove();
-        }
-        let vd;
-        if($$type.TYPE_CP === json.$$type) {
-          vd = builder.initCp2(json, root, host, self);
-        }
-        else {
-          vd = builder.initDom(json, root, host, self);
-        }
-        root.addRefreshTask(vd.__task = {
-          __before() {
-            vd.__task = null; // 清除在before，防止after的回调增加新的task误删
-            self.__json.children.push(json);
-            let len = self.children.length;
-            if(len) {
-              let last = self.children[len - 1];
-              last.__next = vd;
-              vd.__prev = last;
-            }
-            self.children.push(vd);
-            self.__zIndexChildren = null;
-            // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-            let res = {};
-            res[UPDATE_NODE] = vd;
-            res[UPDATE_FOCUS] = level.REFLOW;
-            res[UPDATE_ADD_DOM] = true;
-            res[UPDATE_CONFIG] = vd.__config;
-            root.__addUpdate(vd, vd.__config, root, root.__config, res);
-          },
-          __after(diff) {
-            if(isFunction(cb)) {
-              cb.call(vd, diff);
-            }
-          },
-        });
-      }
-      else {
-        throw new Error('Invalid parameter in appendChild.');
-      }
+  appendChild(child, cb) {
+    let { __root: root, __host: host, __children: children } = this;
+    if(!(child instanceof Node || child instanceof Component)) {
+      child = new Text(child);
     }
+    child.remove();
+    // 只设兄弟/parent，children在relation做，离屏则等真实添加时机
+    let len = children.length;
+    if(len) {
+      let last = children[len - 1];
+      last.__next = child;
+      child.__prev = last;
+    }
+    child.__parent = this;
+    children.push(child);
+    let zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
+    // 离屏情况，不刷新
+    if(this.__isDestroyed) {
+      if(isFunction(cb)) {
+        cb();
+      }
+      return;
+    }
+    // 在dom中则整体设置关系和struct，不可见提前跳出
+    builder.relation(root, host, this, child, {});
+    this.__insertStruct(child, zIndexChildren.indexOf(child));
+    // 可能为component，不能用__currentStyle
+    if(child.currentStyle[DISPLAY] === 'none' || this.__computedStyle[DISPLAY] === 'none') {
+      child.__layoutNone();
+      if(isFunction(cb)) {
+        cb();
+      }
+      return;
+    }
+    // 在reflow过程中设置struct，text视为父变更
+    if(child instanceof Text) {
+      child = this;
+    }
+    root.__addUpdate(child, {
+      focus: level.REFLOW,
+      addDom: true,
+      cb,
+    });
   }
 
-  prependChild(json, cb) {
-    let self = this;
-    if(!isNil(json) && !self.isDestroyed) {
-      let { root, host } = self;
-      if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
-        if(json.vd) {
-          root.delRefreshTask(json.vd.__task);
-          json.vd.remove();
-        }
-        let vd;
-        if($$type.TYPE_CP === json.$$type) {
-          vd = builder.initCp2(json, root, host, self);
-        }
-        else {
-          vd = builder.initDom(json, root, host, self);
-        }
-        root.addRefreshTask(vd.__task = {
-          __before() {
-            vd.__task = null;
-            self.__json.children.unshift(json);
-            let len = self.children.length;
-            if(len) {
-              let first = self.children[0];
-              first.__prev = vd;
-              vd.__next = first;
-            }
-            self.children.unshift(vd);
-            self.__zIndexChildren = null;
-            // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-            let res = {};
-            res[UPDATE_NODE] = vd;
-            res[UPDATE_FOCUS] = level.REFLOW;
-            res[UPDATE_ADD_DOM] = true;
-            res[UPDATE_CONFIG] = vd.__config;
-            root.__addUpdate(vd, vd.__config, root, root.__config, res);
-          },
-          __after(diff) {
-            if(isFunction(cb)) {
-              cb.call(vd, diff);
-            }
-          },
-        });
-      }
-      else {
-        throw new Error('Invalid parameter in prependChild.');
-      }
+  prependChild(child, cb) {
+    let { __root: root, __host: host, __children: children } = this;
+    if(!(child instanceof Node || child instanceof Component)) {
+      child = new Text(child);
     }
+    child.remove();
+    // 只设兄弟/parent，children在relation做，离屏则等真实添加时机
+    let len = children.length;
+    if(len) {
+      let first = children[0];
+      first.__prev = child;
+      child.__next = first;
+    }
+    child.__parent = this;
+    children.unshift(child);
+    let zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
+    // 离屏情况，不刷新
+    if(this.__isDestroyed) {
+      if(isFunction(cb)) {
+        cb();
+      }
+      return;
+    }
+    // 在dom中则整体设置关系和struct，不可见提前跳出
+    builder.relation(root, host, this, child, {});
+    this.__insertStruct(child, zIndexChildren.indexOf(child));
+    // 可能为component，不能用__currentStyle
+    if(child.currentStyle[DISPLAY] === 'none' || this.__computedStyle[DISPLAY] === 'none') {
+      child.__layoutNone();
+      if(isFunction(cb)) {
+        cb();
+      }
+      return;
+    }
+    // 可见在reflow过程中设置struct
+    if(child instanceof Text) {
+      child = this;
+    }
+    root.__addUpdate(child, {
+      focus: level.REFLOW,
+      addDom: true,
+      cb,
+    });
   }
 
-  insertBefore(json, cb) {
-    let self = this;
-    if(!isNil(json) && !self.isDestroyed && self.domParent) {
-      let { root, domParent } = self;
-      let host = domParent.hostRoot;
-      if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
-        if(json.vd) {
-          root.delRefreshTask(json.vd.__task);
-          json.vd.remove();
-        }
-        let vd;
-        if($$type.TYPE_CP === json.$$type) {
-          vd = builder.initCp2(json, root, host, domParent);
-        }
-        else {
-          vd = builder.initDom(json, root, host, domParent);
-        }
-        root.addRefreshTask(vd.__task = {
-          __before() {
-            vd.__task = null;
-            let i = 0, has, __json = domParent.__json, children = __json.children, len = children.length;
-            let pJson = self.isShadowRoot ? self.hostRoot.__json : self.__json;
-            for(; i < len; i++) {
-              if(children[i] === pJson) {
-                has = true;
-                break;
-              }
-            }
-            if(!has) {
-              throw new Error('InsertBefore exception.');
-            }
-            // 插入注意开头位置处理
-            if(i) {
-              children.splice(i, 0, json);
-              vd.__next = self;
-              vd.__prev = self.__prev;
-              self.__prev = vd;
-              domParent.children.splice(i, 0, vd);
-            }
-            else {
-              if(len) {
-                let first = domParent.children[0];
-                first.__prev = vd;
-                vd.__next = first;
-              }
-              children.unshift(json);
-              domParent.children.unshift(vd);
-            }
-            domParent.__zIndexChildren = null;
-            // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-            let res = {};
-            res[UPDATE_NODE] = vd;
-            res[UPDATE_FOCUS] = level.REFLOW;
-            res[UPDATE_ADD_DOM] = true;
-            res[UPDATE_CONFIG] = vd.__config;
-            root.__addUpdate(vd, vd.__config, root, root.__config, res);
-          },
-          __after(diff) {
-            if(isFunction(cb)) {
-              cb.call(vd, diff);
-            }
-          },
-        });
-      }
-      else {
-        throw new Error('Invalid parameter in insertBefore.');
-      }
+  insertBefore(child, cb) {
+    let { __root: root } = this;
+    if(!(child instanceof Node || child instanceof Component)) {
+      child = new Text(child);
     }
+    child.remove();
+    let parent = this.isShadowRoot ? this.__hostRoot.__parent: this.__parent;
+    let i;
+    // 即便没被添加到dom中，也有可能有父节点，除非是离屏根节点，注意组件
+    if(parent) {
+      let children = parent.__children;
+      let target = this.isShadowRoot ? this.__hostRoot : this;
+      i = children.indexOf(target);
+      if(i === -1) {
+        throw new Error('Index exception of insertBefore()');
+      }
+      let prev = target.__prev;
+      if(prev) {
+        prev.__next = child;
+        child.__prev = prev;
+      }
+      child.__next = target;
+      target.__prev = child;
+      children.splice(i, 0, child);
+      parent.__zIndexChildren = genZIndexChildren(parent);
+    }
+    else {
+      throw new Error('InsertBefore() illegal');
+    }
+    // 离屏情况，不刷新
+    if(this.__isDestroyed) {
+      if(isFunction(cb)) {
+        cb();
+      }
+      return;
+    }
+    // 在dom中则整体设置关系和struct，不可见提前跳出
+    builder.relation(root, parent.__host, parent, child, {});
+    parent.__insertStruct(child, parent.__zIndexChildren.indexOf(child));
+    if(child.currentStyle[DISPLAY] === 'none' || parent.__computedStyle[DISPLAY] === 'none') {
+      child.__layoutNone();
+      if(isFunction(cb)) {
+        cb();
+      }
+      return;
+    }
+    if(child instanceof Text) {
+      child = parent;
+    }
+    root.__addUpdate(child, {
+      focus: level.REFLOW,
+      addDom: true,
+      cb,
+    });
   }
 
-  insertAfter(json, cb) {
-    let self = this;
-    if(!isNil(json) && !self.isDestroyed && self.domParent) {
-      let { root, domParent } = self;
-      let host = domParent.hostRoot;
-      if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
-        if(json.vd) {
-          root.delRefreshTask(json.vd.__task);
-          json.vd.remove();
-        }
-        let vd;
-        if($$type.TYPE_CP === json.$$type) {
-          vd = builder.initCp2(json, root, host, domParent);
-        }
-        else {
-          vd = builder.initDom(json, root, host, domParent);
-        }
-        root.addRefreshTask(vd.__task = {
-          __before() {
-            vd.__task = null;
-            let i = 0, has, __json = domParent.__json, children = __json.children, len = children.length;
-            let pJson = self.isShadowRoot ? self.hostRoot.__json : self.__json;
-            for(; i < len; i++) {
-              if(children[i] === pJson) {
-                has = true;
-                break;
-              }
-            }
-            if(!has) {
-              throw new Error('insertAfter exception.');
-            }
-            // 插入注意末尾位置处理
-            if(i < len - 1) {
-              children.splice(i + 1, 0, json);
-              vd.__prev = self;
-              vd.__next = self.__next;
-              self.__next = vd;
-              domParent.children.splice(i + 1, 0, vd);
-            }
-            else {
-              if(len) {
-                let last = domParent.children[len - 1];
-                last.__next = vd;
-                vd.__prev = last;
-              }
-              children.push(json);
-              domParent.children.push(vd);
-            }
-            domParent.__zIndexChildren = null;
-            // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-            let res = {};
-            res[UPDATE_NODE] = vd;
-            res[UPDATE_FOCUS] = level.REFLOW;
-            res[UPDATE_ADD_DOM] = true;
-            res[UPDATE_CONFIG] = vd.__config;
-            root.__addUpdate(vd, vd.__config, root, root.__config, res);
-          },
-          __after(diff) {
-            if(isFunction(cb)) {
-              cb.call(vd, diff);
-            }
-          },
-        });
-      }
-      else {
-        throw new Error('Invalid parameter in insertAfter.');
-      }
+  insertAfter(child, cb) {
+    let { __root: root } = this;
+    if(!(child instanceof Node || child instanceof Component)) {
+      child = new Text(child);
     }
+    child.remove();
+    let parent = this.isShadowRoot ? this.__hostRoot.__parent: this.__parent;
+    let i;
+    // 即便没被添加到dom中，也有可能有父节点，除非是离屏根节点，注意组件
+    if(parent) {
+      let children = parent.__children;
+      let target = this.isShadowRoot ? this.__hostRoot : this;
+      i = children.indexOf(target);
+      if(i === -1) {
+        throw new Error('Index exception of insertBefore()');
+      }
+      target.__next = child;
+      child.__prev = target;
+      children.splice(i + 1, 0, child);
+      parent.__zIndexChildren = genZIndexChildren(parent);
+    }
+    else {
+      throw new Error('InsertAfter() illegal');
+    }
+    // 离屏情况，不刷新
+    if(this.__isDestroyed) {
+      if(isFunction(cb)) {
+        cb();
+      }
+      return;
+    }
+    // 在dom中则整体设置关系和struct，不可见提前跳出
+    builder.relation(root, parent.__host, parent, child, {});
+    parent.__insertStruct(child, parent.__zIndexChildren.indexOf(child));
+    if(child.currentStyle[DISPLAY] === 'none' || parent.__computedStyle[DISPLAY] === 'none') {
+      child.__layoutNone();
+      if(isFunction(cb)) {
+        cb();
+      }
+      return;
+    }
+    if(child instanceof Text) {
+      child = parent;
+    }
+    root.__addUpdate(child, {
+      focus: level.REFLOW,
+      addDom: true,
+      cb,
+    });
   }
 
   removeChild(target, cb) {
-    if(target.parent === this && (target instanceof Xom || target instanceof Component)) {
-      if(this.isDestroyed) {
-        inject.warn('Remove parent is destroyed.');
-        if(isFunction(cb)) {
-          cb();
-        }
-        return;
-      }
+    if((target.__parent === this || target.__domParent === this)
+      && (target instanceof Node || target instanceof Component)) {
       target.remove(cb);
     }
     else {
-      inject.error('Invalid parameter in removeChild.');
+      inject.error('Invalid parameter of removeChild()');
     }
   }
 
@@ -3445,20 +3492,20 @@ class Dom extends Xom {
   }
 
   get flowChildren() {
-    return this.children.filter(item => {
+    return this.__children.filter(item => {
       if(item instanceof Component) {
         item = item.shadowRoot;
       }
-      return item instanceof Text || item.currentStyle[POSITION] !== 'absolute';
+      return item instanceof Text || item.__currentStyle[POSITION] !== 'absolute';
     });
   }
 
   get absChildren() {
-    return this.children.filter(item => {
+    return this.__children.filter(item => {
       if(item instanceof Component) {
-        item = item.shadowRoot;
+        item = item.__shadowRoot;
       }
-      return item instanceof Xom && item.currentStyle[POSITION] === 'absolute';
+      return item instanceof Xom && item.__currentStyle[POSITION] === 'absolute';
     });
   }
 

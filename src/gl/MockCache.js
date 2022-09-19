@@ -15,7 +15,7 @@ class MockCache {
     this.height = height;
     this.bbox = bbox;
     this.available = true;
-    this.__page = new MockPage(texture, width, height);
+    this.page = new MockPage(texture, width, height);
     this.reOffset();
   }
 
@@ -30,10 +30,6 @@ class MockCache {
   release() {
     this.available = false;
     this.gl.deleteTexture(this.page.texture);
-  }
-
-  get page() {
-    return this.__page;
   }
 }
 

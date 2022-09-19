@@ -3,8 +3,8 @@ class Yuan extends karas.Geom {
     super(tagName, props);
     this.__banjing = props.banjing;
   }
-  render(renderMode, lv, ctx, defs) {
-    let res = super.render(renderMode, lv, ctx, defs);
+  render(renderMode, ctx, dx, dy) {
+    let res = super.render(renderMode, ctx, dx, dy);
     let {
       cx,
       cy,

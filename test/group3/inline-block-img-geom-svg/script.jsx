@@ -8,7 +8,7 @@ let o = karas.render(
       <span style={{display:'inlineBlock',width:300,background:'#F00'}}>a</span>
       <span style={{display:'inlineBlock',margin:10,padding:10,background:'#00F'}}>
           <img src="../../logo.png"/>
-        </span>
+      </span>
     </div>
     <div>
       <span style={{display:'inlineBlock',width:300,background:'#F00'}}>a</span>

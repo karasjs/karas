@@ -20,7 +20,6 @@ import geom from '../math/geom';
 import mode from '../refresh/mode';
 import change from '../refresh/change';
 import level from '../refresh/level';
-import Cache from '../refresh/Cache';
 import font from '../style/font';
 import bs from '../style/bs';
 import mbm from '../style/mbm';
@@ -28,7 +27,7 @@ import reset from '../style/reset';
 
 const { svgPolygon } = painter;
 const { CANVAS, SVG, WEBGL } = mode;
-const { LOCAL } = Cache;
+const { normalize, equalStyle } = css;
 
 const {
   STYLE_KEY,
@@ -128,45 +127,6 @@ const {
     WHITE_SPACE,
     WRITING_MODE,
   },
-  UPDATE_KEY: {
-    UPDATE_NODE,
-    UPDATE_FOCUS,
-    UPDATE_STYLE,
-    UPDATE_OVERWRITE,
-    UPDATE_KEYS,
-    UPDATE_CONFIG,
-    UPDATE_REMOVE_DOM,
-  },
-  STRUCT_KEY: {
-    STRUCT_HAS_MASK,
-  },
-  NODE_KEY: {
-    NODE_TAG_NAME,
-    NODE_CACHE_STYLE,
-    NODE_CURRENT_STYLE,
-    NODE_COMPUTED_STYLE,
-    NODE_STYLE,
-    NODE_STRUCT,
-    NODE_OPACITY,
-    NODE_MATRIX_EVENT,
-    NODE_MATRIX,
-    NODE_LIMIT_CACHE,
-    NODE_HAS_CONTENT,
-    NODE_REFRESH_LV,
-    NODE_CACHE,
-    NODE_CACHE_TOTAL,
-    NODE_CACHE_FILTER,
-    NODE_CACHE_MASK,
-    NODE_CACHE_OVERFLOW,
-    NODE_IS_DESTROYED,
-    NODE_DEFS_CACHE,
-    NODE_DOM_PARENT,
-    NODE_IS_INLINE,
-    NODE_PERSPECTIVE_MATRIX,
-    NODE_IS_MASK,
-    NODE_VIRTUAL_DOM,
-    NODE_CACHE_AS_BITMAP,
-  }
 } = enums;
 const { AUTO, PX, PERCENT, INHERIT, NUMBER, RGBA, STRING, REM, VW, VH, VMAX, VMIN, DEG, GRADIENT } = unit;
 const { int2rgba, rgba2int, joinArr, isNil, isFunction } = util;
@@ -177,13 +137,14 @@ const { point2d } = mx;
 
 const {
   contain,
-  NONE,
   TRANSFORM: TF,
   REFLOW,
   REPAINT,
   TRANSLATE_X: TX,
   TRANSLATE_Y: TY,
   TRANSLATE_Z: TZ,
+  TRANSFORM_ALL,
+  CACHE,
 } = level;
 
 function getFirstEmptyInlineWidth(xom) {
@@ -197,7 +158,7 @@ function getFirstEmptyInlineWidth(xom) {
         n += getFirstEmptyInlineWidth(child);
         break;
       }
-      else if(child.__config[NODE_IS_INLINE]) {
+      else if(child.__isInline) {
         n += child.outerWidth;
       }
     }
@@ -261,36 +222,34 @@ class Xom extends Node {
     this.__cacheStyle = {}; // 是否缓存重新计算computedStyle的样式key
     this.__cacheDefs = []; // svg专用，缓存渲染时使用已有的defs，diff过程用，否则会defs被清空
     let isClip = this.__isClip = !!this.props.clip;
-    let isMask = this.__isMask = isClip || !!this.props.mask;
-    let config = this.__config;
-    config[NODE_TAG_NAME] = tagName;
-    config[NODE_CACHE_STYLE] = this.__cacheStyle;
-    config[NODE_CURRENT_STYLE] = this.__currentStyle;
-    config[NODE_COMPUTED_STYLE] = this.__computedStyle;
-    config[NODE_REFRESH_LV] = REFLOW;
-    config[NODE_STYLE] = this.__style;
-    config[NODE_MATRIX] = [];
-    config[NODE_MATRIX_EVENT] = [];
-    config[NODE_DEFS_CACHE] = this.__cacheDefs;
-    config[NODE_IS_MASK] = isMask;
+    this.__isMask = isClip || !!this.props.mask;
+    this.__refreshLevel = REFLOW;
+    this.__limitCache = false;
+    this.__isInline = false;
+    this.__hasContent = false;
+    this.__opacity = 1;
+    this.__matrix = [];
+    this.__matrixEvent = [];
+    this.__perspectiveMatrix = [];
     this.__frameAnimateList = [];
     this.__contentBoxList = []; // inline存储内容用
-    // this.__json domApi需要获取生成时的json引用，builder过程添加，如appendChild时json也需要跟着变更
-    config[NODE_CACHE_AS_BITMAP] = this.__cacheAsBitmap = !!this.props.cacheAsBitmap;
+    this.__cacheAsBitmap = !!this.props.cacheAsBitmap;
+    this.__cache = this.__cacheTotal = this.__cacheFilter = this.__cacheMask = this.__cacheOverflow = null;
     this.__layoutData = null; // 缓存上次布局x/y/w/h数据
     this.__hasComputeReflow = false; // 每次布局计算缓存标，使得每次开始只computeReflow一次
     this.__parentLineBox = null; // inline时指向
     this.__fontRegister = {}; // 优先级字体尚未加载时记录回调hash，销毁时删除回调
   }
 
-  __structure(i, lv, j) {
-    let res = super.__structure(i, lv, j);
+  __structure(lv, j) {
+    let res = super.__structure(lv, j);
     if(this.__hasMask) {
-      res[STRUCT_HAS_MASK] = this.__hasMask;
+      res.hasMask = this.__hasMask;
     }
-    this.__config[NODE_STRUCT] = res;
     return res;
   }
+
+  __modifyStruct() {}
 
   // 设置margin/padding的实际值，layout时执行，inline的垂直方向仍然计算值，但在布局时被忽略
   __mp(currentStyle, computedStyle, w) {
@@ -308,26 +267,28 @@ class Xom extends Node {
   }
 
   __calSize(v, w, includePercent) {
-    if(v[1] === PX) {
-      return v[0];
+    if(v.u === PX) {
+      return v.v;
     }
-    else if(v[1] === PERCENT && includePercent) {
-      return v[0] * w * 0.01;
+    else if(v.u === PERCENT) {
+      if(includePercent) {
+        return v.v * w * 0.01;
+      }
     }
-    else if(v[1] === REM) {
-      return v[0] * this.root.computedStyle[FONT_SIZE];
+    else if(v.u === REM || v.u === REM) {
+      return v.v * this.__root.computedStyle[FONT_SIZE];
     }
-    else if(v[1] === VW) {
-      return v[0] * this.root.width * 0.01;
+    else if(v.u === VW) {
+      return v.v * this.__root.width * 0.01;
     }
-    else if(v[1] === VH) {
-      return v[0] * this.root.height * 0.01;
+    else if(v.u === VH) {
+      return v.v * this.__root.height * 0.01;
     }
-    else if(v[1] === VMAX) {
-      return v[0] * Math.max(this.root.width, this.root.height) * 0.01;
+    else if(v.u === VMAX) {
+      return v.v * Math.max(this.__root.width, this.__root.height) * 0.01;
     }
-    else if(v[1] === VMIN) {
-      return v[0] * Math.min(this.root.width, this.root.height) * 0.01;
+    else if(v.u === VMIN) {
+      return v.v * Math.min(this.__root.width, this.__root.height) * 0.01;
     }
     return 0;
   }
@@ -338,20 +299,20 @@ class Xom extends Node {
     }
     this.__hasComputeReflow = true;
 
-    let { currentStyle, computedStyle, domParent: parent } = this;
+    let { __currentStyle: currentStyle, __computedStyle: computedStyle, __domParent: parent } = this;
     let isRoot = !parent;
-    let parentComputedStyle = parent && parent.computedStyle;
+    let parentComputedStyle = parent && parent.__computedStyle;
     // 继承的特殊处理，根节点用默认值
     [FONT_SIZE, FONT_FAMILY, FONT_WEIGHT, WRITING_MODE].forEach(k => {
       let v = currentStyle[k];
       // ff特殊处理
       if(k === FONT_FAMILY) {
-        if(v[1] === INHERIT) {
+        if(v.u === INHERIT) {
           computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : parentComputedStyle[k];
         }
         else {
-          computedStyle[k] = v[0];
-          let ff = v[0].split(/\s*,\s*/);
+          computedStyle[k] = v.v;
+          let ff = v.v.split(/\s*,\s*/);
           // 从左到右即声明的字体优先级
           for(let i = 0, len = ff.length; i < len; i++) {
             let item = ff[i].replace(/^['"]/, '').replace(/['"]$/, '');
@@ -367,30 +328,30 @@ class Xom extends Node {
           }
         }
       }
-      else if(v[1] === INHERIT) {
+      else if(v.u === INHERIT) {
         computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : parentComputedStyle[k];
       }
       // 只有fontSize会有%
-      else if(v[1] === PERCENT) {
-        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (parentComputedStyle[k] * v[0] * 0.01);
+      else if(v.u === PERCENT) {
+        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (parentComputedStyle[k] * v.v * 0.01);
       }
-      else if(v[1] === REM) {
-        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (this.root.computedStyle[FONT_SIZE] * v[0]);
+      else if(v.u === REM) {
+        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (this.root.computedStyle[FONT_SIZE] * v.v);
       }
-      else if(v[1] === VW) {
-        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (this.root.width * 0.01 * v[0]);
+      else if(v.u === VW) {
+        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (this.root.width * 0.01 * v.v);
       }
-      else if(v[1] === VH) {
-        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (this.root.height * 0.01 * v[0]);
+      else if(v.u === VH) {
+        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (this.root.height * 0.01 * v.v);
       }
-      else if(v[1] === VMAX) {
-        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (Math.max(this.root.width, this.root.height) * 0.01 * v[0]);
+      else if(v.u === VMAX) {
+        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (Math.max(this.root.width, this.root.height) * 0.01 * v.v);
       }
-      else if(v[1] === VMIN) {
-        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (Math.min(this.root.width, this.root.height) * 0.01 * v[0]);
+      else if(v.u === VMIN) {
+        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (Math.min(this.root.width, this.root.height) * 0.01 * v.v);
       }
       else {
-        computedStyle[k] = v[0];
+        computedStyle[k] = v.v;
       }
     });
     [
@@ -432,16 +393,16 @@ class Xom extends Node {
       }
     }
     let textAlign = currentStyle[TEXT_ALIGN];
-    if(textAlign[1] === INHERIT) {
+    if(textAlign.u === INHERIT) {
       computedStyle[TEXT_ALIGN] = isRoot ? 'left' : parentComputedStyle[TEXT_ALIGN];
     }
     else {
-      computedStyle[TEXT_ALIGN] = textAlign[0];
+      computedStyle[TEXT_ALIGN] = textAlign.v;
     }
     let fontSize = computedStyle[FONT_SIZE];
     let lineHeight = currentStyle[LINE_HEIGHT];
     // lineHeight继承很特殊，数字和normal不同于普通单位
-    if(lineHeight[1] === INHERIT) {
+    if(lineHeight.u === INHERIT) {
       if(isRoot) {
         computedStyle[LINE_HEIGHT] = calNormalLineHeight(computedStyle);
       }
@@ -450,18 +411,18 @@ class Xom extends Node {
         let ph;
         while(p) {
           ph = p.currentStyle[LINE_HEIGHT];
-          if(ph[1] !== INHERIT) {
+          if(ph.u !== INHERIT) {
             break;
           }
           p = p.domParent;
         }
         // 到root还是inherit或normal，或者中途遇到了normal，使用normal
-        if([AUTO, INHERIT].indexOf(ph[1]) > -1) {
+        if([AUTO, INHERIT].indexOf(ph.u) > -1) {
           computedStyle[LINE_HEIGHT] = calNormalLineHeight(computedStyle);
         }
         // 数字继承
-        else if(ph[1] === NUMBER) {
-          computedStyle[LINE_HEIGHT] = Math.max(ph[0], 0) * fontSize;
+        else if(ph.u === NUMBER) {
+          computedStyle[LINE_HEIGHT] = Math.max(ph.v, 0) * fontSize;
         }
         // 单位继承
         else {
@@ -469,8 +430,8 @@ class Xom extends Node {
         }
       }
     }
-    else if(lineHeight[1] === NUMBER) {
-      computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0], 0) * fontSize || calNormalLineHeight(computedStyle);
+    else if(lineHeight.u === NUMBER) {
+      computedStyle[LINE_HEIGHT] = Math.max(lineHeight.v, 0) * fontSize || calNormalLineHeight(computedStyle);
     }
     // 防止为0
     else {
@@ -478,7 +439,7 @@ class Xom extends Node {
       computedStyle[LINE_HEIGHT] = v || calNormalLineHeight(computedStyle);
     }
     let letterSpacing = currentStyle[LETTER_SPACING];
-    if(letterSpacing[1] === INHERIT) {
+    if(letterSpacing.u === INHERIT) {
       computedStyle[LETTER_SPACING] = isRoot ? 0 : parentComputedStyle[LETTER_SPACING];
     }
     else {
@@ -486,45 +447,47 @@ class Xom extends Node {
     }
     //whiteSpace
     let whiteSpace = currentStyle[WHITE_SPACE];
-    if(whiteSpace[1] === INHERIT) {
+    if(whiteSpace.u === INHERIT) {
       computedStyle[WHITE_SPACE] = isRoot ? 'normal' : parentComputedStyle[WHITE_SPACE];
     }
     else {
-      computedStyle[WHITE_SPACE] = whiteSpace[0];
+      computedStyle[WHITE_SPACE] = whiteSpace.v;
+    }
+    let {
+      [WIDTH]: width,
+      [HEIGHT]: height,
+    } = currentStyle;
+    // 布局前固定尺寸的线设置好，子元素percent尺寸要用到
+    if(width.u !== AUTO) {
+      this.__width = computedStyle[WIDTH] = this.__calSize(width, isRoot ? this.__width : parent.__width, true);
+    }
+    if(height.u !== AUTO) {
+      this.__height = computedStyle[HEIGHT] = this.__calSize(height, isRoot ? this.__height : parent.__height, true);
     }
   }
 
   __emitFontRegister(fontFamily) {
     let node = this, fontRegister = node.__fontRegister;
-    if(node.isDestroyed) {
+    if(node.__isDestroyed) {
       return;
     }
     delete fontRegister[fontFamily];
-    let { root, currentStyle, __config } = node;
+    let { root, currentStyle } = node;
     if(!root) {
       return;
     }
     let v = currentStyle[FONT_FAMILY];
-    if(v[1] === INHERIT) {
+    if(v.u === INHERIT) {
       return;
     }
-    let ff = v[0].split(/\s*,\s*/);
+    let ff = v.v.split(/\s*,\s*/);
     for(let i = 0, len = ff.length; i < len; i++) {
       let item = ff[i].replace(/^['"]/, '').replace(/['"]$/, '');
       if(item === fontFamily) {
         // 加载成功回调可能没注册信息，需要多判断一下
         if(font.hasRegister(item)) {
-          root.addRefreshTask({
-            __before() {
-              if(__config[NODE_IS_DESTROYED]) {
-                return;
-              }
-              let res = {};
-              res[UPDATE_NODE] = node;
-              res[UPDATE_FOCUS] = level.REFLOW; // 强制执行
-              res[UPDATE_CONFIG] = __config;
-              root.__addUpdate(node, __config, root, root.__config, res);
-            },
+          root.__addUpdate(node, {
+            focus: level.REFLOW,
           });
         }
         // 后面低优先级的无需再看
@@ -593,11 +556,14 @@ class Xom extends Node {
     return res;
   }
 
-  // absolute且无尺寸时，isAbs标明先假布局一次计算尺寸，还有flex列计算时isColumn假布局，flex横计算时writingMode垂直假布局
   __layout(data, isAbs, isColumn, isRow) {
+    this.__layoutFlow(data, isAbs, isColumn, isRow);
+  }
+
+  // absolute且无尺寸时，isAbs标明先假布局一次计算尺寸，还有flex列计算时isColumn假布局，flex横计算时writingMode垂直假布局
+  __layoutFlow(data, isAbs, isColumn, isRow) {
     this.__computeReflow();
-    let { w } = data;
-    let { isDestroyed, currentStyle, computedStyle, __config, __ellipsis } = this;
+    let { __isDestroyed, __currentStyle, __computedStyle, __ellipsis } = this;
     // 虚拟省略号每次清除
     if(__ellipsis) {
       this.__ellipsis = null;
@@ -607,28 +573,30 @@ class Xom extends Node {
     let {
       [DISPLAY]: display,
       [POSITION]: position,
-    } = computedStyle;
+    } = __computedStyle;
     this.__layoutData = {
       x: data.x,
       y: data.y,
-      w,
+      w: data.w,
       h: data.h,
       lx: data.lx,
       ly: data.ly,
       isUpright: data.isUpright, // 从Root开始，父级的书写模式需每层传递
+      container: data.container,
     };
     // 防止display:none不统计mask，isVirtual忽略，abs/flex布局后续会真正来走一遍
     if(!isAbs && !isColumn && !isRow) {
       this.clearCache();
-      __config[NODE_REFRESH_LV] = REFLOW;
-      __config[NODE_LIMIT_CACHE] = false;
-      __config[NODE_IS_INLINE] = false;
+      this.__cacheStyle = {};
+      this.__refreshLevel = REFLOW;
+      this.__limitCache = false;
+      this.__isInline = false;
       let { next } = this;
       // mask关系只有布局才会变更，普通渲染关系不会改变，clip也是mask的一种
-      if(!this.isMask && next && (next.isMask)) {
+      if(!this.__isMask && next && (next.__isMask)) {
         let count = 0;
         while(next) {
-          if(next.isMask) {
+          if(next.__isMask) {
             count++;
           }
           else {
@@ -640,12 +608,7 @@ class Xom extends Node {
       }
     }
     this.__ox = this.__oy = 0;
-    if(isDestroyed || display === 'none') {
-      this.__width = this.__height
-        = this.__clientWidth = this.__clientHeight
-        = this.__offsetWidth = this.__offsetHeight
-        = this.__outerWidth = this.__outerHeight
-        = computedStyle[WIDTH] = computedStyle[HEIGHT] = 0;
+    if(__isDestroyed || display === 'none') {
       this.__x = data.x;
       this.__y = data.y;
       this.__layoutNone();
@@ -654,7 +617,7 @@ class Xom extends Node {
     }
     // absolute特殊，在自己布局时已计算相对于容器的mbp
     if(position !== 'absolute') {
-      this.__mp(currentStyle, computedStyle, w);
+      this.__mp(__currentStyle, __computedStyle, data.w);
     }
     // 只有inline会继承计算行数，其它都是原样返回
     let lineClampCount = data.lineClampCount || 0;
@@ -674,64 +637,65 @@ class Xom extends Node {
       data.lineClampCount = 0;
       this.__layoutBlock(data, isAbs, isColumn, isRow);
     }
-    // relative渲染时做偏移，百分比基于父元素，若父元素没有定高则为0
+    // 非虚拟布局才执行，防止重复
     if(!isAbs && !isColumn && !isRow) {
+      // relative渲染时做偏移，百分比基于父元素，若父元素没有定高则为0
       if(position === 'relative') {
-        let {[TOP]: top, [RIGHT]: right, [BOTTOM]: bottom, [LEFT]: left} = currentStyle;
+        let {[TOP]: top, [RIGHT]: right, [BOTTOM]: bottom, [LEFT]: left} = __currentStyle;
         let {parent} = this;
-        if(top[1] !== AUTO) {
-          let n = calRelative(currentStyle, TOP, top, parent);
-          this.__offsetY(n);
-          computedStyle[TOP] = n;
-          computedStyle[BOTTOM] = 'auto';
+        if(top.u !== AUTO) {
+          let n = calRelative(__currentStyle, TOP, top, parent);
+          this.__offsetY(n, false, null);
+          __computedStyle[TOP] = n;
+          __computedStyle[BOTTOM] = 'auto';
         }
-        else if(bottom[1] !== AUTO) {
-          let n = calRelative(currentStyle, BOTTOM, bottom, parent);
-          this.__offsetY(-n);
-          computedStyle[BOTTOM] = n;
-          computedStyle[TOP] = 'auto';
-        }
-        else {
-          computedStyle[TOP] = computedStyle[BOTTOM] = 'auto';
-        }
-        if(left[1] !== AUTO) {
-          let n = calRelative(currentStyle, LEFT, left, parent, true);
-          this.__offsetX(n);
-          computedStyle[LEFT] = n;
-          computedStyle[RIGHT] = 'auto';
-        }
-        else if (right[1] !== AUTO) {
-          let n = calRelative(currentStyle, RIGHT, right, parent, true);
-          this.__offsetX(-n);
-          computedStyle[RIGHT] = n;
-          computedStyle[LEFT] = 'auto';
+        else if(bottom.u !== AUTO) {
+          let n = calRelative(__currentStyle, BOTTOM, bottom, parent);
+          this.__offsetY(-n, false, null);
+          __computedStyle[BOTTOM] = n;
+          __computedStyle[TOP] = 'auto';
         }
         else {
-          computedStyle[LEFT] = computedStyle[RIGHT] = 'auto';
+          __computedStyle[TOP] = __computedStyle[BOTTOM] = 'auto';
+        }
+        if(left.u !== AUTO) {
+          let n = calRelative(__currentStyle, LEFT, left, parent, true);
+          this.__offsetX(n, false, null);
+          __computedStyle[LEFT] = n;
+          __computedStyle[RIGHT] = 'auto';
+        }
+        else if (right.u !== AUTO) {
+          let n = calRelative(__currentStyle, RIGHT, right, parent, true);
+          this.__offsetX(-n, false, null);
+          __computedStyle[RIGHT] = n;
+          __computedStyle[LEFT] = 'auto';
+        }
+        else {
+          __computedStyle[LEFT] = __computedStyle[RIGHT] = 'auto';
         }
       }
       else if (position !== 'absolute') {
-        computedStyle[TOP] = computedStyle[BOTTOM] = computedStyle[LEFT] = computedStyle[RIGHT] = 'auto';
+        __computedStyle[TOP] = __computedStyle[BOTTOM] = __computedStyle[LEFT] = __computedStyle[RIGHT] = 'auto';
       }
       // 计算结果存入computedStyle和6个坐标，inline在其inlineSize特殊处理
-      let x = this.__sx = this.x + this.ox;
-      let y = this.__sy = this.y + this.oy;
-      if(!__config[NODE_IS_INLINE]) {
-        x = this.__sx1 = x + computedStyle[MARGIN_LEFT];
-        x = this.__sx2 = x + computedStyle[BORDER_LEFT_WIDTH];
-        x = this.__sx3 = x + computedStyle[PADDING_LEFT];
-        x = this.__sx4 = x + this.width;
-        x = this.__sx5 = x + computedStyle[PADDING_RIGHT];
-        this.__sx6 = x + computedStyle[BORDER_RIGHT_WIDTH];
-        y = this.__sy1 = y + computedStyle[MARGIN_TOP];
-        y = this.__sy2 = y + computedStyle[BORDER_TOP_WIDTH];
-        y = this.__sy3 = y + computedStyle[PADDING_TOP];
-        y = this.__sy4 = y + this.height;
-        y = this.__sy5 = y + computedStyle[PADDING_BOTTOM];
-        this.__sy6 = y + computedStyle[BORDER_BOTTOM_WIDTH];
+      let x = this.__sx = this.__x + this.__ox;
+      let y = this.__sy = this.__y + this.__oy;
+      if(!this.__isInline) {
+        x = this.__sx1 = x + __computedStyle[MARGIN_LEFT];
+        x = this.__sx2 = x + __computedStyle[BORDER_LEFT_WIDTH];
+        x = this.__sx3 = x + __computedStyle[PADDING_LEFT];
+        x = this.__sx4 = x + this.__width;
+        x = this.__sx5 = x + __computedStyle[PADDING_RIGHT];
+        this.__sx6 = x + __computedStyle[BORDER_RIGHT_WIDTH];
+        y = this.__sy1 = y + __computedStyle[MARGIN_TOP];
+        y = this.__sy2 = y + __computedStyle[BORDER_TOP_WIDTH];
+        y = this.__sy3 = y + __computedStyle[PADDING_TOP];
+        y = this.__sy4 = y + this.__height;
+        y = this.__sy5 = y + __computedStyle[PADDING_BOTTOM];
+        this.__sy6 = y + __computedStyle[BORDER_BOTTOM_WIDTH];
       }
-      computedStyle[WIDTH] = this.width;
-      computedStyle[HEIGHT] = this.height;
+      __computedStyle[WIDTH] = this.__width;
+      __computedStyle[HEIGHT] = this.__height;
       // abs为parse的根节点时特殊自己执行，前提是真布局
       if(position !== 'absolute') {
         this.__execAr();
@@ -739,6 +703,14 @@ class Xom extends Node {
       this.__hasComputeReflow = false;
     }
     return lineClampCount;
+  }
+
+  __layoutStyle() {
+    let currentStyle = this.__currentStyle;
+    let computedStyle = this.__computedStyle;
+    let cacheStyle = this.__cacheStyle;
+    this.__calStyle(level.REFLOW, currentStyle, computedStyle, cacheStyle);
+    this.__calPerspective(currentStyle, computedStyle, cacheStyle);
   }
 
   __execAr() {
@@ -766,30 +738,43 @@ class Xom extends Node {
   }
 
   __layoutNone() {
-    let { computedStyle } = this;
-    computedStyle[DISPLAY] = 'none';
-    computedStyle[MARGIN_TOP]
-      = computedStyle[MARGIN_RIGHT]
-      = computedStyle[MARGIN_BOTTOM]
-      = computedStyle[MARGIN_LEFT]
-      = computedStyle[BORDER_TOP_WIDTH]
-      = computedStyle[BORDER_RIGHT_WIDTH]
-      = computedStyle[BORDER_BOTTOM_WIDTH]
-      = computedStyle[BORDER_LEFT_WIDTH]
-      = computedStyle[PADDING_TOP]
-      = computedStyle[PADDING_RIGHT]
-      = computedStyle[PADDING_BOTTOM]
-      = computedStyle[PADDING_LEFT]
-      = computedStyle[WIDTH]
-      = computedStyle[HEIGHT]
+    this.__computeReflow();
+    let { __computedStyle } = this;
+    __computedStyle[DISPLAY] = 'none';
+    this.__reset0();
+    this.__hasComputeReflow = false;
+  }
+
+  __reset0() {
+    let { __computedStyle } = this;
+    __computedStyle[MARGIN_TOP]
+      = __computedStyle[MARGIN_RIGHT]
+      = __computedStyle[MARGIN_BOTTOM]
+      = __computedStyle[MARGIN_LEFT]
+      = __computedStyle[BORDER_TOP_WIDTH]
+      = __computedStyle[BORDER_RIGHT_WIDTH]
+      = __computedStyle[BORDER_BOTTOM_WIDTH]
+      = __computedStyle[BORDER_LEFT_WIDTH]
+      = __computedStyle[PADDING_TOP]
+      = __computedStyle[PADDING_RIGHT]
+      = __computedStyle[PADDING_BOTTOM]
+      = __computedStyle[PADDING_LEFT]
+      = __computedStyle[WIDTH]
+      = __computedStyle[HEIGHT]
       = this.__width
       = this.__height
+      = this.__clientWidth
+      = this.__clientHeight
+      = this.__offsetWidth
+      = this.__offsetHeight
+      = this.__outerWidth
+      = this.__outerHeight
       = 0;
   }
 
   // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
   __preLayout(data, isInline) {
-    let { x, y, w, h, w2, h2, w3, h3, lx, ly, lineBoxManager, endSpace = 0, isUpright: isParentVertical } = data;
+    let { x, y, w, h, w2, h2, w3, h3, lx, ly, lineBoxManager, endSpace = 0, isUpright: isParentVertical, container } = data;
     this.__x = x;
     this.__y = y;
     let { currentStyle, computedStyle } = this;
@@ -797,6 +782,7 @@ class Xom extends Node {
       [WIDTH]: width,
       [HEIGHT]: height,
     } = currentStyle;
+    let position = computedStyle[POSITION];
     let {
       [BORDER_TOP_WIDTH]: borderTopWidth,
       [BORDER_RIGHT_WIDTH]: borderRightWidth,
@@ -826,9 +812,15 @@ class Xom extends Node {
       fixedWidth = true;
       w = w3;
     }
-    else if(width[1] !== AUTO && !isInline) {
+    else if(width.u !== AUTO && !isInline) {
       fixedWidth = true;
-      w = this.__calSize(width, w, true);
+      // abs的百分比尺寸相对于container
+      if(position === 'absolute' && width.u === PERCENT) {
+        w = this.__calSize(width, container.__clientWidth, true);
+      }
+      else {
+        w = this.__calSize(width, w, true);
+      }
     }
     if(h2 !== undefined) {
       fixedHeight = true;
@@ -838,9 +830,24 @@ class Xom extends Node {
       fixedHeight = true;
       h = h3;
     }
-    else if(height[1] !== AUTO && !isInline) {
-      fixedHeight = true;
-      h = this.__calSize(height, h, true);
+    // height的百分比需要parent有值不能auto，abs的百分比相对于container
+    else if(height.u !== AUTO && !isInline) {
+      if(position === 'absolute' && height.u === PERCENT) {
+        h = this.__calSize(height, container.__clientHeight, true);
+      }
+      else {
+        let p = this.__domParent;
+        if(height.u === PERCENT) {
+          if(p.__currentStyle[HEIGHT].u !== AUTO) {
+            fixedHeight = true;
+            h = this.__calSize(height, p.height || 0, true);
+          }
+        }
+        else {
+          fixedHeight = true;
+          h = this.__calSize(height, h, true);
+        }
+      }
     }
     // margin/border/padding影响x和y和尺寸，注意inline的y不受mpb影响（垂直模式则是x）
     if(!isInline) {
@@ -870,10 +877,10 @@ class Xom extends Node {
     }
     // 传入w3/h3时，flex的item已知目标主尺寸，需减去mbp，其一定是block，和inline互斥
     if(!isInline) {
-      if(width[1] === AUTO || w3 !== undefined) {
+      if(width.u === AUTO || w3 !== undefined) {
         w -= borderLeftWidth + borderRightWidth + marginLeft + marginRight + paddingLeft + paddingRight;
       }
-      if(height[1] === AUTO || h3 !== undefined) {
+      if(height.u === AUTO || h3 !== undefined) {
         h -= borderTopWidth + borderBottomWidth + marginTop + marginBottom + paddingTop + paddingBottom;
       }
     }
@@ -908,94 +915,93 @@ class Xom extends Node {
     } = style;
     if(position !== 'absolute' && (display === 'block' || display === 'flex')) {
       if(isUpright) {
-        if((height[1] !== AUTO || this.isReplaced) && marginTop[1] === AUTO && marginBottom[1] === AUTO) {
+        if((height.u !== AUTO || this.isReplaced) && marginTop.u === AUTO && marginBottom.u === AUTO) {
           let oh = this.outerHeight;
           if(oh < data.h) {
-            this.__offsetY((data.h - oh) * 0.5, true);
+            this.__offsetY((data.h - oh) * 0.5, false, null);
           }
         }
       }
       else {
-        if((width[1] !== AUTO || this.isReplaced) && marginLeft[1] === AUTO && marginRight[1] === AUTO) {
+        if((width.u !== AUTO || this.isReplaced) && marginLeft.u === AUTO && marginRight.u === AUTO) {
           let ow = this.outerWidth;
           if(ow < data.w) {
-            this.__offsetX((data.w - ow) * 0.5, true);
+            this.__offsetX((data.w - ow) * 0.5, false, null);
           }
         }
       }
     }
   }
 
-  __calMatrix(lv, __cacheStyle, currentStyle, computedStyle, __config, sx1, sy1, offsetWidth, offsetHeight) {
-    if(__config[NODE_IS_INLINE]) {
-      computedStyle[TRANSFORM_ORIGIN] = [sx1, sy1];
-      return __cacheStyle[MATRIX] = mx.identity();
+  __calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle) {
+    let {
+      __sx1,
+      __sy1,
+      __offsetWidth,
+      __offsetHeight,
+    } = this;
+    if(this.__isInline) {
+      __computedStyle[TRANSFORM_ORIGIN] = [__sx1, __sy1];
+      return __cacheStyle[MATRIX] = this.__matrix = mx.identity();
     }
     let matrixCache = __cacheStyle[MATRIX];
-    // tx/ty变化特殊优化
+    // tx/ty/tz变化特殊优化
     if(matrixCache && lv < REFLOW && !contain(lv, TF)) {
       let x = 0, y = 0, z = 0;
       if(contain(lv, TX)) {
-        let v = currentStyle[TRANSLATE_X];
+        let v = __currentStyle[TRANSLATE_X];
         if(isNil(v)) {
           v = 0;
         }
-        // 不访问this.offsetWidth性能提升，暂时性
-        else if(v[1] === PX) {
-          v = v[0];
+        else if(v.u === PX) {
+          v = v.v;
         }
         else {
-          v = this.__calSize(v, this.offsetWidth, true);
+          v = this.__calSize(v, this.__offsetWidth, true);
         }
-        x = v - (computedStyle[TRANSLATE_X] || 0);
-        computedStyle[TRANSLATE_X] = v;
-        computedStyle[TRANSFORM][12] += x;
+        x = v - (__computedStyle[TRANSLATE_X] || 0);
+        __computedStyle[TRANSLATE_X] = v;
+        __computedStyle[TRANSFORM][12] += x;
         matrixCache[12] += x;
       }
       if(contain(lv, TY)) {
-        let v = currentStyle[TRANSLATE_Y];
+        let v = __currentStyle[TRANSLATE_Y];
         if(isNil(v)) {
           v = 0;
         }
-        else if(v[1] === PX) {
-          v = v[0];
+        else if(v.u === PX) {
+          v = v.v;
         }
         else {
-          v = this.__calSize(v, this.offsetHeight, true);
+          v = this.__calSize(v, this.__offsetHeight, true);
         }
-        y = v - (computedStyle[TRANSLATE_Y] || 0);
-        computedStyle[TRANSLATE_Y] = v;
-        computedStyle[TRANSFORM][13] += y;
+        y = v - (__computedStyle[TRANSLATE_Y] || 0);
+        __computedStyle[TRANSLATE_Y] = v;
+        __computedStyle[TRANSFORM][13] += y;
         matrixCache[13] += y;
       }
       if(contain(lv, TZ)) {
-        let v = currentStyle[TRANSLATE_Z];
+        let v = __currentStyle[TRANSLATE_Z];
         if(isNil(v)) {
           v = 0;
         }
         else {
-          v = this.__calSize(v, this.offsetWidth, true);
+          v = this.__calSize(v, this.__offsetWidth, true);
         }
-        z = v - (computedStyle[TRANSLATE_Z] || 0);
-        computedStyle[TRANSLATE_Z] = v;
-        computedStyle[TRANSFORM][14] += z;
+        z = v - (__computedStyle[TRANSLATE_Z] || 0);
+        __computedStyle[TRANSLATE_Z] = v;
+        __computedStyle[TRANSFORM][14] += z;
         matrixCache[14] += z;
       }
       __cacheStyle[MATRIX] = matrixCache;
     }
     // 先根据cache计算需要重新计算的computedStyle
     else {
-      if(sx1 === undefined) {
-        sx1 = this.__sx1;
-        sy1 = this.__sy1;
-        offsetWidth = this.offsetWidth;
-        offsetHeight = this.offsetHeight;
-      }
       if(__cacheStyle[TRANSFORM_ORIGIN] === undefined) {
         __cacheStyle[TRANSFORM_ORIGIN] = true;
         matrixCache = null;
-        computedStyle[TRANSFORM_ORIGIN] = currentStyle[TRANSFORM_ORIGIN].map((item, i) => {
-          return this.__calSize(item, i ? offsetHeight : offsetWidth, true);
+        __computedStyle[TRANSFORM_ORIGIN] = __currentStyle[TRANSFORM_ORIGIN].map((item, i) => {
+          return this.__calSize(item, i ? __offsetHeight : __offsetWidth, true);
         });
       }
       if(__cacheStyle[TRANSFORM] === undefined
@@ -1027,8 +1033,8 @@ class Xom extends Node {
         matrixCache = null;
         let matrix;
         // transform相对于自身
-        if(currentStyle[TRANSFORM]) {
-          matrix = tf.calMatrix(currentStyle[TRANSFORM], offsetWidth, offsetHeight, this.root);
+        if(__currentStyle[TRANSFORM] && __currentStyle[TRANSFORM].length) {
+          matrix = tf.calMatrix(__currentStyle[TRANSFORM], __offsetWidth, __offsetHeight, this.__root);
         }
         // 没有transform则看是否有扩展的css独立变换属性
         else {
@@ -1048,107 +1054,88 @@ class Xom extends Node {
             SCALE_Z,
           ].forEach(k => {
             // 删除之前遗留的
-            delete computedStyle[k];
-            let v = currentStyle[k];
+            delete __computedStyle[k];
+            let v = __currentStyle[k];
             if(isNil(v)) {
               return;
             }
             if(k === ROTATE_3D) {
-              computedStyle[k] = [v[0], v[1], v[2], v[3][0]];
-              if(v[3][0] === 0) {
+              __computedStyle[k] = [v[0], v[1], v[2], v[3].v];
+              if(v[3].v === 0) {
                 return;
               }
-              temp.push([k, v]);
+              temp.push({k, v});
               return;
             }
-            computedStyle[k] = v[0];
+            __computedStyle[k] = v.v;
             if(k === ROTATE_X || k === ROTATE_Y || k === ROTATE_Z) {
-              temp.push([k, v]);
+              if(v.v !== 0) {
+                temp.push({k, v});
+              }
               return;
             }
             // scale为1和其它为0避免计算浪费
             let isScale = k === SCALE_X || k === SCALE_Y || k === SCALE_Z;
-            if(v[0] === 1 && isScale || !isScale && v[0] === 0) {
+            if(v.v === 1 && isScale || !isScale && v.v === 0) {
               return;
             }
-            let p = k === TRANSLATE_X || k === TRANSLATE_Z ? offsetWidth : offsetHeight;
-            computedStyle[k] = this.__calSize(v, p, true);
-            temp.push([k, v]);
+            let p = k === TRANSLATE_X || k === TRANSLATE_Z ? __offsetWidth : __offsetHeight;
+            __computedStyle[k] = this.__calSize(v, p, true);
+            temp.push({k, v});
           });
           if(temp.length) {
-            matrix = tf.calMatrix(temp, offsetWidth, offsetHeight, this.root);
+            matrix = tf.calMatrix(temp, __offsetWidth, __offsetHeight, this.__root);
           }
         }
-        computedStyle[TRANSFORM] = matrix || mx.identity();
+        __computedStyle[TRANSFORM] = matrix || mx.identity();
       }
       if(!matrixCache) {
-        let m = computedStyle[TRANSFORM];
-        let tfo = computedStyle[TRANSFORM_ORIGIN].slice(0);
-        tfo[0] += sx1 || 0;
-        tfo[1] += sy1 || 0;
+        let m = __computedStyle[TRANSFORM];
+        let tfo = __computedStyle[TRANSFORM_ORIGIN].slice(0);
+        tfo[0] += __sx1 || 0;
+        tfo[1] += __sy1 || 0;
         matrixCache = __cacheStyle[MATRIX] = tf.calMatrixByOrigin(m, tfo);
       }
     }
-    return matrixCache;
+    return this.__matrix = matrixCache;
   }
 
   /**
-   * 将currentStyle计算为computedStyle，同时存入cacheStyle可缓存的结果防止无变更重复计算
-   * @param renderMode
-   * @param ctx
-   * @param parent
-   * @param __cacheStyle
-   * @param currentStyle
-   * @param computedStyle
-   * @param clientWidth
-   * @param clientHeight
-   * @param offsetWidth
-   * @param offsetHeight
-   * @param borderTopWidth
-   * @param borderRightWidth
-   * @param borderBottomWidth
-   * @param borderLeftWidth
-   * @param paddingTop
-   * @param paddingRight
-   * @param paddingBottom
-   * @param paddingLeft
-   * @param x1
-   * @param x2
-   * @param x3
-   * @param x4
-   * @param x5
-   * @param x6
-   * @param y1
-   * @param y2
-   * @param y3
-   * @param y4
-   * @param y5
-   * @param y6
-   * @returns {*[]}
-   * @private
+   * 将currentStyle计算为computedStyle，同时存入cacheStyle可缓存的结果防止无变更重复计算，返回背景渲染范围
    */
-  __calCache(renderMode, ctx, parent, __cacheStyle, currentStyle, computedStyle,
-             clientWidth, clientHeight, offsetWidth, offsetHeight,
-             borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
-             paddingTop, paddingRight, paddingBottom, paddingLeft,
-             x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6) {
-    let bx1 = x1, by1 = y1, bx2 = x6, by2 = y6;
-    let backgroundClip = computedStyle[BACKGROUND_CLIP] = currentStyle[BACKGROUND_CLIP];
+  __calStyle(lv, __currentStyle, __computedStyle, __cacheStyle) {
+    let {
+      __sx1,
+      __sx2,
+      __sx3,
+      __sx4,
+      __sx5,
+      __sx6,
+      __sy1,
+      __sy2,
+      __sy3,
+      __sy4,
+      __sy5,
+      __sy6,
+    } = this;
+    this.__bbox = null;
+    let bx1 = __sx1, by1 = __sy1, bx2 = __sx6, by2 = __sy6;
+    let backgroundClip = __computedStyle[BACKGROUND_CLIP] = __currentStyle[BACKGROUND_CLIP];
     // 默认border-box
     if(backgroundClip === 'paddingBox') {
-      bx1 = x2;
-      by1 = y2;
-      bx2 = x5;
-      by2 = y5;
+      bx1 = __sx2;
+      by1 = __sy2;
+      bx2 = __sx5;
+      by2 = __sy5;
     }
     else if(backgroundClip === 'contentBox') {
-      bx1 = x3;
-      by1 = y3;
-      bx2 = x4;
-      by2 = y4;
+      bx1 = __sx3;
+      by1 = __sy3;
+      bx2 = __sx4;
+      by2 = __sy4;
     }
-    let isInline = this.__config[NODE_IS_INLINE];
-    if(isInline && !this.contentBoxList.length) {
+    let isInline = this.__isInline;
+    if(isInline && !this.__contentBoxList.length) {
       isInline = false;
     }
     // 这些直接赋值的不需要再算缓存
@@ -1165,20 +1152,23 @@ class Xom extends Node {
       TEXT_OVERFLOW,
       BACKGROUND_CLIP,
     ].forEach(k => {
-      computedStyle[k] = currentStyle[k];
+      __computedStyle[k] = __currentStyle[k];
     });
     if(isNil(__cacheStyle[FILTER])) {
-      __cacheStyle[FILTER] = true;
-      this.__calFilter(currentStyle, computedStyle);
+      this.__calFilter(__currentStyle, __computedStyle, __cacheStyle);
+    }
+    // 特殊的判断，MATRIX不存在于样式key中，所有的transform共用一个
+    if(isNil(__cacheStyle[MATRIX]) || contain(lv, TRANSFORM_ALL)) {
+      this.__calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle);
     }
     if(isNil(__cacheStyle[BACKGROUND_POSITION_X])) {
       __cacheStyle[BACKGROUND_POSITION_X] = true;
       let {
         [BACKGROUND_POSITION_X]: bgX,
-      } = currentStyle;
-      computedStyle[BACKGROUND_POSITION_X] = (bgX || []).map(item => {
-        if(item[1] === PERCENT) {
-          return item[0] + '%';
+      } = __currentStyle;
+      __computedStyle[BACKGROUND_POSITION_X] = (bgX || []).map(item => {
+        if(item.u === PERCENT) {
+          return item.v + '%';
         }
         return this.__calSize(item, bx2 - bx1, true);
       });
@@ -1187,25 +1177,25 @@ class Xom extends Node {
       __cacheStyle[BACKGROUND_POSITION_Y] = true;
       let {
         [BACKGROUND_POSITION_Y]: bgY,
-      } = currentStyle;
-      computedStyle[BACKGROUND_POSITION_Y] = (bgY || []).map(item => {
-        if(item[1] === PERCENT) {
-          return item[0] + '%';
+      } = __currentStyle;
+      __computedStyle[BACKGROUND_POSITION_Y] = (bgY || []).map(item => {
+        if(item.u === PERCENT) {
+          return item.v + '%';
         }
         return this.__calSize(item, by2 - by1, true);
       });
     }
     if(isNil(__cacheStyle[BACKGROUND_SIZE])) {
       __cacheStyle[BACKGROUND_SIZE] = true;
-      computedStyle[BACKGROUND_SIZE] = (currentStyle[BACKGROUND_SIZE] || []).map(item => {
+      __computedStyle[BACKGROUND_SIZE] = (__currentStyle[BACKGROUND_SIZE] || []).map(item => {
         if(Array.isArray(item)) {
           // 每项是x/y2个
           return item.map((item2, i) => {
-            if(item2[1] === AUTO) {
+            if(item2.u === AUTO) {
               return -1;
             }
-            else if(item2[1] === STRING) {
-              return item2[0] === 'contain' ? -2 : -3;
+            else if(item2.u === STRING) {
+              return item2.v === 'contain' ? -2 : -3;
             }
             return this.__calSize(item2, i ? (by2 - by1) : (bx2 - bx1), true);
           });
@@ -1213,10 +1203,10 @@ class Xom extends Node {
       });
     }
     if(isNil(__cacheStyle[BACKGROUND_IMAGE])) {
-      let bgI = currentStyle[BACKGROUND_IMAGE];
-      computedStyle[BACKGROUND_IMAGE] = bgI.map(item => {
+      let bgI = __currentStyle[BACKGROUND_IMAGE];
+      __computedStyle[BACKGROUND_IMAGE] = bgI.map(item => {
         if(item) {
-          return item[0];
+          return item.v;
         }
         return null;
       });
@@ -1225,37 +1215,31 @@ class Xom extends Node {
           return null;
         }
         // 防止隐藏不加载背景图
-        if(bgi[1] === STRING) {
+        if(bgi.u === STRING) {
           let loadBgi = this.__loadBgi[i] = this.__loadBgi[i] || {};
-          let cache = inject.IMG[bgi[0]];
+          let cache = inject.IMG[bgi.v];
           if(cache && cache.state === inject.LOADED) {
-            loadBgi.url = bgi[0];
+            loadBgi.url = bgi.v;
             loadBgi.source = cache.source;
             loadBgi.width = cache.width;
             loadBgi.height = cache.height;
           }
-          else if(loadBgi.url !== bgi[0]) {
+          else if(loadBgi.url !== bgi.v) {
             // 可能改变导致多次加载，每次清空，成功后还要比对url是否相同
-            loadBgi.url = bgi[0];
+            loadBgi.url = bgi.v;
             loadBgi.source = null;
             let node = this;
-            let root = node.root;
-            inject.measureImg(bgi[0], data => {
+            let root = this.__root;
+            let ctx = this.ctx;
+            inject.measureImg(bgi.v, data => {
               // 还需判断url，防止重复加载时老的替换新的，失败不绘制bgi
               if(data.success && data.url === loadBgi.url && !this.isDestroyed) {
                 loadBgi.source = data.source;
                 loadBgi.width = data.width;
                 loadBgi.height = data.height;
-                root.delRefreshTask(loadBgi.cb);
-                root.addRefreshTask(loadBgi.cb = {
-                  __before() {
-                    __cacheStyle[BACKGROUND_IMAGE] = undefined;
-                    let res = {};
-                    res[UPDATE_NODE] = node;
-                    res[UPDATE_FOCUS] = REPAINT;
-                    res[UPDATE_CONFIG] = node.__config;
-                    root.__addUpdate(node, node.__config, root, root.__config, res);
-                  },
+                __cacheStyle[BACKGROUND_IMAGE] = undefined;
+                root.__addUpdate(node, {
+                  focus: REPAINT,
                 });
               }
             }, {
@@ -1267,7 +1251,7 @@ class Xom extends Node {
           }
           return true;
         }
-        else if(!isInline && bgi[0] && bgi[1] === GRADIENT) {
+        else if(!isInline && bgi.v && bgi.u === GRADIENT) {
           // gradient在渲染时才生成
           return true;
         }
@@ -1275,7 +1259,7 @@ class Xom extends Node {
     }
     if(isNil(__cacheStyle[BOX_SHADOW])) {
       __cacheStyle[BOX_SHADOW] = true;
-      computedStyle[BOX_SHADOW] = (currentStyle[BOX_SHADOW] || []).map(item => {
+      __computedStyle[BOX_SHADOW] = (__currentStyle[BOX_SHADOW] || []).map(item => {
         return item.map((item2, i) => {
           if(i > 3) {
             return item2;
@@ -1292,7 +1276,7 @@ class Xom extends Node {
       BORDER_LEFT_COLOR,
     ].forEach(k => {
       if(isNil(__cacheStyle[k])) {
-        __cacheStyle[k] = int2rgba(computedStyle[k] = currentStyle[k][0]);
+        __cacheStyle[k] = int2rgba(__computedStyle[k] = __currentStyle[k].v);
       }
     });
     // 圆角边计算
@@ -1307,18 +1291,22 @@ class Xom extends Node {
         = true;
       // 非替代的inline计算看contentBox首尾
       if(isInline) {
-        border.calBorderRadiusInline(this.contentBoxList, currentStyle, computedStyle, this.root);
+        border.calBorderRadiusInline(this.__contentBoxList, __currentStyle, __computedStyle, this.__root);
       }
       // 普通block整体计算
       else {
-        border.calBorderRadius(offsetWidth, offsetHeight, currentStyle, computedStyle, this.root);
+        border.calBorderRadius(this.__offsetWidth, this.__offsetHeight, __currentStyle, __computedStyle, this.__root);
       }
     }
     // width/style/radius影响border，color不影响渲染缓存
-    let btlr = computedStyle[BORDER_TOP_LEFT_RADIUS];
-    let btrr = computedStyle[BORDER_TOP_RIGHT_RADIUS];
-    let bbrr = computedStyle[BORDER_BOTTOM_RIGHT_RADIUS];
-    let bblr = computedStyle[BORDER_BOTTOM_LEFT_RADIUS];
+    let btlr = __computedStyle[BORDER_TOP_LEFT_RADIUS];
+    let btrr = __computedStyle[BORDER_TOP_RIGHT_RADIUS];
+    let bbrr = __computedStyle[BORDER_BOTTOM_RIGHT_RADIUS];
+    let bblr = __computedStyle[BORDER_BOTTOM_LEFT_RADIUS];
+    let borderTopWidth = __computedStyle[BORDER_TOP_WIDTH];
+    let borderRightWidth = __computedStyle[BORDER_RIGHT_WIDTH];
+    let borderBottomWidth = __computedStyle[BORDER_BOTTOM_WIDTH];
+    let borderLeftWidth = __computedStyle[BORDER_LEFT_WIDTH];
     ['Top', 'Right', 'Bottom', 'Left'].forEach(k => {
       k = 'border' + k;
       let k2 = STYLE_KEY[style2Upper(k)];
@@ -1339,8 +1327,8 @@ class Xom extends Node {
             if(!isInline) {
               let deg1 = Math.atan(borderTopWidth / borderLeftWidth);
               let deg2 = Math.atan(borderTopWidth / borderRightWidth);
-              __cacheStyle[k2] = border.calPoints(borderTopWidth, computedStyle[ks], deg1, deg2,
-                x1, x2, x5, x6, y1, y2, y5, y6, 0, btlr, btrr);
+              __cacheStyle[k2] = border.calPoints(borderTopWidth, __computedStyle[ks], deg1, deg2,
+                __sx1, __sx2, __sx5, __sx6, __sy1, __sy2, __sy5, __sy6, 0, btlr, btrr);
             }
           }
           else {
@@ -1352,8 +1340,8 @@ class Xom extends Node {
             if(!isInline) {
               let deg1 = Math.atan(borderRightWidth / borderTopWidth);
               let deg2 = Math.atan(borderRightWidth / borderBottomWidth);
-              __cacheStyle[k2] = border.calPoints(borderRightWidth, computedStyle[ks], deg1, deg2,
-                x1, x2, x5, x6, y1, y2, y5, y6, 1, btrr, bbrr);
+              __cacheStyle[k2] = border.calPoints(borderRightWidth, __computedStyle[ks], deg1, deg2,
+                __sx1, __sx2, __sx5, __sx6, __sy1, __sy2, __sy5, __sy6, 1, btrr, bbrr);
             }
           }
           else {
@@ -1365,8 +1353,8 @@ class Xom extends Node {
             if(!isInline) {
               let deg1 = Math.atan(borderBottomWidth / borderLeftWidth);
               let deg2 = Math.atan(borderBottomWidth / borderRightWidth);
-              __cacheStyle[k2] = border.calPoints(borderBottomWidth, computedStyle[ks], deg1, deg2,
-                x1, x2, x5, x6, y1, y2, y5, y6, 2, bblr, bbrr);
+              __cacheStyle[k2] = border.calPoints(borderBottomWidth, __computedStyle[ks], deg1, deg2,
+                __sx1, __sx2, __sx5, __sx6, __sy1, __sy2, __sy5, __sy6, 2, bblr, bbrr);
             }
           }
           else {
@@ -1378,8 +1366,8 @@ class Xom extends Node {
             if(!isInline) {
               let deg1 = Math.atan(borderLeftWidth / borderTopWidth);
               let deg2 = Math.atan(borderLeftWidth / borderBottomWidth);
-              __cacheStyle[k2] = border.calPoints(borderLeftWidth, computedStyle[ks], deg1, deg2,
-                x1, x2, x5, x6, y1, y2, y5, y6, 3, btlr, bblr);
+              __cacheStyle[k2] = border.calPoints(borderLeftWidth, __computedStyle[ks], deg1, deg2,
+                __sx1, __sx2, __sx5, __sx6, __sy1, __sy2, __sy5, __sy6, 3, btlr, bblr);
             }
           }
           else {
@@ -1389,97 +1377,98 @@ class Xom extends Node {
       }
     });
     // 强制计算继承性的
-    let parentComputedStyle = parent && parent.computedStyle;
-    if(currentStyle[FONT_STYLE][1] === INHERIT) {
-      computedStyle[FONT_STYLE] = parent ? parentComputedStyle[FONT_STYLE] : 'normal';
+    let parent = this.__domParent;
+    let parentComputedStyle = parent && parent.__computedStyle;
+    if(__currentStyle[FONT_STYLE].u === INHERIT) {
+      __computedStyle[FONT_STYLE] = parent ? parentComputedStyle[FONT_STYLE] : 'normal';
     }
     else if(isNil(__cacheStyle[FONT_STYLE])) {
-      computedStyle[FONT_STYLE] = currentStyle[FONT_STYLE][0];
+      __computedStyle[FONT_STYLE] = __currentStyle[FONT_STYLE].v;
     }
-    __cacheStyle[FONT_STYLE] = computedStyle[FONT_STYLE];
-    let color = currentStyle[COLOR];
-    if(color[1] === INHERIT) {
-      let v = computedStyle[COLOR] = parent ? parentComputedStyle[COLOR] : rgba2int(reset.INHERIT.color);
+    __cacheStyle[FONT_STYLE] = __computedStyle[FONT_STYLE];
+    let color = __currentStyle[COLOR];
+    if(color.u === INHERIT) {
+      let v = __computedStyle[COLOR] = parent ? parentComputedStyle[COLOR] : rgba2int(reset.INHERIT.color);
       if(v.k) {
         __cacheStyle[COLOR] = v;
       }
       else {
-        __cacheStyle[COLOR] = int2rgba(computedStyle[COLOR]);
+        __cacheStyle[COLOR] = int2rgba(__computedStyle[COLOR]);
       }
     }
     else if(isNil(__cacheStyle[COLOR])) {
-      if(color[1] === GRADIENT) {
-        __cacheStyle[COLOR] = computedStyle[COLOR] = color[0];
+      if(color.u === GRADIENT) {
+        __cacheStyle[COLOR] = __computedStyle[COLOR] = color.v;
       }
-      else if(color[1] === RGBA) {
-        __cacheStyle[COLOR] = int2rgba(computedStyle[COLOR] = rgba2int(color[0]));
+      else {
+        __cacheStyle[COLOR] = int2rgba(__computedStyle[COLOR] = rgba2int(color.v));
       }
     }
-    let textStrokeColor = currentStyle[TEXT_STROKE_COLOR];
-    if(textStrokeColor[1] === INHERIT) {
-      let v = computedStyle[TEXT_STROKE_COLOR] = parent ? parentComputedStyle[TEXT_STROKE_COLOR] : rgba2int(reset.INHERIT.textStrokeColor);
+    let textStrokeColor = __currentStyle[TEXT_STROKE_COLOR];
+    if(textStrokeColor.u === INHERIT) {
+      let v = __computedStyle[TEXT_STROKE_COLOR] = parent ? parentComputedStyle[TEXT_STROKE_COLOR] : rgba2int(reset.INHERIT.textStrokeColor);
       if(v.k) {
         __cacheStyle[TEXT_STROKE_COLOR] = v;
       }
       else {
-        __cacheStyle[TEXT_STROKE_COLOR] = int2rgba(computedStyle[TEXT_STROKE_COLOR]);
+        __cacheStyle[TEXT_STROKE_COLOR] = int2rgba(__computedStyle[TEXT_STROKE_COLOR]);
       }
     }
     else if(isNil(__cacheStyle[TEXT_STROKE_COLOR])) {
-      if(textStrokeColor[1] === GRADIENT) {
-        __cacheStyle[TEXT_STROKE_COLOR] = computedStyle[TEXT_STROKE_COLOR] = textStrokeColor[0];
+      if(textStrokeColor.u === GRADIENT) {
+        __cacheStyle[TEXT_STROKE_COLOR] = __computedStyle[TEXT_STROKE_COLOR] = textStrokeColor.v;
       }
-      else if(textStrokeColor[1] === RGBA) {
-        __cacheStyle[TEXT_STROKE_COLOR] = int2rgba(computedStyle[TEXT_STROKE_COLOR] = rgba2int(textStrokeColor[0]));
+      else if(textStrokeColor.u === RGBA) {
+        __cacheStyle[TEXT_STROKE_COLOR] = int2rgba(__computedStyle[TEXT_STROKE_COLOR] = rgba2int(textStrokeColor.v));
       }
     }
-    if(currentStyle[TEXT_STROKE_WIDTH][1] === INHERIT) {
-      computedStyle[TEXT_STROKE_WIDTH] = parent ? parentComputedStyle[TEXT_STROKE_WIDTH] : reset.INHERIT.textStrokeWidth;
+    if(__currentStyle[TEXT_STROKE_WIDTH].u === INHERIT) {
+      __computedStyle[TEXT_STROKE_WIDTH] = parent ? parentComputedStyle[TEXT_STROKE_WIDTH] : reset.INHERIT.textStrokeWidth;
       __cacheStyle[TEXT_STROKE_WIDTH] = true;
     }
     else if(isNil(__cacheStyle[TEXT_STROKE_WIDTH])) {
-      let v = currentStyle[TEXT_STROKE_WIDTH];
-      if(v[1] === REM) {
-        v = v[0] * this.root.computedStyle[FONT_SIZE];
+      let v = __currentStyle[TEXT_STROKE_WIDTH];
+      if(v.u === REM) {
+        v = v.v * this.__root.__computedStyle[FONT_SIZE];
       }
-      else if(v[1] === VW) {
-        v = v[0] * this.root.width * 0.01;
+      else if(v.u === VW) {
+        v = v.v * this.__root.width * 0.01;
       }
-      else if(v[1] === VH) {
-        v = v[0] * this.root.height * 0.01;
+      else if(v.u === VH) {
+        v = v.v * this.__root.height * 0.01;
       }
-      else if(v[1] === VMAX) {
-        v = v[0] * Math.max(this.root.width, this.root.height) * 0.01;
+      else if(v.u === VMAX) {
+        v = v.v * Math.max(this.__root.width, this.__root.height) * 0.01;
       }
-      else if(v[1] === VMIN) {
-        v = v[0] * Math.min(this.root.width, this.root.height) * 0.01;
+      else if(v.u === VMIN) {
+        v = v.v * Math.min(this.__root.width, this.__root.height) * 0.01;
       }
       else {
-        v = v[0];
+        v = v.v;
       }
-      computedStyle[TEXT_STROKE_WIDTH] = v;
+      __computedStyle[TEXT_STROKE_WIDTH] = v;
       __cacheStyle[TEXT_STROKE_WIDTH] = true;
     }
-    if(currentStyle[TEXT_STROKE_OVER][1] === INHERIT) {
-      __cacheStyle[TEXT_STROKE_OVER] = computedStyle[TEXT_STROKE_OVER] = parent ? parentComputedStyle[TEXT_STROKE_OVER] : reset.INHERIT.textStrokeOver;
+    if(__currentStyle[TEXT_STROKE_OVER].u === INHERIT) {
+      __cacheStyle[TEXT_STROKE_OVER] = __computedStyle[TEXT_STROKE_OVER] = parent ? parentComputedStyle[TEXT_STROKE_OVER] : reset.INHERIT.textStrokeOver;
     }
     else {
-      __cacheStyle[TEXT_STROKE_OVER] = computedStyle[TEXT_STROKE_OVER] = currentStyle[TEXT_STROKE_OVER][0];
+      __cacheStyle[TEXT_STROKE_OVER] = __computedStyle[TEXT_STROKE_OVER] = __currentStyle[TEXT_STROKE_OVER].v;
     }
-    if(currentStyle[VISIBILITY][1] === INHERIT) {
-      computedStyle[VISIBILITY] = parent ? parentComputedStyle[VISIBILITY] : 'visible';
+    if(__currentStyle[VISIBILITY].u === INHERIT) {
+      __computedStyle[VISIBILITY] = parent ? parentComputedStyle[VISIBILITY] : 'visible';
     }
     else if(isNil(__cacheStyle[VISIBILITY])) {
-      computedStyle[VISIBILITY] = currentStyle[VISIBILITY][0];
+      __computedStyle[VISIBILITY] = __currentStyle[VISIBILITY].v;
     }
-    __cacheStyle[VISIBILITY] = computedStyle[VISIBILITY];
-    if(currentStyle[POINTER_EVENTS][1] === INHERIT) {
-      computedStyle[POINTER_EVENTS] = parent ? parentComputedStyle[POINTER_EVENTS] : 'auto';
+    __cacheStyle[VISIBILITY] = __computedStyle[VISIBILITY];
+    if(__currentStyle[POINTER_EVENTS].u === INHERIT) {
+      __computedStyle[POINTER_EVENTS] = parent ? parentComputedStyle[POINTER_EVENTS] : 'auto';
     }
     else if(isNil(__cacheStyle[POINTER_EVENTS])) {
-      computedStyle[POINTER_EVENTS] = currentStyle[POINTER_EVENTS][0];
+      __computedStyle[POINTER_EVENTS] = __currentStyle[POINTER_EVENTS].v;
     }
-    __cacheStyle[POINTER_EVENTS] = computedStyle[POINTER_EVENTS];
+    __cacheStyle[POINTER_EVENTS] = __computedStyle[POINTER_EVENTS];
     this.__bx1 = bx1;
     this.__bx2 = bx2;
     this.__by1 = by1;
@@ -1487,37 +1476,39 @@ class Xom extends Node {
     return [bx1, by1, bx2, by2];
   }
 
-  __calPerspective(__cacheStyle, currentStyle, computedStyle, __config, sx1, sy1) {
+  __calPerspective(__currentStyle, __computedStyle, __cacheStyle) {
+    this.__perspectiveMatrix = [];
     let rebuild;
+    let { __sx1, __sy1 } = this;
     if(isNil(__cacheStyle[PERSPECTIVE])) {
       __cacheStyle[PERSPECTIVE] = true;
       rebuild = true;
-      let v = currentStyle[PERSPECTIVE];
-      let ppt = this.__calSize(v, this.clientWidth, true);
-      computedStyle[PERSPECTIVE] = ppt;
+      let v = __currentStyle[PERSPECTIVE];
+      __computedStyle[PERSPECTIVE] = this.__calSize(v, this.clientWidth, true);
     }
     if(isNil(__cacheStyle[PERSPECTIVE_ORIGIN])) {
       __cacheStyle[PERSPECTIVE_ORIGIN] = true;
       rebuild = true;
-      computedStyle[PERSPECTIVE_ORIGIN] = currentStyle[PERSPECTIVE_ORIGIN].map((item, i) => {
-        return this.__calSize(item, i ? this.offsetHeight : this.offsetWidth, true);
+      __computedStyle[PERSPECTIVE_ORIGIN] = __currentStyle[PERSPECTIVE_ORIGIN].map((item, i) => {
+        return this.__calSize(item, i ? this.__offsetHeight : this.__offsetWidth, true);
       });
     }
-    if(rebuild) {
-      if(sx1 === undefined) {
-        sx1 = this.__sx1;
-        sy1 = this.__sy1;
-      }
-      let po = computedStyle[PERSPECTIVE_ORIGIN].slice(0);
-      po[0] += sx1 || 0;
-      po[1] += sy1 || 0;
-      __config[NODE_PERSPECTIVE_MATRIX] = tf.calPerspectiveMatrix(computedStyle[PERSPECTIVE], po);
+    let ppt = __computedStyle[PERSPECTIVE];
+    // perspective为0无效
+    if(rebuild && ppt) {
+      let po = __computedStyle[PERSPECTIVE_ORIGIN].slice(0);
+      po[0] += __sx1 || 0;
+      po[1] += __sy1 || 0;
+      this.__perspectiveMatrix = tf.calPerspectiveMatrix(ppt, po);
     }
+    return this.__perspectiveMatrix;
   }
 
-  __calFilter(currentStyle, computedStyle) {
-    return computedStyle[FILTER] = (currentStyle[FILTER] || []).map(item => {
-      let [k, v] = item;
+  __calFilter(__currentStyle, __computedStyle, __cacheStyle) {
+    __cacheStyle[FILTER] = true;
+    this.__filterBbox = null;
+    return __computedStyle[FILTER] = (__currentStyle[FILTER] || []).map(item => {
+      let { k, v } = item;
       if(k === 'dropShadow') {
         let v2 = v.map((item2, i) => {
           if(i > 3) {
@@ -1525,139 +1516,210 @@ class Xom extends Node {
           }
           return this.__calSize(item2, i === 0 ? (this.__bx2 - this.__bx1) : (this.__by2 - this.__by1), true);
         });
-        return [k, v2];
+        return { k, v: v2 };
       }
       else {
         // 部分%单位的滤镜强制使用数字
-        if(v[1] === DEG || v[1] === PERCENT || v[1] === NUMBER) {
-          v = v[0];
+        if(v.u === DEG || v.u === NUMBER || v.u === PERCENT) {
+          v = v.v;
         }
         else {
-          v = this.__calSize(v, this.root.width, false);
+          v = this.__calSize(v, this.root.width, true);
         }
-        return [k, v];
+        return { k, v };
       }
     });
   }
 
-  __calContent(renderMode, lv, currentStyle, computedStyle) {
-    if(renderMode === CANVAS || renderMode === WEBGL) {
-      if(lv < REPAINT) {
-        return this.__hasContent;
+  __calOffscreen(ctx, __computedStyle) {
+    let offscreenBlend, offscreenMask, offscreenFilter, offscreenOverflow, root = this.__root;
+    let { width, height } = root;
+    let origin = ctx;
+    let {
+      [MIX_BLEND_MODE]: mixBlendMode,
+      [FILTER]: filter,
+      [OVERFLOW]: overflow,
+      [DISPLAY]: display,
+    } = __computedStyle;
+    if(mixBlendMode !== 'normal' && isValidMbm(mixBlendMode)) {
+      mixBlendMode = mbmName(mixBlendMode);
+      let c = inject.getCacheCanvas(width, height, null, 'blend');
+      offscreenBlend = {
+        ctx,
+        target: c,
+        mixBlendMode,
+      };
+      ctx = c.ctx;
+    }
+    if(this.__hasMask) {
+      let c = inject.getCacheCanvas(width, height, null, 'mask1');
+      offscreenMask = {
+        ctx,
+        target: c,
+      };
+      ctx = c.ctx;
+    }
+    if(filter && filter.length) {
+      let c = inject.getCacheCanvas(width, height, null, 'filter');
+      offscreenFilter = {
+        ctx,
+        filter,
+        target: c,
+      };
+      ctx = c.ctx;
+    }
+    if(overflow === 'hidden' && display !== 'inline') {
+      let c = inject.getCacheCanvas(width, height, null, 'overflow');
+      let bx1 = this.__bx1;
+      let bx2 = this.__bx2;
+      let by1 = this.__by1;
+      let by2 = this.__by2;
+      let {
+        [BORDER_TOP_LEFT_RADIUS]: borderTopLeftRadius,
+        [BORDER_TOP_RIGHT_RADIUS]: borderTopRightRadius,
+        [BORDER_BOTTOM_RIGHT_RADIUS]: borderBottomRightRadius,
+        [BORDER_BOTTOM_LEFT_RADIUS]: borderBottomLeftRadius,
+        [BACKGROUND_CLIP]: backgroundClip,
+        [BORDER_LEFT_WIDTH]: borderLeftWidth,
+        [BORDER_RIGHT_WIDTH]: borderRightWidth,
+        [BORDER_TOP_WIDTH]: borderTopWidth,
+        [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
+        [PADDING_TOP]: paddingTop,
+        [PADDING_RIGHT]: paddingRight,
+        [PADDING_BOTTOM]: paddingBottom,
+        [PADDING_LEFT]: paddingLeft,
+      } = __computedStyle;
+      let btlr = borderTopLeftRadius.slice(0);
+      let btrr = borderTopRightRadius.slice(0);
+      let bbrr = borderBottomRightRadius.slice(0);
+      let bblr = borderBottomLeftRadius.slice(0);
+      if(backgroundClip === 'paddingBox') {
+        btlr[0] -= borderLeftWidth;
+        btlr[1] -= borderTopWidth;
+        btrr[0] -= borderRightWidth;
+        btrr[1] -= borderTopWidth;
+        bbrr[0] -= borderRightWidth;
+        bbrr[1] -= borderBottomWidth;
+        bblr[0] -= borderLeftWidth;
+        bblr[1] -= borderBottomWidth;
       }
-      let visibility = currentStyle[VISIBILITY];
-      if(visibility !== 'hidden') {
-        let bgI = currentStyle[BACKGROUND_IMAGE];
-        if(Array.isArray(bgI)) {
-          for(let i = 0, len = bgI.length; i < len; i++) {
-            if(bgI[i]) {
-              return true;
-            }
+      else if(backgroundClip === 'contentBox') {
+        btlr[0] -= borderLeftWidth + paddingLeft;
+        btlr[1] -= borderTopWidth + paddingTop;
+        btrr[0] -= borderRightWidth + paddingRight;
+        btrr[1] -= borderTopWidth + paddingTop;
+        bbrr[0] -= borderRightWidth + paddingRight;
+        bbrr[1] -= borderBottomWidth + paddingBottom;
+        bblr[0] -= borderLeftWidth + paddingLeft;
+        bblr[1] -= borderBottomWidth + paddingBottom;
+      }
+      let borderList = border.calRadius(bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
+      offscreenOverflow = {
+        ctx,
+        target: c,
+        matrix: this.__matrixEvent,
+        x: this.__sx1,
+        y: this.__sy1,
+        offsetWidth: this.__offsetWidth,
+        offsetHeight: this.__offsetHeight,
+        borderList,
+      };
+      ctx = c.ctx;
+    }
+    // 无离屏不返回
+    if(origin === ctx) {
+      return;
+    }
+    return {
+      ctx,
+      offscreenBlend,
+      offscreenMask,
+      offscreenFilter,
+      offscreenOverflow,
+    };
+  }
+
+  // 自定义图形可能需要覆盖判断，所以是public方法
+  calContent(__currentStyle, __computedStyle) {
+    let visibility = __currentStyle[VISIBILITY];
+    if(visibility !== 'hidden') {
+      let bgI = __currentStyle[BACKGROUND_IMAGE];
+      if(Array.isArray(bgI)) {
+        for(let i = 0, len = bgI.length; i < len; i++) {
+          if(bgI[i]) {
+            return this.__hasContent = true;
           }
         }
-        if(currentStyle[BACKGROUND_COLOR][0][3] > 0) {
-          let width = computedStyle[WIDTH], height = computedStyle[HEIGHT],
-            paddingTop = computedStyle[PADDING_TOP], paddingRight = computedStyle[PADDING_RIGHT],
-            paddingBottom = computedStyle[PADDING_BOTTOM], paddingLeft = computedStyle[PADDING_LEFT];
-          if(width && height || paddingTop || paddingRight || paddingBottom || paddingLeft) {
-            return true;
-          }
+      }
+      if(__currentStyle[BACKGROUND_COLOR].v[3] > 0) {
+        let width = __computedStyle[WIDTH], height = __computedStyle[HEIGHT],
+          paddingTop = __computedStyle[PADDING_TOP], paddingRight = __computedStyle[PADDING_RIGHT],
+          paddingBottom = __computedStyle[PADDING_BOTTOM], paddingLeft = __computedStyle[PADDING_LEFT];
+        if(width && height || paddingTop || paddingRight || paddingBottom || paddingLeft) {
+          return this.__hasContent = true;
         }
-        for(let list = ['Top', 'Right', 'Bottom', 'Left'], i = 0, len = list.length; i < len; i++) {
-          let k = list[i];
-          if(computedStyle[STYLE_KEY[style2Upper('border' + k + 'Width')]] > 0
-            && currentStyle[STYLE_KEY[style2Upper('border' + k + 'Color')]][0][3] > 0) {
-            return true;
-          }
+      }
+      for(let list = ['Top', 'Right', 'Bottom', 'Left'], i = 0, len = list.length; i < len; i++) {
+        let k = list[i];
+        if(__computedStyle[STYLE_KEY[style2Upper('border' + k + 'Width')]] > 0
+          && __currentStyle[STYLE_KEY[style2Upper('border' + k + 'Color')]].v[3] > 0) {
+          return this.__hasContent = true;
         }
-        let bs = currentStyle[BOX_SHADOW];
-        if(Array.isArray(bs)) {
-          for(let i = 0, len = bs.length; i < len; i++) {
-            let item = bs[i];
-            if(item && item[4][3] > 0) {
-              return true;
-            }
+      }
+      let bs = __currentStyle[BOX_SHADOW];
+      if(Array.isArray(bs)) {
+        for(let i = 0, len = bs.length; i < len; i++) {
+          let item = bs[i];
+          if(item && item[4][3] > 0) {
+            return this.__hasContent = true;
           }
         }
       }
     }
-    return false;
+    return this.__hasContent = false;
   }
 
   /**
    * 渲染基础方法，Dom/Geom公用
    * @param renderMode
    * @see node/mode
-   * @param lv
-   * @see refresh/level
    * @param ctx canvas/svg/webgl共用
-   * @param cache 是否是局部根节点缓存模式下的绘制
-   * @see refresh/Cache.NA
    * @param dx cache时偏移x
    * @param dy cache时偏移y
    * @return Object
-   * x1/x2/x3/x4/y1/y2/y3/y4 坐标
+   * sx1/sx2/sx3/sx4/sx5/sx6/sy1/sy2/sy3/sy4/sy5/sy6 坐标
    * break svg判断无变化提前跳出
-   * cacheError 离屏申请失败，仅canvas
-   * offscreenBlend 无cache时的离屏canvas，仅canvas
-   * offscreenFilter 无cache时的离屏canvas，仅canvas
-   * offscreenOverflow 无cache时的离屏canvas，仅canvas
-   * offscreenMask 无cache时的离屏canvas，仅canvas
    */
-  render(renderMode, lv, ctx, cache, dx = 0, dy = 0) {
+  render(renderMode, ctx, dx = 0, dy = 0) {
     let {
-      isDestroyed,
-      root,
-      __config,
+      __isDestroyed: isDestroyed,
     } = this;
-    let __cache = __config[NODE_CACHE];
-    let __cacheStyle = __config[NODE_CACHE_STYLE];
-    let currentStyle = __config[NODE_CURRENT_STYLE];
-    let computedStyle = __config[NODE_COMPUTED_STYLE];
-    // 渲染完认为完全无变更，等布局/动画/更新重置
-    __config[NODE_REFRESH_LV] = NONE;
-    // >=REPAINT清空bbox
-    if(lv >= REPAINT) {
-      this.__bbox = null;
-      this.__filterBbox = null;
-    }
+    let cacheStyle = this.__cacheStyle;
+    let computedStyle = this.__computedStyle;
     if(isDestroyed) {
       return { isDestroyed, break: true };
     }
     let virtualDom;
     // svg设置vd上的lv属性标明<REPAINT时应用缓存，初始化肯定没有
     if(renderMode === SVG) {
-      virtualDom = __config[NODE_VIRTUAL_DOM] = this.__virtualDom = {
+      virtualDom = this.__virtualDom = {
         bb: [],
         children: [],
         visibility: 'visible',
       };
-      // svg mock，每次都生成，每个节点都是局部根，更新时自底向上清除
-      if(!__config[NODE_CACHE_TOTAL]) {
-        __config[NODE_CACHE_TOTAL] = {
-          available: true,
-          release() {
-            this.available = false;
-            delete virtualDom.cache;
-          },
-        };
-      }
-      else if(!__config[NODE_CACHE_TOTAL].available) {
-        __config[NODE_CACHE_TOTAL].available = true;
-      }
     }
     let display = computedStyle[DISPLAY];
     // canvas返回信息，svg已经初始化好了vd
     if(display === 'none') {
       return { break: true };
     }
+    if(renderMode === WEBGL) {
+      return {};
+    }
     // 使用sx和sy渲染位置，考虑了relative和translate影响
     let {
-      clientWidth,
-      clientHeight,
-      offsetWidth,
-      offsetHeight,
-      __hasMask,
+      __offsetWidth,
+      __offsetHeight,
     } = this;
     let {
       [PADDING_TOP]: paddingTop,
@@ -1669,103 +1731,31 @@ class Xom extends Node {
       [BORDER_TOP_WIDTH]: borderTopWidth,
       [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
     } = computedStyle;
-    let isRealInline = __config[NODE_IS_INLINE];
+    let isRealInline = this.__isInline;
     // 考虑mpb的6个坐标，inline比较特殊单独计算
-    let x1 = this.__sx1;
-    let x2 = this.__sx2;
-    let x3 = this.__sx3;
-    let x4 = this.__sx4;
-    let x5 = this.__sx5;
-    let x6 = this.__sx6;
-    let y1 = this.__sy1;
-    let y2 = this.__sy2;
-    let y3 = this.__sy3;
-    let y4 = this.__sy4;
-    let y5 = this.__sy5;
-    let y6 = this.__sy6;
+    let sx1 = this.__sx1;
+    let sx2 = this.__sx2;
+    let sx3 = this.__sx3;
+    let sx4 = this.__sx4;
+    let sx5 = this.__sx5;
+    let sx6 = this.__sx6;
+    let sy1 = this.__sy1;
+    let sy2 = this.__sy2;
+    let sy3 = this.__sy3;
+    let sy4 = this.__sy4;
+    let sy5 = this.__sy5;
+    let sy6 = this.__sy6;
+    let bx1 = this.__bx1;
+    let bx2 = this.__bx2;
+    let by1 = this.__by1;
+    let by2 = this.__by2;
     let res = {
-      ctx,
-      x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6,
-      sx1: x1, sx2: x2, sx3: x3, sx4: x4, sx5: x5, sx6: x6,
-      sy1: y1, sy2: y2, sy3: y3, sy4: y4, sy5: y5, sy6: y6,
-      dx, dy,
+      ctx, dx, dy,
+      sx1, sx2, sx3, sx4, sx5, sx6, sy1, sy2, sy3, sy4, sy5, sy6,
+      bx1, bx2, by1, by2,
     };
-    // 防止cp直接返回cp嵌套，拿到真实dom的parent
-    let p = __config[NODE_DOM_PARENT];
-    if(renderMode === WEBGL) {
-      this.__calPerspective(__cacheStyle, currentStyle, computedStyle, __config);
-    }
     // cache的canvas模式已经提前计算好了，其它需要现在计算
-    let matrix;
-    if(cache && renderMode === CANVAS) {
-      matrix = __config[NODE_MATRIX];
-    }
-    else {
-      matrix = this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, __config, x1, y1, offsetWidth, offsetHeight);
-    }
-    // 计算好cacheStyle的内容，在cache且canvas模式时已经提前算好
-    let bx1, by1, bx2, by2;
-    if(cache && renderMode === CANVAS) {
-      bx1 = this.__bx1;
-      bx2 = this.__bx2;
-      by1 = this.__by1;
-      by2 = this.__by2;
-    }
-    else {
-      [bx1, by1, bx2, by2] = this.__calCache(renderMode, ctx, p,
-        __cacheStyle, currentStyle, computedStyle,
-        clientWidth, clientHeight, offsetWidth, offsetHeight,
-        borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
-        paddingTop, paddingRight, paddingBottom, paddingLeft,
-        x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6
-      );
-    }
-    res.bx1 = bx1;
-    res.by1 = by1;
-    res.bx2 = bx2;
-    res.by2 = by2;
-    let hasContent = this.__hasContent = __config[NODE_HAS_CONTENT] = this.__calContent(renderMode, lv, currentStyle, computedStyle);
-    // webgl特殊申请离屏缓存
-    if(cache && renderMode === WEBGL) {
-      // 无内容可释放并提前跳出，geom覆盖特殊判断，因为后面子类会绘制矢量，img也覆盖特殊判断，加载完肯定有内容
-      if(!hasContent && this.__releaseWhenEmpty(__cache, computedStyle)) {
-        res.break = true;
-        __config[NODE_LIMIT_CACHE] = false;
-      }
-      // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等，geom单独在dom里做
-      else if(!__config[NODE_LIMIT_CACHE]) {
-        let bbox = this.bbox;
-        if(__cache) {
-          __cache.reset(bbox, x1, y1);
-        }
-        else {
-          __cache = Cache.getInstance(bbox, x1, y1);
-        }
-        // cache成功设置坐标偏移，否则为超过最大尺寸限制不使用缓存
-        if(__cache && __cache.enabled) {
-          __cache.__bbox = bbox;
-          ctx = __cache.ctx;
-          dx += __cache.dx;
-          dy += __cache.dy;
-          res.ctx = ctx;
-        }
-        else {
-          __config[NODE_LIMIT_CACHE] = true;
-          __cache = null;
-          res.limitCache = res.break = true;
-        }
-        __config[NODE_CACHE] = __cache;
-      }
-    }
-    // 降级的webgl绘制
-    else if(renderMode === WEBGL) {
-      let c = inject.getCacheCanvas(root.width, root.height, '__$$OVERSIZE$$__');
-      res.ctx = ctx = c.ctx;
-    }
-    // webgl的偏移
-    res.dx = dx;
-    res.dy = dy;
-    // 渲染样式
+    let matrix = this.__matrix;
     let {
       [BACKGROUND_COLOR]: backgroundColor,
       [BORDER_TOP_COLOR]: borderTopColor,
@@ -1789,17 +1779,7 @@ class Xom extends Node {
       [WRITING_MODE]: writingMode,
     } = computedStyle;
     let isUpright = writingMode.indexOf('vertical') === 0;
-    // 先设置透明度，canvas可以向上累积，cache模式外部已计算好
-    if(cache && renderMode === CANVAS) {
-      opacity = __config[NODE_OPACITY];
-    }
-    else if(renderMode === CANVAS || renderMode === WEBGL) {
-      if(p) {
-        opacity *= p.__config[NODE_OPACITY];
-      }
-      __config[NODE_OPACITY] = opacity;
-    }
-    else if(renderMode === SVG) {
+    if(renderMode === SVG) {
       if(opacity === 1) {
         delete virtualDom.opacity;
       }
@@ -1817,85 +1797,20 @@ class Xom extends Node {
       }
       virtualDom.visibility = visibility;
     }
-    // cache模式的canvas的matrix计算在外部做好了，且perspective无效
-    if(renderMode === CANVAS && cache) {
-      matrix = __config[NODE_MATRIX_EVENT];
-    }
-    else {
-      let m = __config[NODE_MATRIX];
-      util.assignMatrix(m, matrix);
-      // 变换和canvas要以父元素matrixEvent为基础，svg使用自身即css规则，webgl在struct渲染时另算
-      if(p) {
-        if(p.perspectiveMatrix) {
-          matrix = mx.multiply(p.perspectiveMatrix, matrix);
-        }
-        matrix = mx.multiply(p.matrixEvent, matrix);
-      }
-      // 为了引用不变，防止变化后text子节点获取不到，恶心的v8优化，初始化在构造函数中空数组
-      m = __config[NODE_MATRIX_EVENT];
-      util.assignMatrix(m, matrix);
-    }
-    // 无离屏功能或超限视为不可缓存本身，等降级无cache再次绘制，webgl一样
-    if(res.limitCache) {
-      return res;
-    }
-    // 按照顺序依次检查生成offscreen离屏功能，顺序在structs中渲染离屏时用到，多个离屏时隔离并且后面有前面的ctx引用
-    let offscreenBlend;
-    if(mixBlendMode !== 'normal' && isValidMbm(mixBlendMode)) {
-      mixBlendMode = mbmName(mixBlendMode);
-      if(renderMode === CANVAS && cache !== LOCAL) {
-        let { width, height } = root;
-        let c = inject.getCacheCanvas(width, height, null, 'blend');
-        offscreenBlend = {
-          ctx,
-          target: c,
-          mixBlendMode,
-          matrix,
-        };
-        ctx = c.ctx;
-      }
-      else if(renderMode === SVG) {
+    if(renderMode === SVG) {
+      if(mixBlendMode !== 'normal' && isValidMbm(mixBlendMode)) {
+        mixBlendMode = mbmName(mixBlendMode);
         virtualDom.mixBlendMode = mixBlendMode;
       }
-    }
-    // svg特殊没有mbm删除
-    else if(renderMode === SVG) {
-      delete virtualDom.mixBlendMode;
-    }
-    let offscreenMask;
-    if(__hasMask) {
-      if(renderMode === CANVAS && cache !== LOCAL) {
-        let { width, height } = root;
-        let c = inject.getCacheCanvas(width, height, null, 'mask1');
-        offscreenMask = {
-          ctx,
-          target: c,
-          matrix,
-        };
-        ctx = c.ctx;
+      else {
+        delete virtualDom.mixBlendMode;
       }
-    }
-    // 无cache时canvas的blur需绘制到离屏上应用后反向绘制回来，有cache在Dom里另生成一个filter的cache
-    let hasFilter = filter && filter.length;
-    let offscreenFilter;
-    if(hasFilter) {
-      if(renderMode === CANVAS && cache !== LOCAL) {
-        let { width, height } = root;
-        let c = inject.getCacheCanvas(width, height, null, 'filter');
-        offscreenFilter = {
-          ctx,
-          filter,
-          target: c,
-          matrix,
-        };
-        ctx = c.ctx;
-      }
-      else if(renderMode === SVG) {
+      if(filter && filter.length) {
         virtualDom.filter = painter.svgFilter(filter);
       }
-    }
-    else if(renderMode === SVG) {
-      delete virtualDom.filter;
+      else {
+        delete virtualDom.filter;
+      }
     }
     // 根据backgroundClip的不同值要调整bg渲染坐标尺寸，也会影响borderRadius
     let btlr = borderTopLeftRadius.slice(0);
@@ -1923,26 +1838,11 @@ class Xom extends Node {
       bblr[1] -= borderBottomWidth + paddingBottom;
     }
     // overflow:hidden，最后判断，filter/mask优先
-    let offscreenOverflow, borderList;
+    let borderList;
     if(overflow === 'hidden' && display !== 'inline') {
       borderList = border.calRadius(bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
-      if(renderMode === CANVAS && cache !== LOCAL) {
-        let { width, height } = root;
-        let c = inject.getCacheCanvas(width, height, null, 'overflow');
-        offscreenOverflow = {
-          ctx,
-          target: c,
-          matrix,
-        };
-        ctx = c.ctx;
-        offscreenOverflow.x = x1;
-        offscreenOverflow.y = y1;
-        offscreenOverflow.offsetWidth = offsetWidth;
-        offscreenOverflow.offsetHeight = offsetHeight;
-        offscreenOverflow.list = borderList;
-      }
-      else if(renderMode === SVG) {
-        let d = svgPolygon(borderList) || `M${x1},${y1}L${x1 + offsetWidth},${y1}L${x1 + offsetWidth},${y1 + offsetHeight}L${x1},${y1 + offsetHeight},L${x1},${y1}`;
+      if(renderMode === SVG) {
+        let d = svgPolygon(borderList) || `M${sx1},${sy1}L${sx1 + __offsetWidth},${sy1}L${sx1 + __offsetWidth},${sy1 + __offsetHeight}L${sx1},${sy1 + __offsetHeight},L${sx1},${sy1}`;
         let v = {
           tagName: 'clipPath',
           props: [],
@@ -1956,34 +1856,17 @@ class Xom extends Node {
           ],
         };
         let id = ctx.add(v);
-        __config[NODE_DEFS_CACHE].push(v);
+        this.__cacheDefs.push(v);
         virtualDom.overflow = 'url(#' + id + ')';
       }
     }
     else if(renderMode === SVG) {
       delete virtualDom.overflow;
     }
-    // 无法使用缓存时主画布直接绘制需设置
-    if(renderMode === CANVAS) {
-      res.offscreenBlend = offscreenBlend;
-      res.offscreenMask = offscreenMask;
-      res.offscreenFilter = offscreenFilter;
-      res.offscreenOverflow = offscreenOverflow;
-      res.ctx = ctx;
-      ctx.globalAlpha = opacity;
-      // cache模式在外面设置
-      if(!cache) {
-        ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
-      }
-    }
     // 隐藏不渲染
     if((visibility === 'hidden' || res.break) && (renderMode === CANVAS || renderMode === WEBGL)) {
       res.break = true;
       return res;
-    }
-    // 仅webgl有用
-    if(__cache && __cache.enabled) {
-      __cache.__available = true;
     }
     /**
      * inline的渲染同block/ib不一样，不是一个矩形区域
@@ -2051,7 +1934,7 @@ class Xom extends Node {
               if(loadBgi.url === bgi) {
                 let uuid = bg.renderImage(this, renderMode, offscreen && offscreen.ctx || ctx, loadBgi,
                   0, 0, iw, ih, btlr, btrr, bbrr, bblr,
-                  computedStyle, i, backgroundSize, backgroundRepeat, __config, true, dx, dy);
+                  computedStyle, i, backgroundSize, backgroundRepeat, true, dx, dy);
                 if(renderMode === SVG && uuid) {
                   svgBgSymbol.push(uuid);
                 }
@@ -2099,7 +1982,7 @@ class Xom extends Node {
               bx1 -= n;
             }
             if(backgroundColor[3] > 0) {
-              bg.renderBgc(this, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR], null,
+              bg.renderBgc(this, renderMode, ctx, cacheStyle[BACKGROUND_COLOR], null,
                 ix1, iy1, ix2 - ix1, iy2 - iy1, btlr, [0, 0], [0, 0], bblr, 'fill', false, dx, dy);
             }
             let w = ix2 - ix1, h = iy2 - iy1; // 世界参考系的宽高，根据writingMode不同取值使用
@@ -2134,7 +2017,7 @@ class Xom extends Node {
                     ],
                   };
                   let clip = ctx.add(v);
-                  __config[NODE_DEFS_CACHE].push(v);
+                  this.__cacheDefs.push(v);
                   virtualDom.bb.push({
                     type: 'item',
                     tagName: 'use',
@@ -2160,7 +2043,7 @@ class Xom extends Node {
               let list = border.calPoints(borderTopWidth, computedStyle[BORDER_TOP_STYLE], deg1, deg2,
                 bx1, bx1 + borderLeftWidth, bx2, bx2,
                 by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 0, isFirst ? btlr : [0, 0], [0, 0]);
-              border.renderBorder(this, renderMode, ctx, list, __cacheStyle[BORDER_TOP_COLOR], dx, dy);
+              border.renderBorder(this, renderMode, ctx, list, cacheStyle[BORDER_TOP_COLOR], dx, dy);
             }
             if(borderBottomWidth > 0 && borderBottomColor[3] > 0) {
               let deg1 = Math.atan(borderBottomWidth / borderLeftWidth);
@@ -2168,7 +2051,7 @@ class Xom extends Node {
               let list = border.calPoints(borderBottomWidth, computedStyle[BORDER_BOTTOM_STYLE], deg1, deg2,
                 bx1, bx1 + borderLeftWidth, bx2, bx2,
                 by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 2, isFirst ? btlr : [0, 0], [0, 0]);
-              border.renderBorder(this, renderMode, ctx, list, __cacheStyle[BORDER_BOTTOM_COLOR], dx, dy);
+              border.renderBorder(this, renderMode, ctx, list, cacheStyle[BORDER_BOTTOM_COLOR], dx, dy);
             }
             if(isFirst && borderLeftWidth > 0 && borderLeftColor[3] > 0) {
               let deg1 = Math.atan(borderLeftWidth / borderTopWidth);
@@ -2176,7 +2059,7 @@ class Xom extends Node {
               let list = border.calPoints(borderLeftWidth, computedStyle[BORDER_LEFT_STYLE], deg1, deg2,
                 bx1, bx1 + borderLeftWidth, bx2 - borderRightWidth, bx2,
                 by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 3, btlr, btrr);
-              border.renderBorder(this, renderMode, ctx, list, __cacheStyle[BORDER_LEFT_COLOR], dx, dy);
+              border.renderBorder(this, renderMode, ctx, list, cacheStyle[BORDER_LEFT_COLOR], dx, dy);
             }
             isFirst = false;
             lastContentBox = contentBox;
@@ -2199,7 +2082,7 @@ class Xom extends Node {
             ix2 += n;
             bx2 += n;
             if(backgroundColor[3] > 0) {
-              bg.renderBgc(this, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR], null,
+              bg.renderBgc(this, renderMode, ctx, cacheStyle[BACKGROUND_COLOR], null,
                 ix1, iy1, ix2 - ix1, iy2 - iy1, isFirst ? btlr : [0, 0], btrr, bbrr, isFirst ? bblr : [0, 0],
                 'fill', false, dx, dy);
             }
@@ -2235,7 +2118,7 @@ class Xom extends Node {
                     ],
                   };
                   let clip = ctx.add(v);
-                  __config[NODE_DEFS_CACHE].push(v);
+                  this.__cacheDefs.push(v);
                   virtualDom.bb.push({
                     type: 'item',
                     tagName: 'use',
@@ -2260,7 +2143,7 @@ class Xom extends Node {
               let list = border.calPoints(borderTopWidth, computedStyle[BORDER_TOP_STYLE], deg1, deg2,
                 bx1, bx1, bx2 - borderRightWidth, bx2,
                 by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 0, isFirst ? btlr : [0, 0], btrr);
-              border.renderBorder(this, renderMode, ctx, list, __cacheStyle[BORDER_TOP_COLOR], dx, dy);
+              border.renderBorder(this, renderMode, ctx, list, cacheStyle[BORDER_TOP_COLOR], dx, dy);
             }
             if(borderRightWidth > 0 && borderRightColor[3] > 0) {
               let deg1 = Math.atan(borderRightWidth / borderTopWidth);
@@ -2268,7 +2151,7 @@ class Xom extends Node {
               let list = border.calPoints(borderRightWidth, computedStyle[BORDER_RIGHT_STYLE], deg1, deg2,
                 bx1, bx1 + borderLeftWidth, bx2 - borderRightWidth, bx2,
                 by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 1, btlr, btrr);
-              border.renderBorder(this, renderMode, ctx, list, __cacheStyle[BORDER_RIGHT_COLOR], dx, dy);
+              border.renderBorder(this, renderMode, ctx, list, cacheStyle[BORDER_RIGHT_COLOR], dx, dy);
             }
             if(borderBottomWidth > 0 && borderBottomColor[3] > 0) {
               let deg1 = Math.atan(borderBottomWidth / borderLeftWidth);
@@ -2276,7 +2159,7 @@ class Xom extends Node {
               let list = border.calPoints(borderBottomWidth, computedStyle[BORDER_BOTTOM_STYLE], deg1, deg2,
                 bx1, bx1, bx2 - borderRightWidth, bx2,
                 by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 2, isFirst ? btlr : [0, 0], btrr);
-              border.renderBorder(this, renderMode, ctx, list, __cacheStyle[BORDER_BOTTOM_COLOR], dx, dy);
+              border.renderBorder(this, renderMode, ctx, list, cacheStyle[BORDER_BOTTOM_COLOR], dx, dy);
             }
             if(isFirst && borderLeftWidth > 0 && borderLeftColor[3] > 0) {
               let deg1 = Math.atan(borderLeftWidth / borderTopWidth);
@@ -2284,7 +2167,7 @@ class Xom extends Node {
               let list = border.calPoints(borderLeftWidth, computedStyle[BORDER_LEFT_STYLE], deg1, deg2,
                 bx1, bx1 + borderLeftWidth, bx2 - borderRightWidth, bx2,
                 by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 3, btlr, btrr);
-              border.renderBorder(this, renderMode, ctx, list, __cacheStyle[BORDER_LEFT_COLOR], dx, dy);
+              border.renderBorder(this, renderMode, ctx, list, cacheStyle[BORDER_LEFT_COLOR], dx, dy);
             }
           }
         }
@@ -2300,7 +2183,7 @@ class Xom extends Node {
     }
     // block渲染，bgc垫底
     if(backgroundColor[3] > 0) {
-      bg.renderBgc(this, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR], borderList,
+      bg.renderBgc(this, renderMode, ctx, cacheStyle[BACKGROUND_COLOR], borderList,
         bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr, 'fill', false, dx, dy);
     }
     // 渐变或图片叠加
@@ -2316,7 +2199,7 @@ class Xom extends Node {
           if(loadBgi.url === bgi) {
             bg.renderImage(this, renderMode, ctx, loadBgi,
               bx1, by1, bx2, by2, btlr, btrr, bbrr, bblr,
-              computedStyle, i, backgroundSize, backgroundRepeat, __config, false, dx, dy);
+              computedStyle, i, backgroundSize, backgroundRepeat, false, dx, dy);
           }
         }
         else if(bgi.k) {
@@ -2337,38 +2220,32 @@ class Xom extends Node {
     // boxShadow可能会有多个
     if(boxShadow) {
       boxShadow.forEach(item => {
-        bs.renderBoxShadow(this, renderMode, ctx, item, x1, y1, x6, y6, x6 - x1, y6 - y1, dx, dy);
+        bs.renderBoxShadow(this, renderMode, ctx, item, sx1, sy1, sx6, sy6, sx6 - sx1, sy6 - sy1, dx, dy);
       });
     }
     // 边框需考虑尖角，两条相交边平分45°夹角
     if(borderTopWidth > 0 && borderTopColor[3] > 0) {
-      border.renderBorder(this, renderMode, ctx, __cacheStyle[BORDER_TOP], __cacheStyle[BORDER_TOP_COLOR], dx, dy);
+      border.renderBorder(this, renderMode, ctx, cacheStyle[BORDER_TOP], cacheStyle[BORDER_TOP_COLOR], dx, dy);
     }
     if(borderRightWidth > 0 && borderRightColor[3] > 0) {
-      border.renderBorder(this, renderMode, ctx, __cacheStyle[BORDER_RIGHT], __cacheStyle[BORDER_RIGHT_COLOR], dx, dy);
+      border.renderBorder(this, renderMode, ctx, cacheStyle[BORDER_RIGHT], cacheStyle[BORDER_RIGHT_COLOR], dx, dy);
     }
     if(borderBottomWidth > 0 && borderBottomColor[3] > 0) {
-      border.renderBorder(this, renderMode, ctx, __cacheStyle[BORDER_BOTTOM], __cacheStyle[BORDER_BOTTOM_COLOR], dx, dy);
+      border.renderBorder(this, renderMode, ctx, cacheStyle[BORDER_BOTTOM], cacheStyle[BORDER_BOTTOM_COLOR], dx, dy);
     }
     if(borderLeftWidth > 0 && borderLeftColor[3] > 0) {
-      border.renderBorder(this, renderMode, ctx, __cacheStyle[BORDER_LEFT], __cacheStyle[BORDER_LEFT_COLOR], dx, dy);
+      border.renderBorder(this, renderMode, ctx, cacheStyle[BORDER_LEFT], cacheStyle[BORDER_LEFT_COLOR], dx, dy);
     }
     return res;
   }
 
   __destroy() {
-    if(this.isDestroyed) {
+    if(this.__isDestroyed) {
       return;
     }
     super.__destroy();
-    let { root } = this;
     this.clearAnimate();
     this.clearFrameAnimate();
-    // root在没有初始化到真实dom渲染的情况下没有
-    root && root.delRefreshTask(this.__loadBgi.cb);
-    root && root.delRefreshTask(this.__task);
-    this.__task = null;
-    this.__root = null;
     this.clearCache();
     let fontRegister = this.__fontRegister;
     for(let i in fontRegister) {
@@ -2376,12 +2253,16 @@ class Xom extends Node {
         font.offRegister(i, this);
       }
     }
+    this.__host = this.__hostRoot = this.__root
+      = this.__prev = this.__next
+      = this.__parent = this.__domParent = null;
+    this.__reset0();
   }
 
   // 先查找到注册了事件的节点，再捕获冒泡判断增加性能
   __emitEvent(e, force) {
-    let { isDestroyed, computedStyle, isMask } = this;
-    if(isDestroyed || computedStyle[DISPLAY] === 'none' || e.__stopPropagation || isMask) {
+    let { __isDestroyed, __computedStyle: computedStyle, __isMask } = this;
+    if(__isDestroyed || computedStyle[DISPLAY] === 'none' || e.__stopPropagation || __isMask) {
       return;
     }
     let { event: { type } } = e;
@@ -2402,9 +2283,9 @@ class Xom extends Node {
       // 如果有mask，点在mask上才行，点在clip外才行
       if(__hasMask) {
         let next = this.next;
-        let isClip = next.isClip;
+        let isClip = next.__isClip;
         let hasEmitMask;
-        while(next && next.isMask) {
+        while(next && next.__isMask) {
           if(next.willResponseEvent(e, true)) {
             hasEmitMask = true;
             break;
@@ -2424,17 +2305,17 @@ class Xom extends Node {
 
   willResponseEvent(e, ignore) {
     let { x, y } = e;
-    let { __sx1, __sy1, offsetWidth, offsetHeight, matrixEvent, computedStyle } = this;
-    if(computedStyle[POINTER_EVENTS] === 'none') {
+    let { __sx1, __sy1, __offsetWidth, __offsetHeight, __matrixEvent, __computedStyle } = this;
+    if(__computedStyle[POINTER_EVENTS] === 'none') {
       return;
     }
     let inThis = geom.pointInQuadrilateral(
       x, y,
       __sx1, __sy1,
-      __sx1 + offsetWidth, __sy1,
-      __sx1 + offsetWidth, __sy1 + offsetHeight,
-      __sx1, __sy1 + offsetHeight,
-      matrixEvent
+      __sx1 + __offsetWidth, __sy1,
+      __sx1 + __offsetWidth, __sy1 + __offsetHeight,
+      __sx1, __sy1 + __offsetHeight,
+      __matrixEvent
     );
     if(inThis) {
       if(!e.target && !ignore) {
@@ -2510,7 +2391,7 @@ class Xom extends Node {
         }),
       };
       let uuid = ctx.add(v);
-      this.__config[NODE_DEFS_CACHE].push(v);
+      this.__cacheDefs.push(v);
       return 'url(#' + uuid + ')';
     }
   }
@@ -2548,7 +2429,7 @@ class Xom extends Node {
         v.props.push(['fy', gd.cy]);
       }
       let uuid = ctx.add(v);
-      this.__config[NODE_DEFS_CACHE].push(v);
+      this.__cacheDefs.push(v);
       return 'url(#' + uuid + ')';
     }
   }
@@ -2571,18 +2452,14 @@ class Xom extends Node {
   }
 
   // canvas清空自身cache，cacheTotal在Root的自底向上逻辑做，svg仅有cacheTotal
-  clearCache(onlyTotal) {
-    let __config = this.__config;
-    let __cacheTotal = __config[NODE_CACHE_TOTAL];
-    let __cacheFilter = __config[NODE_CACHE_FILTER];
-    let __cacheMask = __config[NODE_CACHE_MASK];
-    let __cacheOverflow = __config[NODE_CACHE_OVERFLOW];
-    if(!onlyTotal) {
-      __config[NODE_CACHE_STYLE] = this.__cacheStyle = {};
-      let __cache = __config[NODE_CACHE];
-      if(__cache) {
-        __cache.release();
-      }
+  clearCache(lookUp) {
+    let __cacheTotal = this.__cacheTotal;
+    let __cacheFilter = this.__cacheFilter;
+    let __cacheMask = this.__cacheMask;
+    let __cacheOverflow = this.__cacheOverflow;
+    let __cache = this.__cache;
+    if(__cache) {
+      __cache.release();
     }
     if(__cacheTotal) {
       __cacheTotal.release();
@@ -2596,97 +2473,77 @@ class Xom extends Node {
     if(__cacheOverflow) {
       __cacheOverflow.release();
     }
+    this.__refreshLevel |= CACHE;
+    if(lookUp) {
+      let p = this.__domParent;
+      while(p) {
+        let __cacheTotal = p.__cacheTotal;
+        let __cacheFilter = p.__cacheFilter;
+        let __cacheMask = p.__cacheMask;
+        let __cacheOverflow = p.__cacheOverflow;
+        p.__refreshLevel |= CACHE;
+        if(__cacheTotal) {
+          __cacheTotal.release();
+        }
+        if(__cacheFilter) {
+          __cacheFilter.release();
+        }
+        if(__cacheMask) {
+          __cacheMask.release();
+        }
+        if(__cacheOverflow) {
+          __cacheOverflow.release();
+        }
+        p = p.__domParent;
+      }
+    }
   }
 
   updateStyle(style, cb) {
-    let node = this;
-    let { root, __config } = node;
-    let formatStyle = css.normalize(style);
-    // 有root说明被添加渲染过了
-    if(root) {
-      root.addRefreshTask(node.__task = {
-        __before() {
-          node.__task = null;
-          if(__config[NODE_IS_DESTROYED]) {
-            return;
-          }
-          // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-          let res = {};
-          res[UPDATE_NODE] = node;
-          res[UPDATE_STYLE] = formatStyle;
-          res[UPDATE_OVERWRITE] = style; // 标识盖原有style样式不仅仅是修改currentStyle，不同于animate
-          res[UPDATE_KEYS] = Object.keys(formatStyle).map(i => {
-            if(!GEOM.hasOwnProperty(i)) {
-              i = parseInt(i);
-            }
-            return i;
-          });
-          res[UPDATE_CONFIG] = __config;
-          root.__addUpdate(node, __config, root, root.__config, res);
-        },
-        __after(diff) {
-          if(isFunction(cb)) {
-            cb.call(node, diff);
-          }
-        },
-      });
-    }
-    // 没有是在如parse()还未添加的时候，可以直接同步覆盖
-    else {
-      Object.assign(this.currentStyle, formatStyle);
-      if(isFunction(cb)) {
-        cb.call(node, -1);
-      }
-    }
+    let formatStyle = normalize(style);
+    this.updateFormatStyle(formatStyle, cb);
   }
 
   // 传入格式化好key/value的样式
   updateFormatStyle(style, cb) {
-    let node = this;
-    let { root, __config } = node;
-    if(root) {
-      root.addRefreshTask(node.__task = {
-        __before() {
-          node.__task = null; // 清除在before，防止after的回调增加新的task误删
-          if(__config[NODE_IS_DESTROYED]) {
-            return;
-          }
-          // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-          let res = {};
-          res[UPDATE_NODE] = node;
-          res[UPDATE_STYLE] = style;
-          res[UPDATE_KEYS] = Object.keys(style).map(i => {
-            if(!GEOM.hasOwnProperty(i)) {
-              i = parseInt(i);
-            }
-            return i;
-          });
-          res[UPDATE_CONFIG] = __config;
-          root.__addUpdate(node, __config, root, root.__config, res);
-        },
-        __after(diff) {
-          if(isFunction(cb)) {
-            cb.call(node, diff);
-          }
-        },
-      });
-    }
-    // 没有是在如parse()还未添加的时候，可以直接同步覆盖
-    else {
-      Object.assign(this.currentStyle, style);
-      if(isFunction(cb)) {
-        cb.call(node, -1);
+    let root = this.__root, currentStyle = this.__currentStyle, currentProps = this.__currentProps;
+    let keys = [];
+    Object.keys(style).forEach(i => {
+      let isGeom = GEOM.hasOwnProperty(i);
+      if(!isGeom) {
+        i = parseInt(i);
       }
+      if(!equalStyle(i, isGeom ? currentProps[i] : currentStyle[i], style[i], this)) {
+        if(isGeom) {
+          currentProps[i] = style[i];
+        }
+        else {
+          currentStyle[i] = style[i];
+        }
+        keys.push(i);
+      }
+    });
+    if(!keys.length || this.__isDestroyed) {
+      if(isFunction(cb)) {
+        cb();
+      }
+      return;
+    }
+    if(root) {
+      root.__addUpdate(this, {
+        keys,
+        cb,
+      });
     }
   }
 
   animate(list, options = {}) {
     let animation = new Animation(this, list, options);
-    if(this.isDestroyed) {
-      animation.__destroy(true);
+    if(this.__isDestroyed) {
+      animation.__destroy();
       return animation;
     }
-    this.animationList.push(animation);
+    this.__animationList.push(animation);
     if(options.autoPlay === false) {
       return animation;
     }
@@ -2695,17 +2552,17 @@ class Xom extends Node {
 
   removeAnimate(o) {
     if(o instanceof Animation) {
-      let i = this.animationList.indexOf(o);
+      let i = this.__animationList.indexOf(o);
       if(i > -1) {
         o.cancel();
         o.__destroy();
-        this.animationList.splice(i, 1);
+        this.__animationList.splice(i, 1);
       }
     }
   }
 
   clearAnimate() {
-    this.animationList.splice(0).forEach(o => {
+    this.__animationList.splice(0).forEach(o => {
       o.cancel();
       o.__destroy();
     });
@@ -2752,7 +2609,8 @@ class Xom extends Node {
     return cb(this, options);
   }
 
-  // isLayout为false时，为relative/margin/flex/vertical等
+  // isLayout为false时，为relative，true则是absolute等直接改layoutData数据的
+  // lv是reflow偏移时传入，需要清除cacheStyle
   // 注意所有的offset/resize都要避免display:none的，比如合并margin导致block的孩子inline因clamp为none时没有layoutData
   __offsetX(diff, isLayout, lv) {
     if(this.computedStyle[DISPLAY] === 'none') {
@@ -2763,15 +2621,19 @@ class Xom extends Node {
       this.__layoutData.x += diff;
       this.clearCache();
     }
-    if(lv !== undefined) {
-      this.__config[NODE_REFRESH_LV] |= lv;
-    }
     this.__sx1 += diff;
     this.__sx2 += diff;
     this.__sx3 += diff;
     this.__sx4 += diff;
     this.__sx5 += diff;
     this.__sx6 += diff;
+    if(lv) {
+      this.__refreshLevel |= lv;
+      if(lv >= REFLOW) {
+        this.__cacheStyle = {};
+        this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
+      }
+    }
   }
 
   __offsetY(diff, isLayout, lv) {
@@ -2783,15 +2645,19 @@ class Xom extends Node {
       this.__layoutData && (this.__layoutData.y += diff);
       this.clearCache();
     }
-    if(lv !== undefined) {
-      this.__config[NODE_REFRESH_LV] |= lv;
-    }
     this.__sy1 += diff;
     this.__sy2 += diff;
     this.__sy3 += diff;
     this.__sy4 += diff;
     this.__sy5 += diff;
     this.__sy6 += diff;
+    if(lv) {
+      this.__refreshLevel |= lv;
+      if(lv >= REFLOW) {
+        this.__cacheStyle = {};
+        this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
+      }
+    }
   }
 
   __resizeX(diff, lv) {
@@ -2807,19 +2673,23 @@ class Xom extends Node {
     this.__sx5 += diff;
     this.__sx6 += diff;
     if(diff < 0) {
-      this.__config[NODE_LIMIT_CACHE] = false;
+      this.__limitCache = false;
     }
-    if(lv !== undefined) {
-      this.__config[NODE_REFRESH_LV] |= lv;
+    if(lv) {
+      this.__refreshLevel |= lv;
+      if(lv >= REFLOW) {
+        this.__cacheStyle = {};
+        this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
+      }
     }
     this.clearCache();
   }
 
   __resizeY(diff, lv) {
-    if(this.computedStyle[DISPLAY] === 'none') {
+    if(this.__computedStyle[DISPLAY] === 'none') {
       return;
     }
-    this.computedStyle.height = this.__height += diff;
+    this.__computedStyle.height = this.__height += diff;
     this.__clientHeight += diff;
     this.__offsetHeight += diff;
     this.__outerHeight += diff;
@@ -2828,23 +2698,20 @@ class Xom extends Node {
     this.__sy5 += diff;
     this.__sy6 += diff;
     if(diff < 0) {
-      this.__config[NODE_LIMIT_CACHE] = false;
+      this.__limitCache = false;
     }
-    if(lv !== undefined) {
-      this.__config[NODE_REFRESH_LV] |= lv;
+    if(lv) {
+      this.__refreshLevel |= lv;
+      if(lv >= REFLOW) {
+        this.__cacheStyle = {};
+        this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
+      }
     }
     this.clearCache();
   }
 
-  __releaseWhenEmpty(__cache) {
-    if(__cache && __cache.available) {
-      __cache.release();
-    }
-    return true;
-  }
-
   getComputedStyle(key) {
-    let computedStyle = this.computedStyle;
+    let computedStyle = this.__computedStyle;
     let res = {};
     let keys = [];
     if(key) {
@@ -2886,8 +2753,8 @@ class Xom extends Node {
       box = this.bbox;
     }
     else {
-      let { __sx1, __sy1, offsetWidth, offsetHeight } = this;
-      box = [__sx1, __sy1, __sx1 + offsetWidth, __sy1 + offsetHeight];
+      let { __sx1, __sy1, __offsetWidth, __offsetHeight } = this;
+      box = [__sx1, __sy1, __sx1 + __offsetWidth, __sy1 + __offsetHeight];
     }
     let matrixEvent = this.matrixEvent;
     let p1 = point2d(mx.calPoint([box[0], box[1]], matrixEvent));
@@ -2909,60 +2776,46 @@ class Xom extends Node {
   }
 
   remove(cb) {
-    let self = this;
-    if(self.isDestroyed) {
-      inject.warn('Remove target is destroyed.');
+    let { __root: root } = this;
+    let parent = this.isShadowRoot ? this.hostRoot.__parent: this.__parent;
+    let i;
+    if(parent) {
+      // 移除component的shadowRoot视为移除component
+      let target = this.isShadowRoot ? this.hostRoot : this;
+      i = parent.__children.indexOf(target);
+      parent.__children.splice(i, 1);
+      i = parent.__zIndexChildren.indexOf(target);
+      parent.__zIndexChildren.splice(i, 1);
+      let { __prev, __next } = this;
+      if(__prev) {
+        __prev.__next = __next;
+      }
+      if(__next) {
+        __next.__prev = __prev;
+      }
+    }
+    if(this.__isDestroyed) {
       if(isFunction(cb)) {
         cb();
       }
       return;
     }
-    let { root, domParent } = self;
-    let target = self.isShadowRoot ? self.hostRoot : self;
-    // 特殊情况连续append/remove时候，还未被添加进来找不到所以无需删除
-    if(domParent.children.indexOf(target) === -1) {
+    parent.__deleteStruct(this, i);
+    // 不可见仅改变数据结构
+    if(this.__computedStyle[DISPLAY] === 'none' || parent.__computedStyle[DISPLAY] === 'none') {
+      this.__destroy();
       if(isFunction(cb)) {
         cb();
       }
       return;
     }
-    root.delRefreshTask(self.__task);
-    root.addRefreshTask(self.__task = {
-      __before() {
-        self.__task = null; // 清除在before，防止after的回调增加新的task误删
-        let pJson = domParent.__json;
-        let i = pJson.children.indexOf(self.isShadowRoot ? self.hostRoot.__json : self.__json);
-        if(i === -1) {
-          throw new Error('Remove index Exception.')
-        }
-        pJson.children.splice(i, 1);
-        domParent.children.splice(i, 1);
-        let zChildren = domParent.zIndexChildren;
-        // 可能appendChild会清空没有
-        if(zChildren) {
-          let j = zChildren.indexOf(self.isShadowRoot ? self.hostRoot : self);
-          if(j > -1) {
-            zChildren.splice(j, 1);
-          }
-        }
-        if(self.__prev) {
-          self.__prev.__next = self.__next;
-        }
-        // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-        let res = {};
-        res[UPDATE_NODE] = self;
-        res[UPDATE_FOCUS] = REFLOW;
-        res[UPDATE_REMOVE_DOM] = true;
-        res[UPDATE_CONFIG] = self.__config;
-        root.__addUpdate(self, self.__config, root, root.__config, res);
-      },
-      __after(diff) {
-        self.isShadowRoot ? self.hostRoot.__destroy() : self.__destroy();
-        if(isFunction(cb)) {
-          cb.call(self, diff);
-        }
-      },
-    });
+    // 可见在reflow逻辑做结构关系等
+    let res = {
+      focus: REFLOW,
+      removeDom: true,
+      cb,
+    };
+    root.__addUpdate(this, res);
   }
 
   get tagName() {
@@ -3005,20 +2858,20 @@ class Xom extends Node {
   get bbox() {
     if(!this.__bbox) {
       let {
-        __sx1, __sy1, offsetWidth, offsetHeight,
-        computedStyle: {
+        __sx1, __sy1, __offsetWidth, __offsetHeight,
+        __computedStyle: {
           [BOX_SHADOW]: boxShadow,
         },
       } = this;
-      this.__bbox = spreadBoxShadow([__sx1, __sy1, __sx1 + offsetWidth, __sy1 + offsetHeight], boxShadow);
+      this.__bbox = spreadBoxShadow([__sx1, __sy1, __sx1 + __offsetWidth, __sy1 + __offsetHeight], boxShadow);
     }
     return this.__bbox;
   }
 
   get filterBbox() {
     if(!this.__filterBbox) {
-      let bbox = this.bbox;
-      let filter = this.computedStyle[FILTER];
+      let bbox = this.__bbox || this.bbox;
+      let filter = this.__computedStyle[FILTER];
       this.__filterBbox = spreadFilter(bbox, filter);
     }
     return this.__filterBbox;
@@ -3028,16 +2881,26 @@ class Xom extends Node {
     return this.__listener;
   }
 
+  get opacity() {
+    return this.__opacity;
+  }
+
   get matrix() {
-    return this.__config[NODE_MATRIX];
+    return this.__matrix;
   }
 
   get matrixEvent() {
-    return this.__config[NODE_MATRIX_EVENT];
+    let __domParent = this.__domParent, matrix = this.__matrix;
+    while(__domParent) {
+      matrix = mx.multiply(__domParent.__perspectiveMatrix, matrix);
+      matrix = mx.multiply(__domParent.__matrix, matrix);
+      __domParent = __domParent.__domParent;
+    }
+    return matrix;
   }
 
   get perspectiveMatrix() {
-    return this.__config[NODE_PERSPECTIVE_MATRIX];
+    return this.__perspectiveMatrix;
   }
 
   get style() {
@@ -3093,7 +2956,7 @@ class Xom extends Node {
   }
 
   set cacheAsBitmap(v) {
-    this.__config[NODE_CACHE_AS_BITMAP] = this.__cacheAsBitmap = !!v;
+    this.__cacheAsBitmap = !!v;
   }
 
   get parentLineBox() {

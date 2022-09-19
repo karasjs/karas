@@ -52,9 +52,6 @@ function cache(key, width, height, hash, message) {
   return {
     canvas: o,
     ctx,
-    draw() {
-      // 空函数，仅对小程序提供hook特殊处理，flush缓冲
-    },
     enabled: true,
     available: true,
     release() {
@@ -150,7 +147,7 @@ let inject = {
   measureImg(url, cb) {
     if(Array.isArray(url)) {
       if(!url.length) {
-        return cb();
+        return cb && cb();
       }
       let count = 0;
       let len = url.length;
@@ -159,7 +156,7 @@ let inject = {
         inject.measureImg(item, function(cache) {
           list[i] = cache;
           if(++count === len) {
-            cb(list);
+            cb && cb(list);
           }
         });
       });
@@ -338,7 +335,6 @@ let inject = {
       context.clearRect(0, 0, 16, 16);
       context.font = '16px ' + this.defaultFontFamily;
       context.fillText('a', 8, 8);
-      canvas.draw();
       defaultFontFamilyData = context.getImageData(0, 0, 16, 16).data;
     }
     context.clearRect(0, 0, 16, 16);
@@ -347,7 +343,6 @@ let inject = {
     }
     context.font = '16px ' + ff + ',' + this.defaultFontFamily;
     context.fillText('a', 8, 8);
-    canvas.draw();
     let data = context.getImageData(0, 0, 16, 16).data;
     for(let i = 0, len = data.length; i < len; i++) {
       if(defaultFontFamilyData[i] !== data[i]) {

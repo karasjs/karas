@@ -7,7 +7,7 @@ module.exports = {
       .url('file://' + path.join(__dirname, 'index.html'))
       .waitForElementVisible('body', 1000)
       .pause(300)
-      .assert.value('input', 'blur,1.6/blur,5')
+      .assert.value('input', '[{"k":"blur","v":1.6}]/[{"k":"blur","v":5}]')
       .end();
   }
 };

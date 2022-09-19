@@ -2,6 +2,7 @@ import Geom from './Geom';
 import util from '../../util/util';
 import enums from '../../util/enums';
 import geom from '../../math/geom';
+import mode from '../../refresh/mode';
 
 const { STYLE_KEY: {
   STROKE_WIDTH,
@@ -81,13 +82,12 @@ class Ellipse extends Geom {
     return rebuild;
   }
 
-  render(renderMode, lv, ctx, cache, dx, dy) {
-    let res = super.render(renderMode, lv, ctx, cache, dx, dy);
-    if(res.break) {
+  render(renderMode, ctx, dx, dy) {
+    let res = super.render(renderMode, ctx, dx, dy);
+    if(res.break || renderMode === mode.WEBGL) {
       return res;
     }
     this.buildCache(res.cx, res.cy);
-    ctx = res.ctx;
     this.__renderPolygon(renderMode, ctx, res);
     return res;
   }
@@ -133,8 +133,8 @@ class Ellipse extends Geom {
       });
       half = Math.ceil(half * 0.5) + 1;
       let xa = cx - rx - half;
-      let xb = cx + rx - half;
-      let ya = cy - ry + half;
+      let xb = cx + rx + half;
+      let ya = cy - ry - half;
       let yb = cy + ry + half;
       bbox[0] = Math.min(bbox[0], xa);
       bbox[1] = Math.min(bbox[1], ya);

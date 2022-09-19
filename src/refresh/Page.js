@@ -97,11 +97,11 @@ class Page {
   }
 
   get canvas() {
-    return this.offscreen.canvas;
+    return this.__offscreen.canvas;
   }
 
   get ctx() {
-    return this.offscreen.ctx;
+    return this.__offscreen.ctx;
   }
 
   get update() {

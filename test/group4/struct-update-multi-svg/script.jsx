@@ -11,7 +11,7 @@ let input = document.querySelector('#base64');
 o.ref.span.updateStyle({ padding: 10 });
 o.ref.strong.updateStyle({ padding: 10 }, function() {
   input.value = JSON.stringify(o.__structs.map(item => {
-    item[karas.enums.STRUCT_KEY.STRUCT_NODE] = item[karas.enums.STRUCT_KEY.STRUCT_NODE].tagName || 'text';
+    item.node = item.node.tagName || 'text';
     return item;
   }));
 });

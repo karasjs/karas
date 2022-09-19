@@ -16,16 +16,13 @@ const {
     LINE_HEIGHT,
     ROTATE_Z,
   },
-  NODE_KEY: {
-    NODE_VIRTUAL_DOM,
-  },
 } = enums;
 const { DEG } = unit;
 const { CANVAS, SVG, WEBGL } = mode;
 
 const CHAR = '…';
 
-class Ellipsis extends Node{
+class Ellipsis extends Node {
   constructor(x, y, width, parent, isUpright) {
     super();
     this.__x = this.__sx1 = x;
@@ -38,7 +35,7 @@ class Ellipsis extends Node{
     this.__isVertical = isUpright;
   }
 
-  render(renderMode, lv, ctx, cache, dx = 0, dy = 0) {
+  render(renderMode, ctx, dx = 0, dy = 0) {
     let { x, y, parent, isUpright } = this;
     let {
       ox,
@@ -68,7 +65,7 @@ class Ellipsis extends Node{
       }
       if(isUpright) {
         let me = parent.matrixEvent, list = [
-          [ROTATE_Z, [90, DEG]],
+          { k: ROTATE_Z, v: { v: 90, u: DEG } },
         ];
         let tfo = [x, y];
         let m = transform.calMatrixWithOrigin(list, tfo, 0, 0);
@@ -94,7 +91,7 @@ class Ellipsis extends Node{
       if(isUpright) {
         props.push(['writing-mode', 'vertical-lr']);
       }
-      let vd = this.__config[NODE_VIRTUAL_DOM] = this.__virtualDom = {
+      let vd = this.__virtualDom = {
         type: 'text',
         children: [
           {

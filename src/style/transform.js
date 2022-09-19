@@ -20,7 +20,7 @@ const { STYLE_KEY: {
   MATRIX,
   FONT_SIZE,
 }} = enums;
-const { PX, PERCENT, REM, VW, VH, VMAX, VMIN } = unit;
+const { PERCENT, REM, VW, VH, VMAX, VMIN } = unit;
 const { matrix, geom } = math;
 const { identity, multiply, isE } = matrix;
 const { d2r } = geom;
@@ -78,7 +78,7 @@ function calSingle(t, k, v) {
   }
   else if(k === ROTATE_3D) {
     let [x, y, z, r] = v;
-    r = d2r(r[0]);
+    r = d2r(r.v);
     let s = Math.sin(r);
     let c = Math.cos(r);
     if(x && !y && !z) {
@@ -158,9 +158,8 @@ function calMatrix(transform, ow, oh, root) {
   let list = normalize(transform, ow, oh, root);
   let m = identity();
   list.forEach(item => {
-    let [k, v] = item;
     let t = identity();
-    calSingle(t, k, v);
+    calSingle(t, item.k, item.v);
     m = multiply(m, t);
   });
   return m;
@@ -186,43 +185,43 @@ function calMatrixWithOrigin(transform, transformOrigin, ow, oh) {
 
 function normalizeSingle(k, v, ow, oh, root) {
   if(k === TRANSLATE_X || k === TRANSLATE_Z) {
-    if(v[1] === PERCENT) {
-      return v[0] * ow * 0.01;
+    if(v.u === PERCENT) {
+      return v.v * ow * 0.01;
     }
-    else if(v[1] === REM) {
-      return v[0] * root.computedStyle[FONT_SIZE];
+    else if(v.u === REM) {
+      return v.v * root.computedStyle[FONT_SIZE];
     }
-    else if(v[1] === VW) {
-      return v[0] * root.width * 0.01;
+    else if(v.u === VW) {
+      return v.v * root.width * 0.01;
     }
-    else if(v[1] === VH) {
-      return v[0] * root.height * 0.01;
+    else if(v.u === VH) {
+      return v.v * root.height * 0.01;
     }
-    else if(v[1] === VMAX) {
-      return v[0] * Math.max(root.width, root.height) * 0.01;
+    else if(v.u === VMAX) {
+      return v.v * Math.max(root.width, root.height) * 0.01;
     }
-    else if(v[1] === VMIN) {
-      return v[0] * Math.min(root.width, root.height) * 0.01;
+    else if(v.u === VMIN) {
+      return v.v * Math.min(root.width, root.height) * 0.01;
     }
   }
   else if(k === TRANSLATE_Y) {
-    if(v[1] === PERCENT) {
-      return v[0] * oh * 0.01;
+    if(v.u === PERCENT) {
+      return v.v * oh * 0.01;
     }
-    else if(v[1] === REM) {
-      return v[0] * root.computedStyle[FONT_SIZE];
+    else if(v.u === REM) {
+      return v.v * root.computedStyle[FONT_SIZE];
     }
-    else if(v[1] === VW) {
-      return v[0] * root.width * 0.01;
+    else if(v.u === VW) {
+      return v.v * root.width * 0.01;
     }
-    else if(v[1] === VH) {
-      return v[0] * root.height * 0.01;
+    else if(v.u === VH) {
+      return v.v * root.height * 0.01;
     }
-    else if(v[1] === VMAX) {
-      return v[0] * Math.max(root.width, root.height) * 0.01;
+    else if(v.u === VMAX) {
+      return v.v * Math.max(root.width, root.height) * 0.01;
     }
-    else if(v[1] === VMIN) {
-      return v[0] * Math.min(root.width, root.height) * 0.01;
+    else if(v.u === VMIN) {
+      return v.v * Math.min(root.width, root.height) * 0.01;
     }
   }
   else if(k === MATRIX) {
@@ -231,14 +230,17 @@ function normalizeSingle(k, v, ow, oh, root) {
   else if(k === ROTATE_3D) {
     return v;
   }
-  return v[0];
+  return v.v;
 }
 
 function normalize(transform, ow, oh, root) {
   let res = [];
   transform.forEach(item => {
-    let [k, v] = item;
-    res.push([k, normalizeSingle(k, v, ow, oh, root)]);
+    let k = item.k;
+    res.push({
+      k,
+      v: normalizeSingle(k, item.v, ow, oh, root),
+    });
   });
   return res;
 }

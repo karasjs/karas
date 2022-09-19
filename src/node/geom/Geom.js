@@ -10,6 +10,7 @@ import transform from '../../style/transform';
 import mx from '../../math/matrix';
 import inject from '../../util/inject';
 import gradient from '../../math/gradient';
+import level from '../../refresh/level';
 
 const {
   STYLE_KEY: {
@@ -33,13 +34,6 @@ const {
     VISIBILITY,
     FLEX_BASIS,
   },
-  NODE_KEY: {
-    NODE_CACHE_PROPS,
-    NODE_CURRENT_PROPS,
-    NODE_CURRENT_STYLE,
-    NODE_STYLE,
-    NODE_DEFS_CACHE,
-  }
 } = enums;
 const { AUTO, PX, PERCENT, REM, VW, VH, VMAX, VMIN, RGBA, GRADIENT } = unit;
 const { int2rgba, isNil, joinArr } = util;
@@ -54,11 +48,7 @@ class Geom extends Xom {
     this.__style = css.normalize(this.style, reset.DOM_ENTRY_SET.concat(reset.GEOM_ENTRY_SET));
     this.__currentStyle = util.extend({}, this.__style);
     this.__currentProps = util.clone(this.props);
-    let config = this.__config;
-    config[NODE_CACHE_PROPS] = this.__cacheProps = {};
-    config[NODE_CURRENT_PROPS] = this.__currentProps;
-    config[NODE_CURRENT_STYLE] = this.__currentStyle;
-    config[NODE_STYLE] = this.__style;
+    this.__cacheProps = {};
   }
 
   __tryLayInline(w, total) {
@@ -102,15 +92,20 @@ class Geom extends Xom {
     } = currentStyle;
     let main = isDirectionRow ? width : height;
     // basis3种情况：auto、固定、content，只区分固定和其它
-    let isFixed = [PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(flexBasis[1]) > -1;
+    let isFixed = [PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(flexBasis.u) > -1;
     if(isFixed) {
       b = max = min = this.__calSize(flexBasis, isDirectionRow ? w : h, true);
     }
-    else if(([PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(main[1]) > -1)) {
+    else if(([PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(main.u) > -1)) {
       b = max = min = this.__calSize(main, isDirectionRow ? w : h, true);
     }
     // 直接item的mpb影响basis
     return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], isDirectChild);
+  }
+
+  __layout(data, isAbs, isColumn, isRow) {
+    super.__layout(data, isAbs, isColumn, isRow);
+    this.__layoutStyle();
   }
 
   __layoutBlock(data, isAbs, isColumn, isRow) {
@@ -127,7 +122,7 @@ class Geom extends Xom {
       return;
     }
     this.__marginAuto(this.currentStyle, data);
-    this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
+    this.__cacheProps = {};
   }
 
   __layoutFlex(data, isAbs, isColumn, isRow) {
@@ -140,31 +135,23 @@ class Geom extends Xom {
     let tw = fixedWidth ? w : 0;
     let th = fixedHeight ? h : 0;
     this.__ioSize(tw, th);
-    this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
+    this.__cacheProps = {};
   }
 
-  __calCache(renderMode, ctx, parent, __cacheStyle, currentStyle, computedStyle,
-             clientWidth, clientHeight, offsetWidth, offsetHeight,
-             borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
-             paddingTop, paddingRight, paddingBottom, paddingLeft,
-             x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6) {
-    let res = super.__calCache(renderMode, ctx, parent, __cacheStyle, currentStyle, computedStyle,
-      clientWidth, clientHeight, offsetWidth, offsetHeight,
-      borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
-      paddingTop, paddingRight, paddingBottom, paddingLeft,
-      x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6);
+  __calStyle(lv, __currentStyle, __computedStyle, __cacheStyle) {
+    let res = super.__calStyle(lv, __currentStyle, __computedStyle, __cacheStyle);
     if(isNil(__cacheStyle[STROKE_WIDTH])) {
       __cacheStyle[STROKE_WIDTH] = true;
-      let strokeWidth = currentStyle[STROKE_WIDTH] || [];
+      let strokeWidth = __currentStyle[STROKE_WIDTH] || [];
       let w = this.width;
-      computedStyle[STROKE_WIDTH] = strokeWidth.map(item => {
+      __computedStyle[STROKE_WIDTH] = strokeWidth.map(item => {
         return this.__calSize(item, w, true);
       });
     }
     if(isNil(__cacheStyle[STROKE_DASHARRAY])) {
       __cacheStyle[STROKE_DASHARRAY] = true;
-      computedStyle[STROKE_DASHARRAY] = currentStyle[STROKE_DASHARRAY] || [];
-      __cacheStyle[STROKE_DASHARRAY_STR] = computedStyle[STROKE_DASHARRAY].map(item => joinArr(item, ','));
+      __computedStyle[STROKE_DASHARRAY] = __currentStyle[STROKE_DASHARRAY] || [];
+      __cacheStyle[STROKE_DASHARRAY_STR] = __computedStyle[STROKE_DASHARRAY].map(item => joinArr(item, ','));
     }
     // 直接赋值的
     [
@@ -173,24 +160,24 @@ class Geom extends Xom {
       STROKE_MITERLIMIT,
       FILL_RULE,
     ].forEach(k => {
-      computedStyle[k] = currentStyle[k];
+      __computedStyle[k] = __currentStyle[k];
     });
     // stroke/fll移至render里处理，因为cache涉及渐变坐标偏移
     [FILL, STROKE].forEach(k => {
       if(isNil(__cacheStyle[k])) {
-        let v = currentStyle[k];
-        let cs = computedStyle[k] = [];
+        let v = __currentStyle[k];
+        let cs = __computedStyle[k] = [];
         let res = __cacheStyle[k] = [];
         if(Array.isArray(v)) {
           v.forEach(item => {
-            if(item && item[1] === GRADIENT) {
+            if(item && item.u === GRADIENT) {
               // let t = this.__gradient(renderMode, ctx, x3, y3, x4, y4, item[0], 0, 0);
-              cs.push(item[0]);
+              cs.push(item.v);
               res.push(true);
             }
-            else if(item && item[1] === RGBA && item[0][3] > 0) {
-              cs.push(item[0]);
-              res.push(int2rgba(item[0]));
+            else if(item && item.u === RGBA && item.v[3] > 0) {
+              cs.push(item.v);
+              res.push(int2rgba(item.v));
             }
             else {
               cs.push('none');
@@ -203,7 +190,7 @@ class Geom extends Xom {
     return res;
   }
 
-  __calContent(renderMode, lv, currentStyle, computedStyle) {
+  calContent(currentStyle, computedStyle) {
     // Geom强制有内容
     return computedStyle[VISIBILITY] !== 'hidden';
   }
@@ -227,13 +214,13 @@ class Geom extends Xom {
     } = computedStyle;
     stroke = stroke.map(item => {
       if(item.k) {
-        return this.__gradient(renderMode, res.ctx, res.x3, res.y3, res.x4, res.y4, item, res.dx, res.dy);
+        return this.__gradient(renderMode, res.ctx, res.sx3, res.sy3, res.sx4, res.sy4, item, res.dx, res.dy);
       }
       return int2rgba(item);
     });
     fill = fill.map(item => {
       if(item.k) {
-        return this.__gradient(renderMode, res.ctx, res.x3, res.y3, res.x4, res.y4, item, res.dx, res.dy);
+        return this.__gradient(renderMode, res.ctx, res.sx3, res.sy3, res.sx4, res.sy4, item, res.dx, res.dy);
       }
       return int2rgba(item);
     });
@@ -262,7 +249,7 @@ class Geom extends Xom {
       strokeMiterlimit,
       fill,
     } = res;
-    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+    if(renderMode === mode.CANVAS) {
       if(fill) {
         if(fill.k === 'linear') {
           ctx.fillStyle = fill.v;
@@ -315,13 +302,13 @@ class Geom extends Xom {
     }
   }
 
-  render(renderMode, lv, ctx, cache, dx, dy) {
-    let res = super.render(renderMode, lv, ctx, cache, dx, dy);
+  render(renderMode, ctx, dx, dy) {
+    let res = super.render(renderMode, ctx, dx, dy);
     if(renderMode === mode.SVG) {
       this.virtualDom.type = 'geom';
     }
     // 无论canvas/svg，break可提前跳出省略计算
-    if(res.break) {
+    if(res.break || renderMode === mode.WEBGL) {
       return res;
     }
     // data在无cache时没有提前设置
@@ -458,7 +445,7 @@ class Geom extends Xom {
       dx,
       dy,
     } = res;
-    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+    if(renderMode === mode.CANVAS) {
       this.__preSetCanvas(renderMode, ctx, res);
       ctx.beginPath();
       if(isMulti) {
@@ -564,14 +551,13 @@ class Geom extends Xom {
     let t = mx.inverse(matrix);
     list = this.__inversePtList(list, isMulti, t, dx, dy);
     // 用正向matrix渲染
-    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+    if(renderMode === mode.CANVAS) {
       if(matrix) {
         ctx.save();
-        // 临时解决方案，webgl和cacheCanvas的渲染忽略世界matrix
-        if(renderMode === mode.CANVAS) {
-          let me = this.matrixEvent;
-          matrix = mx.multiply(me, matrix);
-        }
+        // 获取当前matrix，在webgl中为E，在canvas中分无cache和有cache模式
+        let me = ctx.getTransform();
+        me = [me.a, me.b, 0, 0, me.c, me.d, 0, 0, 0, 0, 1, 0, me.e, me.f, 1, 0];
+        matrix = mx.multiply(me, matrix);
         ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
       }
       ctx.beginPath();
@@ -624,7 +610,7 @@ class Geom extends Xom {
       dy = 0,
     } = res;
     let color = fill.v;
-    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+    if(renderMode === mode.CANVAS) {
       let [x1, y1, x2, y2] = bbox;
       let w = x2 - x1, h = y2 - y1;
       let offscreen = inject.getCacheCanvas(w, h, '__$$CONIC_GRADIENT$$__');
@@ -666,7 +652,7 @@ class Geom extends Xom {
             }],
           };
           let clip = ctx.add(v);
-          this.__config[NODE_DEFS_CACHE].push(v);
+          this.__cacheDefs.push(v);
           color.forEach(item => {
             this.virtualDom.bb.push({
               type: 'item',
@@ -691,7 +677,7 @@ class Geom extends Xom {
           }],
         };
         let clip = ctx.add(v);
-        this.__config[NODE_DEFS_CACHE].push(v);
+        this.__cacheDefs.push(v);
         color.forEach(item => {
           this.virtualDom.bb.push({
             type: 'item',
@@ -722,30 +708,33 @@ class Geom extends Xom {
     }
   }
 
-  // geom的cache无内容也不清除，因为子类不清楚内容，除非看不见
-  __releaseWhenEmpty(cache, computedStyle) {
-    return computedStyle[VISIBILITY] === 'hidden';
-  }
-
   // offset/resize时要多一步清空props上记录的缓存
   __offsetX(diff, isLayout, lv) {
     super.__offsetX(diff, isLayout, lv);
-    this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
+    if(lv && lv >= level.REFLOW) {
+      this.__cacheProps = {};
+    }
   }
 
   __offsetY(diff, isLayout, lv) {
     super.__offsetY(diff, isLayout, lv);
-    this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
+    if(lv && lv >= level.REFLOW) {
+      this.__cacheProps = {};
+    }
   }
 
   __resizeX(diff, lv) {
     super.__resizeX(diff, lv);
-    this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
+    if(lv && lv >= level.REFLOW) {
+      this.__cacheProps = {};
+    }
   }
 
   __resizeY(diff, lv) {
     super.__resizeY(diff, lv);
-    this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
+    if(lv && lv >= level.REFLOW) {
+      this.__cacheProps = {};
+    }
   }
 
   addGeom(tagName, props) {
@@ -782,6 +771,9 @@ class Geom extends Xom {
   }
 
   static getRegister(name) {
+    if(name && !util.isString(name) && name.prototype && name.prototype instanceof Geom) {
+      return name;
+    }
     if(!name || !util.isString(name) || name.charAt(0) !== '$') {
       throw new Error('Invalid param');
     }

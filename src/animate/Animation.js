@@ -46,93 +46,29 @@ const {
     TRANSLATE_PATH,
     TEXT_STROKE_COLOR,
     TEXT_STROKE_OVER,
-  },
-  UPDATE_KEY: {
-    UPDATE_NODE,
-    UPDATE_STYLE,
-    UPDATE_KEYS,
-    UPDATE_CONFIG,
-  },
-  KEY_FRAME_KEY: {
-    FRAME_STYLE,
-    FRAME_TIME,
-    FRAME_EASING,
-    FRAME_TRANSITION,
-  },
-  ANIMATE_KEY: {
-    I_ASSIGNING,
-    I_IN_FPS,
-    I_IS_DELAY,
-    I_BEGIN,
-    I_END,
-    I_FINISHED,
-    I_NEXT_END,
-    I_FIRST_PLAY,
-    I_PLAY_CB,
-    I_TARGET,
-    I_ROOT,
-    I_FRAMES,
-    I_FRAMES_R,
-    I_CURRENT_TIME,
-    I_NEXT_TIME,
-    I_STYLE,
-    I_DURATION,
-    I_ITERATIONS,
-    I_FILL,
-    I_PLAYBACK_RATE,
-    I_PLAY_COUNT,
-    I_PLAY_STATE,
-    I_DESTROYED,
-    I_START_TIME,
-    I_FPS_TIME,
-    I_EASING,
-    I_ENTER_FRAME,
-    I_DELAY,
-    I_END_DELAY,
-    I_KEYS,
-    I_ORIGIN_STYLE,
-    I_CURRENT_FRAMES,
-    I_CURRENT_FRAME,
-    I_SPF_LIMIT,
-    I_FPS,
-    I_DIRECTION,
-    I_FIRST_ENTER,
-    I_STAY_BEGIN,
-    I_STAY_END,
-    I_IS2,
-    I_END_TIME,
-    I_NODE_CONFIG,
-    I_ROOT_CONFIG,
-    I_OUT_BEGIN_DELAY,
-    I_TIME_STAMP,
+    STROKE_WIDTH,
   },
 } = enums;
 const { AUTO, PX, PERCENT, INHERIT, RGBA, STRING, NUMBER, REM, VW, VH, VMAX, VMIN, GRADIENT, calUnit } = unit;
-const { isNil, isFunction, isNumber, isObject, isString, clone, equalArr } = util;
+const { isNil, isFunction, isNumber, isObject, clone, equalArr } = util;
 const { linear } = easing;
-const { cloneStyle } = css;
+const { cloneStyle, equalStyle } = css;
 const { isGeom, GEOM } = change;
 
 const {
-  COLOR_HASH,
-  LENGTH_HASH,
-  RADIUS_HASH,
-  GRADIENT_HASH,
-  EXPAND_HASH,
-  GRADIENT_TYPE,
+  isColorKey,
+  isExpandKey,
+  isLengthKey,
+  isGradientKey,
+  isRadiusKey,
 } = key;
-
-const NUM_CAL_HASH = {
-};
-Object.assign(NUM_CAL_HASH, LENGTH_HASH);
-Object.assign(NUM_CAL_HASH, EXPAND_HASH);
 
 function unify(frames, target) {
   let hash = {};
   let keys = [];
   // 获取所有关键帧的属性
   frames.forEach(item => {
-    let style = item[FRAME_STYLE];
+    let style = item.style;
     Object.keys(style).forEach(k => {
       let v = style[k];
       // 未定义的过滤掉，null空有意义
@@ -158,21 +94,21 @@ function unify(frames, target) {
   });
   // 添补没有声明完全的关键帧属性为节点当前值
   frames.forEach(item => {
-    let style = item[FRAME_STYLE];
+    let style = item.style;
     keys.forEach(k => {
       if(!style.hasOwnProperty(k) || isNil(style[k])) {
         if(GEOM.hasOwnProperty(k)) {
-          style[k] = target.getProps(k);
+          style[k] = clone(target.getProps(k));
         }
         else {
           if(k === TRANSLATE_X && style.hasOwnProperty(TRANSLATE_PATH)) {
-            style[k] = style[TRANSLATE_PATH][0];
+            style[k] = clone(style[TRANSLATE_PATH][0]);
           }
           else if(k === TRANSLATE_Y && style.hasOwnProperty(TRANSLATE_PATH)) {
-            style[k] = style[TRANSLATE_PATH][1];
+            style[k] = clone(style[TRANSLATE_PATH][1]);
           }
           else {
-            style[k] = target.currentStyle[k];
+            style[k] = cloneStyle(target.__currentStyle, [k])[k];
           }
         }
       }
@@ -183,9 +119,9 @@ function unify(frames, target) {
 
 // 每次初始化时处理继承值，以及转换transform为单matrix矩阵
 function inherit(frames, keys, target) {
-  let computedStyle = target.computedStyle;
+  let computedStyle = target.__computedStyle;
   frames.forEach(item => {
-    let style = item[FRAME_STYLE];
+    let style = item.style;
     keys.forEach(k => {
       let v = style[k];
       // geom的属性可能在帧中没有
@@ -193,26 +129,27 @@ function inherit(frames, keys, target) {
         return;
       }
       if(k === TRANSFORM) {
-        let ow = target.outerWidth;
-        let oh = target.outerHeight;
+        let ow = target.__outerWidth;
+        let oh = target.__outerHeight;
         let m = tf.calMatrix(v, ow, oh);
-        style[k] = [[MATRIX, m]];
+        style[k] = [{ k: MATRIX, v: m }];
       }
-      else if(v[1] === INHERIT) {
+      else if(v.u === INHERIT) {
         if(k === COLOR || k === TEXT_STROKE_COLOR) {
-          style[k] = [util.rgba2int(computedStyle[k]), RGBA];
+          style[k] = { v: util.rgba2int(computedStyle[k]), u: RGBA };
         }
-        else if(LENGTH_HASH.hasOwnProperty(k)) {
-          style[k] = [computedStyle[k], PX];
+        else if(isLengthKey(k)) {
+          style[k] = { v: computedStyle[k], u: PX };
         }
         else if(k === FONT_WEIGHT) {
-          style[k] = [computedStyle[k], NUMBER];
+          style[k] = { v: computedStyle[k], u: NUMBER };
         }
         else if(k === FONT_STYLE || k === FONT_FAMILY || k === TEXT_ALIGN || k === TEXT_STROKE_OVER) {
-          style[k] = [computedStyle[k], STRING];
+          style[k] = { v: computedStyle[k], u: STRING };
         }
       }
     });
+    item.clone = cloneStyle(style);
   });
 }
 
@@ -220,230 +157,231 @@ function inherit(frames, keys, target) {
  * 通知root更新当前动画，需要根据frame的状态来决定是否是同步插入
  * 在异步时，因为动画本身是异步，需要addRefreshTask
  * 而如果此时frame在执行before过程中，说明帧动画本身是在before计算的，需要同步插入
- * @param style
  * @param keys 样式所有的key
- * @param __config
  * @param root
  * @param node
+ * @param cb
  */
-function genBeforeRefresh(style, keys, __config, root, node) {
-  let res = {};
-  res[UPDATE_NODE] = node;
-  res[UPDATE_STYLE] = style;
-  res[UPDATE_KEYS] = keys;
-  res[UPDATE_CONFIG] = __config[I_NODE_CONFIG];
-  root.__addUpdate(node, __config[I_NODE_CONFIG], root, __config[I_ROOT_CONFIG], res);
-  __config[I_STYLE] = style;
-  __config[I_ASSIGNING] = true;
-  // frame每帧回调时，下方先执行计算好变更的样式，这里特殊插入一个hook，让root增加一个刷新操作
-  // 多个动画调用因为相同root也只会插入一个，这样在所有动画执行完毕后frame里检查同步进行刷新，解决单异步问题
-  root.__frameHook();
+function genBeforeRefresh(keys, root, node, cb) {
+  root.__addUpdate(node, {
+    keys,
+    cb,
+  });
 }
 
 /**
  * 将每帧的样式格式化，提取出offset属性并转化为时间，提取出缓动曲线easing
+ * 加好空数组transition/keys，后续计算两帧之间变化时存入
+ * 加好空数组fixed，后续计算无帧变化时存入
  * @param style 关键帧样式
  * @param duration 动画时间长度
  * @param es options的easing曲线控制，frame没有自定义则使用全局的
- * @returns {{style: *, time: number, easing: *, transition: []}}
  */
 function framing(style, duration, es) {
   let { offset, easing } = style;
   // 这两个特殊值提出来存储不干扰style
   delete style.offset;
   delete style.easing;
-  // translatePath特殊对待，ae的曲线运动动画
+  // translatePath特殊对待，ae的曲线运动动画，普通css不包含，特殊处理并添加到style最后
   let translatePath = style.translatePath;
   style = css.normalize(style);
   if(Array.isArray(translatePath) && [6, 8].indexOf(translatePath.length) > -1) {
     style[TRANSLATE_PATH] = translatePath.map(item => {
       let v = calUnit(item);
-      if(v[1] === NUMBER) {
-        v[1] = PX;
+      if(v.u === NUMBER) {
+        v.u = PX;
       }
       return v;
     });
   }
-  let res = [];
-  res[FRAME_STYLE] = style;
-  res[FRAME_TIME] = offset * duration;
-  res[FRAME_EASING] = easing || es;
-  res[FRAME_TRANSITION] = [];
-  return res;
+  return {
+    style,
+    time: offset * duration,
+    easing: easing || es,
+    timingFunction: getEasing(easing || es),
+    transition: [], // 变化的属性
+    keys: [], // 变化的k
+    fixed: [], // 不变的k
+  };
 }
 
 function calByUnit(p, n, container, root) {
-  if(p[1] === PX) {
-    if(n[1] === PERCENT) {
-      return n[0] * 0.01 * container - p[0];
+  if(p.u === PX) {
+    if(n.u === PERCENT) {
+      return n.v * 0.01 * container - p.v;
     }
-    else if(n[1] === REM) {
-      return n[0] * root.computedStyle[FONT_SIZE] - p[0];
+    else if(n.u === REM) {
+      return n.v * root.computedStyle[FONT_SIZE] - p.v;
     }
-    else if(n[1] === VW) {
-      return n[0] * root.width * 0.01 - p[0];
+    else if(n.u === VW) {
+      return n.v * root.width * 0.01 - p.v;
     }
-    else if(n[1] === VH) {
-      return n[0] * root.height * 0.01 - p[0];
+    else if(n.u === VH) {
+      return n.v * root.height * 0.01 - p.v;
     }
-    else if(n[1] === VMAX) {
-      return n[0] * Math.max(root.width, root.height) * 0.01 - p[0];
+    else if(n.u === VMAX) {
+      return n.v * Math.max(root.width, root.height) * 0.01 - p.v;
     }
-    else if(n[1] === VMIN) {
-      return n[0] * Math.min(root.width, root.height) * 0.01 - p[0];
-    }
-  }
-  else if(p[1] === PERCENT) {
-    if(n[1] === PX) {
-      return n[0] * 100 / container - p[0];
-    }
-    else if(n[1] === REM) {
-      return n[0] * root.computedStyle[FONT_SIZE] * 100 / container - p[0];
-    }
-    else if(n[1] === VW) {
-      return n[0] * root.width / container - p[0];
-    }
-    else if(n[1] === VH) {
-      return n[0] * root.height / container - p[0];
-    }
-    else if(n[1] === VMAX) {
-      return n[0] * Math.max(root.width, root.height) / container - p[0];
-    }
-    else if(n[1] === VMIN) {
-      return n[0] * Math.min(root.width, root.height) / container - p[0];
+    else if(n.u === VMIN) {
+      return n.v * Math.min(root.width, root.height) * 0.01 - p.v;
     }
   }
-  else if(p[1] === REM) {
-    if(n[1] === PX) {
-      return n[0] / root.computedStyle[FONT_SIZE] - p[0];
+  else if(p.u === PERCENT) {
+    if(n.u === PX) {
+      return n.v * 100 / container - p.v;
     }
-    else if(n[1] === PERCENT) {
-      return n[0] * 0.01 * container / root.computedStyle[FONT_SIZE] - p[0];
+    else if(n.u === REM) {
+      return n.v * root.computedStyle[FONT_SIZE] * 100 / container - p.v;
     }
-    else if(n[1] === VW) {
-      return n[0] * root.width * 0.01 / root.computedStyle[FONT_SIZE] - p[0];
+    else if(n.u === VW) {
+      return n.v * root.width / container - p.v;
     }
-    else if(n[1] === VH) {
-      return n[0] * root.height * 0.01 / root.computedStyle[FONT_SIZE] - p[0];
+    else if(n.u === VH) {
+      return n.v * root.height / container - p.v;
     }
-    else if(n[1] === VMAX) {
-      return n[0] * Math.max(root.width, root.height) * 0.01 / root.computedStyle[FONT_SIZE] - p[0];
+    else if(n.u === VMAX) {
+      return n.v * Math.max(root.width, root.height) / container - p.v;
     }
-    else if(n[1] === VMIN) {
-      return n[0] * Math.min(root.width, root.height) * 0.01 / root.computedStyle[FONT_SIZE] - p[0];
-    }
-  }
-  else if(p[1] === VW) {
-    if(n[1] === PX) {
-      return n[0] * 100 / root.width - p[0];
-    }
-    else if(n[1] === REM) {
-      return n[0] * 100 * root.computedStyle[FONT_SIZE] / root.width - p[0];
-    }
-    else if(n[1] === PERCENT) {
-      return n[0] * container / root.width - p[0];
-    }
-    else if(n[1] === VH) {
-      return n[0] * root.height / root.width - p[0];
-    }
-    else if(n[1] === VMAX) {
-      return n[0] * Math.max(root.width, root.height) / root.width - p[0];
-    }
-    else if(n[1] === VMIN) {
-      return n[0] * Math.min(root.width, root.height) / root.width - p[0];
+    else if(n.u === VMIN) {
+      return n.v * Math.min(root.width, root.height) / container - p.v;
     }
   }
-  else if(p[1] === VH) {
-    if(n[1] === PX) {
-      return n[0] * 100 / root.height - p[0];
+  else if(p.u === REM) {
+    if(n.u === PX) {
+      return n.v / root.computedStyle[FONT_SIZE] - p.v;
     }
-    else if(n[1] === REM) {
-      return n[0] * 100 * root.computedStyle[FONT_SIZE] / root.height - p[0];
+    else if(n.u === PERCENT) {
+      return n.v * 0.01 * container / root.computedStyle[FONT_SIZE] - p.v;
     }
-    else if(n[1] === VW) {
-      return n[0] * root.width / root.height - p[0];
+    else if(n.u === VW) {
+      return n.v * root.width * 0.01 / root.computedStyle[FONT_SIZE] - p.v;
     }
-    else if(n[1] === PERCENT) {
-      return n[0] * container / root.height - p[0];
+    else if(n.u === VH) {
+      return n.v * root.height * 0.01 / root.computedStyle[FONT_SIZE] - p.v;
     }
-    else if(n[1] === VMAX) {
-      return n[0] * Math.max(root.width, root.height) / root.height - p[0];
+    else if(n.u === VMAX) {
+      return n.v * Math.max(root.width, root.height) * 0.01 / root.computedStyle[FONT_SIZE] - p.v;
     }
-    else if(n[1] === VMIN) {
-      return n[0] * Math.min(root.width, root.height) / root.height - p[0];
-    }
-  }
-  else if(p[1] === VMAX) {
-    if(n[1] === PX) {
-      return n[0] * 100 / Math.max(root.width, root.height) - p[0];
-    }
-    else if(n[1] === REM) {
-      return n[0] * 100 * root.computedStyle[FONT_SIZE] / Math.max(root.width, root.height) - p[0];
-    }
-    else if(n[1] === PERCENT) {
-      return n[0] * container / Math.max(root.width, root.height) - p[0];
-    }
-    else if(n[1] === VW) {
-      return n[0] * root.width / Math.max(root.width, root.height) - p[0];
-    }
-    else if(n[1] === VH) {
-      return n[0] * root.height / Math.max(root.width, root.height) - p[0];
-    }
-    else if(n[1] === VMIN) {
-      return n[0] * Math.min(root.width, root.height) / Math.max(root.width, root.height) - p[0];
+    else if(n.u === VMIN) {
+      return n.v * Math.min(root.width, root.height) * 0.01 / root.computedStyle[FONT_SIZE] - p.v;
     }
   }
-  else if(p[1] === VMIN) {
-    if(n[1] === PX) {
-      return n[0] * 100 / Math.min(root.width, root.height) - p[0];
+  else if(p.u === VW) {
+    if(n.u === PX) {
+      return n.v * 100 / root.width - p.v;
     }
-    else if(n[1] === REM) {
-      return n[0] * 100 * root.computedStyle[FONT_SIZE] / Math.min(root.width, root.height) - p[0];
+    else if(n.u === REM) {
+      return n.v * 100 * root.computedStyle[FONT_SIZE] / root.width - p.v;
     }
-    else if(n[1] === PERCENT) {
-      return n[0] * container / Math.min(root.width, root.height) - p[0];
+    else if(n.u === PERCENT) {
+      return n.v * container / root.width - p.v;
     }
-    else if(n[1] === VW) {
-      return n[0] * root.width / Math.min(root.width, root.height) - p[0];
+    else if(n.u === VH) {
+      return n.v * root.height / root.width - p.v;
     }
-    else if(n[1] === VH) {
-      return n[0] * root.height / Math.min(root.width, root.height) - p[0];
+    else if(n.u === VMAX) {
+      return n.v * Math.max(root.width, root.height) / root.width - p.v;
     }
-    else if(n[1] === VMAX) {
-      return n[0] * Math.max(root.width, root.height) / Math.min(root.width, root.height) - p[0];
+    else if(n.u === VMIN) {
+      return n.v * Math.min(root.width, root.height) / root.width - p.v;
     }
   }
+  else if(p.u === VH) {
+    if(n.u === PX) {
+      return n.v * 100 / root.height - p.v;
+    }
+    else if(n.u === REM) {
+      return n.v * 100 * root.computedStyle[FONT_SIZE] / root.height - p.v;
+    }
+    else if(n.u === VW) {
+      return n.v * root.width / root.height - p.v;
+    }
+    else if(n.u === PERCENT) {
+      return n.v * container / root.height - p.v;
+    }
+    else if(n.u === VMAX) {
+      return n.v * Math.max(root.width, root.height) / root.height - p.v;
+    }
+    else if(n.u === VMIN) {
+      return n.v * Math.min(root.width, root.height) / root.height - p.v;
+    }
+  }
+  else if(p.u === VMAX) {
+    if(n.u === PX) {
+      return n.v * 100 / Math.max(root.width, root.height) - p.v;
+    }
+    else if(n.u === REM) {
+      return n.v * 100 * root.computedStyle[FONT_SIZE] / Math.max(root.width, root.height) - p.v;
+    }
+    else if(n.u === PERCENT) {
+      return n.v * container / Math.max(root.width, root.height) - p.v;
+    }
+    else if(n.u === VW) {
+      return n.v * root.width / Math.max(root.width, root.height) - p.v;
+    }
+    else if(n.u === VH) {
+      return n.v * root.height / Math.max(root.width, root.height) - p.v;
+    }
+    else if(n.u === VMIN) {
+      return n.v * Math.min(root.width, root.height) / Math.max(root.width, root.height) - p.v;
+    }
+  }
+  else if(p.u === VMIN) {
+    if(n.u === PX) {
+      return n.v * 100 / Math.min(root.width, root.height) - p.v;
+    }
+    else if(n.u === REM) {
+      return n.v * 100 * root.computedStyle[FONT_SIZE] / Math.min(root.width, root.height) - p.v;
+    }
+    else if(n.u === PERCENT) {
+      return n.v * container / Math.min(root.width, root.height) - p.v;
+    }
+    else if(n.u === VW) {
+      return n.v * root.width / Math.min(root.width, root.height) - p.v;
+    }
+    else if(n.u === VH) {
+      return n.v * root.height / Math.min(root.width, root.height) - p.v;
+    }
+    else if(n.u === VMAX) {
+      return n.v * Math.max(root.width, root.height) / Math.min(root.width, root.height) - p.v;
+    }
+  }
+  return 0;
 }
 
 /**
  * 计算两帧之间的差，单位不同的以后面为准，返回的v表示差值
  * 没有变化返回空
- * auto等无法比较的不参与计算，不返回来标识无过度效果
+ * auto等无法比较的不参与计算
  * @param prev 上一帧样式
  * @param next 下一帧样式
  * @param k 比较的样式名
  * @param target dom对象
- * @param tagName dom名
- * @returns {{k: *, v: *}}
  */
-function calDiff(prev, next, k, target, tagName) {
-  let res = [k];
-  let p = prev[k];
-  let n = next[k];
+function calDiff(prev, next, k, target) {
+  let p = prev.style[k];
+  let n = next.style[k];
+  // 提前设置好引用，无需每帧计算时取引用，由于单位一定相同，可以简化直接引用到值v上无需单位u，有些直接量没有单位
+  let cl = prev.clone[k];
+  // translatePath可能不存在
+  if(cl && cl.hasOwnProperty('v')) {
+    cl = cl.v;
+  }
+  let res = { k, st: p, cl };
   if(k === TRANSFORM) {
-    // transform因默认值null很特殊，不存在时需给默认矩阵
-    if(!p && !n) {
+    // transform不存在时需给默认矩阵，他只有1个matrix3d的值做动画
+    if(!p && !n || !p.length && !n.length) {
       return;
     }
     let pm, nm;
-    if(p) {
-      pm = p[0][1];
+    if(p && p[0]) {
+      pm = p[0].v;
     }
     else {
       pm = mx.identity();
     }
-    if(n) {
-      nm = n[0][1];
+    if(n && n[0]) {
+      nm = n[0].v;
     }
     else {
       nm = mx.identity();
@@ -452,7 +390,7 @@ function calDiff(prev, next, k, target, tagName) {
     if(equalArr(pm, nm)) {
       return;
     }
-    res[1] = [
+    res.v = [
       nm[0] - pm[0],
       nm[1] - pm[1],
       nm[2] - pm[2],
@@ -470,13 +408,13 @@ function calDiff(prev, next, k, target, tagName) {
       nm[14] - pm[14],
       nm[15] - pm[15],
     ];
-    return res;
   }
   else if(k === ROTATE_3D) {
-    if(equalArr(p, n)) {
+    if(p[0] === n[0] && p[1] === n[1] && p[2] === n[2]
+      && p[3].v === n[3].v && p[3].u === n[3].u) {
       return;
     }
-    res[1] = [n[0] - p[0], n[1] - p[1], n[2] - p[2], [n[3][0] - p[3][0], n[3][1]]];
+    res.v = [n[0] - p[0], n[1] - p[1], n[2] - p[2], n[3].v - p[3].v];
   }
   else if(k === FILTER) {
     // filter很特殊，里面有多个滤镜，按顺序计算，为空视为默认值，如blur默认0，brightness默认1
@@ -485,107 +423,111 @@ function calDiff(prev, next, k, target, tagName) {
     for(let i = 0; i < len; i++) {
       let pv = p ? p[i] : null, nv = n ? n[i] : null;
       // 空或key不等都无变化
-      if(isNil(pv) || isNil(nv) || pv[0] !== nv[0]) {
+      if(isNil(pv) || isNil(nv) || pv.k !== nv.k) {
         v.push(null);
       }
       else {
-        let k = pv[0];
+        let k = pv.k, pvv = pv.v, nvv = nv.v;
         if(k === 'blur') {
-          if(pv[1][1] === nv[1][1]) {
-            v.push(nv[1][0] - pv[1][0]);
+          if(pvv.u === nvv.u) {
+            v.push(nvv.v - pvv.v);
           }
           else {
-            let v2 = calByUnit(pv[1], nv[1], 0, target.root);
+            let v2 = calByUnit(pvv, nvv, 0, target.root);
             v.push(v2);
           }
         }
         else if(k === 'hueRotate' || k === 'saturate' || k === 'brightness' || k === 'contrast'
           || k === 'sepia' || k === 'invert' || k === 'grayscale') {
-          v.push(nv[1][0] - pv[1][0]);
+          v.push(nvv.v - pvv.v);
         }
         else if(k === 'dropShadow') {
           let v2 = [];
           for(let i = 0; i < 4; i++) {
-            let a = pv[1][i], b = nv[1][i];
-            if(a[1] === b[1]) {
-              v2.push(b[0] - a[0]);
+            let a = pvv[i], b = nvv[i];
+            if(a.u === b.u) {
+              v2.push(b.v - a.v);
             }
             else {
               v2.push(calByUnit(a, b, i === 1 ? target.clientHeight: target.clientWidth, target.root));
             }
           }
           v2.push([
-            nv[1][4][0] - pv[1][4][0],
-            nv[1][4][1] - pv[1][4][1],
-            nv[1][4][2] - pv[1][4][2],
-            nv[1][4][3] - pv[1][4][3],
+            nvv[4][0] - pvv[4][0],
+            nvv[4][1] - pvv[4][1],
+            nvv[4][2] - pvv[4][2],
+            nvv[4][3] - pvv[4][3],
           ])
           v.push(v2);
         }
       }
     }
-    res[1] = v;
+    res.v = v;
   }
-  else if(k === TRANSFORM_ORIGIN || k === PERSPECTIVE_ORIGIN) {
-    res[1] = [];
+  else if(k === TRANSFORM_ORIGIN || k === PERSPECTIVE_ORIGIN || isRadiusKey(k)) {
+    // x/y都相等无需
+    if(n[0].v === p[0].v && n[0].u === p[0].u
+      && n[1].v === p[1].v && n[1].u === p[1].u) {
+      return;
+    }
+    res.v = [];
     for(let i = 0; i < 2; i++) {
       let pi = p[i];
       let ni = n[i];
-      if(pi[1] === ni[1]) {
-        res[1].push(ni[0] - pi[0]);
+      if(pi.u === ni.u) {
+        res.v.push(ni.v - pi.v);
       }
       else {
         let v = calByUnit(pi, ni, target[i ? 'outerHeight' : 'outerWidth'], target.root);
-        res[1].push(v || 0);
+        res.v.push(v);
       }
-    }
-    if(equalArr(res[1], [0, 0])) {
-      return;
     }
   }
   else if(k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y) {
-    res[1] = [];
+    res.v = [];
     let length = Math.min(p.length, n.length);
     for(let i = 0; i < length; i++) {
       let pi = p[i], ni = n[i];
-      if(!pi || !ni) {
-        res[1].push(null);
-        continue;
-      }
-      if(pi[1] === ni[1]) {
-        let v = ni[0] - pi[0];
-        if(!v) {
-          res[1].push(null);
-          return;
-        }
-        res[1].push(v);
+      if(pi.u === ni.u) {
+        let v = ni.v - pi.v;
+        res.v.push(v);
       }
       else {
-        let k2 = k === BACKGROUND_POSITION_X ? 'offsetWidth' : 'offsetHeight';
+        let k2;
         if(['padding-box', 'paddingBox'].indexOf(target.computedStyle[BACKGROUND_CLIP]) > -1) {
           k2 = k === BACKGROUND_POSITION_X ? 'clientWidth' : 'clientHeight';
         }
         else if(['content-box', 'contentBox'].indexOf(target.computedStyle[BACKGROUND_CLIP]) > -1) {
           k2 = k === BACKGROUND_POSITION_X ? 'width' : 'height';
         }
-        let v = calByUnit(pi, ni, target[k2], target.root);
-        if(!v) {
-          res[1].push(null);
-          return;
+        else {
+          k2 = k === BACKGROUND_POSITION_X ? 'offsetWidth' : 'offsetHeight';
         }
-        res[1].push(v);
+        let v = calByUnit(pi, ni, target[k2], target.root);
+        res.v.push(v);
       }
     }
   }
   else if(k === BOX_SHADOW) {
-    res[1] = [];
+    res.v = [];
     for(let i = 0, len = Math.min(p.length, n.length); i < len; i++) {
       let a = p[i];
       let b = n[i];
+      // 不能为空，outset/inset必须相等
+      if(!a || !b || a[5] !== b[5]) {
+        res.v.push(null);
+        continue;
+      }
       let v = [];
       // x/y/blur/spread
       for(let j = 0; j < 4; j++) {
-        v.push(b[j] - a[j]);
+        if(a[j].u === b[j].u) {
+          v.push(b[j].v - a[j].v);
+        }
+        else {
+          let v2 = calByUnit(a[j], b[j], i === 1 ? target.offsetHeight : target.offsetWidth, target.root);
+          v.push(v2);
+        }
       }
       // rgba
       let c = [];
@@ -593,58 +535,45 @@ function calDiff(prev, next, k, target, tagName) {
         c.push(b[4][j] - a[4][j]);
       }
       v.push(c);
-      res[1].push(v);
-    }
-  }
-  else if(EXPAND_HASH.hasOwnProperty(k)) {
-    if(p[1] === n[1]) {
-      let v = n[0] - p[0];
-      if(v === 0) {
-        return;
-      }
-      res[1] = v;
-    }
-    else {
-      let v = calByUnit(p, n, target[k === TRANSLATE_X || k === TRANSLATE_Z ? 'outerWidth' : 'outerHeight'], target.root);
-      if(!v) {
-        return;
-      }
-      res[1] = v;
+      res.v.push(v);
     }
   }
   else if(k === BACKGROUND_SIZE) {
-    res[1] = [];
+    res.v = [];
     let length = Math.min(p.length, n.length);
     let has;
     for(let i = 0; i < length; i++) {
       let pi = p[i], ni = n[i];
       if(!pi || !ni) {
-        res[1].push(null);
+        res.v.push(null);
         continue;
       }
       let temp = [];
       for(let j = 0; j < 2; j++) {
         let pp = pi[j], nn = ni[j];
-        if(pp[1] === nn[1]) {
-          temp.push(nn[0] - pp[0]);
+        if(pp.u === nn.u) {
+          temp.push(nn.v - pp.v);
         }
         else {
-          let k2 = i ? 'offsetWidth' : 'offsetHeight';
+          let k2;
           if(['padding-box', 'paddingBox'].indexOf(target.computedStyle[BACKGROUND_CLIP]) > -1) {
             k2 = i ? 'clientWidth' : 'clientHeight';
           }
           else if(['content-box', 'contentBox'].indexOf(target.computedStyle[BACKGROUND_CLIP]) > -1) {
             k2 = i ? 'width' : 'height';
           }
+          else {
+            k2 = i ? 'offsetWidth' : 'offsetHeight';
+          }
           let v = calByUnit(pp, nn, target[k2], target.root);
-          temp.push(v || 0);
+          temp.push(v);
         }
       }
       if(equalArr(temp, [0, 0])) {
-        res[1].push(null);
+        res.v.push(null);
       }
       else {
-        res[1].push(temp);
+        res.v.push(temp);
         has = true;
       }
     }
@@ -652,99 +581,92 @@ function calDiff(prev, next, k, target, tagName) {
       return;
     }
   }
-  else if(GRADIENT_HASH.hasOwnProperty(k)) {
-    // backgroundImage发生了渐变色和图片的变化，fill发生渐变色和纯色的变化等
-    res[1] = [];
+  else if(k === OPACITY || k === Z_INDEX) {
+    if(n === p) {
+      return;
+    }
+    res.v = n - p;
+  }
+  else if(k === STROKE_WIDTH) {
+    res.v = [];
     let length = Math.min(p.length, n.length);
     for(let i = 0; i < length; i++) {
       let pi = p[i], ni = n[i];
-      if(!pi || !ni || pi[1] !== ni[1]) {
-        res[1].push(null);
-        continue;
+      if(pi.u === ni.u) {
+        let v = ni.v - pi.v;
+        res.v.push(v);
       }
-      let isGradient = pi[1] === GRADIENT;
-      pi = pi[0];
-      ni = ni[0];
-      let temp = [];
-      // 渐变
-      if(isGradient) {
-        let r = calDiffGradient(pi, ni, target);
-        if(!r) {
-          res[1].push(null);
-          continue;
-        }
-        temp = r;
-      }
-      // 纯色
-      else {
-        if(equalArr(ni, pi)) {
-          res[1].push(null);
-        }
-        temp[0] = [
-          ni[0] - pi[0],
-          ni[1] - pi[1],
-          ni[2] - pi[2],
-          ni[3] - pi[3]
-        ];
-      }
-      res[1].push(temp);
+      let v = calByUnit(pi, ni, target.offsetWidth, target.root);
+      res.v.push(v);
     }
   }
-  else if(COLOR_HASH.hasOwnProperty(k)) {
-    if(n[1] !== p[1]) {
-      return;
+  // 特殊的path，不存在style中但在动画某帧中，不会统一化所以可能反向计算frameR时后一帧没有
+  else if(k === TRANSLATE_PATH && p) {
+    let k1 = 'offsetWidth', k2 = 'offsetHeight';
+    if(['padding-box', 'paddingBox'].indexOf(target.computedStyle[BACKGROUND_CLIP]) > -1) {
+      k1 = 'clientWidth';
+      k2 = 'clientHeight';
     }
-    // 特殊增加支持有gradient的先判断，仅color和textStrokeColor支持
-    let isGradient = n[1] === GRADIENT;
-    n = n[0];
-    p = p[0];
-    if(isGradient) {
-      let r = calDiffGradient(p, n, target);
-      if(!r) {
+    else if(['content-box', 'contentBox'].indexOf(target.computedStyle[BACKGROUND_CLIP]) > -1) {
+      k1 = 'width';
+      k2 = 'height';
+    }
+    res.v = p.map((item, i) => {
+      let { v, u } = item;
+      if(u === PERCENT) {
+        if(i % 2 === 0) {
+          return { v: (parseFloat(v) || 0) * 0.01 * target[k1], u: PX };
+        }
+        else {
+          return { v: (parseFloat(v) || 0) * 0.01 * target[k2], u: PX };
+        }
+      }
+      else if(u === REM) {
+        return { v: (parseFloat(v) || 0) * target.root.computedStyle[FONT_SIZE] * 100, u: PX };
+      }
+      else if(u === VW) {
+        return { v: (parseFloat(v) || 0) * 0.01 * target.root.width, u: PX };
+      }
+      else if(u === VH) {
+        return { v: (parseFloat(v) || 0) * 0.01 * target.root.height, u: PX };
+      }
+      else if(u === VMAX) {
+        return { v: (parseFloat(v) || 0) * 0.01 * Math.max(target.root.width, target.root.height), u: PX };
+      }
+      else if(u === VMIN) {
+        return { v: (parseFloat(v) || 0) * 0.01 * Math.min(target.root.width, target.root.height), u: PX };
+      }
+      else {
+        return { v: parseFloat(v) || 0, u: PX };
+      }
+    });
+  }
+  else if(isExpandKey(k)) {
+    if(p.u === n.u) {
+      let v = n.v - p.v;
+      if(v === 0) {
         return;
       }
-      res[1] = r;
+      res.v = v;
     }
     else {
-      // 透明变化无视
-      if(equalArr(n, p) || n[3] === 0 && p[3] === 0) {
+      let v = calByUnit(p, n, target[k === TRANSLATE_X || k === TRANSLATE_Z ? 'outerWidth' : 'outerHeight'], target.root);
+      if(!v) {
         return;
       }
-      res[1] = [
-        n[0] - p[0],
-        n[1] - p[1],
-        n[2] - p[2],
-        n[3] - p[3]
-      ];
+      res.v = v;
     }
   }
-  else if(RADIUS_HASH.hasOwnProperty(k)) {
-    // x/y都相等无需
-    if(n[0][0] === p[0][0] && n[0][1] === p[0][1]
-      && n[1][0] === p[1][0] && n[1][1] === p[1][1]) {
-      return;
-    }
-    res[1] = [];
-    for(let i = 0; i < 2; i++) {
-      if(n[i][1] === p[i][1]) {
-        res[1].push(n[i][0] - p[i][0]);
-      }
-      else {
-        let v = calByUnit(p[i], n[i], target[i ? 'outerHeight' : 'outerWidth'], target.root);
-        res[1].push(v || 0);
-      }
-    }
-  }
-  else if(LENGTH_HASH.hasOwnProperty(k)) {
+  else if(isLengthKey(k)) {
     // auto不做动画
-    if(p[1] === AUTO || n[1] === AUTO) {
+    if(p.u === AUTO || n.u === AUTO) {
       return;
     }
     let computedStyle = target.computedStyle;
     let parentComputedStyle = (target.domParent || target).computedStyle;
     let diff = 0;
-    if(p[1] === n[1]) {
-      diff = n[0] - p[0];
+    if(p.u === n.u) {
+      diff = n.v - p.v;
     }
     // lineHeight奇怪的单位变化，%相对于fontSize
     else if(k === LINE_HEIGHT) {
@@ -758,13 +680,13 @@ function calDiff(prev, next, k, target, tagName) {
     else if(k === FLEX_BASIS
       && ['column', 'column-reverse', 'columnReverse'].indexOf(computedStyle[FLEX_DIRECTION]) > -1
       || [HEIGHT, TOP, BOTTOM].indexOf(k) > -1) {
-      if(p[1] !== AUTO && n[1] !== AUTO) {
+      if(p.u !== AUTO && n.u !== AUTO) {
         diff = calByUnit(p, n, parentComputedStyle[HEIGHT], target.root);
       }
     }
     // 其余都是相对于父width的
     else {
-      if(p[1] !== AUTO && n[1] !== AUTO) {
+      if(p.u !== AUTO && n.u !== AUTO) {
         diff = calByUnit(p, n, parentComputedStyle[WIDTH], target.root);
       }
     }
@@ -772,9 +694,75 @@ function calDiff(prev, next, k, target, tagName) {
     if(diff === 0 || isNaN(diff)) {
       return;
     }
-    res[1] = diff;
+    res.v = diff;
+  }
+  else if(isGradientKey(k)) {
+    // backgroundImage发生了渐变色和图片的变化，fill发生渐变色和纯色的变化等
+    res.v = [];
+    let length = Math.min(p.length, n.length);
+    for(let i = 0; i < length; i++) {
+      let pi = p[i], ni = n[i];
+      if(!pi || !ni || pi.u !== ni.u || pi.u === STRING) {
+        res.v.push(null);
+        continue;
+      }
+      let u = pi.u;
+      pi = pi.v;
+      ni = ni.v;
+      let temp;
+      // 渐变
+      if(u === GRADIENT) {
+        let r = calDiffGradient(pi, ni, target);
+        if(!r) {
+          res.v.push(null);
+          continue;
+        }
+        temp = r;
+      }
+      // 纯色
+      else {
+        if(equalArr(ni, pi)) {
+          res.v.push(null);
+          continue;
+        }
+        temp = [
+          ni[0] - pi[0],
+          ni[1] - pi[1],
+          ni[2] - pi[2],
+          ni[3] - pi[3]
+        ];
+      }
+      res.v.push(temp);
+    }
+  }
+  else if(isColorKey(k)) {
+    if(n.u !== p.u) {
+      return;
+    }
+    // 特殊增加支持有gradient的先判断，仅color和textStrokeColor支持
+    n = n.v;
+    p = p.v;
+    if(n.u === GRADIENT) {
+      let r = calDiffGradient(p, n, target);
+      if(!r) {
+        return;
+      }
+      res.v = r;
+    }
+    else {
+      if(equalArr(n, p)) {
+        return;
+      }
+      res.v = [
+        n[0] - p[0],
+        n[1] - p[1],
+        n[2] - p[2],
+        n[3] - p[3]
+      ];
+    }
   }
   else if(GEOM.hasOwnProperty(k)) {
+    let tagName = target.tagName;
     if(isNil(p)) {
       return;
     }
@@ -788,7 +776,7 @@ function calDiff(prev, next, k, target, tagName) {
         return arr;
       }
       else {
-        res[1] = fn(p, n);
+        res.v = fn(p, n);
       }
     }
     // 特殊处理multi
@@ -797,12 +785,12 @@ function calDiff(prev, next, k, target, tagName) {
         if(isNil(n) || !n.length || isNil(p) || !p.length || equalArr(p, n)) {
           return;
         }
-        res[1] = [];
+        res.v = [];
         for(let i = 0, len = Math.min(p.length, n.length); i < len; i++) {
           let pv = p[i];
           let nv = n[i];
           if(isNil(pv) || !pv.length || isNil(nv) || !nv.length) {
-            res[1].push(null);
+            res.v.push(null);
           }
           else {
             let v2 = [];
@@ -828,7 +816,7 @@ function calDiff(prev, next, k, target, tagName) {
                 v2.push(v3);
               }
             }
-            res[1].push(v2);
+            res.v.push(v2);
           }
         }
       }
@@ -836,15 +824,15 @@ function calDiff(prev, next, k, target, tagName) {
         if(isNil(n) || !n.length || isNil(p) || !p.length || equalArr(p, n)) {
           return;
         }
-        res[1] = [];
+        res.v = [];
         for(let i = 0, len = Math.min(p.length, n.length); i < len; i++) {
           let pv = p[i];
           let nv = n[i];
           if(isNil(pv) || !pv.length || isNil(nv) || !nv.length) {
-            res[1].push(null);
+            res.v.push(null);
           }
           else {
-            res[1].push([
+            res.v.push([
               nv[0] - pv[0],
               nv[1] - pv[1],
             ]);
@@ -864,7 +852,7 @@ function calDiff(prev, next, k, target, tagName) {
           }
           v.push(nv - pv);
         }
-        res[1] = v;
+        res.v = v;
       }
     }
     // 非multi特殊处理这几类数组类型数据
@@ -872,12 +860,12 @@ function calDiff(prev, next, k, target, tagName) {
       if(isNil(n) || !n.length || isNil(p) || !p.length || equalArr(p, n)) {
         return;
       }
-      res[1] = [];
+      res.v = [];
       for(let i = 0, len = Math.min(p.length, n.length); i < len; i++) {
         let pv = p[i];
         let nv = n[i];
         if(isNil(pv) || !pv.length || isNil(nv) || !nv.length) {
-          res[1].push(null);
+          res.v.push(null);
         }
         else {
           let v2 = [];
@@ -892,7 +880,7 @@ function calDiff(prev, next, k, target, tagName) {
               v2.push(nv2 - pv2);
             }
           }
-          res[1].push(v2);
+          res.v.push(v2);
         }
       }
     }
@@ -900,7 +888,7 @@ function calDiff(prev, next, k, target, tagName) {
       if(isNil(n) || !n.length || isNil(p) || !p.length || equalArr(p, n)) {
         return;
       }
-      res[1] = [
+      res.v = [
         n[0] - p[0],
         n[1] - p[1],
       ];
@@ -911,56 +899,9 @@ function calDiff(prev, next, k, target, tagName) {
         return;
       }
       else {
-        res[1] = n - p;
+        res.v = n - p;
       }
     }
-  }
-  else if(k === OPACITY || k === Z_INDEX) {
-    if(n === p) {
-      return;
-    }
-    res[1] = n - p;
-  }
-  // 特殊的path，不存在style中但在动画某帧中，不会统一化所以可能反向计算frameR时后一帧没有
-  else if(k === TRANSLATE_PATH && p) {
-    let k1 = 'offsetWidth', k2 = 'offsetHeight';
-    if(['padding-box', 'paddingBox'].indexOf(target.computedStyle[BACKGROUND_CLIP]) > -1) {
-      k1 = 'clientWidth';
-      k2 = 'clientHeight';
-    }
-    else if(['content-box', 'contentBox'].indexOf(target.computedStyle[BACKGROUND_CLIP]) > -1) {
-      k1 = 'width';
-      k2 = 'height';
-    }
-    res[1] = p.map((item, i) => {
-      let [v, u] = item;
-      if(u === PERCENT) {
-        if(i % 2 === 0) {
-          return [(parseFloat(v) || 0) * 0.01 * target[k1], PX];
-        }
-        else {
-          return [(parseFloat(v) || 0) * 0.01 * target[k2], PX];
-        }
-      }
-      else if(u === REM) {
-        return [(parseFloat(v) || 0) * root.computedStyle[FONT_SIZE] * 100, PX];
-      }
-      else if(u === VW) {
-        return [(parseFloat(v) || 0) * 0.01 * root.width, PX];
-      }
-      else if(u === VH) {
-        return [(parseFloat(v) || 0) * 0.01 * root.height, PX];
-      }
-      else if(u === VMAX) {
-        return [(parseFloat(v) || 0) * 0.01 * Math.max(root.width, root.height), PX];
-      }
-      else if(u === VMIN) {
-        return [(parseFloat(v) || 0) * 0.01 * Math.min(root.width, root.height), PX];
-      }
-      else {
-        return [parseFloat(v) || 0, PX];
-      }
-    });
   }
   // display等不能有增量过程的
   else {
@@ -971,7 +912,7 @@ function calDiff(prev, next, k, target, tagName) {
 
 // 渐变的差异计算
 function calDiffGradient(p, n, target) {
-  if(p.k !== n.k || !GRADIENT_TYPE.hasOwnProperty(p.k)) {
+  if(p.k !== n.k) {
     return;
   }
   let pv = p.v;
@@ -990,8 +931,8 @@ function calDiffGradient(p, n, target) {
       b[0][3] - a[0][3],
     ]);
     if(a[1] && b[1]) {
-      if(a[1][1] === b[1][1]) {
-        t.push(b[1][0] - a[1][0]);
+      if(a[1].u === b[1].u) {
+        t.push(b[1].v - a[1].v);
       }
       else {
         let v = calByUnit(a[1], b[1], target.clientWidth, target.root);
@@ -1055,8 +996,8 @@ function calDiffGradient(p, n, target) {
       for(let i = 0; i < 2; i++) {
         let pp = p.p[i];
         let np = n.p[i];
-        if(pp[1] === np[1]) {
-          temp[2].push(np[0] - pp[0]);
+        if(pp.u === np.u) {
+          temp[2].push(np.v - pp.v);
         }
         else {
           let v = calByUnit(pp, np, target[i ? 'clientWidth' : 'clientHeight'], target.root);
@@ -1086,39 +1027,69 @@ function calDiffGradient(p, n, target) {
   return temp;
 }
 
-// 计算两帧之间不相同的变化，存入transition，相同的忽略
-function calFrame(prev, next, keys, target, tagName) {
+/**
+ * 计算两帧之间不相同的变化，存入transition，相同的忽略
+ * 同时不变化的key也得存入fixed
+ */
+function calFrame(prev, next, keys, target) {
+  let hasTp;
   keys.forEach(k => {
-    let ts = calDiff(prev[FRAME_STYLE], next[FRAME_STYLE], k, target, tagName);
+    if(k === TRANSLATE_PATH) {
+      hasTp = true;
+    }
+    let ts = calDiff(prev, next, k, target);
     // 可以形成过渡的才会产生结果返回
     if(ts) {
-      prev[FRAME_TRANSITION].push(ts);
+      prev.transition.push(ts);
+      prev.keys.push(k);
+    }
+    else {
+      prev.fixed.push(k);
     }
   });
+  // translatePath需特殊处理translate，防止被覆盖
+  if(hasTp) {
+    let i = prev.keys.indexOf(TRANSLATE_X);
+    if(i === -1) {
+      prev.keys.push(TRANSLATE_X);
+    }
+    i = prev.keys.indexOf(TRANSLATE_Y);
+    if(i === -1) {
+      prev.keys.push(TRANSLATE_Y);
+    }
+    i = prev.fixed.indexOf(TRANSLATE_X);
+    if(i > -1) {
+      prev.fixed.splice(i, 1);
+    }
+    i = prev.fixed.indexOf(TRANSLATE_Y);
+    if(i > -1) {
+      prev.fixed.splice(i, 1);
+    }
+  }
   return next;
 }
 
 function binarySearch(i, j, time, frames) {
-  if(i === j) {
-    let frame = frames[i];
-    if(frame[FRAME_TIME] > time) {
-      return i - 1;
+  while(i < j) {
+    if(i === j - 1) {
+      if(frames[j].time <= time) {
+        return j;
+      }
+      return i;
     }
-    return i;
-  }
-  else {
     let middle = i + ((j - i) >> 1);
     let frame = frames[middle];
-    if(frame[FRAME_TIME] === time) {
+    if(frame.time === time) {
       return middle;
     }
-    else if(frame[FRAME_TIME] > time) {
-      return binarySearch(i, Math.max(middle - 1, i), time, frames);
+    if(frame.time > time) {
+      j = Math.max(middle - 1, i);
     }
     else {
-      return binarySearch(Math.min(middle + 1, j), j, time, frames);
+      i = Math.min(middle, j);
     }
   }
+  return i;
 }
 
 function getEasing(ea) {
@@ -1148,90 +1119,57 @@ function getEasing(ea) {
  * 根据百分比和缓动函数计算中间态样式
  * 当easing定义为steps时，优先计算
  * @param frame 当前帧
- * @param keys 所有样式key
  * @param percent 到下一帧时间的百分比
  * @param target vd
- * @returns {*}
+ * @return {[]} 发生变更的样式key
  */
-function calIntermediateStyle(frame, keys, percent, target) {
-  let style = cloneStyle(frame[FRAME_STYLE], keys);
-  let timingFunction = getEasing(frame[FRAME_EASING]);
+function calIntermediateStyle(frame, percent, target) {
+  let style = frame.style;
+  let transition = frame.transition;
+  let timingFunction = frame.timingFunction;
   if(timingFunction && timingFunction !== linear) {
     percent = timingFunction(percent);
   }
-  let transition = frame[FRAME_TRANSITION];
+  // 同一关键帧同一percent可以不刷新，比如diff为0时，或者steps情况
+  if(frame.lastPercent === percent) {
+    return [];
+  }
+  frame.lastPercent = percent;
+  let currentStyle = target.__currentStyle, currentProps = target.__currentProps, res = frame.keys.slice(0);
   for(let i = 0, len = transition.length; i < len; i++) {
-    let [k, v] = transition[i];
-    let st = style[k];
+    let item = transition[i];
+    let k = item.k, v = item.v, st = item.st, cl = item.cl;
     // transform特殊处理，只有1个matrix，有可能不存在，需给默认矩阵
     if(k === TRANSFORM) {
-      if(!st) {
-        st = style[k] = [[MATRIX, mx.identity()]];
+      if(!st || !st.length) {
+        st = style[k] = [{k: MATRIX, v: mx.identity()}];
+      }
+      if(!cl || !cl.length) {
+        cl = frame.clone[k] = [{k: MATRIX, v: mx.identity()}];
       }
       for(let i = 0; i < 16; i++) {
-        st[0][1][i] += v[i] * percent;
+        st[0].v[i] = cl[0].v[i] + v[i] * percent;
       }
-    }
-    // 特殊的曲线运动计算，转换为translateXY，出现在最后一定会覆盖原本的translate防重
-    else if(k === TRANSLATE_PATH) {
-      let t = 1 - percent;
-      if(v.length === 8) {
-        style[TRANSLATE_X] = [
-          v[0][0] * t * t * t
-          + 3 * v[2][0] * percent * t * t
-          + 3 * v[4][0] * percent * percent * t
-          + v[6][0] * percent * percent * percent,
-          PX,
-        ];
-        style[TRANSLATE_Y] = [
-          v[1][0] * t * t * t
-          + 3 * v[3][0] * percent * t * t
-          + 3 * v[5][0] * percent * percent * t
-          + v[7][0] * percent * percent * percent,
-          PX,
-        ];
-      }
-      else if(v.length === 6) {
-        style[TRANSLATE_X] = [
-          v[0][0] * t * t
-          + 2 * v[2][0] * percent * t
-          + v[4][0] * percent * percent,
-          PX,
-        ];
-        style[TRANSLATE_Y] = [
-          v[1][0] * t * t
-          + 3 * v[3][0] * percent * t
-          + v[5][0] * percent * percent,
-          PX,
-        ];
-      }
+      currentStyle[k] = st;
     }
     else if(k === ROTATE_3D) {
-      st[0] += v[0] * percent;
-      st[1] += v[1] * percent;
-      st[2] += v[2] * percent;
-      st[3][0] += v[3][0] * percent;
-    }
-    else if(NUM_CAL_HASH.hasOwnProperty(k)) {
-      if(v) {
-        st[0] += v * percent;
-      }
+      st[0] = cl[0] + v[0] * percent;
+      st[1] = cl[1] + v[1] * percent;
+      st[2] = cl[2] + v[2] * percent;
+      st[3].v = cl[3].v + v[3] * percent;
+      currentStyle[k] = st;
     }
     else if(k === FILTER) {
-      // 只有1个样式声明了filter另外一个为空，会造成无样式，需初始化数组并在下面计算出样式存入
-      if(!st) {
-        st = style[k] = [];
-      }
       for(let i = 0, len = v.length; i < len; i++) {
         let item = v[i];
         if(item) {
-          let k2 = st[i][0], v2 = st[i][1];
+          let k2 = st[i].k, v2 = st[i].v;
           // 只有dropShadow是多个数组，存放x/y/blur/spread/color
           if(k2 === 'dropShadow') {
-            v2[0][0] += item[0] * percent;
-            v2[1][0] += item[1] * percent;
-            v2[2][0] += item[2] * percent;
-            v2[3][0] += item[3] * percent;
+            v2[0].v += item[0] * percent;
+            v2[1].v += item[1] * percent;
+            v2[2].v += item[2] * percent;
+            v2[3].v += item[3] * percent;
             let c1 = v2[4], c2 = item[4];
             c1[0] += c2[0] * percent;
             c1[1] += c2[1] * percent;
@@ -1240,132 +1178,188 @@ function calIntermediateStyle(frame, keys, percent, target) {
           }
           // 其它都是带单位单值
           else {
-            v2[0] += item * percent;
+            v2.v += item * percent;
           }
         }
       }
+      currentStyle[k] = st;
     }
-    else if(RADIUS_HASH.hasOwnProperty(k)) {
-      for(let i = 0; i < 2; i++) {
-        st[i][0] += v[i] * percent;
-      }
-    }
-    else if(k === TRANSFORM_ORIGIN || k === PERSPECTIVE_ORIGIN) {
+    else if(k === TRANSFORM_ORIGIN || k === PERSPECTIVE_ORIGIN || isRadiusKey(k)) {
       if(v[0] !== 0) {
-        st[0][0] += v[0] * percent;
+        st[0].v = cl[0].v + v[0] * percent;
       }
       if(v[1] !== 0) {
-        st[1][0] += v[1] * percent;
+        st[1].v = cl[1].v + v[1] * percent;
       }
+      currentStyle[k] = st;
+    }
+    else if(k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y || k === STROKE_WIDTH) {
+      st.forEach((item, i) => {
+        if(v[i]) {
+          item.v = cl[i].v + v[i] * percent;
+        }
+      });
+      currentStyle[k] = st;
     }
     else if(k === BOX_SHADOW) {
       for(let i = 0, len = Math.min(st.length, v.length); i < len; i++) {
+        if(!v[i]) {
+          continue;
+        }
         // x/y/blur/spread
         for(let j = 0; j < 4; j++) {
-          st[i][j] += v[i][j] * percent;
+          st[i][j].v = cl[i][j].v + v[i][j] * percent;
         }
         // rgba
         for(let j = 0; j < 4; j++) {
-          st[i][4][j] += v[i][4][j] * percent;
+          st[i][4][j] = cl[i][4][j] + v[i][4][j] * percent;
         }
       }
+      currentStyle[k] = st;
     }
     else if(k === BACKGROUND_SIZE) {
       st.forEach((item, i) => {
-        if(v[i]) {
-          item[0][0] += v[i][0] * percent;
-          item[1][0] += v[i][1] * percent;
+        let o = v[i];
+        if(o) {
+          item[0].v = cl[i][0].v + o[0] * percent;
+          item[1].v = cl[i][1].v + o[1] * percent;
         }
       });
+      currentStyle[k] = st;
     }
-    else if(k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y) {
-      st.forEach((item, i) => {
-        if(v[i]) {
-          item[0] += v[i] * percent;
+    else if(k === OPACITY || k === Z_INDEX) {
+      st = cl + v * percent;
+      // 精度问题可能会超过[0,1]区间
+      if(k === OPACITY) {
+        if(st < 0) {
+          st = 0;
         }
-      });
+        else if(st > 1) {
+          st = 1;
+        }
+      }
+      currentStyle[k] = st;
     }
-    else if(GRADIENT_HASH.hasOwnProperty(k)) {
+    // 特殊的曲线运动计算，转换为translateXY，出现在最后一定会覆盖原本的translate防重
+    else if(k === TRANSLATE_PATH) {
+      let t = 1 - percent;
+      if(v.length === 8) {
+        currentStyle[TRANSLATE_X] = {
+          v: v[0].v * t * t * t
+            + 3 * v[2].v * percent * t * t
+            + 3 * v[4].v * percent * percent * t
+            + v[6].v * percent * percent * percent,
+          u: PX,
+        };
+        currentStyle[TRANSLATE_Y] = {
+          v: v[1].v * t * t * t
+            + 3 * v[3].v * percent * t * t
+            + 3 * v[5].v * percent * percent * t
+            + v[7].v * percent * percent * percent,
+          u: PX,
+        };
+      }
+      else if(v.length === 6) {
+        currentStyle[TRANSLATE_X] = {
+          v: v[0].v * t * t
+            + 2 * v[2].v * percent * t
+            + v[4].v * percent * percent,
+          u: PX,
+        };
+        currentStyle[TRANSLATE_Y] = {
+          v: v[1].v * t * t
+            + 3 * v[3].v * percent * t
+            + v[5].v * percent * percent,
+          u: PX,
+        };
+      }
+    }
+    else if(isLengthKey(k) || isExpandKey(k)) {
+      st.v = cl + v * percent;
+      currentStyle[k] = st;
+    }
+    else if(isGradientKey(k)) {
       st.forEach((st2, i) => {
         let v2 = v[i];
         if(!v2) {
           return;
         }
-        if(st2[1] === GRADIENT && GRADIENT_TYPE.hasOwnProperty(st2[0].k)) {
-          st2 = st2[0];
+        let cli = cl[i].v;
+        if(st2.u === GRADIENT) {
+          st2 = st2.v;
           let [c, d, p, z] = v2;
-          for(let i = 0, len = Math.min(st2.v.length, c.length); i < len; i++) {
-            let a = st2.v[i];
-            let b = c[i];
-            a[0][0] += b[0][0] * percent;
-            a[0][1] += b[0][1] * percent;
-            a[0][2] += b[0][2] * percent;
-            a[0][3] += b[0][3] * percent;
+          for(let j = 0, len = Math.min(st2.v.length, c.length); j < len; j++) {
+            let a = st2.v[j];
+            let b = c[j];
+            a[0][0] = cli.v[j][0][0] + b[0][0] * percent;
+            a[0][1] = cli.v[j][0][1] + b[0][1] * percent;
+            a[0][2] = cli.v[j][0][2] + b[0][2] * percent;
+            a[0][3] = cli.v[j][0][3] + b[0][3] * percent;
             if(a[1] && b[1]) {
-              a[1][0] += b[1] * percent;
+              a[1].v = cli.v[j][1].v + b[1] * percent;
             }
           }
           if(st2.k === 'linear' && st2.d !== undefined && d !== undefined) {
             if(Array.isArray(d)) {
-              st2.d[0] += d[0] * percent;
-              st2.d[1] += d[1] * percent;
-              st2.d[2] += d[2] * percent;
-              st2.d[3] += d[3] * percent;
+              st2.d[0] = cli.d[0] + d[0] * percent;
+              st2.d[1] = cli.d[1] + d[1] * percent;
+              st2.d[2] = cli.d[2] + d[2] * percent;
+              st2.d[3] = cli.d[3] + d[3] * percent;
             }
             else {
-              st2.d += d * percent;
+              st2.d = cli.d + d * percent;
             }
           }
-          if(st2.k === 'radial') {
+          else if(st2.k === 'radial') {
             if(st2.z !== undefined && z !== undefined) {
-              st2.z[0] += z[0] * percent;
-              st2.z[1] += z[1] * percent;
-              st2.z[2] += z[2] * percent;
-              st2.z[3] += z[3] * percent;
-              st2.z[4] += z[4] * percent;
+              st2.z[0] = cli.z[0] + z[0] * percent;
+              st2.z[1] = cli.z[1] + z[1] * percent;
+              st2.z[2] = cli.z[2] + z[2] * percent;
+              st2.z[3] = cli.z[3] + z[3] * percent;
+              st2.z[4] = cli.z[4] + z[4] * percent;
             }
             else if(st2.p !== undefined && p !== undefined) {
-              st2.p[0][0] += p[0] * percent;
-              st2.p[1][0] += p[1] * percent;
+              st2.p[0].v = cli.p[0].v + p[0] * percent;
+              st2.p[1].v = cli.p[1].v + p[1] * percent;
             }
           }
           else if(st2.k === 'conic' && st2.d !== undefined && d !== undefined) {
-            st2.d += d * percent;
-            st2.p[0][0] += p[0] * percent;
-            st2.p[1][0] += p[1] * percent;
+            st2.d = cli.d + d * percent;
+            st2.p[0][0] = cli.p[0] + p[0] * percent;
+            st2.p[1][0] = cli.p[1] + p[1] * percent;
           }
         }
         // fill纯色
         else {
-          st2 = st2[0];
-          let c = v2[0];
-          st2[0] += c[0] * percent;
-          st2[1] += c[1] * percent;
-          st2[2] += c[2] * percent;
-          st2[3] += c[3] * percent;
+          st2 = st2.v;
+          st2[0] = cli[0] + v2[0] * percent;
+          st2[1] = cli[1] + v2[1] * percent;
+          st2[2] = cli[2] + v2[2] * percent;
+          st2[3] = cli[3] + v2[3] * percent;
         }
       });
+      currentStyle[k] = st;
     }
     // color可能超限[0,255]，但浏览器已经做了限制，无需关心
-    else if(COLOR_HASH.hasOwnProperty(k)) {
-      st = st[0];
-      st[0] += v[0] * percent;
-      st[1] += v[1] * percent;
-      st[2] += v[2] * percent;
-      st[3] += v[3] * percent;
+    else if(isColorKey(k)) {
+      let t = st.v;
+      t[0] = cl[0] + v[0] * percent;
+      t[1] = cl[1] + v[1] * percent;
+      t[2] = cl[2] + v[2] * percent;
+      t[3] = cl[3] + v[3] * percent;
+      currentStyle[k] = st;
     }
     else if(GEOM.hasOwnProperty(k)) {
-      let st = style[k];
       let tagName = target.tagName;
       if(GEOM[k][tagName] && isFunction(GEOM[k][tagName].calIncrease)) {
         let fn = GEOM[k][tagName].calIncrease;
         if(target.isMulti) {
-          style[k] = st.map((item, i) => {
+          st = st.map((item, i) => {
             return fn(item, v[i], percent);
           });
         }
         else {
-          style[k] = fn(st, v, percent);
+          st = fn(st, v, percent);
         }
       }
       else if(target.isMulti) {
@@ -1373,6 +1367,7 @@ function calIntermediateStyle(frame, keys, percent, target) {
           for(let i = 0, len = Math.min(st.length, v.length); i < len; i++) {
             let o = st[i];
             let n = v[i];
+            let cli = cl[i];
             if(!isNil(o) && !isNil(n)) {
               for(let j = 0, len2 = Math.min(o.length, n.length); j < len2; j++) {
                 let o2 = o[j];
@@ -1380,7 +1375,7 @@ function calIntermediateStyle(frame, keys, percent, target) {
                 if(!isNil(o2) && !isNil(n2)) {
                   for(let k = 0, len3 = Math.min(o2.length, n2.length); k < len3; k++) {
                     if(!isNil(o2[k]) && !isNil(n2[k])) {
-                      o2[k] += n2[k] * percent;
+                      o2[k] = cli[j][k] + n2[k] * percent;
                     }
                   }
                 }
@@ -1391,21 +1386,18 @@ function calIntermediateStyle(frame, keys, percent, target) {
         else if(k === 'controlA' || k === 'controlB') {
           v.forEach((item, i) => {
             let st2 = st[i];
-            if(!isNil(item) && !isNil(st2)) {
-              for(let i = 0, len = Math.min(st2.length, item.length); i < len; i++) {
-                let o = st2[i];
-                let n = item[i];
-                if(!isNil(o) && !isNil(n)) {
-                  st2[i] += n * percent;
-                }
-              }
+            if(!isNil(item[0]) && !isNil(st2[0])) {
+              st2[0] = cl[i][0] + item[0] * percent;
+            }
+            if(!isNil(item[1]) && !isNil(st2[1])) {
+              st2[1] = cl[i][1] + item[1] * percent;
             }
           });
         }
         else {
           v.forEach((item, i) => {
             if(!isNil(item) && !isNil(st[i])) {
-              st[i] += item * percent;
+              st[i] = cl[i] + item * percent;
             }
           });
         }
@@ -1418,7 +1410,7 @@ function calIntermediateStyle(frame, keys, percent, target) {
             if(!isNil(o) && !isNil(n)) {
               for(let j = 0, len2 = Math.min(o.length, n.length); j < len2; j++) {
                 if(!isNil(o[j]) && !isNil(n[j])) {
-                  o[j] += n[j] * percent;
+                  o[j] = cl[i][j] + n[j] * percent;
                 }
               }
             }
@@ -1426,33 +1418,68 @@ function calIntermediateStyle(frame, keys, percent, target) {
         }
         else if(k === 'controlA' || k === 'controlB') {
           if(!isNil(st[0]) && !isNil(v[0])) {
-            st[0] += v[0] * percent;
+            st[0] = cl[0] + v[0] * percent;
           }
           if(!isNil(st[1]) && !isNil(v[1])) {
-            st[1] += v[1] * percent;
+            st[1] = cl[1] + v[1] * percent;
           }
         }
         else {
           if(!isNil(st) && !isNil(v)) {
-            style[k] += v * percent;
+            st = cl + v * percent;
           }
         }
       }
+      currentProps[k] = st;
     }
-    else if(k === OPACITY || k === Z_INDEX) {
-      style[k] += v * percent;
-      // 精度问题可能会超过[0,1]区间
-      if(k === OPACITY) {
-        if(style[k] < 0) {
-          style[k] = 0;
-        }
-        else if(style[k] > 1) {
-          style[k] = 1;
-        }
+    // string的直接量，在不同帧之间可能存在变化，同帧变化后不再改变
+    else {
+      if(currentStyle[k] !== st) {
+        currentStyle[k] = st;
+      }
+      else {
+        let j = res.indexOf(k);
+        res.splice(j, 1);
       }
     }
   }
-  return style;
+  // 无变化的也得检查是否和当前相等，防止跳到一个不变化的帧上，而前一帧有变化的情况
+  let fixed = frame.fixed;
+  for(let i = 0, len = fixed.length; i < len; i++) {
+    let k = fixed[i];
+    let isGeom = GEOM.hasOwnProperty(k);
+    if(!equalStyle(k, style[k], isGeom ? currentProps[k] : currentStyle[k], target)) {
+      if(GEOM.hasOwnProperty(k)) {
+        currentProps[k] = style[k];
+      }
+      else {
+        currentStyle[k] = style[k];
+      }
+      res.push(k);
+    }
+  }
+  return res;
+}
+
+/**
+ * 最后一帧无法计算transition，对整体keys的style进行对比
+ */
+function calLastStyle(style, target, keys) {
+  let currentStyle = target.__currentStyle, currentProps = target.__currentProps, res = [];
+  for(let i = 0, len = keys.length; i < len; i++) {
+    let k = keys[i], v = style[k];
+    let isGeom = GEOM.hasOwnProperty(k);
+    if(!equalStyle(k, v, isGeom ? currentProps[k] : currentStyle[k], target)) {
+      if(isGeom) {
+        currentProps[k] = v;
+      }
+      else {
+        currentStyle[k] = v;
+      }
+      res.push(k);
+    }
+  }
+  return res;
 }
 
 function gotoOverload(options, cb) {
@@ -1463,40 +1490,18 @@ function gotoOverload(options, cb) {
   return [options || {}, cb];
 }
 
-function calDiffTime(__config, diff) {
-  let playbackRate = __config[I_PLAYBACK_RATE];
-  let spfLimit = __config[I_SPF_LIMIT];
-  let fps = __config[I_FPS];
-  let v = __config[I_CURRENT_TIME] = __config[I_NEXT_TIME];
-  // 定帧限制每帧时间间隔最大为spf
-  if(spfLimit) {
-    if(spfLimit === true) {
-      diff = Math.min(diff, 1000 / fps);
-    }
-    else if(spfLimit > 0) {
-      diff = Math.min(diff, spfLimit);
-    }
-  }
-  // 播放时间累加，并且考虑播放速度加成
-  if(playbackRate !== 1 && playbackRate > 0) {
-    diff *= playbackRate;
-  }
-  __config[I_NEXT_TIME] += diff;
-  return [v, diff];
-}
-
-function frameCb(self, __config, diff, isDelay) {
-  self.emit(Event.FRAME, diff, isDelay);
-  if(__config[I_FIRST_PLAY]) {
-    __config[I_FIRST_PLAY] = false;
+function frameCb(self) {
+  self.emit(Event.FRAME, self.__isChange);
+  if(self.__firstPlay) {
+    self.__firstPlay = false;
     self.emit(Event.PLAY);
   }
-  let cb = __config[I_PLAY_CB];
+  let cb = self.__playCb;
   if(isFunction(cb)) {
-    cb.call(self, diff, isDelay);
+    cb(self.__isChange);
     // 清理要检查，gotoAndStop()这种cb回调中直接再次调用goto的话cb会不一致不能删除
-    if(__config[I_PLAY_CB] === cb) {
-      __config[I_PLAY_CB] = null;
+    if(self.__playCb === cb) {
+      self.__playCb = null;
     }
   }
 }
@@ -1539,64 +1544,23 @@ class Animation extends Event {
     let op = this.__options = options || {
       duration: 0,
     };
-    let root = target.root;
-    let config = this.__config = [
-      false, // assigning
-      false, // inFps
-      false, // isDelay
-      true, // begin
-      false, // end
-      false, // finished
-      false, // nextBegin
-      true, // firstPlay
-      null, // playCb
-      target,
-      root,
-      null, // frames
-      null, // framesR
-      0, // currentTime
-      0, // nextTime
-      {}, // style
-      0, // duration
-      1, // iterations
-      'none', // fill
-      1, // playbackRate
-      0, // playCount
-      'idle',
-      false, // destroy
-      0, // startTime
-      0, // fpsTime
-      op.easing,
-      false, // enterFrame
-      0, // delay
-      0, // endDelay
-      null, // keys,
-      null, // originStyle,
-      null, // currentFrames
-      null, // currentFrame
-      false, // spfLimit
-      60, // fps
-      'normal', // direction
-      true, // firstEnter,
-      false, // stayBegin
-      false, // stayEnd
-      false, // is2
-      0, // endTime
-      target.__config, // nodeConfig
-      root && root.__config, // rootConfig，destroy后root可能为空
-      false, // outBeginDelay
-    ];
+    this.__begin = true;
+    this.__playState = 'idle';
+    this.__target = target;
+    this.__root = target.root;
+    this.__isChange = false; // 每帧是否有变化，无变化不刷新也会触发frame事件
+    this.__firstPlay = true;
+    this.__firstEnter = true;
     let iterations = this.iterations = op.iterations;
     let duration = this.duration = op.duration;
     let [frames, framesR, keys, originStyle] = this.__init(list, iterations, duration, op.easing, target);
-    config[I_FRAMES] = frames;
-    config[I_FRAMES_R] = framesR;
-    config[I_KEYS] = keys;
-    config[I_ORIGIN_STYLE] = originStyle;
-    if(frames.length === 2) {
-      config[I_IS2] = true;
-      config[I_END_TIME] = frames[1][FRAME_TIME];
-    }
+    this.__frames = frames;
+    this.__framesR = framesR;
+    this.__keys = keys;
+    this.__originStyle = originStyle;
+    this.__isDelay = false;
+    this.__outBeginDelay = false;
+    this.__playCount = 0;
     let fps = parseInt(op.fps) || 0;
     if(fps <= 0) {
       fps = 60;
@@ -1609,12 +1573,13 @@ class Animation extends Event {
     this.fill = op.fill;
     this.iterations = op.iterations;
     this.direction = op.direction;
-    config[I_CURRENT_FRAMES] = {
+    this.easing = op.easing;
+    this.__currentFrames = {
       reverse: true,
       'alternate-reverse': true,
     }.hasOwnProperty(op.direction) ? framesR : frames;
     // 时间戳
-    config[I_TIME_STAMP] = frame.__now;
+    this.__timestamp = frame.__now;
   }
 
   __init(list, iterations, duration, easing, target) {
@@ -1623,7 +1588,6 @@ class Animation extends Event {
     }
     // 过滤时间非法的，过滤后续offset<=前面的
     let offset = -1;
-    let tagName = target.tagName;
     for(let i = 0, len = list.length; i < len; i++) {
       let current = list[i];
       if(current.hasOwnProperty('offset')) {
@@ -1653,7 +1617,7 @@ class Animation extends Event {
       });
       // 检查key合法性
       Object.keys(current).forEach(k => {
-        if(k !== 'easing' && k !== 'offset' && !change.isValid(tagName, k)) {
+        if(k !== 'easing' && k !== 'offset' && !change.isValid(target.tagName, k)) {
           delete current[k];
         }
       });
@@ -1735,84 +1699,50 @@ class Animation extends Event {
     let { style, props } = target;
     let originStyle = {};
     keys.forEach(k => {
-      if(isGeom(tagName, k)) {
+      if(isGeom(target.tagName, k)) {
         originStyle[k] = props[k];
       }
       originStyle[k] = style[k];
     });
-    // 再计算两帧之间的变化，存入transition属性
+    // 再计算两帧之间的变化，存入transition/fixed属性
     let length = frames.length;
     let prev = frames[0];
     for(let i = 1; i < length; i++) {
       let next = frames[i];
-      prev = calFrame(prev, next, keys, target, tagName);
+      prev = calFrame(prev, next, keys, target);
     }
     // 反向存储帧的倒排结果
     framesR.forEach(item => {
-      item[FRAME_TIME] = duration - item[FRAME_TIME];
-      item[FRAME_TRANSITION] = [];
+      item.time = duration - item.time;
+      item.transition = [];
     });
     prev = framesR[0];
     for(let i = 1; i < length; i++) {
       let next = framesR[i];
-      prev = calFrame(prev, next, keys, target, tagName);
+      prev = calFrame(prev, next, keys, target);
     }
     return [frames, framesR, keys, originStyle];
   }
 
   __clean(isFinish) {
-    let __config = this.__config;
     this.__cancelTask();
-    __config[I_NEXT_TIME] = 0;
-    let restore;
-    let style = __config[I_STYLE];
-    let keys = __config[I_KEYS];
-    let target = __config[I_TARGET];
+    this.__nextTime = 0;
     if(isFinish) {
       // gotoAndStop到一个很大的时间的话，也需要防止超过
-      __config[I_CURRENT_TIME] = __config[I_DELAY] + __config[I_DURATION] * __config[I_ITERATIONS] + __config[I_END_DELAY];
-      if(__config[I_PLAY_STATE] === 'finish') {
-        return;
-      }
-      __config[I_PLAY_STATE] = 'finish';
-      // cancel需要清除finish根据情况保留
-      if(!__config[I_STAY_END]) {
-        __config[I_STYLE] = {};
-        restore = true;
-      }
+      this.__currentTime = this.__delay + this.__duration * this.__iterations + this.__endDelay;
+      this.__playState = 'finished';
     }
     else {
-      __config[I_PLAY_COUNT] = __config[I_CURRENT_TIME] = 0;
-      if(__config[I_PLAY_STATE] === 'idle') {
-        return;
-      }
-      __config[I_PLAY_STATE] = 'idle';
-      __config[I_STYLE] = {};
-      restore = true;
-    }
-    // 动画取消结束不停留在最后一帧需要还原target原本的样式，需要对比目前是否是由本动画赋值的
-    if(restore) {
-      keys.forEach(k => {
-        if(GEOM.hasOwnProperty(k)) {
-          if(target.__currentProps[k] === style[k]) {
-            target.__currentProps[k] = target.props[k];
-          }
-        }
-        else {
-          if(target.__currentStyle[k] === style[k]) {
-            target.__currentStyle[k] = target.style[k];
-          }
-        }
-      });
+      this.__playCount = this.__currentTime = 0;
+      this.__playState = 'idle';
     }
   }
 
   play(cb) {
-    let __config = this.__config;
-    let isDestroyed = __config[I_DESTROYED];
-    let duration = __config[I_DURATION];
-    let playState = __config[I_PLAY_STATE];
-    let frames = __config[I_FRAMES];
+    let isDestroyed = this.__isDestroyed;
+    let duration = this.__duration;
+    let playState = this.__playState;
+    let frames = this.__frames;
     if(isDestroyed || duration <= 0 || frames.length < 1) {
       return this;
     }
@@ -1820,123 +1750,129 @@ class Animation extends Event {
       return this;
     }
     this.__cancelTask();
-    __config[I_PLAY_CB] = cb;
-    __config[I_PLAY_STATE] = 'running';
+    this.__playCb = cb;
+    this.__playState = 'running';
     // 每次play调用标识第一次运行，需响应play事件和回调
-    __config[I_FIRST_PLAY] = true;
+    this.__firstPlay = true;
+    this.__firstEnter = true;
+    this.__playCount = 0;
     // 防止finish/cancel事件重复触发，每次播放重置
     this.__hasFin = false;
     this.__hasCancel = false;
     // 只有第一次调用会进初始化，另外finish/cancel视为销毁也会重新初始化
-    if(!__config[I_ENTER_FRAME]) {
-      __config[I_ENTER_FRAME] = true;
-      let framesR = __config[I_FRAMES_R];
-      let direction = __config[I_DIRECTION];
+    if(!this.__enterFrame) {
+      this.__enterFrame = true;
+      let framesR = this.__framesR;
+      let direction = this.__direction;
       // 初始化根据方向确定帧序列
-      __config[I_CURRENT_FRAMES] = {
+      this.__currentFrames = {
         reverse: true,
         'alternate-reverse': true,
       }.hasOwnProperty(direction) ? framesR : frames;
-      __config[I_CURRENT_TIME] = __config[I_NEXT_TIME] = __config[I_FPS_TIME] = 0;
+      this.__currentTime = this.__nextTime = this.__fpsTime = 0;
     }
     // 添加每帧回调且立刻执行，本次执行调用refreshTask也是下一帧再渲染，frame的每帧都是下一帧
     // frame.offFrame(this);
     frame.onFrame(this);
-    __config[I_START_TIME] = frame.__now;
-    __config[I_END] = false;
+    this.__startTime = frame.__now;
+    this.__end = false;
     return this;
   }
 
   __before(diff) {
-    let __config = this.__config;
-    __config[I_TIME_STAMP] = frame.__now;
-    let target = __config[I_TARGET];
-    let fps = __config[I_FPS];
-    let playCount = 0;
-    let currentFrames = __config[I_CURRENT_FRAMES];
-    let iterations = __config[I_ITERATIONS];
-    let stayBegin = __config[I_STAY_BEGIN];
-    let stayEnd = __config[I_STAY_END];
-    let delay = __config[I_DELAY];
-    let root = __config[I_ROOT];
-    let is2 = __config[I_IS2];
-    let endTime = __config[I_END_TIME];
-    let duration = __config[I_DURATION];
-    let endDelay = __config[I_END_DELAY];
+    this.__timestamp = frame.__now;
+    let target = this.__target;
+    let fps = this.__fps;
+    let currentFrames = this.__currentFrames;
+    let iterations = this.__iterations;
+    let stayBegin = this.__stayBegin;
+    let stayEnd = this.__stayEnd;
+    let delay = this.__delay;
+    let root = this.__root;
+    let duration = this.__duration;
+    let endDelay = this.__endDelay;
     let length = currentFrames.length;
+    let playbackRate = this.__playbackRate;
+    let spfLimit = this.__spfLimit;
+    let currentTime = this.__currentTime = this.__nextTime;
+    this.__isChange = false;
+    // 定帧限制每帧时间间隔最大为spf
+    if(spfLimit) {
+      if(spfLimit === true) {
+        diff = Math.min(diff, 1000 / fps);
+      }
+      else if(spfLimit > 0) {
+        diff = Math.min(diff, spfLimit);
+      }
+    }
+    // 播放时间累加，并且考虑播放速度加成
+    if(playbackRate !== 1 && playbackRate > 0) {
+      diff *= playbackRate;
+    }
     // 用本帧和上帧时间差，计算累加运行时间currentTime，以便定位当前应该处于哪个时刻
-    let [currentTime, d] = calDiffTime(__config, diff);
-    diff = d;
+    this.__nextTime += diff;
     // 增加的fps功能，当<60时计算跳帧，每帧运行依旧累加时间，达到fps时重置，第一帧强制不跳
-    if(!__config[I_FIRST_ENTER] && fps < 60) {
-      diff = __config[I_FPS_TIME] += diff;
+    if(!this.__firstEnter && fps < 60) {
+      diff = this.__fpsTime += diff;
       if(diff < 1000 / fps) {
-        __config[I_IN_FPS] = true;
+        this.__inFps = true;
         return;
       }
-      __config[I_FPS_TIME] = 0;
+      this.__fpsTime = 0;
     }
-    __config[I_FIRST_ENTER] = false;
+    this.__firstEnter = false;
     // delay仅第一次生效等待
     if(currentTime < delay) {
-      if(stayBegin) {
-        let currentFrame = __config[I_CURRENT_FRAME] = currentFrames[0];
-        let current = currentFrame[FRAME_STYLE];
-        genBeforeRefresh(current, __config[I_KEYS], __config, root, target);
+      if(stayBegin && !this.__isDelay) {
+        let currentFrame = this.__currentFrame = currentFrames[0];
+        let keys = calLastStyle(currentFrame.style, target, this.__keys);
+        this.__isChange = !!keys.length;
+        genBeforeRefresh(keys, root, target, null);
       }
-      __config[I_BEGIN] = false; // 默认是true，delay置false防触发
+      this.__begin = false; // 默认是true，delay置false防触发
       // 即便不刷新，依旧执行帧回调，同时标明让后续第一帧响应begin
-      __config[I_OUT_BEGIN_DELAY] = true;
-      __config[I_IS_DELAY] = true;
+      this.__outBeginDelay = true;
+      this.__isDelay = true;
       return;
     }
+    this.__isDelay = false;
     // 减去delay，计算在哪一帧
     currentTime -= delay;
-    if(__config[I_OUT_BEGIN_DELAY]) {
-      __config[I_OUT_BEGIN_DELAY] = false;
-      __config[I_BEGIN] = true;
+    if(this.__outBeginDelay) {
+      this.__outBeginDelay = false;
+      this.__begin = true;
     }
     // 超过duration非尾轮需处理回到开头，触发新一轮动画事件，这里可能时间间隔非常大直接跳过几轮
-    let round;
-    while(currentTime >= duration && playCount < iterations - 1) {
-      currentTime -= duration;
-      playCount++;
-    }
-    if(__config[I_PLAY_COUNT] < playCount) {
-      __config[I_BEGIN] = true;
-      round = true;
-    }
-    __config[I_PLAY_COUNT] = playCount;
+    let playCount = Math.min(iterations - 1, Math.floor(currentTime / duration));
+    currentTime -= duration * playCount;
     // 如果发生轮换，需重新确定正反向
-    if(round) {
-      let direction = __config[I_DIRECTION];
-      let frames = __config[I_FRAMES];
-      let framesR = __config[I_FRAMES_R];
-      let isAlternate = {
-        alternate: true,
-        'alternate-reverse': true,
-      }.hasOwnProperty(direction);
+    if(this.__playCount < playCount) {
+      this.__begin = true;
+      this.__playCount = playCount;
+      let direction = this.__direction;
+      let frames = this.__frames;
+      let framesR = this.__framesR;
       // 有正反向播放需要重设帧序列
-      if(isAlternate) {
+      if(direction === 'alternate' || direction === 'alternate-reverse') {
         let isEven = playCount % 2 === 0;
         if(direction === 'alternate') {
-          currentFrames = __config[I_CURRENT_FRAMES] = isEven ? frames : framesR;
+          currentFrames = this.__currentFrames = isEven ? frames : framesR;
         }
         else {
-          currentFrames = __config[I_CURRENT_FRAMES] = isEven ? framesR : frames;
+          currentFrames = this.__currentFrames = isEven ? framesR : frames;
         }
       }
     }
     let isLastCount = playCount >= iterations - 1;
     // 只有2帧可优化，否则2分查找当前帧
     let i, frameTime;
-    if(is2) {
-      i = currentTime < endTime ? 0 : 1;
-      frameTime = endTime;
+    if(length === 2) {
+      i = currentTime < duration ? 0 : 1;
+      frameTime = duration;
     }
     else {
       i = binarySearch(0, length - 1, currentTime, currentFrames);
-      frameTime = currentFrames[i][FRAME_TIME];
+      frameTime = currentFrames[i].time;
     }
     // 最后一帧结束动画，仅最后一轮才会进入，需处理endDelay
     let isLastFrame = isLastCount && i === length - 1;
@@ -1945,15 +1881,19 @@ class Animation extends Event {
       // 无需任何处理
     }
     // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
-    else if(is2) {
+    else if(length === 2) {
       percent = currentTime / duration;
     }
     else {
-      let total = currentFrames[i + 1][FRAME_TIME] - frameTime;
+      let total = currentFrames[i + 1].time - frameTime;
       percent = (currentTime - frameTime) / total;
     }
-    let inEndDelay, currentFrame = currentFrames[i], current;
-    __config[I_CURRENT_FRAME] = currentFrame;
+    let inEndDelay, currentFrame = currentFrames[i];
+    // 对比前后两帧是否为同一关键帧，不是则清除之前关键帧上的percent标识
+    if(this.__currentFrame !== currentFrame) {
+      this.__currentFrame && (this.__currentFrame.lastPercent = -1);
+      this.__currentFrame = currentFrame;
+    }
     /** 这里要考虑全几种场景：
      * 1. 单次播放无endDelay且fill不停留（有/无差异，下同）
      * 2. 单次播放无endDelay且fill停留
@@ -1965,76 +1905,74 @@ class Animation extends Event {
      * 8. 多次播放有endDelay且fill停留
      */
     let needClean;
+    let keys;
     if(isLastFrame) {
       inEndDelay = currentTime < duration + endDelay;
       // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
       if(stayEnd) {
-        current = cloneStyle(currentFrame[FRAME_STYLE], __config[I_KEYS]);
+        keys = calLastStyle(currentFrame.style, target, this.__keys);
       }
       // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
       else {
-        current = cloneStyle(__config[I_ORIGIN_STYLE], __config[I_KEYS]);
+        keys = calLastStyle(this.__originStyle, target, this.__keys);
       }
       // 进入endDelay或结束阶段触发end事件，注意只触发一次，防重在触发的地方做
-      __config[I_NEXT_END] = true;
+      this.__nextEnd = true;
       if(!inEndDelay) {
-        __config[I_PLAY_COUNT]++;
-        __config[I_FINISHED] = true;
+        this.__playCount++;
+        this.__finished = true;
         frame.offFrame(this);
         needClean = true;
-        __config[I_NEXT_TIME] = 0;
+        this.__nextTime = 0;
       }
     }
     else {
-      current = calIntermediateStyle(currentFrame, __config[I_KEYS], percent, target);
+      keys = calIntermediateStyle(currentFrame, percent, target);
     }
+    this.__isChange = !keys.length;
     // 无论两帧之间是否有变化，都生成计算结果赋给style，去重在root做
-    genBeforeRefresh(current, __config[I_KEYS], __config, root, target);
+    genBeforeRefresh(keys, root, target, null);
     if(needClean) {
-      let playCb = __config[I_PLAY_CB];
+      let playCb = this.__playCb;
       this.__clean(true);
       // 丑陋的做法，防止gotoAndStop()这样的cb被clean()掉
       if(playCb) {
-        __config[I_PLAY_CB] = playCb;
+        this.__playCb = playCb;
       }
     }
   }
 
-  __after(diff) {
-    let __config = this.__config;
-    __config[I_ASSIGNING] = false;
-    if(__config[I_IN_FPS]) {
-      __config[I_IN_FPS] = false;
+  __after() {
+    if(this.__inFps) {
+      this.__inFps = false;
       return;
     }
-    frameCb(this, __config, diff, __config[I_IS_DELAY]);
-    __config[I_IS_DELAY] = false;
-    if(__config[I_BEGIN]) {
-      __config[I_BEGIN] = false;
-      this.emit(Event.BEGIN, __config[I_PLAY_COUNT]);
+    frameCb(this);
+    if(this.__begin) {
+      this.__begin = false;
+      this.emit(Event.BEGIN, this.__playCount);
     }
     // end事件只触发一次，末轮进入endDelay或直接结束时
-    if(__config[I_NEXT_END] && !__config[I_END]) {
-      __config[I_END] = true;
-      this.emit(Event.END, __config[I_PLAY_COUNT] - 1);
+    if(this.__nextEnd && !this.__end) {
+      this.__end = true;
+      this.emit(Event.END, this.__playCount - 1);
     }
-    if(__config[I_FINISHED]) {
-      __config[I_BEGIN] = __config[I_END] = __config[I_IS_DELAY] = __config[I_FINISHED]
-        = __config[I_IN_FPS] = __config[I_ENTER_FRAME] = false;
-      __config[I_PLAY_STATE] = 'finished';
-      this.emit(Event.FINISH);
+    if(this.__finished) {
+      this.__begin = this.__end = this.__isDelay = this.__finished
+        = this.__inFps = this.__enterFrame = false;
+      this.__playState = 'finished';
+      this.emit(Event.FINISH, this.__isChange);
     }
   }
 
   pause(silence) {
-    let __config = this.__config;
-    let isDestroyed = __config[I_DESTROYED];
-    let duration = __config[I_DURATION];
+    let isDestroyed = this.__isDestroyed;
+    let duration = this.__duration;
     let { pending } = this;
     if(isDestroyed || duration <= 0 || pending) {
       return this;
     }
-    __config[I_PLAY_STATE] = 'paused';
+    this.__playState = 'paused';
     this.__cancelTask();
     if(!silence) {
       this.emit(Event.PAUSE);
@@ -2043,10 +1981,9 @@ class Animation extends Event {
   }
 
   resume(cb) {
-    let __config = this.__config;
-    let isDestroyed = __config[I_DESTROYED];
-    let duration = __config[I_DURATION];
-    let playState = __config[I_PLAY_STATE];
+    let isDestroyed = this.__isDestroyed;
+    let duration = this.__duration;
+    let playState = this.__playState;
     if(isDestroyed || duration <= 0 || playState !== 'paused') {
       return this;
     }
@@ -2054,98 +1991,99 @@ class Animation extends Event {
   }
 
   finish(cb) {
-    let self = this;
-    let __config = self.__config;
-    let isDestroyed = __config[I_DESTROYED];
-    let duration = __config[I_DURATION];
-    let playState = __config[I_PLAY_STATE];
-    let frames = __config[I_FRAMES];
-    if(isDestroyed || duration <= 0 || frames.length < 1 || playState === 'finished' || playState === 'idle') {
-      return self;
+    let isDestroyed = this.__isDestroyed;
+    let duration = this.__duration;
+    let playState = this.__playState;
+    let frames = this.__frames;
+    if(isDestroyed || duration <= 0 || frames.length < 1) {
+      return this;
+    }
+    if(playState === 'finished') {
+      if(isFunction(cb)) {
+        cb();
+      }
+      return this;
     }
     // 先清除所有回调任务，多次调用finish也会清除只留最后一次
-    self.__cancelTask();
-    let root = __config[I_ROOT];
-    let originStyle = __config[I_ORIGIN_STYLE];
+    this.__clean(true);
+    this.__begin = this.__end = this.__isDelay = this.__finished
+      = this.__inFps = this.__enterFrame = false;
+    this.__playState = 'finished';
+    let root = this.__root;
     if(root) {
-      let current;
-      // 停留在最后一帧
-      if(__config[I_STAY_END]) {
-        __config[I_CURRENT_FRAME] = frames[frames.length - 1];
-        current = frames[frames.length - 1][FRAME_STYLE];
+      let target = this.__target;
+      let style;
+      // 是否停留在最后一帧
+      if(this.__stayEnd) {
+        let framesR = this.__framesR;
+        let direction = this.__direction;
+        let iterations = this.__iterations;
+        if('reverse'.indexOf(direction) > -1) {
+          [frames, framesR] = [framesR, frames];
+        }
+        if(iterations === Infinity || iterations % 2) {
+          style = frames[frames.length - 1].style;
+        }
+        else {
+          style = framesR[framesR.length - 1].style;
+        }
       }
       else {
-        current = originStyle;
+        style = this.__originStyle;
       }
-      root.addRefreshTask({
-        __before() {
-          __config[I_ASSIGNING] = true;
-          genBeforeRefresh(current, __config[I_KEYS], __config, root, __config[I_TARGET]);
-          self.__clean(true);
-        },
-        __after(diff) {
-          if(!self.__hasFin) {
-            self.__hasFin = true;
-            __config[I_ASSIGNING] = false;
-            frameCb(self, __config, diff);
-            __config[I_BEGIN] = __config[I_END] = __config[I_IS_DELAY] = __config[I_FINISHED]
-              = __config[I_IN_FPS] = __config[I_ENTER_FRAME] = false;
-            self.emit(Event.FINISH);
-          }
-          if(isFunction(cb)) {
-            cb.call(self, diff);
-          }
-        },
+      let keys = calLastStyle(style, target, this.__keys);
+      this.__isChange = !keys.length;
+      genBeforeRefresh(keys, root, target, () => {
+        frameCb(this);
+        this.emit(Event.FINISH, this.__isChange);
+        if(isFunction(cb)) {
+          cb(this.__isChange);
+        }
       });
     }
-    return self;
+    return this;
   }
 
   cancel(cb) {
-    let self = this;
-    let __config = self.__config;
-    let isDestroyed = __config[I_DESTROYED];
-    let duration = __config[I_DURATION];
-    let playState = __config[I_PLAY_STATE];
-    let frames = __config[I_FRAMES];
-    if(isDestroyed || duration <= 0 || playState === 'idle' || frames.length < 1) {
-      return self;
+    let isDestroyed = this.__isDestroyed;
+    let duration = this.__duration;
+    let playState = this.__playState;
+    let frames = this.__frames;
+    if(isDestroyed || duration <= 0 || frames.length < 1) {
+      return this;
     }
-    self.__cancelTask();
-    let root = __config[I_ROOT];
-    let originStyle = __config[I_ORIGIN_STYLE];
+    if(playState === 'idle') {
+      if(isFunction(cb)) {
+        cb();
+      }
+      return this;
+    }
+    this.__clean();
+    this.__begin = this.__end = this.__isDelay = this.__finished
+      = this.__inFps = this.__enterFrame = false;
+    this.__playState = 'idle';
+    let root = this.__root;
     if(root) {
-      root.addRefreshTask({
-        __before() {
-          __config[I_ASSIGNING] = true;
-          genBeforeRefresh(originStyle, __config[I_KEYS], __config, root, __config[I_TARGET]);
-          self.__clean();
-        },
-        __after(diff) {
-          if(!self.__hasCancel) {
-            self.__hasCancel = true;
-            __config[I_ASSIGNING] = false;
-            frameCb(self, __config, diff);
-            __config[I_BEGIN] = __config[I_END] = __config[I_IS_DELAY] = __config[I_FINISHED]
-              = __config[I_IN_FPS] = __config[I_ENTER_FRAME] = false;
-            self.emit(Event.CANCEL);
-          }
-          if(isFunction(cb)) {
-            cb.call(self, diff);
-          }
-        },
+      let target = this.__target;
+      let keys = calLastStyle(this.__originStyle, target, this.__keys);
+      this.__isChange = !keys.length;
+      genBeforeRefresh(keys, root, target, () => {
+        frameCb(this);
+        this.emit(Event.CANCEL, this.__isChange);
+        if(isFunction(cb)) {
+          cb(this.__isChange);
+        }
       });
     }
-    return self;
+    return this;
   }
 
   gotoAndPlay(v, options, cb) {
-    let __config = this.__config;
-    let isDestroyed = __config[I_DESTROYED];
-    let duration = __config[I_DURATION];
-    let frames = __config[I_FRAMES];
-    let delay = __config[I_DELAY];
-    let endDelay = __config[I_END_DELAY];
+    let isDestroyed = this.__isDestroyed;
+    let duration = this.__duration;
+    let frames = this.__frames;
+    let delay = this.__delay;
+    let endDelay = this.__endDelay;
     if(isDestroyed || duration <= 0 || frames.length < 1) {
       return this;
     }
@@ -2159,12 +2097,11 @@ class Animation extends Event {
   }
 
   gotoAndStop(v, options, cb) {
-    let __config = this.__config;
-    let isDestroyed = __config[I_DESTROYED];
-    let duration = __config[I_DURATION];
-    let frames = __config[I_FRAMES];
-    let delay = __config[I_DELAY];
-    let endDelay = __config[I_END_DELAY];
+    let isDestroyed = this.__isDestroyed;
+    let duration = this.__duration;
+    let frames = this.__frames;
+    let delay = this.__delay;
+    let endDelay = this.__endDelay;
     if(isDestroyed || duration <= 0 || frames.length < 1) {
       return this;
     }
@@ -2174,43 +2111,20 @@ class Animation extends Event {
       return this.finish(cb);
     }
     // 先play一帧，回调里模拟暂停
-    return this.play(diff => {
-      __config[I_PLAY_STATE] = 'paused';
+    return this.play(() => {
+      this.__playState = 'paused';
       this.__cancelTask();
       if(isFunction(cb)) {
-        cb.call(this, diff);
-      }
-    });
-  }
-
-  // 同步赋予，用在extendAnimate
-  assignCurrentStyle() {
-    let __config = this.__config;
-    let style = __config[I_STYLE];
-    let target = __config[I_TARGET];
-    let keys = __config[I_KEYS];
-    keys.forEach(i => {
-      if(style.hasOwnProperty(i)) {
-        let v = style[i];
-        // geom的属性变化
-        if(GEOM.hasOwnProperty(i)) {
-          target.currentProps[i] = v;
-        }
-        // 样式
-        else {
-          // 将动画样式直接赋给currentStyle
-          target.currentStyle[i] = v;
-        }
+        cb();
       }
     });
   }
 
   // 返回不包含delay且去除多轮的时间
   __goto(v, isFrame, excludeDelay) {
-    let __config = this.__config;
-    let iterations = __config[I_ITERATIONS];
-    let duration = __config[I_DURATION];
-    __config[I_PLAY_STATE] = 'paused';
+    let iterations = this.__iterations;
+    let duration = this.__duration;
+    this.__playState = 'paused';
     // this.__cancelTask(); // 应该不需要，gotoAndXxx都会调用play()，里面有
     if(isNaN(v) || v < 0) {
       throw new Error('Param of gotoAnd(Play/Stop) is illegal: ' + v);
@@ -2219,33 +2133,33 @@ class Animation extends Event {
       v = (v - 1) / this.spf;
     }
     if(excludeDelay) {
-      v += __config[I_DELAY];
+      v += this.__delay;
     }
     // 在时间范围内设置好时间，复用play直接跳到播放点
-    __config[I_NEXT_TIME] = v;
-    v -= __config[I_DELAY];
+    this.__nextTime = v;
+    v -= this.__delay;
     // 超过时间长度需要累加次数，这里可以超过iterations，因为设定也许会非常大
     let playCount = 0;
     while(v >= duration && playCount < iterations - 1) {
       playCount++;
       v -= duration;
     }
-    __config[I_PLAY_COUNT] = playCount;
+    this.__playCount = playCount;
     // 防止play()重置时间和当前帧组，提前计算好
-    __config[I_ENTER_FRAME] = true;
-    let frames = __config[I_FRAMES];
-    let framesR = __config[I_FRAMES_R];
-    let direction = __config[I_DIRECTION];
+    this.__enterFrame = true;
+    let frames = this.__frames;
+    let framesR = this.__framesR;
+    let direction = this.__direction;
     if({
       alternate: true,
       'alternate-reverse': true,
     }.hasOwnProperty(direction)) {
       let isEven = playCount % 2 === 0;
       if(direction === 'alternate') {
-        __config[I_CURRENT_FRAMES] = isEven ? frames : framesR;
+        this.__currentFrames = isEven ? frames : framesR;
       }
       else {
-        __config[I_CURRENT_FRAMES] = isEven ? framesR : frames;
+        this.__currentFrames = isEven ? framesR : frames;
       }
     }
     return v;
@@ -2263,68 +2177,38 @@ class Animation extends Event {
   }
 
   removeControl() {
-    let root = this.root;
+    let root = this.__root;
     if(!root) {
       return;
     }
-    let ac = root.animateController;
+    let ac = root.__animateController;
     if(ac) {
       ac.remove(this);
     }
   }
 
-  __stayBegin() {
-    return {
-      backwards: true,
-      both: true,
-    }.hasOwnProperty(this.fill);
-  }
-
-  __stayEnd() {
-    return {
-      forwards: true,
-      both: true,
-    }.hasOwnProperty(this.fill);
-  }
-
   __setTarget(target) {
     this.__target = target;
-    this.__config[I_TARGET] = target;
-    this.__config[I_NODE_CONFIG] = target.__config;
   }
 
   __cancelTask() {
     frame.offFrame(this);
-    this.__config[I_PLAY_CB] = null;
+    this.__playCb = null;
   }
 
-  __destroy(sync) {
-    let self = this;
-    let __config = self.__config;
-    if(__config[I_DESTROYED]) {
+  __destroy() {
+    if(this.__isDestroyed) {
       return;
     }
-    self.removeControl();
-    // clean异步执行，因为里面的样式还原需要等到下一帧，否则同步执行清除后，紧接着的新同步动画获取不到currentStyle
-    if(sync) {
-      self.__clean();
-      __config[I_TARGET] = null;
-    }
-    else {
-      frame.nextFrame({
-        __before() {
-          self.__clean();
-          __config[I_TARGET] = null;
-        },
-      });
-    }
-    __config[I_START_TIME] = 0;
-    __config[I_DESTROYED] = true;
+    this.removeControl();
+    this.__clean();
+    this.__target = this.__root = null;
+    this.__startTime = 0;
+    this.__isDestroyed = true;
   }
 
   __checkModify() {
-    let __config = this.__config;
-    if(__config[I_PLAY_STATE] !== 'idle' && __config[I_PLAY_STATE] !== 'finished') {
+    if(this.__playState !== 'idle' && this.__playState !== 'finished') {
       inject.warn('Modification will not come into effect when animation is running');
     }
   }
@@ -2334,19 +2218,15 @@ class Animation extends Event {
   }
 
   get target() {
-    return this.__config[I_TARGET];
+    return this.__target;
   }
 
   get root() {
-    return this.__config[I_ROOT];
+    return this.__root;
   }
 
   get keys() {
-    return this.__config[I_KEYS];
-  }
-
-  get style() {
-    return this.__config[I_STYLE];
+    return this.__keys;
   }
 
   get options() {
@@ -2354,60 +2234,55 @@ class Animation extends Event {
   }
 
   get duration() {
-    return this.__config[I_DURATION];
+    return this.__duration;
   }
 
   set duration(v) {
     v = Math.max(0, parseFloat(v) || 0);
-    let __config = this.__config;
-    if(__config[I_DURATION] !== v) {
-      __config[I_DURATION] = v;
-      __config[I_END_TIME] = v;
+    if(this.__duration !== v) {
+      this.__duration = v;
       this.__checkModify();
     }
     return v;
   }
 
   get delay() {
-    return this.__config[I_DELAY];
+    return this.__delay;
   }
 
   set delay(v) {
     v = Math.max(0, parseFloat(v) || 0);
-    let __config = this.__config;
-    if(__config[I_DELAY] !== v) {
-      __config[I_DELAY] = v;
+    if(this.__delay !== v) {
+      this.__delay = v;
       this.__checkModify();
     }
     return v;
   }
 
   get endDelay() {
-    return this.__config[I_END_DELAY];
+    return this.__endDelay;
   }
 
   set endDelay(v) {
     v = Math.max(0, parseFloat(v) || 0);
-    let __config = this.__config;
-    if(__config[I_END_DELAY] !== v) {
-      __config[I_END_DELAY] = v;
+    if(this.__endDelay !== v) {
+      this.__endDelay = v;
       this.__checkModify();
     }
     return v;
   }
 
   get fps() {
-    return this.__config[I_FPS];
+    return this.__fps;
   }
 
   set fps(v) {
     v = parseInt(v) || 60;
-    let __config = this.__config;
-    if(__config[I_FPS] !== v) {
+    if(this.__fps !== v) {
       if(v <= 0) {
         v = 60;
       }
-      __config[I_FPS] = v;
+      this.__fps = v;
     }
     return v;
   }
@@ -2417,7 +2292,7 @@ class Animation extends Event {
   }
 
   get iterations() {
-    return this.__config[I_ITERATIONS];
+    return this.__iterations;
   }
 
   set iterations(v) {
@@ -2430,29 +2305,27 @@ class Animation extends Event {
         v = 1;
       }
     }
-    let __config = this.__config;
-    if(__config[I_ITERATIONS] !== v) {
-      __config[I_ITERATIONS] = v;
+    if(this.__iterations !== v) {
+      this.__iterations = v;
     }
     return v;
   }
 
   get fill() {
-    return this.__config[I_FILL];
+    return this.__fill;
   }
 
   set fill(v) {
     v = v || 'none';
-    let __config = this.__config;
-    if(__config[I_FILL] !== v) {
-      __config[I_FILL] = v;
+    if(this.__fill !== v) {
+      this.__fill = v;
       this.__checkModify();
     }
-    __config[I_STAY_BEGIN] = {
+    this.__stayBegin = {
       backwards: true,
       both: true,
     }.hasOwnProperty(v);
-    __config[I_STAY_END] = {
+    this.__stayEnd = {
       forwards: true,
       both: true,
     }.hasOwnProperty(v);
@@ -2460,29 +2333,28 @@ class Animation extends Event {
   }
 
   get direction() {
-    return this.__config[I_DIRECTION];
+    return this.__direction;
   }
 
   set direction(v) {
     v = v || 'normal';
-    let __config = this.__config;
-    if(__config[I_DIRECTION] !== v) {
-      __config[I_DIRECTION] = v;
+    if(this.__direction !== v) {
+      this.__direction = v;
       this.__checkModify();
     }
     return v;
   }
 
   get frames() {
-    return this.__config[I_FRAMES];
+    return this.__frames;
   }
 
   get framesR() {
-    return this.__config[I_FRAMES_R];
+    return this.__framesR;
   }
 
   get playbackRate() {
-    return this.__config[I_PLAYBACK_RATE];
+    return this.__playbackRate;
   }
 
   set playbackRate(v) {
@@ -2490,93 +2362,91 @@ class Animation extends Event {
     if(v <= 0) {
       v = 1;
     }
-    let __config = this.__config;
-    if(__config[I_PLAYBACK_RATE] !== v) {
-      __config[I_PLAYBACK_RATE] = v;
+    if(this.__playbackRate !== v) {
+      this.__playbackRate = v;
     }
     return v;
   }
 
   get easing() {
-    return this.__config[I_EASING];
+    return this.__easing;
+  }
+
+  set easing(v) {
+    this.__easing = v;
   }
 
   get startTime() {
-    return this.__config[I_START_TIME];
+    return this.__startTime;
   }
 
   get currentTime() {
-    return this.__config[I_CURRENT_TIME];
+    return this.__currentTime;
   }
 
   set currentTime(v) {
     v = Math.max(0, parseFloat(v) || 0);
-    let __config = this.__config;
-    if(__config[I_CURRENT_TIME] !== v) {
-      __config[I_CURRENT_TIME] = v;
-      __config[I_NEXT_TIME] = v;
+    if(this.__currentTime !== v) {
+      this.__currentTime = v;
+      this.__nextTime = v;
     }
     return v;
   }
 
   get nextTime() {
-    return this.__config[I_NEXT_TIME];
+    return this.__nextTime;
   }
 
   set nextTime(v) {
     v = Math.max(0, parseFloat(v) || 0);
-    let __config = this.__config;
-    if(__config[I_NEXT_TIME] !== v) {
-      __config[I_NEXT_TIME] = v;
+    if(this.__nextTime !== v) {
+      this.__nextTime = v;
     }
     return v;
   }
 
   get timestamp() {
-    return this.__config[I_TIME_STAMP];
+    return this.__timestamp;
   }
 
   get pending() {
-    return this.__config[I_PLAY_STATE] !== 'running';
+    return this.__playState !== 'running';
   }
 
   get finished() {
-    return this.__config[I_PLAY_STATE] === 'finished';
+    return this.__playState === 'finished';
   }
 
   get playState() {
-    return this.__config[I_PLAY_STATE];
+    return this.__playState;
   }
 
   get playCount() {
-    return this.__config[I_PLAY_COUNT];
+    return this.__playCount;
   }
 
   set playCount(v) {
     v = Math.max(0, parseInt(v) || 0);
-    let __config = this.__config;
-    if(__config[I_PLAY_COUNT] !== v) {
-      __config[I_PLAY_COUNT] = v;
+    if(this.__playCount !== v) {
+      this.__playCount = v;
     }
     return v;
   }
 
   get isDestroyed() {
-    return this.__config[I_DESTROYED];
+    return this.__isDestroyed;
   }
 
   get animating() {
-    let __config = this.__config;
-    let playState = __config[I_PLAY_STATE];
+    let playState = this.__playState;
     if(playState === 'idle') {
       return false;
     }
-    return playState !== 'finished' || __config[I_STAY_END] || __config[I_STAY_BEGIN];
+    return playState !== 'finished' || this.__stayEnd || this.__stayBegin;
   }
 
   get spfLimit() {
-    let __config = this.__config;
-    return __config[I_SPF_LIMIT];
+    return this.__spfLimit;
   }
 
   set spfLimit(v) {
@@ -2586,15 +2456,10 @@ class Animation extends Event {
     else {
       v = !!v;
     }
-    let __config = this.__config;
-    if(__config[I_SPF_LIMIT] !== v) {
-      __config[I_SPF_LIMIT] = v;
+    if(this.__spfLimit !== v) {
+      this.__spfLimit = v;
     }
     return v;
-  }
-
-  get assigning() {
-    return this.__config[I_ASSIGNING];
   }
 }
 

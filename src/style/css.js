@@ -53,22 +53,12 @@ const { STYLE_KEY, style2Upper, STYLE_KEY: {
   STROKE,
   STROKE_WIDTH,
   STROKE_DASHARRAY,
-  DISPLAY,
-  FLEX_DIRECTION,
-  FLEX_GROW,
-  FLEX_SHRINK,
   FLEX_BASIS,
-  JUSTIFY_CONTENT,
-  ALIGN_SELF,
-  ALIGN_ITEMS,
   MATRIX,
   LETTER_SPACING,
-  BACKGROUND_CLIP,
   WHITE_SPACE,
-  TEXT_OVERFLOW,
   LINE_CLAMP,
   ORDER,
-  FLEX_WRAP,
   TRANSLATE_PATH,
   TEXT_STROKE_COLOR,
   TEXT_STROKE_WIDTH,
@@ -81,13 +71,21 @@ const { isGeom, GEOM, GEOM_KEY_SET } = change;
 const { VALID_STRING_VALUE } = reset;
 
 const {
-  COLOR_HASH,
-  LENGTH_HASH,
-  RADIUS_HASH,
-  GRADIENT_HASH,
-  EXPAND_HASH,
-  GRADIENT_TYPE,
+  isColorKey,
+  isExpandKey,
+  isLengthKey,
+  isGradientKey,
+  isRadiusKey,
 } = key;
+
+function isGradient(s) {
+  if(reg.gradient.test(s)) {
+    let gradient = reg.gradient.exec(s);
+    if(gradient && ['linear', 'radial', 'conic'].indexOf(gradient[1]) > -1) {
+      return true;
+    }
+  }
+}
 
 const TRANSFORM_HASH = {
   translateX: TRANSLATE_X,
@@ -106,21 +104,21 @@ const TRANSFORM_HASH = {
 
 function compatibleTransform(k, arr) {
   if(k === SCALE_X || k === SCALE_Y || k === SCALE_Z) {
-    arr[1] = NUMBER;
+    arr.u = NUMBER;
   }
   else if(k === TRANSLATE_X || k === TRANSLATE_Y || k === TRANSLATE_Z) {
-    if(arr[1] === NUMBER) {
-      arr[1] = PX;
+    if(arr.u === NUMBER) {
+      arr.u = PX;
     }
   }
   else if(k === PERSPECTIVE) {
-    if([NUMBER, PERCENT, DEG].indexOf(arr[1]) > -1) {
-      arr[1] = PX;
+    if([NUMBER, PERCENT, DEG].indexOf(arr.u) > -1) {
+      arr.u = PX;
     }
   }
   else {
-    if(arr[1] === NUMBER) {
-      arr[1] = DEG;
+    if(arr.u === NUMBER) {
+      arr.u = DEG;
     }
   }
 }
@@ -261,31 +259,37 @@ function normalize(style, resetList = []) {
   temp = style.backgroundImage;
   if(temp !== undefined) {
     if(!temp) {
-      res[BACKGROUND_IMAGE] = [null];
+      res[BACKGROUND_IMAGE] = [];
     }
     else if(Array.isArray(temp)) {
       res[BACKGROUND_IMAGE] = temp.map(item => {
         if(!item) {
           return null;
         }
-        if(reg.gradient.test(item)) {
-          return [gradient.parseGradient(item), GRADIENT];
+        if(isGradient(item)) {
+          return {
+            v: gradient.parseGradient(item),
+            u: GRADIENT,
+          };
         }
         if(reg.img.test(item)) {
-          return [reg.img.exec(item)[2], STRING];
+          return {
+            v: reg.img.exec(item)[2],
+            u: STRING,
+          };
         }
         return null;
       });
     }
     // 区分是渐变色还是图
-    else if(reg.gradient.test(temp)) {
-      res[BACKGROUND_IMAGE] = [[gradient.parseGradient(temp), GRADIENT]];
+    else if(isGradient(temp)) {
+      res[BACKGROUND_IMAGE] = [{ v: gradient.parseGradient(temp), u: GRADIENT }];
     }
     else if(reg.img.test(temp)) {
-      res[BACKGROUND_IMAGE] = [[reg.img.exec(temp)[2], STRING]];
+      res[BACKGROUND_IMAGE] = [{ v: reg.img.exec(temp)[2], u: STRING }];
     }
     else {
-      res[BACKGROUND_IMAGE] = [null];
+      res[BACKGROUND_IMAGE] = [];
     }
   }
   temp = style.backgroundColor;
@@ -294,11 +298,11 @@ function normalize(style, resetList = []) {
     // 先赋值默认透明，后续操作有合法值覆盖
     let bgc = /^#[0-9a-f]{3,8}/i.exec(temp);
     if(bgc && [4, 7, 9].indexOf(bgc[0].length) > -1) {
-      res[BACKGROUND_COLOR] = [rgba2int(bgc[0]), RGBA];
+      res[BACKGROUND_COLOR] = { v: rgba2int(bgc[0]), u: RGBA };
     }
     else {
       bgc = /rgba?\s*\(.+\)/i.exec(temp);
-      res[BACKGROUND_COLOR] = [rgba2int(bgc ? bgc[0] : [0, 0, 0, 0]), RGBA];
+      res[BACKGROUND_COLOR] = { v: rgba2int(bgc ? bgc[0] : [0, 0, 0, 0]), u: RGBA };
     }
   }
   ['backgroundPositionX', 'backgroundPositionY'].forEach((k, i) => {
@@ -312,22 +316,22 @@ function normalize(style, resetList = []) {
       res[k] = temp.map(item => {
         if(/^[-+]?[\d.]/.test(item)) {
           let v = calUnit(item);
-          if([NUMBER, DEG].indexOf(v[1]) > -1) {
-            v[1] = PX;
+          if([NUMBER, DEG].indexOf(v.u) > -1) {
+            v.u = PX;
           }
           return v;
         }
         else {
-          return [
-            {
+          return {
+            v: {
               top: 0,
               left: 0,
               center: 50,
               right: 100,
               bottom: 100,
             }[item] || 0,
-            PERCENT,
-          ];
+            u: PERCENT,
+          };
         }
       });
     }
@@ -341,8 +345,8 @@ function normalize(style, resetList = []) {
     res[BACKGROUND_SIZE] = temp.map(item => {
       if(!item) {
         return [
-          [0, AUTO],
-          [0, AUTO],
+          { u: AUTO },
+          { u: AUTO },
         ];
       }
       let match = item.toString().match(/\b(?:([-+]?[\d.]+[pxremvwhina%]*)|(contain|cover|auto))/ig);
@@ -360,24 +364,24 @@ function normalize(style, resetList = []) {
           let item = match[i].toLowerCase();
           if(/^[-+]?[\d.]/.test(item)) {
             let n = calUnit(item);
-            if([NUMBER, DEG].indexOf(n[1]) > -1) {
-              n[1] = PX;
+            if([NUMBER, DEG].indexOf(n.u) > -1) {
+              n.u = PX;
             }
             v.push(n);
           }
           else if(item === 'contain' || item === 'cover') {
-            v.push([item, STRING]);
+            v.push({ v: item, u: STRING });
           }
           else {
-            v.push([0, AUTO]);
+            v.push({ u: AUTO });
           }
         }
         return v;
       }
       else {
         return [
-          [0, AUTO],
-          [0, AUTO],
+          { u: AUTO },
+          { u: AUTO },
         ];
       }
     });
@@ -387,7 +391,7 @@ function normalize(style, resetList = []) {
     k = 'border' + k + 'Color';
     let v = style[k];
     if(v !== undefined) {
-      res[STYLE_KEY[style2Upper(k)]] = [rgba2int(v || 'transparent'), RGBA];
+      res[STYLE_KEY[style2Upper(k)]] = { v: rgba2int(v || 'transparent'), u: RGBA };
     }
   });
   // border-radius
@@ -404,26 +408,23 @@ function normalize(style, resetList = []) {
         let item = arr[i];
         if(/^[-+]?[\d.]/.test(item)) {
           let n = calUnit(item);
-          if([NUMBER, DEG].indexOf(n[1]) > -1) {
-            n[1] = PX;
+          if([NUMBER, DEG].indexOf(n.u) > -1) {
+            n.u = PX;
           }
-          if(n[0] < 0) {
-            n[0] = 0;
+          if(n.v < 0) {
+            n.v = 0;
           }
           arr[i] = n;
         }
         else {
-          arr[i] = [0, PX];
+          arr[i] = { u: 0, v: PX };
         }
       }
       res[STYLE_KEY[style2Upper(k)]] = arr;
     }
   });
   temp = style.transform;
-  if(temp === null) {
-    res[TRANSFORM] = null;
-  }
-  else if(temp !== undefined) {
+  if(temp !== undefined) {
     let transform = res[TRANSFORM] = [];
     let match = (temp || '').toString().match(/\w+\(.+?\)/g);
     if(match) {
@@ -438,9 +439,9 @@ function normalize(style, resetList = []) {
             arr = arr.slice(0, 6);
           }
           if(arr.length === 6) {
-            transform.push([MATRIX, [
+            transform.push({ k: MATRIX, v: [
               arr[0], arr[1], 0, 0, arr[2], arr[3], 0, 0, 0, 0, 1, 0, arr[4], arr[5], 0, 1,
-            ]]);
+            ]});
           }
         }
         else if(k === 'matrix3d') {
@@ -450,16 +451,16 @@ function normalize(style, resetList = []) {
             arr = arr.slice(0, 16);
           }
           if(arr.length === 16) {
-            transform.push([MATRIX, arr]);
+            transform.push({ k: MATRIX, v: arr });
           }
         }
         else if(k === 'perspective') {
           let arr = calUnit(v);
-          if(arr[0] < 0) {
-            arr[0] = 0;
+          if(arr.v < 0) {
+            arr.v = 0;
           }
           compatibleTransform(PERSPECTIVE, arr);
-          transform.push([PERSPECTIVE, arr]);
+          transform.push({ k: PERSPECTIVE, v: arr });
         }
         else if(k === 'rotate3d') {
           let arr = v.toString().split(/\s*,\s*/);
@@ -470,14 +471,14 @@ function normalize(style, resetList = []) {
             arr[1] = parseFloat(arr[1]);
             arr[2] = parseFloat(arr[2]);
             arr[3] = deg;
-            transform.push([ROTATE_3D, arr]);
+            transform.push({ k: ROTATE_3D, v: arr });
           }
         }
         else if(TRANSFORM_HASH.hasOwnProperty(k)) {
           let k2 = TRANSFORM_HASH[k];
           let arr = calUnit(v);
           compatibleTransform(k2, arr);
-          transform.push([k2, arr]);
+          transform.push({ k: k2, v: arr });
         }
         else if({ translate: true, scale: true, skew: true }.hasOwnProperty(k)) {
           let arr = v.toString().split(/\s*,\s*/);
@@ -491,8 +492,8 @@ function normalize(style, resetList = []) {
             let arr2 = calUnit(arr[1]);
             compatibleTransform(k1, arr1);
             compatibleTransform(k2, arr2);
-            transform.push([k1, arr1]);
-            transform.push([k2, arr2]);
+            transform.push({ k: k1, v: arr1 });
+            transform.push({ k: k2, v: arr2 });
           }
         }
         else if({ translate3d: true, scale3d: true }.hasOwnProperty(k)) {
@@ -514,9 +515,9 @@ function normalize(style, resetList = []) {
             compatibleTransform(k1, arr1);
             compatibleTransform(k2, arr2);
             compatibleTransform(k3, arr3);
-            transform.push([k1, arr1]);
-            transform.push([k2, arr2]);
-            transform.push([k3, arr3]);
+            transform.push({ k: k1, v: arr1 });
+            transform.push({ k: k2, v: arr2 });
+            transform.push({ k: k3, v: arr3 });
           }
         }
       });
@@ -525,8 +526,8 @@ function normalize(style, resetList = []) {
   temp = style.perspective;
   if(temp !== undefined) {
     let arr = calUnit(temp || 0);
-    if(arr[0] < 0) {
-      arr[0] = 0;
+    if(arr.v < 0) {
+      arr.v = 0;
     }
     compatibleTransform(PERSPECTIVE, arr);
     res[PERSPECTIVE] = arr;
@@ -547,32 +548,32 @@ function normalize(style, resetList = []) {
           let item = match[i];
           if(/^[-+]?[\d.]/.test(item)) {
             let n = calUnit(item);
-            if([NUMBER, DEG].indexOf(n[1]) > -1) {
-              n[1] = PX;
+            if([NUMBER, DEG].indexOf(n.u) > -1) {
+              n.u = PX;
             }
             arr.push(n);
           }
           else {
-            arr.push([
-              {
+            arr.push({
+              v: {
                 top: 0,
                 left: 0,
                 center: 50,
                 right: 100,
                 bottom: 100,
               }[item],
-              PERCENT,
-            ]);
+              u: PERCENT,
+            });
             // 不规范的写法变默认值50%
-            if(isNil(arr[i][0])) {
-              arr[i][0] = 50;
+            if(isNil(arr[i].v)) {
+              arr[i].v = 50;
             }
           }
         }
       }
       else {
-        arr.push([50, PERCENT]);
-        arr.push([50, PERCENT]);
+        arr.push({ v: 50, u: PERCENT });
+        arr.push({ v: 50, u: PERCENT });
       }
     }
   });
@@ -666,13 +667,13 @@ function normalize(style, resetList = []) {
       return;
     }
     if(v === 'auto') {
-      v = [0, AUTO];
+      v = { v: 0, u: AUTO };
     }
     else {
       v = calUnit(v || 0);
       // 无单位视为px
-      if([NUMBER, DEG].indexOf(v[1]) > -1) {
-        v[1] = PX;
+      if([NUMBER, DEG].indexOf(v.u) > -1) {
+        v.u = PX;
       }
     }
     let k2 = STYLE_KEY[style2Upper(k)];
@@ -689,25 +690,25 @@ function normalize(style, resetList = []) {
       borderLeftWidth: true,
       width: true,
       height: true,
-    }.hasOwnProperty(k) && v[0] < 0) {
-      v[0] = 0;
+    }.hasOwnProperty(k) && v.v < 0) {
+      v.v = 0;
     }
   });
   temp = style.flexBasis;
   if(temp !== undefined) {
     if(/content/i.test(temp)) {
-      res[FLEX_BASIS] = [temp, STRING];
+      res[FLEX_BASIS] = { v: temp.toLowerCase(), u: STRING };
     }
     else if(/^[\d.]/.test(temp)) {
       let v = res[FLEX_BASIS] = calUnit(temp);
-      v[0] = Math.max(v[0], 0);
+      v.v = Math.max(v.v, 0);
       // 无单位视为px
-      if([NUMBER, DEG].indexOf(v[1]) > -1) {
-        v[1] = PX;
+      if([NUMBER, DEG].indexOf(v.u) > -1) {
+        v.u = PX;
       }
     }
     else {
-      res[FLEX_BASIS] = [0, AUTO];
+      res[FLEX_BASIS] = { v: 0, u: AUTO };
     }
   }
   temp = style.order;
@@ -717,41 +718,41 @@ function normalize(style, resetList = []) {
   temp = style.color;
   if(temp !== undefined) {
     if(/inherit/i.test(temp)) {
-      res[COLOR] = [[], INHERIT];
+      res[COLOR] = { u: INHERIT };
     }
-    else if(reg.gradient.test(temp)) {
-      res[COLOR] = [gradient.parseGradient(temp), GRADIENT];
+    else if(isGradient(temp)) {
+      res[COLOR] = { v: gradient.parseGradient(temp), u: GRADIENT };
     }
     else {
-      res[COLOR] = [rgba2int(temp), RGBA];
+      res[COLOR] = { v: rgba2int(temp), u: RGBA };
     }
   }
   temp = style.textStrokeColor;
   if(temp !== undefined) {
     if(/inherit/i.test(temp)) {
-      res[TEXT_STROKE_COLOR] = [[], INHERIT];
+      res[TEXT_STROKE_COLOR] = { u: INHERIT };
     }
-    else if(reg.gradient.test(temp)) {
-      res[TEXT_STROKE_COLOR] = [gradient.parseGradient(temp), GRADIENT];
+    else if(isGradient(temp)) {
+      res[TEXT_STROKE_COLOR] = { v: gradient.parseGradient(temp), u: GRADIENT };
     }
     else {
-      res[TEXT_STROKE_COLOR] = [rgba2int(temp), RGBA];
+      res[TEXT_STROKE_COLOR] = { v: rgba2int(temp), u: RGBA };
     }
   }
   temp = style.fontSize;
   if(temp !== undefined) {
     if(/inherit/i.test(temp)) {
-      res[FONT_SIZE] = [0, INHERIT];
+      res[FONT_SIZE] = { u: INHERIT };
     }
     else {
       let v = calUnit(temp);
       // fontSize不能为负数，否则为继承
       if(v < 0) {
-        res[FONT_SIZE] = [0, INHERIT];
+        res[FONT_SIZE] = { u: INHERIT };
       }
       else {
-        if([NUMBER, DEG].indexOf(v[1]) > -1) {
-          v[1] = PX;
+        if([NUMBER, DEG].indexOf(v.u) > -1) {
+          v.u = PX;
         }
         res[FONT_SIZE] = v;
       }
@@ -760,17 +761,17 @@ function normalize(style, resetList = []) {
   temp = style.textStrokeWidth;
   if(temp !== undefined) {
     if(/inherit/i.test(temp)) {
-      res[TEXT_STROKE_WIDTH] = [0, INHERIT];
+      res[TEXT_STROKE_WIDTH] = { u: INHERIT };
     }
     else {
       let v = calUnit(temp);
       // textStrokeWidth不能为负数，否则为继承
       if(v < 0) {
-        res[TEXT_STROKE_WIDTH] = [0, INHERIT];
+        res[TEXT_STROKE_WIDTH] = { u: INHERIT };
       }
       else {
-        if([NUMBER, DEG, PERCENT].indexOf(v[1]) > -1) {
-          v[1] = PX;
+        if([NUMBER, DEG, PERCENT].indexOf(v.u) > -1) {
+          v.u = PX;
         }
         res[TEXT_STROKE_WIDTH] = v;
       }
@@ -779,38 +780,38 @@ function normalize(style, resetList = []) {
   temp = style.textStrokeOver;
   if(temp !== undefined) {
     if(temp === null || /inherit/i.test(temp)) {
-      res[TEXT_STROKE_OVER] = [0, INHERIT];
+      res[TEXT_STROKE_OVER] = { u: INHERIT };
     }
     else {
       let v = reset.INHERIT.textStrokeOver;
       if(/fill/i.test(temp)) {
         v = 'fill';
       }
-      res[TEXT_STROKE_OVER] = [v, STRING];
+      res[TEXT_STROKE_OVER] = { v, u: STRING };
     }
   }
   temp = style.fontWeight;
   if(temp !== undefined) {
     if(/bold/i.test(temp)) {
-      res[FONT_WEIGHT] = [700, NUMBER];
+      res[FONT_WEIGHT] = { v: 700, u: NUMBER };
     }
     else if(/normal/i.test(temp)) {
-      res[FONT_WEIGHT] = [400, NUMBER];
+      res[FONT_WEIGHT] = { v: 400, u: NUMBER };
     }
     else if(/lighter/i.test(temp)) {
-      res[FONT_WEIGHT] = [200, NUMBER];
+      res[FONT_WEIGHT] = { v: 200, u: NUMBER };
     }
     else if(/inherit/i.test(temp)) {
-      res[FONT_WEIGHT] = [0, INHERIT];
+      res[FONT_WEIGHT] = { u: INHERIT };
     }
     else {
-      res[FONT_WEIGHT] = [Math.max(0, parseInt(temp)) || 400, NUMBER];
+      res[FONT_WEIGHT] = { v: Math.max(0, parseInt(temp)) || 400, u: NUMBER };
     }
   }
   temp = style.fontStyle;
   if(temp !== undefined) {
     if(temp === null || /inherit/i.test(temp)) {
-      res[FONT_STYLE] = [0, INHERIT];
+      res[FONT_STYLE] = { u: INHERIT };
     }
     else {
       let v = reset.INHERIT.fontStyle;
@@ -820,23 +821,25 @@ function normalize(style, resetList = []) {
       else if(/oblique/i.test(temp)) {
         v = 'oblique';
       }
-      res[FONT_STYLE] = [v, STRING];
+      res[FONT_STYLE] = { v, u: STRING };
     }
   }
   temp = style.fontFamily;
   if(temp !== undefined) {
     if(temp === null || /inherit/i.test(temp)) {
-      res[FONT_FAMILY] = [0, INHERIT];
+      res[FONT_FAMILY] = { u: INHERIT };
     }
     else {
       // 统一文字声明格式
-      res[FONT_FAMILY] = [temp.toString().toLowerCase().replace(/['"]/, '').replace(/\s*,\s*/g, ','), STRING];
+      res[FONT_FAMILY] = { v: temp.toString().toLowerCase()
+          .replace(/['"]/, '')
+          .replace(/\s*,\s*/g, ','), u: STRING };
     }
   }
   temp = style.writingMode;
   if(temp !== undefined) {
     if(temp === null || /inherit/i.test(temp)) {
-      res[WRITING_MODE] = [0, INHERIT];
+      res[WRITING_MODE] = { u: INHERIT };
     }
     else {
       let v = reset.INHERIT.writingMode;
@@ -846,13 +849,13 @@ function normalize(style, resetList = []) {
       else if(/vertical-?lr/i.test(temp)) {
         v = 'verticalLr';
       }
-      res[WRITING_MODE] = [v, STRING];
+      res[WRITING_MODE] = { v, u: STRING };
     }
   }
   temp = style.textAlign;
   if(temp !== undefined) {
     if(temp === null || /inherit/i.test(temp)) {
-      res[TEXT_ALIGN] = [0, INHERIT];
+      res[TEXT_ALIGN] = { u: INHERIT };
     }
     else {
       let v = 'left';
@@ -862,22 +865,22 @@ function normalize(style, resetList = []) {
       else if(/right/i.test(temp)) {
         v = 'right';
       }
-      res[TEXT_ALIGN] = [v, STRING];
+      res[TEXT_ALIGN] = { v, u: STRING };
     }
   }
   temp = style.lineHeight;
   if(temp !== undefined) {
     if(/inherit/i.test(temp)) {
-      res[LINE_HEIGHT] = [0, INHERIT];
+      res[LINE_HEIGHT] = { u: INHERIT };
     }
     else if(/normal/i.test(temp)) {
-      res[LINE_HEIGHT] = [0, AUTO];
+      res[LINE_HEIGHT] = { u: AUTO };
     }
     // lineHeight默认数字，想要px必须强制带单位
     else if(/^[\d.]+/i.test(temp)) {
       let v = calUnit(temp);
-      if([DEG].indexOf(v[1]) > -1) {
-        v[1] = NUMBER;
+      if([DEG].indexOf(v.u) > -1) {
+        v.u = NUMBER;
       }
       res[LINE_HEIGHT] = v;
     }
@@ -885,39 +888,39 @@ function normalize(style, resetList = []) {
       let n = Math.max(0, parseFloat(temp)) || 'normal';
       // 非法数字
       if(n === 'normal') {
-        res[LINE_HEIGHT] = [null, AUTO];
+        res[LINE_HEIGHT] = { u: AUTO };
       }
       else {
-        res[LINE_HEIGHT] = [n, NUMBER];
+        res[LINE_HEIGHT] = { v: n, u: NUMBER };
       }
     }
   }
   temp = style.letterSpacing;
   if(temp !== undefined) {
     if(temp === null || /inherit/i.test(temp)) {
-      res[LETTER_SPACING] = [0, INHERIT];
+      res[LETTER_SPACING] = { u: INHERIT };
     }
     else if(/normal/i.test(temp)) {
-      res[LETTER_SPACING] = [0, PX];
+      res[LETTER_SPACING] = { v: 0, u: PX };
     }
     else if(/^[-+]?[\d.]/.test(temp)) {
       let v = calUnit(temp);
-      if([NUMBER, DEG].indexOf(v[1]) > -1) {
-        v[1] = PX;
+      if([NUMBER, DEG].indexOf(v.u) > -1) {
+        v.u = PX;
       }
       res[LETTER_SPACING] = v;
     }
     else {
-      res[LETTER_SPACING] = [parseFloat(temp) || 0, PX];
+      res[LETTER_SPACING] = { v: parseFloat(temp) || 0, u: PX };
     }
   }
   temp = style.whiteSpace;
   if(temp !== undefined) {
     if(temp === null || /inherit/i.test(temp)) {
-      res[WHITE_SPACE] = [0, INHERIT];
+      res[WHITE_SPACE] = { u: INHERIT };
     }
     else {
-      res[WHITE_SPACE] = [temp, STRING];
+      res[WHITE_SPACE] = { v: temp, u: STRING };
     }
   }
   temp = style.lineClamp;
@@ -926,66 +929,26 @@ function normalize(style, resetList = []) {
     res[LINE_CLAMP] = Math.max(0, temp);
   }
   // fill和stroke为渐变时特殊处理，fillRule无需处理字符串
-  temp = style.fill;
-  if(temp !== undefined) {
-    if(!temp) {
-      res[FILL] = [['none', STRING]];
-    }
-    else if(Array.isArray(temp)) {
-      if(temp.length) {
-        res[FILL] = temp.map(item => {
-          if(!item) {
-            return ['none', STRING];
-          }
-          else if(reg.gradient.test(item)) {
-            return [gradient.parseGradient(item), GRADIENT];
-          }
-          else {
-            return [rgba2int(item), RGBA];
-          }
-        });
+  ['fill', 'stroke'].forEach((k, i) => {
+    temp = style[k];
+    if(temp !== undefined) {
+      k = i ? STROKE : FILL;
+      if(!Array.isArray(temp)) {
+        temp = [temp];
       }
-      else {
-        res[FILL] = [['none', STRING]];
-      }
+      res[k] = temp.map(item => {
+        if(!item) {
+          return { v: 'none', u: STRING };
+        }
+        else if(isGradient(item)) {
+          return { v: gradient.parseGradient(item), u: GRADIENT };
+        }
+        else {
+          return { v: rgba2int(item), u: RGBA };
+        }
+      });
     }
-    else if(reg.gradient.test(temp)) {
-      res[FILL] = [[gradient.parseGradient(temp), GRADIENT]];
-    }
-    else {
-      res[FILL] = [[rgba2int(temp), RGBA]];
-    }
-  }
-  temp = style.stroke;
-  if(temp !== undefined) {
-    if(!temp) {
-      res[STROKE] = [['none', STRING]];
-    }
-    else if(Array.isArray(temp)) {
-      if(temp.length) {
-        res[STROKE] = temp.map(item => {
-          if(!item) {
-            return ['none', STRING];
-          }
-          else if(reg.gradient.test(item)) {
-            return [gradient.parseGradient(item), GRADIENT];
-          }
-          else {
-            return [rgba2int(item), RGBA];
-          }
-        });
-      }
-      else {
-        res[STROKE] = [['none', STRING]];
-      }
-    }
-    else if(reg.gradient.test(temp)) {
-      res[STROKE] = [[gradient.parseGradient(temp), GRADIENT]];
-    }
-    else {
-      res[STROKE] = [[rgba2int(temp), RGBA]];
-    }
-  }
+  });
   temp = style.strokeWidth;
   if(temp !== undefined) {
     if(!Array.isArray(temp)) {
@@ -993,10 +956,10 @@ function normalize(style, resetList = []) {
     }
     res[STROKE_WIDTH] = temp.map(item => {
       let v = calUnit(item);
-      if([NUMBER, DEG].indexOf(v[1]) > -1) {
-        v[1] = PX;
+      if([NUMBER, DEG].indexOf(v.u) > -1) {
+        v.u = PX;
       }
-      v[0] = Math.max(v[0], 0);
+      v.v = Math.max(v.v, 0);
       return v;
     });
   }
@@ -1031,7 +994,7 @@ function normalize(style, resetList = []) {
   }
   temp = style.filter;
   if(temp !== undefined) {
-    let f = null;
+    let f = [];
     // 先替换掉rgba为#RGBA格式，然后分割
     let arr = (replaceRgba2Hex(temp) || '').match(/[\w-]+\s*\(.+?\)/ig);
     if(arr) {
@@ -1042,24 +1005,23 @@ function normalize(style, resetList = []) {
           if(k === 'drop-shadow' || k === 'dropshadow') {
             let coords = /([-+]?[\d.]+[pxremvwhina%]*)[\s,]+([-+]?[\d.]+[pxremvwhina%]*)[\s,]+(?:([-+]?[\d.]+[pxremvwhina%]*)[\s,])?([-+]?[\d.]+[pxremvwhina%]*\s*)?/ig.exec(item);
             if(coords) {
-              f = f || [];
               let res = [];
               // v,h,blur,spread，其中v和h是必须，其余没有为0
               for(let i = 1; i <= 4; i++) {
                 let item2 = coords[i];
                 if(item2) {
                   let v = calUnit(item2);
-                  if([NUMBER, DEG].indexOf(v[1]) > -1) {
-                    v[1] = PX;
+                  if([NUMBER, DEG].indexOf(v.u) > -1) {
+                    v.u = PX;
                   }
                   // x/y可以负，blur和spread不行
-                  if(i > 2 && v[0] < 0) {
-                    v = 0;
+                  if(i > 2 && v.v < 0) {
+                    v.v = 0;
                   }
                   res.push(v);
                 }
                 else {
-                  res.push([0, 1]);
+                  res.push({ v: 0, u: PX });
                 }
               }
               let color = /#[a-f\d]{3,8}/i.exec(item);
@@ -1069,38 +1031,37 @@ function normalize(style, resetList = []) {
               else {
                 res.push([0, 0, 0, 1]);
               }
-              f.push(['dropShadow', res]);
+              f.push({ k: 'dropShadow', v: res });
             }
           }
           else {
             let m2 = /([-+]?[\d.]+\s*[pxremvwhdg%]*)/i.exec(v);
             if(m2) {
-              f = f || [];
               let v = calUnit(m2[0]);
               if(k === 'blur') {
-                if([DEG, PERCENT].indexOf(v[1]) > -1) {
+                if([DEG, PERCENT].indexOf(v.u) > -1) {
                   return;
                 }
-                if(v[1] === NUMBER) {
-                  v[1] = PX;
+                if(v.u === NUMBER) {
+                  v.u = PX;
                 }
-                v[0] = Math.max(v[0], 0);
-                f.push([k, v]);
+                v.v = Math.max(v.v, 0);
+                f.push({ k, v });
               }
               else if(k === 'hue-rotate' || k === 'huerotate') {
-                if([NUMBER, DEG].indexOf(v[1]) === -1) {
+                if([NUMBER, DEG].indexOf(v.u) === -1) {
                   return;
                 }
-                v[1] = DEG;
-                f.push(['hueRotate', v]);
+                v.u = DEG;
+                f.push({ k:'hueRotate', v });
               }
               else if(k === 'saturate' || k === 'brightness' || k === 'grayscale' || k === 'contrast' || k === 'sepia' || k === 'invert') {
-                if([NUMBER, PERCENT].indexOf(v[1]) === -1) {
+                if([NUMBER, PERCENT].indexOf(v.u) === -1) {
                   return;
                 }
-                v[0] = Math.max(v[0], 0);
-                v[1] = PERCENT;
-                f.push([k, v]);
+                v.v = Math.max(v.v, 0);
+                v.u = PERCENT;
+                f.push({ k, v });
               }
             }
           }
@@ -1112,56 +1073,55 @@ function normalize(style, resetList = []) {
   temp = style.visibility;
   if(temp !== undefined) {
     if(temp === null || /inherit/i.test(temp)) {
-      res[VISIBILITY] = [0, INHERIT];
+      res[VISIBILITY] = { u: INHERIT };
     }
     else {
       let v = reset.INHERIT.visibility;
       if(/hidden/i.test(temp)) {
         v = 'hidden';
       }
-      res[VISIBILITY] = [v, STRING];
+      res[VISIBILITY] = { v, u: STRING };
     }
   }
   temp = style.pointerEvents;
   if(temp !== undefined) {
     if(temp === null || /inherit/i.test(temp)) {
-      res[POINTER_EVENTS] = [0, INHERIT];
+      res[POINTER_EVENTS] = { u: INHERIT };
     }
     else {
       let v = reset.INHERIT.pointerEvents;
       if(/none/i.test(temp)) {
         v = 'none';
       }
-      res[POINTER_EVENTS] = [v, STRING];
+      res[POINTER_EVENTS] = { v, u: STRING };
     }
   }
   temp = style.boxShadow;
   if(temp !== undefined) {
-    let bs = null;
+    let bs = [];
     // 先替换掉rgba为#RGBA格式，然后按逗号分割
     let arr = (replaceRgba2Hex(temp) || '').split(',');
     if(arr) {
       arr.forEach(item => {
         let coords = /([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*\s*)?([-+]?[\d.]+[pxremvwhina%]*\s*)?/i.exec(item);
         if(coords) {
-          bs = bs || [];
           let res = [];
           // v,h,blur,spread，其中v和h是必须，其余没有为0
           for(let i = 1; i <= 4; i++) {
             let item2 = coords[i];
             if(item2) {
               let v = calUnit(item2);
-              if([NUMBER, DEG].indexOf(v[1]) > -1) {
-                v[1] = PX;
+              if([NUMBER, DEG].indexOf(v.u) > -1) {
+                v.u = PX;
               }
               // x/y可以负，blur和spread不行
-              if(i > 2 && v[0] < 0) {
-                v = 0;
+              if(i > 2 && v.v < 0) {
+                v.v = 0;
               }
               res.push(v);
             }
             else {
-              res.push([0, 1]);
+              res.push({ v: 0, u: PX });
             }
           }
           let color = /#[a-f\d]{3,8}/i.exec(item);
@@ -1295,7 +1255,7 @@ function calRelativePercent(n, parent, k) {
   n *= 0.01;
   while(parent) {
     let style = parent.currentStyle[k];
-    if(style[1] === AUTO) {
+    if(style.u === AUTO) {
       if(k === WIDTH) {
         parent = parent.domParent;
       }
@@ -1303,63 +1263,68 @@ function calRelativePercent(n, parent, k) {
         break;
       }
     }
-    else if(style[1] === PX) {
-      return n * style[0];
+    else if(style.u === PX) {
+      return n * style.v;
     }
-    else if(style[1] === PERCENT) {
-      n *= style[0] * 0.01;
+    else if(style.u === PERCENT) {
+      n *= style.v * 0.01;
       parent = parent.domParent;
     }
-    else if(style[1] === REM) {
-      return n * style[0] * parent.root.computedStyle[FONT_SIZE];
+    else if(style.u === REM) {
+      return n * style.v * parent.root.computedStyle[FONT_SIZE];
     }
-    else if(style[1] === VW) {
-      return n * style[0] * parent.root.width * 0.01;
+    else if(style.u === VW) {
+      return n * style.v * parent.root.width * 0.01;
     }
-    else if(style[1] === VH) {
-      return n * style[0] * parent.root.height * 0.01;
+    else if(style.u === VH) {
+      return n * style.v * parent.root.height * 0.01;
     }
-    else if(style[1] === VMAX) {
-      return n * style[0] * Math.max(parent.root.width, parent.root.height) * 0.01;
+    else if(style.u === VMAX) {
+      return n * style.v * Math.max(parent.root.width, parent.root.height) * 0.01;
     }
-    else if(style[1] === VMIN) {
-      return n * style[0] * Math.min(parent.root.width, parent.root.height) * 0.01;
+    else if(style.u === VMIN) {
+      return n * style.v * Math.min(parent.root.width, parent.root.height) * 0.01;
     }
   }
   return n;
 }
 
 function calRelative(currentStyle, k, v, parent, isWidth) {
-  if(v[1] === AUTO) {
+  if(v.u === AUTO) {
     v = 0;
   }
-  else if([PX, NUMBER].indexOf(v[1]) > -1) {
-    v = v[0];
+  else if([PX, NUMBER].indexOf(v.u) > -1) {
+    v = v.v;
   }
-  else if(v[1] === PERCENT) {
+  else if(v.u === PERCENT) {
     if(isWidth) {
-      v = calRelativePercent(v[0], parent, WIDTH);
+      v = calRelativePercent(v.v, parent, WIDTH);
     }
     else {
-      v = calRelativePercent(v[0], parent, HEIGHT);
+      v = calRelativePercent(v.v, parent, HEIGHT);
     }
   }
-  else if(v[1] === REM) {
-    v = v[0] * parent.root.computedStyle[FONT_SIZE];
+  else if(v.u === REM) {
+    v = v.v * parent.root.computedStyle[FONT_SIZE];
   }
-  else if(v[1] === VW) {
-    v = v[0] * parent.root.width * 0.01;
+  else if(v.u === VW) {
+    v = v.v * parent.root.width * 0.01;
   }
-  else if(v[1] === VH) {
-    v = v[0] * parent.root.height * 0.01;
+  else if(v.u === VH) {
+    v = v.v * parent.root.height * 0.01;
   }
-  else if(v[1] === VMAX) {
-    v = v[0] * Math.max(parent.root.width, parent.root.height) * 0.01;
+  else if(v.u === VMAX) {
+    v = v.v * Math.max(parent.root.width, parent.root.height) * 0.01;
   }
-  else if(v[1] === VMIN) {
-    v = v[0] * Math.min(parent.root.width, parent.root.height) * 0.01;
+  else if(v.u === VMIN) {
+    v = v.v * Math.min(parent.root.width, parent.root.height) * 0.01;
   }
   return v;
+}
+
+function isRelativeOrAbsolute(node) {
+  let position = node.currentStyle[POSITION];
+  return position === 'relative' || position === 'absolute';
 }
 
 function equalStyle(k, a, b, target) {
@@ -1373,15 +1338,18 @@ function equalStyle(k, a, b, target) {
     for(let i = 0, len = a.length; i < len; i++) {
       let oa = a[i];
       let ob = b[i];
-      if(oa[0] !== ob[0]) {
+      if(oa.k !== ob.k) {
         return false;
       }
       // translate/matrix等都是数组
-      if(!equalArr(oa[1], ob[1])) {
+      if(!equalArr(oa.v, ob.v)) {
         return false;
       }
     }
     return true;
+  }
+  if(k === ROTATE_3D) {
+    return a[0] === b[0] && a[1] === b[1] && a[2] === b[2] && a[3].v === b[3].v && a[3].u === b[3].u;
   }
   if(k === FILTER) {
     if(a.length !== b.length) {
@@ -1393,67 +1361,137 @@ function equalStyle(k, a, b, target) {
       }
     }
   }
-  if(k === BACKGROUND_SIZE) {
+  if(k === TRANSFORM_ORIGIN || k === PERSPECTIVE_ORIGIN || isRadiusKey(k)) {
+    return a[0].v === b[0].v && a[0].u === b[0].u
+      && a[1].v === b[1].v && a[1].u === b[1].u;
+  }
+  if(k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y || k === STROKE_WIDTH) {
     if(a.length !== b.length) {
       return false;
     }
     for(let i = 0, len = a.length; i < len; i++) {
       let aa = a[i], bb = b[i];
-      if(aa[0][0] !== bb[0][0] || aa[0][1] !== bb[0][1] || aa[1][0] !== bb[1][0] || aa[1][1] !== bb[1][1]) {
+      if(aa.v !== bb.v || aa.u !== bb.u || aa.v !== bb.v || aa.u !== bb.u) {
         return false;
       }
     }
     return true;
   }
-  if(k === TRANSFORM_ORIGIN || RADIUS_HASH.hasOwnProperty(k)) {
-    return a[0][0] === b[0][0] && a[0][1] === b[0][1]
-      && a[1][0] === b[1][0] && a[1][1] === b[1][1];
-  }
-  if(k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y
-    || LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {
-    return a[0] === b[0] && a[1] === b[1];
-  }
   if(k === BOX_SHADOW) {
-    return equalArr(a, b);
-  }
-  // color等是rgba颜色时
-  if(k === COLOR || k === TEXT_STROKE_COLOR) {
-    if(a[1] !== b[1]) {
+    if(a.length !== b.length) {
       return false;
     }
-    if(a[1] === RGBA) {
-      return equalArr(a[0], b[0]);
-    }
-    else {}
-  }
-  if(COLOR_HASH.hasOwnProperty(k)) {
-    return a[1] === b[1] && equalArr(a[0], b[0]);
-  }
-  // color/fill等是gradient时
-  if(GRADIENT_HASH.hasOwnProperty(k) && a.k === b.k && GRADIENT_TYPE.hasOwnProperty(a.k)) {
-    let av = a.v;
-    let bv = b.v;
-    if(a.d !== b.d || av.length !== bv.length) {
-      return false;
-    }
-    for(let i = 0, len = av.length; i < len; i++) {
-      let ai = av[i];
-      let bi = bv[i];
-      if(ai.length !== bi.length) {
+    for(let i = 0, len = a.length; i < len; i++) {
+      let aa = a[i], bb = b[i];
+      if((!aa || !bb) && aa !== bb) {
         return false;
       }
       for(let j = 0; j < 4; j++) {
-        if(ai[0][j] !== bi[0][j]) {
+        if(aa[j].v !== bb[j].v || aa[j].u !== bb[j].u) {
           return false;
         }
       }
-      if(ai.length > 1) {
-        if(ai[1][0] !== bi[1][0] || ai[1][1] !== bi[1][1]) {
+      for(let j = 0; j < 4; j++) {
+        if(aa[4][j] !== bb[4][j]) {
           return false;
         }
+      }
+      if(aa[5] !== bb[5]) {
+        return false;
       }
     }
     return true;
+  }
+  if(k === BACKGROUND_SIZE || k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y) {
+    if(a.length !== b.length) {
+      return false;
+    }
+    for(let i = 0, len = a.length; i < len; i++) {
+      let aa = a[i], bb = b[i];
+      if(aa[0].v !== bb[0].v || aa[0].u !== bb[0].u || aa[1].v !== bb[1].v || aa[1].u !== bb[1].u) {
+        return false;
+      }
+    }
+    return true;
+  }
+  // if(k === OPACITY || k === Z_INDEX) {} 原始数字无需判断
+  if(isLengthKey(k) || isExpandKey(k)) {
+    return a.v === b.v && a.u === b.u;
+  }
+  if(isGradientKey(k)) {
+    if(a.length !== b.length) {
+      return false;
+    }
+    for(let i = 0, len = a.length; i < len; i++) {
+      let ai = a[i], bi = b[i];
+      if(ai.u !== bi.u) {
+        return false;
+      }
+      let av = ai.v, bv = bi.v;
+      if(ai.u === GRADIENT) {
+        if(av.k !== bv.k || av.d !== bv.d || av.s !== bv.s || av.z !== bv.z) {
+          return false;
+        }
+        if(av.k === 'linear') {
+          let ad = av.d, bd = bv.d;
+          let isArrayD1 = Array.isArray(ad);
+          let isArrayD2 = Array.isArray(bd);
+          if(isArrayD1 !== isArrayD2) {
+            return false;
+          }
+          if(isArrayD1) {
+            if(ad[0] !== bd[0] || ad[1] !== bd[1] || ad[2] !== bd[2] || ad[3] !== bd[3]) {
+              return false;
+            }
+          }
+          else if(ad !== bd) {
+            return false;
+          }
+        }
+        else if(av.k === 'conic' && av.d !== bv.d) {
+          return false;
+        }
+        if(av.k === 'radial' || av.k === 'conic') {
+          let ap = av.p, bp = bv.p;
+          if(ap[0].u !== bp[0].u || ap[0].v !== bp[0].v || ap[1].u !== bp[1].u || ap[1].v !== bp[1].v) {
+            return false;
+          }
+        }
+        for(let j = 0; j < 2; j++) {
+          let aj = av.v[j], bj = bv.v[j];
+          let ac = aj[0], bc = bj[0];
+          if(ac[0] !== bc[0] || ac[1] !== bc[1] || ac[2] !== bc[2] || ac[3] !== bc[3]) {
+            return false;
+          }
+          if(aj[1] && bj[1]) {
+            if(aj[1].u !== bj[1].u || aj[1].v !== bj[1].v) {
+              return false;
+            }
+          }
+          else if(aj[1] || bj[1]) {
+            return false;
+          }
+        }
+      }
+      else if(ai.u === RGBA) {
+        if(!equalArr(av, bv)) {
+          return false;
+        }
+      }
+      else if(av !== bv) {
+        return false;
+      }
+    }
+    return true;
+  }
+  if(isColorKey(k)) {
+    if(a.u !== b.u) {
+      return false;
+    }
+    if(a.u === GRADIENT) {}
+    else if(a.u === RGBA) {
+      return equalArr(a.v, b.v);
+    }
   }
   // multi都是纯值数组，equalArr本身即递归，非multi根据类型判断
   if(isGeom(target.tagName, k) && (target.isMulti || Array.isArray(a) && Array.isArray(b))) {
@@ -1462,51 +1500,6 @@ function equalStyle(k, a, b, target) {
   return a === b;
 }
 
-function isRelativeOrAbsolute(node) {
-  let position = node.currentStyle[POSITION];
-  return position === 'relative' || position === 'absolute';
-}
-
-const VALUE = {
-  [POSITION]: true,
-  [DISPLAY]: true,
-  [STYLE_KEY.BACKGROUND_REPEAT]: true,
-  [FLEX_DIRECTION]: true,
-  [FLEX_GROW]: true,
-  [FLEX_SHRINK]: true,
-  [FLEX_WRAP]: true,
-  [JUSTIFY_CONTENT]: true,
-  [ALIGN_ITEMS]: true,
-  [ALIGN_SELF]: true,
-  [STYLE_KEY.OVERFLOW]: true,
-  [STYLE_KEY.MIX_BLEND_MODE]: true,
-  [STYLE_KEY.STROKE_LINECAP]: true,
-  [STYLE_KEY.STROKE_LINEJOIN]: true,
-  [STYLE_KEY.STROKE_MITERLIMIT]: true,
-  [STYLE_KEY.FILL_RULE]: true,
-  [OPACITY]: true,
-  [Z_INDEX]: true,
-  [BACKGROUND_CLIP]: true,
-  [TEXT_OVERFLOW]: true,
-  [LINE_CLAMP]: true,
-};
-// 仅1维数组
-const ARRAY_0 = {
-  [BACKGROUND_COLOR]: true,
-  [STYLE_KEY.BORDER_TOP_COLOR]: true,
-  [STYLE_KEY.BORDER_RIGHT_COLOR]: true,
-  [STYLE_KEY.BORDER_BOTTOM_COLOR]: true,
-  [STYLE_KEY.BORDER_LEFT_COLOR]: true,
-};
-// 仅2维数组且只有2个值
-const ARRAY_0_1 = {
-  [STYLE_KEY.BORDER_TOP_LEFT_RADIUS]: true,
-  [STYLE_KEY.BORDER_TOP_RIGHT_RADIUS]: true,
-  [STYLE_KEY.BORDER_BOTTOM_RIGHT_RADIUS]: true,
-  [STYLE_KEY.BORDER_BOTTOM_LEFT_RADIUS]: true,
-  [TRANSFORM_ORIGIN]: true,
-  [PERSPECTIVE_ORIGIN]: true,
-};
 function cloneStyle(style, keys) {
   if(!keys) {
     keys = Object.keys(style).map(i => {
@@ -1520,128 +1513,148 @@ function cloneStyle(style, keys) {
   for(let i = 0, len = keys.length; i < len; i++) {
     let k = keys[i];
     let v = style[k];
-    // 渐变特殊处理
-    if(k === BACKGROUND_IMAGE) {
-      res[k] = v.map(item => {
-        if(item[1] === GRADIENT) {
-          return [util.clone(item[0]), item[1]];
-        }
-        else {
-          return item;
-        }
-      });
-    }
-    else if(k === FILL || k === STROKE) {
-      res[k] = v.map(item => {
-        // 渐变可能非法为空
-        if(item[1] === GRADIENT) {
-          return [util.clone(item[0]), item[1]];
-        }
-        // 颜色
-        else if(item[1] === RGBA) {
-          return [item[0].slice(0), item[1]];
-        }
-        // none
-        else {
-          return item;
-        }
-      });
-    }
-    else if(k === TRANSFORM) {
+    if(k === TRANSFORM) {
       if(v) {
-        let n = v.slice(0);
-        for(let i = 0, len = n.length; i < len; i++) {
-          n[i] = n[i].slice(0);
-          n[i][1] = n[i][1].slice(0);
-        }
-        res[k] = n;
-      }
-    }
-    else if(k === FILTER) {
-      if(v) {
-        let n = v.slice(0);
-        for(let i = 0, len = n.length; i < len; i++) {
-          n[i] = n[i].slice(0);
-          let k = n[i][0];
-          n[i][1] = n[i][1].slice(0);
-          if(k === 'dropShadow') {
-            let temp = n[i][1];
-            temp.forEach((item, j) => {
-              temp[j] = temp[j].slice(0);
-            });
+        let len = v.length;
+        let n = new Array(len);
+        for(let i = 0; i < len; i++) {
+          let o = v[i];
+          if(o.k === MATRIX) {
+            n[i] = {
+              k: o.k,
+              v: o.v.slice(0),
+            };
+          }
+          else {
+            n[i] = {
+              k: o.k,
+              v: {
+                v: o.v.v,
+                u: o.v.u,
+              },
+            };
           }
         }
         res[k] = n;
       }
     }
+    else if(k === ROTATE_3D) {
+      res[k] = [v[0], v[1], v[2], { v: v[3].v, u: v[3].u }];
+    }
+    else if(k === FILTER) {
+      if(v) {
+        let len = v.length;
+        let n = new Array(len);
+        for(let i = 0; i < len; i++) {
+          let o = v[i];
+          let k = o.k, vv = o.v;
+          if(k === 'dropShadow') {
+            let arr = new Array(5);
+            n[i] = { k, v: arr };
+            for(let j = 0; j < 4; j++) {
+              let temp = vv[j];
+              arr[j] = { v: temp.v, u: temp.u };
+            }
+            arr[4] = vv[4].slice(0);
+          }
+          else {
+            n[i] = {k, v: { v: vv.v, u: vv.u }};
+          }
+        }
+        res[k] = n;
+      }
+    }
+    else if(k === TRANSFORM_ORIGIN || k === PERSPECTIVE_ORIGIN || isRadiusKey(k)) {
+      if(v) {
+        let n = new Array(2);
+        for(let i = 0; i < 2; i++) {
+          let o = v[i];
+          n[i] = { v: o.v, u: o.u };
+        }
+        res[k] = n;
+      }
+    }
+    else if(k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y || k === STROKE_WIDTH) {
+      res[k] = v.map(item => ({ v: item.v, u: item.u }));
+    }
     else if(k === BOX_SHADOW) {
       if(v) {
         v = v.map(item => {
-          let n = item.slice(0);
-          n[4] = n[4].slice(0);
+          let n = new Array(6);
+          for(let i = 0; i < 4; i++) {
+            let o = item[i];
+            n[i] = { v: o.v, u: o.u }; // x/y/blur/spread
+          }
+          n[4] = item[4].slice(0); //rgba
+          n[5] = item[5]; // outset/inset
           return n;
         });
         res[k] = v;
       }
     }
+    else if(k === BACKGROUND_SIZE) {
+      if(v) {
+        res[k] = v.map(item => {
+          return [
+            { v: item[0].v, u: item[0].u },
+            { v: item[1].v, u: item[1].u },
+          ];
+        });
+      }
+    }
+    else if(k === OPACITY || k === Z_INDEX) {
+      res[k] = v;
+    }
     else if(k === TRANSLATE_PATH) {
       if(v) {
-        res[k] = v.map(item => item.slice(0));
+        res[k] = v.map(item => ({
+          v: item.v,
+          u: item.u,
+        }));
       }
     }
-    else if(k === COLOR || k === TEXT_STROKE_COLOR) {
-      if(v) {
-        if(v[1] === GRADIENT) {
-          res[k] = [util.clone(v[0]), v[1]];
+    else if(isLengthKey(k) || isExpandKey(k)) {
+      res[k] = { v: v.v, u: v.u };
+    }
+    // 渐变特殊处理
+    else if(isGradientKey(k)) {
+      res[k] = v.map(item => {
+        if(!item) {
+          return null;
         }
-        else if(v[1] === RGBA) {
-          res[k] = [v[0].slice(0), v[1]];
+        if(item.u === GRADIENT) {
+          return { v: util.clone(item.v), u: GRADIENT };
         }
-        // inherit
+        // 颜色
+        else if(item.u === RGBA) {
+          return { v: item.v.slice(0), u: RGBA };
+        }
+        // string和none
         else {
-          res[k] = v.slice(0);
+          return { v: item.v, u: item.u };
         }
-      }
+      });
     }
-    // position等直接值类型赋值
-    else if(VALUE.hasOwnProperty(k)) {
-      res[k] = v;
+    else if(isColorKey(k)) {
+      // 特殊增加支持有gradient的先判断，仅color和textStrokeColor支持
+      if(v.u === GRADIENT) {
+        res[k] = { v: util.clone(v.v), u: GRADIENT };
+      }
+      else if(v.u === RGBA) {
+        res[k] = { v: v.v.slice(0), u: RGBA };
+      }
+      // inherit
+      else {
+        res[k] = { u: INHERIT };
+      }
     }
     // geom自定义属性
     else if(GEOM.hasOwnProperty(k)) {
       res[k] = util.clone(v);
     }
-    // 其余皆是数组或空，默认是一维数组只需slice即可
-    else if(v) {
-      let n = res[k] = v.slice(0);
-      // 特殊引用里数组某项再次clone
-      if(k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y) {
-        for(let i = 0, len = n.length; i < len; i++) {
-          n[i] = n[i].slice(0);
-        }
-      }
-      else if(k === BACKGROUND_SIZE) {
-        for(let i = 0, len = n.length; i < len; i++) {
-          n[i] = n[i].slice(0);
-          n[i][0] = n[i][0].slice(0);
-          n[i][1] = n[i][1].slice(0);
-        }
-      }
-      else if(ARRAY_0.hasOwnProperty(k)) {
-        n[0] = n[0].slice(0);
-      }
-      else if(ARRAY_0_1.hasOwnProperty(k)) {
-        n[0] = n[0].slice(0);
-        n[1] = n[1].slice(0);
-      }
-      else if(k === TRANSFORM) {
-        for(let i = 0, len = n.length; i < len; i++) {
-          n[i] = n[i].slice(0);
-        }
-      }
-      else if(k === ROTATE_3D) {
-        n[3] = n[3].slice(0);
-      }
+    // position等直接值类型赋值
+    else {
+      res[k] = v;
     }
   }
   return res;
@@ -1675,7 +1688,7 @@ function spreadFilter(bbox, filter) {
   // filter对整体有影响，且filter子项可以先后多次重复出现，上面计算完后，依次处理
   if(Array.isArray(filter)) {
     filter.forEach(item => {
-      let [k, v] = item;
+      let { k, v } = item;
       if(k === 'blur' && v > 0) {
         let d = blur.kernelSize(v);
         let spread = blur.outerSizeByD(d);

@@ -7,7 +7,6 @@ import unit from '../style/unit';
 import enums from '../util/enums';
 import util from '../util/util';
 import inject from '../util/inject';
-import Cache from '../refresh/Cache';
 import level from '../refresh/level';
 
 const {
@@ -42,24 +41,12 @@ const {
     BORDER_RIGHT_WIDTH,
     FILTER,
   },
-  NODE_KEY: {
-    NODE_CACHE,
-    NODE_LIMIT_CACHE,
-    NODE_DOM_PARENT,
-    NODE_MATRIX_EVENT,
-    NODE_OPACITY,
-    NODE_VIRTUAL_DOM,
-  },
-  UPDATE_KEY: {
-    UPDATE_NODE,
-    UPDATE_FOCUS,
-    UPDATE_CONFIG,
-  },
   ELLIPSIS,
 } = enums;
 
 const { AUTO } = unit;
 const { CANVAS, SVG, WEBGL } = mode;
+const { isFunction } = util;
 
 /**
  * 在给定宽度w的情况下，测量文字content多少个满足塞下，只支持水平书写，从start的索引开始，content长length
@@ -186,6 +173,8 @@ class Text extends Node {
     this.__textWidth = 0; // 整体宽度
     this.__bp = null; // block父节点
     this.__widthHash = {}; // 存储当前字体样式key下的charWidth/textWidth
+    this.__limitCache = null;
+    this.__hasContent = false;
   }
 
   /**
@@ -197,20 +186,18 @@ class Text extends Node {
    * @param data
    * @private
    */
-  __layout(data) {
-    let __cache = this.__config[NODE_CACHE];
+  __layoutFlow(data) {
+    let __cache = this.__cache;
     if(__cache) {
       __cache.release();
     }
     let { x, y, w, h, lx = x, ly = y, lineBoxManager, endSpace = 0, lineClamp = 0, lineClampCount = 0, isUpright = false } = data;
     this.__x = this.__sx = this.__sx1 = x;
     this.__y = this.__sy = this.__sy1 = y;
-    let { isDestroyed, content, computedStyle, textBoxes, root } = this;
+    let { __isDestroyed, content, computedStyle, textBoxes, root } = this;
     textBoxes.splice(0);
-    let __config = this.__config;
-    __config[NODE_LIMIT_CACHE] = false;
     // 空内容w/h都为0可以提前跳出，lineClamp超出一般不会进这，但有特例flex文本垂直预计算时，所以也要跳出
-    if(isDestroyed || computedStyle[DISPLAY] === 'none' || !content || lineClamp && lineClampCount >= lineClamp) {
+    if(__isDestroyed || computedStyle[DISPLAY] === 'none' || !content || lineClamp && lineClampCount >= lineClamp) {
       return lineClampCount;
     }
     this.__ox = this.__oy = 0;
@@ -259,7 +246,7 @@ class Text extends Node {
       // 只要是overflow隐藏，不管textOverflow如何（默认是clip等同于overflow:hidden的功能）都截取
       if(overflow === 'hidden') {
         // abs自适应宽度时不裁剪
-        if(position === 'absolute' && containerSize[1] === AUTO) {
+        if(position === 'absolute' && containerSize.u === AUTO) {
           isTextOverflow = false;
         }
         else {
@@ -696,64 +683,27 @@ class Text extends Node {
     }
   }
 
-  render(renderMode, lv, ctx, cache, dx = 0, dy = 0) {
-    let { isDestroyed, computedStyle, textBoxes, cacheStyle, __config } = this;
+  render(renderMode, ctx, dx = 0, dy = 0) {
+    let { __isDestroyed, computedStyle, textBoxes, cacheStyle } = this;
     if(renderMode === SVG) {
-      __config[NODE_VIRTUAL_DOM] = this.__virtualDom = {
+      this.__virtualDom = {
         type: 'text',
         children: [],
       };
     }
     // >=REPAINT清空bbox
-    if(lv >= level.REPAINT) {
-      this.__bbox = null;
-      this.__filterBbox = null;
-    }
-    if(isDestroyed || computedStyle[DISPLAY] === 'none' || computedStyle[VISIBILITY] === 'hidden'
+    this.__bbox = null;
+    this.__filterBbox = null;
+    if(__isDestroyed || computedStyle[DISPLAY] === 'none' || computedStyle[VISIBILITY] === 'hidden'
       || !textBoxes.length) {
+      this.__hasContent = false;
       return;
     }
-    if(renderMode === CANVAS || renderMode === WEBGL) {
-      // webgl借用离屏canvas绘制文本，cache标识为true是普通绘制，否则是超限降级情况
-      if(renderMode === WEBGL) {
-        if(cache) {
-          let { sx, sy, bbox } = this;
-          let __cache = __config[NODE_CACHE];
-          if(__cache) {
-            __cache.reset(bbox, sx, sy);
-          }
-          else {
-            __cache = Cache.getInstance(bbox, sx, sy);
-          }
-          if(__cache && __cache.enabled) {
-            __config[NODE_CACHE] = __cache;
-            __cache.__available = true;
-            ctx = __cache.ctx;
-            dx += __cache.dx;
-            dy += __cache.dy;
-            __config[NODE_LIMIT_CACHE] = false;
-          }
-          else {
-            __config[NODE_LIMIT_CACHE] = true;
-            return;
-          }
-        }
-        else {
-          let root = this.root;
-          let c = inject.getCacheCanvas(root.width, root.height, '__$$OVERSIZE$$__');
-          ctx = c.ctx;
-          let {
-            [NODE_DOM_PARENT]: {
-              __config: {
-                [NODE_MATRIX_EVENT]: m,
-                [NODE_OPACITY]: opacity,
-              },
-            },
-          } = __config;
-          ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
-          ctx.globalAlpha = opacity;
-        }
-      }
+    this.__hasContent = true;
+    if(renderMode === WEBGL) {
+      return;
+    }
+    if(renderMode === CANVAS) {
       let font = css.setFontStyle(computedStyle);
       if(ctx.font !== font) {
         ctx.font = font;
@@ -786,7 +736,7 @@ class Text extends Node {
       item.render(renderMode, ctx, computedStyle, cacheStyle, dx, dy);
     });
     if(renderMode === SVG) {
-      this.virtualDom.children = textBoxes.map(textBox => textBox.virtualDom);
+      this.__virtualDom.children = textBoxes.map(textBox => textBox.virtualDom);
     }
   }
 
@@ -795,46 +745,75 @@ class Text extends Node {
   }
 
   __destroy() {
-    if(this.isDestroyed) {
+    if(this.__isDestroyed) {
       return;
     }
     super.__destroy();
-    let __cache = this.__config[NODE_CACHE];
+    let __cache = this.__cache;
     if(__cache) {
       __cache.release();
     }
   }
 
   getComputedStyle(key) {
-    return this.domParent.getComputedStyle(key);
+    return this.__domParent.getComputedStyle(key);
   }
 
   updateContent(s, cb) {
-    let self = this;
-    if(s === self.__content) {
-      if(util.isFunction(cb)) {
-        cb(-1);
+    if(s === this.__content || this.__isDestroyed) {
+      this.__content = s;
+      if(isFunction(cb)) {
+        cb();
       }
       return;
     }
-    root.delRefreshTask(self.__task);
-    root.addRefreshTask(self.__task = {
-      __before() {
-        self.__content = s;
-        let res = {};
-        let vd = self.domParent;
-        res[UPDATE_NODE] = vd;
-        res[UPDATE_FOCUS] = level.REFLOW;
-        res[UPDATE_CONFIG] = vd.__config;
-        let root = vd.root;
-        root.__addUpdate(vd, vd.__config, root, root.__config, res);
-      },
-      __after(diff) {
-        if(util.isFunction(cb)) {
-          cb(diff);
-        }
-      },
+    this.__content = s;
+    this.__root.__addUpdate(this.__domParent, {
+      focus: level.REFLOW,
+      cb,
     });
+  }
+
+  remove(cb) {
+    let { __root: root } = this;
+    let parent = this.isShadowRoot ? this.hostRoot.__parent: this.__parent;
+    let i;
+    if(parent) {
+      let target = this.isShadowRoot ? this.hostRoot : this;
+      i = parent.__children.indexOf(target);
+      parent.__children.splice(i, 1);
+      i = parent.__zIndexChildren.indexOf(target);
+      parent.__zIndexChildren.splice(i, 1);
+      let { __prev, __next } = this;
+      if(__prev) {
+        __prev.__next = __next;
+      }
+      if(__next) {
+        __next.__prev = __prev;
+      }
+    }
+    if(this.__isDestroyed) {
+      if(isFunction(cb)) {
+        cb();
+      }
+      return;
+    }
+    parent.__deleteStruct(this, i);
+    // 不可见仅改变数据结构
+    if(this.computedStyle[DISPLAY] === 'none') {
+      this.__destroy();
+      if(isFunction(cb)) {
+        cb();
+      }
+      return;
+    }
+    // 可见在reflow逻辑做结构关系等，text视为父变更
+    let res = {
+      focus: level.REFLOW,
+      removeDom: true,
+      cb,
+    };
+    root.__addUpdate(this, res);
   }
 
   get content() {
@@ -937,40 +916,68 @@ class Text extends Node {
     return o.textWidth;
   }
 
+  get clientWidth() {
+    return this.__width || 0;
+  }
+
+  get clientHeight() {
+    return this.__height || 0;
+  }
+
+  get offsetWidth() {
+    return this.__width || 0;
+  }
+
+  get offsetHeight() {
+    return this.__height || 0;
+  }
+
+  get outerWidth() {
+    return this.__width || 0;
+  }
+
+  get outerHeight() {
+    return this.__height || 0;
+  }
+
   get root() {
-    return this.domParent.root;
+    return this.__domParent.__root;
   }
 
   get currentStyle() {
-    return this.domParent.currentStyle;
+    return this.__domParent.__currentStyle;
   }
 
   get style() {
-    return this.__style;
+    return this.__domParent.__style;
   }
 
   get computedStyle() {
-    return this.domParent.computedStyle;
+    return this.__domParent.__computedStyle;
   }
 
   get cacheStyle() {
-    return this.domParent.__cacheStyle;
+    return this.__domParent.__cacheStyle;
   }
 
   get bbox() {
-    let { __sx1: sx, __sy1: sy, width, height,
-      computedStyle: {
-        [TEXT_STROKE_WIDTH]: textStrokeWidth,
-      },
-    } = this;
-    // TODO: 文字描边暂时不清楚最大值是多少，影响不确定，先按描边宽算，因为会出现>>0.5宽的情况
-    let half = textStrokeWidth;
-    return [sx - half, sy - half, sx + width + half, sy + height + half];
+    if(!this.__bbox) {
+      let {
+        __sx1, __sy1, width, height,
+        computedStyle: {
+          [TEXT_STROKE_WIDTH]: textStrokeWidth,
+        },
+      } = this;
+      // 文字描边暂时不清楚最大值是多少，影响不确定，先按描边宽算，因为会出现>>0.5宽的情况
+      let half = textStrokeWidth;
+      this.__bbox = [__sx1 - half, __sy1 - half, __sx1 + width + half, __sy1 + height + half];
+    }
+    return this.__bbox;
   }
 
   get filterBbox() {
     if(!this.__filterBbox) {
-      let bbox = this.bbox;
+      let bbox = this.__bbox || this.bbox;
       let filter = this.computedStyle[FILTER];
       this.__filterBbox = css.spreadFilter(bbox, filter);
     }
@@ -978,18 +985,20 @@ class Text extends Node {
   }
 
   get isShadowRoot() {
-    return !this.parent && this.host && this.host !== this.root;
+    return !this.__parent && this.__host && this.__host !== this.root;
   }
 
   get matrix() {
-    return this.domParent.matrix;
+    return this.__domParent.__matrix;
   }
 
   get matrixEvent() {
-    return this.domParent.matrixEvent;
+    return this.__domParent.__matrixEvent;
+  }
+
+  get perspectiveMatrix() {
+    return this.__domParent.__perspectiveMatrix;
   }
 }
-
-Text.prototype.__renderByMask = Text.prototype.render;
 
 export default Text;

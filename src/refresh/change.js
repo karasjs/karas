@@ -3,61 +3,46 @@ import enums from '../util/enums';
 
 const { DOM: RESET_DOM, GEOM: RESET_GEOM } = reset;
 const { STYLE_KEY } = enums;
+const {
+  POINTER_EVENTS,
+  COLOR,
+  STROKE_WIDTH,
+  FILL,
+  STROKE_DASHARRAY,
+  STROKE_LINECAP,
+  STROKE_LINEJOIN,
+  STROKE_MITERLIMIT,
+  BACKGROUND_COLOR,
+  BACKGROUND_IMAGE,
+  BACKGROUND_POSITION_X,
+  BACKGROUND_POSITION_Y,
+  BACKGROUND_REPEAT,
+  BACKGROUND_SIZE,
+  STROKE,
+  BORDER_BOTTOM_COLOR,
+  BORDER_LEFT_COLOR,
+  BORDER_RIGHT_COLOR,
+  BORDER_TOP_COLOR,
+  BORDER_TOP_LEFT_RADIUS,
+  BORDER_TOP_RIGHT_RADIUS,
+  BORDER_BOTTOM_RIGHT_RADIUS,
+  BORDER_BOTTOM_LEFT_RADIUS,
+  VISIBILITY,
+  BOX_SHADOW,
+  OVERFLOW,
+  BACKGROUND_CLIP,
+  TEXT_STROKE_WIDTH,
+  TEXT_STROKE_COLOR,
+  TEXT_STROKE_OVER,
+  TRANSLATE_PATH,
+} = STYLE_KEY;
 
 const GEOM = {};
 const GEOM_KEY_SET = [];
-const IGNORE = {
-  [STYLE_KEY.POINTER_EVENTS]: true,
-};
-const REPAINT = {
-  [STYLE_KEY.TRANSFORM]: true,
-  [STYLE_KEY.TRANSLATE_X]: true,
-  [STYLE_KEY.TRANSLATE_Y]: true,
-  [STYLE_KEY.SKEW_X]: true,
-  [STYLE_KEY.SKEW_Y]: true,
-  [STYLE_KEY.SCALE_X]: true,
-  [STYLE_KEY.SCALE_Y]: true,
-  [STYLE_KEY.ROTATE_Z]: true,
-  [STYLE_KEY.COLOR]: true,
-  [STYLE_KEY.FONT_STYLE]: true,
-  [STYLE_KEY.STROKE_WIDTH]: true,
-  [STYLE_KEY.FILL]: true,
-  [STYLE_KEY.STROKE_DASHARRAY]: true,
-  [STYLE_KEY.STROKE_LINECAP]: true,
-  [STYLE_KEY.STROKE_LINEJOIN]: true,
-  [STYLE_KEY.STROKE_MITERLIMIT]: true,
-  [STYLE_KEY.BACKGROUND_COLOR]: true,
-  [STYLE_KEY.BACKGROUND_IMAGE]: true,
-  [STYLE_KEY.BACKGROUND_POSITION_X]: true,
-  [STYLE_KEY.BACKGROUND_POSITION_Y]: true,
-  [STYLE_KEY.BACKGROUND_REPEAT]: true,
-  [STYLE_KEY.BACKGROUND_SIZE]: true,
-  [STYLE_KEY.STROKE]: true,
-  [STYLE_KEY.BORDER_BOTTOM_COLOR]: true,
-  [STYLE_KEY.BORDER_LEFT_COLOR]: true,
-  [STYLE_KEY.BORDER_RIGHT_COLOR]: true,
-  [STYLE_KEY.BORDER_TOP_COLOR]: true,
-  [STYLE_KEY.BORDER_TOP_LEFT_RADIUS]: true,
-  [STYLE_KEY.BORDER_TOP_RIGHT_RADIUS]: true,
-  [STYLE_KEY.BORDER_BOTTOM_RIGHT_RADIUS]: true,
-  [STYLE_KEY.BORDER_BOTTOM_LEFT_RADIUS]: true,
-  [STYLE_KEY.VISIBILITY]: true,
-  [STYLE_KEY.OPACITY]: true,
-  [STYLE_KEY.Z_INDEX]: true,
-  [STYLE_KEY.FILTER]: true,
-  [STYLE_KEY.BOX_SHADOW]: true,
-  [STYLE_KEY.OVERFLOW]: true,
-  [STYLE_KEY.BACKGROUND_CLIP]: true,
-  [STYLE_KEY.TEXT_STROKE_WIDTH]: true,
-  [STYLE_KEY.TEXT_STROKE_COLOR]: true,
-  [STYLE_KEY.TEXT_STROKE_OVER]: true,
-};
 
 let o = {
   GEOM,
   GEOM_KEY_SET,
-  IGNORE,
-  REPAINT,
   addGeom(tagName, ks, cb) {
     if(Array.isArray(ks)) {
       ks.forEach(k => {
@@ -73,13 +58,21 @@ let o = {
     }
   },
   isIgnore(k) {
-    return IGNORE.hasOwnProperty(k);
+    return k === POINTER_EVENTS || k === TRANSLATE_PATH;
   },
   isGeom(tagName, k) {
     return tagName && k && GEOM.hasOwnProperty(k) && GEOM[k].hasOwnProperty(tagName);
   },
   isRepaint(k, tagName) {
-    return REPAINT.hasOwnProperty(k) || o.isGeom(tagName, k);
+    return k === COLOR || k === STROKE_WIDTH || k === FILL || k === STROKE_DASHARRAY || k === STROKE_LINECAP
+      || k === STROKE_LINEJOIN || k === STROKE_MITERLIMIT || k === BACKGROUND_COLOR || k === BACKGROUND_IMAGE
+      || k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y || k === BACKGROUND_REPEAT
+      || k === BACKGROUND_SIZE || k === STROKE || k === BORDER_BOTTOM_COLOR || k === BORDER_LEFT_COLOR
+      || k === BORDER_BOTTOM_COLOR || k === BORDER_RIGHT_COLOR || k === BORDER_TOP_COLOR
+      || k === BORDER_TOP_LEFT_RADIUS || k === BORDER_TOP_RIGHT_RADIUS || k === BORDER_BOTTOM_RIGHT_RADIUS
+      || k === BORDER_BOTTOM_LEFT_RADIUS || k === VISIBILITY || k === BOX_SHADOW || k === OVERFLOW
+      || k === BACKGROUND_CLIP || k === TEXT_STROKE_WIDTH || k === TEXT_STROKE_COLOR || k === TEXT_STROKE_OVER
+      || o.isGeom(tagName, k);
   },
   isValid(tagName, k) {
     if(!k) {

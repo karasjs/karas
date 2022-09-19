@@ -12,16 +12,16 @@ const OFFSCREEN_MASK2 = 4;
 
 function applyOffscreen(ctx, list, width, height) {
   list.sort(function(a, b) {
-    if(a[1] === b[1]) {
-      if(a[0] === b[0]) {
-        return a[2] - b[2];
+    if(a.lv === b.lv) {
+      if(a.idx === b.idx) {
+        return a.type - b.type;
       }
-      return b[0] - a[0];
+      return b.idx - a.idx;
     }
-    return b[1] - a[1];
+    return b.lv - a.lv;
   });
   list.forEach(item => {
-    let [, , type, offscreen] = item;
+    let { type, offscreen } = item;
     if(type === OFFSCREEN_OVERFLOW) {
       let { matrix, target, ctx: origin, x, y, offsetWidth, offsetHeight, list } = offscreen;
       ctx.globalCompositeOperation = 'destination-in';
@@ -38,17 +38,14 @@ function applyOffscreen(ctx, list, width, height) {
       ctx.fill();
       ctx.closePath();
       ctx.globalCompositeOperation = 'source-over';
-      target.draw();
       ctx = origin;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.globalAlpha = 1;
       if(width && height) {
         ctx.drawImage(target.canvas, 0, 0, width, height, 0, 0, width, height);
       }
-      ctx.draw && ctx.draw(true);
       target.ctx.setTransform(1, 0, 0, 1, 0, 0);
       target.ctx.clearRect(0, 0, width, height);
-      target.draw();
       inject.releaseCacheCanvas(target.canvas);
     }
     else if(type === OFFSCREEN_FILTER) {
@@ -61,17 +58,14 @@ function applyOffscreen(ctx, list, width, height) {
           apply.ctx.drawImage(target.canvas, 0, 0, width, height, 0, 0, width, height);
         }
         apply.ctx.filter = 'none';
-        apply.draw();
         target.ctx.globalAlpha = 1;
         target.ctx.setTransform(1, 0, 0, 1, 0, 0);
         target.ctx.clearRect(0, 0, width, height);
         if(width && height) {
           target.ctx.drawImage(apply.canvas, 0, 0, width, height, 0, 0, width, height);
         }
-        target.draw();
         apply.ctx.setTransform(1, 0, 0, 1, 0, 0);
         apply.ctx.clearRect(0, 0, width, height);
-        apply.draw();
         inject.releaseCacheCanvas(apply.canvas);
       }
       // 绘制回主画布，如果不支持则等同无filter原样绘制
@@ -81,17 +75,14 @@ function applyOffscreen(ctx, list, width, height) {
       if(width && height) {
         ctx.drawImage(target.canvas, 0, 0, width, height, 0, 0, width, height);
       }
-      ctx.draw && ctx.draw(true);
       target.ctx.setTransform(1, 0, 0, 1, 0, 0);
       target.ctx.globalAlpha = 1;
       target.ctx.clearRect(0, 0, width, height);
-      target.draw();
       inject.releaseCacheCanvas(target.canvas);
     }
     else if(type === OFFSCREEN_MASK) {
       let { mask, isClip } = offscreen;
       if(isClip) {
-        offscreen.target.draw();
         ctx = mask.ctx;
         ctx.globalCompositeOperation = 'source-out';
         ctx.globalAlpha = 1;
@@ -99,11 +90,9 @@ function applyOffscreen(ctx, list, width, height) {
         if(width && height) {
           ctx.drawImage(offscreen.target.canvas, 0, 0, width, height, 0, 0, width, height);
         }
-        mask.draw();
         ctx.globalCompositeOperation = 'source-over';
         offscreen.target.ctx.setTransform(1, 0, 0, 1, 0, 0);
         offscreen.target.ctx.clearRect(0, 0, width, height);
-        offscreen.target.draw();
         inject.releaseCacheCanvas(offscreen.target.canvas);
         ctx = offscreen.ctx;
         ctx.globalAlpha = 1;
@@ -111,14 +100,11 @@ function applyOffscreen(ctx, list, width, height) {
         if(width && height) {
           ctx.drawImage(mask.canvas, 0, 0, width, height, 0, 0, width, height);
         }
-        ctx.draw && ctx.draw(true);
         mask.ctx.setTransform(1, 0, 0, 1, 0, 0);
         mask.ctx.clearRect(0, 0, width, height);
-        mask.draw();
         inject.releaseCacheCanvas(mask.canvas);
       }
       else {
-        mask.draw();
         let target = offscreen.target;
         ctx = target.ctx;
         ctx.globalCompositeOperation = 'destination-in';
@@ -128,10 +114,8 @@ function applyOffscreen(ctx, list, width, height) {
           ctx.drawImage(mask.canvas, 0, 0, width, height, 0, 0, width, height);
         }
         ctx.globalCompositeOperation = 'source-over';
-        target.draw();
         mask.ctx.setTransform(1, 0, 0, 1, 0, 0);
         mask.ctx.clearRect(0, 0, width, height);
-        mask.draw();
         inject.releaseCacheCanvas(mask.canvas);
         ctx = offscreen.ctx;
         ctx.globalAlpha = 1;
@@ -139,10 +123,8 @@ function applyOffscreen(ctx, list, width, height) {
         if(width && height) {
           ctx.drawImage(target.canvas, 0, 0, width, height, 0, 0, width, height);
         }
-        ctx.draw && ctx.draw(true);
         target.ctx.setTransform(1, 0, 0, 1, 0, 0);
         target.ctx.clearRect(0, 0, width, height);
-        target.draw();
         inject.releaseCacheCanvas(target.canvas);
       }
     }
@@ -150,18 +132,15 @@ function applyOffscreen(ctx, list, width, height) {
       let target = offscreen.target;
       ctx = offscreen.ctx;
       ctx.globalCompositeOperation = offscreen.mixBlendMode;
-      target.draw();
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.globalAlpha = 1;
       if(width && height) {
         ctx.drawImage(target.canvas, 0, 0, width, height, 0, 0, width, height);
       }
       ctx.globalCompositeOperation = 'source-over';
-      ctx.draw && ctx.draw(true);
       target.ctx.globalAlpha = 1;
       target.ctx.setTransform(1, 0, 0, 1, 0, 0);
       target.ctx.clearRect(0, 0, width, height);
-      target.draw();
       inject.releaseCacheCanvas(target.canvas);
     }
     // 特殊的mask节点汇总结束，还原ctx

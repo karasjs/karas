@@ -1,15 +1,14 @@
 class Component extends karas.Component {
   constructor(props) {
     super(props);
-    this.state.a = 'a';
   }
   click() {
-    this.setState({
-      a: 1,
+    this.updateStyle({
+      color: '#F00',
     });
   }
   render() {
-    return <div onClick={this.click.bind(this)}>{this.state.a}</div>;
+    return <div onClick={this.click.bind(this)}>a</div>;
   }
 }
 

@@ -161,7 +161,10 @@ function bindTexture(gl, texture, n) {
  * @param revertY
  */
 function drawTextureCache(gl, list, hash, cx, cy, revertY) {
-  let vtPoint = [], vtTex = [], vtOpacity = [];
+  let length = list.length;
+  let vtPoint = new Float32Array(length * 24),
+    vtTex = new Float32Array(length * 12),
+    vtOpacity = new Float32Array(length * 6);
   let lastChannel; // 上一个dom的单元号
   let record = [0]; // [num, channel]每一批的数量和单元号记录
   let stack = [record]; // 所有批的数据记录集合
@@ -193,31 +196,70 @@ function drawTextureCache(gl, list, hash, cx, cy, revertY) {
     [x2, y2] = convertCoords2Gl([x2, y2, 0, w2], cx, cy, revertY);
     [x3, y3] = convertCoords2Gl([x3, y3, 0, w3], cx, cy, revertY);
     [x4, y4] = convertCoords2Gl([x4, y4, 0, w4], cx, cy, revertY);
-    vtPoint.push(x1, y1, 0, w1, x4, y4, 0, w4, x2, y2, 0, w2, x4, y4, 0, w4, x2, y2, 0, w2, x3, y3, 0, w3);
+    // vtPoint.push(x1, y1, 0, w1, x4, y4, 0, w4, x2, y2, 0, w2, x4, y4, 0, w4, x2, y2, 0, w2, x3, y3, 0, w3);
+    let j = i * 24;
+    vtPoint[j] = x1;
+    vtPoint[j + 1] = y1;
+    vtPoint[j + 3] = w1;
+    vtPoint[j + 4] = x4;
+    vtPoint[j + 5] = y4;
+    vtPoint[j + 7] = w4;
+    vtPoint[j + 8] = x2;
+    vtPoint[j + 9] = y2;
+    vtPoint[j + 11] = w2;
+    vtPoint[j + 12] = x4;
+    vtPoint[j + 13] = y4;
+    vtPoint[j + 15] = w4;
+    vtPoint[j + 16] = x2;
+    vtPoint[j + 17] = y2;
+    vtPoint[j + 19] = w2;
+    vtPoint[j + 20] = x3;
+    vtPoint[j + 21] = y3;
+    vtPoint[j + 23] = w3;
     let tx1 = x / page.width, ty1 = (y + height) / page.height;
     let tx2 = (x + width) / page.width, ty2 = y / page.height;
-    vtTex.push(tx1, ty1, tx1, ty2, tx2, ty1, tx1, ty2, tx2, ty1, tx2, ty2);
-    vtOpacity.push(opacity, opacity, opacity, opacity, opacity, opacity);
+    // vtTex.push(tx1, ty1, tx1, ty2, tx2, ty1, tx1, ty2, tx2, ty1, tx2, ty2);
+    j = i * 12;
+    vtTex[j] = tx1;
+    vtTex[j + 1] = ty1;
+    vtTex[j + 2] = tx1;
+    vtTex[j + 3] = ty2;
+    vtTex[j + 4] = tx2;
+    vtTex[j + 5] = ty1;
+    vtTex[j + 6] = tx1;
+    vtTex[j + 7] = ty2;
+    vtTex[j + 8] = tx2;
+    vtTex[j + 9] = ty1;
+    vtTex[j + 10] = tx2;
+    vtTex[j + 11] = ty2;
+    // vtOpacity.push(opacity, opacity, opacity, opacity, opacity, opacity);
+    j = i * 6;
+    vtOpacity[j] = opacity;
+    vtOpacity[j + 1] = opacity;
+    vtOpacity[j + 2] = opacity;
+    vtOpacity[j + 3] = opacity;
+    vtOpacity[j + 4] = opacity;
+    vtOpacity[j + 5] = opacity;
     record[0]++;
   });
   // 顶点buffer
   let pointBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vtPoint), gl.STATIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
   let a_position = gl.getAttribLocation(gl.program, 'a_position');
   gl.vertexAttribPointer(a_position, 4, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(a_position);
   // 纹理buffer
   let texBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vtTex), gl.STATIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
   let a_texCoords = gl.getAttribLocation(gl.program, 'a_texCoords');
   gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(a_texCoords);
   // opacity buffer
   let opacityBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, opacityBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vtOpacity), gl.STATIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, vtOpacity, gl.STATIC_DRAW);
   let a_opacity = gl.getAttribLocation(gl.program, 'a_opacity');
   gl.vertexAttribPointer(a_opacity, 1, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(a_opacity);

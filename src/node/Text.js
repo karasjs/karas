@@ -186,7 +186,7 @@ class Text extends Node {
    * @param data
    * @private
    */
-  __layout(data) {
+  __layoutFlow(data) {
     let __cache = this.__cache;
     if(__cache) {
       __cache.release();

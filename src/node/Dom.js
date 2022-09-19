@@ -629,7 +629,7 @@ class Dom extends Xom {
             if(isUpright) {
               let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight,
                 isUpright ? getVerticalBaseline(computedStyle) : getBaseline(computedStyle), isUpright);
-              item.__layout({
+              item.__layoutFlow({
                 x,
                 y,
                 w,
@@ -657,7 +657,7 @@ class Dom extends Xom {
       else if(isUpright) {
         let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight,
           isUpright ? getVerticalBaseline(computedStyle) : getBaseline(computedStyle), isUpright);
-        this.__layout({
+        this.__layoutFlow({
           x,
           y,
           w,
@@ -710,7 +710,7 @@ class Dom extends Xom {
     }
     // column的flex时，每个child做一次虚拟布局，获取到每个child的高度和宽度
     else {
-      this.__layout({
+      this.__layoutFlow({
         x,
         y,
         w,
@@ -721,6 +721,22 @@ class Dom extends Xom {
     }
     // 直接item的mpb影响basis
     return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], isDirectChild);
+  }
+
+  // flow的layout包裹方法，布局后递归计算computedStyle，abs节点在__layoutAbs中做
+  __layout(data, isAbs, isColumn, isRow) {
+    super.__layout(data, isAbs, isColumn, isRow);
+    this.__layoutStyle();
+  }
+
+  // 布局结束后递归向下计算computedStyle，父级必须先算因为有inherit
+  __layoutStyle() {
+    super.__layoutStyle();
+    this.flowChildren.forEach(child => {
+      if(!(child instanceof Text)) {
+        child.__layoutStyle();
+      }
+    });
   }
 
   __layoutNone() {
@@ -824,7 +840,7 @@ class Dom extends Xom {
           }
           // x开头或者nowrap单行的非block，不用考虑是否放得下直接放
           if((isUpright && y === ly) || (!isUpright && x === lx) || !i || whiteSpace === 'nowrap') {
-            lineClampCount = item.__layout({
+            lineClampCount = item.__layoutFlow({
               x,
               y,
               w,
@@ -887,7 +903,7 @@ class Dom extends Xom {
             let free = item.__tryLayInline(isUpright ? (h + ly - y) : (w + lx - x), isUpright ? h : w, isUpright);
             // 放得下继续，奇怪的精度问题，加上阈值
             if(free >= (-1e-10)) {
-              lineClampCount = item.__layout({
+              lineClampCount = item.__layoutFlow({
                 x,
                 y,
                 w,
@@ -941,7 +957,7 @@ class Dom extends Xom {
                 backtrack(this, lineBoxManager, lineBox, isUpright ? h : w, 0, isUpright);
                 return;
               }
-              lineClampCount = item.__layout({
+              lineClampCount = item.__layoutFlow({
                 x,
                 y,
                 w,
@@ -1013,7 +1029,7 @@ class Dom extends Xom {
             lineBoxManager.setNotEnd();
             lineBoxManager.setNewLine();
           }
-          item.__layout({
+          item.__layoutFlow({
             x,
             y,
             w,
@@ -1119,7 +1135,7 @@ class Dom extends Xom {
         }
         // x开头，不用考虑是否放得下直接放
         if((isUpright && y === ly) || (!isUpright && x === lx) || !i || whiteSpace === 'nowrap') {
-          lineClampCount = item.__layout({
+          lineClampCount = item.__layoutFlow({
             x,
             y,
             w,
@@ -1161,7 +1177,7 @@ class Dom extends Xom {
           let free = item.__tryLayInline(isUpright ? (h + ly - y) : (w + lx - x));
           // 放得下继续
           if(free >= (-1e-10)) {
-            lineClampCount = item.__layout({
+            lineClampCount = item.__layoutFlow({
               x,
               y,
               w,
@@ -1212,7 +1228,7 @@ class Dom extends Xom {
               backtrack(this, lineBoxManager, lineBox, isUpright ? h : w, 0, isUpright);
               return;
             }
-            lineClampCount = item.__layout({
+            lineClampCount = item.__layoutFlow({
               x,
               y,
               w,
@@ -1403,7 +1419,7 @@ class Dom extends Xom {
         if(isDirectionRow && isUpright || !isDirectionRow && !isUpright) {
           let lineBoxManager = new LineBoxManager(x, y, lineHeight,
             isUpright ? getVerticalBaseline(computedStyle) : getBaseline(computedStyle), isUpright);
-          item.__layout({
+          item.__layoutFlow({
             x,
             y,
             w,
@@ -1870,7 +1886,7 @@ class Dom extends Xom {
       let main = targetMainList[i];
       if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
         if(isDirectionRow) {
-          item.__layout({
+          item.__layoutFlow({
             x,
             y,
             w: main,
@@ -1894,7 +1910,7 @@ class Dom extends Xom {
               needGenAr = true;
             }
             if(needGenAr) {
-              item.__layout({
+              item.__layoutFlow({
                 x,
                 y,
                 w,
@@ -1904,7 +1920,7 @@ class Dom extends Xom {
               }, isAbs, isColumn, isRow);
             }
             else {
-              item.__layout({
+              item.__layoutFlow({
                 x,
                 y,
                 w,
@@ -1912,7 +1928,7 @@ class Dom extends Xom {
                 h3: main, // 同w2
                 isUpright,
               }, true, isColumn, isRow);
-              item.__layout({
+              item.__layoutFlow({
                 x,
                 y,
                 w,
@@ -1924,7 +1940,7 @@ class Dom extends Xom {
             }
           }
           else {
-            item.__layout({
+            item.__layoutFlow({
               x,
               y,
               w,
@@ -1960,7 +1976,7 @@ class Dom extends Xom {
         let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight,
           isUpright ? getVerticalBaseline(computedStyle) : getBaseline(computedStyle), isUpright);
         lbmList.push(lineBoxManager);
-        item.__layout({
+        item.__layoutFlow({
           x,
           y,
           w: isDirectionRow ? main : w,
@@ -2147,7 +2163,7 @@ class Dom extends Xom {
             } } = item;
             // row的孩子还是flex且column且不定高时，如果高度<侧轴拉伸高度则重新布局
             if(isDirectionRow && display === 'flex' && flexDirection === 'column' && height.u === AUTO && item.outerHeight < maxCross) {
-              item.__layout(Object.assign(item.__layoutData, { h3: maxCross }));
+              item.__layoutFlow(Object.assign(item.__layoutData, { h3: maxCross }));
             }
             let {
               [BORDER_TOP_WIDTH]: borderTopWidth,
@@ -2412,7 +2428,7 @@ class Dom extends Xom {
         }
         // x开头或者nowrap单行，不用考虑是否放得下直接放，因为有beginSpace所以要多判断i为0
         if((isUpright && y === ly) || (!isUpright && x === lx) || !i || whiteSpace === 'nowrap') {
-          lineClampCount = item.__layout({
+          lineClampCount = item.__layoutFlow({
             x,
             y,
             w,
@@ -2467,7 +2483,7 @@ class Dom extends Xom {
           let free = item.__tryLayInline(isUpright ? (h + ly - y - endSpace) : (w + lx - x - endSpace), isUpright ? h : w, isUpright);
           // 放得下继续
           if(free >= (-1e-10)) {
-            lineClampCount = item.__layout({
+            lineClampCount = item.__layoutFlow({
               x,
               y,
               w,
@@ -2509,7 +2525,7 @@ class Dom extends Xom {
               backtrack(bp, lineBoxManager, lineBox, w, endSpace, isUpright);
               return;
             }
-            lineClampCount = item.__layout({
+            lineClampCount = item.__layoutFlow({
               x,
               y,
               w,
@@ -2554,7 +2570,7 @@ class Dom extends Xom {
         let n = lineBoxManager.size;
         // i为0时强制不换行
         if((isUpright && y === ly) || (!isUpright && x === lx) || !i || whiteSpace === 'nowrap') {
-          lineClampCount = item.__layout({
+          lineClampCount = item.__layoutFlow({
             x,
             y,
             w,
@@ -2592,7 +2608,7 @@ class Dom extends Xom {
           let free = item.__tryLayInline(isUpright ? (h + ly - y - endSpace) : (w + lx - x - endSpace));
           // 放得下继续
           if(free >= (-1e-10)) {
-            lineClampCount = item.__layout({
+            lineClampCount = item.__layoutFlow({
               x,
               y,
               w,
@@ -2633,7 +2649,7 @@ class Dom extends Xom {
               backtrack(bp, lineBoxManager, lineBox, w, endSpace, isUpright);
               return;
             }
-            lineClampCount = item.__layout({
+            lineClampCount = item.__layoutFlow({
               x,
               y,
               w,
@@ -3102,7 +3118,7 @@ class Dom extends Xom {
       let heightLimit = onlyBottom ? y2 - y : clientHeight + y - y2;
       // 未直接或间接定义尺寸，取特殊孩子宽度的最大值，同时不能超限
       if(w2 === undefined) {
-        item.__layout({
+        item.__layoutFlow({
           x: x2,
           y: y2,
           w: widthLimit,
@@ -3112,6 +3128,7 @@ class Dom extends Xom {
         }, true, false);
         widthLimit = item.outerWidth;
       }
+      // 这里用包裹方法标明要递归计算computedStyle
       item.__layout({
         x: x2,
         y: y2,

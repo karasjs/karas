@@ -52,6 +52,8 @@ const {
     TEXT_STROKE_OVER,
     MATRIX,
     TRANSFORM,
+    OPACITY,
+    MIX_BLEND_MODE,
   },
 } = enums;
 const { isNil, isObject, isFunction } = util;
@@ -61,13 +63,16 @@ const {
   getLevel,
   isRepaint,
   NONE,
-  FILTER,
-  PERSPECTIVE,
+  FILTER: FT,
+  PERSPECTIVE: PPT,
   REPAINT,
   REFLOW,
   REBUILD,
   CACHE,
   TRANSFORM: TF,
+  TRANSFORM_ALL,
+  OPACITY: OP,
+  MIX_BLEND_MODE: MBM,
 } = level;
 const { isGeom } = change;
 
@@ -619,6 +624,7 @@ class Root extends Dom {
     } = o;
     let {
       computedStyle,
+      currentStyle,
       cacheStyle,
       __cacheProps,
       __isMask,
@@ -626,6 +632,7 @@ class Root extends Dom {
     } = node;
     let hasZ, hasVisibility, hasColor, hasDisplay, hasTsColor, hasTsWidth, hasTsOver;
     let lv = focus || NONE;
+    // 清空对应改变的cacheStyle
     if(keys) {
       for(let i = 0, len = keys.length; i < len; i++) {
         let k = keys[i];
@@ -675,7 +682,7 @@ class Root extends Dom {
       }
       return;
     }
-    // transform变化清空重算
+    // transform变化清空重算，比较特殊，MATRIX的cache需手动清理
     if(contain(lv, TF)) {
       cacheStyle[MATRIX] = computedStyle[TRANSFORM] = undefined;
     }
@@ -693,7 +700,7 @@ class Root extends Dom {
         if(node instanceof Text) {
           continue;
         }
-        let currentStyle = node.currentStyle, cacheStyle = node.cacheStyle;
+        let currentStyle = node.__currentStyle, cacheStyle = node.__cacheStyle;
         let need;
         if(hasVisibility && currentStyle[VISIBILITY].u === INHERIT) {
           need = true;
@@ -718,6 +725,7 @@ class Root extends Dom {
         if(need) {
           node.__refreshLevel |= REPAINT;
           node.clearCache();
+          node.__calStyle(REPAINT, currentStyle, node.__computedStyle, cacheStyle);
         }
         // 不为inherit此子树可跳过，因为不影响
         else {
@@ -744,9 +752,29 @@ class Root extends Dom {
         if(node.__cache) {
           node.__cache.release();
         }
+        node.__calStyle(lv, computedStyle, cacheStyle);
+        node.__calPerspective(currentStyle, computedStyle, cacheStyle);
       }
-      // perspective也特殊只清空total的cache，和>=REPAINT清空total共用
-      if(need || contain(lv, PERSPECTIVE)) {
+      // < REPAINT特殊的优化computedStyle计算
+      else {
+        if(contain(lv, PPT)) {
+          node.__calPerspective(currentStyle, computedStyle, cacheStyle);
+        }
+        if(contain(lv, TRANSFORM_ALL)) {
+          node.__calMatrix(lv, currentStyle, computedStyle, cacheStyle);
+        }
+        if(contain(lv, OP)) {
+          computedStyle[OPACITY] = currentStyle[OPACITY];
+        }
+        if(contain(lv, FT)) {
+          node.__calFilter(currentStyle, computedStyle, cacheStyle);
+        }
+        if(contain(lv, MBM)) {
+          computedStyle[MIX_BLEND_MODE] = currentStyle[MIX_BLEND_MODE];
+        }
+      }
+      // perspective也特殊只清空total的cache，和>=REPAINT清空total共用，TODO:优化判断ppt
+      if(need || contain(lv, PPT)) {
         if(node.__cacheTotal) {
           node.__cacheTotal.release();
         }
@@ -758,7 +786,7 @@ class Root extends Dom {
         }
       }
       // 特殊的filter清除cache
-      if((need || contain(lv, FILTER)) && node.__cacheFilter) {
+      if((need || contain(lv, FT)) && node.__cacheFilter) {
         node.__cacheFilter.release();
       }
       // 向上清除cache汇总缓存信息，过程中可能会出现重复，根据refreshLevel判断，reflow已经自己清过了

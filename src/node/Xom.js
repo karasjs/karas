@@ -556,8 +556,12 @@ class Xom extends Node {
     return res;
   }
 
-  // absolute且无尺寸时，isAbs标明先假布局一次计算尺寸，还有flex列计算时isColumn假布局，flex横计算时writingMode垂直假布局
   __layout(data, isAbs, isColumn, isRow) {
+    this.__layoutFlow(data, isAbs, isColumn, isRow);
+  }
+
+  // absolute且无尺寸时，isAbs标明先假布局一次计算尺寸，还有flex列计算时isColumn假布局，flex横计算时writingMode垂直假布局
+  __layoutFlow(data, isAbs, isColumn, isRow) {
     this.__computeReflow();
     let { __isDestroyed, __currentStyle, __computedStyle, __ellipsis } = this;
     // 虚拟省略号每次清除
@@ -633,8 +637,9 @@ class Xom extends Node {
       data.lineClampCount = 0;
       this.__layoutBlock(data, isAbs, isColumn, isRow);
     }
-    // relative渲染时做偏移，百分比基于父元素，若父元素没有定高则为0
+    // 非虚拟布局才执行，防止重复
     if(!isAbs && !isColumn && !isRow) {
+      // relative渲染时做偏移，百分比基于父元素，若父元素没有定高则为0
       if(position === 'relative') {
         let {[TOP]: top, [RIGHT]: right, [BOTTOM]: bottom, [LEFT]: left} = __currentStyle;
         let {parent} = this;
@@ -698,6 +703,14 @@ class Xom extends Node {
       this.__hasComputeReflow = false;
     }
     return lineClampCount;
+  }
+
+  __layoutStyle() {
+    let currentStyle = this.__currentStyle;
+    let computedStyle = this.__computedStyle;
+    let cacheStyle = this.__cacheStyle;
+    this.__calStyle(level.REFLOW, currentStyle, computedStyle, cacheStyle);
+    this.__calPerspective(currentStyle, computedStyle, cacheStyle);
   }
 
   __execAr() {
@@ -1680,11 +1693,8 @@ class Xom extends Node {
   render(renderMode, ctx, dx = 0, dy = 0) {
     let {
       __isDestroyed: isDestroyed,
-      // root,
     } = this;
-    // let __cache = this.__cache;
     let cacheStyle = this.__cacheStyle;
-    // let currentStyle = this.__currentStyle;
     let computedStyle = this.__computedStyle;
     if(isDestroyed) {
       return { isDestroyed, break: true };
@@ -1858,10 +1868,6 @@ class Xom extends Node {
       res.break = true;
       return res;
     }
-    // 仅webgl有用
-    // if(renderMode === WEBGL && __cache && __cache.enabled) {
-    //   __cache.__available = true;
-    // }
     /**
      * inline的渲染同block/ib不一样，不是一个矩形区域
      * 它根据内部的contentBox渲染，contentBox是指lineBox中的内容，即TextBox/inline/ib元素

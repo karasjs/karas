@@ -34824,7 +34824,6 @@
         node.__currentStyle;
 
         if (contain$1(__refreshLevel, TRANSFORM_ALL$1)) {
-          // let matrix = node.__calMatrix(__refreshLevel, currentStyle, computedStyle, __cacheStyle);
           var matrix = node.__matrix;
 
           if (!matrix || isE(matrix)) {
@@ -34851,7 +34850,6 @@
         }
 
         if (contain$1(__refreshLevel, FT$1)) {
-          // let filter = node.__calFilter(currentStyle, computedStyle, __cacheStyle);
           var filter = computedStyle[FILTER];
           var s = painter.svgFilter(filter);
 
@@ -34876,8 +34874,7 @@
       } else {
         // >=REPAINT会调用render，重新生成defsCache，text没有这个东西
         if (!(node instanceof Text)) {
-          node.__cacheDefs.splice(0); // node.__calStyle(__refreshLevel, node.__currentStyle, node.__computedStyle, node.__cacheStyle);
-
+          node.__cacheDefs.splice(0);
 
           var _matrix2 = node.__matrix;
 
@@ -35129,28 +35126,8 @@
        */
 
       if (__refreshLevel < REPAINT$1) {
-        // if(contain(__refreshLevel, PPT)) {
-        //   node.__calPerspective(__currentStyle, __computedStyle, __cacheStyle);
-        // }
-        // transform变化，父元素的perspective变化也会在Root特殊处理重新计算
-        var matrix = node.__matrix; // if(contain(__refreshLevel, TRANSFORM_ALL)) {
-        //   matrix = node.__calMatrix(__refreshLevel, __currentStyle, __computedStyle, __cacheStyle);
-        // }
-        // else {
-        //   matrix = node.__matrix;
-        // }
-        // if(contain(__refreshLevel, OP)) {
-        //   __computedStyle[OPACITY] = __currentStyle[OPACITY];
-        // }
-        // filter会改变bbox范围
-        // if(contain(__refreshLevel, FT)) {
-        //   node.__calFilter(__currentStyle, __computedStyle, __cacheStyle);
-        // }
-
-        var _mbm = __computedStyle[MIX_BLEND_MODE$1]; // if(contain(__refreshLevel, MBM)) {
-        //   mbm = __computedStyle[MIX_BLEND_MODE] = __currentStyle[MIX_BLEND_MODE];
-        // }
-
+        var matrix = node.__matrix;
+        var _mbm = __computedStyle[MIX_BLEND_MODE$1];
         var isMbm = contain$1(__refreshLevel, MBM$1) && isValidMbm(_mbm);
         var __domParent = node.__domParent;
         var isPpt = !isE(__domParent && __domParent.__perspectiveMatrix) || transform.isPerspectiveMatrix(matrix);
@@ -35184,9 +35161,7 @@
        * Geom没有子节点无需汇总局部根，Dom中Img也是，它们的局部根等于自身的cache，其它符合条件的Dom需要生成
        */
       else {
-        // node.__calStyle(__refreshLevel, __currentStyle, __computedStyle, __cacheStyle);
-        var hasContent = node.calContent(__currentStyle, __computedStyle); // node.__calPerspective(__currentStyle, __computedStyle, __cacheStyle);
-        // 有内容先以canvas模式绘制到离屏画布上，自定义渲染设置无内容不实现即可跳过
+        var hasContent = node.calContent(__currentStyle, __computedStyle); // 有内容先以canvas模式绘制到离屏画布上，自定义渲染设置无内容不实现即可跳过
 
         if (hasContent) {
           var _bbox3 = node.bbox,
@@ -35680,52 +35655,7 @@
         if (__refreshLevel === NONE$1 && hasMask) {
           i += countMaskNum(__structs, i + 1, hasMask);
         }
-      } // if(__refreshLevel < REPAINT) {
-      //   if(contain(__refreshLevel, TRANSFORM_ALL)) {
-      //     node.__calMatrix(__refreshLevel, __currentStyle, __computedStyle, __cacheStyle);
-      //   }
-      //   if(contain(__refreshLevel, OP)) {
-      //     __computedStyle[OPACITY] = __currentStyle[OPACITY];
-      //   }
-      //   if(contain(__refreshLevel, FT)) {
-      //     node.__calFilter(__currentStyle, __computedStyle, __cacheStyle);
-      //   }
-      //   if(contain(__refreshLevel, MBM)) {
-      //     __computedStyle[MIX_BLEND_MODE] = __currentStyle[MIX_BLEND_MODE];
-      //   }
-      //   // filter变化需重新生成，cacheTotal本身就存在要判断下；CACHE取消重新生成则无需判断
-      //   if(node.__cacheAsBitmap) {
-      //     if(contain(__refreshLevel, CACHE | FT)) {
-      //       mergeList.push({
-      //         i,
-      //         lv,
-      //         total,
-      //         node,
-      //         hasMask,
-      //       });
-      //     }
-      //   }
-      //   // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total
-      //   if(__cacheTotal && __cacheTotal.available) {
-      //     i += (total || 0);
-      //     if(__refreshLevel === NONE && hasMask) {
-      //       i += countMaskNum(__structs, i + 1, hasMask);
-      //     }
-      //   }
-      // }
-      // else {
-      //   node.__calStyle(__refreshLevel, __currentStyle, __computedStyle, __cacheStyle);
-      //   if(node.__cacheAsBitmap) {
-      //     mergeList.push({
-      //       i,
-      //       lv,
-      //       total,
-      //       node,
-      //       hasMask,
-      //     });
-      //   }
-      // }
-
+      }
     }
     /**
      * 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
@@ -40955,7 +40885,7 @@
     Cache: Cache
   };
 
-  var version = "0.78.3";
+  var version = "0.79.0";
 
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);

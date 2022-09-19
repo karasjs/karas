@@ -26157,10 +26157,7 @@
 
       if (isRemoveSelf) {
         nowH = 0;
-      } // else if(isFixedWidthOrHeight(top, HEIGHT)) {
-      //   nowH = oldH;
-      // }
-      else {
+      } else {
         nowH = top.offsetHeight;
       }
     } else if (isNowAbs) {
@@ -26171,7 +26168,7 @@
 
 
     if (!removeDom && d3) {
-      top.__offsetY(d3, false, null);
+      top.__offsetY(d3, false, REPAINT$2);
     } // 差值计算注意考虑margin合并前的值，和合并后的差值，height使用offsetHeight不考虑margin
 
 

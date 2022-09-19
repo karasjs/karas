@@ -483,9 +483,6 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
     if(isRemoveSelf) {
       nowH = 0;
     }
-    // else if(isFixedWidthOrHeight(top, HEIGHT)) {
-    //   nowH = oldH;
-    // }
     else {
       nowH = top.offsetHeight;
     }
@@ -498,7 +495,7 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
   }
   // 查看mergeMargin对top造成的偏移
   if(!removeDom && d3) {
-    top.__offsetY(d3, false, null);
+    top.__offsetY(d3, false, REPAINT);
   }
   // 差值计算注意考虑margin合并前的值，和合并后的差值，height使用offsetHeight不考虑margin
   let diff = t3 + t4 - t1 - t2 + nowH - oldH;

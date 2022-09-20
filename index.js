@@ -21739,14 +21739,12 @@
         var matrixCache = __cacheStyle[MATRIX$1]; // tx/ty/tz变化特殊优化
 
         if (matrixCache && lv < REFLOW$2 && !contain$3(lv, TF$1)) {
-          var x = 0,
-              y = 0,
-              z = 0;
+          var transform$1 = __computedStyle[TRANSFORM$3];
 
           if (contain$3(lv, TX)) {
             var v = __currentStyle[TRANSLATE_X];
 
-            if (isNil$9(v)) {
+            if (!v) {
               v = 0;
             } else if (v.u === PX$5) {
               v = v.v;
@@ -21754,16 +21752,13 @@
               v = this.__calSize(v, this.__offsetWidth, true);
             }
 
-            x = v - (__computedStyle[TRANSLATE_X] || 0);
-            __computedStyle[TRANSLATE_X] = v;
-            __computedStyle[TRANSFORM$3][12] += x;
-            matrixCache[12] += x;
+            transform$1[12] = matrixCache[12] = __computedStyle[TRANSLATE_X] = v;
           }
 
           if (contain$3(lv, TY)) {
             var _v = __currentStyle[TRANSLATE_Y];
 
-            if (isNil$9(_v)) {
+            if (!_v) {
               _v = 0;
             } else if (_v.u === PX$5) {
               _v = _v.v;
@@ -21771,25 +21766,21 @@
               _v = this.__calSize(_v, this.__offsetHeight, true);
             }
 
-            y = _v - (__computedStyle[TRANSLATE_Y] || 0);
-            __computedStyle[TRANSLATE_Y] = _v;
-            __computedStyle[TRANSFORM$3][13] += y;
-            matrixCache[13] += y;
+            transform$1[13] = matrixCache[13] = __computedStyle[TRANSLATE_Y] = _v;
           }
 
           if (contain$3(lv, TZ)) {
             var _v2 = __currentStyle[TRANSLATE_Z];
 
-            if (isNil$9(_v2)) {
+            if (!_v2) {
               _v2 = 0;
+            } else if (_v2.u === PX$5) {
+              _v2 = _v2.v;
             } else {
               _v2 = this.__calSize(_v2, this.__offsetWidth, true);
             }
 
-            z = _v2 - (__computedStyle[TRANSLATE_Z] || 0);
-            __computedStyle[TRANSLATE_Z] = _v2;
-            __computedStyle[TRANSFORM$3][14] += z;
-            matrixCache[14] += z;
+            transform$1[14] = matrixCache[14] = __computedStyle[TRANSLATE_Z] = _v2;
           }
 
           __cacheStyle[MATRIX$1] = matrixCache;

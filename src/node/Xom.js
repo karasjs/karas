@@ -964,10 +964,10 @@ class Xom extends Node {
     let matrixCache = __cacheStyle[MATRIX];
     // tx/ty/tz变化特殊优化
     if(matrixCache && lv < REFLOW && !contain(lv, TF)) {
-      let x = 0, y = 0, z = 0;
+      let transform = __computedStyle[TRANSFORM];
       if(contain(lv, TX)) {
         let v = __currentStyle[TRANSLATE_X];
-        if(isNil(v)) {
+        if(!v) {
           v = 0;
         }
         else if(v.u === PX) {
@@ -976,14 +976,11 @@ class Xom extends Node {
         else {
           v = this.__calSize(v, this.__offsetWidth, true);
         }
-        x = v - (__computedStyle[TRANSLATE_X] || 0);
-        __computedStyle[TRANSLATE_X] = v;
-        __computedStyle[TRANSFORM][12] += x;
-        matrixCache[12] += x;
+        transform[12] = matrixCache[12] = __computedStyle[TRANSLATE_X] = v;
       }
       if(contain(lv, TY)) {
         let v = __currentStyle[TRANSLATE_Y];
-        if(isNil(v)) {
+        if(!v) {
           v = 0;
         }
         else if(v.u === PX) {
@@ -992,23 +989,20 @@ class Xom extends Node {
         else {
           v = this.__calSize(v, this.__offsetHeight, true);
         }
-        y = v - (__computedStyle[TRANSLATE_Y] || 0);
-        __computedStyle[TRANSLATE_Y] = v;
-        __computedStyle[TRANSFORM][13] += y;
-        matrixCache[13] += y;
+        transform[13] = matrixCache[13] = __computedStyle[TRANSLATE_Y] = v;
       }
       if(contain(lv, TZ)) {
         let v = __currentStyle[TRANSLATE_Z];
-        if(isNil(v)) {
+        if(!v) {
           v = 0;
+        }
+        else if(v.u === PX) {
+          v = v.v;
         }
         else {
           v = this.__calSize(v, this.__offsetWidth, true);
         }
-        z = v - (__computedStyle[TRANSLATE_Z] || 0);
-        __computedStyle[TRANSLATE_Z] = v;
-        __computedStyle[TRANSFORM][14] += z;
-        matrixCache[14] += z;
+        transform[14] = matrixCache[14] = __computedStyle[TRANSLATE_Z] = v;
       }
       __cacheStyle[MATRIX] = matrixCache;
     }

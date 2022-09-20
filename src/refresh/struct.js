@@ -108,7 +108,7 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
   // 局部根节点如有perspective，则计算pm，这里不会出现嵌套，因为每个出现都会生成局部根节点
   let pm;
   if(perspective) {
-    pm = tf.calPerspectiveMatrix(perspective, perspectiveOrigin);
+    pm = tf.calPerspectiveMatrix(perspective, perspectiveOrigin[0], perspectiveOrigin[1]);
   }
   // 广度遍历，不断一层层循环下去，用2个hash暂存每层的父matrix和opacity，blur只需记住顶层，因为子的如果有一定是cacheFilter
   let list = [index];

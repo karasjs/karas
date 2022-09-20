@@ -135,7 +135,7 @@ const { GEOM } = change;
 const { mbmName, isValidMbm } = mbm;
 const { point2d,  multiply,
   multiplyRotateX, multiplyRotateY, multiplyRotateZ,
-  multiplySkewX, multiplySkewY, multiplyPerspective,
+  multiplySkewX, multiplySkewY,
   multiplyScaleX, multiplyScaleY, multiplyScaleZ } = mx;
 
 const {
@@ -149,6 +149,8 @@ const {
   TRANSFORM_ALL,
   CACHE,
 } = level;
+const { d2r } = geom;
+const { calRotateX, calRotateY, calRotateZ, calRotate3d } = tf;
 
 function getFirstEmptyInlineWidth(xom) {
   let n = 0;
@@ -1094,7 +1096,12 @@ class Xom extends Node {
             v = __computedStyle[ROTATE_X] = v.v;
             if(v) {
               matrix = matrix || mx.identity();
-              matrix = multiplyRotateX(matrix, v);
+              if(matrix) {
+                matrix = multiplyRotateX(matrix, v);
+              }
+              else {
+                matrix = calRotateX(mx.identity(), v);
+              }
             }
           }
           __computedStyle[ROTATE_Y] = 0;
@@ -1102,8 +1109,12 @@ class Xom extends Node {
           if(v) {
             v = __computedStyle[ROTATE_Y] = v.v;
             if(v) {
-              matrix = matrix || mx.identity();
-              matrix = multiplyRotateY(matrix, v);
+              if(matrix) {
+                matrix = multiplyRotateY(matrix, v);
+              }
+              else {
+                matrix = calRotateY(mx.identity(), v);
+              }
             }
           }
           __computedStyle[ROTATE_Z] = 0;
@@ -1111,8 +1122,12 @@ class Xom extends Node {
           if(v) {
             v = __computedStyle[ROTATE_Z] = v.v;
             if(v) {
-              matrix = matrix || mx.identity();
-              matrix = multiplyRotateZ(matrix, v);
+              if(matrix) {
+                matrix = multiplyRotateZ(matrix, v);
+              }
+              else {
+                matrix = calRotateZ(mx.identity(), v);
+              }
             }
           }
           __computedStyle[ROTATE_3D] = [0, 0, 0, 0];
@@ -1120,8 +1135,12 @@ class Xom extends Node {
           if(v) {
             v = __computedStyle[ROTATE_3D] = [v[0], v[1], v[2], v[3].v];
             if((v[0] || v[1] || v[2]) && v[3]) {
-              matrix = matrix || mx.identity();
-              matrix = multiply(matrix, tf.calRotate3d(mx.identity(), v));
+              if(matrix) {
+                matrix = multiply(matrix, calRotate3d(mx.identity(), v));
+              }
+              else {
+                matrix = calRotate3d(mx.identity(), v);
+              }
             }
           }
           __computedStyle[SKEW_X] = 0;
@@ -1129,8 +1148,13 @@ class Xom extends Node {
           if(v) {
             v = __computedStyle[SKEW_X] = v.v;
             if(v) {
-              matrix = matrix || mx.identity();
-              matrix = multiplySkewX(matrix, v);
+              if(matrix) {
+                matrix = multiplySkewX(matrix, d2r(v));
+              }
+              else {
+                matrix = mx.identity();
+                matrix[4] = Math.tan(d2r(v));
+              }
             }
           }
           __computedStyle[SKEW_Y] = 0;
@@ -1138,8 +1162,13 @@ class Xom extends Node {
           if(v) {
             v = __computedStyle[SKEW_Y] = v.v;
             if(v) {
-              matrix = matrix || mx.identity();
-              matrix = multiplySkewY(matrix, v);
+              if(matrix) {
+                matrix = multiplySkewY(matrix, d2r(v));
+              }
+              else {
+                matrix = mx.identity();
+                matrix[1] = Math.tan(d2r(v));
+              }
             }
           }
           __computedStyle[SCALE_X] = 1;
@@ -1147,8 +1176,13 @@ class Xom extends Node {
           if(v) {
             v = __computedStyle[SCALE_X] = v.v;
             if(v !== 1) {
-              matrix = matrix || mx.identity();
-              matrix = multiplyScaleX(matrix, v);
+              if(matrix) {
+                matrix = multiplyScaleX(matrix, v);
+              }
+              else {
+                matrix = mx.identity();
+                matrix[0] = v;
+              }
             }
           }
           __computedStyle[SCALE_Y] = 1;
@@ -1156,8 +1190,13 @@ class Xom extends Node {
           if(v) {
             v = __computedStyle[SCALE_Y] = v.v;
             if(v !== 1) {
-              matrix = matrix || mx.identity();
-              matrix = multiplyScaleY(matrix, v);
+              if(matrix) {
+                matrix = multiplyScaleY(matrix, v);
+              }
+              else {
+                matrix = mx.identity();
+                matrix[5] = v;
+              }
             }
           }
           __computedStyle[SCALE_Z] = 1;
@@ -1165,8 +1204,13 @@ class Xom extends Node {
           if(v) {
             v = __computedStyle[SCALE_Z] = v.v;
             if(v !== 1) {
-              matrix = matrix || mx.identity();
-              matrix = multiplyScaleZ(matrix, v);
+              if(matrix) {
+                matrix = multiplyScaleZ(matrix, v);
+              }
+              else {
+                matrix = mx.identity();
+                matrix[10] = v;
+              }
             }
           }
         }
@@ -1558,7 +1602,7 @@ class Xom extends Node {
   }
 
   __calPerspective(__currentStyle, __computedStyle, __cacheStyle) {
-    this.__perspectiveMatrix = [];
+    this.__perspectiveMatrix = null;
     let rebuild;
     let { __sx1, __sy1 } = this;
     if(isNil(__cacheStyle[PERSPECTIVE])) {
@@ -1577,10 +1621,8 @@ class Xom extends Node {
     let ppt = __computedStyle[PERSPECTIVE];
     // perspective为0无效
     if(rebuild && ppt) {
-      let po = __computedStyle[PERSPECTIVE_ORIGIN].slice(0);
-      po[0] += __sx1 || 0;
-      po[1] += __sy1 || 0;
-      this.__perspectiveMatrix = tf.calPerspectiveMatrix(ppt, po);
+      let po = __computedStyle[PERSPECTIVE_ORIGIN];
+      this.__perspectiveMatrix = tf.calPerspectiveMatrix(ppt, po[0] + __sx1, po[1] + __sy1);
     }
     return this.__perspectiveMatrix;
   }

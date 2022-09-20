@@ -57,28 +57,13 @@ function calSingle(t, k, v) {
     t[1] = Math.tan(v);
   }
   else if(k === ROTATE_X) {
-    v = d2r(v);
-    let sin = Math.sin(v);
-    let cos = Math.cos(v);
-    t[5] = t[10] = cos;
-    t[6] = sin;
-    t[9] = -sin;
+    calRotateX(t, v);
   }
   else if(k === ROTATE_Y) {
-    v = d2r(v);
-    let sin = Math.sin(v);
-    let cos = Math.cos(v);
-    t[0] = t[10] = cos;
-    t[8] = sin;
-    t[2] = -sin;
+    calRotateY(t, v);
   }
   else if(k === ROTATE_Z) {
-    v = d2r(v);
-    let sin = Math.sin(v);
-    let cos = Math.cos(v);
-    t[0] = t[5] = cos;
-    t[1] = sin;
-    t[4] = -sin;
+    calRotateZ(t, v);
   }
   else if(k === ROTATE_3D) {
     calRotate3d(t, v);
@@ -90,6 +75,36 @@ function calSingle(t, k, v) {
   else if(k === MATRIX) {
     util.assignMatrix(t, v);
   }
+}
+
+function calRotateX(t, v) {
+  v = d2r(v);
+  let sin = Math.sin(v);
+  let cos = Math.cos(v);
+  t[5] = t[10] = cos;
+  t[6] = sin;
+  t[9] = -sin;
+  return t;
+}
+
+function calRotateY(t, v) {
+  v = d2r(v);
+  let sin = Math.sin(v);
+  let cos = Math.cos(v);
+  t[0] = t[10] = cos;
+  t[8] = sin;
+  t[2] = -sin;
+  return t;
+}
+
+function calRotateZ(t, v) {
+  v = d2r(v);
+  let sin = Math.sin(v);
+  let cos = Math.cos(v);
+  t[0] = t[5] = cos;
+  t[1] = sin;
+  t[4] = -sin;
+  return t;
 }
 
 function calRotate3d(t, v) {
@@ -216,7 +231,6 @@ function calMatrix(transform, ow, oh, root) {
 
 // 已有计算好的变换矩阵，根据tfo原点计算最终的matrix
 function calMatrixByOrigin(m, ox, oy) {
-  // let [ox, oy] = transformOrigin;
   let res = m.slice(0);
   if(ox === 0 && oy === 0 || isE(m)) {
     return res;
@@ -265,19 +279,11 @@ function calSingleValue(k, v, ow, oh, root) {
   return v.v;
 }
 
-function calMatrixByPerspective(m, pm) {
-  if(!isE(pm)) {
-    m = multiply(pm, m);
-  }
-  return m;
-}
-
-function calPerspectiveMatrix(ppt, po) {
+function calPerspectiveMatrix(ppt, ox, oy) {
   if(ppt && ppt > 0) {
     let res = identity();
     ppt = Math.max(ppt, 1);
     res[11] = -1 / ppt;
-    let [ox, oy] = po;
     if(ox || oy) {
       res = tfoMultiply(ox, oy, res);
       res = multiplyTfo(res, -ox, -oy);
@@ -297,7 +303,9 @@ function isPerspectiveMatrix(m) {
 export default {
   calSingleValue,
   calMatrix,
-  calMatrixByPerspective,
+  calRotateX,
+  calRotateY,
+  calRotateZ,
   calRotate3d,
   calPerspectiveMatrix,
   calMatrixByOrigin,

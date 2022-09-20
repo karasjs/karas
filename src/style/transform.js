@@ -22,7 +22,7 @@ const { STYLE_KEY: {
 }} = enums;
 const { PX, PERCENT, REM, VW, VH, VMAX, VMIN } = unit;
 const { matrix, geom } = math;
-const { identity, multiply, multiplyTfo, isE } = matrix;
+const { identity, multiply, multiplyTfo, tfoMultiply, isE } = matrix;
 const { d2r } = geom;
 
 function calSingle(t, k, v) {
@@ -172,7 +172,7 @@ function calMatrixByOrigin(m, transformOrigin) {
   if(ox === 0 && oy === 0 || isE(m)) {
     return res;
   }
-  res = multiply([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ox, oy, 0, 1], res);
+  res = tfoMultiply(ox, oy, res);
   res = multiplyTfo(res, -ox, -oy);
   return res;
 }
@@ -230,7 +230,7 @@ function calPerspectiveMatrix(ppt, po) {
     res[11] = -1 / ppt;
     let [ox, oy] = po;
     if(ox || oy) {
-      res = multiply([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ox, oy, 0, 1], res);
+      res = tfoMultiply(ox, oy, res);
       res = multiplyTfo(res, -ox, -oy);
     }
     return res;

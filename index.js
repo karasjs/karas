@@ -536,11 +536,31 @@
       return m;
     }
 
-    var res = m.slice(0);
-    res[12] = m[0] * x + m[4] * y + m[12];
-    res[13] = m[1] * x + m[5] * y + m[13];
-    res[14] = m[2] * x + m[6] * y + m[14];
-    return res;
+    m[12] = m[0] * x + m[4] * y + m[12];
+    m[13] = m[1] * x + m[5] * y + m[13];
+    m[14] = m[2] * x + m[6] * y + m[14];
+    m[15] = m[3] * x + m[7] * y + m[15];
+    return m;
+  }
+
+  function tfoMultiply$1(x, y, m) {
+    if (x === 0 && y === 0) {
+      return m;
+    }
+
+    var d = m[3],
+        h = m[7],
+        l = m[11],
+        p = m[15];
+    m[0] = m[0] + d * x;
+    m[1] = m[1] + d * y;
+    m[4] = m[4] + h * x;
+    m[5] = m[5] + h * y;
+    m[8] = m[8] + l * x;
+    m[9] = m[9] + l * y;
+    m[12] = m[12] + p * x;
+    m[13] = m[13] + p * y;
+    return m;
   }
 
   function calPoint$2(point, m) {
@@ -714,6 +734,7 @@
     identity: identity$1,
     multiply: multiply$3,
     multiplyTfo: multiplyTfo$1,
+    tfoMultiply: tfoMultiply$1,
     calPoint: calPoint$2,
     point2d: point2d$1,
     inverse: inverse$1,
@@ -13894,6 +13915,7 @@
   var identity = matrix.identity,
       multiply$2 = matrix.multiply,
       multiplyTfo = matrix.multiplyTfo,
+      tfoMultiply = matrix.tfoMultiply,
       isE$3 = matrix.isE;
   var d2r = geom.d2r;
 
@@ -14049,7 +14071,7 @@
       return res;
     }
 
-    res = multiply$2([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ox, oy, 0, 1], res);
+    res = tfoMultiply(ox, oy, res);
     res = multiplyTfo(res, -ox, -oy);
     return res;
   } // img缩放svg下专用，无rem
@@ -14105,7 +14127,7 @@
           oy = _po[1];
 
       if (ox || oy) {
-        res = multiply$2([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ox, oy, 0, 1], res);
+        res = tfoMultiply(ox, oy, res);
         res = multiplyTfo(res, -ox, -oy);
       }
 

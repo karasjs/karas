@@ -33,11 +33,27 @@ function multiplyTfo(m, x, y) {
   if(x === 0 && y === 0) {
     return m;
   }
-  let res = m.slice(0);
-  res[12] = m[0] * x + m[4] * y + m[12];
-  res[13] = m[1] * x + m[5] * y + m[13];
-  res[14] = m[2] * x + m[6] * y + m[14];
-  return res;
+  m[12] = m[0] * x + m[4] * y + m[12];
+  m[13] = m[1] * x + m[5] * y + m[13];
+  m[14] = m[2] * x + m[6] * y + m[14];
+  m[15] = m[3] * x + m[7] * y + m[15];
+  return m;
+}
+
+function tfoMultiply(x, y, m) {
+  if(x === 0 && y === 0) {
+    return m;
+  }
+  let d = m[3], h = m[7], l = m[11], p = m[15];
+  m[0] = m[0] + d * x;
+  m[1] = m[1] + d * y;
+  m[4] = m[4] + h * x;
+  m[5] = m[5] + h * y;
+  m[8] = m[8] + l * x;
+  m[9] = m[9] + l * y;
+  m[12] = m[12] + p * x;
+  m[13] = m[13] + p * y;
+  return m;
 }
 
 function calPoint(point, m) {
@@ -196,6 +212,7 @@ export default {
   identity,
   multiply,
   multiplyTfo,
+  tfoMultiply,
   calPoint,
   point2d,
   inverse,

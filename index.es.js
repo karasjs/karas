@@ -9361,7 +9361,11 @@ function equalStyle$2(k, a, b, target) {
       var av = oa.v,
           bv = ob.v;
 
-      if (av.u !== bv.u || av.v !== bv.v) {
+      if (oa.k === MATRIX$4) {
+        if (!equalArr$1(av, bv)) {
+          return false;
+        }
+      } else if (av.u !== bv.u || av.v !== bv.v) {
         return false;
       }
     }
@@ -21185,7 +21189,8 @@ var Xom = /*#__PURE__*/function (_Node) {
       }
 
       var width = currentStyle[WIDTH$5],
-          height = currentStyle[HEIGHT$5]; // 布局前固定尺寸的线设置好，子元素percent尺寸要用到
+          height = currentStyle[HEIGHT$5];
+      this.__width = this.__height = 0; // 布局前固定尺寸的线设置好，子元素percent尺寸要用到，flex的子元素侧轴stretch也要特殊提前处理，认为定高
 
       if (width.u !== AUTO$4) {
         this.__width = computedStyle[WIDTH$5] = this.__calSize(width, isRoot ? this.__width : parent.__width, true);
@@ -21193,6 +21198,19 @@ var Xom = /*#__PURE__*/function (_Node) {
 
       if (height.u !== AUTO$4) {
         this.__height = computedStyle[HEIGHT$5] = this.__calSize(height, isRoot ? this.__height : parent.__height, true);
+      } else {
+        var p = this.__domParent;
+
+        if (p) {
+          var crs = p.__currentStyle;
+          var alignSelf = currentStyle[ALIGN_SELF$1]; // flex的子元素stretch提前处理认为高度，以便其子元素%高度计算
+
+          if (crs[DISPLAY$6] === 'flex' && p.__height) {
+            if (crs[FLEX_DIRECTION$1].indexOf('row') > -1 && (alignSelf === 'stretch' || crs[ALIGN_ITEMS$1] === 'stretch' && alignSelf === 'auto')) {
+              this.__height = p.__height;
+            }
+          }
+        }
       }
     }
   }, {
@@ -21591,7 +21609,7 @@ var Xom = /*#__PURE__*/function (_Node) {
       } else if (h3 !== undefined) {
         fixedHeight = true;
         h = h3;
-      } // height的百分比需要parent有值不能auto，abs的百分比相对于container
+      } // height的百分比需要parent有值不能auto，或者parent的flex定高且侧轴stretch时；abs的百分比相对于container
       else if (height.u !== AUTO$4 && !isInline) {
         if (position === 'absolute' && height.u === PERCENT$4) {
           h = this.__calSize(height, container.__clientHeight, true);
@@ -21599,7 +21617,8 @@ var Xom = /*#__PURE__*/function (_Node) {
           var p = this.__domParent;
 
           if (height.u === PERCENT$4) {
-            if (p.__currentStyle[HEIGHT$5].u !== AUTO$4) {
+            // 一般都是0，除了定高，或者flex的stretch
+            if (p.height) {
               fixedHeight = true;
               h = this.__calSize(height, p.height || 0, true);
             }

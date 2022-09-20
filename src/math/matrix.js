@@ -28,6 +28,18 @@ function multiply(a, b) {
   return c;
 }
 
+// 特殊优化，b为tfo，因此既只有12/13/14有值
+function multiplyTfo(m, x, y) {
+  if(x === 0 && y === 0) {
+    return m;
+  }
+  let res = m.slice(0);
+  res[12] = m[0] * x + m[4] * y + m[12];
+  res[13] = m[1] * x + m[5] * y + m[13];
+  res[14] = m[2] * x + m[6] * y + m[14];
+  return res;
+}
+
 function calPoint(point, m) {
   let [x, y, z, w] = point;
   if(w === undefined) {
@@ -183,6 +195,7 @@ function point2d(point) {
 export default {
   identity,
   multiply,
+  multiplyTfo,
   calPoint,
   point2d,
   inverse,

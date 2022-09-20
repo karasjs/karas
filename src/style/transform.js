@@ -22,7 +22,7 @@ const { STYLE_KEY: {
 }} = enums;
 const { PX, PERCENT, REM, VW, VH, VMAX, VMIN } = unit;
 const { matrix, geom } = math;
-const { identity, multiply, isE } = matrix;
+const { identity, multiply, multiplyTfo, isE } = matrix;
 const { d2r } = geom;
 
 function calSingle(t, k, v) {
@@ -156,7 +156,7 @@ function calSingle(t, k, v) {
 
 function calMatrix(transform, ow, oh, root) {
   let m = identity();
-  for(let i = 0, len = transform; i < len; i++) {
+  for(let i = 0, len = transform.length; i < len; i++) {
     let item = transform[i];
     let t = identity();
     calSingle(t, item.k, normalizeSingle(item.k, item.v, ow, oh, root));
@@ -173,7 +173,7 @@ function calMatrixByOrigin(m, transformOrigin) {
     return res;
   }
   res = multiply([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ox, oy, 0, 1], res);
-  res = multiply(res, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -ox, -oy, 0, 1]);
+  res = multiplyTfo(res, -ox, -oy);
   return res;
 }
 
@@ -231,7 +231,7 @@ function calPerspectiveMatrix(ppt, po) {
     let [ox, oy] = po;
     if(ox || oy) {
       res = multiply([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ox, oy, 0, 1], res);
-      res = multiply(res, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -ox, -oy, 0, 1]);
+      res = multiplyTfo(res, -ox, -oy);
     }
     return res;
   }

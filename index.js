@@ -528,6 +528,19 @@
     }
 
     return c;
+  } // 特殊优化，b为tfo，因此既只有12/13/14有值
+
+
+  function multiplyTfo$1(m, x, y) {
+    if (x === 0 && y === 0) {
+      return m;
+    }
+
+    var res = m.slice(0);
+    res[12] = m[0] * x + m[4] * y + m[12];
+    res[13] = m[1] * x + m[5] * y + m[13];
+    res[14] = m[2] * x + m[6] * y + m[14];
+    return res;
   }
 
   function calPoint$2(point, m) {
@@ -700,6 +713,7 @@
   var mx = {
     identity: identity$1,
     multiply: multiply$3,
+    multiplyTfo: multiplyTfo$1,
     calPoint: calPoint$2,
     point2d: point2d$1,
     inverse: inverse$1,
@@ -13879,6 +13893,7 @@
       geom = math.geom;
   var identity = matrix.identity,
       multiply$2 = matrix.multiply,
+      multiplyTfo = matrix.multiplyTfo,
       isE$3 = matrix.isE;
   var d2r = geom.d2r;
 
@@ -14012,7 +14027,7 @@
   function calMatrix(transform, ow, oh, root) {
     var m = identity();
 
-    for (var i = 0, len = transform; i < len; i++) {
+    for (var i = 0, len = transform.length; i < len; i++) {
       var item = transform[i];
       var t = identity();
       calSingle(t, item.k, normalizeSingle(item.k, item.v, ow, oh, root));
@@ -14035,7 +14050,7 @@
     }
 
     res = multiply$2([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ox, oy, 0, 1], res);
-    res = multiply$2(res, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -ox, -oy, 0, 1]);
+    res = multiplyTfo(res, -ox, -oy);
     return res;
   } // img缩放svg下专用，无rem
 
@@ -14091,7 +14106,7 @@
 
       if (ox || oy) {
         res = multiply$2([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ox, oy, 0, 1], res);
-        res = multiply$2(res, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -ox, -oy, 0, 1]);
+        res = multiplyTfo(res, -ox, -oy);
       }
 
       return res;

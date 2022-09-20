@@ -457,12 +457,28 @@ class Xom extends Node {
       [WIDTH]: width,
       [HEIGHT]: height,
     } = currentStyle;
-    // 布局前固定尺寸的线设置好，子元素percent尺寸要用到
+    this.__width = this.__height = 0;
+    // 布局前固定尺寸的线设置好，子元素percent尺寸要用到，flex的子元素侧轴stretch也要特殊提前处理，认为定高
     if(width.u !== AUTO) {
       this.__width = computedStyle[WIDTH] = this.__calSize(width, isRoot ? this.__width : parent.__width, true);
     }
     if(height.u !== AUTO) {
       this.__height = computedStyle[HEIGHT] = this.__calSize(height, isRoot ? this.__height : parent.__height, true);
+    }
+    else {
+      let p = this.__domParent;
+      if(p) {
+        let crs = p.__currentStyle;
+        let alignSelf = currentStyle[ALIGN_SELF];
+        // flex的子元素stretch提前处理认为高度，以便其子元素%高度计算
+        if(crs[DISPLAY] === 'flex' && p.__height) {
+          if(crs[FLEX_DIRECTION].indexOf('row') > -1
+            && (alignSelf === 'stretch'
+            || crs[ALIGN_ITEMS] === 'stretch' && alignSelf === 'auto')) {
+            this.__height = p.__height;
+          }
+        }
+      }
     }
   }
 
@@ -830,7 +846,7 @@ class Xom extends Node {
       fixedHeight = true;
       h = h3;
     }
-    // height的百分比需要parent有值不能auto，abs的百分比相对于container
+    // height的百分比需要parent有值不能auto，或者parent的flex定高且侧轴stretch时；abs的百分比相对于container
     else if(height.u !== AUTO && !isInline) {
       if(position === 'absolute' && height.u === PERCENT) {
         h = this.__calSize(height, container.__clientHeight, true);
@@ -838,7 +854,8 @@ class Xom extends Node {
       else {
         let p = this.__domParent;
         if(height.u === PERCENT) {
-          if(p.__currentStyle[HEIGHT].u !== AUTO) {
+          // 一般都是0，除了定高，或者flex的stretch
+          if(p.height) {
             fixedHeight = true;
             h = this.__calSize(height, p.height || 0, true);
           }

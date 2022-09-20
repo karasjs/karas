@@ -21739,6 +21739,9 @@
         var matrixCache = __cacheStyle[MATRIX$1]; // tx/ty/tz变化特殊优化
 
         if (matrixCache && lv < REFLOW$2 && !contain$3(lv, TF$1)) {
+          var x = 0,
+              y = 0,
+              z = 0;
           var transform$1 = __computedStyle[TRANSFORM$3];
 
           if (contain$3(lv, TX)) {
@@ -21752,7 +21755,9 @@
               v = this.__calSize(v, this.__offsetWidth, true);
             }
 
-            transform$1[12] = matrixCache[12] = __computedStyle[TRANSLATE_X] = v;
+            x = v - (__computedStyle[TRANSLATE_X] || 0);
+            transform$1[12] = __computedStyle[TRANSLATE_X] = v;
+            matrixCache[12] += x;
           }
 
           if (contain$3(lv, TY)) {
@@ -21766,7 +21771,9 @@
               _v = this.__calSize(_v, this.__offsetHeight, true);
             }
 
-            transform$1[13] = matrixCache[13] = __computedStyle[TRANSLATE_Y] = _v;
+            y = _v - (__computedStyle[TRANSLATE_Y] || 0);
+            transform$1[13] = __computedStyle[TRANSLATE_Y] = _v;
+            matrixCache[13] += y;
           }
 
           if (contain$3(lv, TZ)) {
@@ -21780,7 +21787,9 @@
               _v2 = this.__calSize(_v2, this.__offsetWidth, true);
             }
 
-            transform$1[14] = matrixCache[14] = __computedStyle[TRANSLATE_Z] = _v2;
+            z = _v2 - (__computedStyle[TRANSLATE_Z] || 0);
+            transform$1[14] = __computedStyle[TRANSLATE_Z] = _v2;
+            matrixCache[14] += z;
           }
 
           __cacheStyle[MATRIX$1] = matrixCache;

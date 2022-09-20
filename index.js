@@ -14160,7 +14160,7 @@
     } else if (k === ROTATE_Z$4) {
       calRotateZ$1(t, v);
     } else if (k === ROTATE_3D$3) {
-      calRotate3d$1(t, v);
+      calRotate3d$1(t, v.v);
     } else if (k === PERSPECTIVE$3 && v > 0) {
       v = Math.max(v, 1);
       t[11] = -1 / v;
@@ -14206,7 +14206,7 @@
         z = _v[2],
         r = _v[3];
 
-    r = d2r$1(r.v);
+    r = d2r$1(r);
     var s = Math.sin(r);
     var c = Math.cos(r);
 
@@ -22005,9 +22005,9 @@
           return __cacheStyle[MATRIX$1] = this.__matrix = mx.identity();
         }
 
-        var matrixCache = __cacheStyle[MATRIX$1]; // tx/ty/tz变化特殊优化
+        var matrixCache = __cacheStyle[MATRIX$1]; // tx/ty/tz变化特殊优化，d/h/l不能有值，否则不能这样直接简化运算
 
-        if (matrixCache && lv < REFLOW$2 && !contain$3(lv, TF$1)) {
+        if (matrixCache && lv < REFLOW$2 && !contain$3(lv, TF$1) && !transform.isPerspectiveMatrix(matrixCache)) {
           var x = 0,
               y = 0,
               z = 0;

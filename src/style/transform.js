@@ -66,7 +66,7 @@ function calSingle(t, k, v) {
     calRotateZ(t, v);
   }
   else if(k === ROTATE_3D) {
-    calRotate3d(t, v);
+    calRotate3d(t, v.v);
   }
   else if(k === PERSPECTIVE && v > 0) {
     v = Math.max(v, 1);
@@ -109,7 +109,7 @@ function calRotateZ(t, v) {
 
 function calRotate3d(t, v) {
   let [x, y, z, r] = v;
-  r = d2r(r.v);
+  r = d2r(r);
   let s = Math.sin(r);
   let c = Math.cos(r);
   if(x && !y && !z) {

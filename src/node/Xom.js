@@ -1097,7 +1097,7 @@ class Xom extends Node {
             if(v) {
               matrix = matrix || mx.identity();
               if(matrix) {
-                matrix = multiplyRotateX(matrix, v);
+                matrix = multiplyRotateX(matrix, d2r(v));
               }
               else {
                 matrix = calRotateX(mx.identity(), v);
@@ -1110,7 +1110,7 @@ class Xom extends Node {
             v = __computedStyle[ROTATE_Y] = v.v;
             if(v) {
               if(matrix) {
-                matrix = multiplyRotateY(matrix, v);
+                matrix = multiplyRotateY(matrix, d2r(v));
               }
               else {
                 matrix = calRotateY(mx.identity(), v);
@@ -1123,7 +1123,7 @@ class Xom extends Node {
             v = __computedStyle[ROTATE_Z] = v.v;
             if(v) {
               if(matrix) {
-                matrix = multiplyRotateZ(matrix, v);
+                matrix = multiplyRotateZ(matrix, d2r(v));
               }
               else {
                 matrix = calRotateZ(mx.identity(), v);

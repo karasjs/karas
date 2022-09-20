@@ -202,8 +202,8 @@ function multiplyScaleZ(m, v) {
 }
 
 function multiplyPerspective(m, v) {
-  if(!v || v < 0) {
-    return;
+  if(!v || v <= 0) {
+    return m;
   }
   v = Math.max(v, 1);
   v = -1 / v;

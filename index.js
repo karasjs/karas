@@ -741,8 +741,8 @@
   }
 
   function multiplyPerspective$1(m, v) {
-    if (!v || v < 0) {
-      return;
+    if (!v || v <= 0) {
+      return m;
     }
 
     v = Math.max(v, 1);
@@ -22128,7 +22128,7 @@
                   matrix = matrix || mx.identity();
 
                   if (matrix) {
-                    matrix = multiplyRotateX(matrix, _v3);
+                    matrix = multiplyRotateX(matrix, d2r(_v3));
                   } else {
                     matrix = calRotateX(mx.identity(), _v3);
                   }
@@ -22143,7 +22143,7 @@
 
                 if (_v3) {
                   if (matrix) {
-                    matrix = multiplyRotateY(matrix, _v3);
+                    matrix = multiplyRotateY(matrix, d2r(_v3));
                   } else {
                     matrix = calRotateY(mx.identity(), _v3);
                   }
@@ -22158,7 +22158,7 @@
 
                 if (_v3) {
                   if (matrix) {
-                    matrix = multiplyRotateZ(matrix, _v3);
+                    matrix = multiplyRotateZ(matrix, d2r(_v3));
                   } else {
                     matrix = calRotateZ(mx.identity(), _v3);
                   }

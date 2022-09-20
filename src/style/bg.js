@@ -39,8 +39,7 @@ function renderBgc(xom, renderMode, ctx, color, list, x, y, w, h, btlr, btrr, bb
   }
   // 椭圆有matrix，用逆矩阵变化点来完成
   if(matrix) {
-    let tfo = [cx, cy];
-    matrix = transform.calMatrixByOrigin(matrix, tfo);
+    matrix = transform.calMatrixByOrigin(matrix, cx, cy);
     let t = mx.inverse(matrix);
     list = list.map(item => {
       if(!item || !item.length) {

@@ -546,8 +546,7 @@ class Geom extends Xom {
     } = res;
     let [color, matrix, cx, cy] = res[method].v;
     // 椭圆渐变的转换，顶点逆矩阵变换
-    let tfo = [cx, cy];
-    matrix = transform.calMatrixByOrigin(matrix, tfo);
+    matrix = transform.calMatrixByOrigin(matrix, cx, cy);
     let t = mx.inverse(matrix);
     list = this.__inversePtList(list, isMulti, t, dx, dy);
     // 用正向matrix渲染

@@ -81,73 +81,7 @@ function calSingle(t, k, v) {
     t[4] = -sin;
   }
   else if(k === ROTATE_3D) {
-    let [x, y, z, r] = v;
-    r = d2r(r.v);
-    let s = Math.sin(r);
-    let c = Math.cos(r);
-    if(x && !y && !z) {
-      if(x < 0) {
-        s = -s;
-      }
-      t[5] = c;
-      t[9] = -s;
-      t[6] = s;
-      t[10] = c;
-    }
-    else if(y && !x && !z) {
-      if(y < 0) {
-        s = -s;
-      }
-      t[0] = c;
-      t[8] = s;
-      t[2] = -s;
-      t[10] = c;
-    }
-    else if(z && !x && !y) {
-      if(z < 0) {
-        s = -s;
-      }
-      t[0] = c;
-      t[4] = -s;
-      t[1] = s;
-      t[5] = c;
-    }
-    else {
-      let len = Math.sqrt(x * x + y * y + z * z);
-      if(len !== 1) {
-        let rlen = 1 / len;
-        x *= rlen;
-        y *= rlen;
-        z *= rlen;
-      }
-      let nc = 1 - c;
-      let xy = x * y;
-      let yz = y * z;
-      let zx = z * x;
-      let xs = x * s;
-      let ys = y * s;
-      let zs = z * s;
-
-      t[0] = x * x * nc + c;
-      t[1] = xy * nc + zs;
-      t[2] = zx * nc - ys;
-      t[3] = 0;
-
-      t[4] = xy * nc - zs;
-      t[5] = y * y * nc + c;
-      t[6] = yz * nc + xs;
-      t[7] = 0;
-
-      t[8] = zx * nc + ys;
-      t[9] = yz * nc - xs;
-      t[10] = z * z * nc + c;
-      t[11] = 0;
-
-      t[12] = 0;
-      t[13] = 0;
-      t[14] = 0;
-      t[15] = 1;
-    }
+    calRotate3d(t, v);
   }
   else if(k === PERSPECTIVE && v > 0) {
     v = Math.max(v, 1);
@@ -158,12 +92,83 @@ function calSingle(t, k, v) {
   }
 }
 
+function calRotate3d(t, v) {
+  let [x, y, z, r] = v;
+  r = d2r(r.v);
+  let s = Math.sin(r);
+  let c = Math.cos(r);
+  if(x && !y && !z) {
+    if(x < 0) {
+      s = -s;
+    }
+    t[5] = c;
+    t[9] = -s;
+    t[6] = s;
+    t[10] = c;
+  }
+  else if(y && !x && !z) {
+    if(y < 0) {
+      s = -s;
+    }
+    t[0] = c;
+    t[8] = s;
+    t[2] = -s;
+    t[10] = c;
+  }
+  else if(z && !x && !y) {
+    if(z < 0) {
+      s = -s;
+    }
+    t[0] = c;
+    t[4] = -s;
+    t[1] = s;
+    t[5] = c;
+  }
+  else {
+    let len = Math.sqrt(x * x + y * y + z * z);
+    if(len !== 1) {
+      let rlen = 1 / len;
+      x *= rlen;
+      y *= rlen;
+      z *= rlen;
+    }
+    let nc = 1 - c;
+    let xy = x * y;
+    let yz = y * z;
+    let zx = z * x;
+    let xs = x * s;
+    let ys = y * s;
+    let zs = z * s;
+
+    t[0] = x * x * nc + c;
+    t[1] = xy * nc + zs;
+    t[2] = zx * nc - ys;
+    t[3] = 0;
+
+    t[4] = xy * nc - zs;
+    t[5] = y * y * nc + c;
+    t[6] = yz * nc + xs;
+    t[7] = 0;
+
+    t[8] = zx * nc + ys;
+    t[9] = yz * nc - xs;
+    t[10] = z * z * nc + c;
+    t[11] = 0;
+
+    t[12] = 0;
+    t[13] = 0;
+    t[14] = 0;
+    t[15] = 1;
+  }
+  return t;
+}
+
 function calMatrix(transform, ow, oh, root) {
   let m = identity();
   for(let i = 0, len = transform.length; i < len; i++) {
     let item = transform[i];
     let k = item.k;
-    let v = normalizeSingle(k, item.v, ow, oh, root);
+    let v = calSingleValue(k, item.v, ow, oh, root);
     if(k === TRANSLATE_X) {
       m = multiplyTranslateX(m, v);
     }
@@ -210,8 +215,8 @@ function calMatrix(transform, ow, oh, root) {
 }
 
 // 已有计算好的变换矩阵，根据tfo原点计算最终的matrix
-function calMatrixByOrigin(m, transformOrigin) {
-  let [ox, oy] = transformOrigin;
+function calMatrixByOrigin(m, ox, oy) {
+  // let [ox, oy] = transformOrigin;
   let res = m.slice(0);
   if(ox === 0 && oy === 0 || isE(m)) {
     return res;
@@ -222,12 +227,12 @@ function calMatrixByOrigin(m, transformOrigin) {
 }
 
 // img缩放svg下专用，无rem
-function calMatrixWithOrigin(transform, transformOrigin, ow, oh) {
+function calMatrixWithOrigin(transform, ox, oy, ow, oh) {
   let m = calMatrix(transform, ow, oh);
-  return calMatrixByOrigin(m, transformOrigin);
+  return calMatrixByOrigin(m, ox, oy);
 }
 
-function normalizeSingle(k, v, ow, oh, root) {
+function calSingleValue(k, v, ow, oh, root) {
   if(k === TRANSLATE_X || k === TRANSLATE_Y || k === TRANSLATE_Z) {
     if(v.u === PX) {
       return v.v;
@@ -290,8 +295,10 @@ function isPerspectiveMatrix(m) {
 }
 
 export default {
+  calSingleValue,
   calMatrix,
   calMatrixByPerspective,
+  calRotate3d,
   calPerspectiveMatrix,
   calMatrixByOrigin,
   calMatrixWithOrigin,

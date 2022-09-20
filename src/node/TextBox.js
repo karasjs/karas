@@ -120,8 +120,7 @@ class TextBox {
               }
             }
             else {
-              let tfo = [x, y];
-              let m = transform.calMatrixWithOrigin(list, tfo, 0, 0);
+              let m = transform.calMatrixWithOrigin(list, x, y, 0, 0);
               m = mx.multiply(me, m);
               ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
               if(overFill) {
@@ -172,8 +171,7 @@ class TextBox {
                 count += fontSize;
               }
               else {
-                let tfo = [x, y + count];
-                let m = transform.calMatrixWithOrigin(list, tfo, 0, 0);
+                let m = transform.calMatrixWithOrigin(list, x, y + count, 0, 0);
                 m = mx.multiply(me, m);
                 ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
                 let s = content.slice(last, i);
@@ -224,8 +222,7 @@ class TextBox {
               }
             }
             else {
-              let tfo = [x, y + count];
-              let m = transform.calMatrixWithOrigin(list, tfo, 0, 0);
+              let m = transform.calMatrixWithOrigin(list, x, y + count, 0, 0);
               m = mx.multiply(me, m);
               ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
               if(overFill) {

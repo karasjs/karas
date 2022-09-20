@@ -501,7 +501,7 @@
   } // 矩阵a*b，固定两个matrix都是长度16
 
 
-  function multiply$3(a, b) {
+  function multiply$4(a, b) {
     if (!a && !b) {
       return identity$1();
     }
@@ -600,7 +600,7 @@
     return m;
   }
 
-  function multiplyRotateX$1(m, v) {
+  function multiplyRotateX$2(m, v) {
     if (!v) {
       return m;
     }
@@ -626,7 +626,7 @@
     return m;
   }
 
-  function multiplyRotateY$1(m, v) {
+  function multiplyRotateY$2(m, v) {
     if (!v) {
       return m;
     }
@@ -652,7 +652,7 @@
     return m;
   }
 
-  function multiplyRotateZ$1(m, v) {
+  function multiplyRotateZ$2(m, v) {
     if (!v) {
       return m;
     }
@@ -678,7 +678,7 @@
     return m;
   }
 
-  function multiplySkewX$1(m, v) {
+  function multiplySkewX$2(m, v) {
     if (!v) {
       return m;
     }
@@ -691,7 +691,7 @@
     return m;
   }
 
-  function multiplySkewY$1(m, v) {
+  function multiplySkewY$2(m, v) {
     if (!v) {
       return m;
     }
@@ -704,7 +704,7 @@
     return m;
   }
 
-  function multiplyScaleX$1(m, v) {
+  function multiplyScaleX$2(m, v) {
     if (v === 1) {
       return m;
     }
@@ -716,7 +716,7 @@
     return m;
   }
 
-  function multiplyScaleY$1(m, v) {
+  function multiplyScaleY$2(m, v) {
     if (v === 1) {
       return m;
     }
@@ -728,7 +728,7 @@
     return m;
   }
 
-  function multiplyScaleZ$1(m, v) {
+  function multiplyScaleZ$2(m, v) {
     if (v === 1) {
       return m;
     }
@@ -923,20 +923,20 @@
 
   var mx = {
     identity: identity$1,
-    multiply: multiply$3,
+    multiply: multiply$4,
     multiplyTfo: multiplyTfo$1,
     tfoMultiply: tfoMultiply$1,
     multiplyTranslateX: multiplyTranslateX$1,
     multiplyTranslateY: multiplyTranslateY$1,
     multiplyTranslateZ: multiplyTranslateZ$1,
-    multiplyRotateX: multiplyRotateX$1,
-    multiplyRotateY: multiplyRotateY$1,
-    multiplyRotateZ: multiplyRotateZ$1,
-    multiplySkewX: multiplySkewX$1,
-    multiplySkewY: multiplySkewY$1,
-    multiplyScaleX: multiplyScaleX$1,
-    multiplyScaleY: multiplyScaleY$1,
-    multiplyScaleZ: multiplyScaleZ$1,
+    multiplyRotateX: multiplyRotateX$2,
+    multiplyRotateY: multiplyRotateY$2,
+    multiplyRotateZ: multiplyRotateZ$2,
+    multiplySkewX: multiplySkewX$2,
+    multiplySkewY: multiplySkewY$2,
+    multiplyScaleX: multiplyScaleX$2,
+    multiplyScaleY: multiplyScaleY$2,
+    multiplyScaleZ: multiplyScaleZ$2,
     multiplyPerspective: multiplyPerspective$1,
     calPoint: calPoint$2,
     point2d: point2d$1,
@@ -14116,22 +14116,22 @@
   var matrix = math.matrix,
       geom = math.geom;
   var identity = matrix.identity,
-      multiply$2 = matrix.multiply,
+      multiply$3 = matrix.multiply,
       multiplyTfo = matrix.multiplyTfo,
       tfoMultiply = matrix.tfoMultiply,
       isE$3 = matrix.isE,
       multiplyTranslateX = matrix.multiplyTranslateX,
       multiplyTranslateY = matrix.multiplyTranslateY,
       multiplyTranslateZ = matrix.multiplyTranslateZ,
-      multiplyRotateX = matrix.multiplyRotateX,
-      multiplyRotateY = matrix.multiplyRotateY,
-      multiplyRotateZ = matrix.multiplyRotateZ,
-      multiplySkewX = matrix.multiplySkewX,
-      multiplySkewY = matrix.multiplySkewY,
+      multiplyRotateX$1 = matrix.multiplyRotateX,
+      multiplyRotateY$1 = matrix.multiplyRotateY,
+      multiplyRotateZ$1 = matrix.multiplyRotateZ,
+      multiplySkewX$1 = matrix.multiplySkewX,
+      multiplySkewY$1 = matrix.multiplySkewY,
       multiplyPerspective = matrix.multiplyPerspective,
-      multiplyScaleX = matrix.multiplyScaleX,
-      multiplyScaleY = matrix.multiplyScaleY,
-      multiplyScaleZ = matrix.multiplyScaleZ;
+      multiplyScaleX$1 = matrix.multiplyScaleX,
+      multiplyScaleY$1 = matrix.multiplyScaleY,
+      multiplyScaleZ$1 = matrix.multiplyScaleZ;
   var d2r = geom.d2r;
 
   function calSingle(t, k, v) {
@@ -14181,78 +14181,7 @@
       t[1] = _sin2;
       t[4] = -_sin2;
     } else if (k === ROTATE_3D$3) {
-      var _v = v,
-          _v2 = _slicedToArray(_v, 4),
-          x = _v2[0],
-          y = _v2[1],
-          z = _v2[2],
-          r = _v2[3];
-
-      r = d2r(r.v);
-      var s = Math.sin(r);
-      var c = Math.cos(r);
-
-      if (x && !y && !z) {
-        if (x < 0) {
-          s = -s;
-        }
-
-        t[5] = c;
-        t[9] = -s;
-        t[6] = s;
-        t[10] = c;
-      } else if (y && !x && !z) {
-        if (y < 0) {
-          s = -s;
-        }
-
-        t[0] = c;
-        t[8] = s;
-        t[2] = -s;
-        t[10] = c;
-      } else if (z && !x && !y) {
-        if (z < 0) {
-          s = -s;
-        }
-
-        t[0] = c;
-        t[4] = -s;
-        t[1] = s;
-        t[5] = c;
-      } else {
-        var len = Math.sqrt(x * x + y * y + z * z);
-
-        if (len !== 1) {
-          var rlen = 1 / len;
-          x *= rlen;
-          y *= rlen;
-          z *= rlen;
-        }
-
-        var nc = 1 - c;
-        var xy = x * y;
-        var yz = y * z;
-        var zx = z * x;
-        var xs = x * s;
-        var ys = y * s;
-        var zs = z * s;
-        t[0] = x * x * nc + c;
-        t[1] = xy * nc + zs;
-        t[2] = zx * nc - ys;
-        t[3] = 0;
-        t[4] = xy * nc - zs;
-        t[5] = y * y * nc + c;
-        t[6] = yz * nc + xs;
-        t[7] = 0;
-        t[8] = zx * nc + ys;
-        t[9] = yz * nc - xs;
-        t[10] = z * z * nc + c;
-        t[11] = 0;
-        t[12] = 0;
-        t[13] = 0;
-        t[14] = 0;
-        t[15] = 1;
-      }
+      calRotate3d(t, v);
     } else if (k === PERSPECTIVE$3 && v > 0) {
       v = Math.max(v, 1);
       t[11] = -1 / v;
@@ -14261,13 +14190,89 @@
     }
   }
 
+  function calRotate3d(t, v) {
+    var _v = _slicedToArray(v, 4),
+        x = _v[0],
+        y = _v[1],
+        z = _v[2],
+        r = _v[3];
+
+    r = d2r(r.v);
+    var s = Math.sin(r);
+    var c = Math.cos(r);
+
+    if (x && !y && !z) {
+      if (x < 0) {
+        s = -s;
+      }
+
+      t[5] = c;
+      t[9] = -s;
+      t[6] = s;
+      t[10] = c;
+    } else if (y && !x && !z) {
+      if (y < 0) {
+        s = -s;
+      }
+
+      t[0] = c;
+      t[8] = s;
+      t[2] = -s;
+      t[10] = c;
+    } else if (z && !x && !y) {
+      if (z < 0) {
+        s = -s;
+      }
+
+      t[0] = c;
+      t[4] = -s;
+      t[1] = s;
+      t[5] = c;
+    } else {
+      var len = Math.sqrt(x * x + y * y + z * z);
+
+      if (len !== 1) {
+        var rlen = 1 / len;
+        x *= rlen;
+        y *= rlen;
+        z *= rlen;
+      }
+
+      var nc = 1 - c;
+      var xy = x * y;
+      var yz = y * z;
+      var zx = z * x;
+      var xs = x * s;
+      var ys = y * s;
+      var zs = z * s;
+      t[0] = x * x * nc + c;
+      t[1] = xy * nc + zs;
+      t[2] = zx * nc - ys;
+      t[3] = 0;
+      t[4] = xy * nc - zs;
+      t[5] = y * y * nc + c;
+      t[6] = yz * nc + xs;
+      t[7] = 0;
+      t[8] = zx * nc + ys;
+      t[9] = yz * nc - xs;
+      t[10] = z * z * nc + c;
+      t[11] = 0;
+      t[12] = 0;
+      t[13] = 0;
+      t[14] = 0;
+      t[15] = 1;
+    }
+
+    return t;
+  }
+
   function calMatrix(transform, ow, oh, root) {
     var m = identity();
 
     for (var i = 0, len = transform.length; i < len; i++) {
       var item = transform[i];
       var k = item.k;
-      var v = normalizeSingle(k, item.v, ow, oh, root);
+      var v = calSingleValue(k, item.v, ow, oh, root);
 
       if (k === TRANSLATE_X$3) {
         m = multiplyTranslateX(m, v);
@@ -14276,27 +14281,27 @@
       } else if (k === TRANSLATE_Z$3) {
         m = multiplyTranslateZ(m, v);
       } else if (k === ROTATE_X$2) {
-        m = multiplyRotateX(m, d2r(v));
+        m = multiplyRotateX$1(m, d2r(v));
       } else if (k === ROTATE_Y$2) {
-        m = multiplyRotateY(m, d2r(v));
+        m = multiplyRotateY$1(m, d2r(v));
       } else if (k === ROTATE_Z$4) {
-        m = multiplyRotateZ(m, d2r(v));
+        m = multiplyRotateZ$1(m, d2r(v));
       } else if (k === SKEW_X$2) {
-        m = multiplySkewX(m, d2r(v));
+        m = multiplySkewX$1(m, d2r(v));
       } else if (k === SKEW_Y$2) {
-        m = multiplySkewY(m, d2r(v));
+        m = multiplySkewY$1(m, d2r(v));
       } else if (k === SCALE_X$3) {
-        m = multiplyScaleX(m, v);
+        m = multiplyScaleX$1(m, v);
       } else if (k === SCALE_Y$3) {
-        m = multiplyScaleY(m, v);
+        m = multiplyScaleY$1(m, v);
       } else if (k === SCALE_Z$2) {
-        m = multiplyScaleZ(m, v);
+        m = multiplyScaleZ$1(m, v);
       } else if (k === PERSPECTIVE$3) {
         m = multiplyPerspective(m, v);
       } else {
         var t = identity();
         calSingle(t, k, v);
-        m = multiply$2(m, t);
+        m = multiply$3(m, t);
       }
     }
 
@@ -14304,11 +14309,8 @@
   } // 已有计算好的变换矩阵，根据tfo原点计算最终的matrix
 
 
-  function calMatrixByOrigin(m, transformOrigin) {
-    var _transformOrigin = _slicedToArray(transformOrigin, 2),
-        ox = _transformOrigin[0],
-        oy = _transformOrigin[1];
-
+  function calMatrixByOrigin(m, ox, oy) {
+    // let [ox, oy] = transformOrigin;
     var res = m.slice(0);
 
     if (ox === 0 && oy === 0 || isE$3(m)) {
@@ -14321,12 +14323,12 @@
   } // img缩放svg下专用，无rem
 
 
-  function calMatrixWithOrigin(transform, transformOrigin, ow, oh) {
+  function calMatrixWithOrigin(transform, ox, oy, ow, oh) {
     var m = calMatrix(transform, ow, oh);
-    return calMatrixByOrigin(m, transformOrigin);
+    return calMatrixByOrigin(m, ox, oy);
   }
 
-  function normalizeSingle(k, v, ow, oh, root) {
+  function calSingleValue(k, v, ow, oh, root) {
     if (k === TRANSLATE_X$3 || k === TRANSLATE_Y$3 || k === TRANSLATE_Z$3) {
       if (v.u === PX$7) {
         return v.v;
@@ -14354,7 +14356,7 @@
 
   function calMatrixByPerspective(m, pm) {
     if (!isE$3(pm)) {
-      m = multiply$2(pm, m);
+      m = multiply$3(pm, m);
     }
 
     return m;
@@ -14389,8 +14391,10 @@
   }
 
   var transform = {
+    calSingleValue: calSingleValue,
     calMatrix: calMatrix,
     calMatrixByPerspective: calMatrixByPerspective,
+    calRotate3d: calRotate3d,
     calPerspectiveMatrix: calPerspectiveMatrix,
     calMatrixByOrigin: calMatrixByOrigin,
     calMatrixWithOrigin: calMatrixWithOrigin,
@@ -14537,8 +14541,7 @@
                     ctx.fillText(c, x - dev1, y - dev2);
                   }
                 } else {
-                  var tfo = [x, y];
-                  var m = transform.calMatrixWithOrigin(list, tfo, 0, 0);
+                  var m = transform.calMatrixWithOrigin(list, x, y, 0, 0);
                   m = mx.multiply(me, m);
                   ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
 
@@ -14601,9 +14604,7 @@
 
                     count += fontSize;
                   } else {
-                    var _tfo = [x, y + count];
-
-                    var _m = transform.calMatrixWithOrigin(list, _tfo, 0, 0);
+                    var _m = transform.calMatrixWithOrigin(list, x, y + count, 0, 0);
 
                     _m = mx.multiply(me, _m);
                     ctx.setTransform(_m[0], _m[1], _m[4], _m[5], _m[12], _m[13]);
@@ -14669,9 +14670,7 @@
                     ctx.fillText(_s3, x - dev1, y + count + b - dev2);
                   }
                 } else {
-                  var _tfo2 = [x, y + count];
-
-                  var _m2 = transform.calMatrixWithOrigin(list, _tfo2, 0, 0);
+                  var _m2 = transform.calMatrixWithOrigin(list, x, y + count, 0, 0);
 
                   _m2 = mx.multiply(me, _m2);
                   ctx.setTransform(_m2[0], _m2[1], _m2[4], _m2[5], _m2[12], _m2[13]);
@@ -14921,8 +14920,7 @@
                 u: DEG$1
               }
             }];
-            var tfo = [x, y];
-            var m = transform.calMatrixWithOrigin(list, tfo, 0, 0);
+            var m = transform.calMatrixWithOrigin(list, x, y, 0, 0);
             m = mx.multiply(me, m);
             ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
           }
@@ -17074,8 +17072,7 @@
         u: NUMBER$3
       }
     }];
-    var tfo = [x, y];
-    return transform.calMatrixWithOrigin(list, tfo, w, h);
+    return transform.calMatrixWithOrigin(list, x, y, w, h);
   }
 
   var image = {
@@ -17114,8 +17111,7 @@
 
 
     if (matrix) {
-      var tfo = [cx, cy];
-      matrix = transform.calMatrixByOrigin(matrix, tfo);
+      matrix = transform.calMatrixByOrigin(matrix, cx, cy);
       var t = mx.inverse(matrix);
       list = list.map(function (item) {
         if (!item || !item.length) {
@@ -21138,7 +21134,17 @@
   var GEOM = o$2.GEOM;
   var mbmName$1 = mbm.mbmName,
       isValidMbm$1 = mbm.isValidMbm;
-  var point2d = mx.point2d;
+  var point2d = mx.point2d,
+      multiply$2 = mx.multiply,
+      multiplyRotateX = mx.multiplyRotateX,
+      multiplyRotateY = mx.multiplyRotateY,
+      multiplyRotateZ = mx.multiplyRotateZ,
+      multiplySkewX = mx.multiplySkewX,
+      multiplySkewY = mx.multiplySkewY;
+      mx.multiplyPerspective;
+      var multiplyScaleX = mx.multiplyScaleX,
+      multiplyScaleY = mx.multiplyScaleY,
+      multiplyScaleZ = mx.multiplyScaleZ;
   var contain$3 = o$1.contain,
       TF$1 = o$1.TRANSFORM,
       REFLOW$2 = o$1.REFLOW,
@@ -22074,60 +22080,148 @@
               matrix = transform.calMatrix(__currentStyle[TRANSFORM$3], __offsetWidth, __offsetHeight, this.__root);
             } // 没有transform则看是否有扩展的css独立变换属性
             else {
-              var temp = [];
-              [TRANSLATE_X, TRANSLATE_Y, TRANSLATE_Z, ROTATE_X, ROTATE_Y, ROTATE_Z, ROTATE_3D, SKEW_X, SKEW_Y, SCALE_X, SCALE_Y, SCALE_Z].forEach(function (k) {
-                // 删除之前遗留的
-                __computedStyle[k] = undefined;
-                var v = __currentStyle[k];
+              __computedStyle[TRANSLATE_X] = 0;
+              var _v3 = __currentStyle[TRANSLATE_X];
 
-                if (isNil$9(v)) {
-                  return;
+              if (_v3) {
+                _v3 = __computedStyle[TRANSLATE_X] = this.__calSize(_v3, this.__offsetWidth, true);
+
+                if (_v3) {
+                  matrix = matrix || mx.identity();
+                  matrix[12] = _v3;
                 }
+              }
 
-                if (k === ROTATE_3D) {
-                  __computedStyle[k] = [v[0], v[1], v[2], v[3].v];
+              __computedStyle[TRANSLATE_Y] = 0;
+              _v3 = __currentStyle[TRANSLATE_Y];
 
-                  if (v[3].v === 0) {
-                    return;
-                  }
+              if (_v3) {
+                _v3 = __computedStyle[TRANSLATE_Y] = this.__calSize(_v3, this.__offsetHeight, true);
 
-                  temp.push({
-                    k: k,
-                    v: v
-                  });
-                  return;
+                if (_v3) {
+                  matrix = matrix || mx.identity();
+                  matrix[13] = _v3;
                 }
+              }
 
-                __computedStyle[k] = v.v;
+              __computedStyle[TRANSLATE_Z] = 0;
+              _v3 = __currentStyle[TRANSLATE_Z];
 
-                if (k === ROTATE_X || k === ROTATE_Y || k === ROTATE_Z) {
-                  if (v.v !== 0) {
-                    temp.push({
-                      k: k,
-                      v: v
-                    });
-                  }
+              if (_v3) {
+                _v3 = __computedStyle[TRANSLATE_Z] = this.__calSize(_v3, this.__offsetWidth, true);
 
-                  return;
-                } // scale为1和其它为0避免计算浪费
-
-
-                var isScale = k === SCALE_X || k === SCALE_Y || k === SCALE_Z;
-
-                if (v.v === 1 && isScale || !isScale && v.v === 0) {
-                  return;
+                if (_v3) {
+                  matrix = matrix || mx.identity();
+                  matrix[14] = _v3;
                 }
+              }
 
-                var p = k === TRANSLATE_X || k === TRANSLATE_Z ? __offsetWidth : __offsetHeight;
-                __computedStyle[k] = _this4.__calSize(v, p, true);
-                temp.push({
-                  k: k,
-                  v: v
-                });
-              });
+              __computedStyle[ROTATE_X] = 0;
+              _v3 = __currentStyle[ROTATE_X];
 
-              if (temp.length) {
-                matrix = transform.calMatrix(temp, __offsetWidth, __offsetHeight, this.__root);
+              if (_v3) {
+                _v3 = __computedStyle[ROTATE_X] = _v3.v;
+
+                if (_v3) {
+                  matrix = matrix || mx.identity();
+                  matrix = multiplyRotateX(matrix, _v3);
+                }
+              }
+
+              __computedStyle[ROTATE_Y] = 0;
+              _v3 = __currentStyle[ROTATE_Y];
+
+              if (_v3) {
+                _v3 = __computedStyle[ROTATE_Y] = _v3.v;
+
+                if (_v3) {
+                  matrix = matrix || mx.identity();
+                  matrix = multiplyRotateY(matrix, _v3);
+                }
+              }
+
+              __computedStyle[ROTATE_Z] = 0;
+              _v3 = __currentStyle[ROTATE_Z];
+
+              if (_v3) {
+                _v3 = __computedStyle[ROTATE_Z] = _v3.v;
+
+                if (_v3) {
+                  matrix = matrix || mx.identity();
+                  matrix = multiplyRotateZ(matrix, _v3);
+                }
+              }
+
+              __computedStyle[ROTATE_3D] = [0, 0, 0, 0];
+              _v3 = __currentStyle[ROTATE_3D];
+
+              if (_v3) {
+                _v3 = __computedStyle[ROTATE_3D] = [_v3[0], _v3[1], _v3[2], _v3[3].v];
+
+                if ((_v3[0] || _v3[1] || _v3[2]) && _v3[3]) {
+                  matrix = matrix || mx.identity();
+                  matrix = multiply$2(matrix, transform.calRotate3d(mx.identity(), _v3));
+                }
+              }
+
+              __computedStyle[SKEW_X] = 0;
+              _v3 = __currentStyle[SKEW_X];
+
+              if (_v3) {
+                _v3 = __computedStyle[SKEW_X] = _v3.v;
+
+                if (_v3) {
+                  matrix = matrix || mx.identity();
+                  matrix = multiplySkewX(matrix, _v3);
+                }
+              }
+
+              __computedStyle[SKEW_Y] = 0;
+              _v3 = __currentStyle[SKEW_Y];
+
+              if (_v3) {
+                _v3 = __computedStyle[SKEW_Y] = _v3.v;
+
+                if (_v3) {
+                  matrix = matrix || mx.identity();
+                  matrix = multiplySkewY(matrix, _v3);
+                }
+              }
+
+              __computedStyle[SCALE_X] = 1;
+              _v3 = __currentStyle[SCALE_X];
+
+              if (_v3) {
+                _v3 = __computedStyle[SCALE_X] = _v3.v;
+
+                if (_v3 !== 1) {
+                  matrix = matrix || mx.identity();
+                  matrix = multiplyScaleX(matrix, _v3);
+                }
+              }
+
+              __computedStyle[SCALE_Y] = 1;
+              _v3 = __currentStyle[SCALE_Y];
+
+              if (_v3) {
+                _v3 = __computedStyle[SCALE_Y] = _v3.v;
+
+                if (_v3 !== 1) {
+                  matrix = matrix || mx.identity();
+                  matrix = multiplyScaleY(matrix, _v3);
+                }
+              }
+
+              __computedStyle[SCALE_Z] = 1;
+              _v3 = __currentStyle[SCALE_Z];
+
+              if (_v3) {
+                _v3 = __computedStyle[SCALE_Z] = _v3.v;
+
+                if (_v3 !== 1) {
+                  matrix = matrix || mx.identity();
+                  matrix = multiplyScaleZ(matrix, _v3);
+                }
               }
             }
 
@@ -22136,12 +22230,8 @@
 
           if (!matrixCache) {
             var m = __computedStyle[TRANSFORM$3];
-
-            var tfo = __computedStyle[TRANSFORM_ORIGIN$2].slice(0);
-
-            tfo[0] += __sx1 || 0;
-            tfo[1] += __sy1 || 0;
-            matrixCache = __cacheStyle[MATRIX$1] = transform.calMatrixByOrigin(m, tfo);
+            var tfo = __computedStyle[TRANSFORM_ORIGIN$2];
+            matrixCache = __cacheStyle[MATRIX$1] = transform.calMatrixByOrigin(m, tfo[0] + __sx1, tfo[1] + __sy1);
           }
         }
 
@@ -22445,10 +22535,10 @@
         var textStrokeColor = __currentStyle[TEXT_STROKE_COLOR$1];
 
         if (textStrokeColor.u === INHERIT$1) {
-          var _v3 = __computedStyle[TEXT_STROKE_COLOR$1] = parent ? parentComputedStyle[TEXT_STROKE_COLOR$1] : rgba2int(reset.INHERIT.textStrokeColor);
+          var _v4 = __computedStyle[TEXT_STROKE_COLOR$1] = parent ? parentComputedStyle[TEXT_STROKE_COLOR$1] : rgba2int(reset.INHERIT.textStrokeColor);
 
-          if (_v3.k) {
-            __cacheStyle[TEXT_STROKE_COLOR$1] = _v3;
+          if (_v4.k) {
+            __cacheStyle[TEXT_STROKE_COLOR$1] = _v4;
           } else {
             __cacheStyle[TEXT_STROKE_COLOR$1] = int2rgba$1(__computedStyle[TEXT_STROKE_COLOR$1]);
           }
@@ -22464,23 +22554,23 @@
           __computedStyle[TEXT_STROKE_WIDTH$1] = parent ? parentComputedStyle[TEXT_STROKE_WIDTH$1] : reset.INHERIT.textStrokeWidth;
           __cacheStyle[TEXT_STROKE_WIDTH$1] = true;
         } else if (isNil$9(__cacheStyle[TEXT_STROKE_WIDTH$1])) {
-          var _v4 = __currentStyle[TEXT_STROKE_WIDTH$1];
+          var _v5 = __currentStyle[TEXT_STROKE_WIDTH$1];
 
-          if (_v4.u === REM$4) {
-            _v4 = _v4.v * this.__root.__computedStyle[FONT_SIZE$2];
-          } else if (_v4.u === VW$4) {
-            _v4 = _v4.v * this.__root.width * 0.01;
-          } else if (_v4.u === VH$4) {
-            _v4 = _v4.v * this.__root.height * 0.01;
-          } else if (_v4.u === VMAX$4) {
-            _v4 = _v4.v * Math.max(this.__root.width, this.__root.height) * 0.01;
-          } else if (_v4.u === VMIN$4) {
-            _v4 = _v4.v * Math.min(this.__root.width, this.__root.height) * 0.01;
+          if (_v5.u === REM$4) {
+            _v5 = _v5.v * this.__root.__computedStyle[FONT_SIZE$2];
+          } else if (_v5.u === VW$4) {
+            _v5 = _v5.v * this.__root.width * 0.01;
+          } else if (_v5.u === VH$4) {
+            _v5 = _v5.v * this.__root.height * 0.01;
+          } else if (_v5.u === VMAX$4) {
+            _v5 = _v5.v * Math.max(this.__root.width, this.__root.height) * 0.01;
+          } else if (_v5.u === VMIN$4) {
+            _v5 = _v5.v * Math.min(this.__root.width, this.__root.height) * 0.01;
           } else {
-            _v4 = _v4.v;
+            _v5 = _v5.v;
           }
 
-          __computedStyle[TEXT_STROKE_WIDTH$1] = _v4;
+          __computedStyle[TEXT_STROKE_WIDTH$1] = _v5;
           __cacheStyle[TEXT_STROKE_WIDTH$1] = true;
         }
 
@@ -23130,7 +23220,7 @@
                     else if (renderMode === SVG$1 && svgBgSymbol.length) {
                       svgBgSymbol.forEach(function (symbol) {
                         if (symbol) {
-                          var _v5 = {
+                          var _v6 = {
                             tagName: 'clipPath',
                             props: [],
                             children: [{
@@ -23138,9 +23228,9 @@
                               props: [['d', isUpright ? "M".concat(0, ",", count, "L").concat(ih, ",").concat(count, "L").concat(ih, ",").concat(h + count, "L", 0, ",").concat(h + count, ",L", 0, ",").concat(count) : "M".concat(count, ",", 0, "L").concat(w + count, ",", 0, "L").concat(w + count, ",").concat(ih, "L").concat(count, ",").concat(ih, ",L").concat(count, ",", 0)]]
                             }]
                           };
-                          var clip = ctx.add(_v5);
+                          var clip = ctx.add(_v6);
 
-                          _this8.__cacheDefs.push(_v5);
+                          _this8.__cacheDefs.push(_v6);
 
                           virtualDom.bb.push({
                             type: 'item',
@@ -23236,7 +23326,7 @@
                     else if (renderMode === SVG$1 && svgBgSymbol.length) {
                       svgBgSymbol.forEach(function (symbol) {
                         if (symbol) {
-                          var _v6 = {
+                          var _v7 = {
                             tagName: 'clipPath',
                             props: [],
                             children: [{
@@ -23244,9 +23334,9 @@
                               props: [['d', isUpright ? "M".concat(0, ",", count, "L").concat(ih, ",").concat(count, "L").concat(ih, ",").concat(h + count, "L", 0, ",").concat(h + count, ",L", 0, ",").concat(count) : "M".concat(count, ",", 0, "L").concat(w + count, ",", 0, "L").concat(w + count, ",").concat(ih, "L").concat(count, ",").concat(ih, ",L").concat(count, ",", 0)]]
                             }]
                           };
-                          var clip = ctx.add(_v6);
+                          var clip = ctx.add(_v7);
 
-                          _this8.__cacheDefs.push(_v6);
+                          _this8.__cacheDefs.push(_v7);
 
                           virtualDom.bb.push({
                             type: 'item',
@@ -25676,8 +25766,7 @@
             cy = _res$method$v[3]; // 椭圆渐变的转换，顶点逆矩阵变换
 
 
-        var tfo = [cx, cy];
-        matrix = transform.calMatrixByOrigin(matrix, tfo);
+        matrix = transform.calMatrixByOrigin(matrix, cx, cy);
         var t = mx.inverse(matrix);
         list = this.__inversePtList(list, isMulti, t, dx, dy); // 用正向matrix渲染
 
@@ -32744,10 +32833,7 @@
             ctx = cacheMask.ctx,
             dbx = cacheMask.dbx,
             dby = cacheMask.dby;
-        tfo = tfo.slice(0);
-        tfo[0] += x + dbx;
-        tfo[1] += y + dby;
-        var inverse = transform.calMatrixByOrigin(transform$1, tfo);
+        var inverse = transform.calMatrixByOrigin(transform$1, tfo[0] + x + dbx, tfo[1] + y + dby);
 
         if (isE$1(inverse)) {
           inverse = null;
@@ -33291,11 +33377,9 @@
             var matrix = matrixHash[parentIndex]; // 父级matrix初始化E为null，自身不为E时才运算，可以加速
 
             if (transform$1 && !isE(transform$1)) {
-              var tfo = transformOrigin.slice(0); // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
+              var _tfo = transformOrigin; // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
 
-              tfo[0] += __sx1 - sx1 + dx;
-              tfo[1] += __sy1 - sy1 + dy;
-              var m = transform.calMatrixByOrigin(transform$1, tfo);
+              var m = transform.calMatrixByOrigin(transform$1, _tfo[0] + __sx1 - sx1 + dx, _tfo[1] + __sy1 - sy1 + dy);
 
               if (matrix) {
                 matrix = multiply(matrix, m);
@@ -33496,7 +33580,7 @@
               _cacheMask = _node2.__cacheMask,
               _cacheOverflow = _node2.__cacheOverflow;
           var transform$1 = _computedStyle[TRANSFORM$1],
-              tfo = _computedStyle[TRANSFORM_ORIGIN];
+              _tfo2 = _computedStyle[TRANSFORM_ORIGIN];
 
           if (maskStartHash.hasOwnProperty(_i2)) {
             var _maskStartHash$_i = maskStartHash[_i2],
@@ -33560,10 +33644,7 @@
           var m = void 0;
 
           if (_i2 !== index && (!isE(parentMatrix) || !isE(transform$1))) {
-            tfo = tfo.slice(0);
-            tfo[0] += dbx + _node2.__sx1 - sx1 + tx;
-            tfo[1] += dby + _node2.__sy1 - sy1 + ty;
-            m = transform.calMatrixByOrigin(transform$1, tfo);
+            m = transform.calMatrixByOrigin(transform$1, _tfo2[0] + dbx + _node2.__sx1 - sx1 + tx, _tfo2[1] + dby + _node2.__sy1 - sy1 + ty);
 
             if (!isE(parentMatrix)) {
               m = multiply(parentMatrix, m);
@@ -33866,7 +33947,7 @@
             lastLv = _lv2; // 计算临时的matrix，先以此节点为局部根节点原点，后面考虑逆矩阵
 
             var transform$1 = _computedStyle2[TRANSFORM$1],
-                tfo = _computedStyle2[TRANSFORM_ORIGIN],
+                _tfo3 = _computedStyle2[TRANSFORM_ORIGIN],
                 opacity = _computedStyle2[OPACITY$1];
 
             if (i !== index) {
@@ -33878,10 +33959,7 @@
             var m = void 0;
 
             if (!isE(transform$1)) {
-              tfo = tfo.slice(0);
-              tfo[0] += dbx + _node3.__sx1 - sx1 + tx;
-              tfo[1] += dby + _node3.__sy1 - sy1 + ty;
-              m = transform.calMatrixByOrigin(transform$1, tfo);
+              m = transform.calMatrixByOrigin(transform$1, _tfo3[0] + dbx + _node3.__sx1 - sx1 + tx, _tfo3[1] + dby + _node3.__sy1 - sy1 + ty);
 
               if (!isE(parentMatrix)) {
                 m = multiply(parentMatrix, m);
@@ -34226,23 +34304,26 @@
         }
 
         if (transform$1 && !isE(transform$1)) {
-          var tfo = transformOrigin.slice(0); // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
+          var _transformOrigin = _slicedToArray(transformOrigin, 2),
+              x = _transformOrigin[0],
+              y = _transformOrigin[1]; // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
+
 
           if (__cache && __cache.available) {
-            tfo[0] += __cache.sx1;
-            tfo[1] += __cache.sy1;
+            x += __cache.sx1;
+            y += __cache.sy1;
           } else {
-            tfo[0] += _node4.__sx1;
-            tfo[1] += _node4.__sy1;
+            x += _node4.__sx1;
+            y += _node4.__sy1;
           }
 
           var _dx = -sx1 + dbx;
 
           var _dy = -sy1 + dby;
 
-          tfo[0] += _dx;
-          tfo[1] += _dy;
-          var m = transform.calMatrixByOrigin(transform$1, tfo);
+          x += _dx;
+          y += _dy;
+          var m = transform.calMatrixByOrigin(transform$1, x, y);
 
           if (matrix) {
             matrix = multiply(matrix, m);
@@ -34662,10 +34743,8 @@
     if (isE(transform$1)) {
       inverse = mx.identity();
     } else {
-      var tfo = transformOrigin.slice(0);
-      tfo[0] += sx1 + dx;
-      tfo[1] += sy1 + dy;
-      inverse = transform.calMatrixByOrigin(transform$1, tfo);
+      var _tfo4 = transformOrigin;
+      inverse = transform.calMatrixByOrigin(transform$1, _tfo4[0] + sx1 + dx, _tfo4[1] + sy1 + dy);
     }
 
     inverse = mx.inverse(inverse); // 将所有mask绘入一个单独纹理中，尺寸和原点与被遮罩total相同，才能做到顶点坐标一致
@@ -34735,7 +34814,7 @@
           var _node5$__computedStyl = _node5.__computedStyle,
               opacity = _node5$__computedStyl[OPACITY$1],
               _transform = _node5$__computedStyl[TRANSFORM$1],
-              _transformOrigin = _node5$__computedStyl[TRANSFORM_ORIGIN]; // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理
+              _transformOrigin2 = _node5$__computedStyl[TRANSFORM_ORIGIN]; // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理
 
           if (_i6 === index) ; else if (_lv3 > lastLv) {
             parentMatrix = lastMatrix;
@@ -34766,20 +34845,12 @@
             if (isE(_transform)) {
               m = mx.identity();
             } else {
-              var _tfo = _transformOrigin.slice(0);
-
-              _tfo[0] += target.bbox[0] + dx;
-              _tfo[1] += target.bbox[1] + dy;
-              m = transform.calMatrixByOrigin(_transform, _tfo);
+              var _tfo5 = _transformOrigin2;
+              m = transform.calMatrixByOrigin(_transform, _tfo5[0] + target.bbox[0] + dx, _tfo5[1] + target.bbox[1] + dy);
             }
 
             m = mx.multiply(inverse, m);
-
-            var tfo = _transformOrigin.slice(0);
-
-            tfo[0] += target.bbox[0] + dx;
-            tfo[1] += target.bbox[1] + dy;
-            lastMatrix = transform.calMatrixByOrigin(_transform, tfo);
+            lastMatrix = transform.calMatrixByOrigin(_transform, tfo[0] + target.bbox[0] + dx, tfo[1] + target.bbox[1] + dy);
 
             if (!isE(parentMatrix)) {
               lastMatrix = multiply(parentMatrix, lastMatrix);

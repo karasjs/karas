@@ -201,11 +201,9 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
           let matrix = matrixHash[parentIndex];
           // 父级matrix初始化E为null，自身不为E时才运算，可以加速
           if(transform && !isE(transform)) {
-            let tfo = transformOrigin.slice(0);
+            let tfo = transformOrigin;
             // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
-            tfo[0] += __sx1 - sx1 + dx;
-            tfo[1] += __sy1 - sy1 + dy;
-            let m = tf.calMatrixByOrigin(transform, tfo);
+            let m = tf.calMatrixByOrigin(transform, tfo[0] + __sx1 - sx1 + dx, tfo[1] + __sy1 - sy1 + dy);
             if(matrix) {
               matrix = multiply(matrix, m);
             }
@@ -426,10 +424,7 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
         // 特殊渲染的matrix，局部根节点为原点考虑，当需要计算时（不为E）再计算
         let m;
         if(i !== index && (!isE(parentMatrix) || !isE(transform))) {
-          tfo = tfo.slice(0);
-          tfo[0] += dbx + node.__sx1 - sx1 + tx;
-          tfo[1] += dby + node.__sy1 - sy1 + ty;
-          m = tf.calMatrixByOrigin(transform, tfo);
+          m = tf.calMatrixByOrigin(transform, tfo[0] + dbx + node.__sx1 - sx1 + tx, tfo[1] + dby + node.__sy1 - sy1 + ty);
           if(!isE(parentMatrix)) {
             m = multiply(parentMatrix, m);
           }
@@ -663,10 +658,7 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
           // 特殊渲染的matrix，局部根节点为原点且考虑根节点自身的transform
           let m;
           if(!isE(transform)) {
-            tfo = tfo.slice(0);
-            tfo[0] += dbx + node.__sx1 - sx1 + tx;
-            tfo[1] += dby + node.__sy1 - sy1 + ty;
-            m = tf.calMatrixByOrigin(transform, tfo);
+            m = tf.calMatrixByOrigin(transform, tfo[0] + dbx + node.__sx1 - sx1 + tx, tfo[1] + dby + node.__sy1 - sy1 + ty);
             if(!isE(parentMatrix)) {
               m = multiply(parentMatrix, m);
             }
@@ -926,21 +918,21 @@ function genTotalWebgl(renderMode, gl, texCache, node, index, total, __structs, 
         continue;
       }
       if(transform && !isE(transform)) {
-        let tfo = transformOrigin.slice(0);
+        let [x, y] = transformOrigin;
         // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
         if(__cache && __cache.available) {
-          tfo[0] += __cache.sx1;
-          tfo[1] += __cache.sy1;
+          x += __cache.sx1;
+          y += __cache.sy1;
         }
         else {
-          tfo[0] += node.__sx1;
-          tfo[1] += node.__sy1;
+          x += node.__sx1;
+          y += node.__sy1;
         }
         let dx = -sx1 + dbx;
         let dy = -sy1 + dby;
-        tfo[0] += dx;
-        tfo[1] += dy;
-        let m = tf.calMatrixByOrigin(transform, tfo);
+        x += dx;
+        y += dy;
+        let m = tf.calMatrixByOrigin(transform, x, y);
         if(matrix) {
           matrix = multiply(matrix, m);
         }
@@ -1275,10 +1267,8 @@ function genMaskWebgl(gl, texCache, node, cache, W, H, lv, __structs) {
     inverse = mx.identity();
   }
   else {
-    let tfo = transformOrigin.slice(0);
-    tfo[0] += sx1 + dx;
-    tfo[1] += sy1 + dy;
-    inverse = tf.calMatrixByOrigin(transform, tfo);
+    let tfo = transformOrigin;
+    inverse = tf.calMatrixByOrigin(transform, tfo[0] + sx1 + dx, tfo[1] + sy1 + dy);
   }
   inverse = mx.inverse(inverse);
   // 将所有mask绘入一个单独纹理中，尺寸和原点与被遮罩total相同，才能做到顶点坐标一致
@@ -1371,16 +1361,11 @@ function genMaskWebgl(gl, texCache, node, cache, W, H, lv, __structs) {
             m = mx.identity();
           }
           else {
-            let tfo = transformOrigin.slice(0);
-            tfo[0] += target.bbox[0] + dx;
-            tfo[1] += target.bbox[1] + dy;
-            m = tf.calMatrixByOrigin(transform, tfo);
+            let tfo = transformOrigin;
+            m = tf.calMatrixByOrigin(transform, tfo[0] + target.bbox[0] + dx, tfo[1] + target.bbox[1] + dy);
           }
           m = mx.multiply(inverse, m);
-          let tfo = transformOrigin.slice(0);
-          tfo[0] += target.bbox[0] + dx;
-          tfo[1] += target.bbox[1] + dy;
-          lastMatrix = tf.calMatrixByOrigin(transform, tfo);
+          lastMatrix = tf.calMatrixByOrigin(transform, tfo[0] + target.bbox[0] + dx, tfo[1] + target.bbox[1] + dy);
           if(!isE(parentMatrix)) {
             lastMatrix = multiply(parentMatrix, lastMatrix);
           }

@@ -67,8 +67,7 @@ class Ellipsis extends Node {
         let me = parent.matrixEvent, list = [
           { k: ROTATE_Z, v: { v: 90, u: DEG } },
         ];
-        let tfo = [x, y];
-        let m = transform.calMatrixWithOrigin(list, tfo, 0, 0);
+        let m = transform.calMatrixWithOrigin(list, x, y, 0, 0);
         m = mx.multiply(me, m);
         ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
       }

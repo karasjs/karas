@@ -115,14 +115,14 @@ function multiplyRotateY(m, v) {
   let sin = Math.sin(v);
   let cos = Math.cos(v);
   let a = m[0], b = m[1], c = m[2], d = m[3], i = m[8], j = m[9], k = m[10], l = m[11];
-  m[0] = a * cos + i * sin;
-  m[1] = b * cos + j * sin;
-  m[2] = c * cos + k * sin;
-  m[3] = d * cos + l * sin;
-  m[8] = a * -sin + i * cos;
-  m[9] = b * -sin + j * cos;
-  m[10] = c * -sin + k * sin;
-  m[11] = d * -sin + l * sin;
+  m[0] = a * cos + i * -sin;
+  m[1] = b * cos + j * -sin;
+  m[2] = c * cos + k * -sin;
+  m[3] = d * cos + l * -sin;
+  m[8] = a * sin + i * cos;
+  m[9] = b * sin + j * cos;
+  m[10] = c * sin + k * sin;
+  m[11] = d * sin + l * sin;
   return m;
 }
 
@@ -202,7 +202,7 @@ function multiplyScaleZ(m, v) {
 }
 
 function multiplyPerspective(m, v) {
-  if(!v) {
+  if(!v || v < 0) {
     return;
   }
   v = Math.max(v, 1);

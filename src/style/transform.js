@@ -20,7 +20,7 @@ const { STYLE_KEY: {
   MATRIX,
   FONT_SIZE,
 }} = enums;
-const { PERCENT, REM, VW, VH, VMAX, VMIN } = unit;
+const { PX, PERCENT, REM, VW, VH, VMAX, VMIN } = unit;
 const { matrix, geom } = math;
 const { identity, multiply, isE } = matrix;
 const { d2r } = geom;
@@ -155,13 +155,13 @@ function calSingle(t, k, v) {
 }
 
 function calMatrix(transform, ow, oh, root) {
-  let list = normalize(transform, ow, oh, root);
   let m = identity();
-  list.forEach(item => {
+  for(let i = 0, len = transform; i < len; i++) {
+    let item = transform[i];
     let t = identity();
-    calSingle(t, item.k, item.v);
+    calSingle(t, item.k, normalizeSingle(item.k, item.v, ow, oh, root));
     m = multiply(m, t);
-  });
+  }
   return m;
 }
 
@@ -184,32 +184,15 @@ function calMatrixWithOrigin(transform, transformOrigin, ow, oh) {
 }
 
 function normalizeSingle(k, v, ow, oh, root) {
-  if(k === TRANSLATE_X || k === TRANSLATE_Z) {
-    if(v.u === PERCENT) {
-      return v.v * ow * 0.01;
+  if(k === TRANSLATE_X || k === TRANSLATE_Y || k === TRANSLATE_Z) {
+    if(v.u === PX) {
+      return v.v;
+    }
+    else if(v.u === PERCENT) {
+      return v.v * (k === TRANSLATE_Y ? oh : ow) * 0.01;
     }
     else if(v.u === REM) {
-      return v.v * root.computedStyle[FONT_SIZE];
-    }
-    else if(v.u === VW) {
-      return v.v * root.width * 0.01;
-    }
-    else if(v.u === VH) {
-      return v.v * root.height * 0.01;
-    }
-    else if(v.u === VMAX) {
-      return v.v * Math.max(root.width, root.height) * 0.01;
-    }
-    else if(v.u === VMIN) {
-      return v.v * Math.min(root.width, root.height) * 0.01;
-    }
-  }
-  else if(k === TRANSLATE_Y) {
-    if(v.u === PERCENT) {
-      return v.v * oh * 0.01;
-    }
-    else if(v.u === REM) {
-      return v.v * root.computedStyle[FONT_SIZE];
+      return v.v * root.__computedStyle[FONT_SIZE];
     }
     else if(v.u === VW) {
       return v.v * root.width * 0.01;
@@ -231,18 +214,6 @@ function normalizeSingle(k, v, ow, oh, root) {
     return v;
   }
   return v.v;
-}
-
-function normalize(transform, ow, oh, root) {
-  let res = [];
-  transform.forEach(item => {
-    let k = item.k;
-    res.push({
-      k,
-      v: normalizeSingle(k, item.v, ow, oh, root),
-    });
-  });
-  return res;
 }
 
 function calMatrixByPerspective(m, pm) {

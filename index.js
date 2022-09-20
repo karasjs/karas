@@ -381,7 +381,7 @@
   };
 
   var AUTO$8 = 0;
-  var PX$a = 1;
+  var PX$b = 1;
   var PERCENT$a = 2;
   var NUMBER$6 = 3;
   var INHERIT$5 = 4;
@@ -397,7 +397,7 @@
   var GRADIENT$4 = 14;
   var o$4 = {
     AUTO: AUTO$8,
-    PX: PX$a,
+    PX: PX$b,
     PERCENT: PERCENT$a,
     NUMBER: NUMBER$6,
     INHERIT: INHERIT$5,
@@ -429,7 +429,7 @@
       } else if (/px$/i.test(v)) {
         return {
           v: n,
-          u: PX$a
+          u: PX$b
         };
       } else if (/deg$/i.test(v)) {
         return {
@@ -3940,7 +3940,7 @@
   };
 
   var H = geom$1.H;
-  var PX$9 = o$4.PX,
+  var PX$a = o$4.PX,
       PERCENT$9 = o$4.PERCENT,
       REM$9 = o$4.REM,
       VW$9 = o$4.VW,
@@ -6201,7 +6201,7 @@
           return 0;
         }
 
-        if (item.u === PX$9) {
+        if (item.u === PX$a) {
           return Math.max(0, item.v);
         } else if (item.u === PERCENT$9) {
           return Math.max(0, item.v * (i ? h : w) * 0.01);
@@ -6268,7 +6268,7 @@
       computedStyle[k] = currentStyle[k].map(function (item, i) {
         var v;
 
-        if (item.u === PX$9) {
+        if (item.u === PX$a) {
           v = Math.max(0, item.v);
           v = Math.min(i ? h : w, v);
         } else {
@@ -6286,7 +6286,7 @@
       computedStyle[k] = currentStyle[k].map(function (item, i) {
         var v;
 
-        if (item.u === PX$9) {
+        if (item.u === PX$a) {
           v = Math.max(0, item.v);
           v = Math.min(i ? h : w, v);
         } else {
@@ -6335,7 +6335,7 @@
 
   var rgba2int$2 = util.rgba2int,
       isNil$d = util.isNil;
-  var PX$8 = o$4.PX,
+  var PX$9 = o$4.PX,
       PERCENT$8 = o$4.PERCENT,
       DEG$4 = o$4.DEG,
       NUMBER$5 = o$4.NUMBER,
@@ -6383,7 +6383,7 @@
       var v = calUnit$2(data);
 
       if ([NUMBER$5, DEG$4].indexOf(v.u) > -1) {
-        v.v = PX$8;
+        v.v = PX$9;
       }
 
       return v;
@@ -6890,7 +6890,7 @@
           var _v = calUnit$2(percent[0]);
 
           if ([NUMBER$5, DEG$4].indexOf(_v.u) > -1) {
-            _v.v = PX$8;
+            _v.v = PX$9;
           }
 
           arr[1] = _v;
@@ -7777,7 +7777,7 @@
       TEXT_STROKE_OVER$4 = _enums$STYLE_KEY$i.TEXT_STROKE_OVER,
       WRITING_MODE$3 = _enums$STYLE_KEY$i.WRITING_MODE;
   var AUTO$7 = o$4.AUTO,
-      PX$7 = o$4.PX,
+      PX$8 = o$4.PX,
       PERCENT$7 = o$4.PERCENT,
       NUMBER$4 = o$4.NUMBER,
       INHERIT$3 = o$4.INHERIT,
@@ -7836,11 +7836,11 @@
       arr.u = NUMBER$4;
     } else if (k === TRANSLATE_X$4 || k === TRANSLATE_Y$4 || k === TRANSLATE_Z$4) {
       if (arr.u === NUMBER$4) {
-        arr.u = PX$7;
+        arr.u = PX$8;
       }
     } else if (k === PERSPECTIVE$4) {
       if ([NUMBER$4, PERCENT$7, DEG$3].indexOf(arr.u) > -1) {
-        arr.u = PX$7;
+        arr.u = PX$8;
       }
     } else {
       if (arr.u === NUMBER$4) {
@@ -7885,7 +7885,7 @@
    */
 
 
-  function normalize$2(style) {
+  function normalize$1(style) {
     var resetList = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
 
     if (!util.isObject(style)) {
@@ -8086,7 +8086,7 @@
             var v = calUnit$1(item);
 
             if ([NUMBER$4, DEG$3].indexOf(v.u) > -1) {
-              v.u = PX$7;
+              v.u = PX$8;
             }
 
             return v;
@@ -8142,7 +8142,7 @@
               var n = calUnit$1(_item);
 
               if ([NUMBER$4, DEG$3].indexOf(n.u) > -1) {
-                n.u = PX$7;
+                n.u = PX$8;
               }
 
               v.push(n);
@@ -8201,7 +8201,7 @@
             var n = calUnit$1(item);
 
             if ([NUMBER$4, DEG$3].indexOf(n.u) > -1) {
-              n.u = PX$7;
+              n.u = PX$8;
             }
 
             if (n.v < 0) {
@@ -8212,7 +8212,7 @@
           } else {
             arr[i] = {
               u: 0,
-              v: PX$7
+              v: PX$8
             };
           }
         }
@@ -8410,7 +8410,7 @@
               var n = calUnit$1(item);
 
               if ([NUMBER$4, DEG$3].indexOf(n.u) > -1) {
-                n.u = PX$7;
+                n.u = PX$8;
               }
 
               _arr9.push(n);
@@ -8524,7 +8524,7 @@
         v = calUnit$1(v || 0); // 无单位视为px
 
         if ([NUMBER$4, DEG$3].indexOf(v.u) > -1) {
-          v.u = PX$7;
+          v.u = PX$8;
         }
       }
 
@@ -8559,7 +8559,7 @@
         v.v = Math.max(v.v, 0); // 无单位视为px
 
         if ([NUMBER$4, DEG$3].indexOf(v.u) > -1) {
-          v.u = PX$7;
+          v.u = PX$8;
         }
       } else {
         res[FLEX_BASIS$4] = {
@@ -8632,7 +8632,7 @@
           };
         } else {
           if ([NUMBER$4, DEG$3].indexOf(_v.u) > -1) {
-            _v.u = PX$7;
+            _v.u = PX$8;
           }
 
           res[FONT_SIZE$8] = _v;
@@ -8657,7 +8657,7 @@
           };
         } else {
           if ([NUMBER$4, DEG$3, PERCENT$7].indexOf(_v2.u) > -1) {
-            _v2.u = PX$7;
+            _v2.u = PX$8;
           }
 
           res[TEXT_STROKE_WIDTH$4] = _v2;
@@ -8847,20 +8847,20 @@
       } else if (/normal/i.test(temp)) {
         res[LETTER_SPACING$3] = {
           v: 0,
-          u: PX$7
+          u: PX$8
         };
       } else if (/^[-+]?[\d.]/.test(temp)) {
         var _v8 = calUnit$1(temp);
 
         if ([NUMBER$4, DEG$3].indexOf(_v8.u) > -1) {
-          _v8.u = PX$7;
+          _v8.u = PX$8;
         }
 
         res[LETTER_SPACING$3] = _v8;
       } else {
         res[LETTER_SPACING$3] = {
           v: parseFloat(temp) || 0,
-          u: PX$7
+          u: PX$8
         };
       }
     }
@@ -8929,7 +8929,7 @@
         var v = calUnit$1(item);
 
         if ([NUMBER$4, DEG$3].indexOf(v.u) > -1) {
-          v.u = PX$7;
+          v.u = PX$8;
         }
 
         v.v = Math.max(v.v, 0);
@@ -9005,7 +9005,7 @@
                     var _v10 = calUnit$1(item2);
 
                     if ([NUMBER$4, DEG$3].indexOf(_v10.u) > -1) {
-                      _v10.u = PX$7;
+                      _v10.u = PX$8;
                     } // x/y可以负，blur和spread不行
 
 
@@ -9017,7 +9017,7 @@
                   } else {
                     _res.push({
                       v: 0,
-                      u: PX$7
+                      u: PX$8
                     });
                   }
                 }
@@ -9047,7 +9047,7 @@
                   }
 
                   if (_v11.u === NUMBER$4) {
-                    _v11.u = PX$7;
+                    _v11.u = PX$8;
                   }
 
                   _v11.v = Math.max(_v11.v, 0);
@@ -9149,7 +9149,7 @@
                 var _v14 = calUnit$1(item2);
 
                 if ([NUMBER$4, DEG$3].indexOf(_v14.u) > -1) {
-                  _v14.u = PX$7;
+                  _v14.u = PX$8;
                 } // x/y可以负，blur和spread不行
 
 
@@ -9161,7 +9161,7 @@
               } else {
                 _res2.push({
                   v: 0,
-                  u: PX$7
+                  u: PX$8
                 });
               }
             }
@@ -9294,7 +9294,7 @@
         } else {
           break;
         }
-      } else if (style.u === PX$7) {
+      } else if (style.u === PX$8) {
         return n * style.v;
       } else if (style.u === PERCENT$7) {
         n *= style.v * 0.01;
@@ -9318,7 +9318,7 @@
   function calRelative$1(currentStyle, k, v, parent, isWidth) {
     if (v.u === AUTO$7) {
       v = 0;
-    } else if ([PX$7, NUMBER$4].indexOf(v.u) > -1) {
+    } else if ([PX$8, NUMBER$4].indexOf(v.u) > -1) {
       v = v.v;
     } else if (v.u === PERCENT$7) {
       if (isWidth) {
@@ -9902,7 +9902,7 @@
   }
 
   var css = {
-    normalize: normalize$2,
+    normalize: normalize$1,
     setFontStyle: setFontStyle,
     getBaseline: getBaseline$1,
     getVerticalBaseline: getVerticalBaseline$1,
@@ -13868,7 +13868,8 @@
       PERSPECTIVE$3 = _enums$STYLE_KEY$h.PERSPECTIVE,
       MATRIX$3 = _enums$STYLE_KEY$h.MATRIX,
       FONT_SIZE$7 = _enums$STYLE_KEY$h.FONT_SIZE;
-  var PERCENT$6 = o$4.PERCENT,
+  var PX$7 = o$4.PX,
+      PERCENT$6 = o$4.PERCENT,
       REM$6 = o$4.REM,
       VW$6 = o$4.VW,
       VH$6 = o$4.VH,
@@ -14009,13 +14010,15 @@
   }
 
   function calMatrix(transform, ow, oh, root) {
-    var list = normalize$1(transform, ow, oh, root);
     var m = identity();
-    list.forEach(function (item) {
+
+    for (var i = 0, len = transform; i < len; i++) {
+      var item = transform[i];
       var t = identity();
-      calSingle(t, item.k, item.v);
+      calSingle(t, item.k, normalizeSingle(item.k, item.v, ow, oh, root));
       m = multiply$2(m, t);
-    });
+    }
+
     return m;
   } // 已有计算好的变换矩阵，根据tfo原点计算最终的matrix
 
@@ -14043,25 +14046,13 @@
   }
 
   function normalizeSingle(k, v, ow, oh, root) {
-    if (k === TRANSLATE_X$3 || k === TRANSLATE_Z$3) {
-      if (v.u === PERCENT$6) {
-        return v.v * ow * 0.01;
+    if (k === TRANSLATE_X$3 || k === TRANSLATE_Y$3 || k === TRANSLATE_Z$3) {
+      if (v.u === PX$7) {
+        return v.v;
+      } else if (v.u === PERCENT$6) {
+        return v.v * (k === TRANSLATE_Y$3 ? oh : ow) * 0.01;
       } else if (v.u === REM$6) {
-        return v.v * root.computedStyle[FONT_SIZE$7];
-      } else if (v.u === VW$6) {
-        return v.v * root.width * 0.01;
-      } else if (v.u === VH$6) {
-        return v.v * root.height * 0.01;
-      } else if (v.u === VMAX$6) {
-        return v.v * Math.max(root.width, root.height) * 0.01;
-      } else if (v.u === VMIN$6) {
-        return v.v * Math.min(root.width, root.height) * 0.01;
-      }
-    } else if (k === TRANSLATE_Y$3) {
-      if (v.u === PERCENT$6) {
-        return v.v * oh * 0.01;
-      } else if (v.u === REM$6) {
-        return v.v * root.computedStyle[FONT_SIZE$7];
+        return v.v * root.__computedStyle[FONT_SIZE$7];
       } else if (v.u === VW$6) {
         return v.v * root.width * 0.01;
       } else if (v.u === VH$6) {
@@ -14078,18 +14069,6 @@
     }
 
     return v.v;
-  }
-
-  function normalize$1(transform, ow, oh, root) {
-    var res = [];
-    transform.forEach(function (item) {
-      var k = item.k;
-      res.push({
-        k: k,
-        v: normalizeSingle(k, item.v, ow, oh, root)
-      });
-    });
-    return res;
   }
 
   function calMatrixByPerspective(m, pm) {
@@ -14788,6 +14767,7 @@
   }
 
   var o$1 = Object.assign({
+    // 是否包含value之内的
     contain: function contain(lv, value) {
       return (lv & value) > 0;
     },
@@ -21755,8 +21735,9 @@
               v = this.__calSize(v, this.__offsetWidth, true);
             }
 
-            x = v - (__computedStyle[TRANSLATE_X] || 0);
-            transform$1[12] = __computedStyle[TRANSLATE_X] = v;
+            x = v - __computedStyle[TRANSLATE_X];
+            __computedStyle[TRANSLATE_X] = v;
+            transform$1[12] += x;
             matrixCache[12] += x;
           }
 
@@ -21771,8 +21752,9 @@
               _v = this.__calSize(_v, this.__offsetHeight, true);
             }
 
-            y = _v - (__computedStyle[TRANSLATE_Y] || 0);
-            transform$1[13] = __computedStyle[TRANSLATE_Y] = _v;
+            y = _v - __computedStyle[TRANSLATE_Y];
+            __computedStyle[TRANSLATE_Y] = _v;
+            transform$1[13] += y;
             matrixCache[13] += y;
           }
 
@@ -21787,12 +21769,11 @@
               _v2 = this.__calSize(_v2, this.__offsetWidth, true);
             }
 
-            z = _v2 - (__computedStyle[TRANSLATE_Z] || 0);
-            transform$1[14] = __computedStyle[TRANSLATE_Z] = _v2;
+            z = _v2 - __computedStyle[TRANSLATE_Z];
+            __computedStyle[TRANSLATE_Z] = _v2;
+            transform$1[14] += z;
             matrixCache[14] += z;
           }
-
-          __cacheStyle[MATRIX$1] = matrixCache;
         } // 先根据cache计算需要重新计算的computedStyle
         else {
           if (__cacheStyle[TRANSFORM_ORIGIN$2] === undefined) {
@@ -21815,7 +21796,7 @@
               var temp = [];
               [TRANSLATE_X, TRANSLATE_Y, TRANSLATE_Z, ROTATE_X, ROTATE_Y, ROTATE_Z, ROTATE_3D, SKEW_X, SKEW_Y, SCALE_X, SCALE_Y, SCALE_Z].forEach(function (k) {
                 // 删除之前遗留的
-                delete __computedStyle[k];
+                __computedStyle[k] = undefined;
                 var v = __currentStyle[k];
 
                 if (isNil$9(v)) {

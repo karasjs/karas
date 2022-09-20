@@ -977,8 +977,9 @@ class Xom extends Node {
         else {
           v = this.__calSize(v, this.__offsetWidth, true);
         }
-        x = v - (__computedStyle[TRANSLATE_X] || 0);
-        transform[12] = __computedStyle[TRANSLATE_X] = v;
+        x = v - __computedStyle[TRANSLATE_X];
+        __computedStyle[TRANSLATE_X] = v;
+        transform[12] += x;
         matrixCache[12] += x;
       }
       if(contain(lv, TY)) {
@@ -992,8 +993,9 @@ class Xom extends Node {
         else {
           v = this.__calSize(v, this.__offsetHeight, true);
         }
-        y = v - (__computedStyle[TRANSLATE_Y] || 0);
-        transform[13] = __computedStyle[TRANSLATE_Y] = v;
+        y = v - __computedStyle[TRANSLATE_Y];
+        __computedStyle[TRANSLATE_Y] = v;
+        transform[13] += y;
         matrixCache[13] += y;
       }
       if(contain(lv, TZ)) {
@@ -1007,11 +1009,11 @@ class Xom extends Node {
         else {
           v = this.__calSize(v, this.__offsetWidth, true);
         }
-        z = v - (__computedStyle[TRANSLATE_Z] || 0);
-        transform[14] = __computedStyle[TRANSLATE_Z] = v;
+        z = v - __computedStyle[TRANSLATE_Z];
+        __computedStyle[TRANSLATE_Z] = v;
+        transform[14] += z;
         matrixCache[14] += z;
       }
-      __cacheStyle[MATRIX] = matrixCache;
     }
     // 先根据cache计算需要重新计算的computedStyle
     else {
@@ -1072,7 +1074,7 @@ class Xom extends Node {
             SCALE_Z,
           ].forEach(k => {
             // 删除之前遗留的
-            delete __computedStyle[k];
+            __computedStyle[k] = undefined;
             let v = __currentStyle[k];
             if(isNil(v)) {
               return;

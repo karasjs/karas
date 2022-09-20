@@ -73,6 +73,7 @@ function isTransforms(k) {
 }
 
 let o = Object.assign({
+  // 是否包含value之内的
   contain(lv, value) {
     return (lv & value) > 0;
   },

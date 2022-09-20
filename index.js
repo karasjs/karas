@@ -532,7 +532,7 @@
 
 
   function multiplyTfo$1(m, x, y) {
-    if (x === 0 && y === 0) {
+    if (!x && !y) {
       return m;
     }
 
@@ -544,7 +544,7 @@
   }
 
   function tfoMultiply$1(x, y, m) {
-    if (x === 0 && y === 0) {
+    if (!x && !y) {
       return m;
     }
 
@@ -560,6 +560,197 @@
     m[9] = m[9] + l * y;
     m[12] = m[12] + p * x;
     m[13] = m[13] + p * y;
+    return m;
+  } // 几种特殊的transform变换优化
+
+
+  function multiplyTranslateX$1(m, v) {
+    if (!v) {
+      return m;
+    }
+
+    m[12] = m[0] * v + m[12];
+    m[13] = m[1] * v + m[13];
+    m[14] = m[2] * v + m[14];
+    m[15] = m[3] * v + m[15];
+    return m;
+  }
+
+  function multiplyTranslateY$1(m, v) {
+    if (!v) {
+      return m;
+    }
+
+    m[12] = m[4] * v + m[12];
+    m[13] = m[5] * v + m[13];
+    m[14] = m[6] * v + m[14];
+    m[15] = m[7] * v + m[15];
+    return m;
+  }
+
+  function multiplyTranslateZ$1(m, v) {
+    if (!v) {
+      return m;
+    }
+
+    m[12] = m[8] * v + m[12];
+    m[13] = m[9] * v + m[13];
+    m[14] = m[10] * v + m[14];
+    m[15] = m[11] * v + m[15];
+    return m;
+  }
+
+  function multiplyRotateX$1(m, v) {
+    if (!v) {
+      return m;
+    }
+
+    var sin = Math.sin(v);
+    var cos = Math.cos(v);
+    var e = m[4],
+        f = m[5],
+        g = m[6],
+        h = m[7],
+        i = m[8];
+        m[9];
+        var k = m[10],
+        l = m[11];
+    m[4] = e * cos + i * sin;
+    m[5] = f * cos + g * sin;
+    m[6] = g * cos + k * sin;
+    m[7] = h * cos + l * sin;
+    m[8] = e * -sin + i * cos;
+    m[9] = f * -sin + g * cos;
+    m[10] = g * -sin + k * cos;
+    m[11] = h * -sin + l * cos;
+    return m;
+  }
+
+  function multiplyRotateY$1(m, v) {
+    if (!v) {
+      return m;
+    }
+
+    var sin = Math.sin(v);
+    var cos = Math.cos(v);
+    var a = m[0],
+        b = m[1],
+        c = m[2],
+        d = m[3],
+        i = m[8],
+        j = m[9],
+        k = m[10],
+        l = m[11];
+    m[0] = a * cos + i * sin;
+    m[1] = b * cos + j * sin;
+    m[2] = c * cos + k * sin;
+    m[3] = d * cos + l * sin;
+    m[8] = a * -sin + i * cos;
+    m[9] = b * -sin + j * cos;
+    m[10] = c * -sin + k * sin;
+    m[11] = d * -sin + l * sin;
+    return m;
+  }
+
+  function multiplyRotateZ$1(m, v) {
+    if (!v) {
+      return m;
+    }
+
+    var sin = Math.sin(v);
+    var cos = Math.cos(v);
+    var a = m[0],
+        b = m[1],
+        c = m[2],
+        d = m[3],
+        e = m[4],
+        f = m[5],
+        g = m[6],
+        h = m[7];
+    m[0] = a * cos + e * sin;
+    m[1] = b * cos + f * sin;
+    m[2] = c * cos + g * sin;
+    m[3] = d * cos + h * sin;
+    m[4] = a * -sin + e * cos;
+    m[5] = b * -sin + f * cos;
+    m[6] = c * -sin + g * cos;
+    m[7] = d * -sin + h * cos;
+    return m;
+  }
+
+  function multiplySkewX$1(m, v) {
+    if (!v) {
+      return m;
+    }
+
+    var tan = Math.tan(v);
+    m[4] += m[0] * tan;
+    m[5] += m[1] * tan;
+    m[6] += m[2] * tan;
+    m[7] += m[3] * tan;
+    return m;
+  }
+
+  function multiplySkewY$1(m, v) {
+    if (!v) {
+      return m;
+    }
+
+    var tan = Math.tan(v);
+    m[0] += m[4] * tan;
+    m[1] += m[5] * tan;
+    m[2] += m[6] * tan;
+    m[3] += m[7] * tan;
+    return m;
+  }
+
+  function multiplyScaleX$1(m, v) {
+    if (v === 1) {
+      return m;
+    }
+
+    m[0] *= v;
+    m[1] *= v;
+    m[2] *= v;
+    m[3] *= v;
+    return m;
+  }
+
+  function multiplyScaleY$1(m, v) {
+    if (v === 1) {
+      return m;
+    }
+
+    m[4] *= v;
+    m[5] *= v;
+    m[6] *= v;
+    m[7] *= v;
+    return m;
+  }
+
+  function multiplyScaleZ$1(m, v) {
+    if (v === 1) {
+      return m;
+    }
+
+    m[8] *= v;
+    m[9] *= v;
+    m[10] *= v;
+    m[11] *= v;
+    return m;
+  }
+
+  function multiplyPerspective$1(m, v) {
+    if (!v) {
+      return;
+    }
+
+    v = Math.max(v, 1);
+    v = -1 / v;
+    m[8] += m[12] * v;
+    m[9] += m[13] * v;
+    m[10] += m[14] * v;
+    m[11] += m[15] * v;
     return m;
   }
 
@@ -735,6 +926,18 @@
     multiply: multiply$3,
     multiplyTfo: multiplyTfo$1,
     tfoMultiply: tfoMultiply$1,
+    multiplyTranslateX: multiplyTranslateX$1,
+    multiplyTranslateY: multiplyTranslateY$1,
+    multiplyTranslateZ: multiplyTranslateZ$1,
+    multiplyRotateX: multiplyRotateX$1,
+    multiplyRotateY: multiplyRotateY$1,
+    multiplyRotateZ: multiplyRotateZ$1,
+    multiplySkewX: multiplySkewX$1,
+    multiplySkewY: multiplySkewY$1,
+    multiplyScaleX: multiplyScaleX$1,
+    multiplyScaleY: multiplyScaleY$1,
+    multiplyScaleZ: multiplyScaleZ$1,
+    multiplyPerspective: multiplyPerspective$1,
     calPoint: calPoint$2,
     point2d: point2d$1,
     inverse: inverse$1,
@@ -13916,7 +14119,19 @@
       multiply$2 = matrix.multiply,
       multiplyTfo = matrix.multiplyTfo,
       tfoMultiply = matrix.tfoMultiply,
-      isE$3 = matrix.isE;
+      isE$3 = matrix.isE,
+      multiplyTranslateX = matrix.multiplyTranslateX,
+      multiplyTranslateY = matrix.multiplyTranslateY,
+      multiplyTranslateZ = matrix.multiplyTranslateZ,
+      multiplyRotateX = matrix.multiplyRotateX,
+      multiplyRotateY = matrix.multiplyRotateY,
+      multiplyRotateZ = matrix.multiplyRotateZ,
+      multiplySkewX = matrix.multiplySkewX,
+      multiplySkewY = matrix.multiplySkewY,
+      multiplyPerspective = matrix.multiplyPerspective,
+      multiplyScaleX = matrix.multiplyScaleX,
+      multiplyScaleY = matrix.multiplyScaleY,
+      multiplyScaleZ = matrix.multiplyScaleZ;
   var d2r = geom.d2r;
 
   function calSingle(t, k, v) {
@@ -14051,9 +14266,38 @@
 
     for (var i = 0, len = transform.length; i < len; i++) {
       var item = transform[i];
-      var t = identity();
-      calSingle(t, item.k, normalizeSingle(item.k, item.v, ow, oh, root));
-      m = multiply$2(m, t);
+      var k = item.k;
+      var v = normalizeSingle(k, item.v, ow, oh, root);
+
+      if (k === TRANSLATE_X$3) {
+        m = multiplyTranslateX(m, v);
+      } else if (k === TRANSLATE_Y$3) {
+        m = multiplyTranslateY(m, v);
+      } else if (k === TRANSLATE_Z$3) {
+        m = multiplyTranslateZ(m, v);
+      } else if (k === ROTATE_X$2) {
+        m = multiplyRotateX(m, d2r(v));
+      } else if (k === ROTATE_Y$2) {
+        m = multiplyRotateY(m, d2r(v));
+      } else if (k === ROTATE_Z$4) {
+        m = multiplyRotateZ(m, d2r(v));
+      } else if (k === SKEW_X$2) {
+        m = multiplySkewX(m, d2r(v));
+      } else if (k === SKEW_Y$2) {
+        m = multiplySkewY(m, d2r(v));
+      } else if (k === SCALE_X$3) {
+        m = multiplyScaleX(m, v);
+      } else if (k === SCALE_Y$3) {
+        m = multiplyScaleY(m, v);
+      } else if (k === SCALE_Z$2) {
+        m = multiplyScaleZ(m, v);
+      } else if (k === PERSPECTIVE$3) {
+        m = multiplyPerspective(m, v);
+      } else {
+        var t = identity();
+        calSingle(t, k, v);
+        m = multiply$2(m, t);
+      }
     }
 
     return m;

@@ -30,7 +30,7 @@ function multiply(a, b) {
 
 // 特殊优化，b为tfo，因此既只有12/13/14有值
 function multiplyTfo(m, x, y) {
-  if(x === 0 && y === 0) {
+  if(!x && !y) {
     return m;
   }
   m[12] = m[0] * x + m[4] * y + m[12];
@@ -41,7 +41,7 @@ function multiplyTfo(m, x, y) {
 }
 
 function tfoMultiply(x, y, m) {
-  if(x === 0 && y === 0) {
+  if(!x && !y) {
     return m;
   }
   let d = m[3], h = m[7], l = m[11], p = m[15];
@@ -53,6 +53,164 @@ function tfoMultiply(x, y, m) {
   m[9] = m[9] + l * y;
   m[12] = m[12] + p * x;
   m[13] = m[13] + p * y;
+  return m;
+}
+
+// 几种特殊的transform变换优化
+function multiplyTranslateX(m, v) {
+  if(!v) {
+    return m;
+  }
+  m[12] = m[0] * v + m[12];
+  m[13] = m[1] * v + m[13];
+  m[14] = m[2] * v + m[14];
+  m[15] = m[3] * v + m[15];
+  return m;
+}
+
+function multiplyTranslateY(m, v) {
+  if(!v) {
+    return m;
+  }
+  m[12] = m[4] * v + m[12];
+  m[13] = m[5] * v + m[13];
+  m[14] = m[6] * v + m[14];
+  m[15] = m[7] * v + m[15];
+  return m;
+}
+
+function multiplyTranslateZ(m, v) {
+  if(!v) {
+    return m;
+  }
+  m[12] = m[8] * v + m[12];
+  m[13] = m[9] * v + m[13];
+  m[14] = m[10] * v + m[14];
+  m[15] = m[11] * v + m[15];
+  return m;
+}
+
+function multiplyRotateX(m, v) {
+  if(!v) {
+    return m;
+  }
+  let sin = Math.sin(v);
+  let cos = Math.cos(v);
+  let e = m[4], f = m[5], g = m[6], h = m[7], i = m[8], j = m[9], k = m[10], l = m[11];
+  m[4] = e * cos + i * sin;
+  m[5] = f * cos + g * sin;
+  m[6] = g * cos + k * sin;
+  m[7] = h * cos + l * sin;
+  m[8] = e * -sin + i * cos;
+  m[9] = f * -sin + g * cos;
+  m[10] = g * -sin + k * cos;
+  m[11] = h * -sin + l * cos;
+  return m;
+}
+
+function multiplyRotateY(m, v) {
+  if(!v) {
+    return m;
+  }
+  let sin = Math.sin(v);
+  let cos = Math.cos(v);
+  let a = m[0], b = m[1], c = m[2], d = m[3], i = m[8], j = m[9], k = m[10], l = m[11];
+  m[0] = a * cos + i * sin;
+  m[1] = b * cos + j * sin;
+  m[2] = c * cos + k * sin;
+  m[3] = d * cos + l * sin;
+  m[8] = a * -sin + i * cos;
+  m[9] = b * -sin + j * cos;
+  m[10] = c * -sin + k * sin;
+  m[11] = d * -sin + l * sin;
+  return m;
+}
+
+function multiplyRotateZ(m, v) {
+  if(!v) {
+    return m;
+  }
+  let sin = Math.sin(v);
+  let cos = Math.cos(v);
+  let a = m[0], b = m[1], c = m[2], d = m[3], e = m[4], f = m[5], g = m[6], h = m[7];
+  m[0] = a * cos + e * sin;
+  m[1] = b * cos + f * sin;
+  m[2] = c * cos + g * sin;
+  m[3] = d * cos + h * sin;
+  m[4] = a * -sin + e * cos;
+  m[5] = b * -sin + f * cos;
+  m[6] = c * -sin + g * cos;
+  m[7] = d * -sin + h * cos;
+  return m;
+}
+
+function multiplySkewX(m, v) {
+  if(!v) {
+    return m;
+  }
+  let tan = Math.tan(v);
+  m[4] += m[0] * tan;
+  m[5] += m[1] * tan;
+  m[6] += m[2] * tan;
+  m[7] += m[3] * tan;
+  return m;
+}
+
+function multiplySkewY(m, v) {
+  if(!v) {
+    return m;
+  }
+  let tan = Math.tan(v);
+  m[0] += m[4] * tan;
+  m[1] += m[5] * tan;
+  m[2] += m[6] * tan;
+  m[3] += m[7] * tan;
+  return m;
+}
+
+function multiplyScaleX(m, v) {
+  if(v === 1) {
+    return m;
+  }
+  m[0] *= v;
+  m[1] *= v;
+  m[2] *= v;
+  m[3] *= v;
+  return m;
+}
+
+function multiplyScaleY(m, v) {
+  if(v === 1) {
+    return m;
+  }
+  m[4] *= v;
+  m[5] *= v;
+  m[6] *= v;
+  m[7] *= v;
+  return m;
+}
+
+function multiplyScaleZ(m, v) {
+  if(v === 1) {
+    return m;
+  }
+  m[8] *= v;
+  m[9] *= v;
+  m[10] *= v;
+  m[11] *= v;
+  return m;
+}
+
+function multiplyPerspective(m, v) {
+  if(!v) {
+    return;
+  }
+  v = Math.max(v, 1);
+  v = -1 / v;
+  m[8] += m[12] * v;
+  m[9] += m[13] * v;
+  m[10] += m[14] * v;
+  m[11] += m[15] * v;
   return m;
 }
 
@@ -213,6 +371,18 @@ export default {
   multiply,
   multiplyTfo,
   tfoMultiply,
+  multiplyTranslateX,
+  multiplyTranslateY,
+  multiplyTranslateZ,
+  multiplyRotateX,
+  multiplyRotateY,
+  multiplyRotateZ,
+  multiplySkewX,
+  multiplySkewY,
+  multiplyScaleX,
+  multiplyScaleY,
+  multiplyScaleZ,
+  multiplyPerspective,
   calPoint,
   point2d,
   inverse,

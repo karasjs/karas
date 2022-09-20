@@ -22,7 +22,11 @@ const { STYLE_KEY: {
 }} = enums;
 const { PX, PERCENT, REM, VW, VH, VMAX, VMIN } = unit;
 const { matrix, geom } = math;
-const { identity, multiply, multiplyTfo, tfoMultiply, isE } = matrix;
+const { identity, multiply, multiplyTfo, tfoMultiply, isE,
+  multiplyTranslateX, multiplyTranslateY, multiplyTranslateZ,
+  multiplyRotateX, multiplyRotateY, multiplyRotateZ,
+  multiplySkewX, multiplySkewY, multiplyPerspective,
+  multiplyScaleX, multiplyScaleY, multiplyScaleZ } = matrix;
 const { d2r } = geom;
 
 function calSingle(t, k, v) {
@@ -158,9 +162,49 @@ function calMatrix(transform, ow, oh, root) {
   let m = identity();
   for(let i = 0, len = transform.length; i < len; i++) {
     let item = transform[i];
-    let t = identity();
-    calSingle(t, item.k, normalizeSingle(item.k, item.v, ow, oh, root));
-    m = multiply(m, t);
+    let k = item.k;
+    let v = normalizeSingle(k, item.v, ow, oh, root);
+    if(k === TRANSLATE_X) {
+      m = multiplyTranslateX(m, v);
+    }
+    else if(k === TRANSLATE_Y) {
+      m = multiplyTranslateY(m, v);
+    }
+    else if(k === TRANSLATE_Z) {
+      m = multiplyTranslateZ(m, v);
+    }
+    else if(k === ROTATE_X) {
+      m = multiplyRotateX(m, d2r(v));
+    }
+    else if(k === ROTATE_Y) {
+      m = multiplyRotateY(m, d2r(v));
+    }
+    else if(k === ROTATE_Z) {
+      m = multiplyRotateZ(m, d2r(v));
+    }
+    else if(k === SKEW_X) {
+      m = multiplySkewX(m, d2r(v));
+    }
+    else if(k === SKEW_Y) {
+      m = multiplySkewY(m, d2r(v));
+    }
+    else if(k === SCALE_X) {
+      m = multiplyScaleX(m, v);
+    }
+    else if(k === SCALE_Y) {
+      m = multiplyScaleY(m, v);
+    }
+    else if(k === SCALE_Z) {
+      m = multiplyScaleZ(m, v);
+    }
+    else if(k === PERSPECTIVE) {
+      m = multiplyPerspective(m, v);
+    }
+    else {
+      let t = identity();
+      calSingle(t, k, v);
+      m = multiply(m, t);
+    }
   }
   return m;
 }

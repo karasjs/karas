@@ -967,8 +967,8 @@ class Xom extends Node {
       return __cacheStyle[MATRIX] = this.__matrix = mx.identity();
     }
     let matrixCache = __cacheStyle[MATRIX];
-    // tx/ty/tz变化特殊优化，d/h/l不能有值，否则不能这样直接简化运算
-    if(matrixCache && lv < REFLOW && !contain(lv, TF) && !tf.isPerspectiveMatrix(matrixCache)) {
+    // tx/ty/tz变化特殊优化，d/h/l不能有值，否则不能这样直接简化运算，因为这里不包含perspective，所以一定没有
+    if(matrixCache && lv < REFLOW && !contain(lv, TF)) {
       let x = 0, y = 0, z = 0;
       let transform = __computedStyle[TRANSFORM];
       if(contain(lv, TX)) {

@@ -21972,9 +21972,9 @@
           return __cacheStyle[MATRIX$1] = this.__matrix = mx.identity();
         }
 
-        var matrixCache = __cacheStyle[MATRIX$1]; // tx/ty/tz变化特殊优化，d/h/l不能有值，否则不能这样直接简化运算
+        var matrixCache = __cacheStyle[MATRIX$1]; // tx/ty/tz变化特殊优化，d/h/l不能有值，否则不能这样直接简化运算，因为这里不包含perspective，所以一定没有
 
-        if (matrixCache && lv < REFLOW$2 && !contain$3(lv, TF$1) && !transform.isPerspectiveMatrix(matrixCache)) {
+        if (matrixCache && lv < REFLOW$2 && !contain$3(lv, TF$1)) {
           var x = 0,
               y = 0,
               z = 0;
@@ -33377,9 +33377,9 @@
             var matrix = matrixHash[parentIndex]; // 父级matrix初始化E为null，自身不为E时才运算，可以加速
 
             if (transform$1 && !isE(transform$1)) {
-              var _tfo = transformOrigin; // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
+              var tfo = transformOrigin; // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
 
-              var m = transform.calMatrixByOrigin(transform$1, _tfo[0] + __sx1 - sx1 + dx, _tfo[1] + __sy1 - sy1 + dy);
+              var m = transform.calMatrixByOrigin(transform$1, tfo[0] + __sx1 - sx1 + dx, tfo[1] + __sy1 - sy1 + dy);
 
               if (matrix) {
                 matrix = multiply(matrix, m);
@@ -33580,7 +33580,7 @@
               _cacheMask = _node2.__cacheMask,
               _cacheOverflow = _node2.__cacheOverflow;
           var transform$1 = _computedStyle[TRANSFORM$1],
-              _tfo2 = _computedStyle[TRANSFORM_ORIGIN];
+              tfo = _computedStyle[TRANSFORM_ORIGIN];
 
           if (maskStartHash.hasOwnProperty(_i2)) {
             var _maskStartHash$_i = maskStartHash[_i2],
@@ -33644,7 +33644,7 @@
           var m = void 0;
 
           if (_i2 !== index && (!isE(parentMatrix) || !isE(transform$1))) {
-            m = transform.calMatrixByOrigin(transform$1, _tfo2[0] + dbx + _node2.__sx1 - sx1 + tx, _tfo2[1] + dby + _node2.__sy1 - sy1 + ty);
+            m = transform.calMatrixByOrigin(transform$1, tfo[0] + dbx + _node2.__sx1 - sx1 + tx, tfo[1] + dby + _node2.__sy1 - sy1 + ty);
 
             if (!isE(parentMatrix)) {
               m = multiply(parentMatrix, m);
@@ -33947,7 +33947,7 @@
             lastLv = _lv2; // 计算临时的matrix，先以此节点为局部根节点原点，后面考虑逆矩阵
 
             var transform$1 = _computedStyle2[TRANSFORM$1],
-                _tfo3 = _computedStyle2[TRANSFORM_ORIGIN],
+                tfo = _computedStyle2[TRANSFORM_ORIGIN],
                 opacity = _computedStyle2[OPACITY$1];
 
             if (i !== index) {
@@ -33959,7 +33959,7 @@
             var m = void 0;
 
             if (!isE(transform$1)) {
-              m = transform.calMatrixByOrigin(transform$1, _tfo3[0] + dbx + _node3.__sx1 - sx1 + tx, _tfo3[1] + dby + _node3.__sy1 - sy1 + ty);
+              m = transform.calMatrixByOrigin(transform$1, tfo[0] + dbx + _node3.__sx1 - sx1 + tx, tfo[1] + dby + _node3.__sy1 - sy1 + ty);
 
               if (!isE(parentMatrix)) {
                 m = multiply(parentMatrix, m);
@@ -34743,8 +34743,8 @@
     if (isE(transform$1)) {
       inverse = mx.identity();
     } else {
-      var _tfo4 = transformOrigin;
-      inverse = transform.calMatrixByOrigin(transform$1, _tfo4[0] + sx1 + dx, _tfo4[1] + sy1 + dy);
+      var tfo = transformOrigin;
+      inverse = transform.calMatrixByOrigin(transform$1, tfo[0] + sx1 + dx, tfo[1] + sy1 + dy);
     }
 
     inverse = mx.inverse(inverse); // 将所有mask绘入一个单独纹理中，尺寸和原点与被遮罩total相同，才能做到顶点坐标一致
@@ -34845,12 +34845,11 @@
             if (isE(_transform)) {
               m = mx.identity();
             } else {
-              var _tfo5 = _transformOrigin2;
-              m = transform.calMatrixByOrigin(_transform, _tfo5[0] + target.bbox[0] + dx, _tfo5[1] + target.bbox[1] + dy);
+              m = transform.calMatrixByOrigin(_transform, _transformOrigin2[0] + target.bbox[0] + dx, _transformOrigin2[1] + target.bbox[1] + dy);
             }
 
             m = mx.multiply(inverse, m);
-            lastMatrix = transform.calMatrixByOrigin(_transform, tfo[0] + target.bbox[0] + dx, tfo[1] + target.bbox[1] + dy);
+            lastMatrix = transform.calMatrixByOrigin(_transform, _transformOrigin2[0] + target.bbox[0] + dx, _transformOrigin2[1] + target.bbox[1] + dy);
 
             if (!isE(parentMatrix)) {
               lastMatrix = multiply(parentMatrix, lastMatrix);

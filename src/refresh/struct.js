@@ -1361,11 +1361,10 @@ function genMaskWebgl(gl, texCache, node, cache, W, H, lv, __structs) {
             m = mx.identity();
           }
           else {
-            let tfo = transformOrigin;
-            m = tf.calMatrixByOrigin(transform, tfo[0] + target.bbox[0] + dx, tfo[1] + target.bbox[1] + dy);
+            m = tf.calMatrixByOrigin(transform, transformOrigin[0] + target.bbox[0] + dx, transformOrigin[1] + target.bbox[1] + dy);
           }
           m = mx.multiply(inverse, m);
-          lastMatrix = tf.calMatrixByOrigin(transform, tfo[0] + target.bbox[0] + dx, tfo[1] + target.bbox[1] + dy);
+          lastMatrix = tf.calMatrixByOrigin(transform, transformOrigin[0] + target.bbox[0] + dx, transformOrigin[1] + target.bbox[1] + dy);
           if(!isE(parentMatrix)) {
             lastMatrix = multiply(parentMatrix, lastMatrix);
           }

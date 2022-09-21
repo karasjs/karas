@@ -14134,41 +14134,6 @@
       multiplyScaleZ$1 = matrix.multiplyScaleZ;
   var d2r$1 = geom.d2r;
 
-  function calSingle(t, k, v) {
-    if (k === TRANSLATE_X$3) {
-      t[12] = v;
-    } else if (k === TRANSLATE_Y$3) {
-      t[13] = v;
-    } else if (k === TRANSLATE_Z$3) {
-      t[14] = v;
-    } else if (k === SCALE_X$3) {
-      t[0] = v;
-    } else if (k === SCALE_Y$3) {
-      t[5] = v;
-    } else if (k === SCALE_Z$2) {
-      t[10] = v;
-    } else if (k === SKEW_X$2) {
-      v = d2r$1(v);
-      t[4] = Math.tan(v);
-    } else if (k === SKEW_Y$2) {
-      v = d2r$1(v);
-      t[1] = Math.tan(v);
-    } else if (k === ROTATE_X$2) {
-      calRotateX$1(t, v);
-    } else if (k === ROTATE_Y$2) {
-      calRotateY$1(t, v);
-    } else if (k === ROTATE_Z$4) {
-      calRotateZ$1(t, v);
-    } else if (k === ROTATE_3D$3) {
-      calRotate3d$1(t, v.v);
-    } else if (k === PERSPECTIVE$3 && v > 0) {
-      v = Math.max(v, 1);
-      t[11] = -1 / v;
-    } else if (k === MATRIX$3) {
-      util.assignMatrix(t, v);
-    }
-  }
-
   function calRotateX$1(t, v) {
     v = d2r$1(v);
     var sin = Math.sin(v);
@@ -14307,10 +14272,12 @@
         m = multiplyScaleZ$1(m, v);
       } else if (k === PERSPECTIVE$3) {
         m = multiplyPerspective(m, v);
-      } else {
+      } else if (k === ROTATE_3D$3) {
         var t = identity();
-        calSingle(t, k, v);
+        calRotate3d$1(t, [v[0], v[1], v[2], v[3].v]);
         m = multiply$3(m, t);
+      } else if (k === MATRIX$3) {
+        m = multiply$3(m, v);
       }
     }
 

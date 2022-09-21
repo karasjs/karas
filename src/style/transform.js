@@ -66,7 +66,7 @@ function calSingle(t, k, v) {
     calRotateZ(t, v);
   }
   else if(k === ROTATE_3D) {
-    calRotate3d(t, v.v);
+    calRotate3d(t, [v[0], v[1], v[2], v[3].v]);
   }
   else if(k === PERSPECTIVE && v > 0) {
     v = Math.max(v, 1);
@@ -220,10 +220,13 @@ function calMatrix(transform, ow, oh, root) {
     else if(k === PERSPECTIVE) {
       m = multiplyPerspective(m, v);
     }
-    else {
+    else if(k === ROTATE_3D) {
       let t = identity();
-      calSingle(t, k, v);
+      calRotate3d(t, [v[0], v[1], v[2], v[3].v]);
       m = multiply(m, t);
+    }
+    else if(k === MATRIX) {
+      m = multiply(m, v);
     }
   }
   return m;

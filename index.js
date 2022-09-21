@@ -14969,7 +14969,7 @@
 
   var TRANSLATE_Z$2 = 8; //                                1000
 
-  var TRANSLATE$1 = 14; //                                 1110
+  var TRANSLATE = 14; //                                 1110
 
   var SCALE_X$2 = 16; //                                  10000
 
@@ -15005,7 +15005,7 @@
     TRANSLATE_X: TRANSLATE_X$2,
     TRANSLATE_Y: TRANSLATE_Y$2,
     TRANSLATE_Z: TRANSLATE_Z$2,
-    TRANSLATE: TRANSLATE$1,
+    TRANSLATE: TRANSLATE,
     SCALE_X: SCALE_X$2,
     SCALE_Y: SCALE_Y$2,
     SCALE_Z: SCALE_Z$1,
@@ -21140,16 +21140,16 @@
       multiplyScaleX = mx.multiplyScaleX,
       multiplyScaleY = mx.multiplyScaleY,
       multiplyScaleZ = mx.multiplyScaleZ;
-  var contain$3 = o$1.contain,
-      exclude = o$1.exclude,
-      TF$1 = o$1.TRANSFORM,
+  var contain$3 = o$1.contain;
+      o$1.exclude;
+      var TF$1 = o$1.TRANSFORM,
       REFLOW$2 = o$1.REFLOW,
       REPAINT$3 = o$1.REPAINT,
       TX = o$1.TRANSLATE_X,
       TY = o$1.TRANSLATE_Y,
-      TZ = o$1.TRANSLATE_Z,
-      TRANSLATE = o$1.TRANSLATE,
-      SX = o$1.SCALE_X,
+      TZ = o$1.TRANSLATE_Z;
+      o$1.TRANSLATE;
+      var SX = o$1.SCALE_X,
       SY = o$1.SCALE_Y,
       SZ = o$1.SCALE_Z,
       SCALE = o$1.SCALE,
@@ -22010,20 +22010,16 @@
         }
 
         var matrixCache = __cacheStyle[MATRIX$1],
-            onlyTranslate,
-            onlyScale;
+            optimize; // 优化计算scale不能为0，无法计算倍数差
 
         if (matrixCache && lv < REFLOW$2 && !contain$3(lv, TF$1)) {
-          onlyTranslate = exclude(lv, TRANSLATE);
-          onlyScale = exclude(lv, SCALE); // scale原本为0时无法优化计算，因为不知道倍数差
-
-          if (onlyScale && (!__computedStyle[SCALE_X] || !__computedStyle[SCALE_Y] || !__computedStyle[SCALE_Z])) {
-            onlyScale = false;
+          if (contain$3(lv, SX) && !__computedStyle[SCALE_X] || contain$3(lv, SY) && !__computedStyle[SCALE_Y] || contain$3(lv, SZ) && !__computedStyle[SCALE_Z]) ; else {
+            optimize = true;
           }
-        } // translate变化特殊优化，d/h/l不能有值，否则不能这样直接简化运算，因为这里不包含perspective，所以一定没有
+        } // translate/scale变化特殊优化，d/h/l不能有值，否则不能这样直接简化运算，因为这里不包含perspective，所以一定没有
 
 
-        if (onlyTranslate) {
+        if (optimize) {
           var transform$1 = __computedStyle[TRANSFORM$3];
 
           if (contain$3(lv, TX)) {
@@ -22076,9 +22072,6 @@
             transform$1[14] += z;
             matrixCache[14] += z;
           }
-        } // 同上，但是优化步骤不如它，需要根据transform值计算差值，再重新算tfo得matrixCache，前面已排除0为除数
-        else if (onlyScale) {
-          var _transform = __computedStyle[TRANSFORM$3];
 
           if (contain$3(lv, SX)) {
             var _v3 = __currentStyle[SCALE_X].v;
@@ -22086,9 +22079,9 @@
             var _x = _v3 / __computedStyle[SCALE_X];
 
             __computedStyle[SCALE_X] = _v3;
-            _transform[0] *= _x;
-            _transform[1] *= _x;
-            _transform[2] *= _x;
+            transform$1[0] *= _x;
+            transform$1[1] *= _x;
+            transform$1[2] *= _x;
           }
 
           if (contain$3(lv, SY)) {
@@ -22097,9 +22090,9 @@
             var _y = _v4 / __computedStyle[SCALE_Y];
 
             __computedStyle[SCALE_Y] = _v4;
-            _transform[4] *= _y;
-            _transform[5] *= _y;
-            _transform[6] *= _y;
+            transform$1[4] *= _y;
+            transform$1[5] *= _y;
+            transform$1[6] *= _y;
           }
 
           if (contain$3(lv, SZ)) {
@@ -22108,13 +22101,15 @@
             var _z = _v5 / __computedStyle[SCALE_Z];
 
             __computedStyle[SCALE_Z] = _v5;
-            _transform[8] *= _z;
-            _transform[9] *= _z;
-            _transform[10] *= _z;
+            transform$1[8] *= _z;
+            transform$1[9] *= _z;
+            transform$1[10] *= _z;
           }
 
-          var tfo = __computedStyle[TRANSFORM_ORIGIN$2];
-          matrixCache = __cacheStyle[MATRIX$1] = transform.calMatrixByOrigin(_transform, tfo[0] + __sx1, tfo[1] + __sy1);
+          if (contain$3(lv, SCALE)) {
+            var tfo = __computedStyle[TRANSFORM_ORIGIN$2];
+            matrixCache = __cacheStyle[MATRIX$1] = transform.calMatrixByOrigin(transform$1, tfo[0] + __sx1, tfo[1] + __sy1);
+          }
         } // 先根据cache计算需要重新计算的computedStyle
         else {
           if (__cacheStyle[TRANSFORM_ORIGIN$2] === undefined) {

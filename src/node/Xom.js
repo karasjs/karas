@@ -972,19 +972,19 @@ class Xom extends Node {
       __computedStyle[TRANSFORM_ORIGIN] = [__sx1, __sy1];
       return __cacheStyle[MATRIX] = this.__matrix = mx.identity();
     }
-    let matrixCache = __cacheStyle[MATRIX], onlyTranslate, onlyScale;
+    let matrixCache = __cacheStyle[MATRIX], optimize;
+    // 优化计算scale不能为0，无法计算倍数差
     if(matrixCache && lv < REFLOW && !contain(lv, TF)) {
-      onlyTranslate = exclude(lv, TRANSLATE);
-      onlyScale = exclude(lv, SCALE);
-      // scale原本为0时无法优化计算，因为不知道倍数差
-      if(onlyScale && (!__computedStyle[SCALE_X]
-        || !__computedStyle[SCALE_Y]
-        || !__computedStyle[SCALE_Z])) {
-        onlyScale = false;
+      if(contain(lv, SX) && !__computedStyle[SCALE_X]
+        || contain(lv, SY) && !__computedStyle[SCALE_Y]
+        || contain(lv, SZ) && !__computedStyle[SCALE_Z]) {
+      }
+      else {
+        optimize = true;
       }
     }
-    // translate变化特殊优化，d/h/l不能有值，否则不能这样直接简化运算，因为这里不包含perspective，所以一定没有
-    if(onlyTranslate) {
+    // translate/scale变化特殊优化，d/h/l不能有值，否则不能这样直接简化运算，因为这里不包含perspective，所以一定没有
+    if(optimize) {
       let transform = __computedStyle[TRANSFORM];
       if(contain(lv, TX)) {
         let v = __currentStyle[TRANSLATE_X];
@@ -1034,10 +1034,6 @@ class Xom extends Node {
         transform[14] += z;
         matrixCache[14] += z;
       }
-    }
-    // 同上，但是优化步骤不如它，需要根据transform值计算差值，再重新算tfo得matrixCache，前面已排除0为除数
-    else if(onlyScale) {
-      let transform = __computedStyle[TRANSFORM];
       if(contain(lv, SX)) {
         let v = __currentStyle[SCALE_X].v;
         let x = v / __computedStyle[SCALE_X];
@@ -1062,8 +1058,10 @@ class Xom extends Node {
         transform[9] *= z;
         transform[10] *= z;
       }
-      let tfo = __computedStyle[TRANSFORM_ORIGIN];
-      matrixCache = __cacheStyle[MATRIX] = tf.calMatrixByOrigin(transform, tfo[0] + __sx1, tfo[1] + __sy1);
+      if(contain(lv, SCALE)) {
+        let tfo = __computedStyle[TRANSFORM_ORIGIN];
+        matrixCache = __cacheStyle[MATRIX] = tf.calMatrixByOrigin(transform, tfo[0] + __sx1, tfo[1] + __sy1);
+      }
     }
     // 先根据cache计算需要重新计算的computedStyle
     else {

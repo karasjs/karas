@@ -228,10 +228,7 @@ class Cache {
       next = next.next;
     }
     let { x, y, ctx, dbx, dby } = cacheMask;
-    tfo = tfo.slice(0);
-    tfo[0] += x + dbx;
-    tfo[1] += y + dby;
-    let inverse = tf.calMatrixByOrigin(transform, tfo);
+    let inverse = tf.calMatrixByOrigin(transform, tfo[0] + x + dbx, tfo[1] + y + dby);
     if(isE(inverse)) {
       inverse = null;
     }

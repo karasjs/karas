@@ -10,9 +10,9 @@ const { STYLE_KEY: {
   PERSPECTIVE: PPT,
   PERSPECTIVE_ORIGIN,
   Z_INDEX,
-  SCALE_X,
-  SCALE_Y,
-  SCALE_Z,
+  SCALE_X: SX,
+  SCALE_Y: SY,
+  SCALE_Z: SZ,
   ROTATE_X,
   ROTATE_Y,
   ROTATE_Z,
@@ -34,20 +34,25 @@ const CACHE = 1; //                                         1
 const TRANSLATE_X = 2; //                                  10
 const TRANSLATE_Y = 4; //                                 100
 const TRANSLATE_Z = 8; //                                1000
-const TRANSFORM = 16; //                                10000
-const TRANSFORM_ALL = 30; //                            11110
-const OPACITY = 32; //                                 100000
-const FILTER = 64; //                                 1000000
-const MIX_BLEND_MODE = 128; //                       10000000
-const PERSPECTIVE = 256; //                         100000000
+const TRANSLATE = 14; //                                 1110
+const SCALE_X = 16; //                                  10000
+const SCALE_Y = 32; //                                 100000
+const SCALE_Z = 64; //                                1000000
+const SCALE = 112; //                                 1110000
+const TRANSFORM = 128; //                            10000000
+const TRANSFORM_ALL = 254; //                        11111110
+const OPACITY = 256; //                             100000000
+const FILTER = 512; //                             1000000000
+const MIX_BLEND_MODE = 1024; //                   10000000000
+const PERSPECTIVE = 2048; //                     100000000000
 
-const REPAINT = 512; //                            1000000000
+const REPAINT = 4096; //                        1000000000000
 
 // 高位表示reflow
-const REFLOW = 1024; //                           10000000000
+const REFLOW = 8192; //                        10000000000000
 
 // 特殊高位表示rebuild，节点发生变化
-const REBUILD = 2048; //                         100000000000
+const REBUILD = 16384; //                     100000000000000
 
 const ENUM = {
   NONE,
@@ -55,6 +60,11 @@ const ENUM = {
   TRANSLATE_X,
   TRANSLATE_Y,
   TRANSLATE_Z,
+  TRANSLATE,
+  SCALE_X,
+  SCALE_Y,
+  SCALE_Z,
+  SCALE,
   TRANSFORM,
   TRANSFORM_ALL,
   OPACITY,
@@ -67,14 +77,18 @@ const ENUM = {
 };
 
 function isTransforms(k) {
-  return k === SCALE_X || k === SCALE_Y || k === SCALE_Z
-    || k === ROTATE_X || k === ROTATE_Y || k === ROTATE_Z || k === ROTATE_3D
+  return k === ROTATE_X || k === ROTATE_Y || k === ROTATE_Z || k === ROTATE_3D
     || k === SKEW_X || k === SKEW_Y || k === TF || k === TRANSFORM_ORIGIN;
 }
 
 let o = Object.assign({
+  // 是否包含value之内的
   contain(lv, value) {
     return (lv & value) > 0;
+  },
+  // 是否不包含value之外的
+  exclude(lv, value) {
+    return (lv | value) === value;
   },
   /**
    * 得出等级
@@ -96,6 +110,15 @@ let o = Object.assign({
     }
     if(k === TZ) {
       return TRANSLATE_Z;
+    }
+    if(k === SX) {
+      return SCALE_X;
+    }
+    if(k === SY) {
+      return SCALE_Y;
+    }
+    if(k === SZ) {
+      return SCALE_Z;
     }
     if(k === OP) {
       return OPACITY;

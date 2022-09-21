@@ -133,7 +133,10 @@ const { int2rgba, rgba2int, joinArr, isNil, isFunction } = util;
 const { calRelative, calNormalLineHeight, calFontFamily, spreadBoxShadow, spreadFilter } = css;
 const { GEOM } = change;
 const { mbmName, isValidMbm } = mbm;
-const { point2d } = mx;
+const { point2d,  multiply,
+  multiplyRotateX, multiplyRotateY, multiplyRotateZ,
+  multiplySkewX, multiplySkewY,
+  multiplyScaleX, multiplyScaleY, multiplyScaleZ } = mx;
 
 const {
   contain,
@@ -143,9 +146,14 @@ const {
   TRANSLATE_X: TX,
   TRANSLATE_Y: TY,
   TRANSLATE_Z: TZ,
+  SCALE_X: SX,
+  SCALE_Y: SY,
+  SCALE_Z: SZ,
   TRANSFORM_ALL,
   CACHE,
 } = level;
+const { d2r } = geom;
+const { calRotateX, calRotateY, calRotateZ, calRotate3d } = tf;
 
 function getFirstEmptyInlineWidth(xom) {
   let n = 0;
@@ -961,13 +969,23 @@ class Xom extends Node {
       __computedStyle[TRANSFORM_ORIGIN] = [__sx1, __sy1];
       return __cacheStyle[MATRIX] = this.__matrix = mx.identity();
     }
-    let matrixCache = __cacheStyle[MATRIX];
-    // tx/ty/tz变化特殊优化
+    let matrixCache = __cacheStyle[MATRIX], optimize;
+    // 优化计算scale不能为0，无法计算倍数差
     if(matrixCache && lv < REFLOW && !contain(lv, TF)) {
-      let x = 0, y = 0, z = 0;
+      if(contain(lv, SX) && !__computedStyle[SCALE_X]
+        || contain(lv, SY) && !__computedStyle[SCALE_Y]
+        || contain(lv, SZ) && !__computedStyle[SCALE_Z]) {
+      }
+      else {
+        optimize = true;
+      }
+    }
+    // translate/scale变化特殊优化，d/h/l不能有值，否则不能这样直接简化运算，因为这里不包含perspective，所以一定没有
+    if(optimize) {
+      let transform = __computedStyle[TRANSFORM];
       if(contain(lv, TX)) {
         let v = __currentStyle[TRANSLATE_X];
-        if(isNil(v)) {
+        if(!v) {
           v = 0;
         }
         else if(v.u === PX) {
@@ -976,14 +994,14 @@ class Xom extends Node {
         else {
           v = this.__calSize(v, this.__offsetWidth, true);
         }
-        x = v - (__computedStyle[TRANSLATE_X] || 0);
+        let x = v - __computedStyle[TRANSLATE_X];
         __computedStyle[TRANSLATE_X] = v;
-        __computedStyle[TRANSFORM][12] += x;
+        transform[12] += x;
         matrixCache[12] += x;
       }
       if(contain(lv, TY)) {
         let v = __currentStyle[TRANSLATE_Y];
-        if(isNil(v)) {
+        if(!v) {
           v = 0;
         }
         else if(v.u === PX) {
@@ -992,25 +1010,54 @@ class Xom extends Node {
         else {
           v = this.__calSize(v, this.__offsetHeight, true);
         }
-        y = v - (__computedStyle[TRANSLATE_Y] || 0);
+        let y = v - __computedStyle[TRANSLATE_Y];
         __computedStyle[TRANSLATE_Y] = v;
-        __computedStyle[TRANSFORM][13] += y;
+        transform[13] += y;
         matrixCache[13] += y;
       }
       if(contain(lv, TZ)) {
         let v = __currentStyle[TRANSLATE_Z];
-        if(isNil(v)) {
+        if(!v) {
           v = 0;
+        }
+        else if(v.u === PX) {
+          v = v.v;
         }
         else {
           v = this.__calSize(v, this.__offsetWidth, true);
         }
-        z = v - (__computedStyle[TRANSLATE_Z] || 0);
+        let z = v - __computedStyle[TRANSLATE_Z];
         __computedStyle[TRANSLATE_Z] = v;
-        __computedStyle[TRANSFORM][14] += z;
+        transform[14] += z;
         matrixCache[14] += z;
       }
-      __cacheStyle[MATRIX] = matrixCache;
+      if(contain(lv, SX)) {
+        let v = __currentStyle[SCALE_X].v;
+        let x = v / __computedStyle[SCALE_X];
+        __computedStyle[SCALE_X] = v;
+        transform[0] *= x;
+        transform[1] *= x;
+        transform[2] *= x;
+        matrixCache = null;
+      }
+      if(contain(lv, SY)) {
+        let v = __currentStyle[SCALE_Y].v;
+        let y = v / __computedStyle[SCALE_Y];
+        __computedStyle[SCALE_Y] = v;
+        transform[4] *= y;
+        transform[5] *= y;
+        transform[6] *= y;
+        matrixCache = null;
+      }
+      if(contain(lv, SZ)) {
+        let v = __currentStyle[SCALE_Z].v;
+        let z = v / __computedStyle[SCALE_Z];
+        __computedStyle[SCALE_Z] = v;
+        transform[8] *= z;
+        transform[9] *= z;
+        transform[10] *= z;
+        matrixCache = null;
+      }
     }
     // 先根据cache计算需要重新计算的computedStyle
     else {
@@ -1055,64 +1102,164 @@ class Xom extends Node {
         }
         // 没有transform则看是否有扩展的css独立变换属性
         else {
-          let temp = [];
-          [
-            TRANSLATE_X,
-            TRANSLATE_Y,
-            TRANSLATE_Z,
-            ROTATE_X,
-            ROTATE_Y,
-            ROTATE_Z,
-            ROTATE_3D,
-            SKEW_X,
-            SKEW_Y,
-            SCALE_X,
-            SCALE_Y,
-            SCALE_Z,
-          ].forEach(k => {
-            // 删除之前遗留的
-            delete __computedStyle[k];
-            let v = __currentStyle[k];
-            if(isNil(v)) {
-              return;
+          __computedStyle[TRANSLATE_X] = 0;
+          let v = __currentStyle[TRANSLATE_X];
+          if(v) {
+            v = __computedStyle[TRANSLATE_X] = this.__calSize(v, this.__offsetWidth, true);
+            if(v) {
+              matrix = matrix || mx.identity();
+              matrix[12] = v;
             }
-            if(k === ROTATE_3D) {
-              __computedStyle[k] = [v[0], v[1], v[2], v[3].v];
-              if(v[3].v === 0) {
-                return;
+          }
+          __computedStyle[TRANSLATE_Y] = 0;
+          v = __currentStyle[TRANSLATE_Y];
+          if(v) {
+            v = __computedStyle[TRANSLATE_Y] = this.__calSize(v, this.__offsetHeight, true);
+            if(v) {
+              matrix = matrix || mx.identity();
+              matrix[13] = v;
+            }
+          }
+          __computedStyle[TRANSLATE_Z] = 0;
+          v = __currentStyle[TRANSLATE_Z];
+          if(v) {
+            v = __computedStyle[TRANSLATE_Z] = this.__calSize(v, this.__offsetWidth, true);
+            if(v) {
+              matrix = matrix || mx.identity();
+              matrix[14] = v;
+            }
+          }
+          __computedStyle[ROTATE_X] = 0;
+          v = __currentStyle[ROTATE_X];
+          if(v) {
+            v = __computedStyle[ROTATE_X] = v.v;
+            if(v) {
+              matrix = matrix || mx.identity();
+              if(matrix) {
+                matrix = multiplyRotateX(matrix, d2r(v));
               }
-              temp.push({k, v});
-              return;
-            }
-            __computedStyle[k] = v.v;
-            if(k === ROTATE_X || k === ROTATE_Y || k === ROTATE_Z) {
-              if(v.v !== 0) {
-                temp.push({k, v});
+              else {
+                matrix = calRotateX(mx.identity(), v);
               }
-              return;
             }
-            // scale为1和其它为0避免计算浪费
-            let isScale = k === SCALE_X || k === SCALE_Y || k === SCALE_Z;
-            if(v.v === 1 && isScale || !isScale && v.v === 0) {
-              return;
+          }
+          __computedStyle[ROTATE_Y] = 0;
+          v = __currentStyle[ROTATE_Y];
+          if(v) {
+            v = __computedStyle[ROTATE_Y] = v.v;
+            if(v) {
+              if(matrix) {
+                matrix = multiplyRotateY(matrix, d2r(v));
+              }
+              else {
+                matrix = calRotateY(mx.identity(), v);
+              }
             }
-            let p = k === TRANSLATE_X || k === TRANSLATE_Z ? __offsetWidth : __offsetHeight;
-            __computedStyle[k] = this.__calSize(v, p, true);
-            temp.push({k, v});
-          });
-          if(temp.length) {
-            matrix = tf.calMatrix(temp, __offsetWidth, __offsetHeight, this.__root);
+          }
+          __computedStyle[ROTATE_Z] = 0;
+          v = __currentStyle[ROTATE_Z];
+          if(v) {
+            v = __computedStyle[ROTATE_Z] = v.v;
+            if(v) {
+              if(matrix) {
+                matrix = multiplyRotateZ(matrix, d2r(v));
+              }
+              else {
+                matrix = calRotateZ(mx.identity(), v);
+              }
+            }
+          }
+          __computedStyle[ROTATE_3D] = [0, 0, 0, 0];
+          v = __currentStyle[ROTATE_3D];
+          if(v) {
+            v = __computedStyle[ROTATE_3D] = [v[0], v[1], v[2], v[3].v];
+            if((v[0] || v[1] || v[2]) && v[3]) {
+              if(matrix) {
+                matrix = multiply(matrix, calRotate3d(mx.identity(), v));
+              }
+              else {
+                matrix = calRotate3d(mx.identity(), v);
+              }
+            }
+          }
+          __computedStyle[SKEW_X] = 0;
+          v = __currentStyle[SKEW_X];
+          if(v) {
+            v = __computedStyle[SKEW_X] = v.v;
+            if(v) {
+              if(matrix) {
+                matrix = multiplySkewX(matrix, d2r(v));
+              }
+              else {
+                matrix = mx.identity();
+                matrix[4] = Math.tan(d2r(v));
+              }
+            }
+          }
+          __computedStyle[SKEW_Y] = 0;
+          v = __currentStyle[SKEW_Y];
+          if(v) {
+            v = __computedStyle[SKEW_Y] = v.v;
+            if(v) {
+              if(matrix) {
+                matrix = multiplySkewY(matrix, d2r(v));
+              }
+              else {
+                matrix = mx.identity();
+                matrix[1] = Math.tan(d2r(v));
+              }
+            }
+          }
+          __computedStyle[SCALE_X] = 1;
+          v = __currentStyle[SCALE_X];
+          if(v) {
+            v = __computedStyle[SCALE_X] = v.v;
+            if(v !== 1) {
+              if(matrix) {
+                matrix = multiplyScaleX(matrix, v);
+              }
+              else {
+                matrix = mx.identity();
+                matrix[0] = v;
+              }
+            }
+          }
+          __computedStyle[SCALE_Y] = 1;
+          v = __currentStyle[SCALE_Y];
+          if(v) {
+            v = __computedStyle[SCALE_Y] = v.v;
+            if(v !== 1) {
+              if(matrix) {
+                matrix = multiplyScaleY(matrix, v);
+              }
+              else {
+                matrix = mx.identity();
+                matrix[5] = v;
+              }
+            }
+          }
+          __computedStyle[SCALE_Z] = 1;
+          v = __currentStyle[SCALE_Z];
+          if(v) {
+            v = __computedStyle[SCALE_Z] = v.v;
+            if(v !== 1) {
+              if(matrix) {
+                matrix = multiplyScaleZ(matrix, v);
+              }
+              else {
+                matrix = mx.identity();
+                matrix[10] = v;
+              }
+            }
           }
         }
         __computedStyle[TRANSFORM] = matrix || mx.identity();
       }
-      if(!matrixCache) {
-        let m = __computedStyle[TRANSFORM];
-        let tfo = __computedStyle[TRANSFORM_ORIGIN].slice(0);
-        tfo[0] += __sx1 || 0;
-        tfo[1] += __sy1 || 0;
-        matrixCache = __cacheStyle[MATRIX] = tf.calMatrixByOrigin(m, tfo);
-      }
+    }
+    if(!matrixCache) {
+      let m = __computedStyle[TRANSFORM];
+      let tfo = __computedStyle[TRANSFORM_ORIGIN];
+      matrixCache = __cacheStyle[MATRIX] = tf.calMatrixByOrigin(m, tfo[0] + __sx1, tfo[1] + __sy1);
     }
     return this.__matrix = matrixCache;
   }
@@ -1494,7 +1641,7 @@ class Xom extends Node {
   }
 
   __calPerspective(__currentStyle, __computedStyle, __cacheStyle) {
-    this.__perspectiveMatrix = [];
+    this.__perspectiveMatrix = null;
     let rebuild;
     let { __sx1, __sy1 } = this;
     if(isNil(__cacheStyle[PERSPECTIVE])) {
@@ -1513,10 +1660,8 @@ class Xom extends Node {
     let ppt = __computedStyle[PERSPECTIVE];
     // perspective为0无效
     if(rebuild && ppt) {
-      let po = __computedStyle[PERSPECTIVE_ORIGIN].slice(0);
-      po[0] += __sx1 || 0;
-      po[1] += __sy1 || 0;
-      this.__perspectiveMatrix = tf.calPerspectiveMatrix(ppt, po);
+      let po = __computedStyle[PERSPECTIVE_ORIGIN];
+      this.__perspectiveMatrix = tf.calPerspectiveMatrix(ppt, po[0] + __sx1, po[1] + __sy1);
     }
     return this.__perspectiveMatrix;
   }

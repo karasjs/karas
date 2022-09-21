@@ -70,9 +70,9 @@ class Cache {
   __appendData(sx1, sy1) {
     this.sx1 = sx1; // 去除margin的左上角原点坐标
     this.sy1 = sy1;
-    let bbox = this.bbox;
-    this.dx = this.x - bbox[0]; // cache坐标和box原点的差值
-    this.dy = this.y - bbox[1];
+    let bbox = this.__bbox;
+    this.dx = this.__x - bbox[0]; // cache坐标和box原点的差值
+    this.dy = this.__y - bbox[1];
     this.dbx = sx1 - bbox[0]; // 原始sx1/sy1和box原点的差值
     this.dby = sy1 - bbox[1];
     this.update();
@@ -117,6 +117,14 @@ class Cache {
     }
     let { page, pos } = res;
     this.__init(w, h, bbox, page, pos, x1, y1);
+  }
+
+  __offsetY(diff) {
+    this.sy1 += diff;
+    let bbox = this.__bbox;
+    bbox[1] += diff;
+    bbox[3] += diff;
+    this.dy -= diff;
   }
 
   // 是否功能可用，生成离屏canvas及尺寸超限

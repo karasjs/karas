@@ -21977,7 +21977,7 @@
               var oh = this.outerHeight;
 
               if (oh < data.h) {
-                this.__offsetY((data.h - oh) * 0.5, false, null);
+                this.__offsetY((data.h - oh) * 0.5, true, null);
               }
             }
           } else {
@@ -21985,7 +21985,7 @@
               var ow = this.outerWidth;
 
               if (ow < data.w) {
-                this.__offsetX((data.w - ow) * 0.5, false, null);
+                this.__offsetX((data.w - ow) * 0.5, true, null);
               }
             }
           }
@@ -23993,14 +23993,14 @@
       key: "__deepScan",
       value: function __deepScan(cb, options) {
         return cb(this, options);
-      } // isLayout为false时，为relative，true则是absolute等直接改layoutData数据的
-      // lv是reflow偏移时传入，需要清除cacheStyle
+      } // isLayout为false时，为relative，true则是absolute/justify/marginAuto等直接改layoutData数据的
+      // lv是reflow偏移时传入，需要清除cacheStyle，并且对位图cache进行偏移设置
       // 注意所有的offset/resize都要避免display:none的，比如合并margin导致block的孩子inline因clamp为none时没有layoutData
 
     }, {
       key: "__offsetX",
       value: function __offsetX(diff, isLayout, lv) {
-        if (this.computedStyle[DISPLAY$6] === 'none') {
+        if (this.__computedStyle[DISPLAY$6] === 'none') {
           return;
         }
 
@@ -24008,7 +24008,6 @@
 
         if (isLayout) {
           this.__layoutData.x += diff;
-          this.clearCache();
         }
 
         this.__sx1 += diff;
@@ -24026,12 +24025,22 @@
 
             this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
           }
+
+          if (this.__bbox) {
+            this.__bbox[0] += diff;
+            this.__bbox[2] += diff;
+          }
+
+          if (this.__filterBbox) {
+            this.__filterBbox[0] += diff;
+            this.__filterBbox[2] += diff;
+          }
         }
       }
     }, {
       key: "__offsetY",
       value: function __offsetY(diff, isLayout, lv) {
-        if (this.computedStyle[DISPLAY$6] === 'none') {
+        if (this.__computedStyle[DISPLAY$6] === 'none') {
           return;
         }
 
@@ -24039,7 +24048,6 @@
 
         if (isLayout) {
           this.__layoutData && (this.__layoutData.y += diff);
-          this.clearCache();
         }
 
         this.__sy1 += diff;
@@ -24057,16 +24065,46 @@
 
             this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
           }
+
+          if (this.__bbox) {
+            this.__bbox[1] += diff;
+            this.__bbox[3] += diff;
+          }
+
+          if (this.__filterBbox) {
+            this.__filterBbox[1] += diff;
+            this.__filterBbox[3] += diff;
+          }
+
+          if (this.__cache) {
+            this.__cache.__offsetY(diff);
+          }
+
+          if (this.__cacheTotal) {
+            this.__cacheTotal.__offsetY(diff);
+          }
+
+          if (this.__cacheOverflow) {
+            this.__cacheOverflow.__offsetY(diff);
+          }
+
+          if (this.__cacheFilter) {
+            this.__cacheFilter.__offsetY(diff);
+          }
+
+          if (this.__cacheMask) {
+            this.__cacheMask.__offsetY(diff);
+          }
         }
       }
     }, {
       key: "__resizeX",
       value: function __resizeX(diff, lv) {
-        if (this.computedStyle[DISPLAY$6] === 'none') {
+        if (this.__computedStyle[DISPLAY$6] === 'none') {
           return;
         }
 
-        this.computedStyle.width = this.__width += diff;
+        this.__computedStyle.width = this.__width += diff;
         this.__clientWidth += diff;
         this.__offsetWidth += diff;
         this.__outerWidth += diff;
@@ -27453,11 +27491,15 @@
         }
 
         return free;
-      } // 设置y偏移值，递归包括children，此举在justify-content/margin-auto等对齐用
+      } // 设置y偏移值，递归包括children，此举在justify-content/margin-auto/relative等对齐用
 
     }, {
       key: "__offsetX",
       value: function __offsetX(diff, isLayout, lv) {
+        if (this.__computedStyle[DISPLAY$3] === 'none') {
+          return;
+        }
+
         _get(_getPrototypeOf(Dom.prototype), "__offsetX", this).call(this, diff, isLayout, lv);
 
         var ep = this.__ellipsis;
@@ -27480,7 +27522,7 @@
     }, {
       key: "__offsetY",
       value: function __offsetY(diff, isLayout, lv) {
-        if (this.computedStyle[DISPLAY$3] === 'none') {
+        if (this.__computedStyle[DISPLAY$3] === 'none') {
           return;
         }
 
@@ -32701,10 +32743,10 @@
         this.sx1 = sx1; // 去除margin的左上角原点坐标
 
         this.sy1 = sy1;
-        var bbox = this.bbox;
-        this.dx = this.x - bbox[0]; // cache坐标和box原点的差值
+        var bbox = this.__bbox;
+        this.dx = this.__x - bbox[0]; // cache坐标和box原点的差值
 
-        this.dy = this.y - bbox[1];
+        this.dy = this.__y - bbox[1];
         this.dbx = sx1 - bbox[0]; // 原始sx1/sy1和box原点的差值
 
         this.dby = sy1 - bbox[1];
@@ -32761,6 +32803,15 @@
             pos = res.pos;
 
         this.__init(w, h, bbox, page, pos, x1, y1);
+      }
+    }, {
+      key: "__offsetY",
+      value: function __offsetY(diff) {
+        this.sy1 += diff;
+        var bbox = this.__bbox;
+        bbox[1] += diff;
+        bbox[3] += diff;
+        this.dy -= diff;
       } // 是否功能可用，生成离屏canvas及尺寸超限
 
     }, {
@@ -35388,7 +35439,8 @@
             release: function release() {
               this.available = false;
               delete virtualDom.cache;
-            }
+            },
+            __offsetY: function __offsetY() {}
           };
           node.__cacheTotal.available = true;
         } // 渲染后更新取值
@@ -36151,11 +36203,12 @@
         }
       }
     }
+
+    console.log(mergeList);
     /**
      * 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
      * 这样保证子节点在前，后节点在前，后节点是为了mask先应用自身如filter之后再进行遮罩
      */
-
 
     if (mergeList.length) {
       mergeList.sort(function (a, b) {
@@ -36287,6 +36340,7 @@
         assignMatrix(_node8.__matrixEvent, m); // 有cache声明从而有total的可以直接绘制并跳过子节点索，total生成可能会因超限而失败
 
         var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, _cacheTotal5]);
+        console.log(_i11, target);
 
         if (target) {
           _i11 += _total10 || 0;

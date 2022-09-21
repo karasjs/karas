@@ -29,54 +29,6 @@ const { identity, multiply, multiplyTfo, tfoMultiply, isE,
   multiplyScaleX, multiplyScaleY, multiplyScaleZ } = matrix;
 const { d2r } = geom;
 
-function calSingle(t, k, v) {
-  if(k === TRANSLATE_X) {
-    t[12] = v;
-  }
-  else if(k === TRANSLATE_Y) {
-    t[13] = v;
-  }
-  else if(k === TRANSLATE_Z) {
-    t[14] = v;
-  }
-  else if(k === SCALE_X) {
-    t[0] = v;
-  }
-  else if(k === SCALE_Y) {
-    t[5] = v;
-  }
-  else if(k === SCALE_Z) {
-    t[10] = v;
-  }
-  else if(k === SKEW_X) {
-    v = d2r(v);
-    t[4] = Math.tan(v);
-  }
-  else if(k === SKEW_Y) {
-    v = d2r(v);
-    t[1] = Math.tan(v);
-  }
-  else if(k === ROTATE_X) {
-    calRotateX(t, v);
-  }
-  else if(k === ROTATE_Y) {
-    calRotateY(t, v);
-  }
-  else if(k === ROTATE_Z) {
-    calRotateZ(t, v);
-  }
-  else if(k === ROTATE_3D) {
-    calRotate3d(t, [v[0], v[1], v[2], v[3].v]);
-  }
-  else if(k === PERSPECTIVE && v > 0) {
-    v = Math.max(v, 1);
-    t[11] = -1 / v;
-  }
-  else if(k === MATRIX) {
-    util.assignMatrix(t, v);
-  }
-}
-
 function calRotateX(t, v) {
   v = d2r(v);
   let sin = Math.sin(v);

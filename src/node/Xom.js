@@ -140,12 +140,18 @@ const { point2d,  multiply,
 
 const {
   contain,
+  exclude,
   TRANSFORM: TF,
   REFLOW,
   REPAINT,
   TRANSLATE_X: TX,
   TRANSLATE_Y: TY,
   TRANSLATE_Z: TZ,
+  TRANSLATE,
+  SCALE_X: SX,
+  SCALE_Y: SY,
+  SCALE_Z: SZ,
+  SCALE,
   TRANSFORM_ALL,
   CACHE,
 } = level;
@@ -966,10 +972,19 @@ class Xom extends Node {
       __computedStyle[TRANSFORM_ORIGIN] = [__sx1, __sy1];
       return __cacheStyle[MATRIX] = this.__matrix = mx.identity();
     }
-    let matrixCache = __cacheStyle[MATRIX];
-    // tx/ty/tz变化特殊优化，d/h/l不能有值，否则不能这样直接简化运算，因为这里不包含perspective，所以一定没有
+    let matrixCache = __cacheStyle[MATRIX], onlyTranslate, onlyScale;
     if(matrixCache && lv < REFLOW && !contain(lv, TF)) {
-      let x = 0, y = 0, z = 0;
+      onlyTranslate = exclude(lv, TRANSLATE);
+      onlyScale = exclude(lv, SCALE);
+      // scale原本为0时无法优化计算，因为不知道倍数差
+      if(onlyScale && (!__computedStyle[SCALE_X]
+        || !__computedStyle[SCALE_Y]
+        || !__computedStyle[SCALE_Z])) {
+        onlyScale = false;
+      }
+    }
+    // translate变化特殊优化，d/h/l不能有值，否则不能这样直接简化运算，因为这里不包含perspective，所以一定没有
+    if(onlyTranslate) {
       let transform = __computedStyle[TRANSFORM];
       if(contain(lv, TX)) {
         let v = __currentStyle[TRANSLATE_X];
@@ -982,7 +997,7 @@ class Xom extends Node {
         else {
           v = this.__calSize(v, this.__offsetWidth, true);
         }
-        x = v - __computedStyle[TRANSLATE_X];
+        let x = v - __computedStyle[TRANSLATE_X];
         __computedStyle[TRANSLATE_X] = v;
         transform[12] += x;
         matrixCache[12] += x;
@@ -998,7 +1013,7 @@ class Xom extends Node {
         else {
           v = this.__calSize(v, this.__offsetHeight, true);
         }
-        y = v - __computedStyle[TRANSLATE_Y];
+        let y = v - __computedStyle[TRANSLATE_Y];
         __computedStyle[TRANSLATE_Y] = v;
         transform[13] += y;
         matrixCache[13] += y;
@@ -1014,11 +1029,41 @@ class Xom extends Node {
         else {
           v = this.__calSize(v, this.__offsetWidth, true);
         }
-        z = v - __computedStyle[TRANSLATE_Z];
+        let z = v - __computedStyle[TRANSLATE_Z];
         __computedStyle[TRANSLATE_Z] = v;
         transform[14] += z;
         matrixCache[14] += z;
       }
+    }
+    // 同上，但是优化步骤不如它，需要根据transform值计算差值，再重新算tfo得matrixCache，前面已排除0为除数
+    else if(onlyScale) {
+      let transform = __computedStyle[TRANSFORM];
+      if(contain(lv, SX)) {
+        let v = __currentStyle[SCALE_X].v;
+        let x = v / __computedStyle[SCALE_X];
+        __computedStyle[SCALE_X] = v;
+        transform[0] *= x;
+        transform[1] *= x;
+        transform[2] *= x;
+      }
+      if(contain(lv, SY)) {
+        let v = __currentStyle[SCALE_Y].v;
+        let y = v / __computedStyle[SCALE_Y];
+        __computedStyle[SCALE_Y] = v;
+        transform[4] *= y;
+        transform[5] *= y;
+        transform[6] *= y;
+      }
+      if(contain(lv, SZ)) {
+        let v = __currentStyle[SCALE_Z].v;
+        let z = v / __computedStyle[SCALE_Z];
+        __computedStyle[SCALE_Z] = v;
+        transform[8] *= z;
+        transform[9] *= z;
+        transform[10] *= z;
+      }
+      let tfo = __computedStyle[TRANSFORM_ORIGIN];
+      matrixCache = __cacheStyle[MATRIX] = tf.calMatrixByOrigin(transform, tfo[0] + __sx1, tfo[1] + __sy1);
     }
     // 先根据cache计算需要重新计算的computedStyle
     else {

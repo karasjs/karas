@@ -33,10 +33,10 @@ function multiplyTfo(m, x, y) {
   if(!x && !y) {
     return m;
   }
-  m[12] = m[0] * x + m[4] * y + m[12];
-  m[13] = m[1] * x + m[5] * y + m[13];
-  m[14] = m[2] * x + m[6] * y + m[14];
-  m[15] = m[3] * x + m[7] * y + m[15];
+  m[12] += m[0] * x + m[4] * y;
+  m[13] += m[1] * x + m[5] * y;
+  m[14] += m[2] * x + m[6] * y;
+  m[15] += m[3] * x + m[7] * y;
   return m;
 }
 
@@ -45,14 +45,14 @@ function tfoMultiply(x, y, m) {
     return m;
   }
   let d = m[3], h = m[7], l = m[11], p = m[15];
-  m[0] = m[0] + d * x;
-  m[1] = m[1] + d * y;
-  m[4] = m[4] + h * x;
-  m[5] = m[5] + h * y;
-  m[8] = m[8] + l * x;
-  m[9] = m[9] + l * y;
-  m[12] = m[12] + p * x;
-  m[13] = m[13] + p * y;
+  m[0] += d * x;
+  m[1] += d * y;
+  m[4] += h * x;
+  m[5] += h * y;
+  m[8] += l * x;
+  m[9] += l * y;
+  m[12] += p * x;
+  m[13] += p * y;
   return m;
 }
 
@@ -61,10 +61,10 @@ function multiplyTranslateX(m, v) {
   if(!v) {
     return m;
   }
-  m[12] = m[0] * v + m[12];
-  m[13] = m[1] * v + m[13];
-  m[14] = m[2] * v + m[14];
-  m[15] = m[3] * v + m[15];
+  m[12] += m[0] * v;
+  m[13] += m[1] * v;
+  m[14] += m[2] * v;
+  m[15] += m[3] * v;
   return m;
 }
 
@@ -72,10 +72,10 @@ function multiplyTranslateY(m, v) {
   if(!v) {
     return m;
   }
-  m[12] = m[4] * v + m[12];
-  m[13] = m[5] * v + m[13];
-  m[14] = m[6] * v + m[14];
-  m[15] = m[7] * v + m[15];
+  m[12] += m[4] * v;
+  m[13] += m[5] * v;
+  m[14] += m[6] * v;
+  m[15] += m[7] * v;
   return m;
 }
 
@@ -83,10 +83,10 @@ function multiplyTranslateZ(m, v) {
   if(!v) {
     return m;
   }
-  m[12] = m[8] * v + m[12];
-  m[13] = m[9] * v + m[13];
-  m[14] = m[10] * v + m[14];
-  m[15] = m[11] * v + m[15];
+  m[12] += m[8] * v;
+  m[13] += m[9] * v;
+  m[14] += m[10] * v;
+  m[15] += m[11] * v;
   return m;
 }
 

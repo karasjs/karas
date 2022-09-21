@@ -140,18 +140,15 @@ const { point2d,  multiply,
 
 const {
   contain,
-  exclude,
   TRANSFORM: TF,
   REFLOW,
   REPAINT,
   TRANSLATE_X: TX,
   TRANSLATE_Y: TY,
   TRANSLATE_Z: TZ,
-  TRANSLATE,
   SCALE_X: SX,
   SCALE_Y: SY,
   SCALE_Z: SZ,
-  SCALE,
   TRANSFORM_ALL,
   CACHE,
 } = level;
@@ -1041,6 +1038,7 @@ class Xom extends Node {
         transform[0] *= x;
         transform[1] *= x;
         transform[2] *= x;
+        matrixCache = null;
       }
       if(contain(lv, SY)) {
         let v = __currentStyle[SCALE_Y].v;
@@ -1049,6 +1047,7 @@ class Xom extends Node {
         transform[4] *= y;
         transform[5] *= y;
         transform[6] *= y;
+        matrixCache = null;
       }
       if(contain(lv, SZ)) {
         let v = __currentStyle[SCALE_Z].v;
@@ -1057,10 +1056,7 @@ class Xom extends Node {
         transform[8] *= z;
         transform[9] *= z;
         transform[10] *= z;
-      }
-      if(contain(lv, SCALE)) {
-        let tfo = __computedStyle[TRANSFORM_ORIGIN];
-        matrixCache = __cacheStyle[MATRIX] = tf.calMatrixByOrigin(transform, tfo[0] + __sx1, tfo[1] + __sy1);
+        matrixCache = null;
       }
     }
     // 先根据cache计算需要重新计算的computedStyle
@@ -1259,11 +1255,11 @@ class Xom extends Node {
         }
         __computedStyle[TRANSFORM] = matrix || mx.identity();
       }
-      if(!matrixCache) {
-        let m = __computedStyle[TRANSFORM];
-        let tfo = __computedStyle[TRANSFORM_ORIGIN];
-        matrixCache = __cacheStyle[MATRIX] = tf.calMatrixByOrigin(m, tfo[0] + __sx1, tfo[1] + __sy1);
-      }
+    }
+    if(!matrixCache) {
+      let m = __computedStyle[TRANSFORM];
+      let tfo = __computedStyle[TRANSFORM_ORIGIN];
+      matrixCache = __cacheStyle[MATRIX] = tf.calMatrixByOrigin(m, tfo[0] + __sx1, tfo[1] + __sy1);
     }
     return this.__matrix = matrixCache;
   }

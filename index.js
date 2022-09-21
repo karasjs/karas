@@ -536,10 +536,10 @@
       return m;
     }
 
-    m[12] = m[0] * x + m[4] * y + m[12];
-    m[13] = m[1] * x + m[5] * y + m[13];
-    m[14] = m[2] * x + m[6] * y + m[14];
-    m[15] = m[3] * x + m[7] * y + m[15];
+    m[12] += m[0] * x + m[4] * y;
+    m[13] += m[1] * x + m[5] * y;
+    m[14] += m[2] * x + m[6] * y;
+    m[15] += m[3] * x + m[7] * y;
     return m;
   }
 
@@ -552,14 +552,14 @@
         h = m[7],
         l = m[11],
         p = m[15];
-    m[0] = m[0] + d * x;
-    m[1] = m[1] + d * y;
-    m[4] = m[4] + h * x;
-    m[5] = m[5] + h * y;
-    m[8] = m[8] + l * x;
-    m[9] = m[9] + l * y;
-    m[12] = m[12] + p * x;
-    m[13] = m[13] + p * y;
+    m[0] += d * x;
+    m[1] += d * y;
+    m[4] += h * x;
+    m[5] += h * y;
+    m[8] += l * x;
+    m[9] += l * y;
+    m[12] += p * x;
+    m[13] += p * y;
     return m;
   } // 几种特殊的transform变换优化
 
@@ -569,10 +569,10 @@
       return m;
     }
 
-    m[12] = m[0] * v + m[12];
-    m[13] = m[1] * v + m[13];
-    m[14] = m[2] * v + m[14];
-    m[15] = m[3] * v + m[15];
+    m[12] += m[0] * v;
+    m[13] += m[1] * v;
+    m[14] += m[2] * v;
+    m[15] += m[3] * v;
     return m;
   }
 
@@ -581,10 +581,10 @@
       return m;
     }
 
-    m[12] = m[4] * v + m[12];
-    m[13] = m[5] * v + m[13];
-    m[14] = m[6] * v + m[14];
-    m[15] = m[7] * v + m[15];
+    m[12] += m[4] * v;
+    m[13] += m[5] * v;
+    m[14] += m[6] * v;
+    m[15] += m[7] * v;
     return m;
   }
 
@@ -593,10 +593,10 @@
       return m;
     }
 
-    m[12] = m[8] * v + m[12];
-    m[13] = m[9] * v + m[13];
-    m[14] = m[10] * v + m[14];
-    m[15] = m[11] * v + m[15];
+    m[12] += m[8] * v;
+    m[13] += m[9] * v;
+    m[14] += m[10] * v;
+    m[15] += m[11] * v;
     return m;
   }
 
@@ -14977,7 +14977,7 @@
 
   var SCALE_Z$1 = 64; //                                1000000
 
-  var SCALE$1 = 112; //                                 1110000
+  var SCALE = 112; //                                 1110000
 
   var TRANSFORM$5 = 128; //                            10000000
 
@@ -15009,7 +15009,7 @@
     SCALE_X: SCALE_X$2,
     SCALE_Y: SCALE_Y$2,
     SCALE_Z: SCALE_Z$1,
-    SCALE: SCALE$1,
+    SCALE: SCALE,
     TRANSFORM: TRANSFORM$5,
     TRANSFORM_ALL: TRANSFORM_ALL$4,
     OPACITY: OPACITY$5,
@@ -21140,19 +21140,16 @@
       multiplyScaleX = mx.multiplyScaleX,
       multiplyScaleY = mx.multiplyScaleY,
       multiplyScaleZ = mx.multiplyScaleZ;
-  var contain$3 = o$1.contain;
-      o$1.exclude;
-      var TF$1 = o$1.TRANSFORM,
+  var contain$3 = o$1.contain,
+      TF$1 = o$1.TRANSFORM,
       REFLOW$2 = o$1.REFLOW,
       REPAINT$3 = o$1.REPAINT,
       TX = o$1.TRANSLATE_X,
       TY = o$1.TRANSLATE_Y,
-      TZ = o$1.TRANSLATE_Z;
-      o$1.TRANSLATE;
-      var SX = o$1.SCALE_X,
+      TZ = o$1.TRANSLATE_Z,
+      SX = o$1.SCALE_X,
       SY = o$1.SCALE_Y,
       SZ = o$1.SCALE_Z,
-      SCALE = o$1.SCALE,
       TRANSFORM_ALL$3 = o$1.TRANSFORM_ALL,
       CACHE$3 = o$1.CACHE;
   var d2r = geom$1.d2r;
@@ -22082,6 +22079,7 @@
             transform$1[0] *= _x;
             transform$1[1] *= _x;
             transform$1[2] *= _x;
+            matrixCache = null;
           }
 
           if (contain$3(lv, SY)) {
@@ -22093,6 +22091,7 @@
             transform$1[4] *= _y;
             transform$1[5] *= _y;
             transform$1[6] *= _y;
+            matrixCache = null;
           }
 
           if (contain$3(lv, SZ)) {
@@ -22104,11 +22103,7 @@
             transform$1[8] *= _z;
             transform$1[9] *= _z;
             transform$1[10] *= _z;
-          }
-
-          if (contain$3(lv, SCALE)) {
-            var tfo = __computedStyle[TRANSFORM_ORIGIN$2];
-            matrixCache = __cacheStyle[MATRIX$1] = transform.calMatrixByOrigin(transform$1, tfo[0] + __sx1, tfo[1] + __sy1);
+            matrixCache = null;
           }
         } // 先根据cache计算需要重新计算的computedStyle
         else {
@@ -22310,12 +22305,12 @@
 
             __computedStyle[TRANSFORM$3] = matrix || mx.identity();
           }
+        }
 
-          if (!matrixCache) {
-            var m = __computedStyle[TRANSFORM$3];
-            var _tfo = __computedStyle[TRANSFORM_ORIGIN$2];
-            matrixCache = __cacheStyle[MATRIX$1] = transform.calMatrixByOrigin(m, _tfo[0] + __sx1, _tfo[1] + __sy1);
-          }
+        if (!matrixCache) {
+          var m = __computedStyle[TRANSFORM$3];
+          var tfo = __computedStyle[TRANSFORM_ORIGIN$2];
+          matrixCache = __cacheStyle[MATRIX$1] = transform.calMatrixByOrigin(m, tfo[0] + __sx1, tfo[1] + __sy1);
         }
 
         return this.__matrix = matrixCache;
@@ -41384,7 +41379,7 @@
     Cache: Cache
   };
 
-  var version = "0.79.1";
+  var version = "0.79.2";
 
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);

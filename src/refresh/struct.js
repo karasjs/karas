@@ -2421,7 +2421,7 @@ function renderCanvas(renderMode, ctx, root) {
         i += countMaskNum(__structs, i + 1, hasMask);
       }
     }
-  }console.log(mergeList)
+  }
   /**
    * 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
    * 这样保证子节点在前，后节点在前，后节点是为了mask先应用自身如filter之后再进行遮罩
@@ -2523,7 +2523,6 @@ function renderCanvas(renderMode, ctx, root) {
       assignMatrix(node.__matrixEvent, m);
       // 有cache声明从而有total的可以直接绘制并跳过子节点索，total生成可能会因超限而失败
       let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]);
-      console.log(i,target);
       if(target) {
         i += (total || 0);
         if(hasMask) {

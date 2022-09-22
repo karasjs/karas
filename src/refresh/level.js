@@ -15,7 +15,7 @@ const { STYLE_KEY: {
   SCALE_Z: SZ,
   ROTATE_X,
   ROTATE_Y,
-  ROTATE_Z,
+  ROTATE_Z: RZ,
   ROTATE_3D,
   SKEW_X,
   SKEW_Y,
@@ -35,24 +35,25 @@ const TRANSLATE_X = 2; //                                  10
 const TRANSLATE_Y = 4; //                                 100
 const TRANSLATE_Z = 8; //                                1000
 const TRANSLATE = 14; //                                 1110
-const SCALE_X = 16; //                                  10000
-const SCALE_Y = 32; //                                 100000
-const SCALE_Z = 64; //                                1000000
-const SCALE = 112; //                                 1110000
-const TRANSFORM = 128; //                            10000000
-const TRANSFORM_ALL = 254; //                        11111110
-const OPACITY = 256; //                             100000000
-const FILTER = 512; //                             1000000000
-const MIX_BLEND_MODE = 1024; //                   10000000000
-const PERSPECTIVE = 2048; //                     100000000000
+const ROTATE_Z = 16; //                                 10000
+const SCALE_X = 32; //                                 100000
+const SCALE_Y = 64; //                                1000000
+const SCALE_Z = 128; //                              10000000
+const SCALE = 224; //                                11100000
+const TRANSFORM = 256; //                           100000000
+const TRANSFORM_ALL = 510; //                       111111110
+const OPACITY = 512; //                            1000000000
+const FILTER = 1024; //                           10000000000
+const MIX_BLEND_MODE = 2048; //                  100000000000
+const PERSPECTIVE = 4096; //                    1000000000000
 
-const REPAINT = 4096; //                        1000000000000
+const REPAINT = 8192; //                       10000000000000
 
 // 高位表示reflow
-const REFLOW = 8192; //                        10000000000000
+const REFLOW = 16384; //                      100000000000000
 
 // 特殊高位表示rebuild，节点发生变化
-const REBUILD = 16384; //                     100000000000000
+const REBUILD = 32768; //                    1000000000000000
 
 const ENUM = {
   NONE,
@@ -61,6 +62,7 @@ const ENUM = {
   TRANSLATE_Y,
   TRANSLATE_Z,
   TRANSLATE,
+  ROTATE_Z,
   SCALE_X,
   SCALE_Y,
   SCALE_Z,
@@ -77,7 +79,7 @@ const ENUM = {
 };
 
 function isTransforms(k) {
-  return k === ROTATE_X || k === ROTATE_Y || k === ROTATE_Z || k === ROTATE_3D
+  return k === ROTATE_X || k === ROTATE_Y || k === ROTATE_3D
     || k === SKEW_X || k === SKEW_Y || k === TF || k === TRANSFORM_ORIGIN;
 }
 
@@ -110,6 +112,9 @@ let o = Object.assign({
     }
     if(k === TZ) {
       return TRANSLATE_Z;
+    }
+    if(k === RZ) {
+      return ROTATE_Z;
     }
     if(k === SX) {
       return SCALE_X;

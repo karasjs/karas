@@ -1,9 +1,6 @@
 import Node from '../node/Node';
 import Component from '../node/Component';
-import $$type from '../util/$$type';
 import util from '../util/util';
-
-const { TYPE_VD, TYPE_GM, TYPE_CP } = $$type;
 
 let { isPrimitive } = util;
 
@@ -43,17 +40,11 @@ function parse(karas, json, animateRecords, opt, offsetTime) {
   else if(/^[A-Z]/.test(tagName)) {
     let cp = Component.getRegister(tagName);
     vd = karas.createCp(cp, props, children.map(item => {
-      if(item && [TYPE_VD, TYPE_GM, TYPE_CP].indexOf(item.$$type) > -1) {
-        return item;
-      }
       return parse(karas, item, animateRecords, opt, offsetTime);
     }));
   }
   else {
     vd = karas.createVd(tagName, props, children.map(item => {
-      if(item && [TYPE_VD, TYPE_GM, TYPE_CP].indexOf(item.$$type) > -1) {
-        return item;
-      }
       return parse(karas, item, animateRecords, opt, offsetTime);
     }));
   }

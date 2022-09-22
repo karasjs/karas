@@ -508,8 +508,11 @@ class Dom extends Xom {
     return free;
   }
 
-  // 设置y偏移值，递归包括children，此举在justify-content/margin-auto等对齐用
+  // 设置y偏移值，递归包括children，此举在justify-content/margin-auto/relative等对齐用
   __offsetX(diff, isLayout, lv) {
+    if(this.__computedStyle[DISPLAY] === 'none') {
+      return;
+    }
     super.__offsetX(diff, isLayout, lv);
     let ep = this.__ellipsis;
     if(ep) {
@@ -527,7 +530,7 @@ class Dom extends Xom {
   }
 
   __offsetY(diff, isLayout, lv) {
-    if(this.computedStyle[DISPLAY] === 'none') {
+    if(this.__computedStyle[DISPLAY] === 'none') {
       return;
     }
     super.__offsetY(diff, isLayout, lv);

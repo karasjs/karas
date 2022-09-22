@@ -146,9 +146,11 @@ const {
   TRANSLATE_X: TX,
   TRANSLATE_Y: TY,
   TRANSLATE_Z: TZ,
+  ROTATE_Z: RZ,
   SCALE_X: SX,
   SCALE_Y: SY,
   SCALE_Z: SZ,
+  SCALE,
   TRANSFORM_ALL,
   CACHE,
 } = level;
@@ -943,7 +945,7 @@ class Xom extends Node {
         if((height.u !== AUTO || this.isReplaced) && marginTop.u === AUTO && marginBottom.u === AUTO) {
           let oh = this.outerHeight;
           if(oh < data.h) {
-            this.__offsetY((data.h - oh) * 0.5, false, null);
+            this.__offsetY((data.h - oh) * 0.5, true, null);
           }
         }
       }
@@ -951,7 +953,7 @@ class Xom extends Node {
         if((width.u !== AUTO || this.isReplaced) && marginLeft.u === AUTO && marginRight.u === AUTO) {
           let ow = this.outerWidth;
           if(ow < data.w) {
-            this.__offsetX((data.w - ow) * 0.5, false, null);
+            this.__offsetX((data.w - ow) * 0.5, true, null);
           }
         }
       }
@@ -970,11 +972,13 @@ class Xom extends Node {
       return __cacheStyle[MATRIX] = this.__matrix = mx.identity();
     }
     let matrixCache = __cacheStyle[MATRIX], optimize;
-    // 优化计算scale不能为0，无法计算倍数差
+    // 优化计算scale不能为0，无法计算倍数差，rotateZ优化不能包含rotateX/rotateY/skew
     if(matrixCache && lv < REFLOW && !contain(lv, TF)) {
       if(contain(lv, SX) && !__computedStyle[SCALE_X]
         || contain(lv, SY) && !__computedStyle[SCALE_Y]
-        || contain(lv, SZ) && !__computedStyle[SCALE_Z]) {
+        || contain(lv, SZ) && !__computedStyle[SCALE_Z]
+        || contain(lv, RZ) && (__computedStyle[ROTATE_X] || __computedStyle[ROTATE_Y]
+          || __computedStyle[SKEW_X] || __computedStyle[SKEW_Y])) {
       }
       else {
         optimize = true;
@@ -1031,32 +1035,62 @@ class Xom extends Node {
         transform[14] += z;
         matrixCache[14] += z;
       }
-      if(contain(lv, SX)) {
-        let v = __currentStyle[SCALE_X].v;
-        let x = v / __computedStyle[SCALE_X];
-        __computedStyle[SCALE_X] = v;
-        transform[0] *= x;
-        transform[1] *= x;
-        transform[2] *= x;
-        matrixCache = null;
+      if(contain(lv, RZ)) {
+        let v = __currentStyle[ROTATE_Z].v;
+        __computedStyle[ROTATE_Z] = v;
+        v = d2r(v);
+        let sin = Math.sin(v), cos = Math.cos(v);
+        let x = __computedStyle[SCALE_X], y = __computedStyle[SCALE_Y];
+        let cx = matrixCache[0] = transform[0] = cos * x;
+        let sx = matrixCache[1] = transform[1] = sin * x;
+        let sy = matrixCache[4] = transform[4] = -sin * y;
+        let cy = matrixCache[5] = transform[5] = cos * y;
+        let [ox, oy] = __computedStyle[TRANSFORM_ORIGIN];
+        ox += __sx1;
+        oy += __sy1;
+        matrixCache[12] = transform[12] + ox - cx * ox - oy * sy;
+        matrixCache[13] = transform[13] + oy - sx * ox - oy * cy;
       }
-      if(contain(lv, SY)) {
-        let v = __currentStyle[SCALE_Y].v;
-        let y = v / __computedStyle[SCALE_Y];
-        __computedStyle[SCALE_Y] = v;
-        transform[4] *= y;
-        transform[5] *= y;
-        transform[6] *= y;
-        matrixCache = null;
-      }
-      if(contain(lv, SZ)) {
-        let v = __currentStyle[SCALE_Z].v;
-        let z = v / __computedStyle[SCALE_Z];
-        __computedStyle[SCALE_Z] = v;
-        transform[8] *= z;
-        transform[9] *= z;
-        transform[10] *= z;
-        matrixCache = null;
+      if(contain(lv, SCALE)) {
+        if(contain(lv, SX)) {
+          let v = __currentStyle[SCALE_X].v;
+          let x = v / __computedStyle[SCALE_X];
+          __computedStyle[SCALE_X] = v;
+          transform[0] *= x;
+          transform[1] *= x;
+          transform[2] *= x;
+          matrixCache[0] *= x;
+          matrixCache[1] *= x;
+          matrixCache[2] *= x;
+        }
+        if(contain(lv, SY)) {
+          let v = __currentStyle[SCALE_Y].v;
+          let y = v / __computedStyle[SCALE_Y];
+          __computedStyle[SCALE_Y] = v;
+          transform[4] *= y;
+          transform[5] *= y;
+          transform[6] *= y;
+          matrixCache[4] *= y;
+          matrixCache[5] *= y;
+          matrixCache[6] *= y;
+        }
+        if(contain(lv, SZ)) {
+          let v = __currentStyle[SCALE_Z].v;
+          let z = v / __computedStyle[SCALE_Z];
+          __computedStyle[SCALE_Z] = v;
+          transform[8] *= z;
+          transform[9] *= z;
+          transform[10] *= z;
+          matrixCache[8] *= z;
+          matrixCache[9] *= z;
+          matrixCache[10] *= z;
+        }
+        let [ox, oy] = __computedStyle[TRANSFORM_ORIGIN];
+        ox += __sx1;
+        oy += __sy1;
+        matrixCache[12] = transform[12] + ox - transform[0] * ox - transform[4] * oy;
+        matrixCache[13] = transform[13] + oy - transform[1] * ox - transform[5] * oy;
+        matrixCache[14] = transform[14] - transform[2] * ox - transform[6] * oy;
       }
     }
     // 先根据cache计算需要重新计算的computedStyle
@@ -2771,17 +2805,16 @@ class Xom extends Node {
     return cb(this, options);
   }
 
-  // isLayout为false时，为relative，true则是absolute等直接改layoutData数据的
-  // lv是reflow偏移时传入，需要清除cacheStyle
+  // isLayout为false时，为relative，true则是absolute/justify/marginAuto等直接改layoutData数据的
+  // lv是reflow偏移时传入，需要清除cacheStyle，并且对位图cache进行偏移设置
   // 注意所有的offset/resize都要避免display:none的，比如合并margin导致block的孩子inline因clamp为none时没有layoutData
   __offsetX(diff, isLayout, lv) {
-    if(this.computedStyle[DISPLAY] === 'none') {
+    if(this.__computedStyle[DISPLAY] === 'none') {
       return;
     }
     super.__offsetX(diff, isLayout);
     if(isLayout) {
       this.__layoutData.x += diff;
-      this.clearCache();
     }
     this.__sx1 += diff;
     this.__sx2 += diff;
@@ -2795,17 +2828,24 @@ class Xom extends Node {
         this.__cacheStyle = {};
         this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
       }
+      if(this.__bbox) {
+        this.__bbox[0] += diff;
+        this.__bbox[2] += diff;
+      }
+      if(this.__filterBbox) {
+        this.__filterBbox[0] += diff;
+        this.__filterBbox[2] += diff;
+      }
     }
   }
 
   __offsetY(diff, isLayout, lv) {
-    if(this.computedStyle[DISPLAY] === 'none') {
+    if(this.__computedStyle[DISPLAY] === 'none') {
       return;
     }
     super.__offsetY(diff, isLayout);
     if(isLayout) {
       this.__layoutData && (this.__layoutData.y += diff);
-      this.clearCache();
     }
     this.__sy1 += diff;
     this.__sy2 += diff;
@@ -2819,14 +2859,37 @@ class Xom extends Node {
         this.__cacheStyle = {};
         this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
       }
+      if(this.__bbox) {
+        this.__bbox[1] += diff;
+        this.__bbox[3] += diff;
+      }
+      if(this.__filterBbox) {
+        this.__filterBbox[1] += diff;
+        this.__filterBbox[3] += diff;
+      }
+      if(this.__cache) {
+        this.__cache.__offsetY(diff);
+      }
+      if(this.__cacheTotal) {
+        this.__cacheTotal.__offsetY(diff);
+      }
+      if(this.__cacheOverflow) {
+        this.__cacheOverflow.__offsetY(diff);
+      }
+      if(this.__cacheFilter) {
+        this.__cacheFilter.__offsetY(diff);
+      }
+      if(this.__cacheMask) {
+        this.__cacheMask.__offsetY(diff);
+      }
     }
   }
 
   __resizeX(diff, lv) {
-    if(this.computedStyle[DISPLAY] === 'none') {
+    if(this.__computedStyle[DISPLAY] === 'none') {
       return;
     }
-    this.computedStyle.width = this.__width += diff;
+    this.__computedStyle.width = this.__width += diff;
     this.__clientWidth += diff;
     this.__offsetWidth += diff;
     this.__outerWidth += diff;

@@ -773,7 +773,7 @@ class Root extends Dom {
           }
         }
       }
-      // perspective也特殊只清空total的cache，和>=REPAINT清空total共用，TODO:优化判断ppt
+      // perspective也特殊只清空total的cache，和>=REPAINT清空total共用
       if(need || contain(lv, PPT)) {
         if(node.__cacheTotal) {
           node.__cacheTotal.release();

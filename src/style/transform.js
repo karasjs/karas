@@ -1,6 +1,5 @@
 import unit from '../style/unit';
 import enums from '../util/enums';
-import util from '../util/util';
 import math from '../math/index';
 
 const { STYLE_KEY: {

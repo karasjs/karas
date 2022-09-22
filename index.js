@@ -485,16 +485,6 @@
     }
   };
 
-  // 类型为引用防止json仿造
-  var TYPE_VD$3 = Symbol('Dom');
-  var TYPE_GM$3 = Symbol('Geom');
-  var TYPE_CP$3 = Symbol('Component');
-  var $$type = {
-    TYPE_VD: TYPE_VD$3,
-    TYPE_GM: TYPE_GM$3,
-    TYPE_CP: TYPE_CP$3
-  };
-
   // 生成4*4单位矩阵
   function identity$1() {
     return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
@@ -1235,11 +1225,6 @@
 
   function clone$3(obj) {
     if (isNil$e(obj) || _typeof(obj) !== 'object') {
-      return obj;
-    } // parse递归会出现内部先返回解析好的json，外部parse不能clone
-
-
-    if (obj.$$type === $$type.TYPE_VD || obj.$$type === $$type.TYPE_GM || obj.$$type === $$type.TYPE_CP) {
       return obj;
     }
 
@@ -14941,7 +14926,7 @@
       TZ$1 = _enums$STYLE_KEY$e.TRANSLATE_Z,
       OP$2 = _enums$STYLE_KEY$e.OPACITY,
       FT$2 = _enums$STYLE_KEY$e.FILTER,
-      PPT$1 = _enums$STYLE_KEY$e.PERSPECTIVE,
+      PPT$2 = _enums$STYLE_KEY$e.PERSPECTIVE,
       PERSPECTIVE_ORIGIN$3 = _enums$STYLE_KEY$e.PERSPECTIVE_ORIGIN,
       Z_INDEX$4 = _enums$STYLE_KEY$e.Z_INDEX,
       SX$1 = _enums$STYLE_KEY$e.SCALE_X,
@@ -14949,7 +14934,7 @@
       SZ$1 = _enums$STYLE_KEY$e.SCALE_Z,
       ROTATE_X$1 = _enums$STYLE_KEY$e.ROTATE_X,
       ROTATE_Y$1 = _enums$STYLE_KEY$e.ROTATE_Y,
-      ROTATE_Z$1 = _enums$STYLE_KEY$e.ROTATE_Z,
+      RZ$1 = _enums$STYLE_KEY$e.ROTATE_Z,
       ROTATE_3D$2 = _enums$STYLE_KEY$e.ROTATE_3D,
       SKEW_X$1 = _enums$STYLE_KEY$e.SKEW_X,
       SKEW_Y$1 = _enums$STYLE_KEY$e.SKEW_Y,
@@ -14971,33 +14956,35 @@
 
   var TRANSLATE = 14; //                                 1110
 
-  var SCALE_X$2 = 16; //                                  10000
+  var ROTATE_Z$1 = 16; //                                 10000
 
-  var SCALE_Y$2 = 32; //                                 100000
+  var SCALE_X$2 = 32; //                                 100000
 
-  var SCALE_Z$1 = 64; //                                1000000
+  var SCALE_Y$2 = 64; //                                1000000
 
-  var SCALE = 112; //                                 1110000
+  var SCALE_Z$1 = 128; //                              10000000
 
-  var TRANSFORM$5 = 128; //                            10000000
+  var SCALE$1 = 224; //                                11100000
 
-  var TRANSFORM_ALL$4 = 254; //                        11111110
+  var TRANSFORM$5 = 256; //                           100000000
 
-  var OPACITY$5 = 256; //                             100000000
+  var TRANSFORM_ALL$4 = 510; //                       111111110
 
-  var FILTER$5 = 512; //                             1000000000
+  var OPACITY$5 = 512; //                            1000000000
 
-  var MIX_BLEND_MODE$4 = 1024; //                   10000000000
+  var FILTER$5 = 1024; //                           10000000000
 
-  var PERSPECTIVE$2 = 2048; //                     100000000000
+  var MIX_BLEND_MODE$4 = 2048; //                  100000000000
 
-  var REPAINT$4 = 4096; //                        1000000000000
+  var PERSPECTIVE$2 = 4096; //                    1000000000000
+
+  var REPAINT$4 = 8192; //                       10000000000000
   // 高位表示reflow
 
-  var REFLOW$3 = 8192; //                        10000000000000
+  var REFLOW$3 = 16384; //                      100000000000000
   // 特殊高位表示rebuild，节点发生变化
 
-  var REBUILD$1 = 16384; //                     100000000000000
+  var REBUILD$1 = 32768; //                    1000000000000000
 
   var ENUM = {
     NONE: NONE$3,
@@ -15006,10 +14993,11 @@
     TRANSLATE_Y: TRANSLATE_Y$2,
     TRANSLATE_Z: TRANSLATE_Z$2,
     TRANSLATE: TRANSLATE,
+    ROTATE_Z: ROTATE_Z$1,
     SCALE_X: SCALE_X$2,
     SCALE_Y: SCALE_Y$2,
     SCALE_Z: SCALE_Z$1,
-    SCALE: SCALE,
+    SCALE: SCALE$1,
     TRANSFORM: TRANSFORM$5,
     TRANSFORM_ALL: TRANSFORM_ALL$4,
     OPACITY: OPACITY$5,
@@ -15022,7 +15010,7 @@
   };
 
   function isTransforms(k) {
-    return k === ROTATE_X$1 || k === ROTATE_Y$1 || k === ROTATE_Z$1 || k === ROTATE_3D$2 || k === SKEW_X$1 || k === SKEW_Y$1 || k === TF$2 || k === TRANSFORM_ORIGIN$4;
+    return k === ROTATE_X$1 || k === ROTATE_Y$1 || k === ROTATE_3D$2 || k === SKEW_X$1 || k === SKEW_Y$1 || k === TF$2 || k === TRANSFORM_ORIGIN$4;
   }
 
   var o$1 = Object.assign({
@@ -15061,6 +15049,10 @@
         return TRANSLATE_Z$2;
       }
 
+      if (k === RZ$1) {
+        return ROTATE_Z$1;
+      }
+
       if (k === SX$1) {
         return SCALE_X$2;
       }
@@ -15081,7 +15073,7 @@
         return FILTER$5;
       }
 
-      if (k === PPT$1 || k === PERSPECTIVE_ORIGIN$3) {
+      if (k === PPT$2 || k === PERSPECTIVE_ORIGIN$3) {
         return PERSPECTIVE$2;
       }
 
@@ -21147,9 +21139,11 @@
       TX = o$1.TRANSLATE_X,
       TY = o$1.TRANSLATE_Y,
       TZ = o$1.TRANSLATE_Z,
+      RZ = o$1.ROTATE_Z,
       SX = o$1.SCALE_X,
       SY = o$1.SCALE_Y,
       SZ = o$1.SCALE_Z,
+      SCALE = o$1.SCALE,
       TRANSFORM_ALL$3 = o$1.TRANSFORM_ALL,
       CACHE$3 = o$1.CACHE;
   var d2r = geom$1.d2r;
@@ -21977,7 +21971,7 @@
               var oh = this.outerHeight;
 
               if (oh < data.h) {
-                this.__offsetY((data.h - oh) * 0.5, false, null);
+                this.__offsetY((data.h - oh) * 0.5, true, null);
               }
             }
           } else {
@@ -21985,7 +21979,7 @@
               var ow = this.outerWidth;
 
               if (ow < data.w) {
-                this.__offsetX((data.w - ow) * 0.5, false, null);
+                this.__offsetX((data.w - ow) * 0.5, true, null);
               }
             }
           }
@@ -22007,10 +22001,10 @@
         }
 
         var matrixCache = __cacheStyle[MATRIX$1],
-            optimize; // 优化计算scale不能为0，无法计算倍数差
+            optimize; // 优化计算scale不能为0，无法计算倍数差，rotateZ优化不能包含rotateX/rotateY/skew
 
         if (matrixCache && lv < REFLOW$2 && !contain$3(lv, TF$1)) {
-          if (contain$3(lv, SX) && !__computedStyle[SCALE_X] || contain$3(lv, SY) && !__computedStyle[SCALE_Y] || contain$3(lv, SZ) && !__computedStyle[SCALE_Z]) ; else {
+          if (contain$3(lv, SX) && !__computedStyle[SCALE_X] || contain$3(lv, SY) && !__computedStyle[SCALE_Y] || contain$3(lv, SZ) && !__computedStyle[SCALE_Z] || contain$3(lv, RZ) && (__computedStyle[ROTATE_X] || __computedStyle[ROTATE_Y] || __computedStyle[SKEW_X] || __computedStyle[SKEW_Y])) ; else {
             optimize = true;
           }
         } // translate/scale变化特殊优化，d/h/l不能有值，否则不能这样直接简化运算，因为这里不包含perspective，所以一定没有
@@ -22070,40 +22064,81 @@
             matrixCache[14] += z;
           }
 
-          if (contain$3(lv, SX)) {
-            var _v3 = __currentStyle[SCALE_X].v;
+          if (contain$3(lv, RZ)) {
+            var _v3 = __currentStyle[ROTATE_Z].v;
+            __computedStyle[ROTATE_Z] = _v3;
+            _v3 = d2r(_v3);
+            var sin = Math.sin(_v3),
+                cos = Math.cos(_v3);
+            var _x = __computedStyle[SCALE_X],
+                _y = __computedStyle[SCALE_Y];
+            var cx = matrixCache[0] = transform$1[0] = cos * _x;
+            var sx = matrixCache[1] = transform$1[1] = sin * _x;
+            var sy = matrixCache[4] = transform$1[4] = -sin * _y;
+            var cy = matrixCache[5] = transform$1[5] = cos * _y;
 
-            var _x = _v3 / __computedStyle[SCALE_X];
+            var _computedStyle$TRANS = _slicedToArray(__computedStyle[TRANSFORM_ORIGIN$2], 2),
+                ox = _computedStyle$TRANS[0],
+                oy = _computedStyle$TRANS[1];
 
-            __computedStyle[SCALE_X] = _v3;
-            transform$1[0] *= _x;
-            transform$1[1] *= _x;
-            transform$1[2] *= _x;
-            matrixCache = null;
+            ox += __sx1;
+            oy += __sy1;
+            matrixCache[12] = transform$1[12] + ox - cx * ox - oy * sy;
+            matrixCache[13] = transform$1[13] + oy - sx * ox - oy * cy;
           }
 
-          if (contain$3(lv, SY)) {
-            var _v4 = __currentStyle[SCALE_Y].v;
+          if (contain$3(lv, SCALE)) {
+            if (contain$3(lv, SX)) {
+              var _v4 = __currentStyle[SCALE_X].v;
 
-            var _y = _v4 / __computedStyle[SCALE_Y];
+              var _x2 = _v4 / __computedStyle[SCALE_X];
 
-            __computedStyle[SCALE_Y] = _v4;
-            transform$1[4] *= _y;
-            transform$1[5] *= _y;
-            transform$1[6] *= _y;
-            matrixCache = null;
-          }
+              __computedStyle[SCALE_X] = _v4;
+              transform$1[0] *= _x2;
+              transform$1[1] *= _x2;
+              transform$1[2] *= _x2;
+              matrixCache[0] *= _x2;
+              matrixCache[1] *= _x2;
+              matrixCache[2] *= _x2;
+            }
 
-          if (contain$3(lv, SZ)) {
-            var _v5 = __currentStyle[SCALE_Z].v;
+            if (contain$3(lv, SY)) {
+              var _v5 = __currentStyle[SCALE_Y].v;
 
-            var _z = _v5 / __computedStyle[SCALE_Z];
+              var _y2 = _v5 / __computedStyle[SCALE_Y];
 
-            __computedStyle[SCALE_Z] = _v5;
-            transform$1[8] *= _z;
-            transform$1[9] *= _z;
-            transform$1[10] *= _z;
-            matrixCache = null;
+              __computedStyle[SCALE_Y] = _v5;
+              transform$1[4] *= _y2;
+              transform$1[5] *= _y2;
+              transform$1[6] *= _y2;
+              matrixCache[4] *= _y2;
+              matrixCache[5] *= _y2;
+              matrixCache[6] *= _y2;
+            }
+
+            if (contain$3(lv, SZ)) {
+              var _v6 = __currentStyle[SCALE_Z].v;
+
+              var _z = _v6 / __computedStyle[SCALE_Z];
+
+              __computedStyle[SCALE_Z] = _v6;
+              transform$1[8] *= _z;
+              transform$1[9] *= _z;
+              transform$1[10] *= _z;
+              matrixCache[8] *= _z;
+              matrixCache[9] *= _z;
+              matrixCache[10] *= _z;
+            }
+
+            var _computedStyle$TRANS2 = _slicedToArray(__computedStyle[TRANSFORM_ORIGIN$2], 2),
+                _ox = _computedStyle$TRANS2[0],
+                _oy = _computedStyle$TRANS2[1];
+
+            _ox += __sx1;
+            _oy += __sy1;
+            matrixCache[12] = transform$1[12] + _ox - transform$1[0] * _ox - transform$1[4] * _oy;
+            matrixCache[13] = transform$1[13] + _oy - transform$1[1] * _ox - transform$1[5] * _oy;
+            matrixCache[14] = transform$1[14] - transform$1[2] * _ox - transform$1[6] * _oy;
           }
         } // 先根据cache计算需要重新计算的computedStyle
         else {
@@ -22125,179 +22160,179 @@
             } // 没有transform则看是否有扩展的css独立变换属性
             else {
               __computedStyle[TRANSLATE_X] = 0;
-              var _v6 = __currentStyle[TRANSLATE_X];
+              var _v7 = __currentStyle[TRANSLATE_X];
 
-              if (_v6) {
-                _v6 = __computedStyle[TRANSLATE_X] = this.__calSize(_v6, this.__offsetWidth, true);
+              if (_v7) {
+                _v7 = __computedStyle[TRANSLATE_X] = this.__calSize(_v7, this.__offsetWidth, true);
 
-                if (_v6) {
+                if (_v7) {
                   matrix = matrix || mx.identity();
-                  matrix[12] = _v6;
+                  matrix[12] = _v7;
                 }
               }
 
               __computedStyle[TRANSLATE_Y] = 0;
-              _v6 = __currentStyle[TRANSLATE_Y];
+              _v7 = __currentStyle[TRANSLATE_Y];
 
-              if (_v6) {
-                _v6 = __computedStyle[TRANSLATE_Y] = this.__calSize(_v6, this.__offsetHeight, true);
+              if (_v7) {
+                _v7 = __computedStyle[TRANSLATE_Y] = this.__calSize(_v7, this.__offsetHeight, true);
 
-                if (_v6) {
+                if (_v7) {
                   matrix = matrix || mx.identity();
-                  matrix[13] = _v6;
+                  matrix[13] = _v7;
                 }
               }
 
               __computedStyle[TRANSLATE_Z] = 0;
-              _v6 = __currentStyle[TRANSLATE_Z];
+              _v7 = __currentStyle[TRANSLATE_Z];
 
-              if (_v6) {
-                _v6 = __computedStyle[TRANSLATE_Z] = this.__calSize(_v6, this.__offsetWidth, true);
+              if (_v7) {
+                _v7 = __computedStyle[TRANSLATE_Z] = this.__calSize(_v7, this.__offsetWidth, true);
 
-                if (_v6) {
+                if (_v7) {
                   matrix = matrix || mx.identity();
-                  matrix[14] = _v6;
+                  matrix[14] = _v7;
                 }
               }
 
               __computedStyle[ROTATE_X] = 0;
-              _v6 = __currentStyle[ROTATE_X];
+              _v7 = __currentStyle[ROTATE_X];
 
-              if (_v6) {
-                _v6 = __computedStyle[ROTATE_X] = _v6.v;
+              if (_v7) {
+                _v7 = __computedStyle[ROTATE_X] = _v7.v;
 
-                if (_v6) {
+                if (_v7) {
                   matrix = matrix || mx.identity();
 
                   if (matrix) {
-                    matrix = multiplyRotateX(matrix, d2r(_v6));
+                    matrix = multiplyRotateX(matrix, d2r(_v7));
                   } else {
-                    matrix = calRotateX(mx.identity(), _v6);
+                    matrix = calRotateX(mx.identity(), _v7);
                   }
                 }
               }
 
               __computedStyle[ROTATE_Y] = 0;
-              _v6 = __currentStyle[ROTATE_Y];
+              _v7 = __currentStyle[ROTATE_Y];
 
-              if (_v6) {
-                _v6 = __computedStyle[ROTATE_Y] = _v6.v;
+              if (_v7) {
+                _v7 = __computedStyle[ROTATE_Y] = _v7.v;
 
-                if (_v6) {
+                if (_v7) {
                   if (matrix) {
-                    matrix = multiplyRotateY(matrix, d2r(_v6));
+                    matrix = multiplyRotateY(matrix, d2r(_v7));
                   } else {
-                    matrix = calRotateY(mx.identity(), _v6);
+                    matrix = calRotateY(mx.identity(), _v7);
                   }
                 }
               }
 
               __computedStyle[ROTATE_Z] = 0;
-              _v6 = __currentStyle[ROTATE_Z];
+              _v7 = __currentStyle[ROTATE_Z];
 
-              if (_v6) {
-                _v6 = __computedStyle[ROTATE_Z] = _v6.v;
+              if (_v7) {
+                _v7 = __computedStyle[ROTATE_Z] = _v7.v;
 
-                if (_v6) {
+                if (_v7) {
                   if (matrix) {
-                    matrix = multiplyRotateZ(matrix, d2r(_v6));
+                    matrix = multiplyRotateZ(matrix, d2r(_v7));
                   } else {
-                    matrix = calRotateZ(mx.identity(), _v6);
+                    matrix = calRotateZ(mx.identity(), _v7);
                   }
                 }
               }
 
               __computedStyle[ROTATE_3D] = [0, 0, 0, 0];
-              _v6 = __currentStyle[ROTATE_3D];
+              _v7 = __currentStyle[ROTATE_3D];
 
-              if (_v6) {
-                _v6 = __computedStyle[ROTATE_3D] = [_v6[0], _v6[1], _v6[2], _v6[3].v];
+              if (_v7) {
+                _v7 = __computedStyle[ROTATE_3D] = [_v7[0], _v7[1], _v7[2], _v7[3].v];
 
-                if ((_v6[0] || _v6[1] || _v6[2]) && _v6[3]) {
+                if ((_v7[0] || _v7[1] || _v7[2]) && _v7[3]) {
                   if (matrix) {
-                    matrix = multiply$2(matrix, calRotate3d(mx.identity(), _v6));
+                    matrix = multiply$2(matrix, calRotate3d(mx.identity(), _v7));
                   } else {
-                    matrix = calRotate3d(mx.identity(), _v6);
+                    matrix = calRotate3d(mx.identity(), _v7);
                   }
                 }
               }
 
               __computedStyle[SKEW_X] = 0;
-              _v6 = __currentStyle[SKEW_X];
+              _v7 = __currentStyle[SKEW_X];
 
-              if (_v6) {
-                _v6 = __computedStyle[SKEW_X] = _v6.v;
+              if (_v7) {
+                _v7 = __computedStyle[SKEW_X] = _v7.v;
 
-                if (_v6) {
+                if (_v7) {
                   if (matrix) {
-                    matrix = multiplySkewX(matrix, d2r(_v6));
+                    matrix = multiplySkewX(matrix, d2r(_v7));
                   } else {
                     matrix = mx.identity();
-                    matrix[4] = Math.tan(d2r(_v6));
+                    matrix[4] = Math.tan(d2r(_v7));
                   }
                 }
               }
 
               __computedStyle[SKEW_Y] = 0;
-              _v6 = __currentStyle[SKEW_Y];
+              _v7 = __currentStyle[SKEW_Y];
 
-              if (_v6) {
-                _v6 = __computedStyle[SKEW_Y] = _v6.v;
+              if (_v7) {
+                _v7 = __computedStyle[SKEW_Y] = _v7.v;
 
-                if (_v6) {
+                if (_v7) {
                   if (matrix) {
-                    matrix = multiplySkewY(matrix, d2r(_v6));
+                    matrix = multiplySkewY(matrix, d2r(_v7));
                   } else {
                     matrix = mx.identity();
-                    matrix[1] = Math.tan(d2r(_v6));
+                    matrix[1] = Math.tan(d2r(_v7));
                   }
                 }
               }
 
               __computedStyle[SCALE_X] = 1;
-              _v6 = __currentStyle[SCALE_X];
+              _v7 = __currentStyle[SCALE_X];
 
-              if (_v6) {
-                _v6 = __computedStyle[SCALE_X] = _v6.v;
+              if (_v7) {
+                _v7 = __computedStyle[SCALE_X] = _v7.v;
 
-                if (_v6 !== 1) {
+                if (_v7 !== 1) {
                   if (matrix) {
-                    matrix = multiplyScaleX(matrix, _v6);
+                    matrix = multiplyScaleX(matrix, _v7);
                   } else {
                     matrix = mx.identity();
-                    matrix[0] = _v6;
+                    matrix[0] = _v7;
                   }
                 }
               }
 
               __computedStyle[SCALE_Y] = 1;
-              _v6 = __currentStyle[SCALE_Y];
+              _v7 = __currentStyle[SCALE_Y];
 
-              if (_v6) {
-                _v6 = __computedStyle[SCALE_Y] = _v6.v;
+              if (_v7) {
+                _v7 = __computedStyle[SCALE_Y] = _v7.v;
 
-                if (_v6 !== 1) {
+                if (_v7 !== 1) {
                   if (matrix) {
-                    matrix = multiplyScaleY(matrix, _v6);
+                    matrix = multiplyScaleY(matrix, _v7);
                   } else {
                     matrix = mx.identity();
-                    matrix[5] = _v6;
+                    matrix[5] = _v7;
                   }
                 }
               }
 
               __computedStyle[SCALE_Z] = 1;
-              _v6 = __currentStyle[SCALE_Z];
+              _v7 = __currentStyle[SCALE_Z];
 
-              if (_v6) {
-                _v6 = __computedStyle[SCALE_Z] = _v6.v;
+              if (_v7) {
+                _v7 = __computedStyle[SCALE_Z] = _v7.v;
 
-                if (_v6 !== 1) {
+                if (_v7 !== 1) {
                   if (matrix) {
-                    matrix = multiplyScaleZ(matrix, _v6);
+                    matrix = multiplyScaleZ(matrix, _v7);
                   } else {
                     matrix = mx.identity();
-                    matrix[10] = _v6;
+                    matrix[10] = _v7;
                   }
                 }
               }
@@ -22613,10 +22648,10 @@
         var textStrokeColor = __currentStyle[TEXT_STROKE_COLOR$1];
 
         if (textStrokeColor.u === INHERIT$1) {
-          var _v7 = __computedStyle[TEXT_STROKE_COLOR$1] = parent ? parentComputedStyle[TEXT_STROKE_COLOR$1] : rgba2int(reset.INHERIT.textStrokeColor);
+          var _v8 = __computedStyle[TEXT_STROKE_COLOR$1] = parent ? parentComputedStyle[TEXT_STROKE_COLOR$1] : rgba2int(reset.INHERIT.textStrokeColor);
 
-          if (_v7.k) {
-            __cacheStyle[TEXT_STROKE_COLOR$1] = _v7;
+          if (_v8.k) {
+            __cacheStyle[TEXT_STROKE_COLOR$1] = _v8;
           } else {
             __cacheStyle[TEXT_STROKE_COLOR$1] = int2rgba$1(__computedStyle[TEXT_STROKE_COLOR$1]);
           }
@@ -22632,23 +22667,23 @@
           __computedStyle[TEXT_STROKE_WIDTH$1] = parent ? parentComputedStyle[TEXT_STROKE_WIDTH$1] : reset.INHERIT.textStrokeWidth;
           __cacheStyle[TEXT_STROKE_WIDTH$1] = true;
         } else if (isNil$9(__cacheStyle[TEXT_STROKE_WIDTH$1])) {
-          var _v8 = __currentStyle[TEXT_STROKE_WIDTH$1];
+          var _v9 = __currentStyle[TEXT_STROKE_WIDTH$1];
 
-          if (_v8.u === REM$4) {
-            _v8 = _v8.v * this.__root.__computedStyle[FONT_SIZE$2];
-          } else if (_v8.u === VW$4) {
-            _v8 = _v8.v * this.__root.width * 0.01;
-          } else if (_v8.u === VH$4) {
-            _v8 = _v8.v * this.__root.height * 0.01;
-          } else if (_v8.u === VMAX$4) {
-            _v8 = _v8.v * Math.max(this.__root.width, this.__root.height) * 0.01;
-          } else if (_v8.u === VMIN$4) {
-            _v8 = _v8.v * Math.min(this.__root.width, this.__root.height) * 0.01;
+          if (_v9.u === REM$4) {
+            _v9 = _v9.v * this.__root.__computedStyle[FONT_SIZE$2];
+          } else if (_v9.u === VW$4) {
+            _v9 = _v9.v * this.__root.width * 0.01;
+          } else if (_v9.u === VH$4) {
+            _v9 = _v9.v * this.__root.height * 0.01;
+          } else if (_v9.u === VMAX$4) {
+            _v9 = _v9.v * Math.max(this.__root.width, this.__root.height) * 0.01;
+          } else if (_v9.u === VMIN$4) {
+            _v9 = _v9.v * Math.min(this.__root.width, this.__root.height) * 0.01;
           } else {
-            _v8 = _v8.v;
+            _v9 = _v9.v;
           }
 
-          __computedStyle[TEXT_STROKE_WIDTH$1] = _v8;
+          __computedStyle[TEXT_STROKE_WIDTH$1] = _v9;
           __cacheStyle[TEXT_STROKE_WIDTH$1] = true;
         }
 
@@ -23295,7 +23330,7 @@
                     else if (renderMode === SVG$1 && svgBgSymbol.length) {
                       svgBgSymbol.forEach(function (symbol) {
                         if (symbol) {
-                          var _v9 = {
+                          var _v10 = {
                             tagName: 'clipPath',
                             props: [],
                             children: [{
@@ -23303,9 +23338,9 @@
                               props: [['d', isUpright ? "M".concat(0, ",", count, "L").concat(ih, ",").concat(count, "L").concat(ih, ",").concat(h + count, "L", 0, ",").concat(h + count, ",L", 0, ",").concat(count) : "M".concat(count, ",", 0, "L").concat(w + count, ",", 0, "L").concat(w + count, ",").concat(ih, "L").concat(count, ",").concat(ih, ",L").concat(count, ",", 0)]]
                             }]
                           };
-                          var clip = ctx.add(_v9);
+                          var clip = ctx.add(_v10);
 
-                          _this8.__cacheDefs.push(_v9);
+                          _this8.__cacheDefs.push(_v10);
 
                           virtualDom.bb.push({
                             type: 'item',
@@ -23401,7 +23436,7 @@
                     else if (renderMode === SVG$1 && svgBgSymbol.length) {
                       svgBgSymbol.forEach(function (symbol) {
                         if (symbol) {
-                          var _v10 = {
+                          var _v11 = {
                             tagName: 'clipPath',
                             props: [],
                             children: [{
@@ -23409,9 +23444,9 @@
                               props: [['d', isUpright ? "M".concat(0, ",", count, "L").concat(ih, ",").concat(count, "L").concat(ih, ",").concat(h + count, "L", 0, ",").concat(h + count, ",L", 0, ",").concat(count) : "M".concat(count, ",", 0, "L").concat(w + count, ",", 0, "L").concat(w + count, ",").concat(ih, "L").concat(count, ",").concat(ih, ",L").concat(count, ",", 0)]]
                             }]
                           };
-                          var clip = ctx.add(_v10);
+                          var clip = ctx.add(_v11);
 
-                          _this8.__cacheDefs.push(_v10);
+                          _this8.__cacheDefs.push(_v11);
 
                           virtualDom.bb.push({
                             type: 'item',
@@ -23993,14 +24028,14 @@
       key: "__deepScan",
       value: function __deepScan(cb, options) {
         return cb(this, options);
-      } // isLayout为false时，为relative，true则是absolute等直接改layoutData数据的
-      // lv是reflow偏移时传入，需要清除cacheStyle
+      } // isLayout为false时，为relative，true则是absolute/justify/marginAuto等直接改layoutData数据的
+      // lv是reflow偏移时传入，需要清除cacheStyle，并且对位图cache进行偏移设置
       // 注意所有的offset/resize都要避免display:none的，比如合并margin导致block的孩子inline因clamp为none时没有layoutData
 
     }, {
       key: "__offsetX",
       value: function __offsetX(diff, isLayout, lv) {
-        if (this.computedStyle[DISPLAY$6] === 'none') {
+        if (this.__computedStyle[DISPLAY$6] === 'none') {
           return;
         }
 
@@ -24008,7 +24043,6 @@
 
         if (isLayout) {
           this.__layoutData.x += diff;
-          this.clearCache();
         }
 
         this.__sx1 += diff;
@@ -24026,12 +24060,22 @@
 
             this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
           }
+
+          if (this.__bbox) {
+            this.__bbox[0] += diff;
+            this.__bbox[2] += diff;
+          }
+
+          if (this.__filterBbox) {
+            this.__filterBbox[0] += diff;
+            this.__filterBbox[2] += diff;
+          }
         }
       }
     }, {
       key: "__offsetY",
       value: function __offsetY(diff, isLayout, lv) {
-        if (this.computedStyle[DISPLAY$6] === 'none') {
+        if (this.__computedStyle[DISPLAY$6] === 'none') {
           return;
         }
 
@@ -24039,7 +24083,6 @@
 
         if (isLayout) {
           this.__layoutData && (this.__layoutData.y += diff);
-          this.clearCache();
         }
 
         this.__sy1 += diff;
@@ -24057,16 +24100,46 @@
 
             this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
           }
+
+          if (this.__bbox) {
+            this.__bbox[1] += diff;
+            this.__bbox[3] += diff;
+          }
+
+          if (this.__filterBbox) {
+            this.__filterBbox[1] += diff;
+            this.__filterBbox[3] += diff;
+          }
+
+          if (this.__cache) {
+            this.__cache.__offsetY(diff);
+          }
+
+          if (this.__cacheTotal) {
+            this.__cacheTotal.__offsetY(diff);
+          }
+
+          if (this.__cacheOverflow) {
+            this.__cacheOverflow.__offsetY(diff);
+          }
+
+          if (this.__cacheFilter) {
+            this.__cacheFilter.__offsetY(diff);
+          }
+
+          if (this.__cacheMask) {
+            this.__cacheMask.__offsetY(diff);
+          }
         }
       }
     }, {
       key: "__resizeX",
       value: function __resizeX(diff, lv) {
-        if (this.computedStyle[DISPLAY$6] === 'none') {
+        if (this.__computedStyle[DISPLAY$6] === 'none') {
           return;
         }
 
-        this.computedStyle.width = this.__width += diff;
+        this.__computedStyle.width = this.__width += diff;
         this.__clientWidth += diff;
         this.__offsetWidth += diff;
         this.__outerWidth += diff;
@@ -27453,11 +27526,15 @@
         }
 
         return free;
-      } // 设置y偏移值，递归包括children，此举在justify-content/margin-auto等对齐用
+      } // 设置y偏移值，递归包括children，此举在justify-content/margin-auto/relative等对齐用
 
     }, {
       key: "__offsetX",
       value: function __offsetX(diff, isLayout, lv) {
+        if (this.__computedStyle[DISPLAY$3] === 'none') {
+          return;
+        }
+
         _get(_getPrototypeOf(Dom.prototype), "__offsetX", this).call(this, diff, isLayout, lv);
 
         var ep = this.__ellipsis;
@@ -27480,7 +27557,7 @@
     }, {
       key: "__offsetY",
       value: function __offsetY(diff, isLayout, lv) {
-        if (this.computedStyle[DISPLAY$3] === 'none') {
+        if (this.__computedStyle[DISPLAY$3] === 'none') {
           return;
         }
 
@@ -31624,7 +31701,7 @@
     }
   }
 
-  function diffChild$1(elem, ovd, nvd) {
+  function diffChild(elem, ovd, nvd) {
     if (ovd.type === 'dom') {
       if (nvd.type === 'dom') {
         diffD2D(elem, ovd, nvd);
@@ -31801,7 +31878,7 @@
     var cns = lastChild.childNodes;
 
     for (; i < Math.min(ol, nl); i++) {
-      diffChild$1(cns[i], ovd.children[i], nvd.children[i]);
+      diffChild(cns[i], ovd.children[i], nvd.children[i]);
     }
 
     if (i < ol) {
@@ -32701,10 +32778,10 @@
         this.sx1 = sx1; // 去除margin的左上角原点坐标
 
         this.sy1 = sy1;
-        var bbox = this.bbox;
-        this.dx = this.x - bbox[0]; // cache坐标和box原点的差值
+        var bbox = this.__bbox;
+        this.dx = this.__x - bbox[0]; // cache坐标和box原点的差值
 
-        this.dy = this.y - bbox[1];
+        this.dy = this.__y - bbox[1];
         this.dbx = sx1 - bbox[0]; // 原始sx1/sy1和box原点的差值
 
         this.dby = sy1 - bbox[1];
@@ -32761,6 +32838,15 @@
             pos = res.pos;
 
         this.__init(w, h, bbox, page, pos, x1, y1);
+      }
+    }, {
+      key: "__offsetY",
+      value: function __offsetY(diff) {
+        this.sy1 += diff;
+        var bbox = this.__bbox;
+        bbox[1] += diff;
+        bbox[3] += diff;
+        this.dy -= diff;
       } // 是否功能可用，生成离屏canvas及尺寸超限
 
     }, {
@@ -33304,9 +33390,9 @@
       FT$1 = o$1.FILTER,
       REPAINT$1 = o$1.REPAINT,
       contain$1 = o$1.contain,
-      MBM$1 = o$1.MIX_BLEND_MODE;
-      o$1.PERSPECTIVE;
-      var CACHE$1 = o$1.CACHE;
+      MBM$1 = o$1.MIX_BLEND_MODE,
+      PPT$1 = o$1.PERSPECTIVE,
+      CACHE$1 = o$1.CACHE;
   var isE = mx.isE,
       inverse = mx.inverse,
       multiply = mx.multiply;
@@ -35314,9 +35400,6 @@
           }
         }
 
-        node.__cacheStyle;
-        node.__currentStyle;
-
         if (contain$1(__refreshLevel, TRANSFORM_ALL$1)) {
           var matrix = node.__matrix;
 
@@ -35388,7 +35471,8 @@
             release: function release() {
               this.available = false;
               delete virtualDom.cache;
-            }
+            },
+            __offsetY: function __offsetY() {}
           };
           node.__cacheTotal.available = true;
         } // 渲染后更新取值
@@ -35631,7 +35715,7 @@
         } // 这里和canvas不一样，前置cacheAsBitmap条件变成或条件之一，新的ppt层级且画中画需要新的fbo
 
 
-        if (contain$1(__refreshLevel, FT$1 | MBM$1) || isPpt) {
+        if (contain$1(__refreshLevel, FT$1 | MBM$1) || contain$1(__refreshLevel, PPT$1) && node.__cacheAsBitmap || isPpt) {
           mergeList.push({
             i: i,
             lv: lv,
@@ -37633,7 +37717,7 @@
                 _i2 += total || 0;
               }
             }
-          } // perspective也特殊只清空total的cache，和>=REPAINT清空total共用，TODO:优化判断ppt
+          } // perspective也特殊只清空total的cache，和>=REPAINT清空total共用
 
 
           if (need || contain(lv, PPT)) {
@@ -40082,500 +40166,6 @@
     return Ellipse;
   }(Geom);
 
-  var TYPE_VD$2 = $$type.TYPE_VD,
-      TYPE_GM$2 = $$type.TYPE_GM,
-      TYPE_CP$2 = $$type.TYPE_CP;
-  /**
-   * 2. 打平children中的数组，变成一维
-   * 3. 合并相连的Text节点，即string内容
-   */
-
-  function flattenJson(parent) {
-    if (Array.isArray(parent)) {
-      return parent.map(function (item) {
-        return flattenJson(item);
-      });
-    } else if (!parent || [TYPE_VD$2, TYPE_GM$2, TYPE_CP$2].indexOf(parent.$$type) === -1 || !Array.isArray(parent.children)) {
-      return parent;
-    }
-
-    var list = [];
-    traverseJson(list, parent.children, {
-      lastText: null
-    });
-    parent.children = list;
-    return parent;
-  }
-
-  function traverseJson(list, children, options) {
-    if (Array.isArray(children)) {
-      children.forEach(function (item) {
-        traverseJson(list, item, options);
-      });
-    } else if (children && (children.$$type === TYPE_VD$2 || children.$$type === TYPE_GM$2)) {
-      if (['canvas', 'svg', 'webgl'].indexOf(children.tagName) > -1) {
-        throw new Error('Can not nest canvas/svg/webgl');
-      }
-
-      if (children.$$type === TYPE_VD$2) {
-        flattenJson(children);
-      }
-
-      list.push(children);
-      options.lastText = null;
-    } else if (children && children.$$type === TYPE_CP$2) {
-      list.push(children); // 强制component即便返回text也形成一个独立的节点，合并在layout布局中做
-
-      options.lastText = null;
-    } // 排除掉空的文本，连续的text合并
-    else if (!util.isNil(children) && children !== '') {
-      if (options.lastText !== null) {
-        list[list.length - 1] = options.lastText += children;
-      } else {
-        list.push(children);
-      }
-    }
-  }
-
-  var TYPE_VD$1 = $$type.TYPE_VD,
-      TYPE_GM$1 = $$type.TYPE_GM,
-      TYPE_CP$1 = $$type.TYPE_CP;
-  var updateList = [];
-  var removeList = [];
-  var KEY_FLAG = {};
-  /**
-   * setState后刷新前先根遍历检查组件开始进行shouldComponentUpdate判断
-   */
-
-  function check(vd) {
-    if (vd instanceof Dom) {
-      vd.children.forEach(function (child) {
-        if (child instanceof Dom) {
-          check(child);
-        } // 当组件有setState更新时，从叶子到根链路会标识__hasCpUpdate，以便节约遍历成本忽略那些没变化的链路
-        else if (child instanceof Component && child.__hasCpUpdate) {
-          child.__hasCpUpdate = false;
-          checkCp(child, child.props);
-        }
-      });
-    } // 高阶组件会进入此分支，被父组件调用
-    else if (vd instanceof Component && vd.__hasCpUpdate) {
-      vd.__hasCpUpdate = false;
-      checkCp(vd, vd.props);
-    }
-  }
-  /**
-   * 检查cp是否有state变更，注意递归检查时需要看shadow不能看shadowRoot，
-   * 否则高阶组件会被跳过，其更新无法触发update生命周期
-   * @param cp
-   * @param nextProps
-   * @param forceCheckUpdate，被render()后的json的二级组件，发现props有变更强制检查更新，否则可以跳过
-   */
-
-
-  function checkCp(cp, nextProps, forceCheckUpdate) {
-    if (cp.__nextState || forceCheckUpdate) {
-      var shouldUpdate;
-
-      if (util.isFunction(cp.shouldComponentUpdate)) {
-        shouldUpdate = cp.shouldComponentUpdate(nextProps, cp.__nextState || cp.state);
-      } else {
-        // 没有默认更新
-        shouldUpdate = true;
-      }
-
-      if (shouldUpdate) {
-        updateCp(cp, nextProps, cp.__nextState || cp.state);
-      } // 不更新则递归检查子tree的cp
-      else {
-        cp.props = nextProps;
-        cp.state = cp.__nextState || cp.state;
-        check(cp.shadow);
-      }
-    } else {
-      check(cp.shadow);
-    }
-  }
-  /**
-   * 更新组件的props和state，清空__nextState
-   * @param cp
-   * @param props
-   * @param state
-   */
-
-
-  function updateCp(cp, props, state) {
-    cp.props = props;
-    cp.state = state;
-    cp.__nextState = null; // 同步在refresh前清除component的新state标识，这样frame动画在after回调中可以新设
-
-    var oldS = cp.shadow;
-    var oldSr = cp.shadowRoot;
-    var oldJson = cp.__cd;
-    var json = flattenJson(cp.render()); // 对比新老render()返回的内容，更新后重新生成sr
-
-    diffSr(oldS, oldJson, json);
-
-    cp.__init(json); // 为了局部dom布局需要知道老的css信息
-
-
-    var sr = cp.shadowRoot;
-
-    if (sr instanceof Xom) {
-      ['__outerWidth', '__outerHeight', '__sx', '__sy', '__sx2', '__sx3', '__sx4', '__sx5', '__sx6', '__sy2', '__sy3', '__sy4', '__sy5', '__sy6'].forEach(function (k) {
-        sr[k] = oldSr[k];
-      });
-      sr.__computedStyle = oldSr.computedStyle;
-    }
-
-    ['__x', '__y', '__width', '__height', '__sx1', // text和xom
-    '__sy1', '__layoutData', '__parent', '__domParent'].forEach(function (k) {
-      sr[k] = oldSr[k];
-    });
-    sr.__domParent = oldSr.__domParent;
-    sr.__struct = oldSr.__struct;
-    updateList.push(cp); // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
-
-    if (!util.isObject(json) || !json.__placeholder) {
-      removeList.push(oldS);
-    } // 子组件使用老的json时标识，更新后删除，render()返回空会没json对象
-
-
-    if (json && json.__placeholder) {
-      delete json.__placeholder;
-    }
-
-    if (json && json.__inheritAnimate) {
-      delete json.__inheritAnimate;
-    }
-
-    if (json && json.__animateRecords) {
-      delete json.__animateRecords;
-    } // 高阶组件时需判断，子组件更新后生成新的sr，父组件的sr/host需要同时更新引用
-
-
-    var host = cp.host;
-
-    while (host) {
-      if (host.shadow === cp) {
-        host.__shadowRoot = sr;
-        sr.__hostRoot = host;
-        cp = host;
-        host = host.host;
-      } else {
-        break;
-      }
-    }
-  }
-  /**
-   * 非一级组件sr进行对比，key相同的无需重新生成且继承动画
-   * @param vd
-   * @param oj oldJson
-   * @param nj
-   */
-
-
-  function diffSr(vd, oj, nj) {
-    // 先遍历检查key相同的，将没有变化的key暂存下来，深度优先，这样叶子节点出现在前面，当key的叶子也有key时，确保叶子先对比
-    var ojk = getKeyHash(oj, {}, vd);
-    var njk = getKeyHash(nj, {});
-    var keyList = [];
-    var cpList = []; // 先对比key对应的节点，如果新老有一方对不上则落空
-
-    Object.keys(ojk).forEach(function (k) {
-      var o = ojk[k];
-      var n = njk[k];
-
-      if (!n) {
-        o.json.key = KEY_FLAG;
-      }
-    });
-    Object.keys(njk).forEach(function (k) {
-      var o = ojk[k];
-      var n = njk[k]; // 有可能老的没有这个key，新key落空
-
-      if (!o) {
-        n.json.key = KEY_FLAG;
-        return;
-      }
-
-      var oj = o.json;
-      var nj = n.json;
-      var vd = o.vd; // 相同class的组件进行对比替换
-
-      if (oj.$$type === TYPE_CP$1 && nj.$$type === TYPE_CP$1) {
-        if (oj.klass === nj.klass) {
-          // 对比props和children看是否全等，是则直接替换新json类型为占位符，引用老vd，否则强制更新
-          diffCp(oj, nj, vd); // 标识对比过了
-
-          oj.key = nj.key = KEY_FLAG; // 老的sr里需删除这个vd，因为老sr会回收
-
-          cpList.push(vd);
-        }
-      } // 相同类型的vd进行对比继承动画
-      else if (oj.$$type === nj.$$type && oj.tagName === nj.tagName) {
-        // 需判断矢量标签mutil是否相等
-        if (nj.$$type !== TYPE_GM$1 || oj.props.multi === nj.props.multi) {
-          nj.__inheritAnimate = vd;
-        }
-
-        oj.key = nj.key = KEY_FLAG; // key相同的dom暂存下来
-
-        if (nj.$$type === TYPE_VD$1) {
-          keyList.push({
-            vd: vd,
-            oj: oj,
-            nj: nj
-          });
-        }
-      }
-    }); // key相同的dom对比children，下面非key逻辑就不做了
-
-    keyList.forEach(function (item) {
-      diffChildren(item.vd, item.oj, item.nj);
-    }); // 整体tree进行对比
-
-    diffChild(vd, oj, nj); // 已更新的cp需被老sr删除，因为老sr会回收，而此cp继续存在于新sr中不能回收，这里处理key的
-
-    cpList.forEach(function (vd) {
-      removeCpFromOldTree(vd);
-    });
-  }
-  /**
-   * 递归检查dom的children，相同的无需重新生成，用PL类型占位符代替直接返回老vd
-   * @param vd
-   * @param oj
-   * @param nj
-   */
-
-
-  function diffChild(vd, oj, nj) {
-    if (util.isObject(nj)) {
-      if (nj.$$type === TYPE_CP$1) {
-        // key对比过了忽略
-        if (nj.key === KEY_FLAG) {
-          return;
-        } // 相同class的组件处理
-
-
-        if (oj && oj.$$type === nj.$$type && oj.klass === nj.klass) {
-          diffCp(oj, nj, vd); // 已更新的cp需被老sr删除，因为老sr会回收，而此cp继续存在于新sr中不能回收
-
-          removeCpFromOldTree(vd);
-        }
-      } else if (nj.$$type === TYPE_GM$1 && oj && oj.$$type === TYPE_GM$1) {
-        // $geom的multi必须一致
-        if (oj.tagName === nj.tagName && oj.props.multi === nj.props.multi) {
-          nj.__inheritAnimate = vd;
-        }
-      } // dom类型递归children
-      else if (nj.$$type === TYPE_VD$1 && oj && oj.$$type === TYPE_VD$1) {
-        if (oj.tagName === nj.tagName) {
-          nj.__inheritAnimate = vd;
-        }
-
-        diffChildren(vd, oj, nj);
-      }
-    }
-  }
-  /**
-   * dom类型的vd对比children
-   * @param vd
-   * @param oj
-   * @param nj
-   */
-
-
-  function diffChildren(vd, oj, nj) {
-    var oc = oj.children;
-    var nc = nj.children;
-    var ol = oc.length;
-    var nl = nc.length;
-    var children = vd.children;
-
-    for (var i = 0, of = 0, nf = 0, len = Math.min(ol, nl); i < len; i++) {
-      var o = oc[i + of];
-      var n = nc[i + nf]; // 新老都是key直接跳过
-
-      if (o.key === KEY_FLAG && n.key === KEY_FLAG) ; // 其中一个是key对比过了调整索引和长度
-      else if (o.key === KEY_FLAG) {
-        of++;
-        i--;
-        ol--;
-        len = Math.min(ol, nl);
-      } else if (n.key === KEY_FLAG) {
-        nf++;
-        i--;
-        nl--;
-        len = Math.min(ol, nl);
-      } else {
-        diffChild(children[i + of], o, n);
-      }
-    } // 长度不同增减的无需关注，新json创建cp有didMount，老vd会调用cp的destroy
-
-  }
-  /**
-   * 根据json对比看cp如何更新，被render()后的json的二级组件对比才会出现
-   * @param oj
-   * @param nj
-   * @param vd
-   */
-
-
-  function diffCp(oj, nj, vd) {
-    // props全等，直接替换新json类型为占位符，引用老vd内容，无需重新创建，暂时存在json的placeholder上
-    // 否则需要强制触发组件更新，包含setState内容
-    nj.__placeholder = vd;
-    var sr = vd.shadowRoot; // 对比需忽略on开头的事件，直接改老的引用到新的上，这样只变了on的话无需更新
-
-    var exist = {};
-    Object.keys(oj.props).forEach(function (k) {
-      var v = oj.props[k];
-      exist[k] = v;
-    });
-    Object.keys(nj.props).forEach(function (k) {
-      var v = nj.props[k];
-
-      if (/^on[a-zA-Z]/.test(k)) {
-        oj.props[k] = v;
-        var ex = exist[k];
-
-        if (ex) {
-          delete exist[k];
-
-          if (ex !== v) {
-            k = k.slice(2).toLowerCase();
-            sr.listener[k] = v;
-          }
-        } else {
-          k = k.slice(2).toLowerCase();
-          sr.listener[k] = v;
-        }
-      } else if (/^on-[a-zA-Z\d_$]/.test(k)) {
-        oj.props[k] = v;
-        var _ex = exist[k];
-
-        if (_ex) {
-          delete exist[k];
-
-          if (_ex !== v) {
-            k = k.slice(2).toLowerCase();
-            vd.off(k, exist[k]);
-            vd.on(k, v);
-          }
-
-          delete exist[k];
-        } else {
-          k = k.slice(2).toLowerCase();
-          vd.on(k, v);
-        }
-      }
-    }); // 新的少的事件取消
-
-    Object.keys(exist).forEach(function (k) {
-      var v = exist[k];
-
-      if (/^on[a-zA-Z]/.test(k)) {
-        nj.props[k] = v;
-        k = k.slice(2).toLowerCase();
-        delete sr.listener[k];
-      } else if (/^on-[a-zA-Z\d_$]/.test(k)) {
-        nj.props[k] = v;
-        k = k.slice(2).toLowerCase();
-        vd.off(k, v);
-      }
-    });
-    checkCp(vd, nj.props, !util.equal(oj.props, nj.props));
-  }
-  /**
-   * 深度优先遍历json，将有key的记录在hash中，如果传入根vd，同步递归保存对应位置的vd
-   * @param json
-   * @param hash
-   * @param vd
-   * @returns {*}
-   */
-
-
-  function getKeyHash(json, hash, vd) {
-    if (Array.isArray(json)) {
-      json.forEach(function (item, i) {
-        return getKeyHash(item, hash, vd && vd[i]);
-      });
-    } else if (util.isObject(json)) {
-      if (json.$$type === TYPE_VD$1 || json.$$type === TYPE_GM$1 || json.$$type === TYPE_CP$1) {
-        // 深度优先
-        if (json.$$type === TYPE_VD$1) {
-          getKeyHash(json.children, hash, vd && vd.children);
-        }
-
-        var key = json.props.key;
-
-        if (!util.isNil(key) && key !== '') {
-          // 重复key错误警告
-          if (hash.hasOwnProperty(key)) {
-            inject.warn('Component ' + vd.tagName + ' has duplicate key: ' + key);
-          }
-
-          hash[key] = {
-            json: json,
-            vd: vd
-          };
-        }
-      }
-    }
-
-    return hash;
-  }
-  /**
-   * 非一级组件diff发生更新时，其需要从sr的tree中移除，因为sr会销毁
-   */
-
-
-  function removeCpFromOldTree(vd) {
-    // root下的一级组件不会发生回收情况，忽略
-    if (!vd.host) {
-      return;
-    }
-
-    var parent = vd.parent;
-
-    if (parent) {
-      var i = parent.children.indexOf(vd);
-
-      if (i > -1) {
-        parent.children[i] = null;
-      } else {
-        throw new Error('Can not find child: ' + vd.tagName);
-      }
-    }
-  }
-  /**
-   * 执行componentDidUpdate/destroy
-   */
-
-
-  function did() {
-    updateList.forEach(function (item) {
-      if (util.isFunction(item.componentDidUpdate)) {
-        item.componentDidUpdate();
-      }
-    });
-    updateList.splice(0);
-    removeList.forEach(function (item) {
-      item.__destroy();
-    });
-    removeList = [];
-  }
-
-  var updater = {
-    updateList: updateList,
-    check: check,
-    did: did
-  };
-
-  var TYPE_VD = $$type.TYPE_VD,
-      TYPE_GM = $$type.TYPE_GM,
-      TYPE_CP = $$type.TYPE_CP;
   var isPrimitive$1 = util.isPrimitive;
   /**
    * 入口方法，animateRecords记录所有的动画结果等初始化后分配开始动画
@@ -40627,18 +40217,10 @@
     } else if (/^[A-Z]/.test(tagName)) {
       var cp = Component.getRegister(tagName);
       vd = karas.createCp(cp, props, children.map(function (item) {
-        if (item && [TYPE_VD, TYPE_GM, TYPE_CP].indexOf(item.$$type) > -1) {
-          return item;
-        }
-
         return parse(karas, item, animateRecords, opt, offsetTime);
       }));
     } else {
       vd = karas.createVd(tagName, props, children.map(function (item) {
-        if (item && [TYPE_VD, TYPE_GM, TYPE_CP].indexOf(item.$$type) > -1) {
-          return item;
-        }
-
         return parse(karas, item, animateRecords, opt, offsetTime);
       }));
     }
@@ -41379,7 +40961,7 @@
     Cache: Cache
   };
 
-  var version = "0.79.2";
+  var version = "0.79.3";
 
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);
@@ -41486,7 +41068,6 @@
     parser: o,
     animate: animate,
     math: math,
-    updater: updater,
     refresh: refresh,
     enums: enums,
 

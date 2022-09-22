@@ -17,7 +17,6 @@ import Ellipse from './node/geom/Ellipse';
 import Component from './node/Component';
 import Event from './util/Event';
 import util from './util/util';
-import updater from './util/updater';
 import inject from './util/inject';
 import enums from './util/enums';
 import debug from './util/debug';
@@ -129,7 +128,6 @@ let karas = {
   parser,
   animate,
   math,
-  updater,
   refresh,
   enums,
   set debug(v) {

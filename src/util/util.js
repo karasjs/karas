@@ -1,4 +1,3 @@
-import $$type from './$$type';
 import mx from '../math/matrix';
 
 let toString = {}.toString;
@@ -281,12 +280,6 @@ function hash2arr(hash) {
 
 function clone(obj) {
   if(isNil(obj) || typeof obj !== 'object') {
-    return obj;
-  }
-  // parse递归会出现内部先返回解析好的json，外部parse不能clone
-  if(obj.$$type === $$type.TYPE_VD
-    || obj.$$type === $$type.TYPE_GM
-    || obj.$$type === $$type.TYPE_CP) {
     return obj;
   }
   if(util.isDate(obj)) {

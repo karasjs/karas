@@ -14962,7 +14962,7 @@
 
   var SCALE_Z$1 = 64; //                                1000000
 
-  var SCALE = 112; //                                 1110000
+  var SCALE$1 = 112; //                                 1110000
 
   var TRANSFORM$5 = 128; //                            10000000
 
@@ -14994,7 +14994,7 @@
     SCALE_X: SCALE_X$2,
     SCALE_Y: SCALE_Y$2,
     SCALE_Z: SCALE_Z$1,
-    SCALE: SCALE,
+    SCALE: SCALE$1,
     TRANSFORM: TRANSFORM$5,
     TRANSFORM_ALL: TRANSFORM_ALL$4,
     OPACITY: OPACITY$5,
@@ -21135,6 +21135,7 @@
       SX = o$1.SCALE_X,
       SY = o$1.SCALE_Y,
       SZ = o$1.SCALE_Z,
+      SCALE = o$1.SCALE,
       TRANSFORM_ALL$3 = o$1.TRANSFORM_ALL,
       CACHE$3 = o$1.CACHE;
   var d2r = geom$1.d2r;
@@ -22055,40 +22056,56 @@
             matrixCache[14] += z;
           }
 
-          if (contain$3(lv, SX)) {
-            var _v3 = __currentStyle[SCALE_X].v;
+          if (contain$3(lv, SCALE)) {
+            var _x = 0,
+                _y = 0,
+                _z = 0;
 
-            var _x = _v3 / __computedStyle[SCALE_X];
+            if (contain$3(lv, SX)) {
+              var _v3 = __currentStyle[SCALE_X].v;
+              _x = _v3 / __computedStyle[SCALE_X];
+              __computedStyle[SCALE_X] = _v3;
+              transform$1[0] *= _x;
+              transform$1[1] *= _x;
+              transform$1[2] *= _x;
+              matrixCache[0] *= _x;
+              matrixCache[1] *= _x;
+              matrixCache[2] *= _x;
+            }
 
-            __computedStyle[SCALE_X] = _v3;
-            transform$1[0] *= _x;
-            transform$1[1] *= _x;
-            transform$1[2] *= _x;
-            matrixCache = null;
-          }
+            if (contain$3(lv, SY)) {
+              var _v4 = __currentStyle[SCALE_Y].v;
+              _y = _v4 / __computedStyle[SCALE_Y];
+              __computedStyle[SCALE_Y] = _v4;
+              transform$1[4] *= _y;
+              transform$1[5] *= _y;
+              transform$1[6] *= _y;
+              matrixCache[4] *= _y;
+              matrixCache[5] *= _y;
+              matrixCache[6] *= _y;
+            }
 
-          if (contain$3(lv, SY)) {
-            var _v4 = __currentStyle[SCALE_Y].v;
+            if (contain$3(lv, SZ)) {
+              var _v5 = __currentStyle[SCALE_Z].v;
+              _z = _v5 / __computedStyle[SCALE_Z];
+              __computedStyle[SCALE_Z] = _v5;
+              transform$1[8] *= _z;
+              transform$1[9] *= _z;
+              transform$1[10] *= _z;
+              matrixCache[8] *= _z;
+              matrixCache[9] *= _z;
+              matrixCache[10] *= _z;
+            }
 
-            var _y = _v4 / __computedStyle[SCALE_Y];
+            var _computedStyle$TRANS = _slicedToArray(__computedStyle[TRANSFORM_ORIGIN$2], 2),
+                ox = _computedStyle$TRANS[0],
+                oy = _computedStyle$TRANS[1];
 
-            __computedStyle[SCALE_Y] = _v4;
-            transform$1[4] *= _y;
-            transform$1[5] *= _y;
-            transform$1[6] *= _y;
-            matrixCache = null;
-          }
-
-          if (contain$3(lv, SZ)) {
-            var _v5 = __currentStyle[SCALE_Z].v;
-
-            var _z = _v5 / __computedStyle[SCALE_Z];
-
-            __computedStyle[SCALE_Z] = _v5;
-            transform$1[8] *= _z;
-            transform$1[9] *= _z;
-            transform$1[10] *= _z;
-            matrixCache = null;
+            ox += __sx1;
+            oy += __sy1;
+            matrixCache[12] = transform$1[12] + ox - transform$1[0] * ox - transform$1[4] * oy;
+            matrixCache[13] = transform$1[13] + oy - transform$1[1] * ox - transform$1[5] * oy;
+            matrixCache[14] = transform$1[14] - transform$1[2] * ox - transform$1[6] * oy;
           }
         } // 先根据cache计算需要重新计算的computedStyle
         else {

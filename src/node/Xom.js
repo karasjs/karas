@@ -149,6 +149,7 @@ const {
   SCALE_X: SX,
   SCALE_Y: SY,
   SCALE_Z: SZ,
+  SCALE,
   TRANSFORM_ALL,
   CACHE,
 } = level;
@@ -1031,32 +1032,47 @@ class Xom extends Node {
         transform[14] += z;
         matrixCache[14] += z;
       }
-      if(contain(lv, SX)) {
-        let v = __currentStyle[SCALE_X].v;
-        let x = v / __computedStyle[SCALE_X];
-        __computedStyle[SCALE_X] = v;
-        transform[0] *= x;
-        transform[1] *= x;
-        transform[2] *= x;
-        matrixCache = null;
-      }
-      if(contain(lv, SY)) {
-        let v = __currentStyle[SCALE_Y].v;
-        let y = v / __computedStyle[SCALE_Y];
-        __computedStyle[SCALE_Y] = v;
-        transform[4] *= y;
-        transform[5] *= y;
-        transform[6] *= y;
-        matrixCache = null;
-      }
-      if(contain(lv, SZ)) {
-        let v = __currentStyle[SCALE_Z].v;
-        let z = v / __computedStyle[SCALE_Z];
-        __computedStyle[SCALE_Z] = v;
-        transform[8] *= z;
-        transform[9] *= z;
-        transform[10] *= z;
-        matrixCache = null;
+      if(contain(lv, SCALE)) {
+        let x = 0, y = 0, z = 0;
+        if(contain(lv, SX)) {
+          let v = __currentStyle[SCALE_X].v;
+          x = v / __computedStyle[SCALE_X];
+          __computedStyle[SCALE_X] = v;
+          transform[0] *= x;
+          transform[1] *= x;
+          transform[2] *= x;
+          matrixCache[0] *= x;
+          matrixCache[1] *= x;
+          matrixCache[2] *= x;
+        }
+        if(contain(lv, SY)) {
+          let v = __currentStyle[SCALE_Y].v;
+          y = v / __computedStyle[SCALE_Y];
+          __computedStyle[SCALE_Y] = v;
+          transform[4] *= y;
+          transform[5] *= y;
+          transform[6] *= y;
+          matrixCache[4] *= y;
+          matrixCache[5] *= y;
+          matrixCache[6] *= y;
+        }
+        if(contain(lv, SZ)) {
+          let v = __currentStyle[SCALE_Z].v;
+          z = v / __computedStyle[SCALE_Z];
+          __computedStyle[SCALE_Z] = v;
+          transform[8] *= z;
+          transform[9] *= z;
+          transform[10] *= z;
+          matrixCache[8] *= z;
+          matrixCache[9] *= z;
+          matrixCache[10] *= z;
+        }
+        let [ox, oy] = __computedStyle[TRANSFORM_ORIGIN];
+        ox += __sx1;
+        oy += __sy1;
+        matrixCache[12] = transform[12] + ox - transform[0] * ox - transform[4] * oy;
+        matrixCache[13] = transform[13] + oy - transform[1] * ox - transform[5] * oy;
+        matrixCache[14] = transform[14] - transform[2] * ox - transform[6] * oy;
       }
     }
     // 先根据cache计算需要重新计算的computedStyle

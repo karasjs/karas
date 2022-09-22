@@ -14934,7 +14934,7 @@
       SZ$1 = _enums$STYLE_KEY$e.SCALE_Z,
       ROTATE_X$1 = _enums$STYLE_KEY$e.ROTATE_X,
       ROTATE_Y$1 = _enums$STYLE_KEY$e.ROTATE_Y,
-      ROTATE_Z$1 = _enums$STYLE_KEY$e.ROTATE_Z,
+      RZ$1 = _enums$STYLE_KEY$e.ROTATE_Z,
       ROTATE_3D$2 = _enums$STYLE_KEY$e.ROTATE_3D,
       SKEW_X$1 = _enums$STYLE_KEY$e.SKEW_X,
       SKEW_Y$1 = _enums$STYLE_KEY$e.SKEW_Y,
@@ -14956,33 +14956,35 @@
 
   var TRANSLATE = 14; //                                 1110
 
-  var SCALE_X$2 = 16; //                                  10000
+  var ROTATE_Z$1 = 16; //                                 10000
 
-  var SCALE_Y$2 = 32; //                                 100000
+  var SCALE_X$2 = 32; //                                 100000
 
-  var SCALE_Z$1 = 64; //                                1000000
+  var SCALE_Y$2 = 64; //                                1000000
 
-  var SCALE$1 = 112; //                                 1110000
+  var SCALE_Z$1 = 128; //                              10000000
 
-  var TRANSFORM$5 = 128; //                            10000000
+  var SCALE$1 = 224; //                                11100000
 
-  var TRANSFORM_ALL$4 = 254; //                        11111110
+  var TRANSFORM$5 = 256; //                           100000000
 
-  var OPACITY$5 = 256; //                             100000000
+  var TRANSFORM_ALL$4 = 510; //                       111111110
 
-  var FILTER$5 = 512; //                             1000000000
+  var OPACITY$5 = 512; //                            1000000000
 
-  var MIX_BLEND_MODE$4 = 1024; //                   10000000000
+  var FILTER$5 = 1024; //                           10000000000
 
-  var PERSPECTIVE$2 = 2048; //                     100000000000
+  var MIX_BLEND_MODE$4 = 2048; //                  100000000000
 
-  var REPAINT$4 = 4096; //                        1000000000000
+  var PERSPECTIVE$2 = 4096; //                    1000000000000
+
+  var REPAINT$4 = 8192; //                       10000000000000
   // 高位表示reflow
 
-  var REFLOW$3 = 8192; //                        10000000000000
+  var REFLOW$3 = 16384; //                      100000000000000
   // 特殊高位表示rebuild，节点发生变化
 
-  var REBUILD$1 = 16384; //                     100000000000000
+  var REBUILD$1 = 32768; //                    1000000000000000
 
   var ENUM = {
     NONE: NONE$3,
@@ -14991,6 +14993,7 @@
     TRANSLATE_Y: TRANSLATE_Y$2,
     TRANSLATE_Z: TRANSLATE_Z$2,
     TRANSLATE: TRANSLATE,
+    ROTATE_Z: ROTATE_Z$1,
     SCALE_X: SCALE_X$2,
     SCALE_Y: SCALE_Y$2,
     SCALE_Z: SCALE_Z$1,
@@ -15007,7 +15010,7 @@
   };
 
   function isTransforms(k) {
-    return k === ROTATE_X$1 || k === ROTATE_Y$1 || k === ROTATE_Z$1 || k === ROTATE_3D$2 || k === SKEW_X$1 || k === SKEW_Y$1 || k === TF$2 || k === TRANSFORM_ORIGIN$4;
+    return k === ROTATE_X$1 || k === ROTATE_Y$1 || k === ROTATE_3D$2 || k === SKEW_X$1 || k === SKEW_Y$1 || k === TF$2 || k === TRANSFORM_ORIGIN$4;
   }
 
   var o$1 = Object.assign({
@@ -15044,6 +15047,10 @@
 
       if (k === TZ$1) {
         return TRANSLATE_Z$2;
+      }
+
+      if (k === RZ$1) {
+        return ROTATE_Z$1;
       }
 
       if (k === SX$1) {
@@ -21132,6 +21139,7 @@
       TX = o$1.TRANSLATE_X,
       TY = o$1.TRANSLATE_Y,
       TZ = o$1.TRANSLATE_Z,
+      RZ = o$1.ROTATE_Z,
       SX = o$1.SCALE_X,
       SY = o$1.SCALE_Y,
       SZ = o$1.SCALE_Z,
@@ -21993,10 +22001,10 @@
         }
 
         var matrixCache = __cacheStyle[MATRIX$1],
-            optimize; // 优化计算scale不能为0，无法计算倍数差
+            optimize; // 优化计算scale不能为0，无法计算倍数差，rotateZ优化不能包含rotateX/rotateY/skew
 
         if (matrixCache && lv < REFLOW$2 && !contain$3(lv, TF$1)) {
-          if (contain$3(lv, SX) && !__computedStyle[SCALE_X] || contain$3(lv, SY) && !__computedStyle[SCALE_Y] || contain$3(lv, SZ) && !__computedStyle[SCALE_Z]) ; else {
+          if (contain$3(lv, SX) && !__computedStyle[SCALE_X] || contain$3(lv, SY) && !__computedStyle[SCALE_Y] || contain$3(lv, SZ) && !__computedStyle[SCALE_Z] || contain$3(lv, RZ) && (__computedStyle[ROTATE_X] || __computedStyle[ROTATE_Y] || __computedStyle[SKEW_X] || __computedStyle[SKEW_Y])) ; else {
             optimize = true;
           }
         } // translate/scale变化特殊优化，d/h/l不能有值，否则不能这样直接简化运算，因为这里不包含perspective，所以一定没有
@@ -22056,39 +22064,64 @@
             matrixCache[14] += z;
           }
 
-          if (contain$3(lv, SCALE)) {
-            var _x = 0,
-                _y = 0,
-                _z = 0;
+          if (contain$3(lv, RZ)) {
+            var _v3 = __currentStyle[ROTATE_Z].v;
+            __computedStyle[ROTATE_Z] = _v3;
+            _v3 = d2r(_v3);
+            var sin = Math.sin(_v3),
+                cos = Math.cos(_v3);
+            var _x = __computedStyle[SCALE_X],
+                _y = __computedStyle[SCALE_Y];
+            var cx = matrixCache[0] = transform$1[0] = cos * _x;
+            var sx = matrixCache[1] = transform$1[1] = sin * _x;
+            var sy = matrixCache[4] = transform$1[4] = -sin * _y;
+            var cy = matrixCache[5] = transform$1[5] = cos * _y;
 
+            var _computedStyle$TRANS = _slicedToArray(__computedStyle[TRANSFORM_ORIGIN$2], 2),
+                ox = _computedStyle$TRANS[0],
+                oy = _computedStyle$TRANS[1];
+
+            ox += __sx1;
+            oy += __sy1;
+            matrixCache[12] = transform$1[12] + ox - cx * ox - oy * sy;
+            matrixCache[13] = transform$1[13] + oy - sx * ox - oy * cy;
+          }
+
+          if (contain$3(lv, SCALE)) {
             if (contain$3(lv, SX)) {
-              var _v3 = __currentStyle[SCALE_X].v;
-              _x = _v3 / __computedStyle[SCALE_X];
-              __computedStyle[SCALE_X] = _v3;
-              transform$1[0] *= _x;
-              transform$1[1] *= _x;
-              transform$1[2] *= _x;
-              matrixCache[0] *= _x;
-              matrixCache[1] *= _x;
-              matrixCache[2] *= _x;
+              var _v4 = __currentStyle[SCALE_X].v;
+
+              var _x2 = _v4 / __computedStyle[SCALE_X];
+
+              __computedStyle[SCALE_X] = _v4;
+              transform$1[0] *= _x2;
+              transform$1[1] *= _x2;
+              transform$1[2] *= _x2;
+              matrixCache[0] *= _x2;
+              matrixCache[1] *= _x2;
+              matrixCache[2] *= _x2;
             }
 
             if (contain$3(lv, SY)) {
-              var _v4 = __currentStyle[SCALE_Y].v;
-              _y = _v4 / __computedStyle[SCALE_Y];
-              __computedStyle[SCALE_Y] = _v4;
-              transform$1[4] *= _y;
-              transform$1[5] *= _y;
-              transform$1[6] *= _y;
-              matrixCache[4] *= _y;
-              matrixCache[5] *= _y;
-              matrixCache[6] *= _y;
+              var _v5 = __currentStyle[SCALE_Y].v;
+
+              var _y2 = _v5 / __computedStyle[SCALE_Y];
+
+              __computedStyle[SCALE_Y] = _v5;
+              transform$1[4] *= _y2;
+              transform$1[5] *= _y2;
+              transform$1[6] *= _y2;
+              matrixCache[4] *= _y2;
+              matrixCache[5] *= _y2;
+              matrixCache[6] *= _y2;
             }
 
             if (contain$3(lv, SZ)) {
-              var _v5 = __currentStyle[SCALE_Z].v;
-              _z = _v5 / __computedStyle[SCALE_Z];
-              __computedStyle[SCALE_Z] = _v5;
+              var _v6 = __currentStyle[SCALE_Z].v;
+
+              var _z = _v6 / __computedStyle[SCALE_Z];
+
+              __computedStyle[SCALE_Z] = _v6;
               transform$1[8] *= _z;
               transform$1[9] *= _z;
               transform$1[10] *= _z;
@@ -22097,15 +22130,15 @@
               matrixCache[10] *= _z;
             }
 
-            var _computedStyle$TRANS = _slicedToArray(__computedStyle[TRANSFORM_ORIGIN$2], 2),
-                ox = _computedStyle$TRANS[0],
-                oy = _computedStyle$TRANS[1];
+            var _computedStyle$TRANS2 = _slicedToArray(__computedStyle[TRANSFORM_ORIGIN$2], 2),
+                _ox = _computedStyle$TRANS2[0],
+                _oy = _computedStyle$TRANS2[1];
 
-            ox += __sx1;
-            oy += __sy1;
-            matrixCache[12] = transform$1[12] + ox - transform$1[0] * ox - transform$1[4] * oy;
-            matrixCache[13] = transform$1[13] + oy - transform$1[1] * ox - transform$1[5] * oy;
-            matrixCache[14] = transform$1[14] - transform$1[2] * ox - transform$1[6] * oy;
+            _ox += __sx1;
+            _oy += __sy1;
+            matrixCache[12] = transform$1[12] + _ox - transform$1[0] * _ox - transform$1[4] * _oy;
+            matrixCache[13] = transform$1[13] + _oy - transform$1[1] * _ox - transform$1[5] * _oy;
+            matrixCache[14] = transform$1[14] - transform$1[2] * _ox - transform$1[6] * _oy;
           }
         } // 先根据cache计算需要重新计算的computedStyle
         else {
@@ -22127,179 +22160,179 @@
             } // 没有transform则看是否有扩展的css独立变换属性
             else {
               __computedStyle[TRANSLATE_X] = 0;
-              var _v6 = __currentStyle[TRANSLATE_X];
+              var _v7 = __currentStyle[TRANSLATE_X];
 
-              if (_v6) {
-                _v6 = __computedStyle[TRANSLATE_X] = this.__calSize(_v6, this.__offsetWidth, true);
+              if (_v7) {
+                _v7 = __computedStyle[TRANSLATE_X] = this.__calSize(_v7, this.__offsetWidth, true);
 
-                if (_v6) {
+                if (_v7) {
                   matrix = matrix || mx.identity();
-                  matrix[12] = _v6;
+                  matrix[12] = _v7;
                 }
               }
 
               __computedStyle[TRANSLATE_Y] = 0;
-              _v6 = __currentStyle[TRANSLATE_Y];
+              _v7 = __currentStyle[TRANSLATE_Y];
 
-              if (_v6) {
-                _v6 = __computedStyle[TRANSLATE_Y] = this.__calSize(_v6, this.__offsetHeight, true);
+              if (_v7) {
+                _v7 = __computedStyle[TRANSLATE_Y] = this.__calSize(_v7, this.__offsetHeight, true);
 
-                if (_v6) {
+                if (_v7) {
                   matrix = matrix || mx.identity();
-                  matrix[13] = _v6;
+                  matrix[13] = _v7;
                 }
               }
 
               __computedStyle[TRANSLATE_Z] = 0;
-              _v6 = __currentStyle[TRANSLATE_Z];
+              _v7 = __currentStyle[TRANSLATE_Z];
 
-              if (_v6) {
-                _v6 = __computedStyle[TRANSLATE_Z] = this.__calSize(_v6, this.__offsetWidth, true);
+              if (_v7) {
+                _v7 = __computedStyle[TRANSLATE_Z] = this.__calSize(_v7, this.__offsetWidth, true);
 
-                if (_v6) {
+                if (_v7) {
                   matrix = matrix || mx.identity();
-                  matrix[14] = _v6;
+                  matrix[14] = _v7;
                 }
               }
 
               __computedStyle[ROTATE_X] = 0;
-              _v6 = __currentStyle[ROTATE_X];
+              _v7 = __currentStyle[ROTATE_X];
 
-              if (_v6) {
-                _v6 = __computedStyle[ROTATE_X] = _v6.v;
+              if (_v7) {
+                _v7 = __computedStyle[ROTATE_X] = _v7.v;
 
-                if (_v6) {
+                if (_v7) {
                   matrix = matrix || mx.identity();
 
                   if (matrix) {
-                    matrix = multiplyRotateX(matrix, d2r(_v6));
+                    matrix = multiplyRotateX(matrix, d2r(_v7));
                   } else {
-                    matrix = calRotateX(mx.identity(), _v6);
+                    matrix = calRotateX(mx.identity(), _v7);
                   }
                 }
               }
 
               __computedStyle[ROTATE_Y] = 0;
-              _v6 = __currentStyle[ROTATE_Y];
+              _v7 = __currentStyle[ROTATE_Y];
 
-              if (_v6) {
-                _v6 = __computedStyle[ROTATE_Y] = _v6.v;
+              if (_v7) {
+                _v7 = __computedStyle[ROTATE_Y] = _v7.v;
 
-                if (_v6) {
+                if (_v7) {
                   if (matrix) {
-                    matrix = multiplyRotateY(matrix, d2r(_v6));
+                    matrix = multiplyRotateY(matrix, d2r(_v7));
                   } else {
-                    matrix = calRotateY(mx.identity(), _v6);
+                    matrix = calRotateY(mx.identity(), _v7);
                   }
                 }
               }
 
               __computedStyle[ROTATE_Z] = 0;
-              _v6 = __currentStyle[ROTATE_Z];
+              _v7 = __currentStyle[ROTATE_Z];
 
-              if (_v6) {
-                _v6 = __computedStyle[ROTATE_Z] = _v6.v;
+              if (_v7) {
+                _v7 = __computedStyle[ROTATE_Z] = _v7.v;
 
-                if (_v6) {
+                if (_v7) {
                   if (matrix) {
-                    matrix = multiplyRotateZ(matrix, d2r(_v6));
+                    matrix = multiplyRotateZ(matrix, d2r(_v7));
                   } else {
-                    matrix = calRotateZ(mx.identity(), _v6);
+                    matrix = calRotateZ(mx.identity(), _v7);
                   }
                 }
               }
 
               __computedStyle[ROTATE_3D] = [0, 0, 0, 0];
-              _v6 = __currentStyle[ROTATE_3D];
+              _v7 = __currentStyle[ROTATE_3D];
 
-              if (_v6) {
-                _v6 = __computedStyle[ROTATE_3D] = [_v6[0], _v6[1], _v6[2], _v6[3].v];
+              if (_v7) {
+                _v7 = __computedStyle[ROTATE_3D] = [_v7[0], _v7[1], _v7[2], _v7[3].v];
 
-                if ((_v6[0] || _v6[1] || _v6[2]) && _v6[3]) {
+                if ((_v7[0] || _v7[1] || _v7[2]) && _v7[3]) {
                   if (matrix) {
-                    matrix = multiply$2(matrix, calRotate3d(mx.identity(), _v6));
+                    matrix = multiply$2(matrix, calRotate3d(mx.identity(), _v7));
                   } else {
-                    matrix = calRotate3d(mx.identity(), _v6);
+                    matrix = calRotate3d(mx.identity(), _v7);
                   }
                 }
               }
 
               __computedStyle[SKEW_X] = 0;
-              _v6 = __currentStyle[SKEW_X];
+              _v7 = __currentStyle[SKEW_X];
 
-              if (_v6) {
-                _v6 = __computedStyle[SKEW_X] = _v6.v;
+              if (_v7) {
+                _v7 = __computedStyle[SKEW_X] = _v7.v;
 
-                if (_v6) {
+                if (_v7) {
                   if (matrix) {
-                    matrix = multiplySkewX(matrix, d2r(_v6));
+                    matrix = multiplySkewX(matrix, d2r(_v7));
                   } else {
                     matrix = mx.identity();
-                    matrix[4] = Math.tan(d2r(_v6));
+                    matrix[4] = Math.tan(d2r(_v7));
                   }
                 }
               }
 
               __computedStyle[SKEW_Y] = 0;
-              _v6 = __currentStyle[SKEW_Y];
+              _v7 = __currentStyle[SKEW_Y];
 
-              if (_v6) {
-                _v6 = __computedStyle[SKEW_Y] = _v6.v;
+              if (_v7) {
+                _v7 = __computedStyle[SKEW_Y] = _v7.v;
 
-                if (_v6) {
+                if (_v7) {
                   if (matrix) {
-                    matrix = multiplySkewY(matrix, d2r(_v6));
+                    matrix = multiplySkewY(matrix, d2r(_v7));
                   } else {
                     matrix = mx.identity();
-                    matrix[1] = Math.tan(d2r(_v6));
+                    matrix[1] = Math.tan(d2r(_v7));
                   }
                 }
               }
 
               __computedStyle[SCALE_X] = 1;
-              _v6 = __currentStyle[SCALE_X];
+              _v7 = __currentStyle[SCALE_X];
 
-              if (_v6) {
-                _v6 = __computedStyle[SCALE_X] = _v6.v;
+              if (_v7) {
+                _v7 = __computedStyle[SCALE_X] = _v7.v;
 
-                if (_v6 !== 1) {
+                if (_v7 !== 1) {
                   if (matrix) {
-                    matrix = multiplyScaleX(matrix, _v6);
+                    matrix = multiplyScaleX(matrix, _v7);
                   } else {
                     matrix = mx.identity();
-                    matrix[0] = _v6;
+                    matrix[0] = _v7;
                   }
                 }
               }
 
               __computedStyle[SCALE_Y] = 1;
-              _v6 = __currentStyle[SCALE_Y];
+              _v7 = __currentStyle[SCALE_Y];
 
-              if (_v6) {
-                _v6 = __computedStyle[SCALE_Y] = _v6.v;
+              if (_v7) {
+                _v7 = __computedStyle[SCALE_Y] = _v7.v;
 
-                if (_v6 !== 1) {
+                if (_v7 !== 1) {
                   if (matrix) {
-                    matrix = multiplyScaleY(matrix, _v6);
+                    matrix = multiplyScaleY(matrix, _v7);
                   } else {
                     matrix = mx.identity();
-                    matrix[5] = _v6;
+                    matrix[5] = _v7;
                   }
                 }
               }
 
               __computedStyle[SCALE_Z] = 1;
-              _v6 = __currentStyle[SCALE_Z];
+              _v7 = __currentStyle[SCALE_Z];
 
-              if (_v6) {
-                _v6 = __computedStyle[SCALE_Z] = _v6.v;
+              if (_v7) {
+                _v7 = __computedStyle[SCALE_Z] = _v7.v;
 
-                if (_v6 !== 1) {
+                if (_v7 !== 1) {
                   if (matrix) {
-                    matrix = multiplyScaleZ(matrix, _v6);
+                    matrix = multiplyScaleZ(matrix, _v7);
                   } else {
                     matrix = mx.identity();
-                    matrix[10] = _v6;
+                    matrix[10] = _v7;
                   }
                 }
               }
@@ -22615,10 +22648,10 @@
         var textStrokeColor = __currentStyle[TEXT_STROKE_COLOR$1];
 
         if (textStrokeColor.u === INHERIT$1) {
-          var _v7 = __computedStyle[TEXT_STROKE_COLOR$1] = parent ? parentComputedStyle[TEXT_STROKE_COLOR$1] : rgba2int(reset.INHERIT.textStrokeColor);
+          var _v8 = __computedStyle[TEXT_STROKE_COLOR$1] = parent ? parentComputedStyle[TEXT_STROKE_COLOR$1] : rgba2int(reset.INHERIT.textStrokeColor);
 
-          if (_v7.k) {
-            __cacheStyle[TEXT_STROKE_COLOR$1] = _v7;
+          if (_v8.k) {
+            __cacheStyle[TEXT_STROKE_COLOR$1] = _v8;
           } else {
             __cacheStyle[TEXT_STROKE_COLOR$1] = int2rgba$1(__computedStyle[TEXT_STROKE_COLOR$1]);
           }
@@ -22634,23 +22667,23 @@
           __computedStyle[TEXT_STROKE_WIDTH$1] = parent ? parentComputedStyle[TEXT_STROKE_WIDTH$1] : reset.INHERIT.textStrokeWidth;
           __cacheStyle[TEXT_STROKE_WIDTH$1] = true;
         } else if (isNil$9(__cacheStyle[TEXT_STROKE_WIDTH$1])) {
-          var _v8 = __currentStyle[TEXT_STROKE_WIDTH$1];
+          var _v9 = __currentStyle[TEXT_STROKE_WIDTH$1];
 
-          if (_v8.u === REM$4) {
-            _v8 = _v8.v * this.__root.__computedStyle[FONT_SIZE$2];
-          } else if (_v8.u === VW$4) {
-            _v8 = _v8.v * this.__root.width * 0.01;
-          } else if (_v8.u === VH$4) {
-            _v8 = _v8.v * this.__root.height * 0.01;
-          } else if (_v8.u === VMAX$4) {
-            _v8 = _v8.v * Math.max(this.__root.width, this.__root.height) * 0.01;
-          } else if (_v8.u === VMIN$4) {
-            _v8 = _v8.v * Math.min(this.__root.width, this.__root.height) * 0.01;
+          if (_v9.u === REM$4) {
+            _v9 = _v9.v * this.__root.__computedStyle[FONT_SIZE$2];
+          } else if (_v9.u === VW$4) {
+            _v9 = _v9.v * this.__root.width * 0.01;
+          } else if (_v9.u === VH$4) {
+            _v9 = _v9.v * this.__root.height * 0.01;
+          } else if (_v9.u === VMAX$4) {
+            _v9 = _v9.v * Math.max(this.__root.width, this.__root.height) * 0.01;
+          } else if (_v9.u === VMIN$4) {
+            _v9 = _v9.v * Math.min(this.__root.width, this.__root.height) * 0.01;
           } else {
-            _v8 = _v8.v;
+            _v9 = _v9.v;
           }
 
-          __computedStyle[TEXT_STROKE_WIDTH$1] = _v8;
+          __computedStyle[TEXT_STROKE_WIDTH$1] = _v9;
           __cacheStyle[TEXT_STROKE_WIDTH$1] = true;
         }
 
@@ -23297,7 +23330,7 @@
                     else if (renderMode === SVG$1 && svgBgSymbol.length) {
                       svgBgSymbol.forEach(function (symbol) {
                         if (symbol) {
-                          var _v9 = {
+                          var _v10 = {
                             tagName: 'clipPath',
                             props: [],
                             children: [{
@@ -23305,9 +23338,9 @@
                               props: [['d', isUpright ? "M".concat(0, ",", count, "L").concat(ih, ",").concat(count, "L").concat(ih, ",").concat(h + count, "L", 0, ",").concat(h + count, ",L", 0, ",").concat(count) : "M".concat(count, ",", 0, "L").concat(w + count, ",", 0, "L").concat(w + count, ",").concat(ih, "L").concat(count, ",").concat(ih, ",L").concat(count, ",", 0)]]
                             }]
                           };
-                          var clip = ctx.add(_v9);
+                          var clip = ctx.add(_v10);
 
-                          _this8.__cacheDefs.push(_v9);
+                          _this8.__cacheDefs.push(_v10);
 
                           virtualDom.bb.push({
                             type: 'item',
@@ -23403,7 +23436,7 @@
                     else if (renderMode === SVG$1 && svgBgSymbol.length) {
                       svgBgSymbol.forEach(function (symbol) {
                         if (symbol) {
-                          var _v10 = {
+                          var _v11 = {
                             tagName: 'clipPath',
                             props: [],
                             children: [{
@@ -23411,9 +23444,9 @@
                               props: [['d', isUpright ? "M".concat(0, ",", count, "L").concat(ih, ",").concat(count, "L").concat(ih, ",").concat(h + count, "L", 0, ",").concat(h + count, ",L", 0, ",").concat(count) : "M".concat(count, ",", 0, "L").concat(w + count, ",", 0, "L").concat(w + count, ",").concat(ih, "L").concat(count, ",").concat(ih, ",L").concat(count, ",", 0)]]
                             }]
                           };
-                          var clip = ctx.add(_v10);
+                          var clip = ctx.add(_v11);
 
-                          _this8.__cacheDefs.push(_v10);
+                          _this8.__cacheDefs.push(_v11);
 
                           virtualDom.bb.push({
                             type: 'item',

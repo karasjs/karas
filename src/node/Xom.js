@@ -146,6 +146,7 @@ const {
   TRANSLATE_X: TX,
   TRANSLATE_Y: TY,
   TRANSLATE_Z: TZ,
+  ROTATE_Z: RZ,
   SCALE_X: SX,
   SCALE_Y: SY,
   SCALE_Z: SZ,
@@ -971,11 +972,13 @@ class Xom extends Node {
       return __cacheStyle[MATRIX] = this.__matrix = mx.identity();
     }
     let matrixCache = __cacheStyle[MATRIX], optimize;
-    // 优化计算scale不能为0，无法计算倍数差
+    // 优化计算scale不能为0，无法计算倍数差，rotateZ优化不能包含rotateX/rotateY/skew
     if(matrixCache && lv < REFLOW && !contain(lv, TF)) {
       if(contain(lv, SX) && !__computedStyle[SCALE_X]
         || contain(lv, SY) && !__computedStyle[SCALE_Y]
-        || contain(lv, SZ) && !__computedStyle[SCALE_Z]) {
+        || contain(lv, SZ) && !__computedStyle[SCALE_Z]
+        || contain(lv, RZ) && (__computedStyle[ROTATE_X] || __computedStyle[ROTATE_Y]
+          || __computedStyle[SKEW_X] || __computedStyle[SKEW_Y])) {
       }
       else {
         optimize = true;
@@ -1032,11 +1035,26 @@ class Xom extends Node {
         transform[14] += z;
         matrixCache[14] += z;
       }
+      if(contain(lv, RZ)) {
+        let v = __currentStyle[ROTATE_Z].v;
+        __computedStyle[ROTATE_Z] = v;
+        v = d2r(v);
+        let sin = Math.sin(v), cos = Math.cos(v);
+        let x = __computedStyle[SCALE_X], y = __computedStyle[SCALE_Y];
+        let cx = matrixCache[0] = transform[0] = cos * x;
+        let sx = matrixCache[1] = transform[1] = sin * x;
+        let sy = matrixCache[4] = transform[4] = -sin * y;
+        let cy = matrixCache[5] = transform[5] = cos * y;
+        let [ox, oy] = __computedStyle[TRANSFORM_ORIGIN];
+        ox += __sx1;
+        oy += __sy1;
+        matrixCache[12] = transform[12] + ox - cx * ox - oy * sy;
+        matrixCache[13] = transform[13] + oy - sx * ox - oy * cy;
+      }
       if(contain(lv, SCALE)) {
-        let x = 0, y = 0, z = 0;
         if(contain(lv, SX)) {
           let v = __currentStyle[SCALE_X].v;
-          x = v / __computedStyle[SCALE_X];
+          let x = v / __computedStyle[SCALE_X];
           __computedStyle[SCALE_X] = v;
           transform[0] *= x;
           transform[1] *= x;
@@ -1047,7 +1065,7 @@ class Xom extends Node {
         }
         if(contain(lv, SY)) {
           let v = __currentStyle[SCALE_Y].v;
-          y = v / __computedStyle[SCALE_Y];
+          let y = v / __computedStyle[SCALE_Y];
           __computedStyle[SCALE_Y] = v;
           transform[4] *= y;
           transform[5] *= y;
@@ -1058,7 +1076,7 @@ class Xom extends Node {
         }
         if(contain(lv, SZ)) {
           let v = __currentStyle[SCALE_Z].v;
-          z = v / __computedStyle[SCALE_Z];
+          let z = v / __computedStyle[SCALE_Z];
           __computedStyle[SCALE_Z] = v;
           transform[8] *= z;
           transform[9] *= z;

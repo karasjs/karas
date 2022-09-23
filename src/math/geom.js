@@ -369,7 +369,7 @@ function isRectsInside(a, b, includeIntersect) {
 }
 
 function calCoordsInNode(px, py, node) {
-  let { matrix = [1, 0, 0, 1, 0, 0], computedStyle = {} } = node;
+  let { matrix = [1, 0, 0, 1, 0, 0], computedStyle = [] } = node;
   let { [WIDTH]: width, [HEIGHT]: height, [TRANSFORM_ORIGIN]: [ox, oy] = [width * 0.5, height * 0.5] } = computedStyle;
   [px, py] = calPoint([px * width - ox, py * height - oy], matrix);
   return [px + ox, py + oy];

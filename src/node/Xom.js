@@ -213,8 +213,8 @@ class Xom extends Node {
     }
     this.__tagName = tagName;
     this.__style = this.props.style || {}; // style被解析后的k-v形式
-    this.__currentStyle = {}; // 动画过程中绘制一开始会merge动画样式
-    this.__computedStyle = {}; // 类似getComputedStyle()将currentStyle计算好数值赋给
+    this.__currentStyle = []; // 动画过程中绘制一开始会merge动画样式
+    this.__computedStyle = []; // 类似getComputedStyle()将currentStyle计算好数值赋给
     this.__listener = {};
     Object.keys(this.props).forEach(k => {
       let v = this.props[k];
@@ -229,7 +229,7 @@ class Xom extends Node {
       cb: function() {
       },
     };
-    this.__cacheStyle = {}; // 是否缓存重新计算computedStyle的样式key
+    this.__cacheStyle = []; // 是否缓存重新计算computedStyle的样式key
     this.__cacheDefs = []; // svg专用，缓存渲染时使用已有的defs，diff过程用，否则会defs被清空
     let isClip = this.__isClip = !!this.props.clip;
     this.__isMask = isClip || !!this.props.mask;
@@ -613,7 +613,7 @@ class Xom extends Node {
     // 防止display:none不统计mask，isVirtual忽略，abs/flex布局后续会真正来走一遍
     if(!isAbs && !isColumn && !isRow) {
       this.clearCache();
-      this.__cacheStyle = {};
+      this.__cacheStyle = [];
       this.__refreshLevel = REFLOW;
       this.__limitCache = false;
       this.__isInline = false;
@@ -2825,7 +2825,7 @@ class Xom extends Node {
     if(lv) {
       this.__refreshLevel |= lv;
       if(lv >= REFLOW) {
-        this.__cacheStyle = {};
+        this.__cacheStyle = [];
         this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
       }
       if(this.__bbox) {
@@ -2856,7 +2856,7 @@ class Xom extends Node {
     if(lv) {
       this.__refreshLevel |= lv;
       if(lv >= REFLOW) {
-        this.__cacheStyle = {};
+        this.__cacheStyle = [];
         this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
       }
       if(this.__bbox) {
@@ -2903,7 +2903,7 @@ class Xom extends Node {
     if(lv) {
       this.__refreshLevel |= lv;
       if(lv >= REFLOW) {
-        this.__cacheStyle = {};
+        this.__cacheStyle = [];
         this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
       }
     }
@@ -2928,7 +2928,7 @@ class Xom extends Node {
     if(lv) {
       this.__refreshLevel |= lv;
       if(lv >= REFLOW) {
-        this.__cacheStyle = {};
+        this.__cacheStyle = [];
         this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
       }
     }

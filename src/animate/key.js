@@ -83,7 +83,7 @@ function isGradientKey(k) {
 
 function isRadiusKey(k) {
   return k === BORDER_BOTTOM_LEFT_RADIUS || k === BORDER_TOP_LEFT_RADIUS
-    || k === BORDER_TOP_LEFT_RADIUS || k === BORDER_BOTTOM_RIGHT_RADIUS;
+    || k === BORDER_TOP_RIGHT_RADIUS || k === BORDER_BOTTOM_RIGHT_RADIUS;
 }
 
 export default {

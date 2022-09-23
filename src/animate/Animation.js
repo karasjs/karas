@@ -47,6 +47,44 @@ const {
     TEXT_STROKE_COLOR,
     TEXT_STROKE_OVER,
     STROKE_WIDTH,
+    BORDER_TOP_LEFT_RADIUS,
+    BORDER_TOP_RIGHT_RADIUS,
+    BORDER_BOTTOM_RIGHT_RADIUS,
+    BORDER_BOTTOM_LEFT_RADIUS,
+    TEXT_STROKE_WIDTH,
+    BORDER_BOTTOM_WIDTH,
+    BORDER_LEFT_WIDTH,
+    BORDER_RIGHT_WIDTH,
+    BORDER_TOP_WIDTH,
+    LEFT,
+    RIGHT,
+    MARGIN_BOTTOM,
+    MARGIN_TOP,
+    MARGIN_LEFT,
+    MARGIN_RIGHT,
+    PADDING_TOP,
+    PADDING_RIGHT,
+    PADDING_LEFT,
+    PADDING_BOTTOM,
+    STROKE_MITERLIMIT,
+    LETTER_SPACING,
+    PERSPECTIVE,
+    SKEW_X,
+    SKEW_Y,
+    SCALE_X,
+    SCALE_Y,
+    SCALE_Z,
+    ROTATE_X,
+    ROTATE_Y,
+    ROTATE_Z,
+    BACKGROUND_IMAGE,
+    FILL,
+    STROKE,
+    BACKGROUND_COLOR,
+    BORDER_BOTTOM_COLOR,
+    BORDER_LEFT_COLOR,
+    BORDER_RIGHT_COLOR,
+    BORDER_TOP_COLOR,
   },
 } = enums;
 const { AUTO, PX, PERCENT, INHERIT, RGBA, STRING, NUMBER, REM, VW, VH, VMAX, VMIN, GRADIENT, calUnit } = unit;
@@ -1116,6 +1154,257 @@ function getEasing(ea) {
 }
 
 /**
+ * calIntermediateStyle计算优化，不能类型的style动画计算方式不同，也有可以复用的，
+ * 全部if分支判断太长且浪费，相同计算的用hash存储，k为样式，v为方法，一次hash获取即可
+ */
+const CAL_HASH = [];
+CAL_HASH[TRANSFORM] = calTransform;
+CAL_HASH[ROTATE_3D] = calRotate3d;
+CAL_HASH[FILTER] = calFilter;
+CAL_HASH[TRANSFORM_ORIGIN] = CAL_HASH[PERSPECTIVE_ORIGIN]
+  = CAL_HASH[BORDER_TOP_LEFT_RADIUS] = CAL_HASH[BORDER_TOP_RIGHT_RADIUS]
+  = CAL_HASH[BORDER_BOTTOM_RIGHT_RADIUS] = CAL_HASH[BORDER_BOTTOM_LEFT_RADIUS] = calOrigin;
+CAL_HASH[STROKE_WIDTH] = CAL_HASH[BACKGROUND_POSITION_X] = CAL_HASH[BACKGROUND_POSITION_Y] = calPosition;
+CAL_HASH[BOX_SHADOW] = calBoxShadow;
+CAL_HASH[BACKGROUND_SIZE] = calBgSize;
+CAL_HASH[OPACITY] = CAL_HASH[Z_INDEX] = calNumber;
+CAL_HASH[TRANSLATE_PATH] = calPath;
+CAL_HASH[FONT_SIZE] = CAL_HASH[TEXT_STROKE_WIDTH] = CAL_HASH[BORDER_BOTTOM_WIDTH] = CAL_HASH[BORDER_LEFT_WIDTH]
+  = CAL_HASH[BORDER_RIGHT_WIDTH] = CAL_HASH[BORDER_TOP_WIDTH] = CAL_HASH[LEFT] = CAL_HASH[TOP] = CAL_HASH[RIGHT]
+  = CAL_HASH[BOTTOM] = CAL_HASH[FLEX_BASIS] = CAL_HASH[WIDTH] = CAL_HASH[HEIGHT] = CAL_HASH[LINE_HEIGHT]
+  = CAL_HASH[MARGIN_BOTTOM] = CAL_HASH[MARGIN_TOP] = CAL_HASH[MARGIN_LEFT] = CAL_HASH[MARGIN_RIGHT]
+  = CAL_HASH[PADDING_TOP] = CAL_HASH[PADDING_RIGHT] = CAL_HASH[PADDING_LEFT] = CAL_HASH[PADDING_BOTTOM]
+  = CAL_HASH[STROKE_WIDTH] = CAL_HASH[STROKE_MITERLIMIT] = CAL_HASH[LETTER_SPACING] = CAL_HASH[PERSPECTIVE]
+  = CAL_HASH[TRANSLATE_X] = CAL_HASH[TRANSLATE_Y] = CAL_HASH[TRANSLATE_Z] = CAL_HASH[SKEW_X] = CAL_HASH[SKEW_Y]
+  = CAL_HASH[SCALE_X] = CAL_HASH[SCALE_Y] = CAL_HASH[SCALE_Z] = CAL_HASH[ROTATE_X] = CAL_HASH[ROTATE_Y]
+  = CAL_HASH[ROTATE_Z] = calLength;
+CAL_HASH[BACKGROUND_IMAGE] = CAL_HASH[FILL] = CAL_HASH[STROKE] = calGradient;
+CAL_HASH[BACKGROUND_COLOR] = CAL_HASH[BORDER_BOTTOM_COLOR] = CAL_HASH[BORDER_LEFT_COLOR] = CAL_HASH[BORDER_RIGHT_COLOR]
+  = CAL_HASH[BORDER_TOP_COLOR] = CAL_HASH[COLOR] = CAL_HASH[TEXT_STROKE_COLOR] = calColor;
+
+// transform特殊处理，只有1个matrix，有可能不存在，需给默认矩阵
+function calTransform(k, v, percent, st, cl, frame, currentStyle) {
+  if(!st || !st.length) {
+    st = frame.style[k] = [{k: MATRIX, v: mx.identity()}];
+  }
+  if(!cl || !cl.length) {
+    cl = frame.clone[k] = [{k: MATRIX, v: mx.identity()}];
+  }
+  for(let i = 0; i < 16; i++) {
+    st[0].v[i] = cl[0].v[i] + v[i] * percent;
+  }
+  currentStyle[k] = st;
+}
+
+function calRotate3d(k, v, percent, st, cl, frame, currentStyle) {
+  st[0] = cl[0] + v[0] * percent;
+  st[1] = cl[1] + v[1] * percent;
+  st[2] = cl[2] + v[2] * percent;
+  st[3].v = cl[3].v + v[3] * percent;
+  currentStyle[k] = st;
+}
+
+function calFilter(k, v, percent, st, cl, frame, currentStyle) {
+  for(let i = 0, len = v.length; i < len; i++) {
+    let item = v[i];
+    if(item) {
+      let k2 = st[i].k, v2 = st[i].v;
+      // 只有dropShadow是多个数组，存放x/y/blur/spread/color
+      if(k2 === 'dropShadow') {
+        v2[0].v += item[0] * percent;
+        v2[1].v += item[1] * percent;
+        v2[2].v += item[2] * percent;
+        v2[3].v += item[3] * percent;
+        let c1 = v2[4], c2 = item[4];
+        c1[0] += c2[0] * percent;
+        c1[1] += c2[1] * percent;
+        c1[2] += c2[2] * percent;
+        c1[3] += c2[3] * percent;
+      }
+      // 其它都是带单位单值
+      else {
+        v2.v += item * percent;
+      }
+    }
+  }
+  currentStyle[k] = st;
+}
+
+function calOrigin(k, v, percent, st, cl, frame, currentStyle) {
+  if(v[0] !== 0) {
+    st[0].v = cl[0].v + v[0] * percent;
+  }
+  if(v[1] !== 0) {
+    st[1].v = cl[1].v + v[1] * percent;
+  }
+  currentStyle[k] = st;
+}
+
+function calPosition(k, v, percent, st, cl, frame, currentStyle) {
+  st.forEach((item, i) => {
+    if(v[i]) {
+      item.v = cl[i].v + v[i] * percent;
+    }
+  });
+  currentStyle[k] = st;
+}
+
+function calBoxShadow(k, v, percent, st, cl, frame, currentStyle) {
+  for(let i = 0, len = Math.min(st.length, v.length); i < len; i++) {
+    if(!v[i]) {
+      continue;
+    }
+    // x/y/blur/spread
+    for(let j = 0; j < 4; j++) {
+      st[i][j].v = cl[i][j].v + v[i][j] * percent;
+    }
+    // rgba
+    for(let j = 0; j < 4; j++) {
+      st[i][4][j] = cl[i][4][j] + v[i][4][j] * percent;
+    }
+  }
+  currentStyle[k] = st;
+}
+
+function calBgSize(k, v, percent, st, cl, frame, currentStyle) {
+  st.forEach((item, i) => {
+    let o = v[i];
+    if(o) {
+      item[0].v = cl[i][0].v + o[0] * percent;
+      item[1].v = cl[i][1].v + o[1] * percent;
+    }
+  });
+  currentStyle[k] = st;
+}
+
+function calNumber(k, v, percent, st, cl, frame, currentStyle) {
+  st = cl + v * percent;
+  // 精度问题可能会超过[0,1]区间
+  if(k === OPACITY) {
+    if(st < 0) {
+      st = 0;
+    }
+    else if(st > 1) {
+      st = 1;
+    }
+  }
+  currentStyle[k] = st;
+}
+
+// 特殊的曲线运动计算，转换为translateXY，出现在最后一定会覆盖原本的translate防重
+function calPath(k, v, percent, st, cl, frame, currentStyle) {
+  let t = 1 - percent;
+  if(v.length === 8) {
+    currentStyle[TRANSLATE_X] = {
+      v: v[0].v * t * t * t
+        + 3 * v[2].v * percent * t * t
+        + 3 * v[4].v * percent * percent * t
+        + v[6].v * percent * percent * percent,
+      u: PX,
+    };
+    currentStyle[TRANSLATE_Y] = {
+      v: v[1].v * t * t * t
+        + 3 * v[3].v * percent * t * t
+        + 3 * v[5].v * percent * percent * t
+        + v[7].v * percent * percent * percent,
+      u: PX,
+    };
+  }
+  else if(v.length === 6) {
+    currentStyle[TRANSLATE_X] = {
+      v: v[0].v * t * t
+        + 2 * v[2].v * percent * t
+        + v[4].v * percent * percent,
+      u: PX,
+    };
+    currentStyle[TRANSLATE_Y] = {
+      v: v[1].v * t * t
+        + 3 * v[3].v * percent * t
+        + v[5].v * percent * percent,
+      u: PX,
+    };
+  }
+}
+
+function calLength(k, v, percent, st, cl, frame, currentStyle) {
+  st.v = cl + v * percent;
+  currentStyle[k] = st;
+}
+
+function calGradient(k, v, percent, st, cl, frame, currentStyle) {
+  st.forEach((st2, i) => {
+    let v2 = v[i];
+    if(!v2) {
+      return;
+    }
+    let cli = cl[i].v;
+    if(st2.u === GRADIENT) {
+      st2 = st2.v;
+      let [c, d, p, z] = v2;
+      for(let j = 0, len = Math.min(st2.v.length, c.length); j < len; j++) {
+        let a = st2.v[j];
+        let b = c[j];
+        a[0][0] = cli.v[j][0][0] + b[0][0] * percent;
+        a[0][1] = cli.v[j][0][1] + b[0][1] * percent;
+        a[0][2] = cli.v[j][0][2] + b[0][2] * percent;
+        a[0][3] = cli.v[j][0][3] + b[0][3] * percent;
+        if(a[1] && b[1]) {
+          a[1].v = cli.v[j][1].v + b[1] * percent;
+        }
+      }
+      if(st2.k === 'linear' && st2.d !== undefined && d !== undefined) {
+        if(Array.isArray(d)) {
+          st2.d[0] = cli.d[0] + d[0] * percent;
+          st2.d[1] = cli.d[1] + d[1] * percent;
+          st2.d[2] = cli.d[2] + d[2] * percent;
+          st2.d[3] = cli.d[3] + d[3] * percent;
+        }
+        else {
+          st2.d = cli.d + d * percent;
+        }
+      }
+      else if(st2.k === 'radial') {
+        if(st2.z !== undefined && z !== undefined) {
+          st2.z[0] = cli.z[0] + z[0] * percent;
+          st2.z[1] = cli.z[1] + z[1] * percent;
+          st2.z[2] = cli.z[2] + z[2] * percent;
+          st2.z[3] = cli.z[3] + z[3] * percent;
+          st2.z[4] = cli.z[4] + z[4] * percent;
+        }
+        else if(st2.p !== undefined && p !== undefined) {
+          st2.p[0].v = cli.p[0].v + p[0] * percent;
+          st2.p[1].v = cli.p[1].v + p[1] * percent;
+        }
+      }
+      else if(st2.k === 'conic' && st2.d !== undefined && d !== undefined) {
+        st2.d = cli.d + d * percent;
+        st2.p[0][0] = cli.p[0] + p[0] * percent;
+        st2.p[1][0] = cli.p[1] + p[1] * percent;
+      }
+    }
+    // fill纯色
+    else {
+      st2 = st2.v;
+      st2[0] = cli[0] + v2[0] * percent;
+      st2[1] = cli[1] + v2[1] * percent;
+      st2[2] = cli[2] + v2[2] * percent;
+      st2[3] = cli[3] + v2[3] * percent;
+    }
+  });
+  currentStyle[k] = st;
+}
+
+// color可能超限[0,255]，但浏览器已经做了限制，无需关心
+function calColor(k, v, percent, st, cl, frame, currentStyle) {
+  let t = st.v;
+  t[0] = cl[0] + v[0] * percent;
+  t[1] = cl[1] + v[1] * percent;
+  t[2] = cl[2] + v[2] * percent;
+  t[3] = cl[3] + v[3] * percent;
+  currentStyle[k] = st;
+}
+
+/**
  * 根据百分比和缓动函数计算中间态样式
  * 当easing定义为steps时，优先计算
  * @param frame 当前帧
@@ -1130,224 +1419,18 @@ function calIntermediateStyle(frame, percent, target) {
   if(timingFunction && timingFunction !== linear) {
     percent = timingFunction(percent);
   }
-  // 同一关键帧同一percent可以不刷新，比如diff为0时，或者steps情况
+  // 同一关键帧同一percent可以不刷新，比如diff为0时，或者steps情况，离开会清空
   if(frame.lastPercent === percent) {
     return [];
   }
   frame.lastPercent = percent;
-  let currentStyle = target.__currentStyle, currentProps = target.__currentProps, res = frame.keys.slice(0);
+  let currentStyle = target.__currentStyle, currentProps = target.__currentProps, res = frame.keys, modify;
   for(let i = 0, len = transition.length; i < len; i++) {
     let item = transition[i];
     let k = item.k, v = item.v, st = item.st, cl = item.cl;
-    // transform特殊处理，只有1个matrix，有可能不存在，需给默认矩阵
-    if(k === TRANSFORM) {
-      if(!st || !st.length) {
-        st = style[k] = [{k: MATRIX, v: mx.identity()}];
-      }
-      if(!cl || !cl.length) {
-        cl = frame.clone[k] = [{k: MATRIX, v: mx.identity()}];
-      }
-      for(let i = 0; i < 16; i++) {
-        st[0].v[i] = cl[0].v[i] + v[i] * percent;
-      }
-      currentStyle[k] = st;
-    }
-    else if(k === ROTATE_3D) {
-      st[0] = cl[0] + v[0] * percent;
-      st[1] = cl[1] + v[1] * percent;
-      st[2] = cl[2] + v[2] * percent;
-      st[3].v = cl[3].v + v[3] * percent;
-      currentStyle[k] = st;
-    }
-    else if(k === FILTER) {
-      for(let i = 0, len = v.length; i < len; i++) {
-        let item = v[i];
-        if(item) {
-          let k2 = st[i].k, v2 = st[i].v;
-          // 只有dropShadow是多个数组，存放x/y/blur/spread/color
-          if(k2 === 'dropShadow') {
-            v2[0].v += item[0] * percent;
-            v2[1].v += item[1] * percent;
-            v2[2].v += item[2] * percent;
-            v2[3].v += item[3] * percent;
-            let c1 = v2[4], c2 = item[4];
-            c1[0] += c2[0] * percent;
-            c1[1] += c2[1] * percent;
-            c1[2] += c2[2] * percent;
-            c1[3] += c2[3] * percent;
-          }
-          // 其它都是带单位单值
-          else {
-            v2.v += item * percent;
-          }
-        }
-      }
-      currentStyle[k] = st;
-    }
-    else if(k === TRANSFORM_ORIGIN || k === PERSPECTIVE_ORIGIN || isRadiusKey(k)) {
-      if(v[0] !== 0) {
-        st[0].v = cl[0].v + v[0] * percent;
-      }
-      if(v[1] !== 0) {
-        st[1].v = cl[1].v + v[1] * percent;
-      }
-      currentStyle[k] = st;
-    }
-    else if(k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y || k === STROKE_WIDTH) {
-      st.forEach((item, i) => {
-        if(v[i]) {
-          item.v = cl[i].v + v[i] * percent;
-        }
-      });
-      currentStyle[k] = st;
-    }
-    else if(k === BOX_SHADOW) {
-      for(let i = 0, len = Math.min(st.length, v.length); i < len; i++) {
-        if(!v[i]) {
-          continue;
-        }
-        // x/y/blur/spread
-        for(let j = 0; j < 4; j++) {
-          st[i][j].v = cl[i][j].v + v[i][j] * percent;
-        }
-        // rgba
-        for(let j = 0; j < 4; j++) {
-          st[i][4][j] = cl[i][4][j] + v[i][4][j] * percent;
-        }
-      }
-      currentStyle[k] = st;
-    }
-    else if(k === BACKGROUND_SIZE) {
-      st.forEach((item, i) => {
-        let o = v[i];
-        if(o) {
-          item[0].v = cl[i][0].v + o[0] * percent;
-          item[1].v = cl[i][1].v + o[1] * percent;
-        }
-      });
-      currentStyle[k] = st;
-    }
-    else if(k === OPACITY || k === Z_INDEX) {
-      st = cl + v * percent;
-      // 精度问题可能会超过[0,1]区间
-      if(k === OPACITY) {
-        if(st < 0) {
-          st = 0;
-        }
-        else if(st > 1) {
-          st = 1;
-        }
-      }
-      currentStyle[k] = st;
-    }
-    // 特殊的曲线运动计算，转换为translateXY，出现在最后一定会覆盖原本的translate防重
-    else if(k === TRANSLATE_PATH) {
-      let t = 1 - percent;
-      if(v.length === 8) {
-        currentStyle[TRANSLATE_X] = {
-          v: v[0].v * t * t * t
-            + 3 * v[2].v * percent * t * t
-            + 3 * v[4].v * percent * percent * t
-            + v[6].v * percent * percent * percent,
-          u: PX,
-        };
-        currentStyle[TRANSLATE_Y] = {
-          v: v[1].v * t * t * t
-            + 3 * v[3].v * percent * t * t
-            + 3 * v[5].v * percent * percent * t
-            + v[7].v * percent * percent * percent,
-          u: PX,
-        };
-      }
-      else if(v.length === 6) {
-        currentStyle[TRANSLATE_X] = {
-          v: v[0].v * t * t
-            + 2 * v[2].v * percent * t
-            + v[4].v * percent * percent,
-          u: PX,
-        };
-        currentStyle[TRANSLATE_Y] = {
-          v: v[1].v * t * t
-            + 3 * v[3].v * percent * t
-            + v[5].v * percent * percent,
-          u: PX,
-        };
-      }
-    }
-    else if(isLengthKey(k) || isExpandKey(k)) {
-      st.v = cl + v * percent;
-      currentStyle[k] = st;
-    }
-    else if(isGradientKey(k)) {
-      st.forEach((st2, i) => {
-        let v2 = v[i];
-        if(!v2) {
-          return;
-        }
-        let cli = cl[i].v;
-        if(st2.u === GRADIENT) {
-          st2 = st2.v;
-          let [c, d, p, z] = v2;
-          for(let j = 0, len = Math.min(st2.v.length, c.length); j < len; j++) {
-            let a = st2.v[j];
-            let b = c[j];
-            a[0][0] = cli.v[j][0][0] + b[0][0] * percent;
-            a[0][1] = cli.v[j][0][1] + b[0][1] * percent;
-            a[0][2] = cli.v[j][0][2] + b[0][2] * percent;
-            a[0][3] = cli.v[j][0][3] + b[0][3] * percent;
-            if(a[1] && b[1]) {
-              a[1].v = cli.v[j][1].v + b[1] * percent;
-            }
-          }
-          if(st2.k === 'linear' && st2.d !== undefined && d !== undefined) {
-            if(Array.isArray(d)) {
-              st2.d[0] = cli.d[0] + d[0] * percent;
-              st2.d[1] = cli.d[1] + d[1] * percent;
-              st2.d[2] = cli.d[2] + d[2] * percent;
-              st2.d[3] = cli.d[3] + d[3] * percent;
-            }
-            else {
-              st2.d = cli.d + d * percent;
-            }
-          }
-          else if(st2.k === 'radial') {
-            if(st2.z !== undefined && z !== undefined) {
-              st2.z[0] = cli.z[0] + z[0] * percent;
-              st2.z[1] = cli.z[1] + z[1] * percent;
-              st2.z[2] = cli.z[2] + z[2] * percent;
-              st2.z[3] = cli.z[3] + z[3] * percent;
-              st2.z[4] = cli.z[4] + z[4] * percent;
-            }
-            else if(st2.p !== undefined && p !== undefined) {
-              st2.p[0].v = cli.p[0].v + p[0] * percent;
-              st2.p[1].v = cli.p[1].v + p[1] * percent;
-            }
-          }
-          else if(st2.k === 'conic' && st2.d !== undefined && d !== undefined) {
-            st2.d = cli.d + d * percent;
-            st2.p[0][0] = cli.p[0] + p[0] * percent;
-            st2.p[1][0] = cli.p[1] + p[1] * percent;
-          }
-        }
-        // fill纯色
-        else {
-          st2 = st2.v;
-          st2[0] = cli[0] + v2[0] * percent;
-          st2[1] = cli[1] + v2[1] * percent;
-          st2[2] = cli[2] + v2[2] * percent;
-          st2[3] = cli[3] + v2[3] * percent;
-        }
-      });
-      currentStyle[k] = st;
-    }
-    // color可能超限[0,255]，但浏览器已经做了限制，无需关心
-    else if(isColorKey(k)) {
-      let t = st.v;
-      t[0] = cl[0] + v[0] * percent;
-      t[1] = cl[1] + v[1] * percent;
-      t[2] = cl[2] + v[2] * percent;
-      t[3] = cl[3] + v[3] * percent;
-      currentStyle[k] = st;
+    let fn = CAL_HASH[k];
+    if(fn) {
+      fn(k, v, percent, st, cl, frame, currentStyle);
     }
     else if(GEOM.hasOwnProperty(k)) {
       let tagName = target.tagName;
@@ -1438,6 +1521,10 @@ function calIntermediateStyle(frame, percent, target) {
         currentStyle[k] = st;
       }
       else {
+        if(!modify) {
+          modify = true;
+          res = res.slice(0);
+        }
         let j = res.indexOf(k);
         res.splice(j, 1);
       }
@@ -1454,6 +1541,10 @@ function calIntermediateStyle(frame, percent, target) {
       }
       else {
         currentStyle[k] = style[k];
+      }
+      if(!modify) {
+        modify = true;
+        res = res.slice(0);
       }
       res.push(k);
     }

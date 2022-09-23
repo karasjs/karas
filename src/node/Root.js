@@ -363,7 +363,6 @@ class Root extends Dom {
   }
 
   refresh(isFirst) {
-    // this.__hookTask = null;
     let { isDestroyed, renderMode, ctx, defs } = this;
     if(isDestroyed) {
       return;
@@ -373,11 +372,6 @@ class Root extends Dom {
     if(isFirst) {
       this.__reLayout();
     }
-    // 非首次刷新如果没有更新则无需继续
-    // else if(!this.__checkUpdate(renderMode, ctx, width, height)) {
-    //   return;
-    // }
-    // this.__checkReflow(width, height);
     if(this.props.noRender) {
       return;
     }
@@ -403,12 +397,9 @@ class Root extends Dom {
     }
     else if(renderMode === mode.WEBGL) {
       this.__clear(ctx, renderMode);
-      struct.renderWebgl(renderMode, ctx, this);
+      // console.log(ctx.getParameter(ctx.MAX_TEXTURE_SIZE), ctx.getParameter(ctx.MAX_VARYING_VECTORS), ctx.getParameter(ctx.MAX_TEXTURE_IMAGE_UNITS))
+      struct.renderWebgl(renderMode, ctx, this, isFirst);
     }
-    // 特殊cb，供小程序绘制完回调使用
-    // if(isFunction(cb)) {
-    //   cb();
-    // }
     this.emit(Event.REFRESH, this.__rlv);
     this.__rlv = NONE;
   }
@@ -644,7 +635,7 @@ class Root extends Dom {
           // repaint置空，如果reflow会重新生成空的
           cacheStyle[k] = undefined;
           // TRBL变化只对relative/absolute起作用，其它忽视
-          if([TOP, RIGHT, BOTTOM, LEFT].indexOf(k) > -1
+          if((k === TOP || k === RIGHT || k === BOTTOM || k === LEFT)
             && ['relative', 'absolute'].indexOf(computedStyle[POSITION]) === -1) {
             continue;
           }

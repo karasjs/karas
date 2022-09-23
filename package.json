@@ -1,6 +1,6 @@
 {
   "name": "karas",
-  "version": "0.79.3",
+  "version": "0.79.4",
   "description": "A flexible JavaScript framework for RIA on Canvas/Svg/Webgl.",
   "maintainers": [
     {
@@ -22,7 +22,9 @@
     "type": "git",
     "url": "git://github.com/karasjs/karas.git"
   },
-  "dependencies": {},
+  "dependencies": {
+    "pixi.js": "^6.5.4"
+  },
   "devDependencies": {
     "@babel/core": "^7.18.9",
     "@babel/plugin-proposal-class-properties": "^7.18.6",

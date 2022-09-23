@@ -1,4 +1,5 @@
 import Cache from './Cache';
+// import Page from './Page2';
 import offscreen from './offscreen';
 import Text from '../node/Text';
 import Dom from '../node/Dom';
@@ -1885,7 +1886,10 @@ function renderSvg(renderMode, ctx, root, isFirst) {
   }
 }
 
-function renderWebgl(renderMode, gl, root) {
+function renderWebgl(renderMode, gl, root, isFirst) {
+  if(isFirst) {
+    // Page.init(gl.getParameter(gl.MAX_TEXTURE_SIZE));
+  }
   let { __structs, width, height, texCache } = root;
   let cx = width * 0.5, cy = height * 0.5;
   // 栈代替递归，存父节点的matrix/opacity，matrix为E时存null省略计算

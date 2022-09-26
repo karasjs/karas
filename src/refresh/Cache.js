@@ -3,7 +3,6 @@ import util from '../util/util';
 import inject from '../util/inject';
 import enums from '../util/enums';
 import painter from '../util/painter';
-import debug from '../util/debug';
 import tf from '../style/transform';
 import css from '../style/css';
 import mx from '../math/matrix';
@@ -25,7 +24,7 @@ function genSingle(cache, message, bboxNew) {
   let height = bboxNew[3] - bboxNew[1];
   let dx = bboxNew[0] - bbox[0];
   let dy = bboxNew[1] - bbox[1];
-  let offscreen = inject.getCacheCanvas(width, height, null, message);
+  let offscreen = inject.getOffscreenCanvas(width, height, null, message);
   offscreen.x = 0;
   offscreen.y = 0;
   offscreen.bbox = bboxNew;
@@ -42,7 +41,8 @@ function genSingle(cache, message, bboxNew) {
 }
 
 class Cache {
-  constructor(w, h, bbox, page, pos, x1, y1) {
+  constructor(rootId, w, h, bbox, page, pos, x1, y1) {
+    this.__rootId = rootId;
     this.__init(w, h, bbox, page, pos, x1, y1);
   }
 
@@ -52,7 +52,7 @@ class Cache {
     this.__bbox = bbox;
     this.__page = page;
     this.__pos = pos;
-    let [x, y] = page.getCoords(pos);
+    let { x, y } = page.getCoords(pos);
     this.__x = x;
     this.__y = y;
     this.__appendData(x1, y1);
@@ -61,9 +61,6 @@ class Cache {
       let ctx = page.ctx;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.globalAlpha = 1;
-      if(debug.flag) {
-        page.canvas.setAttribute && page.canvas.setAttribute('size', page.size);
-      }
     }
   }
 
@@ -86,12 +83,13 @@ class Cache {
     if(this.__available) {
       let ctx = this.ctx;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      let size = this.page.size;
-      ctx.clearRect(this.x, this.y, size, size);
+      let size = this.__page.__size;
+      ctx.clearRect(this.__x, this.__y, size, size);
       this.__available = false;
     }
   }
 
+  // svg打标用会覆盖此方法
   release() {
     if(this.__enabled) {
       this.clear();
@@ -110,7 +108,7 @@ class Cache {
     this.release();
     let w = Math.ceil(bbox[2] - bbox[0]);
     let h = Math.ceil(bbox[3] - bbox[1]);
-    let res = Page.getInstance(Math.max(w, h));
+    let res = Page.getInstance(this.__rootId, Math.max(w, h));
     if(!res) {
       this.__enabled = false;
       return;
@@ -181,22 +179,21 @@ class Cache {
     return Page.MAX;
   }
 
-  static getInstance(bbox, x1, y1) {
+  static getInstance(rootId, bbox, x1, y1) {
     let w = Math.ceil(bbox[2] - bbox[0]);
     let h = Math.ceil(bbox[3] - bbox[1]);
-    let res = Page.getInstance(Math.max(w, h));
+    let res = Page.getInstance(rootId, Math.max(w, h));
     if(!res) {
       return;
     }
     let { page, pos } = res;
-    return new Cache(w, h, bbox, page, pos, x1, y1);
+    return new Cache(rootId, w, h, bbox, page, pos, x1, y1);
   }
 
   /**
    * 复制cache的一块出来单独作为cacheFilter，尺寸边距保持一致，用浏览器原生ctx.filter滤镜
    * @param cache
    * @param filter
-   * @returns {{canvas: *, ctx: *, release(): void, available: boolean}}
    */
   static genFilter(cache, filter) {
     let { x, y, size, canvas, sx1, sy1, width, height, bbox } = cache;
@@ -205,7 +202,7 @@ class Cache {
     let d = oldX1 - bbox[0];
     let widthNew = bbox[2] - bbox[0];
     let heightNew = bbox[3] - bbox[1];
-    let offscreen = inject.getCacheCanvas(widthNew, heightNew, null, 'filter');
+    let offscreen = inject.getOffscreenCanvas(widthNew, heightNew, null, 'filter');
     offscreen.ctx.filter = painter.canvasFilter(filter);
     offscreen.ctx.drawImage(canvas, x, y, width, height, d, d, width, height);
     offscreen.ctx.filter = 'none';

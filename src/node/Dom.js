@@ -3224,7 +3224,7 @@ class Dom extends Xom {
     if(computedStyle[OVERFLOW] === 'hidden' && !this.willResponseEvent(e, true)) {
       return;
     }
-    // __cacheTotal可提前判断是否在bbox范围内，防止svg进入判断bbox
+    // __cacheTotal可提前判断是否在bbox范围内，svg没有bbox防止进入判断
     if(__cacheTotal && __cacheTotal.available && __cacheTotal.bbox) {
       // 不是E的话，因为缓存缘故影响cache的子元素，先左乘可能的父matrix（嵌套cache），再赋值给pm递归传下去
       if(!isE(this.__matrix)) {

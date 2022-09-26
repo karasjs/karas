@@ -1,26 +1,15 @@
 import util from './util';
 import debug from './debug';
-import ca from '../gl/ca';
-import webgl from '../gl/webgl';
 
 const SPF = 1000 / 60;
 
 const CANVAS = {};
-const WEBGL = {};
-const CANVAS_LIST = [];
-const WEBGL_LIST = [];
-const SUPPORT_OFFSCREEN_CANVAS = typeof OffscreenCanvas === 'function' && util.isFunction(OffscreenCanvas.prototype.getContext);
+const SUPPORT_OFFSCREEN_CANVAS = typeof OffscreenCanvas === 'function' && OffscreenCanvas.prototype.getContext;
 
 function cache(key, width, height, hash, message) {
   let o;
   if(!key) {
-    let target = hash === CANVAS ? CANVAS_LIST : WEBGL_LIST;
-    if(target.length) {
-      o = target.pop();
-    }
-    else {
-      o = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
-    }
+    o = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
   }
   else if(!hash[key]) {
     o = hash[key] = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
@@ -33,7 +22,7 @@ function cache(key, width, height, hash, message) {
   if(debug.flag) {
     o.style.width = width + 'px';
     o.style.height = height + 'px';
-    o.setAttribute('type', hash === CANVAS ? 'canvas' : 'webgl');
+    // o.setAttribute('type', hash === CANVAS ? 'canvas' : 'webgl');
     if(key) {
       o.setAttribute('key', key);
     }
@@ -42,38 +31,20 @@ function cache(key, width, height, hash, message) {
     }
     document.body.appendChild(o);
   }
-  let ctx;
-  if(hash === CANVAS) {
-    ctx = o.getContext('2d');
-  }
-  else {
-    ctx = o.getContext('webgl', ca) || o.getContext('experimental-webgl', ca);
-  }
+  let ctx = o.getContext('2d');
   return {
     canvas: o,
     ctx,
     enabled: true,
     available: true,
     release() {
-      if(!key && this.available) {
-        if(hash === CANVAS) {
-          CANVAS_LIST.push(this.canvas);
-        }
-        else {
-          WEBGL_LIST.push(this.canvas);
-        }
-      }
       this.available = false;
     },
   };
 }
 
-function cacheCanvas(key, width, height, message) {
+function offscreenCanvas(key, width, height, message) {
   return cache(key, width, height, CANVAS, message);
-}
-
-function cacheWebgl(key, width, height, message) {
-  return cache(key, width, height, WEBGL, message);
 }
 
 const IMG = {};
@@ -263,29 +234,11 @@ let inject = {
     inject.now = Date.now.bind(Date);
     return Date.now();
   },
-  hasCacheCanvas(key) {
+  hasOffscreenCanvas(key) {
     return key && CANVAS.hasOwnProperty(key);
   },
-  getCacheCanvas(width, height, key, message) {
-    return cacheCanvas(key, width, height, message);
-  },
-  releaseCacheCanvas(o) {
-    CANVAS_LIST.push(o);
-  },
-  delCacheCanvas(key) {
-    key && delete CANVAS[key];
-  },
-  hasCacheWebgl(key) {
-    return key && WEBGL.hasOwnProperty(key);
-  },
-  getCacheWebgl(width, height, key, message) {
-    return cacheWebgl(key, width, height, message);
-  },
-  releaseCacheWebgl(o) {
-    WEBGL_LIST.push(o);
-  },
-  delCacheWebgl(key) {
-    key && delete WEBGL[key];
+  getOffscreenCanvas(width, height, key, message) {
+    return offscreenCanvas(key, width, height, message);
   },
   isDom(o) {
     if(o) {
@@ -315,7 +268,7 @@ let inject = {
   },
   defaultFontFamily: 'arial',
   getFontCanvas() {
-    return inject.getCacheCanvas(16, 16, '__$$CHECK_SUPPORT_FONT_FAMILY$$__');
+    return inject.getOffscreenCanvas(16, 16, '__$$CHECK_SUPPORT_FONT_FAMILY$$__', null);
   },
   checkSupportFontFamily(ff) {
     ff = ff.toLowerCase();

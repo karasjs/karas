@@ -23,15 +23,6 @@ class TexCache {
    * 此次又被添加且没有变更update，可以直接复用上次的纹理单元号且无需再次上传纹理，节省性能
    * 后续接入局部纹理更新也是复用单元号，如果update变更可以选择局部上传纹理而非整个重新上传
    * 判断上传的逻辑在收集满8个后绘制前进行，因为添加队列过程中可能会变更Page及其update
-   * @param gl
-   * @param cache
-   * @param opacity
-   * @param matrix
-   * @param cx
-   * @param cy
-   * @param dx
-   * @param dy
-   * @param revertY
    */
   addTexAndDrawWhenLimit(gl, cache, opacity, matrix, cx, cy, dx = 0, dy = 0, revertY) {
     let pages = this.__pages;
@@ -117,9 +108,9 @@ class TexCache {
             if(a[1].time !== b[1].time) {
               return (a[1].time || 0) - (b[1].time || 0);
             }
-            if(a[1].fullSize !== b[1].fullSize) {
-              return a[1].fullSize - b[1].fullSize;
-            }
+            // if(a[1].fullSize !== b[1].fullSize) {
+            //   return a[1].fullSize - b[1].fullSize;
+            // }
             return a[0] - b[0];
           });
           // cl靠前是时间小尺寸小的，优先使用替换
@@ -151,7 +142,7 @@ class TexCache {
             if(last && !(last instanceof MockPage)) {
               gl.deleteTexture(last.texture);
             }
-            page.texture = webgl.createTexture(gl, page.canvas, i);
+            page.texture = webgl.createTexture(gl, page.canvas, i, null, null);
           }
           channels[i] = page;
         }
@@ -199,9 +190,9 @@ class TexCache {
         if(a[1].time !== b[1].time) {
           return (a[1].time || 0) - (b[1].time || 0);
         }
-        if(a[1].fullSize !== b[1].fullSize) {
-          return a[1].fullSize - b[1].fullSize;
-        }
+        // if(a[1].fullSize !== b[1].fullSize) {
+        //   return a[1].fullSize - b[1].fullSize;
+        // }
         return a[0] - b[0];
       });
       let i = cl[0][0];

@@ -612,7 +612,7 @@ class Geom extends Xom {
     if(renderMode === mode.CANVAS) {
       let [x1, y1, x2, y2] = bbox;
       let w = x2 - x1, h = y2 - y1;
-      let offscreen = inject.getCacheCanvas(w, h, '__$$CONIC_GRADIENT$$__');
+      let offscreen = inject.getOffscreenCanvas(w, h, '__$$CONIC_GRADIENT$$__', null);
       let imgData = offscreen.ctx.getImageData(0,0, w, h);
       gradient.getConicGradientImage(w * 0.5, h * 0.5, w, h, fill.v.stop, imgData.data);
       offscreen.ctx.putImageData(imgData, 0, 0);

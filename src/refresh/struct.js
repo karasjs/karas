@@ -1,10 +1,10 @@
 import Cache from './Cache';
-// import Page from './Page2';
 import offscreen from './offscreen';
+import mode from './mode';
+import Page from './Page';
 import Text from '../node/Text';
 import Dom from '../node/Dom';
 import Img from '../node/Img';
-import mode from './mode';
 import mx from '../math/matrix';
 import geom from '../math/geom';
 import level from './level';
@@ -246,18 +246,8 @@ function mergeBbox(bbox, t, sx1, sy1) {
  * cacheOverflow基于filter
  * cacheMask基于overflow
  * cacheBlend基于mask
- * @param renderMode
- * @param node
- * @param index
- * @param lv
- * @param total
- * @param __structs
- * @param hasMask
- * @param width
- * @param height
- * @returns {{enabled}|Cache|*}
  */
-function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width, height) {
+function genTotal(renderMode, root, node, index, lv, total, __structs, hasMask, width, height) {
   let __cacheTotal = node.__cacheTotal;
   // 先绘制形成基础的total，有可能已经存在无变化，就可省略
   if(!__cacheTotal || !__cacheTotal.available) {
@@ -324,7 +314,7 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
     }
 
     // 生成cacheTotal，获取偏移dx/dy
-    __cacheTotal = node.__cacheTotal = Cache.getInstance(bboxTotal, sx1, sy1);
+    __cacheTotal = node.__cacheTotal = Cache.getInstance(root.uuid, bboxTotal, sx1, sy1);
     if(!__cacheTotal || !__cacheTotal.__enabled) {
       inject.warn('Cache of ' + node.tagName + '(' + index + ')' + ' is oversize: '
         + (bboxTotal[2] - bboxTotal[0]) + ', ' + (bboxTotal[3] - bboxTotal[1]));
@@ -387,7 +377,7 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
         } = __computedStyle2;
         if(maskStartHash.hasOwnProperty(i)) {
           let { idx, hasMask, offscreenMask } = maskStartHash[i];
-          let target = inject.getCacheCanvas(width, height, null, 'mask2');
+          let target = inject.getOffscreenCanvas(width, height, null, 'mask2');
           offscreenMask.mask = target; // 应用mask用到
           offscreenMask.isClip = node.__isClip;
           // 定位到最后一个mask元素上的末尾
@@ -537,24 +527,18 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
   let target = __cacheTotal, needGen;
   if(overflow === 'hidden') {
     if(!__cacheOverflow || !__cacheOverflow.available) {
-      node.__cacheOverflow = __cacheOverflow = Cache.genOverflow(target, node);
+      target = node.__cacheOverflow = __cacheOverflow = Cache.genOverflow(target, node);
       needGen = true;
-    }
-    if(__cacheOverflow && __cacheOverflow.available) {
-      target = __cacheOverflow;
     }
   }
   if(filter && filter.length) {
-    if(!__cacheFilter || !__cacheFilter.available || needGen) {
-      node.__cacheFilter = __cacheFilter = Cache.genFilter(target, filter);
+    if(!__cacheFilter|| !__cacheFilter.available  || needGen) {
+      target = node.__cacheFilter = __cacheFilter = Cache.genFilter(target, filter);
       needGen = true;
-    }
-    if(__cacheFilter && __cacheFilter.available) {
-      target = __cacheFilter;
     }
   }
   if(hasMask && (!__cacheMask || !__cacheMask.available || needGen)) {
-    node.__cacheMask = __cacheMask = Cache.genMask(target, node, function(item, cacheMask, inverse) {
+    target = node.__cacheMask = __cacheMask = Cache.genMask(target, node, function(item, cacheMask, inverse) {
       // 和外面没cache的类似，mask生成hash记录，这里mask节点一定是个普通无cache的独立节点
       let maskStartHash = {};
       let offscreenHash = {};
@@ -607,7 +591,7 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
           } = node;
           if(maskStartHash.hasOwnProperty(i)) {
             let { idx, hasMask, offscreenMask } = maskStartHash[i];
-            let target = inject.getCacheCanvas(width, height, null, 'mask2');
+            let target = inject.getOffscreenCanvas(width, height, null, 'mask2');
             offscreenMask.mask = target; // 应用mask用到
             offscreenMask.isClip = node.__isClip;
             // 定位到最后一个mask元素上的末尾
@@ -855,10 +839,10 @@ function genTotalWebgl(renderMode, gl, texCache, node, index, total, __structs, 
   }
   // limitCache无cache需先绘制到统一的离屏画布上
   else if(limitCache) {
-    let c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
+    let c = inject.getOffscreenCanvas(width, height, '__$$OVERSIZE$$__', null);
     node.render(mode.CANVAS, c.ctx, 0, 0);
     let j = texCache.lockOneChannel();
-    let texture = webgl.createTexture(gl, c.canvas, j);
+    let texture = webgl.createTexture(gl, c.canvas, j, null, null);
     let mockCache = new MockCache(gl, texture, 0, 0, width, height, [0, 0, width, height]);
     texCache.addTexAndDrawWhenLimit(gl, mockCache, 1, null, cx, cy, 0, 0, false);
     texCache.refresh(gl, cx, cy);
@@ -1581,7 +1565,7 @@ function genMbmWebgl(gl, texCache, i, j, fbo, tex, mbm, W, H) {
 function renderSvg(renderMode, ctx, root, isFirst) {
   let { __structs, width, height } = root;
   // mask节点很特殊，本身有matrix会影响，本身没改变但对象节点有改变也需要计算逆矩阵应用顶点
-  let maskEffectHash = {};
+  let maskEffectHash = [];
   if(!isFirst) {
     // 先遍历一遍收集完全不变的defs，缓存起来id，随后再执行遍历渲染生成新的，避免掉重复的id
     for(let i = 0, len = __structs.length; i < len; i++) {
@@ -1603,9 +1587,9 @@ function renderSvg(renderMode, ctx, root, isFirst) {
       // >=REPAINT重绘生成走render()跳过这里
       if(__refreshLevel < REPAINT) {
         // 特殊的mask判断，遮罩对象影响这个mask了，除去filter、遮罩对象无TRANSFORM变化外都可缓存
-        if(maskEffectHash.hasOwnProperty(i)) {
-          let v = maskEffectHash[i];
-          if(!contain(__refreshLevel, TRANSFORM_ALL) && v < REPAINT && !contain(v, TRANSFORM_ALL)) {
+        let mh = maskEffectHash[i];
+        if(mh) {
+          if(!contain(__refreshLevel, TRANSFORM_ALL) && mh < REPAINT && !contain(mh, TRANSFORM_ALL)) {
             __cacheDefs.forEach(item => {
               ctx.addCache(item);
             });
@@ -1620,7 +1604,7 @@ function renderSvg(renderMode, ctx, root, isFirst) {
       }
     }
   }
-  let maskHash = {};
+  let maskHash = [];
   // 栈代替递归，存父节点的matrix/opacity，matrix为E时存null省略计算
   let matrixList = [];
   let parentMatrix;
@@ -1784,11 +1768,11 @@ function renderSvg(renderMode, ctx, root, isFirst) {
      * 另外最初遍历时记录了会影响的mask，在<REPAINT时比较，>=REPAINT始终重新设置
      * 本身有matrix也需要重设
      */
-    if(maskHash.hasOwnProperty(i)
-      && (maskEffectHash.hasOwnProperty(i)
+    let mh = maskHash[i];
+    if(mh && (maskEffectHash[i]
         || __refreshLevel >= REPAINT
         || contain(__refreshLevel, TRANSFORM_ALL | OP))) {
-      let { index, start, end, isClip } = maskHash[i];
+      let { index, start, end, isClip } = mh;
       let target = __structs[index];
       let dom = target.node;
       let mChildren = [];
@@ -1888,7 +1872,7 @@ function renderSvg(renderMode, ctx, root, isFirst) {
 
 function renderWebgl(renderMode, gl, root, isFirst) {
   if(isFirst) {
-    // Page.init(gl.getParameter(gl.MAX_TEXTURE_SIZE));
+    Page.init(gl.getParameter(gl.MAX_TEXTURE_SIZE));
   }
   let { __structs, width, height, texCache } = root;
   let cx = width * 0.5, cy = height * 0.5;
@@ -1920,7 +1904,7 @@ function renderWebgl(renderMode, gl, root, isFirst) {
           __cache.reset(bbox, sx, sy);
         }
         else {
-          __cache = Cache.getInstance(bbox, sx, sy);
+          __cache = Cache.getInstance(root.uuid, bbox, sx, sy);
         }
         if(__cache && __cache.enabled) {
           __cache.__bbox = bbox;
@@ -2001,7 +1985,7 @@ function renderWebgl(renderMode, gl, root, isFirst) {
           __cache.reset(bbox, sx1, sy1);
         }
         else {
-          __cache = Cache.getInstance(bbox, sx1, sy1);
+          __cache = Cache.getInstance(root.uuid, bbox, sx1, sy1);
         }
         if(__cache && __cache.enabled) {
           __cache.__bbox = bbox;
@@ -2046,7 +2030,7 @@ function renderWebgl(renderMode, gl, root, isFirst) {
       }
     }
   }
-  let limitHash = {};
+  let limitHash = [];
   // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
   // 这样保证子节点在前，后节点在前，后节点是为了mask先应用自身如filter之后再进行遮罩
   if(mergeList.length) {
@@ -2190,10 +2174,10 @@ function renderWebgl(renderMode, gl, root, isFirst) {
       }
       // 超限特殊处理，先生成画布尺寸大小的纹理然后原始位置绘制，超限一定有文字内容
       else if(node.__limitCache && __domParent.__computedStyle[VISIBILITY] !== 'hidden') {
-        let c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
+        let c = inject.getOffscreenCanvas(width, height, '__$$OVERSIZE$$__', null);
         node.render(mode.CANVAS, c.ctx, 0, 0);
         let j = texCache.lockOneChannel();
-        let texture = webgl.createTexture(gl, c.canvas, j);
+        let texture = webgl.createTexture(gl, c.canvas, j, null, null);
         let mockCache = new MockCache(gl, texture, 0, 0, width, height, [0, 0, width, height]);
         texCache.addTexAndDrawWhenLimit(gl, mockCache, node.__opacity, node.__matrixEvent, cx, cy, 0, 0, true);
         texCache.refresh(gl, cx, cy, true);
@@ -2272,7 +2256,7 @@ function renderWebgl(renderMode, gl, root, isFirst) {
           gl.viewport(0, 0, width, height);
         }
       }
-      else if(limitHash.hasOwnProperty(i)) {
+      else if(limitHash[i]) {
         let target = limitHash[i];
         if(hasMbm && isValidMbm(mixBlendMode)) {
           texCache.refresh(gl, cx, cy, true);
@@ -2299,10 +2283,10 @@ function renderWebgl(renderMode, gl, root, isFirst) {
       // 超限的情况，这里是普通单节点超限，没有合成total后再合成特殊cache如filter/mask/mbm之类的，
       // 直接按原始位置绘制到离屏canvas，再作为纹理绘制即可，特殊的在total那做过降级了
       else if(node.__limitCache && node.__hasContent) {
-        let c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
+        let c = inject.getOffscreenCanvas(width, height, '__$$OVERSIZE$$__', null);
         node.render(mode.CANVAS, c.ctx, 0, 0);
         let j = texCache.lockOneChannel();
-        let texture = webgl.createTexture(gl, c.canvas, j);
+        let texture = webgl.createTexture(gl, c.canvas, j, null, null);
         let mockCache = new MockCache(gl, texture, 0, 0, width, height, [0, 0, width, height]);
         texCache.addTexAndDrawWhenLimit(gl, mockCache, opacity, m, cx, cy, 0, 0, true);
         texCache.refresh(gl, cx, cy, true);
@@ -2438,7 +2422,7 @@ function renderCanvas(renderMode, ctx, root) {
     });
     mergeList.forEach(item => {
       let { i, lv, total, node, hasMask } = item;
-      let __cacheTotal = genTotal(renderMode, node, i, lv, total || 0, __structs, hasMask, width, height);
+      let __cacheTotal = genTotal(renderMode, root, node, i, lv, total || 0, __structs, hasMask, width, height);
       if(__cacheTotal) {
         genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width, height);
       }
@@ -2455,8 +2439,8 @@ function renderCanvas(renderMode, ctx, root) {
    * 所有离屏应用的索引都以最后一个节点的索引为准，即有mask时以最后一个mask，无mask则以自身节点的最后一个（+total)为索引
    * 由于存在普通非cache绘制，所以依然要用到栈代替递归计算matrix
    */
-  let maskStartHash = {};
-  let offscreenHash = {};
+  let maskStartHash = [];
+  let offscreenHash = [];
   for(let i = 0, len = __structs.length; i < len; i++) {
     let {
       node,
@@ -2467,8 +2451,9 @@ function renderCanvas(renderMode, ctx, root) {
     // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
     if(node instanceof Text) {
       node.render(renderMode, ctx, 0, 0);
-      if(offscreenHash.hasOwnProperty(i)) {
-        ctx = applyOffscreen(ctx, offscreenHash[i], width, height, false);
+      let oh = offscreenHash[i];
+      if(oh) {
+        ctx = applyOffscreen(ctx, oh, width, height, false);
       }
     }
     else {
@@ -2479,8 +2464,9 @@ function renderCanvas(renderMode, ctx, root) {
         if(hasMask) {
           i += countMaskNum(__structs, i + 1, hasMask);
         }
-        if(offscreenHash.hasOwnProperty(i)) {
-          ctx = applyOffscreen(ctx, offscreenHash[i], width, height, true);
+        let oh = offscreenHash[i];
+        if(oh) {
+          ctx = applyOffscreen(ctx, oh, width, height, true);
         }
         continue;
       }
@@ -2495,9 +2481,10 @@ function renderCanvas(renderMode, ctx, root) {
       // 遮罩对象申请了个离屏，其第一个mask申请另外一个离屏mask2，开始聚集所有mask元素的绘制，
       // 这是一个十分特殊的逻辑，保存的index是最后一个节点的索引，OFFSCREEN_MASK2是最低优先级，
       // 这样当mask本身有filter时优先自身，然后才是OFFSCREEN_MASK2
-      if(maskStartHash.hasOwnProperty(i)) {
-        let { idx, hasMask, offscreenMask } = maskStartHash[i];
-        let target = inject.getCacheCanvas(width, height, null, 'mask2');
+      let msh = maskStartHash[i];
+      if(msh) {
+        let { idx, hasMask, offscreenMask } = msh;
+        let target = inject.getOffscreenCanvas(width, height, null, 'mask2');
         offscreenMask.mask = target; // 应用mask用到
         offscreenMask.isClip = node.__isClip;
         // 定位到最后一个mask元素上的末尾
@@ -2542,8 +2529,9 @@ function renderCanvas(renderMode, ctx, root) {
         // total应用后记得设置回来
         ctx.globalCompositeOperation = 'source-over';
         // 父超限但子有total的时候，i此时已经增加到了末尾，也需要检查
-        if(offscreenHash.hasOwnProperty(i)) {
-          ctx = applyOffscreen(ctx, offscreenHash[i], width, height, false);
+        let oh = offscreenHash[i];
+        if(oh) {
+          ctx = applyOffscreen(ctx, oh, width, height, false);
         }
       }
       // 没有cacheTotal是普通节点绘制
@@ -2601,8 +2589,9 @@ function renderCanvas(renderMode, ctx, root) {
         }
         // 离屏应用，按照lv从大到小即子节点在前先应用，同一个节点多个效果按offscreen优先级从小到大来，
         // 由于mask特殊索引影响，所有离屏都在最后一个mask索引判断，此时mask本身优先结算，以index序大到小判断
-        if(offscreenHash.hasOwnProperty(i)) {
-          ctx = applyOffscreen(ctx, offscreenHash[i], width, height, false);
+        let oh = offscreenHash[i];
+        if(oh) {
+          ctx = applyOffscreen(ctx, oh, width, height, false);
         }
       }
     }

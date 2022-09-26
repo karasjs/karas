@@ -1739,7 +1739,7 @@ class Xom extends Node {
     } = __computedStyle;
     if(mixBlendMode !== 'normal' && isValidMbm(mixBlendMode)) {
       mixBlendMode = mbmName(mixBlendMode);
-      let c = inject.getCacheCanvas(width, height, null, 'blend');
+      let c = inject.getOffscreenCanvas(width, height, null, 'blend');
       offscreenBlend = {
         ctx,
         target: c,
@@ -1748,7 +1748,7 @@ class Xom extends Node {
       ctx = c.ctx;
     }
     if(this.__hasMask) {
-      let c = inject.getCacheCanvas(width, height, null, 'mask1');
+      let c = inject.getOffscreenCanvas(width, height, null, 'mask1');
       offscreenMask = {
         ctx,
         target: c,
@@ -1756,7 +1756,7 @@ class Xom extends Node {
       ctx = c.ctx;
     }
     if(filter && filter.length) {
-      let c = inject.getCacheCanvas(width, height, null, 'filter');
+      let c = inject.getOffscreenCanvas(width, height, null, 'filter');
       offscreenFilter = {
         ctx,
         filter,
@@ -1765,7 +1765,7 @@ class Xom extends Node {
       ctx = c.ctx;
     }
     if(overflow === 'hidden' && display !== 'inline') {
-      let c = inject.getCacheCanvas(width, height, null, 'overflow');
+      let c = inject.getOffscreenCanvas(width, height, null, 'overflow');
       let bx1 = this.__bx1;
       let bx2 = this.__bx2;
       let by1 = this.__by1;
@@ -2117,7 +2117,7 @@ class Xom extends Node {
             }
           }
           if(renderMode === CANVAS || renderMode === WEBGL) {
-            offscreen = inject.getCacheCanvas(iw, ih, '__$$INLINE_BGI$$__');
+            offscreen = inject.getOffscreenCanvas(iw, ih, '__$$INLINE_BGI$$__', null);
           }
           let length = backgroundImage.length;
           backgroundImage.slice(0).reverse().forEach((bgi, i) => {

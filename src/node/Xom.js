@@ -2982,15 +2982,15 @@ class Xom extends Node {
       box = [__sx1, __sy1, __sx1 + __offsetWidth, __sy1 + __offsetHeight];
     }
     let matrixEvent = this.__matrixEvent;
-    let p1 = point2d(mx.calPoint([box[0], box[1]], matrixEvent));
-    let p2 = point2d(mx.calPoint([box[2], box[1]], matrixEvent));
-    let p3 = point2d(mx.calPoint([box[2], box[3]], matrixEvent));
-    let p4 = point2d(mx.calPoint([box[0], box[3]], matrixEvent));
+    let p1 = point2d(mx.calPoint({ x: box[0], y: box[1] }, matrixEvent));
+    let p2 = point2d(mx.calPoint({ x: box[2], y: box[1] }, matrixEvent));
+    let p3 = point2d(mx.calPoint({ x: box[2], y: box[3] }, matrixEvent));
+    let p4 = point2d(mx.calPoint({ x: box[0], y: box[3] }, matrixEvent));
     return {
-      left: Math.min(p1[0], Math.min(p2[0], Math.min(p3[0], p4[0]))),
-      top: Math.min(p1[1], Math.min(p2[1], Math.min(p3[1], p4[1]))),
-      right: Math.max(p1[0], Math.max(p2[0], Math.max(p3[0], p4[0]))),
-      bottom: Math.max(p1[1], Math.max(p2[1], Math.max(p3[1], p4[1]))),
+      left: Math.min(p1.x, Math.min(p2.x, Math.min(p3.x, p4.x))),
+      top: Math.min(p1.y, Math.min(p2.y, Math.min(p3.y, p4.y))),
+      right: Math.max(p1.x, Math.max(p2.x, Math.max(p3.x, p4.x))),
+      bottom: Math.max(p1.y, Math.max(p2.y, Math.max(p3.y, p4.y))),
       points: [p1, p2, p3, p4],
     };
   }

@@ -94,7 +94,7 @@ export function loadShader(gl, type, source) {
   return shader;
 }
 
-function convertCoords2Gl([x, y, z, w], cx, cy, revertY) {
+function convertCoords2Gl(x, y, z, w, cx, cy, revertY) {
   if(z === undefined) {
     z = 0;
   }
@@ -121,7 +121,7 @@ function convertCoords2Gl([x, y, z, w], cx, cy, revertY) {
       y = -y;
     }
   }
-  return [x * w, y * w, z * w, w];
+  return { x: x * w, y: y * w, z: z * w, w };
 }
 
 function createTexture(gl, tex, n, width, height) {
@@ -149,29 +149,40 @@ function bindTexture(gl, texture, n) {
   gl.bindTexture(gl.TEXTURE_2D, texture);
 }
 
+let lastVtPoint, lastVtTex, lastVtOpacity;
 /**
  * texCache集满纹理上传占用最多可用纹理单元后，进行批量顺序绘制
  * 将所有dom的矩形顶点（经过transform变换后的）、贴图坐标、透明度存入3个buffer中，
  * 然后相同纹理单元的形成一批，设置uniform的纹理单元号进行绘制，如此循环
- * @param gl
- * @param list
- * @param hash
- * @param cx
- * @param cy
- * @param revertY
  */
 function drawTextureCache(gl, list, hash, cx, cy, revertY) {
   let length = list.length;
-  let vtPoint = new Float32Array(length * 24),
-    vtTex = new Float32Array(length * 12),
-    vtOpacity = new Float32Array(length * 6);
+  let vtPoint, vtTex, vtOpacity;
+  if(lastVtPoint && lastVtPoint.length === length * 24) {
+    vtPoint = lastVtPoint;
+  }
+  else {
+    vtPoint = lastVtPoint = new Float32Array(length * 24);
+  }
+  if(lastVtTex && lastVtTex.length === length * 12) {
+    vtTex = lastVtTex;
+  }
+  else {
+    vtTex = lastVtTex = new Float32Array(length * 12);
+  }
+  if(lastVtOpacity && lastVtOpacity.length === length * 6) {
+    vtOpacity = lastVtPoint;
+  }
+  else {
+    vtOpacity = lastVtOpacity = new Float32Array(length * 24);
+  }
   let lastChannel; // 上一个dom的单元号
   let record = [0]; // [num, channel]每一批的数量和单元号记录
   let stack = [record]; // 所有批的数据记录集合
-  list.forEach((item, i) => {
-    let [cache, opacity, matrix, dx, dy] = item;
+  for(let i = 0; i < length; i++) {
+    let { cache, opacity, matrix, dx, dy } = list[i];
     if(i) {
-      let channel = hash[cache.page.uuid];
+      let channel = hash[cache.page.__uuid];
       // 和上一个单元号不同时，生成新的批次记录
       if(lastChannel !== channel) {
         lastChannel = channel;
@@ -180,22 +191,26 @@ function drawTextureCache(gl, list, hash, cx, cy, revertY) {
       }
     }
     else {
-      lastChannel = hash[cache.page.uuid];
+      lastChannel = hash[cache.page.__uuid];
       record[1] = lastChannel;
     }
     let { x, y, width, height, page, bbox } = cache;
     // 计算顶点坐标和纹理坐标，转换[0,1]对应关系
     let bx = bbox[0], by = bbox[1];
-    let [xa, ya] = [bx + (dx || 0), by + height + (dy || 0)];
-    let [xb, yb] = [bx + width + (dx || 0), by + (dy || 0)];
-    let [x1, y1, , w1] = calPoint([xa, ya], matrix);
-    let [x2, y2, , w2] = calPoint([xb, ya], matrix);
-    let [x3, y3, , w3] = calPoint([xb, yb], matrix);
-    let [x4, y4, , w4] = calPoint([xa, yb], matrix);
-    [x1, y1] = convertCoords2Gl([x1, y1, 0, w1], cx, cy, revertY);
-    [x2, y2] = convertCoords2Gl([x2, y2, 0, w2], cx, cy, revertY);
-    [x3, y3] = convertCoords2Gl([x3, y3, 0, w3], cx, cy, revertY);
-    [x4, y4] = convertCoords2Gl([x4, y4, 0, w4], cx, cy, revertY);
+    let xa = bx + (dx || 0), ya = by + height + (dy || 0);
+    let xb = bx + width + (dx || 0), yb = by + (dy || 0);
+    let { x: x1, y: y1, w: w1 } = calPoint({ x: xa, y: ya }, matrix);
+    let { x: x2, y: y2, w: w2 } = calPoint({ x: xb, y: ya }, matrix);
+    let { x: x3, y: y3, w: w3 } = calPoint({ x: xb, y: yb }, matrix);
+    let { x: x4, y: y4, w: w4 } = calPoint({ x: xa, y: yb }, matrix);
+    let t = convertCoords2Gl(x1, y1, 0, w1, cx, cy, revertY);
+    x1 = t.x; y1 = t.y;
+    t = convertCoords2Gl(x2, y2, 0, w2, cx, cy, revertY);
+    x2 = t.x; y2 = t.y;
+    t = convertCoords2Gl(x3, y3, 0, w3, cx, cy, revertY);
+    x3 = t.x; y3 = t.y;
+    t = convertCoords2Gl(x4, y4, 0, w4, cx, cy, revertY);
+    x4 = t.x; y4 = t.y;
     // vtPoint.push(x1, y1, 0, w1, x4, y4, 0, w4, x2, y2, 0, w2, x4, y4, 0, w4, x2, y2, 0, w2, x3, y3, 0, w3);
     let j = i * 24;
     vtPoint[j] = x1;
@@ -241,7 +256,7 @@ function drawTextureCache(gl, list, hash, cx, cy, revertY) {
     vtOpacity[j + 4] = opacity;
     vtOpacity[j + 5] = opacity;
     record[0]++;
-  });
+  }
   // 顶点buffer
   let pointBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
@@ -291,25 +306,11 @@ function drawTextureCache(gl, list, hash, cx, cy, revertY) {
  * i和j为total和filter的纹理单元，3次执行（x/y合起来算1次）需互换单元，来回执行源和结果
  * 由total变为filter时cache会各方向上扩展spread的大小到width/height
  * 因此第一次绘制时坐标非1，后面则固定1
- * @param gl
- * @param program
- * @param frameBuffer
- * @param tex1 初次绘制目标纹理
- * @param tex2 初次绘制源纹理
- * @param i 初次绘制目标纹理单元
- * @param j 初次绘制源纹理单元
- * @param width
- * @param height
- * @param spread
- * @param widthNew
- * @param heightNew
- * @param cx
- * @param cy
  */
 function drawBlur(gl, program, frameBuffer, tex1, tex2, i, j, width, height, spread, widthNew, heightNew, cx, cy) {
   // 第一次将total绘制到blur上，此时尺寸存在spread差值，因此不加模糊防止坐标计算问题，仅作为扩展纹理尺寸
-  let [x1, y2] = convertCoords2Gl([spread, height + spread, 0, 1], cx, cy, false);
-  let [x2, y1] = convertCoords2Gl([width + spread, spread, 0, 1], cx, cy, false);
+  let { x: x1, y: y2 } = convertCoords2Gl(spread, height + spread, 0, 1, cx, cy, false);
+  let { x: x2, y: y1 } = convertCoords2Gl(width + spread, spread, 0, 1, cx, cy, false);
   // 顶点buffer
   let pointBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);

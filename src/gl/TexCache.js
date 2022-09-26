@@ -1,6 +1,7 @@
 import webgl from './webgl';
 import MockPage from './MockPage';
 import inject from '../util/inject';
+import frame from '../animate/frame';
 
 class TexCache {
   constructor(units) {
@@ -27,11 +28,11 @@ class TexCache {
   addTexAndDrawWhenLimit(gl, cache, opacity, matrix, cx, cy, dx = 0, dy = 0, revertY) {
     let pages = this.__pages;
     let list = this.__list;
-    let page = cache.page;
+    let page = cache.__page;
     let i = pages.indexOf(page);
     // 找到说明已有page在此索引的通道中，记录下来info
     if(i > -1) {
-      list.push([cache, opacity, matrix, dx, dy]);
+      list.push({ cache, opacity, matrix, dx, dy });
     }
     // 找不到说明是新的纹理贴图，此时看是否超过纹理单元限制，超过则刷新绘制并清空，然后/否则 存入纹理列表
     else {
@@ -41,7 +42,7 @@ class TexCache {
         this.refresh(gl, cx, cy, revertY);
       }
       pages.push(page);
-      list.push([cache, opacity, matrix, dx, dy]);
+      list.push({ cache, opacity, matrix, dx, dy });
     }
   }
 
@@ -61,17 +62,17 @@ class TexCache {
       let locks = this.locks;
       // 先将上次渲染的纹理单元使用的Page形成一个hash，键为page的uuid，值为纹理单元
       let lastHash = {};
-      channels.forEach((item, i) => {
+      for(let i = 0, len = channels.length; i < len; i++) {
+        let item = channels[i];
         if(item) {
-          let uuid = item.uuid;
-          lastHash[uuid] = i;
+          lastHash[item.__uuid] = i;
         }
-      });
+      }
       let units = this.__units;
       // 再遍历，查找相同的Page并保持其使用的纹理单元不变，存入相同索引下标oldList，不同的按顺序收集放newList
       let oldList = new Array(units), newList = [];
-      pages.forEach(page => {
-        let uuid = page.uuid;
+      for(let i = 0, len = pages.length; i < len; i++) {
+        let page = pages[i], uuid = page.__uuid;
         if(lastHash.hasOwnProperty(uuid)) {
           let index = lastHash[uuid];
           oldList[index] = page;
@@ -79,7 +80,7 @@ class TexCache {
         else {
           newList.push(page);
         }
-      });
+      }
       /**
        * 以oldList为基准，将newList依次存入oldList中
        * 优先使用未用过的纹理单元，以便用过的可能下次用到无需重新上传
@@ -132,7 +133,7 @@ class TexCache {
           continue;
         }
         let last = channels[i];
-        if(!last || last !== page || page.update) {
+        if(!last || last !== page || page.__update) {
           // page可能为一个已有fbo纹理，或者贴图
           if(page instanceof MockPage) {
             webgl.bindTexture(gl, page.texture, i);
@@ -146,10 +147,10 @@ class TexCache {
           }
           channels[i] = page;
         }
-        hash[page.uuid] = i;
+        hash[page.__uuid] = i;
         // 标识没有更新，以及最后使用时间
         page.update = false;
-        page.time = inject.now();
+        page.time = frame.__now || inject.now();
       }
       // 再次遍历开始本次渲染并清空
       webgl.drawTextureCache(gl, list, hash, cx, cy, revertY);

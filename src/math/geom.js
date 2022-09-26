@@ -30,11 +30,11 @@ function h(deg) {
  */
 function pointInConvexPolygon(x, y, vertexes) {
   // 先取最大最小值得一个外围矩形，在外边可快速判断false
-  let [xmax, ymax] = vertexes[0];
-  let [xmin, ymin] = vertexes[0];
+  let { x: xmax, y: ymax } = vertexes[0];
+  let { x: xmin, y: ymin } = vertexes[0];
   let len = vertexes.length;
   for(let i = 1; i < len; i++) {
-    let [x, y] = vertexes[i];
+    let { x, y } = vertexes[i];
     xmax = Math.max(xmax, x);
     ymax = Math.max(ymax, y);
     xmin = Math.min(xmin, x);
@@ -67,10 +67,14 @@ function pointInConvexPolygon(x, y, vertexes) {
 function pointInQuadrilateral(x, y, x1, y1, x2, y2, x4, y4, x3, y3, matrix) {
   if(matrix && !isE(matrix)) {
     let w1, w2, w3, w4;
-    [x1, y1,, w1] = calPoint([x1, y1], matrix);
-    [x2, y2,, w2] = calPoint([x2, y2], matrix);
-    [x3, y3,, w3] = calPoint([x3, y3], matrix);
-    [x4, y4,, w4] = calPoint([x4, y4], matrix);
+    let t = calPoint({ x: x1, y: y1 }, matrix);
+    x1 = t.x; y1 = t.y; w1 = t.w;
+    t = calPoint({ x: x2, y: y2 }, matrix);
+    x2 = t.x; y2 = t.y; w2 = t.w;
+    t = calPoint({ x: x3, y: y3 }, matrix);
+    x3 = t.x; y3 = t.y; w3 = t.w;
+    t = calPoint({ x: x4, y: y4 }, matrix);
+    x4 = t.x; y4 = t.y; w4 = t.w;
     if(w1 && w1 !== 1) {
       x1 /= w1;
       y1 /= w1;
@@ -88,10 +92,10 @@ function pointInQuadrilateral(x, y, x1, y1, x2, y2, x4, y4, x3, y3, matrix) {
       y4 /= w4;
     }
     return pointInConvexPolygon(x, y, [
-      [x1, y1],
-      [x2, y2],
-      [x4, y4],
-      [x3, y3]
+      { x: x1, y: y1 },
+      { x: x2, y: y2 },
+      { x: x4, y: y4 },
+      { x: x3, y: y3 },
     ]);
   }
   else {
@@ -145,10 +149,10 @@ function triangleIncentre(x1, y1, x2, y2, x3, y3) {
   let a = pointsDistance(x2, y2, x3, y3);
   let b = pointsDistance(x1, y1, x3, y3);
   let c = pointsDistance(x1, y1, x2, y2);
-  return [
-    (a * x1 + b * x2 + c * x3) / (a + b + c),
-    (a * y1 + b * y2 + c * y3) / (a + b + c),
-  ];
+  return {
+    x: (a * x1 + b * x2 + c * x3) / (a + b + c),
+    y: (a * y1 + b * y2 + c * y3) / (a + b + c),
+  };
 }
 
 /**
@@ -371,15 +375,15 @@ function isRectsInside(a, b, includeIntersect) {
 function calCoordsInNode(px, py, node) {
   let { matrix = [1, 0, 0, 1, 0, 0], computedStyle = [] } = node;
   let { [WIDTH]: width, [HEIGHT]: height, [TRANSFORM_ORIGIN]: [ox, oy] = [width * 0.5, height * 0.5] } = computedStyle;
-  [px, py] = calPoint([px * width - ox, py * height - oy], matrix);
-  return [px + ox, py + oy];
+  let t = calPoint({ x: px * width - ox, y: py * height - oy }, matrix);
+  return { x: t.x + ox, y: t.y + oy };
 }
 
 function calPercentInNode(x, y, node) {
   let { computedStyle: { [WIDTH]: width, [HEIGHT]: height, [TRANSFORM_ORIGIN]: [ox, oy] } } = node;
   // 先求无旋转时右下角相对于原点的角度ds
   let ds = Math.atan((height - oy) / (width - ox));
-  let [x1, y1] = calCoordsInNode(1, 1, node);
+  let { x: x1, y: y1 } = calCoordsInNode(1, 1, node);
   let d1;
   let deg;
   // 根据旋转后的坐标，分4个象限，求旋转后的右下角相对于原点的角度d1，得出偏移角度deg，分顺逆时针[-180, 180]
@@ -460,30 +464,30 @@ function calPercentInNode(x, y, node) {
     ];
   }
   if(d2 >= 0) {
-    return [
-      (ox + dt * Math.cos(d2)) / width,
-      (oy + dt * Math.sin(d2)) / height,
-    ];
+    return {
+      x: (ox + dt * Math.cos(d2)) / width,
+      y: (oy + dt * Math.sin(d2)) / height,
+    };
   }
   if(d2 >= -Math.PI * 0.5) {
     d2 = -d2;
-    return [
-      (ox + dt * Math.cos(d2)) / width,
-      (oy - dt * Math.sin(d2)) / height,
-    ];
+    return {
+      x: (ox + dt * Math.cos(d2)) / width,
+      y: (oy - dt * Math.sin(d2)) / height,
+    };
   }
   if(d2 >= -Math.PI) {
     d2 = Math.PI + d2;
-    return [
-      (ox - dt * Math.cos(d2)) / width,
-      (oy - dt * Math.sin(d2)) / height,
-    ];
+    return {
+      x: (ox - dt * Math.cos(d2)) / width,
+      y: (oy - dt * Math.sin(d2)) / height,
+    };
   }
   d2 = -Math.PI - d2;
-  return [
-    (ox - dt * Math.cos(d2)) / width,
-    (oy + dt * Math.sin(d2)) / height,
-  ];
+  return {
+    x: (ox - dt * Math.cos(d2)) / width,
+    y: (oy + dt * Math.sin(d2)) / height,
+  };
 }
 
 function d2r(n) {
@@ -498,33 +502,33 @@ function pointOnCircle(x, y, r, deg) {
   if(deg >= 270) {
     deg -= 270;
     deg = d2r(deg);
-    return [
-      x - Math.cos(deg) * r,
-      y - Math.sin(deg) * r,
-    ];
+    return {
+      x: x - Math.cos(deg) * r,
+      y: y - Math.sin(deg) * r,
+    };
   }
   else if(deg >= 180) {
     deg -= 180;
     deg = d2r(deg);
-    return [
-      x - Math.sin(deg) * r,
-      y + Math.cos(deg) * r,
-    ];
+    return {
+      x: x - Math.sin(deg) * r,
+      y: y + Math.cos(deg) * r,
+    };
   }
   else if(deg >= 90) {
     deg -= 90;
     deg = d2r(deg);
-    return [
-      x + Math.cos(deg) * r,
-      y + Math.sin(deg) * r,
-    ];
+    return {
+      x: x + Math.cos(deg) * r,
+      y: y + Math.sin(deg) * r,
+    };
   }
   else {
     deg = d2r(deg);
-    return [
-      x + Math.sin(deg) * r,
-      y - Math.cos(deg) * r,
-    ];
+    return {
+      x: x + Math.sin(deg) * r,
+      y: y - Math.cos(deg) * r,
+    };
   }
 }
 

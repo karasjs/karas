@@ -745,13 +745,12 @@
   }
 
   function calPoint$2(point, m) {
-    var _point = _slicedToArray(point, 4),
-        x = _point[0],
-        y = _point[1],
-        z = _point[2],
-        w = _point[3];
+    var x = point.x,
+        y = point.y,
+        z = point.z,
+        w = point.w;
 
-    if (w === undefined) {
+    if (w === undefined || w === null) {
       w = 1;
     }
 
@@ -778,7 +777,12 @@
             d4 = _m[15];
 
         w *= x * d1 + y * d2 + z * d3 + d4;
-        return [x * a1 + y * a2 + z * a3 + a4, x * b1 + y * b2 + z * b3 + b4, x * c1 + y * c2 + z * c3 + c4, w];
+        return {
+          x: x * a1 + y * a2 + z * a3 + a4,
+          y: x * b1 + y * b2 + z * b3 + b4,
+          z: x * c1 + y * c2 + z * c3 + c4,
+          w: w
+        };
       } // 6位类型
 
 
@@ -790,16 +794,22 @@
           e = _m2[4],
           f = _m2[5];
 
-      return [a * x + c * y + e, b * x + d * y + f];
+      return {
+        x: a * x + c * y + e,
+        y: b * x + d * y + f
+      };
     }
 
-    return [x, y, z, w];
+    return {
+      x: x,
+      y: y,
+      z: z,
+      w: w
+    };
   }
   /**
    * 初等行变换求3*3特定css的matrix方阵，一维6长度
    * https://blog.csdn.net/iloveas2014/article/details/82930946
-   * @param m
-   * @returns {number[]|*}
    */
 
 
@@ -1387,14 +1397,13 @@
 
       var list = [x2, y1, x1, y2, x2, y2];
       var w;
-
-      var _mx$calPoint = mx.calPoint([x1, y1], matrix);
-
-      var _mx$calPoint2 = _slicedToArray(_mx$calPoint, 4);
-
-      x1 = _mx$calPoint2[0];
-      y1 = _mx$calPoint2[1];
-      w = _mx$calPoint2[3];
+      var t = mx.calPoint({
+        x: x1,
+        y: y1
+      }, matrix);
+      x1 = t.x;
+      y1 = t.y;
+      w = t.w;
 
       if (w && w !== 1) {
         x1 /= w;
@@ -1410,13 +1419,14 @@
         var x = list[i],
             y = list[i + 1];
 
-        var _mx$calPoint3 = mx.calPoint([x, y], matrix);
+        var _t = mx.calPoint({
+          x: x,
+          y: y
+        }, matrix);
 
-        var _mx$calPoint4 = _slicedToArray(_mx$calPoint3, 4);
-
-        x = _mx$calPoint4[0];
-        y = _mx$calPoint4[1];
-        w = _mx$calPoint4[3];
+        x = _t.x;
+        y = _t.y;
+        w = _t.w;
 
         if (w && w !== 1) {
           x /= w;
@@ -2571,21 +2581,18 @@
 
   function pointInConvexPolygon(x, y, vertexes) {
     // 先取最大最小值得一个外围矩形，在外边可快速判断false
-    var _vertexes$ = _slicedToArray(vertexes[0], 2),
-        xmax = _vertexes$[0],
-        ymax = _vertexes$[1];
-
-    var _vertexes$2 = _slicedToArray(vertexes[0], 2),
-        xmin = _vertexes$2[0],
-        ymin = _vertexes$2[1];
-
+    var _vertexes$ = vertexes[0],
+        xmax = _vertexes$.x,
+        ymax = _vertexes$.y;
+    var _vertexes$2 = vertexes[0],
+        xmin = _vertexes$2.x,
+        ymin = _vertexes$2.y;
     var len = vertexes.length;
 
     for (var i = 1; i < len; i++) {
-      var _vertexes$i = _slicedToArray(vertexes[i], 2),
-          _x = _vertexes$i[0],
-          _y = _vertexes$i[1];
-
+      var _vertexes$i = vertexes[i],
+          _x = _vertexes$i.x,
+          _y = _vertexes$i.y;
       xmax = Math.max(xmax, _x);
       ymax = Math.max(ymax, _y);
       xmin = Math.min(xmin, _x);
@@ -2627,38 +2634,34 @@
   function pointInQuadrilateral(x, y, x1, y1, x2, y2, x4, y4, x3, y3, matrix) {
     if (matrix && !isE$4(matrix)) {
       var w1, w2, w3, w4;
-
-      var _calPoint = calPoint$1([x1, y1], matrix);
-
-      var _calPoint2 = _slicedToArray(_calPoint, 4);
-
-      x1 = _calPoint2[0];
-      y1 = _calPoint2[1];
-      w1 = _calPoint2[3];
-
-      var _calPoint3 = calPoint$1([x2, y2], matrix);
-
-      var _calPoint4 = _slicedToArray(_calPoint3, 4);
-
-      x2 = _calPoint4[0];
-      y2 = _calPoint4[1];
-      w2 = _calPoint4[3];
-
-      var _calPoint5 = calPoint$1([x3, y3], matrix);
-
-      var _calPoint6 = _slicedToArray(_calPoint5, 4);
-
-      x3 = _calPoint6[0];
-      y3 = _calPoint6[1];
-      w3 = _calPoint6[3];
-
-      var _calPoint7 = calPoint$1([x4, y4], matrix);
-
-      var _calPoint8 = _slicedToArray(_calPoint7, 4);
-
-      x4 = _calPoint8[0];
-      y4 = _calPoint8[1];
-      w4 = _calPoint8[3];
+      var t = calPoint$1({
+        x: x1,
+        y: y1
+      }, matrix);
+      x1 = t.x;
+      y1 = t.y;
+      w1 = t.w;
+      t = calPoint$1({
+        x: x2,
+        y: y2
+      }, matrix);
+      x2 = t.x;
+      y2 = t.y;
+      w2 = t.w;
+      t = calPoint$1({
+        x: x3,
+        y: y3
+      }, matrix);
+      x3 = t.x;
+      y3 = t.y;
+      w3 = t.w;
+      t = calPoint$1({
+        x: x4,
+        y: y4
+      }, matrix);
+      x4 = t.x;
+      y4 = t.y;
+      w4 = t.w;
 
       if (w1 && w1 !== 1) {
         x1 /= w1;
@@ -2680,7 +2683,19 @@
         y4 /= w4;
       }
 
-      return pointInConvexPolygon(x, y, [[x1, y1], [x2, y2], [x4, y4], [x3, y3]]);
+      return pointInConvexPolygon(x, y, [{
+        x: x1,
+        y: y1
+      }, {
+        x: x2,
+        y: y2
+      }, {
+        x: x4,
+        y: y4
+      }, {
+        x: x3,
+        y: y3
+      }]);
     } else {
       return x >= x1 && y >= y1 && x <= x4 && y <= y4;
     }
@@ -2736,7 +2751,10 @@
     var a = pointsDistance(x2, y2, x3, y3);
     var b = pointsDistance(x1, y1, x3, y3);
     var c = pointsDistance(x1, y1, x2, y2);
-    return [(a * x1 + b * x2 + c * x3) / (a + b + c), (a * y1 + b * y2 + c * y3) / (a + b + c)];
+    return {
+      x: (a * x1 + b * x2 + c * x3) / (a + b + c),
+      y: (a * y1 + b * y2 + c * y3) / (a + b + c)
+    };
   }
   /**
    * 椭圆圆心和长短轴生成4个端点和控制点
@@ -3010,13 +3028,14 @@
         ox = _computedStyle$TRANSF2[0],
         oy = _computedStyle$TRANSF2[1];
 
-    var _calPoint9 = calPoint$1([px * width - ox, py * height - oy], matrix);
-
-    var _calPoint10 = _slicedToArray(_calPoint9, 2);
-
-    px = _calPoint10[0];
-    py = _calPoint10[1];
-    return [px + ox, py + oy];
+    var t = calPoint$1({
+      x: px * width - ox,
+      y: py * height - oy
+    }, matrix);
+    return {
+      x: t.x + ox,
+      y: t.y + oy
+    };
   }
 
   function calPercentInNode(x, y, node) {
@@ -3031,9 +3050,8 @@
     var ds = Math.atan((height - oy) / (width - ox));
 
     var _calCoordsInNode = calCoordsInNode(1, 1, node),
-        _calCoordsInNode2 = _slicedToArray(_calCoordsInNode, 2),
-        x1 = _calCoordsInNode2[0],
-        y1 = _calCoordsInNode2[1];
+        x1 = _calCoordsInNode.x,
+        y1 = _calCoordsInNode.y;
 
     var d1;
     var deg; // 根据旋转后的坐标，分4个象限，求旋转后的右下角相对于原点的角度d1，得出偏移角度deg，分顺逆时针[-180, 180]
@@ -3106,21 +3124,33 @@
     }
 
     if (d2 >= 0) {
-      return [(ox + dt * Math.cos(d2)) / width, (oy + dt * Math.sin(d2)) / height];
+      return {
+        x: (ox + dt * Math.cos(d2)) / width,
+        y: (oy + dt * Math.sin(d2)) / height
+      };
     }
 
     if (d2 >= -Math.PI * 0.5) {
       d2 = -d2;
-      return [(ox + dt * Math.cos(d2)) / width, (oy - dt * Math.sin(d2)) / height];
+      return {
+        x: (ox + dt * Math.cos(d2)) / width,
+        y: (oy - dt * Math.sin(d2)) / height
+      };
     }
 
     if (d2 >= -Math.PI) {
       d2 = Math.PI + d2;
-      return [(ox - dt * Math.cos(d2)) / width, (oy - dt * Math.sin(d2)) / height];
+      return {
+        x: (ox - dt * Math.cos(d2)) / width,
+        y: (oy - dt * Math.sin(d2)) / height
+      };
     }
 
     d2 = -Math.PI - d2;
-    return [(ox - dt * Math.cos(d2)) / width, (oy + dt * Math.sin(d2)) / height];
+    return {
+      x: (ox - dt * Math.cos(d2)) / width,
+      y: (oy + dt * Math.sin(d2)) / height
+    };
   }
 
   function d2r$3(n) {
@@ -3135,18 +3165,30 @@
     if (deg >= 270) {
       deg -= 270;
       deg = d2r$3(deg);
-      return [x - Math.cos(deg) * r, y - Math.sin(deg) * r];
+      return {
+        x: x - Math.cos(deg) * r,
+        y: y - Math.sin(deg) * r
+      };
     } else if (deg >= 180) {
       deg -= 180;
       deg = d2r$3(deg);
-      return [x - Math.sin(deg) * r, y + Math.cos(deg) * r];
+      return {
+        x: x - Math.sin(deg) * r,
+        y: y + Math.cos(deg) * r
+      };
     } else if (deg >= 90) {
       deg -= 90;
       deg = d2r$3(deg);
-      return [x + Math.cos(deg) * r, y + Math.sin(deg) * r];
+      return {
+        x: x + Math.cos(deg) * r,
+        y: y + Math.sin(deg) * r
+      };
     } else {
       deg = d2r$3(deg);
-      return [x + Math.sin(deg) * r, y - Math.cos(deg) * r];
+      return {
+        x: x + Math.sin(deg) * r,
+        y: y - Math.cos(deg) * r
+      };
     }
   }
 
@@ -9690,8 +9732,14 @@
     // 源三角目前的第3点坐标y值即为长度，因为a点在原点0无需减去
 
 
-    var ls2 = Math.abs(mx.calPoint([sx3, sy3], m)[1]);
-    var lt2 = Math.abs(mx.calPoint([tx3, ty3], n)[1]); // 缩放y
+    var ls2 = Math.abs(mx.calPoint({
+      x: sx3,
+      y: sy3
+    }, m).y);
+    var lt2 = Math.abs(mx.calPoint({
+      x: tx3,
+      y: ty3
+    }, n).y); // 缩放y
     // if(ls2 !== lt2) {
     // let scale = lt / ls;
     // t = matrix.identity();
@@ -9716,20 +9764,26 @@
 
     n = m;
 
-    var _matrix$calPoint = mx.calPoint([sx1, sy1], n),
-        _matrix$calPoint2 = _slicedToArray(_matrix$calPoint, 2),
-        ax1 = _matrix$calPoint2[0],
-        ay1 = _matrix$calPoint2[1];
+    var _matrix$calPoint = mx.calPoint({
+      x: sx1,
+      y: sy1
+    }, n),
+        ax1 = _matrix$calPoint.x,
+        ay1 = _matrix$calPoint.y;
 
-    var _matrix$calPoint3 = mx.calPoint([sx2, sy2], n),
-        _matrix$calPoint4 = _slicedToArray(_matrix$calPoint3, 2),
-        ax2 = _matrix$calPoint4[0],
-        ay2 = _matrix$calPoint4[1];
+    var _matrix$calPoint2 = mx.calPoint({
+      x: sx2,
+      y: sy2
+    }, n),
+        ax2 = _matrix$calPoint2.x,
+        ay2 = _matrix$calPoint2.y;
 
-    var _matrix$calPoint5 = mx.calPoint([sx3, sy3], n),
-        _matrix$calPoint6 = _slicedToArray(_matrix$calPoint5, 2),
-        ax3 = _matrix$calPoint6[0],
-        ay3 = _matrix$calPoint6[1];
+    var _matrix$calPoint3 = mx.calPoint({
+      x: sx3,
+      y: sy3
+    }, n),
+        ax3 = _matrix$calPoint3.x,
+        ay3 = _matrix$calPoint3.y;
 
     var ab = geom$1.pointsDistance(ax1, ay1, ax2, ay2);
     var ac = geom$1.pointsDistance(ax1, ay1, ax3, ay3);
@@ -16417,9 +16471,12 @@
         var arr = [];
 
         for (var i = 0, len = item.length; i < len; i += 2) {
-          var p = mx.calPoint([item[i], item[i + 1]], t);
-          arr.push(p[0]);
-          arr.push(p[1]);
+          var p = mx.calPoint({
+            x: item[i],
+            y: item[i + 1]
+          }, t);
+          arr.push(p.x);
+          arr.push(p.y);
         }
 
         return arr;
@@ -16721,8 +16778,14 @@
         }
 
         if (needMask) {
-          var p1 = [bx1, by1];
-          var p2 = [bx2, by2];
+          var p1 = {
+            x: bx1,
+            y: by1
+          };
+          var p2 = {
+            x: bx2,
+            y: by2
+          };
 
           if (needResize) {
             var inverse = mx.inverse(matrix);
@@ -16734,7 +16797,7 @@
             tagName: 'clipPath',
             children: [{
               tagName: 'path',
-              props: [['d', "M".concat(p1[0], ",").concat(p1[1], "L").concat(p2[0], ",").concat(p1[1], "L").concat(p2[0], ",").concat(p2[1], "L").concat(p1[0], ",").concat(p2[1], "L").concat(p1[0], ",").concat(p1[1])], ['fill', '#FFF']]
+              props: [['d', "M".concat(p1.x, ",").concat(p1.y, "L").concat(p2.x, ",").concat(p1.y, "L").concat(p2.x, ",").concat(p2.y, "L").concat(p1.x, ",").concat(p2.y, "L").concat(p1.x, ",").concat(p1.y)], ['fill', '#FFF']]
             }]
           };
           var id = ctx.add(v);
@@ -16838,7 +16901,7 @@
       this.__rootTask = []; // 动画刷新后，每个root注册的刷新回调执行
 
       this.__task = [];
-      this.__now = null;
+      this.__now = inject.now();
     }
 
     _createClass(Frame, [{
@@ -23653,15 +23716,27 @@
         }
 
         var matrixEvent = this.__matrixEvent;
-        var p1 = point2d(mx.calPoint([box[0], box[1]], matrixEvent));
-        var p2 = point2d(mx.calPoint([box[2], box[1]], matrixEvent));
-        var p3 = point2d(mx.calPoint([box[2], box[3]], matrixEvent));
-        var p4 = point2d(mx.calPoint([box[0], box[3]], matrixEvent));
+        var p1 = point2d(mx.calPoint({
+          x: box[0],
+          y: box[1]
+        }, matrixEvent));
+        var p2 = point2d(mx.calPoint({
+          x: box[2],
+          y: box[1]
+        }, matrixEvent));
+        var p3 = point2d(mx.calPoint({
+          x: box[2],
+          y: box[3]
+        }, matrixEvent));
+        var p4 = point2d(mx.calPoint({
+          x: box[0],
+          y: box[3]
+        }, matrixEvent));
         return {
-          left: Math.min(p1[0], Math.min(p2[0], Math.min(p3[0], p4[0]))),
-          top: Math.min(p1[1], Math.min(p2[1], Math.min(p3[1], p4[1]))),
-          right: Math.max(p1[0], Math.max(p2[0], Math.max(p3[0], p4[0]))),
-          bottom: Math.max(p1[1], Math.max(p2[1], Math.max(p3[1], p4[1]))),
+          left: Math.min(p1.x, Math.min(p2.x, Math.min(p3.x, p4.x))),
+          top: Math.min(p1.y, Math.min(p2.y, Math.min(p3.y, p4.y))),
+          right: Math.max(p1.x, Math.max(p2.x, Math.max(p3.x, p4.x))),
+          bottom: Math.max(p1.y, Math.max(p2.y, Math.max(p3.y, p4.y))),
           points: [p1, p2, p3, p4]
         };
       } // img和geom返回false，在inline布局时判断是否是真的inline
@@ -25273,9 +25348,12 @@
               var arr = [];
 
               for (var i = 0, len = item.length; i < len; i += 2) {
-                var p = mx.calPoint([item[i] + dx, item[i + 1] + dy], t);
-                arr.push(p[0]);
-                arr.push(p[1]);
+                var p = mx.calPoint({
+                  x: item[i] + dx,
+                  y: item[i + 1] + dy
+                }, t);
+                arr.push(p.x);
+                arr.push(p.y);
               }
 
               return arr;
@@ -25290,9 +25368,12 @@
             var arr = [];
 
             for (var i = 0, len = item.length; i < len; i += 2) {
-              var p = mx.calPoint([item[i] + dx, item[i + 1] + dy], t);
-              arr.push(p[0]);
-              arr.push(p[1]);
+              var p = mx.calPoint({
+                x: item[i] + dx,
+                y: item[i + 1] + dy
+              }, t);
+              arr.push(p.x);
+              arr.push(p.y);
             }
 
             return arr;
@@ -32825,13 +32906,7 @@
     return shader;
   }
 
-  function convertCoords2Gl(_ref, cx, cy, revertY) {
-    var _ref2 = _slicedToArray(_ref, 4),
-        x = _ref2[0],
-        y = _ref2[1],
-        z = _ref2[2],
-        w = _ref2[3];
-
+  function convertCoords2Gl(x, y, z, w, cx, cy, revertY) {
     if (z === undefined) {
       z = 0;
     }
@@ -32862,7 +32937,12 @@
       }
     }
 
-    return [x * w, y * w, z * w, w];
+    return {
+      x: x * w,
+      y: y * w,
+      z: z * w,
+      w: w
+    };
   }
 
   function createTexture(gl, tex, n, width, height) {
@@ -32889,40 +32969,52 @@
     gl.activeTexture(gl['TEXTURE' + n]);
     gl.bindTexture(gl.TEXTURE_2D, texture);
   }
+
+  var lastVtPoint, lastVtTex, lastVtOpacity;
   /**
    * texCache集满纹理上传占用最多可用纹理单元后，进行批量顺序绘制
    * 将所有dom的矩形顶点（经过transform变换后的）、贴图坐标、透明度存入3个buffer中，
    * 然后相同纹理单元的形成一批，设置uniform的纹理单元号进行绘制，如此循环
-   * @param gl
-   * @param list
-   * @param hash
-   * @param cx
-   * @param cy
-   * @param revertY
    */
-
 
   function drawTextureCache(gl, list, hash, cx, cy, revertY) {
     var length = list.length;
-    var vtPoint = new Float32Array(length * 24),
-        vtTex = new Float32Array(length * 12),
-        vtOpacity = new Float32Array(length * 6);
+    var vtPoint, vtTex, vtOpacity;
+
+    if (lastVtPoint && lastVtPoint.length === length * 24) {
+      vtPoint = lastVtPoint;
+    } else {
+      vtPoint = lastVtPoint = new Float32Array(length * 24);
+    }
+
+    if (lastVtTex && lastVtTex.length === length * 12) {
+      vtTex = lastVtTex;
+    } else {
+      vtTex = lastVtTex = new Float32Array(length * 12);
+    }
+
+    if (lastVtOpacity && lastVtOpacity.length === length * 6) {
+      vtOpacity = lastVtPoint;
+    } else {
+      vtOpacity = lastVtOpacity = new Float32Array(length * 24);
+    }
+
     var lastChannel; // 上一个dom的单元号
 
     var record = [0]; // [num, channel]每一批的数量和单元号记录
 
     var stack = [record]; // 所有批的数据记录集合
 
-    list.forEach(function (item, i) {
-      var _item = _slicedToArray(item, 5),
-          cache = _item[0],
-          opacity = _item[1],
-          matrix = _item[2],
-          dx = _item[3],
-          dy = _item[4];
+    for (var i = 0; i < length; i++) {
+      var _list$i = list[i],
+          cache = _list$i.cache,
+          opacity = _list$i.opacity,
+          matrix = _list$i.matrix,
+          dx = _list$i.dx,
+          dy = _list$i.dy;
 
       if (i) {
-        var channel = hash[cache.page.uuid]; // 和上一个单元号不同时，生成新的批次记录
+        var channel = hash[cache.page.__uuid]; // 和上一个单元号不同时，生成新的批次记录
 
         if (lastChannel !== channel) {
           lastChannel = channel;
@@ -32930,7 +33022,7 @@
           stack.push(record);
         }
       } else {
-        lastChannel = hash[cache.page.uuid];
+        lastChannel = hash[cache.page.__uuid];
         record[1] = lastChannel;
       }
 
@@ -32948,58 +33040,51 @@
       var xb = bx + width + (dx || 0),
           yb = by + (dy || 0);
 
-      var _calPoint = calPoint([xa, ya], matrix),
-          _calPoint2 = _slicedToArray(_calPoint, 4),
-          x1 = _calPoint2[0],
-          y1 = _calPoint2[1],
-          w1 = _calPoint2[3];
+      var _calPoint = calPoint({
+        x: xa,
+        y: ya
+      }, matrix),
+          x1 = _calPoint.x,
+          y1 = _calPoint.y,
+          w1 = _calPoint.w;
 
-      var _calPoint3 = calPoint([xb, ya], matrix),
-          _calPoint4 = _slicedToArray(_calPoint3, 4),
-          x2 = _calPoint4[0],
-          y2 = _calPoint4[1],
-          w2 = _calPoint4[3];
+      var _calPoint2 = calPoint({
+        x: xb,
+        y: ya
+      }, matrix),
+          x2 = _calPoint2.x,
+          y2 = _calPoint2.y,
+          w2 = _calPoint2.w;
 
-      var _calPoint5 = calPoint([xb, yb], matrix),
-          _calPoint6 = _slicedToArray(_calPoint5, 4),
-          x3 = _calPoint6[0],
-          y3 = _calPoint6[1],
-          w3 = _calPoint6[3];
+      var _calPoint3 = calPoint({
+        x: xb,
+        y: yb
+      }, matrix),
+          x3 = _calPoint3.x,
+          y3 = _calPoint3.y,
+          w3 = _calPoint3.w;
 
-      var _calPoint7 = calPoint([xa, yb], matrix),
-          _calPoint8 = _slicedToArray(_calPoint7, 4),
-          x4 = _calPoint8[0],
-          y4 = _calPoint8[1],
-          w4 = _calPoint8[3];
+      var _calPoint4 = calPoint({
+        x: xa,
+        y: yb
+      }, matrix),
+          x4 = _calPoint4.x,
+          y4 = _calPoint4.y,
+          w4 = _calPoint4.w;
 
-      var _convertCoords2Gl = convertCoords2Gl([x1, y1, 0, w1], cx, cy, revertY);
+      var t = convertCoords2Gl(x1, y1, 0, w1, cx, cy, revertY);
+      x1 = t.x;
+      y1 = t.y;
+      t = convertCoords2Gl(x2, y2, 0, w2, cx, cy, revertY);
+      x2 = t.x;
+      y2 = t.y;
+      t = convertCoords2Gl(x3, y3, 0, w3, cx, cy, revertY);
+      x3 = t.x;
+      y3 = t.y;
+      t = convertCoords2Gl(x4, y4, 0, w4, cx, cy, revertY);
+      x4 = t.x;
+      y4 = t.y; // vtPoint.push(x1, y1, 0, w1, x4, y4, 0, w4, x2, y2, 0, w2, x4, y4, 0, w4, x2, y2, 0, w2, x3, y3, 0, w3);
 
-      var _convertCoords2Gl2 = _slicedToArray(_convertCoords2Gl, 2);
-
-      x1 = _convertCoords2Gl2[0];
-      y1 = _convertCoords2Gl2[1];
-
-      var _convertCoords2Gl3 = convertCoords2Gl([x2, y2, 0, w2], cx, cy, revertY);
-
-      var _convertCoords2Gl4 = _slicedToArray(_convertCoords2Gl3, 2);
-
-      x2 = _convertCoords2Gl4[0];
-      y2 = _convertCoords2Gl4[1];
-
-      var _convertCoords2Gl5 = convertCoords2Gl([x3, y3, 0, w3], cx, cy, revertY);
-
-      var _convertCoords2Gl6 = _slicedToArray(_convertCoords2Gl5, 2);
-
-      x3 = _convertCoords2Gl6[0];
-      y3 = _convertCoords2Gl6[1];
-
-      var _convertCoords2Gl7 = convertCoords2Gl([x4, y4, 0, w4], cx, cy, revertY);
-
-      var _convertCoords2Gl8 = _slicedToArray(_convertCoords2Gl7, 2);
-
-      x4 = _convertCoords2Gl8[0];
-      y4 = _convertCoords2Gl8[1];
-      // vtPoint.push(x1, y1, 0, w1, x4, y4, 0, w4, x2, y2, 0, w2, x4, y4, 0, w4, x2, y2, 0, w2, x3, y3, 0, w3);
       var j = i * 24;
       vtPoint[j] = x1;
       vtPoint[j + 1] = y1;
@@ -33046,7 +33131,8 @@
       vtOpacity[j + 4] = opacity;
       vtOpacity[j + 5] = opacity;
       record[0]++;
-    }); // 顶点buffer
+    } // 顶点buffer
+
 
     var pointBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
@@ -33098,34 +33184,18 @@
    * i和j为total和filter的纹理单元，3次执行（x/y合起来算1次）需互换单元，来回执行源和结果
    * 由total变为filter时cache会各方向上扩展spread的大小到width/height
    * 因此第一次绘制时坐标非1，后面则固定1
-   * @param gl
-   * @param program
-   * @param frameBuffer
-   * @param tex1 初次绘制目标纹理
-   * @param tex2 初次绘制源纹理
-   * @param i 初次绘制目标纹理单元
-   * @param j 初次绘制源纹理单元
-   * @param width
-   * @param height
-   * @param spread
-   * @param widthNew
-   * @param heightNew
-   * @param cx
-   * @param cy
    */
 
 
   function drawBlur(gl, program, frameBuffer, tex1, tex2, i, j, width, height, spread, widthNew, heightNew, cx, cy) {
     // 第一次将total绘制到blur上，此时尺寸存在spread差值，因此不加模糊防止坐标计算问题，仅作为扩展纹理尺寸
-    var _convertCoords2Gl9 = convertCoords2Gl([spread, height + spread, 0, 1], cx, cy, false),
-        _convertCoords2Gl10 = _slicedToArray(_convertCoords2Gl9, 2),
-        x1 = _convertCoords2Gl10[0],
-        y2 = _convertCoords2Gl10[1];
+    var _convertCoords2Gl = convertCoords2Gl(spread, height + spread, 0, 1, cx, cy, false),
+        x1 = _convertCoords2Gl.x,
+        y2 = _convertCoords2Gl.y;
 
-    var _convertCoords2Gl11 = convertCoords2Gl([width + spread, spread, 0, 1], cx, cy, false),
-        _convertCoords2Gl12 = _slicedToArray(_convertCoords2Gl11, 2),
-        x2 = _convertCoords2Gl12[0],
-        y1 = _convertCoords2Gl12[1]; // 顶点buffer
+    var _convertCoords2Gl2 = convertCoords2Gl(width + spread, spread, 0, 1, cx, cy, false),
+        x2 = _convertCoords2Gl2.x,
+        y1 = _convertCoords2Gl2.y; // 顶点buffer
 
 
     var pointBuffer = gl.createBuffer();
@@ -33366,8 +33436,8 @@
   };
 
   var MockPage = /*#__PURE__*/_createClass(function MockPage(texture, width, height) {
-    this.uuid = Page.genUuid();
-    this.time = inject.now();
+    this.uuid = this.__uuid = Page.genUuid();
+    this.time = frame.__now || inject.now();
     this.texture = texture;
     this.width = width;
     this.height = height;
@@ -33389,7 +33459,7 @@
       this.height = height;
       this.bbox = bbox;
       this.available = true;
-      this.page = new MockPage(texture, width, height);
+      this.page = this.__page = new MockPage(texture, width, height);
       this.reOffset();
     }
 
@@ -36658,11 +36728,17 @@
         var revertY = arguments.length > 8 ? arguments[8] : undefined;
         var pages = this.__pages;
         var list = this.__list;
-        var page = cache.page;
+        var page = cache.__page;
         var i = pages.indexOf(page); // 找到说明已有page在此索引的通道中，记录下来info
 
         if (i > -1) {
-          list.push([cache, opacity, matrix, dx, dy]);
+          list.push({
+            cache: cache,
+            opacity: opacity,
+            matrix: matrix,
+            dx: dx,
+            dy: dy
+          });
         } // 找不到说明是新的纹理贴图，此时看是否超过纹理单元限制，超过则刷新绘制并清空，然后/否则 存入纹理列表
         else {
           i = pages.length;
@@ -36673,7 +36749,13 @@
           }
 
           pages.push(page);
-          list.push([cache, opacity, matrix, dx, dy]);
+          list.push({
+            cache: cache,
+            opacity: opacity,
+            matrix: matrix,
+            dx: dx,
+            dy: dy
+          });
         }
       }
       /**
@@ -36695,18 +36777,23 @@
           var locks = this.locks; // 先将上次渲染的纹理单元使用的Page形成一个hash，键为page的uuid，值为纹理单元
 
           var lastHash = {};
-          channels.forEach(function (item, i) {
+
+          for (var i = 0, len = channels.length; i < len; i++) {
+            var item = channels[i];
+
             if (item) {
-              var uuid = item.uuid;
-              lastHash[uuid] = i;
+              lastHash[item.__uuid] = i;
             }
-          });
+          }
+
           var units = this.__units; // 再遍历，查找相同的Page并保持其使用的纹理单元不变，存入相同索引下标oldList，不同的按顺序收集放newList
 
           var oldList = new Array(units),
               newList = [];
-          pages.forEach(function (page) {
-            var uuid = page.uuid;
+
+          for (var _i = 0, _len = pages.length; _i < _len; _i++) {
+            var page = pages[_i],
+                uuid = page.__uuid;
 
             if (lastHash.hasOwnProperty(uuid)) {
               var index = lastHash[uuid];
@@ -36714,18 +36801,19 @@
             } else {
               newList.push(page);
             }
-          });
+          }
           /**
            * 以oldList为基准，将newList依次存入oldList中
            * 优先使用未用过的纹理单元，以便用过的可能下次用到无需重新上传
            * 找不到未用过的后，尝试NRU算法，优先淘汰最近未使用的Page，相等则尺寸小的
            */
 
+
           if (newList.length) {
             // 先循环找空的，oldList空且channels空且locks空
-            for (var i = 0; i < units; i++) {
-              if (!oldList[i] && !channels[i] && !locks[i]) {
-                oldList[i] = newList.shift();
+            for (var _i2 = 0; _i2 < units; _i2++) {
+              if (!oldList[_i2] && !channels[_i2] && !locks[_i2]) {
+                oldList[_i2] = newList.shift();
 
                 if (!newList.length) {
                   break;
@@ -36733,15 +36821,15 @@
               }
             }
 
-            var len = newList.length;
+            var _len2 = newList.length;
 
-            if (len) {
+            if (_len2) {
               // 按时间排序已使用channel且未被当前占用的，以便淘汰最久未使用的
               var cl = [];
 
-              for (var _i = 0; _i < units; _i++) {
-                if (!oldList[_i] && !locks[_i]) {
-                  cl.push([_i, channels[_i]]);
+              for (var _i3 = 0; _i3 < units; _i3++) {
+                if (!oldList[_i3] && !locks[_i3]) {
+                  cl.push([_i3, channels[_i3]]);
                 }
               }
 
@@ -36756,8 +36844,8 @@
                 return a[0] - b[0];
               }); // cl靠前是时间小尺寸小的，优先使用替换
 
-              for (var _i2 = 0; _i2 < len; _i2++) {
-                oldList[cl[_i2][0]] = newList[_i2];
+              for (var _i4 = 0; _i4 < _len2; _i4++) {
+                oldList[cl[_i4][0]] = newList[_i4];
               }
             }
           }
@@ -36770,35 +36858,35 @@
 
           var hash = {};
 
-          for (var _i3 = 0, _len = oldList.length; _i3 < _len; _i3++) {
-            var page = oldList[_i3]; // 可能为空，不满的情况下前面单元保留老tex先用的后面的单元
+          for (var _i5 = 0, _len3 = oldList.length; _i5 < _len3; _i5++) {
+            var _page = oldList[_i5]; // 可能为空，不满的情况下前面单元保留老tex先用的后面的单元
 
-            if (!page) {
+            if (!_page) {
               continue;
             }
 
-            var last = channels[_i3];
+            var last = channels[_i5];
 
-            if (!last || last !== page || page.update) {
+            if (!last || last !== _page || _page.__update) {
               // page可能为一个已有fbo纹理，或者贴图
-              if (page instanceof MockPage) {
-                webgl.bindTexture(gl, page.texture, _i3);
+              if (_page instanceof MockPage) {
+                webgl.bindTexture(gl, _page.texture, _i5);
               } else {
                 // 可能老的先删除，注意只删Page，MockPage是fbo生成的texture即total缓存不能自动清除
                 if (last && !(last instanceof MockPage)) {
                   gl.deleteTexture(last.texture);
                 }
 
-                page.texture = webgl.createTexture(gl, page.canvas, _i3, null, null);
+                _page.texture = webgl.createTexture(gl, _page.canvas, _i5, null, null);
               }
 
-              channels[_i3] = page;
+              channels[_i5] = _page;
             }
 
-            hash[page.uuid] = _i3; // 标识没有更新，以及最后使用时间
+            hash[_page.__uuid] = _i5; // 标识没有更新，以及最后使用时间
 
-            page.update = false;
-            page.time = inject.now();
+            _page.update = false;
+            _page.time = frame.__now || inject.now();
           } // 再次遍历开始本次渲染并清空
 
 
@@ -36836,9 +36924,9 @@
         var units = this.__units;
         var cl = [];
 
-        for (var _i4 = 0; _i4 < units; _i4++) {
-          if (!locks[_i4]) {
-            cl.push([_i4, channels[_i4]]);
+        for (var _i6 = 0; _i6 < units; _i6++) {
+          if (!locks[_i6]) {
+            cl.push([_i6, channels[_i6]]);
           }
         }
 
@@ -36853,11 +36941,11 @@
 
             return a[0] - b[0];
           });
-          var _i5 = cl[0][0];
-          channels[_i5] = null;
-          locks[_i5] = true;
+          var _i7 = cl[0][0];
+          channels[_i7] = null;
+          locks[_i7] = true;
           this.__lockUnits++;
-          return _i5;
+          return _i7;
         }
 
         throw new Error('No free texture unit');

@@ -510,9 +510,9 @@ class Geom extends Xom {
           }
           let arr = [];
           for(let i = 0, len = item.length; i < len; i += 2) {
-            let p = mx.calPoint([item[i] + dx, item[i + 1] + dy], t);
-            arr.push(p[0]);
-            arr.push(p[1]);
+            let p = mx.calPoint({ x: item[i] + dx, y: item[i + 1] + dy }, t);
+            arr.push(p.x);
+            arr.push(p.y);
           }
           return arr;
         });
@@ -525,9 +525,9 @@ class Geom extends Xom {
         }
         let arr = [];
         for(let i = 0, len = item.length; i < len; i += 2) {
-          let p = mx.calPoint([item[i] + dx, item[i + 1] + dy], t);
-          arr.push(p[0]);
-          arr.push(p[1]);
+          let p = mx.calPoint({ x: item[i] + dx, y: item[i + 1] + dy }, t);
+          arr.push(p.x);
+          arr.push(p.y);
         }
         return arr;
       });

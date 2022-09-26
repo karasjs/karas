@@ -15,7 +15,7 @@ class MockCache {
     this.height = height;
     this.bbox = bbox;
     this.available = true;
-    this.page = new MockPage(texture, width, height);
+    this.page = this.__page = new MockPage(texture, width, height);
     this.reOffset();
   }
 

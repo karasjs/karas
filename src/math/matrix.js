@@ -215,8 +215,8 @@ function multiplyPerspective(m, v) {
 }
 
 function calPoint(point, m) {
-  let [x, y, z, w] = point;
-  if(w === undefined) {
+  let { x, y, z, w } = point;
+  if(w === undefined || w === null) {
     w = 1;
   }
   if(m && !isE(m)) {
@@ -224,25 +224,23 @@ function calPoint(point, m) {
       z = z || 0;
       let [a1, b1, c1, d1, a2, b2, c2, d2, a3, b3, c3, d3, a4, b4, c4, d4] = m;
       w *= x * d1 + y * d2 + z * d3 + d4;
-      return [
-        (x * a1 + y * a2 + z * a3 + a4),
-        (x * b1 + y * b2 + z * b3 + b4),
-        (x * c1 + y * c2 + z * c3 + c4),
+      return {
+        x: (x * a1 + y * a2 + z * a3 + a4),
+        y: (x * b1 + y * b2 + z * b3 + b4),
+        z: (x * c1 + y * c2 + z * c3 + c4),
         w
-      ];
+      };
     }
     // 6位类型
     let [a, b, c, d, e, f] = m;
-    return [a * x + c * y + e, b * x + d * y + f];
+    return { x: a * x + c * y + e, y: b * x + d * y + f };
   }
-  return [x, y, z, w];
+  return { x, y, z, w };
 }
 
 /**
  * 初等行变换求3*3特定css的matrix方阵，一维6长度
  * https://blog.csdn.net/iloveas2014/article/details/82930946
- * @param m
- * @returns {number[]|*}
  */
 function inverse(m) {
   if(m.length === 16) {

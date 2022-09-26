@@ -101,7 +101,7 @@ class Cache {
 
   reset(bbox, x1, y1) {
     // 尺寸没变复用之前的并清空
-    if(util.equalArr(this.bbox, bbox) && this.__enabled) {
+    if(util.equalArr(this.__bbox, bbox) && this.__enabled) {
       this.clear();
       return;
     }
@@ -182,7 +182,11 @@ class Cache {
   static getInstance(rootId, bbox, x1, y1) {
     let w = Math.ceil(bbox[2] - bbox[0]);
     let h = Math.ceil(bbox[3] - bbox[1]);
-    let res = Page.getInstance(rootId, Math.max(w, h));
+    let n = Math.max(w, h);
+    if(n <= 0) {
+      return;
+    }
+    let res = Page.getInstance(rootId, n);
     if(!res) {
       return;
     }

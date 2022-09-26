@@ -316,8 +316,10 @@ function genTotal(renderMode, root, node, index, lv, total, __structs, hasMask, 
     // 生成cacheTotal，获取偏移dx/dy
     __cacheTotal = node.__cacheTotal = Cache.getInstance(root.uuid, bboxTotal, sx1, sy1);
     if(!__cacheTotal || !__cacheTotal.__enabled) {
-      inject.warn('Cache of ' + node.tagName + '(' + index + ')' + ' is oversize: '
-        + (bboxTotal[2] - bboxTotal[0]) + ', ' + (bboxTotal[3] - bboxTotal[1]));
+      if((bboxTotal[2] - bboxTotal[0]) || (bboxTotal[3] - bboxTotal[1])) {
+        inject.warn('Cache of ' + node.tagName + '(' + index + ')' + ' is oversize: '
+          + (bboxTotal[2] - bboxTotal[0]) + ', ' + (bboxTotal[3] - bboxTotal[1]));
+      }
       return;
     }
     __cacheTotal.__available = true;

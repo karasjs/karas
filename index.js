@@ -32267,7 +32267,7 @@
       key: "reset",
       value: function reset(bbox, x1, y1) {
         // 尺寸没变复用之前的并清空
-        if (util.equalArr(this.bbox, bbox) && this.__enabled) {
+        if (util.equalArr(this.__bbox, bbox) && this.__enabled) {
           this.clear();
           return;
         }
@@ -32368,7 +32368,13 @@
       value: function getInstance(rootId, bbox, x1, y1) {
         var w = Math.ceil(bbox[2] - bbox[0]);
         var h = Math.ceil(bbox[3] - bbox[1]);
-        var res = Page.getInstance(rootId, Math.max(w, h));
+        var n = Math.max(w, h);
+
+        if (n <= 0) {
+          return;
+        }
+
+        var res = Page.getInstance(rootId, n);
 
         if (!res) {
           return;
@@ -33742,7 +33748,10 @@
       __cacheTotal = node.__cacheTotal = Cache.getInstance(root.uuid, bboxTotal, sx1, sy1);
 
       if (!__cacheTotal || !__cacheTotal.__enabled) {
-        inject.warn('Cache of ' + node.tagName + '(' + index + ')' + ' is oversize: ' + (bboxTotal[2] - bboxTotal[0]) + ', ' + (bboxTotal[3] - bboxTotal[1]));
+        if (bboxTotal[2] - bboxTotal[0] || bboxTotal[3] - bboxTotal[1]) {
+          inject.warn('Cache of ' + node.tagName + '(' + index + ')' + ' is oversize: ' + (bboxTotal[2] - bboxTotal[0]) + ', ' + (bboxTotal[3] - bboxTotal[1]));
+        }
+
         return;
       }
 

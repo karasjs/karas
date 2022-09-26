@@ -22,7 +22,6 @@ function cache(key, width, height, hash, message) {
   if(debug.flag) {
     o.style.width = width + 'px';
     o.style.height = height + 'px';
-    // o.setAttribute('type', hash === CANVAS ? 'canvas' : 'webgl');
     if(key) {
       o.setAttribute('key', key);
     }

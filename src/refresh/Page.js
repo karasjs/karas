@@ -207,7 +207,8 @@ class Page {
     }
     init = true;
     if(MAX_TEXTURE_SIZE !== 2048) {
-      Page.MAX = MAX_TEXTURE_SIZE;
+      // 超过8192会卡一下
+      Page.MAX = Math.min(MAX_TEXTURE_SIZE, 8192);
     }
   }
 }

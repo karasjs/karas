@@ -238,9 +238,9 @@ class Xom extends Node {
     this.__isInline = false;
     this.__hasContent = false;
     this.__opacity = 1;
-    this.__matrix = [];
-    this.__matrixEvent = [];
-    this.__perspectiveMatrix = [];
+    this.__matrix = mx.identity();
+    this.__matrixEvent = mx.identity();
+    this.__perspectiveMatrix = null;
     this.__frameAnimateList = [];
     this.__contentBoxList = []; // inline存储内容用
     this.__cacheAsBitmap = !!this.props.cacheAsBitmap;
@@ -2981,7 +2981,7 @@ class Xom extends Node {
       let { __sx1, __sy1, __offsetWidth, __offsetHeight } = this;
       box = [__sx1, __sy1, __sx1 + __offsetWidth, __sy1 + __offsetHeight];
     }
-    let matrixEvent = this.matrixEvent;
+    let matrixEvent = this.__matrixEvent;
     let p1 = point2d(mx.calPoint([box[0], box[1]], matrixEvent));
     let p2 = point2d(mx.calPoint([box[2], box[1]], matrixEvent));
     let p3 = point2d(mx.calPoint([box[2], box[3]], matrixEvent));

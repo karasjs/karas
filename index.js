@@ -487,7 +487,7 @@
 
   // 生成4*4单位矩阵
   function identity$1() {
-    return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+    return new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
   } // 矩阵a*b，固定两个matrix都是长度16
 
 
@@ -1457,22 +1457,25 @@
   }
 
   function assignMatrix$2(t, v) {
-    t[0] = v[0];
-    t[1] = v[1];
-    t[2] = v[2];
-    t[3] = v[3];
-    t[4] = v[4];
-    t[5] = v[5];
-    t[6] = v[6];
-    t[7] = v[7];
-    t[8] = v[8];
-    t[9] = v[9];
-    t[10] = v[10];
-    t[11] = v[11];
-    t[12] = v[12];
-    t[13] = v[13];
-    t[14] = v[14];
-    t[15] = v[15];
+    if (t && v) {
+      t[0] = v[0];
+      t[1] = v[1];
+      t[2] = v[2];
+      t[3] = v[3];
+      t[4] = v[4];
+      t[5] = v[5];
+      t[6] = v[6];
+      t[7] = v[7];
+      t[8] = v[8];
+      t[9] = v[9];
+      t[10] = v[10];
+      t[11] = v[11];
+      t[12] = v[12];
+      t[13] = v[13];
+      t[14] = v[14];
+      t[15] = v[15];
+    }
+
     return t;
   }
 
@@ -1560,7 +1563,7 @@
 
     if (debug.flag) {
       o.style.width = width + 'px';
-      o.style.height = height + 'px'; // o.setAttribute('type', hash === CANVAS ? 'canvas' : 'webgl');
+      o.style.height = height + 'px';
 
       if (key) {
         o.setAttribute('key', key);
@@ -20645,9 +20648,9 @@
       _this.__isInline = false;
       _this.__hasContent = false;
       _this.__opacity = 1;
-      _this.__matrix = [];
-      _this.__matrixEvent = [];
-      _this.__perspectiveMatrix = [];
+      _this.__matrix = mx.identity();
+      _this.__matrixEvent = mx.identity();
+      _this.__perspectiveMatrix = null;
       _this.__frameAnimateList = [];
       _this.__contentBoxList = []; // inline存储内容用
 
@@ -23649,7 +23652,7 @@
           box = [__sx1, __sy1, __sx1 + __offsetWidth, __sy1 + __offsetHeight];
         }
 
-        var matrixEvent = this.matrixEvent;
+        var matrixEvent = this.__matrixEvent;
         var p1 = point2d(mx.calPoint([box[0], box[1]], matrixEvent));
         var p2 = point2d(mx.calPoint([box[2], box[1]], matrixEvent));
         var p3 = point2d(mx.calPoint([box[2], box[3]], matrixEvent));
@@ -32147,7 +32150,8 @@
         _init = true;
 
         if (MAX_TEXTURE_SIZE !== 2048) {
-          Page.MAX = MAX_TEXTURE_SIZE;
+          // 超过8192会卡一下
+          Page.MAX = Math.min(MAX_TEXTURE_SIZE, 8192);
         }
       }
     }]);

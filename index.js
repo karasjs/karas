@@ -487,7 +487,7 @@
 
   // 生成4*4单位矩阵
   function identity$1() {
-    return new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+    return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
   } // 矩阵a*b，固定两个matrix都是长度16
 
 
@@ -20648,8 +20648,8 @@
       _this.__isInline = false;
       _this.__hasContent = false;
       _this.__opacity = 1;
-      _this.__matrix = mx.identity();
-      _this.__matrixEvent = mx.identity();
+      _this.__matrix = [];
+      _this.__matrixEvent = [];
       _this.__perspectiveMatrix = null;
       _this.__frameAnimateList = [];
       _this.__contentBoxList = []; // inline存储内容用

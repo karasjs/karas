@@ -238,8 +238,8 @@ class Xom extends Node {
     this.__isInline = false;
     this.__hasContent = false;
     this.__opacity = 1;
-    this.__matrix = mx.identity();
-    this.__matrixEvent = mx.identity();
+    this.__matrix = [];
+    this.__matrixEvent = [];
     this.__perspectiveMatrix = null;
     this.__frameAnimateList = [];
     this.__contentBoxList = []; // inline存储内容用

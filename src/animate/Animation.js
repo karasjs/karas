@@ -1078,6 +1078,7 @@ function calFrame(prev, next, keys, target) {
     let ts = calDiff(prev, next, k, target);
     // 可以形成过渡的才会产生结果返回
     if(ts) {
+      ts.fn = CAL_HASH[k];
       prev.transition.push(ts);
       prev.keys.push(k);
     }
@@ -1427,8 +1428,7 @@ function calIntermediateStyle(frame, percent, target) {
   let currentStyle = target.__currentStyle, currentProps = target.__currentProps, res = frame.keys, modify;
   for(let i = 0, len = transition.length; i < len; i++) {
     let item = transition[i];
-    let k = item.k, v = item.v, st = item.st, cl = item.cl;
-    let fn = CAL_HASH[k];
+    let k = item.k, v = item.v, st = item.st, cl = item.cl, fn = item.fn;
     if(fn) {
       fn(k, v, percent, st, cl, frame, currentStyle);
     }

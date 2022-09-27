@@ -18320,6 +18320,7 @@
       var ts = calDiff(prev, next, k, target); // 可以形成过渡的才会产生结果返回
 
       if (ts) {
+        ts.fn = CAL_HASH[k];
         prev.transition.push(ts);
         prev.keys.push(k);
       } else {
@@ -18697,8 +18698,8 @@
       var k = item.k,
           v = item.v,
           st = item.st,
-          cl = item.cl;
-      var fn = CAL_HASH[k];
+          cl = item.cl,
+          fn = item.fn;
 
       if (fn) {
         fn(k, v, percent, st, cl, frame, currentStyle);

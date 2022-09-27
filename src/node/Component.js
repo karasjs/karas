@@ -6,7 +6,7 @@ import inject from '../util/inject';
 import css from '../style/css';
 import change from '../refresh/change';
 
-const { isFunction, extend } = util;
+const { isNil, isFunction, extend } = util;
 
 const REGISTER = {};
 
@@ -76,6 +76,10 @@ class Component extends Event {
     }
     this.__isDestroyed = true;
     this.__isMounted = false;
+    let ref = this.props.ref;
+    if(!isNil(ref) && !isFunction(ref)) {
+      delete this.__root.__ref[ref];
+    }
     if(isFunction(this.componentWillUnmount)) {
       this.componentWillUnmount();
     }

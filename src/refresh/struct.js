@@ -302,7 +302,7 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
       } = node;
       let p = node.__domParent;
       node.__opacity = __computedStyle2[OPACITY] * p.__opacity;
-      let matrix = multiply(node.__matrix, p.__matrixEvent);
+      let matrix = multiply(p.__matrixEvent, node.__matrix);
       assignMatrix(node.__matrixEvent, matrix);
       let bbox;
       // 子元素有cacheTotal优先使用
@@ -346,8 +346,8 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
     let lastMatrix = null;
     let lastLv = lv;
     // 和外面没cache的类似，mask生成hash记录
-    let maskStartHash = {};
-    let offscreenHash = {};
+    let maskStartHash = [];
+    let offscreenHash = [];
     for(let i = index, len = index + (total || 0) + 1; i < len; i++) {
       let {
         node,

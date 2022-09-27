@@ -2606,14 +2606,12 @@
     var first; // 所有向量积均为非负数（逆时针，反过来顺时针是非正）说明在多边形内或边上
 
     for (var _i = 0, _len = vertexes.length; _i < _len; _i++) {
-      var _vertexes$_i = _slicedToArray(vertexes[_i], 2),
-          x1 = _vertexes$_i[0],
-          y1 = _vertexes$_i[1];
-
-      var _vertexes = _slicedToArray(vertexes[(_i + 1) % _len], 2),
-          x2 = _vertexes[0],
-          y2 = _vertexes[1];
-
+      var _vertexes$_i = vertexes[_i],
+          x1 = _vertexes$_i.x,
+          y1 = _vertexes$_i.y;
+      var _vertexes = vertexes[(_i + 1) % _len],
+          x2 = _vertexes.x,
+          y2 = _vertexes.y;
       var n = crossProduct(x2 - x1, y2 - y1, x - x1, y - y1);
 
       if (n !== 0) {

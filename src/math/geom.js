@@ -46,8 +46,8 @@ function pointInConvexPolygon(x, y, vertexes) {
   let first;
   // 所有向量积均为非负数（逆时针，反过来顺时针是非正）说明在多边形内或边上
   for(let i = 0, len = vertexes.length; i < len; i++) {
-    let [x1, y1] = vertexes[i];
-    let [x2, y2] = vertexes[(i + 1) % len];
+    let { x: x1, y: y1 } = vertexes[i];
+    let { x: x2, y: y2 } = vertexes[(i + 1) % len];
     let n = crossProduct(x2 - x1, y2 - y1, x - x1, y - y1);
     if(n !== 0) {
       n = n > 0 ? 1 : 0;

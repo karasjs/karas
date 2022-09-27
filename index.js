@@ -776,8 +776,8 @@
             d4 = m[15];
 
         if (d1 || d2 || d3) {
-          w += x * d1 + y * d2 + z * d3;
-        } else if (w !== 1) {
+          w = x * d1 + y * d2 + z * d3 + d4 * w;
+        } else {
           w *= d4;
         }
 

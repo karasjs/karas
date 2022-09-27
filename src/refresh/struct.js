@@ -299,7 +299,7 @@ function genTotal(renderMode, root, node, index, lv, total, __structs, hasMask, 
       } = node;
       let p = node.__domParent;
       node.__opacity = __computedStyle2[OPACITY] * p.__opacity;
-      let matrix = multiply(node.__matrix, p.__matrixEvent);
+      let matrix = multiply(p.__matrixEvent, node.__matrix);
       assignMatrix(node.__matrixEvent, matrix);
       let bbox;
       // 子元素有cacheTotal优先使用

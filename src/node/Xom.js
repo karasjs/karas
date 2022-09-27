@@ -2439,6 +2439,10 @@ class Xom extends Node {
     if(this.__isDestroyed) {
       return;
     }
+    let ref = this.props.ref;
+    if(!isNil(ref) && !isFunction(ref)) {
+      delete this.__root.__ref[ref];
+    }
     super.__destroy();
     this.clearAnimate();
     this.clearFrameAnimate();

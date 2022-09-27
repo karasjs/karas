@@ -947,7 +947,7 @@ var hasOwn = {}.hasOwnProperty;
 var fnToString = hasOwn.toString;
 var ObjectFunctionString = fnToString.call(Object);
 
-function isNil$e(v) {
+function isNil$f(v) {
   return v === undefined || v === null;
 }
 
@@ -968,7 +968,7 @@ function _joinSourceArray(arr) {
 }
 
 function stringify(s) {
-  if (isNil$e(s)) {
+  if (isNil$f(s)) {
     return '';
   }
 
@@ -1126,7 +1126,7 @@ function rgba2int$3(color) {
     if (c) {
       res = [parseInt(c[1]), parseInt(c[2]), parseInt(c[3])];
 
-      if (!isNil$e(c[4])) {
+      if (!isNil$f(c[4])) {
         res[3] = parseFloat(c[4]);
       } else {
         res[3] = 1;
@@ -1218,7 +1218,7 @@ function hash2arr(hash) {
 }
 
 function clone$3(obj) {
-  if (isNil$e(obj) || _typeof(obj) !== 'object') {
+  if (isNil$f(obj) || _typeof(obj) !== 'object') {
     return obj;
   }
 
@@ -1497,13 +1497,13 @@ var util = {
   isNumber: isNumber$1,
   isBoolean: isBoolean,
   isDate: isDate,
-  isNil: isNil$e,
+  isNil: isNil$f,
   isPrimitive: function isPrimitive(v) {
     return util.isNil(v) || util.isBoolean(v) || util.isString(v) || util.isNumber(v);
   },
   // css中常用undefined/null表示auto本身
   isAuto: function isAuto(v) {
-    return isNil$e(v) || v === 'auto';
+    return isNil$f(v) || v === 'auto';
   },
   isPlainObject: isPlainObject,
   stringify: stringify,
@@ -6551,7 +6551,7 @@ var border = {
 };
 
 var rgba2int$2 = util.rgba2int,
-    isNil$d = util.isNil;
+    isNil$e = util.isNil;
 var PX$9 = o$4.PX,
     PERCENT$8 = o$4.PERCENT,
     DEG$4 = o$4.DEG,
@@ -7028,9 +7028,9 @@ function parseGradient(s) {
 
         if (_points) {
           o.z = [parseFloat(_points[1]), parseFloat(_points[2]), parseFloat(_points[3]), parseFloat(_points[4])];
-          var i5 = !isNil$d(_points[5]),
-              i6 = !isNil$d(_points[6]),
-              i7 = !isNil$d(_points[7]); // 重载，567是偏移x/y和ratio，都可省略即不偏移和半径1，只有5是ratio，只有56是x/y
+          var i5 = !isNil$e(_points[5]),
+              i6 = !isNil$e(_points[6]),
+              i7 = !isNil$e(_points[7]); // 重载，567是偏移x/y和ratio，都可省略即不偏移和半径1，只有5是ratio，只有56是x/y
 
           if (i5 && i6 && i7) {
             o.z.push(parseFloat(_points[5]));
@@ -7330,18 +7330,18 @@ var gradient = {
   renderConic: renderConic
 };
 
-var isNil$c = util.isNil;
+var isNil$d = util.isNil;
 
 function parseFlex(style, grow, shrink, basis) {
-  if (isNil$c(style.flexGrow)) {
+  if (isNil$d(style.flexGrow)) {
     style.flexGrow = grow || 0;
   }
 
-  if (isNil$c(style.flexShrink)) {
+  if (isNil$d(style.flexShrink)) {
     style.flexShrink = shrink || 0;
   }
 
-  if (isNil$c(style.flexBasis)) {
+  if (isNil$d(style.flexBasis)) {
     style.flexBasis = basis || 0;
   }
 }
@@ -7349,7 +7349,7 @@ function parseFlex(style, grow, shrink, basis) {
 function parseMarginPadding(style, key, list) {
   var temp = style[key];
 
-  if (!isNil$c(temp)) {
+  if (!isNil$d(temp)) {
     var match = temp.toString().match(/([-+]?[\d.]+[pxremvwhina%]*)|(auto)/ig);
 
     if (match) {
@@ -7363,7 +7363,7 @@ function parseMarginPadding(style, key, list) {
       }
 
       list.forEach(function (k, i) {
-        if (isNil$c(style[k])) {
+        if (isNil$d(style[k])) {
           style[k] = match[i];
         }
       });
@@ -7374,22 +7374,22 @@ function parseMarginPadding(style, key, list) {
 function parseOneBorder(style, k) {
   var v = style[k];
 
-  if (isNil$c(v)) {
+  if (isNil$d(v)) {
     return;
   } // 后面会统一格式化处理
 
 
-  if (isNil$c(style[k + 'Width'])) {
+  if (isNil$d(style[k + 'Width'])) {
     var w = /\b[\d.]+[pxremvwhina%]*\b/i.exec(v);
     style[k + 'Width'] = w ? w[0] : 0;
   }
 
-  if (isNil$c(style[k + 'Style'])) {
+  if (isNil$d(style[k + 'Style'])) {
     var s = /\b(solid|dashed|dotted)\b/i.exec(v);
     style[k + 'Style'] = s ? s[1] : 'solid';
   }
 
-  if (isNil$c(style[k + 'Color'])) {
+  if (isNil$d(style[k + 'Color'])) {
     var c = /#[0-9a-f]{3,8}/i.exec(v);
 
     if (c && [4, 7, 9].indexOf(c[0].length) > -1) {
@@ -7435,7 +7435,7 @@ var abbr$1 = {
       if (Array.isArray(v)) {
         var length = v.length;
 
-        if (isNil$c(style.backgroundColor)) {
+        if (isNil$d(style.backgroundColor)) {
           var bgc = /^\s*((transparent)|(#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))/i.exec(v[length - 1]);
 
           if (bgc) {
@@ -7448,7 +7448,7 @@ var abbr$1 = {
         var bgr = [];
         var bgp = [];
         v.forEach(function (item) {
-          if (isNil$c(style.backgroundImage)) {
+          if (isNil$d(style.backgroundImage)) {
             var gd = reg.gradient.exec(item);
 
             if (gd) {
@@ -7464,7 +7464,7 @@ var abbr$1 = {
             }
           }
 
-          if (isNil$c(style.backgroundRepeat)) {
+          if (isNil$d(style.backgroundRepeat)) {
             var repeat = /(no-?)?repeat(-?[xy])?/i.exec(item);
 
             if (repeat) {
@@ -7472,7 +7472,7 @@ var abbr$1 = {
             }
           }
 
-          if (isNil$c(style.backgroundPosition)) {
+          if (isNil$d(style.backgroundPosition)) {
             var position = item.match(reg.position);
 
             if (position) {
@@ -7494,7 +7494,7 @@ var abbr$1 = {
           this.toFull(style, 'backgroundPosition');
         }
       } else {
-        if (isNil$c(style.backgroundImage)) {
+        if (isNil$d(style.backgroundImage)) {
           var gd = reg.gradient.exec(v);
 
           if (gd) {
@@ -7510,7 +7510,7 @@ var abbr$1 = {
           }
         }
 
-        if (isNil$c(style.backgroundRepeat)) {
+        if (isNil$d(style.backgroundRepeat)) {
           var repeat = /(no-?)?repeat(-?[xy])?/i.exec(v);
 
           if (repeat) {
@@ -7518,7 +7518,7 @@ var abbr$1 = {
           }
         }
 
-        if (isNil$c(style.backgroundColor)) {
+        if (isNil$d(style.backgroundColor)) {
           var _bgc = /^(transparent)|(#[0-9a-f]{3,8})|(rgba?\s*\(.+?\))/i.exec(v);
 
           if (_bgc) {
@@ -7527,7 +7527,7 @@ var abbr$1 = {
           }
         }
 
-        if (isNil$c(style.backgroundPosition)) {
+        if (isNil$d(style.backgroundPosition)) {
           var position = v.match(reg.position);
 
           if (position) {
@@ -7563,7 +7563,7 @@ var abbr$1 = {
       v = v.toString().split(/\s+/);
 
       if (v.length) {
-        if (isNil$c(style.flexDirection)) ;
+        if (isNil$d(style.flexDirection)) ;
 
         style.flexDirection = v[0];
 
@@ -7596,7 +7596,7 @@ var abbr$1 = {
       }
 
       this[k].forEach(function (k, i) {
-        if (isNil$c(style[k])) {
+        if (isNil$d(style[k])) {
           style[k] = v[0][i] + ' ' + v[1][i];
         }
       });
@@ -7606,7 +7606,7 @@ var abbr$1 = {
       }
 
       var isEmpty = this[k].map(function (k2) {
-        return isNil$c(style[k2]);
+        return isNil$d(style[k2]);
       });
       v.forEach(function (v2) {
         v2 = v2.toString().split(/\s+/);
@@ -7630,7 +7630,7 @@ var abbr$1 = {
       }
 
       this[k].forEach(function (k, i) {
-        if (isNil$c(style[k])) {
+        if (isNil$d(style[k])) {
           style[k] = _arr3[i];
         }
       });
@@ -7644,7 +7644,7 @@ var abbr$1 = {
       }
 
       this[k].forEach(function (k, i) {
-        if (isNil$c(style[k])) {
+        if (isNil$d(style[k])) {
           style[k] = _arr4[i];
         }
       });
@@ -7672,7 +7672,7 @@ var abbr$1 = {
       }
     } else if (this[k]) {
       this[k].forEach(function (k) {
-        if (isNil$c(style[k])) {
+        if (isNil$d(style[k])) {
           style[k] = v;
         }
       });
@@ -8008,7 +8008,7 @@ var AUTO$7 = o$4.AUTO,
     VMIN$7 = o$4.VMIN,
     GRADIENT$3 = o$4.GRADIENT,
     calUnit$1 = o$4.calUnit;
-var isNil$b = util.isNil,
+var isNil$c = util.isNil,
     rgba2int$1 = util.rgba2int,
     equalArr$1 = util.equalArr,
     equal = util.equal,
@@ -8067,7 +8067,7 @@ function compatibleTransform(k, arr) {
 }
 
 function camel(v) {
-  if (isNil$b(v)) {
+  if (isNil$c(v)) {
     v = '';
   }
 
@@ -8155,7 +8155,7 @@ function normalize$1(style) {
 
   temp = style.backgroundPosition;
 
-  if (!isNil$b(temp)) {
+  if (!isNil$c(temp)) {
     abbr$1.toFull(style, 'backgroundPosition');
   } // flex
 
@@ -8175,13 +8175,13 @@ function normalize$1(style) {
 
   temp = style.margin;
 
-  if (!isNil$b(temp)) {
+  if (!isNil$c(temp)) {
     abbr$1.toFull(style, 'margin');
   }
 
   temp = style.padding;
 
-  if (!isNil$b(temp)) {
+  if (!isNil$c(temp)) {
     abbr$1.toFull(style, 'padding');
   }
 
@@ -8201,7 +8201,7 @@ function normalize$1(style) {
   ['translate', 'scale', 'skew', 'translate3d', 'scale3d', 'rotate'].forEach(function (k) {
     temp = style[k];
 
-    if (!isNil$b(temp)) {
+    if (!isNil$c(temp)) {
       abbr$1.toFull(style, k);
     }
   }); // 扩展的不能和transform混用，给出警告
@@ -8218,7 +8218,7 @@ function normalize$1(style) {
     var k = item.k,
         v = item.v;
 
-    if (isNil$b(style[k])) {
+    if (isNil$c(style[k])) {
       style[k] = v;
     }
   }); // 背景图
@@ -8644,7 +8644,7 @@ function normalize$1(style) {
             }); // 不规范的写法变默认值50%
 
 
-            if (isNil$b(_arr9[i].v)) {
+            if (isNil$c(_arr9[i].v)) {
               _arr9[i].v = 50;
             }
           }
@@ -16494,7 +16494,8 @@ _defineProperty(Event, "BEGIN", 'begin');
 
 _defineProperty(Event, "END", 'end');
 
-var isFunction$8 = util.isFunction,
+var isNil$b = util.isNil,
+    isFunction$8 = util.isFunction,
     extend$2 = util.extend;
 var REGISTER$1 = {};
 
@@ -16581,6 +16582,11 @@ var Component = /*#__PURE__*/function (_Event) {
 
       this.__isDestroyed = true;
       this.__isMounted = false;
+      var ref = this.props.ref;
+
+      if (!isNil$b(ref) && !isFunction$8(ref)) {
+        delete this.__root.__ref[ref];
+      }
 
       if (isFunction$8(this.componentWillUnmount)) {
         this.componentWillUnmount();
@@ -18945,6 +18951,7 @@ function calFrame(prev, next, keys, target) {
     var ts = calDiff(prev, next, k, target); // 可以形成过渡的才会产生结果返回
 
     if (ts) {
+      ts.fn = CAL_HASH[k];
       prev.transition.push(ts);
       prev.keys.push(k);
     } else {
@@ -19322,8 +19329,8 @@ function calIntermediateStyle(frame, percent, target) {
     var k = item.k,
         v = item.v,
         st = item.st,
-        cl = item.cl;
-    var fn = CAL_HASH[k];
+        cl = item.cl,
+        fn = item.fn;
 
     if (fn) {
       fn(k, v, percent, st, cl, frame, currentStyle);
@@ -23674,6 +23681,12 @@ var Xom = /*#__PURE__*/function (_Node) {
     value: function __destroy() {
       if (this.__isDestroyed) {
         return;
+      }
+
+      var ref = this.props.ref;
+
+      if (!isNil$9(ref) && !isFunction$5(ref)) {
+        delete this.__root.__ref[ref];
       }
 
       _get(_getPrototypeOf(Xom.prototype), "__destroy", this).call(this);
@@ -33737,7 +33750,7 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
           __cacheOverflow2 = _node.__cacheOverflow;
       var p = _node.__domParent;
       _node.__opacity = __computedStyle2[OPACITY$1] * p.__opacity;
-      var matrix = multiply(_node.__matrix, p.__matrixEvent);
+      var matrix = multiply(p.__matrixEvent, _node.__matrix);
       assignMatrix(_node.__matrixEvent, matrix);
 
       var _bbox = void 0; // 子元素有cacheTotal优先使用
@@ -33792,8 +33805,8 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
     var lastMatrix = null;
     var lastLv = lv; // 和外面没cache的类似，mask生成hash记录
 
-    var maskStartHash = {};
-    var offscreenHash = {};
+    var maskStartHash = [];
+    var offscreenHash = [];
 
     for (var _i2 = index, _len2 = index + (total || 0) + 1; _i2 < _len2; _i2++) {
       var _structs$_i2 = __structs[_i2],
@@ -41042,7 +41055,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.79.4";
+var version = "0.79.5";
 
 Geom.register('$line', Line);
 Geom.register('$polyline', Polyline);

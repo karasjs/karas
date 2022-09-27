@@ -745,18 +745,19 @@
   }
 
   function calPoint$2(point, m) {
-    var x = point.x,
-        y = point.y,
-        z = point.z,
-        w = point.w;
-
-    if (w === undefined || w === null) {
-      w = 1;
-    }
-
     if (m && !isE$5(m)) {
+      var x = point.x,
+          y = point.y,
+          z = point.z,
+          w = point.w;
+
       if (m.length === 16) {
         z = z || 0;
+
+        if (w === undefined || w === null) {
+          w = 1;
+        }
+
         var a1 = m[0],
             b1 = m[1],
             c1 = m[2],
@@ -773,13 +774,27 @@
             b4 = m[13],
             c4 = m[14],
             d4 = m[15];
-        w *= x * d1 + y * d2 + z * d3 + d4;
-        return {
-          x: x * a1 + y * a2 + z * a3 + a4,
-          y: x * b1 + y * b2 + z * b3 + b4,
-          z: x * c1 + y * c2 + z * c3 + c4,
+
+        if (d1 || d2 || d3) {
+          w += x * d1 + y * d2 + z * d3;
+        } else if (w !== 1) {
+          w *= d4;
+        }
+
+        var o = {
+          x: x * a1 + y * a2 + a4,
+          y: x * b1 + y * b2 + b4,
+          z: 0,
           w: w
         };
+
+        if (z) {
+          o.x += z * a3;
+          o.y += z * b3;
+          o.z = x * c1 + y * c2 + c4 + z * c3;
+        }
+
+        return o;
       } // 6位类型
 
 
@@ -795,12 +810,7 @@
       };
     }
 
-    return {
-      x: x,
-      y: y,
-      z: z,
-      w: w
-    };
+    return point;
   }
   /**
    * 初等行变换求3*3特定css的matrix方阵，一维6长度
@@ -28973,14 +28983,6 @@
   }
 
   function convertCoords2Gl(x, y, z, w, cx, cy, revertY) {
-    if (z === undefined) {
-      z = 0;
-    }
-
-    if (w === undefined) {
-      w = 1;
-    }
-
     if (w && w !== 1) {
       x /= w;
       y /= w;
@@ -29080,7 +29082,7 @@
           dy = _list$i.dy;
 
       if (i) {
-        var channel = hash[cache.page.__uuid]; // 和上一个单元号不同时，生成新的批次记录
+        var channel = hash[cache.__page.__uuid]; // 和上一个单元号不同时，生成新的批次记录
 
         if (lastChannel !== channel) {
           lastChannel = channel;
@@ -29088,7 +29090,7 @@
           stack.push(record);
         }
       } else {
-        lastChannel = hash[cache.page.__uuid];
+        lastChannel = hash[cache.__page.__uuid];
         record[1] = lastChannel;
       }
 
@@ -29108,7 +29110,9 @@
 
       var _calPoint = calPoint({
         x: xa,
-        y: ya
+        y: ya,
+        z: 0,
+        w: 1
       }, matrix),
           x1 = _calPoint.x,
           y1 = _calPoint.y,
@@ -29116,7 +29120,9 @@
 
       var _calPoint2 = calPoint({
         x: xb,
-        y: ya
+        y: ya,
+        z: 0,
+        w: 1
       }, matrix),
           x2 = _calPoint2.x,
           y2 = _calPoint2.y,
@@ -29124,7 +29130,9 @@
 
       var _calPoint3 = calPoint({
         x: xb,
-        y: yb
+        y: yb,
+        z: 0,
+        w: 1
       }, matrix),
           x3 = _calPoint3.x,
           y3 = _calPoint3.y,
@@ -29132,7 +29140,9 @@
 
       var _calPoint4 = calPoint({
         x: xa,
-        y: yb
+        y: yb,
+        z: 0,
+        w: 1
       }, matrix),
           x4 = _calPoint4.x,
           y4 = _calPoint4.y,

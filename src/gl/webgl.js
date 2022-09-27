@@ -95,12 +95,6 @@ export function loadShader(gl, type, source) {
 }
 
 function convertCoords2Gl(x, y, z, w, cx, cy, revertY) {
-  if(z === undefined) {
-    z = 0;
-  }
-  if(w === undefined) {
-    w = 1;
-  }
   if(w && w !== 1) {
     x /= w;
     y /= w;
@@ -182,7 +176,7 @@ function drawTextureCache(gl, list, hash, cx, cy, revertY) {
   for(let i = 0; i < length; i++) {
     let { cache, opacity, matrix, dx, dy } = list[i];
     if(i) {
-      let channel = hash[cache.page.__uuid];
+      let channel = hash[cache.__page.__uuid];
       // 和上一个单元号不同时，生成新的批次记录
       if(lastChannel !== channel) {
         lastChannel = channel;
@@ -191,7 +185,7 @@ function drawTextureCache(gl, list, hash, cx, cy, revertY) {
       }
     }
     else {
-      lastChannel = hash[cache.page.__uuid];
+      lastChannel = hash[cache.__page.__uuid];
       record[1] = lastChannel;
     }
     let { x, y, width, height, page, bbox } = cache;
@@ -199,10 +193,10 @@ function drawTextureCache(gl, list, hash, cx, cy, revertY) {
     let bx = bbox[0], by = bbox[1];
     let xa = bx + (dx || 0), ya = by + height + (dy || 0);
     let xb = bx + width + (dx || 0), yb = by + (dy || 0);
-    let { x: x1, y: y1, w: w1 } = calPoint({ x: xa, y: ya }, matrix);
-    let { x: x2, y: y2, w: w2 } = calPoint({ x: xb, y: ya }, matrix);
-    let { x: x3, y: y3, w: w3 } = calPoint({ x: xb, y: yb }, matrix);
-    let { x: x4, y: y4, w: w4 } = calPoint({ x: xa, y: yb }, matrix);
+    let { x: x1, y: y1, w: w1 } = calPoint({ x: xa, y: ya, z: 0, w: 1 }, matrix);
+    let { x: x2, y: y2, w: w2 } = calPoint({ x: xb, y: ya, z: 0, w: 1 }, matrix);
+    let { x: x3, y: y3, w: w3 } = calPoint({ x: xb, y: yb, z: 0, w: 1 }, matrix);
+    let { x: x4, y: y4, w: w4 } = calPoint({ x: xa, y: yb, z: 0, w: 1 }, matrix);
     let t = convertCoords2Gl(x1, y1, 0, w1, cx, cy, revertY);
     x1 = t.x; y1 = t.y;
     t = convertCoords2Gl(x2, y2, 0, w2, cx, cy, revertY);

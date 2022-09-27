@@ -28015,6 +28015,198 @@
   }();
 
   /**
+   * canvas和texture合图的基类，和Page类配合，抽象出基础尺寸偏差等信息
+   * 派生2个子类
+   */
+
+  var Cache = /*#__PURE__*/function () {
+    function Cache(rootId, w, h, bbox, page, pos, x1, y1) {
+      this.__rootId = rootId;
+
+      this.__init(w, h, bbox, page, pos, x1, y1);
+    }
+
+    _createClass(Cache, [{
+      key: "__init",
+      value: function __init(w, h, bbox, page, pos, x1, y1) {
+        this.__width = w;
+        this.__height = h;
+        this.__bbox = bbox;
+        this.__page = page;
+        this.__pos = pos;
+
+        var _page$getCoords = page.getCoords(pos),
+            x = _page$getCoords.x,
+            y = _page$getCoords.y;
+
+        this.__x = x;
+        this.__y = y;
+        this.__enabled = true;
+
+        this.__appendData(x1, y1);
+      }
+    }, {
+      key: "__appendData",
+      value: function __appendData(sx1, sy1) {
+        this.sx1 = sx1; // 去除margin的左上角原点坐标
+
+        this.sy1 = sy1;
+        var bbox = this.__bbox;
+        this.dx = this.__x - bbox[0]; // cache坐标和box原点的差值
+
+        this.dy = this.__y - bbox[1];
+        this.dbx = sx1 - bbox[0]; // 原始sx1/sy1和box原点的差值
+
+        this.dby = sy1 - bbox[1];
+        this.update();
+      }
+    }, {
+      key: "update",
+      value: function update() {
+        this.page.__update = true;
+      }
+    }, {
+      key: "clear",
+      value: function clear() {// if(this.__available) {
+        //   this.__available = false;
+        //   let ctx = this.ctx;
+        //   ctx.setTransform(1, 0, 0, 1, 0, 0);
+        //   let size = this.__page.__size;
+        //   ctx.clearRect(this.__x, this.__y, size, size);
+        // }
+      } // svg打标用会覆盖此方法
+
+    }, {
+      key: "release",
+      value: function release() {
+        if (this.__enabled) {
+          this.clear();
+
+          this.__page.del(this.pos);
+
+          this.__page = null;
+          this.__enabled = false;
+          return true;
+        }
+      }
+    }, {
+      key: "reset",
+      value: function reset(bbox, x1, y1, klass) {
+        // 尺寸没变复用之前的并清空
+        if (util.equalArr(this.__bbox, bbox) && this.__enabled) {
+          this.clear();
+          return;
+        }
+
+        this.release();
+        var w = Math.ceil(bbox[2] - bbox[0]);
+        var h = Math.ceil(bbox[3] - bbox[1]);
+        var res = klass.getInstance(this.__rootId, Math.max(w, h));
+
+        if (!res) {
+          this.__enabled = false;
+          return;
+        }
+
+        var page = res.page,
+            pos = res.pos;
+
+        this.__init(w, h, bbox, page, pos, x1, y1);
+      }
+    }, {
+      key: "__offsetY",
+      value: function __offsetY(diff) {
+        this.sy1 += diff;
+        var bbox = this.__bbox;
+        bbox[1] += diff;
+        bbox[3] += diff;
+        this.dy -= diff;
+      } // 是否功能可用，生成离屏canvas及尺寸超限
+
+    }, {
+      key: "enabled",
+      get: function get() {
+        return this.__enabled;
+      } // 是否有可用缓存内容
+
+    }, {
+      key: "available",
+      get: function get() {
+        return this.__enabled && this.__available;
+      }
+    }, {
+      key: "bbox",
+      get: function get() {
+        return this.__bbox;
+      }
+    }, {
+      key: "page",
+      get: function get() {
+        return this.__page;
+      }
+    }, {
+      key: "x",
+      get: function get() {
+        return this.__x;
+      }
+    }, {
+      key: "y",
+      get: function get() {
+        return this.__y;
+      }
+    }, {
+      key: "width",
+      get: function get() {
+        return this.__width;
+      }
+    }, {
+      key: "height",
+      get: function get() {
+        return this.__height;
+      }
+    }, {
+      key: "pos",
+      get: function get() {
+        return this.__pos;
+      }
+    }], [{
+      key: "getInstance",
+      value: function getInstance(rootId, bbox, x1, y1, cacheKlass, pageKlass) {
+        var w = Math.ceil(bbox[2] - bbox[0]);
+        var h = Math.ceil(bbox[3] - bbox[1]);
+        var n = Math.max(w, h);
+
+        if (n <= 0) {
+          return;
+        }
+
+        var res = pageKlass.getInstance(rootId, n);
+
+        if (!res) {
+          return;
+        }
+
+        var page = res.page,
+            pos = res.pos;
+        return new cacheKlass(rootId, w, h, bbox, page, pos, x1, y1);
+      }
+    }, {
+      key: "getCache",
+      value: function getCache(list) {
+        for (var i = 0, len = list.length; i < len; i++) {
+          var item = list[i];
+
+          if (item && item.available) {
+            return item;
+          }
+        }
+      }
+    }]);
+
+    return Cache;
+  }();
+
+  /**
    * 默认的动态合图配置，保守低端机8个纹理单元和最大2048px尺寸，一般chrome是16个和16384px
    * webgl初始化会调用获取参数动态进行更改，16px是最小划分基本单位1，后续成2倍增长
    * 并不需要非常紧凑合理，因为特定需求如骨骼动画，合图都是前置做好的，这里应对临时的Dom位图
@@ -28027,11 +28219,10 @@
    * 如此可满足不同尺寸分布在一张texture上的需求，碎片情况也较少，避免频繁纹理切换，清空置0
    * canvas模式时固定2048，是个保守值，当webgl第一次初始化，会改变这些值
    */
-
   var UNIT = 16;
   var MAX = 2048;
   var NUMBER = 128;
-  var HASH_CANVAS = {};
+  var HASH = {};
   var uuid$1 = 0;
   var _init = false;
 
@@ -28039,8 +28230,8 @@
     function Page(size, number) {
       this.__size = size;
       this.__number = number;
-      this.__width = this.__height = size;
-      this.__offscreen = inject.getOffscreenCanvas(size, size, null, number); // 标识n*n个单元格是否空闲可用，一维数组表示
+      this.__width = this.__height = size; // this.__offscreen = inject.getOffscreenCanvas(size, size, null, number);
+      // 标识n*n个单元格是否空闲可用，一维数组表示
 
       var grid = [];
 
@@ -28161,21 +28352,6 @@
         return this.__grid;
       }
     }, {
-      key: "offscreen",
-      get: function get() {
-        return this.__offscreen;
-      }
-    }, {
-      key: "canvas",
-      get: function get() {
-        return this.__offscreen.canvas;
-      }
-    }, {
-      key: "ctx",
-      get: function get() {
-        return this.__offscreen.ctx;
-      }
-    }, {
       key: "update",
       get: function get() {
         return this.__update;
@@ -28185,7 +28361,7 @@
       }
     }], [{
       key: "getInstance",
-      value: function getInstance(rootId, size) {
+      value: function getInstance(rootId, size, klass) {
         if (size > MAX) {
           return;
         } // 换算为每单位16px占多少单位，位移操作注意精度问题，只有恰好16倍数无需校准
@@ -28198,7 +28374,7 @@
         } // 每个root复用自己的合图，webgl中为了隔离不同实例
 
 
-        var list = HASH_CANVAS[rootId] = HASH_CANVAS[rootId] || [];
+        var list = HASH[rootId] = HASH[rootId] || [];
         var page, pos;
 
         for (var i = 0, len = list.length; i < len; i++) {
@@ -28211,7 +28387,7 @@
         }
 
         if (!page) {
-          page = new Page(MAX, NUMBER);
+          page = new klass(MAX, NUMBER);
           pos = 0;
           list.push(page);
         }
@@ -28280,168 +28456,71 @@
     return Page;
   }();
 
+  var CanvasPage = /*#__PURE__*/function (_Page) {
+    _inherits(CanvasPage, _Page);
+
+    function CanvasPage(size, number) {
+      var _this;
+
+      _this = _Page.call(this, size, number) || this;
+      _this.__offscreen = inject.getOffscreenCanvas(size, size, null, number);
+      return _this;
+    }
+
+    _createClass(CanvasPage, [{
+      key: "offscreen",
+      get: function get() {
+        return this.__offscreen;
+      }
+    }, {
+      key: "canvas",
+      get: function get() {
+        return this.__offscreen.canvas;
+      }
+    }, {
+      key: "ctx",
+      get: function get() {
+        return this.__offscreen.ctx;
+      }
+    }], [{
+      key: "getInstance",
+      value: function getInstance(rootId, size) {
+        return _get(_getPrototypeOf(CanvasPage), "getInstance", this).call(this, rootId, size, this);
+      }
+    }]);
+
+    return CanvasPage;
+  }(Page);
+
   var _enums$STYLE_KEY$2 = enums.STYLE_KEY,
       TRANSFORM_ORIGIN$1 = _enums$STYLE_KEY$2.TRANSFORM_ORIGIN,
       TRANSFORM$2 = _enums$STYLE_KEY$2.TRANSFORM;
   var spreadFilter = css.spreadFilter;
-  var isE$1 = matrix.isE; // 根据一个共享cache的信息，生成一个独立的离屏canvas，一般是filter,mask用，可能尺寸会发生变化
+  var isE$1 = matrix.isE;
 
-  function genSingle(cache, message, bboxNew) {
-    var size = cache.size,
-        sx1 = cache.sx1,
-        sy1 = cache.sy1,
-        bbox = cache.bbox;
-    bboxNew = bboxNew || bbox;
-    var width = bboxNew[2] - bboxNew[0];
-    var height = bboxNew[3] - bboxNew[1];
-    var dx = bboxNew[0] - bbox[0];
-    var dy = bboxNew[1] - bbox[1];
-    var offscreen = inject.getOffscreenCanvas(width, height, null, message);
-    offscreen.x = 0;
-    offscreen.y = 0;
-    offscreen.bbox = bboxNew;
-    offscreen.size = size;
-    offscreen.sx1 = sx1;
-    offscreen.sy1 = sy1;
-    offscreen.dx = -bboxNew[0];
-    offscreen.dy = -bboxNew[1];
-    offscreen.dbx = cache.dbx - dx;
-    offscreen.dby = cache.dby - dy;
-    offscreen.width = width;
-    offscreen.height = height;
-    return offscreen;
-  }
+  var CanvasCache = /*#__PURE__*/function (_Cache) {
+    _inherits(CanvasCache, _Cache);
 
-  var Cache = /*#__PURE__*/function () {
-    function Cache(rootId, w, h, bbox, page, pos, x1, y1) {
-      this.__rootId = rootId;
-
-      this.__init(w, h, bbox, page, pos, x1, y1);
+    function CanvasCache(rootId, w, h, bbox, page, pos, x1, y1) {
+      return _Cache.call(this, rootId, w, h, bbox, page, pos, x1, y1) || this;
     }
 
-    _createClass(Cache, [{
-      key: "__init",
-      value: function __init(w, h, bbox, page, pos, x1, y1) {
-        this.__width = w;
-        this.__height = h;
-        this.__bbox = bbox;
-        this.__page = page;
-        this.__pos = pos;
-
-        var _page$getCoords = page.getCoords(pos),
-            x = _page$getCoords.x,
-            y = _page$getCoords.y;
-
-        this.__x = x;
-        this.__y = y;
-
-        this.__appendData(x1, y1);
-
-        if (page.canvas) {
-          this.__enabled = true;
-          var ctx = page.ctx;
-          ctx.setTransform(1, 0, 0, 1, 0, 0);
-          ctx.globalAlpha = 1;
-        }
-      }
-    }, {
-      key: "__appendData",
-      value: function __appendData(sx1, sy1) {
-        this.sx1 = sx1; // 去除margin的左上角原点坐标
-
-        this.sy1 = sy1;
-        var bbox = this.__bbox;
-        this.dx = this.__x - bbox[0]; // cache坐标和box原点的差值
-
-        this.dy = this.__y - bbox[1];
-        this.dbx = sx1 - bbox[0]; // 原始sx1/sy1和box原点的差值
-
-        this.dby = sy1 - bbox[1];
-        this.update();
-      }
-    }, {
-      key: "update",
-      value: function update() {
-        this.page.__update = true;
-      }
-    }, {
+    _createClass(CanvasCache, [{
       key: "clear",
       value: function clear() {
         if (this.__available) {
-          var ctx = this.ctx;
-          ctx.setTransform(1, 0, 0, 1, 0, 0);
-          var size = this.__page.__size;
-          ctx.clearRect(this.__x, this.__y, size, size);
           this.__available = false;
-        }
-      } // svg打标用会覆盖此方法
-
-    }, {
-      key: "release",
-      value: function release() {
-        if (this.__enabled) {
-          this.clear();
-
-          this.__page.del(this.pos);
-
-          this.__page = null;
-          this.__enabled = false;
+          var page = this.__page,
+              ctx = page.ctx,
+              size = page.__size;
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.clearRect(this.__x, this.__y, size, size);
         }
       }
     }, {
       key: "reset",
       value: function reset(bbox, x1, y1) {
-        // 尺寸没变复用之前的并清空
-        if (util.equalArr(this.__bbox, bbox) && this.__enabled) {
-          this.clear();
-          return;
-        }
-
-        this.release();
-        var w = Math.ceil(bbox[2] - bbox[0]);
-        var h = Math.ceil(bbox[3] - bbox[1]);
-        var res = Page.getInstance(this.__rootId, Math.max(w, h));
-
-        if (!res) {
-          this.__enabled = false;
-          return;
-        }
-
-        var page = res.page,
-            pos = res.pos;
-
-        this.__init(w, h, bbox, page, pos, x1, y1);
-      }
-    }, {
-      key: "__offsetY",
-      value: function __offsetY(diff) {
-        this.sy1 += diff;
-        var bbox = this.__bbox;
-        bbox[1] += diff;
-        bbox[3] += diff;
-        this.dy -= diff;
-      } // 是否功能可用，生成离屏canvas及尺寸超限
-
-    }, {
-      key: "enabled",
-      get: function get() {
-        return this.__enabled;
-      } // 是否有可用缓存内容
-
-    }, {
-      key: "available",
-      get: function get() {
-        return this.__enabled && this.__available;
-      }
-    }, {
-      key: "bbox",
-      get: function get() {
-        return this.__bbox;
-      }
-    }, {
-      key: "page",
-      get: function get() {
-        return this.__page;
+        return _get(_getPrototypeOf(CanvasCache.prototype), "reset", this).call(this, bbox, x1, y1, CanvasPage);
       }
     }, {
       key: "canvas",
@@ -28453,61 +28532,10 @@
       get: function get() {
         return this.__page.ctx;
       }
-    }, {
-      key: "size",
-      get: function get() {
-        return this.__page.size;
-      }
-    }, {
-      key: "x",
-      get: function get() {
-        return this.__x;
-      }
-    }, {
-      key: "y",
-      get: function get() {
-        return this.__y;
-      }
-    }, {
-      key: "width",
-      get: function get() {
-        return this.__width;
-      }
-    }, {
-      key: "height",
-      get: function get() {
-        return this.__height;
-      }
-    }, {
-      key: "pos",
-      get: function get() {
-        return this.__pos;
-      }
     }], [{
-      key: "MAX",
-      get: function get() {
-        return Page.MAX;
-      }
-    }, {
       key: "getInstance",
       value: function getInstance(rootId, bbox, x1, y1) {
-        var w = Math.ceil(bbox[2] - bbox[0]);
-        var h = Math.ceil(bbox[3] - bbox[1]);
-        var n = Math.max(w, h);
-
-        if (n <= 0) {
-          return;
-        }
-
-        var res = Page.getInstance(rootId, n);
-
-        if (!res) {
-          return;
-        }
-
-        var page = res.page,
-            pos = res.pos;
-        return new Cache(rootId, w, h, bbox, page, pos, x1, y1);
+        return _get(_getPrototypeOf(CanvasCache), "getInstance", this).call(this, rootId, bbox, x1, y1, this, CanvasPage);
       }
       /**
        * 复制cache的一块出来单独作为cacheFilter，尺寸边距保持一致，用浏览器原生ctx.filter滤镜
@@ -28644,21 +28672,37 @@
         var oy = ty + sy2 - sy1 + dby - dby2;
         ctx.drawImage(canvas, x, y, width, height, ox, oy, width, height);
       }
-    }, {
-      key: "getCache",
-      value: function getCache(list) {
-        for (var i = 0, len = list.length; i < len; i++) {
-          var item = list[i];
-
-          if (item && item.available) {
-            return item;
-          }
-        }
-      }
     }]);
 
-    return Cache;
-  }();
+    return CanvasCache;
+  }(Cache); // 根据一个共享cache的信息，生成一个独立的离屏canvas，一般是filter,mask用，可能尺寸会发生变化
+
+
+  function genSingle(cache, message, bboxNew) {
+    var size = cache.size,
+        sx1 = cache.sx1,
+        sy1 = cache.sy1,
+        bbox = cache.bbox;
+    bboxNew = bboxNew || bbox;
+    var width = bboxNew[2] - bboxNew[0];
+    var height = bboxNew[3] - bboxNew[1];
+    var dx = bboxNew[0] - bbox[0];
+    var dy = bboxNew[1] - bbox[1];
+    var offscreen = inject.getOffscreenCanvas(width, height, null, message);
+    offscreen.x = 0;
+    offscreen.y = 0;
+    offscreen.bbox = bboxNew;
+    offscreen.size = size;
+    offscreen.sx1 = sx1;
+    offscreen.sy1 = sy1;
+    offscreen.dx = -bboxNew[0];
+    offscreen.dy = -bboxNew[1];
+    offscreen.dbx = cache.dbx - dx;
+    offscreen.dby = cache.dby - dy;
+    offscreen.width = width;
+    offscreen.height = height;
+    return offscreen;
+  }
 
   var canvasPolygon = painter.canvasPolygon; // 无cache时应用离屏时的优先级，从小到大，OFFSCREEN_MASK2是个特殊的
 
@@ -29515,8 +29559,10 @@
     }, {
       key: "release",
       value: function release() {
-        this.available = false;
-        this.gl.deleteTexture(this.page.texture);
+        if (this.available) {
+          this.available = false;
+          this.gl.deleteTexture(this.page.texture);
+        }
       }
     }]);
 
@@ -29559,7 +29605,6 @@
 
   var fragmentLuminosity = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture1;uniform sampler2D u_texture2;float getLuminosity(vec3 color){return 0.3*color[0]+0.59*color[1]+0.11*color[2];}float clipLowest(float channel,float lowestChannel,float luminosity){return luminosity+((channel-luminosity)*luminosity)/(luminosity-lowestChannel);}float clipHighest(float channel,float highestChannel,float luminosity){return luminosity+((channel-luminosity)*(1.0-luminosity))/(highestChannel-luminosity);}vec3 clipColor(vec3 rgb){float luminosity=getLuminosity(rgb);float lowestChannel=min(rgb[0],min(rgb[1],rgb[2]));float highestChannel=max(rgb[0],max(rgb[1],rgb[2]));float r=rgb[0],g=rgb[1],b=rgb[2];if(lowestChannel<0.0){r=clipLowest(r,lowestChannel,luminosity);g=clipLowest(g,lowestChannel,luminosity);b=clipLowest(b,lowestChannel,luminosity);}if(highestChannel>1.0){r=clipHighest(r,highestChannel,luminosity);g=clipHighest(g,highestChannel,luminosity);b=clipHighest(b,highestChannel,luminosity);}return vec3(r,g,b);}vec3 setLuminosity(vec3 rgb,float luminosity){float delta=luminosity-getLuminosity(rgb);float r=rgb[0],g=rgb[1],b=rgb[2];return clipColor(vec3(r+delta,g+delta,b+delta));}float getSaturation(vec3 rgb){return max(rgb[0],max(rgb[1],rgb[2]))-min(rgb[0],min(rgb[1],rgb[2]));}vec3 setSaturation(vec3 rgb,float saturation){float r=rgb[0],g=rgb[1],b=rgb[2];float maxC=0.0,minC=0.0,midC=0.0;int maxI=0,minI=0,midI=0;if(r>=g&&r>=b){maxI=0;maxC=r;if(g>=b){minI=2;midI=1;minC=b;midC=g;}else{minI=1;midI=2;minC=g;midC=b;}}else if(g>=r&&g>=b){maxI=1;maxC=g;if(r>=b){minI=2;midI=0;minC=b;midC=r;}else{minI=0;midI=2;minC=r;midC=b;}}else if(b>=r&&b>=g){maxI=2;maxC=b;if(r>=g){minI=1;midI=0;minC=g;midC=r;}else{minI=0;midI=1;minC=r;midC=g;}}vec3 result=vec3(r,g,b);if(maxC>minC){midC=(midC-minC)*saturation/(maxC-minC);maxC=saturation;}else{maxC=midC=0.0;}minC=0.0;if(maxI==0){result[0]=maxC;}else if(maxI==1){result[1]=maxC;}else if(maxI==2){result[2]=maxC;}if(minI==0){result[0]=minC;}else if(minI==1){result[1]=minC;}else if(minI==2){result[2]=minC;}if(midI==0){result[0]=midC;}else if(midI==1){result[1]=midC;}else if(midI==2){result[2]=midC;}return result;}vec3 op(vec3 a,vec3 b){float l=getLuminosity(b);return setLuminosity(a,l);}vec3 premultipliedAlpha(vec4 color){float a=color.a;if(a==0.0){return vec3(0.0,0.0,0.0);}return vec3(color.r/a,color.g/a,color.b/a);}float alphaCompose(float a1,float a2,float a3,float c1,float c2,float c3){return(1.0-a2/a3)*c1+a2/a3*((1.0-a1)*c2+a1*c3);}void main(){vec4 color1=texture2D(u_texture1,v_texCoords);vec4 color2=texture2D(u_texture2,v_texCoords);if(color1.a==0.0){gl_FragColor=color2;}else if(color2.a==0.0){gl_FragColor=color1;}else{vec3 bottom=premultipliedAlpha(color1);vec3 top=premultipliedAlpha(color2);vec3 res=op(bottom,top);float a=color1.a+color2.a-color1.a*color2.a;gl_FragColor=vec4(alphaCompose(color1.a,color2.a,a,bottom.r,top.r,res.r)*a,alphaCompose(color1.a,color2.a,a,bottom.g,top.g,res.g)*a,alphaCompose(color1.a,color2.a,a,bottom.b,top.b,res.b)*a,a);}}"; // eslint-disable-line
 
-  var getCache = Cache.getCache;
   var OFFSCREEN_OVERFLOW = offscreen.OFFSCREEN_OVERFLOW,
       OFFSCREEN_FILTER = offscreen.OFFSCREEN_FILTER,
       OFFSCREEN_MASK = offscreen.OFFSCREEN_MASK,
@@ -29578,7 +29623,6 @@
       TRANSFORM_ORIGIN = _enums$STYLE_KEY$1.TRANSFORM_ORIGIN,
       PERSPECTIVE = _enums$STYLE_KEY$1.PERSPECTIVE,
       PERSPECTIVE_ORIGIN = _enums$STYLE_KEY$1.PERSPECTIVE_ORIGIN;
-      _enums$STYLE_KEY$1.MATRIX;
   var NONE$1 = o$1.NONE,
       TRANSFORM_ALL$1 = o$1.TRANSFORM_ALL,
       OP$1 = o$1.OPACITY,
@@ -29595,6 +29639,16 @@
       isValidMbm = mbm.isValidMbm;
   var assignMatrix = util.assignMatrix,
       transformBbox = util.transformBbox;
+
+  function getCache(list) {
+    for (var i = 0, len = list.length; i < len; i++) {
+      var item = list[i];
+
+      if (item && item.available) {
+        return item;
+      }
+    }
+  }
   /**
    * 生成一个节点及其子节点所包含的矩形范围盒，canvas和webgl的最大尺寸限制不一样，由外部传入
    * 如果某个子节点超限，则视为整个超限，超限返回空
@@ -29608,6 +29662,7 @@
    * @param includeLimitCache webgl时即便超限也要强制生成total，所以标识不能跳出
    * @returns {*}
    */
+
 
   function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash, MAX, includeLimitCache) {
     var sx1 = node.__sx1,
@@ -29628,10 +29683,10 @@
 
     bboxTotal = bboxTotal.slice(0); // 局部根节点如有perspective，则计算pm，这里不会出现嵌套，因为每个出现都会生成局部根节点
 
-    var pm;
+    var parentPm;
 
     if (perspective) {
-      pm = transform$1.calPerspectiveMatrix(perspective, perspectiveOrigin[0], perspectiveOrigin[1]);
+      parentPm = transform$1.calPerspectiveMatrix(perspective, perspectiveOrigin[0], perspectiveOrigin[1]);
     } // 广度遍历，不断一层层循环下去，用2个hash暂存每层的父matrix和opacity，blur只需记住顶层，因为子的如果有一定是cacheFilter
 
 
@@ -29647,7 +29702,7 @@
     });
     opacityHash[index] = 1; // opacity可以保存下来层级相乘结果供外部使用，但matrix不可以，因为这里按画布原点为坐标系计算，外部合并局部根节点以bbox左上角为原点
 
-    var matrixHash = {};
+    var matrixHash = [];
 
     while (list.length) {
       var arr = list.splice(0);
@@ -29748,8 +29803,8 @@
               matrixHash[_i] = matrix;
             }
 
-            if (pm) {
-              matrix = multiply(pm, matrix);
+            if (parentPm) {
+              matrix = multiply(parentPm, matrix);
             }
 
             bbox = transformBbox(bbox, matrix, d, d); // 有孩子才继续存入下层级广度运算
@@ -29764,7 +29819,10 @@
       }
     }
 
-    return [bboxTotal, pm];
+    return {
+      bboxTotal: bboxTotal,
+      parentPm: parentPm
+    };
   }
 
   function mergeBbox(bbox, t, sx1, sy1) {
@@ -29859,11 +29917,11 @@
       } // 生成cacheTotal，获取偏移dx/dy
 
 
-      __cacheTotal = node.__cacheTotal = Cache.getInstance(root.uuid, bboxTotal, sx1, sy1);
+      __cacheTotal = node.__cacheTotal = CanvasCache.getInstance(root.uuid, bboxTotal, sx1, sy1);
 
       if (!__cacheTotal || !__cacheTotal.__enabled) {
         if (bboxTotal[2] - bboxTotal[0] || bboxTotal[3] - bboxTotal[1]) {
-          inject.warn('Cache of ' + node.tagName + '(' + index + ')' + ' is oversize: ' + (bboxTotal[2] - bboxTotal[0]) + ', ' + (bboxTotal[3] - bboxTotal[1]));
+          inject.warn('CanvasCache of ' + node.tagName + '(' + index + ')' + ' is oversize: ' + (bboxTotal[2] - bboxTotal[0]) + ', ' + (bboxTotal[3] - bboxTotal[1]));
         }
 
         return;
@@ -29891,8 +29949,8 @@
       var lastMatrix = null;
       var lastLv = lv; // 和外面没cache的类似，mask生成hash记录
 
-      var maskStartHash = {};
-      var offscreenHash = {};
+      var maskStartHash = [];
+      var offscreenHash = [];
 
       for (var _i2 = index, _len2 = index + (total || 0) + 1; _i2 < _len2; _i2++) {
         var _structs$_i2 = __structs[_i2],
@@ -29904,8 +29962,10 @@
         if (_node2 instanceof Text) {
           _node2.render(renderMode, ctxTotal, dx, dy);
 
-          if (offscreenHash.hasOwnProperty(_i2)) {
-            ctxTotal = applyOffscreen(ctxTotal, offscreenHash[_i2], width, height, false);
+          var oh = offscreenHash[_i2];
+
+          if (oh) {
+            ctxTotal = applyOffscreen(ctxTotal, oh, width, height, false);
           }
         } else {
           var _computedStyle = _node2.__computedStyle; // none跳过这棵子树，判断下最后一个节点的离屏应用即可
@@ -29917,8 +29977,10 @@
               _i2 += countMaskNum(__structs, _i2 + 1, _hasMask2);
             }
 
-            if (offscreenHash.hasOwnProperty(_i2)) {
-              ctxTotal = applyOffscreen(ctxTotal, offscreenHash[_i2], width, height, true);
+            var _oh = offscreenHash[_i2];
+
+            if (_oh) {
+              ctxTotal = applyOffscreen(ctxTotal, _oh, width, height, true);
             }
 
             continue;
@@ -29930,12 +29992,12 @@
               _cacheOverflow = _node2.__cacheOverflow;
           var transform = _computedStyle[TRANSFORM$1],
               tfo = _computedStyle[TRANSFORM_ORIGIN];
+          var mh = maskStartHash[_i2];
 
-          if (maskStartHash.hasOwnProperty(_i2)) {
-            var _maskStartHash$_i = maskStartHash[_i2],
-                idx = _maskStartHash$_i.idx,
-                _hasMask3 = _maskStartHash$_i.hasMask,
-                offscreenMask = _maskStartHash$_i.offscreenMask;
+          if (mh) {
+            var idx = mh.idx,
+                _hasMask3 = mh.hasMask,
+                offscreenMask = mh.offscreenMask;
 
             var _target2 = inject.getOffscreenCanvas(width, height, null, 'mask2');
 
@@ -30025,11 +30087,12 @@
               ctxTotal.globalCompositeOperation = mbmName(mixBlendMode);
             }
 
-            Cache.drawCache(_target, __cacheTotal);
+            CanvasCache.drawCache(_target, __cacheTotal);
             ctxTotal.globalCompositeOperation = 'source-over';
+            var _oh2 = offscreenHash[_i2];
 
-            if (offscreenHash.hasOwnProperty(_i2)) {
-              ctxTotal = applyOffscreen(ctxTotal, offscreenHash[_i2], width, height, false);
+            if (_oh2) {
+              ctxTotal = applyOffscreen(ctxTotal, _oh2, width, height, false);
             }
           } else {
             var offscreenBlend = void 0,
@@ -30125,8 +30188,10 @@
             // 由于mask特殊索引影响，所有离屏都在最后一个mask索引判断，此时mask本身优先结算，以index序大到小判断
 
 
-            if (offscreenHash.hasOwnProperty(_i2)) {
-              ctxTotal = applyOffscreen(ctxTotal, offscreenHash[_i2], width, height, false);
+            var _oh3 = offscreenHash[_i2];
+
+            if (_oh3) {
+              ctxTotal = applyOffscreen(ctxTotal, _oh3, width, height, false);
             }
           }
         }
@@ -30149,20 +30214,20 @@
 
     if (overflow === 'hidden') {
       if (!__cacheOverflow || !__cacheOverflow.available) {
-        target = node.__cacheOverflow = __cacheOverflow = Cache.genOverflow(target, node);
+        target = node.__cacheOverflow = CanvasCache.genOverflow(target, node);
         needGen = true;
       }
     }
 
     if (filter && filter.length) {
       if (!__cacheFilter || !__cacheFilter.available || needGen) {
-        target = node.__cacheFilter = __cacheFilter = Cache.genFilter(target, filter);
+        target = node.__cacheFilter = CanvasCache.genFilter(target, filter);
         needGen = true;
       }
     }
 
     if (hasMask && (!__cacheMask || !__cacheMask.available || needGen)) {
-      target = node.__cacheMask = __cacheMask = Cache.genMask(target, node, function (item, cacheMask, inverse) {
+      target = node.__cacheMask = CanvasCache.genMask(target, node, function (item, cacheMask, inverse) {
         // 和外面没cache的类似，mask生成hash记录，这里mask节点一定是个普通无cache的独立节点
         var maskStartHash = {};
         var offscreenHash = {};
@@ -30457,10 +30522,6 @@
           }
         }
       });
-
-      if (__cacheMask && __cacheMask.available) {
-        target = __cacheMask;
-      }
     }
 
     return target;
@@ -30506,7 +30567,11 @@
     gl.viewport(0, 0, width, height);
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
-    return [n, frameBuffer, texture];
+    return {
+      n: n,
+      frameBuffer: frameBuffer,
+      texture: texture
+    };
   }
   /**
    * 局部根节点复合图层生成，汇总所有子节点到一颗局部树上的位图缓存，包含超限特殊情况
@@ -30528,13 +30593,12 @@
 
   function genTotalWebgl(renderMode, gl, texCache, node, index, total, __structs, cache, limitCache, W, H) {
     // 存每层父亲的matrix和opacity和index，bbox计算过程中生成，缓存给下面渲染过程用
-    var parentIndexHash = {};
-    var opacityHash = {};
+    var parentIndexHash = [];
+    var opacityHash = [];
 
     var _genBboxTotal = genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash, gl.getParameter(gl.MAX_TEXTURE_SIZE), limitCache),
-        _genBboxTotal2 = _slicedToArray(_genBboxTotal, 2),
-        bboxTotal = _genBboxTotal2[0],
-        parentPm = _genBboxTotal2[1]; // 可能局部根节点合成过程中发现整体超限
+        bboxTotal = _genBboxTotal.bboxTotal,
+        parentPm = _genBboxTotal.parentPm; // 可能局部根节点合成过程中发现整体超限
 
 
     var totalLimitCache;
@@ -30552,10 +30616,9 @@
     var height = bboxTotal[3] - bboxTotal[1];
 
     var _genFrameBufferWithTe = genFrameBufferWithTexture(gl, texCache, width, height),
-        _genFrameBufferWithTe2 = _slicedToArray(_genFrameBufferWithTe, 3),
-        n = _genFrameBufferWithTe2[0],
-        frameBuffer = _genFrameBufferWithTe2[1],
-        texture = _genFrameBufferWithTe2[2]; // 以bboxTotal的左上角为原点生成离屏texture
+        n = _genFrameBufferWithTe.n,
+        frameBuffer = _genFrameBufferWithTe.frameBuffer,
+        texture = _genFrameBufferWithTe.texture; // 以bboxTotal的左上角为原点生成离屏texture
 
 
     var sx1 = node.__sx1,
@@ -30686,11 +30749,10 @@
           if (isValidMbm(mixBlendMode)) {
             texCache.refresh(gl, cx, cy);
 
-            var _genFrameBufferWithTe3 = genFrameBufferWithTexture(gl, texCache, width, height),
-                _genFrameBufferWithTe4 = _slicedToArray(_genFrameBufferWithTe3, 3),
-                n2 = _genFrameBufferWithTe4[0],
-                frameBuffer2 = _genFrameBufferWithTe4[1],
-                texture2 = _genFrameBufferWithTe4[2];
+            var _genFrameBufferWithTe2 = genFrameBufferWithTexture(gl, texCache, width, height),
+                n2 = _genFrameBufferWithTe2.n,
+                frameBuffer2 = _genFrameBufferWithTe2.frameBuffer,
+                texture2 = _genFrameBufferWithTe2.texture;
 
             texCache.addTexAndDrawWhenLimit(gl, target, opacity, matrix, cx, cy, dx, dy, false);
             texCache.refresh(gl, cx, cy); // 合成结果作为当前frameBuffer，以及纹理和单元，等于替代了当前fbo作为绘制对象
@@ -30953,11 +31015,10 @@
     var program = webgl.initShaders(gl, vert, frag);
     gl.useProgram(program);
 
-    var _genFrameBufferWithTe5 = genFrameBufferWithTexture(gl, texCache, widthNew, heightNew),
-        _genFrameBufferWithTe6 = _slicedToArray(_genFrameBufferWithTe5, 3),
-        i = _genFrameBufferWithTe6[0],
-        frameBuffer = _genFrameBufferWithTe6[1],
-        texture = _genFrameBufferWithTe6[2]; // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
+    var _genFrameBufferWithTe3 = genFrameBufferWithTexture(gl, texCache, widthNew, heightNew),
+        i = _genFrameBufferWithTe3.n,
+        frameBuffer = _genFrameBufferWithTe3.frameBuffer,
+        texture = _genFrameBufferWithTe3.texture; // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
 
 
     var j = texCache.findExistTexChannel(cache.page);
@@ -30985,11 +31046,10 @@
 
   function genColorMatrixWebgl(gl, texCache, cache, m, width, height, sx1, sy1, bbox) {
     // 生成最终纹理，尺寸为被遮罩节点大小
-    var _genFrameBufferWithTe7 = genFrameBufferWithTexture(gl, texCache, width, height),
-        _genFrameBufferWithTe8 = _slicedToArray(_genFrameBufferWithTe7, 3),
-        i = _genFrameBufferWithTe8[0],
-        frameBuffer = _genFrameBufferWithTe8[1],
-        texture = _genFrameBufferWithTe8[2]; // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
+    var _genFrameBufferWithTe4 = genFrameBufferWithTexture(gl, texCache, width, height),
+        i = _genFrameBufferWithTe4.n,
+        frameBuffer = _genFrameBufferWithTe4.frameBuffer,
+        texture = _genFrameBufferWithTe4.texture; // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
 
 
     var j = texCache.findExistTexChannel(cache.page);
@@ -31030,11 +31090,10 @@
 
     var bboxNew = [__sx1, __sy1, xe, ye]; // 生成最终纹理，尺寸为被遮罩节点大小
 
-    var _genFrameBufferWithTe9 = genFrameBufferWithTexture(gl, texCache, __clientWidth, __clientHeight),
-        _genFrameBufferWithTe10 = _slicedToArray(_genFrameBufferWithTe9, 3),
-        i = _genFrameBufferWithTe10[0],
-        frameBuffer = _genFrameBufferWithTe10[1],
-        texture = _genFrameBufferWithTe10[2]; // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
+    var _genFrameBufferWithTe5 = genFrameBufferWithTexture(gl, texCache, __clientWidth, __clientHeight),
+        i = _genFrameBufferWithTe5.n,
+        frameBuffer = _genFrameBufferWithTe5.frameBuffer,
+        texture = _genFrameBufferWithTe5.texture; // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
 
 
     var j = texCache.findExistTexChannel(cache.page);
@@ -31088,11 +31147,10 @@
 
     inverse = matrix.inverse(inverse); // 将所有mask绘入一个单独纹理中，尺寸和原点与被遮罩total相同，才能做到顶点坐标一致
 
-    var _genFrameBufferWithTe11 = genFrameBufferWithTexture(gl, texCache, width, height),
-        _genFrameBufferWithTe12 = _slicedToArray(_genFrameBufferWithTe11, 3),
-        i = _genFrameBufferWithTe12[0],
-        frameBuffer = _genFrameBufferWithTe12[1],
-        texture = _genFrameBufferWithTe12[2];
+    var _genFrameBufferWithTe6 = genFrameBufferWithTexture(gl, texCache, width, height),
+        i = _genFrameBufferWithTe6.n,
+        frameBuffer = _genFrameBufferWithTe6.frameBuffer,
+        texture = _genFrameBufferWithTe6.texture;
 
     var next = node.next;
     var isClip = next.__isClip;
@@ -31225,11 +31283,10 @@
     } // 生成最终纹理，汇总total和maskCache
 
 
-    var _genFrameBufferWithTe13 = genFrameBufferWithTexture(gl, texCache, width, height),
-        _genFrameBufferWithTe14 = _slicedToArray(_genFrameBufferWithTe13, 3),
-        n = _genFrameBufferWithTe14[0],
-        frameBuffer2 = _genFrameBufferWithTe14[1],
-        texture2 = _genFrameBufferWithTe14[2];
+    var _genFrameBufferWithTe7 = genFrameBufferWithTexture(gl, texCache, width, height),
+        n = _genFrameBufferWithTe7.n,
+        frameBuffer2 = _genFrameBufferWithTe7.frameBuffer,
+        texture2 = _genFrameBufferWithTe7.texture;
 
     var program;
 
@@ -31279,11 +31336,10 @@
         blur = _v[2],
         color = _v[4];
 
-    var _genFrameBufferWithTe15 = genFrameBufferWithTexture(gl, texCache, width, height),
-        _genFrameBufferWithTe16 = _slicedToArray(_genFrameBufferWithTe15, 3),
-        i = _genFrameBufferWithTe16[0],
-        frameBuffer = _genFrameBufferWithTe16[1],
-        texture = _genFrameBufferWithTe16[2]; // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
+    var _genFrameBufferWithTe8 = genFrameBufferWithTexture(gl, texCache, width, height),
+        i = _genFrameBufferWithTe8.n,
+        frameBuffer = _genFrameBufferWithTe8.frameBuffer,
+        texture = _genFrameBufferWithTe8.texture; // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
 
 
     var j = texCache.findExistTexChannel(cache.page);
@@ -31341,11 +31397,10 @@
       var dx = -bboxMerge[0],
           dy = -bboxMerge[1];
 
-      var _genFrameBufferWithTe17 = genFrameBufferWithTexture(gl, texCache, width, height),
-          _genFrameBufferWithTe18 = _slicedToArray(_genFrameBufferWithTe17, 3),
-          k = _genFrameBufferWithTe18[0],
-          _frameBuffer = _genFrameBufferWithTe18[1],
-          texture2 = _genFrameBufferWithTe18[2]; // 以merge的bbox的左上角为原点，每个cache要换算一下
+      var _genFrameBufferWithTe9 = genFrameBufferWithTexture(gl, texCache, width, height),
+          k = _genFrameBufferWithTe9.n,
+          _frameBuffer = _genFrameBufferWithTe9.frameBuffer,
+          texture2 = _genFrameBufferWithTe9.texture; // 以merge的bbox的左上角为原点，每个cache要换算一下
 
 
       texCache.addTexAndDrawWhenLimit(gl, cache, 1, null, cx, cy, dx, dy, false);
@@ -31416,11 +31471,10 @@
     var program = webgl.initShaders(gl, vertexMbm, frag);
     gl.useProgram(program); // 生成新的fbo，将混合结果绘入
 
-    var _genFrameBufferWithTe19 = genFrameBufferWithTexture(gl, texCache, W, H),
-        _genFrameBufferWithTe20 = _slicedToArray(_genFrameBufferWithTe19, 3),
-        n = _genFrameBufferWithTe20[0],
-        frameBuffer = _genFrameBufferWithTe20[1],
-        texture = _genFrameBufferWithTe20[2];
+    var _genFrameBufferWithTe10 = genFrameBufferWithTexture(gl, texCache, W, H),
+        n = _genFrameBufferWithTe10.n,
+        frameBuffer = _genFrameBufferWithTe10.frameBuffer,
+        texture = _genFrameBufferWithTe10.texture;
 
     webgl.drawMbm(gl, program, i, j, W, H); // 切换回主程序并销毁这个临时program
 
@@ -31843,7 +31897,7 @@
           if (__cache) {
             __cache.reset(bbox, sx, sy);
           } else {
-            __cache = Cache.getInstance(root.uuid, bbox, sx, sy);
+            __cache = CanvasCache.getInstance(root.uuid, bbox, sx, sy);
           }
 
           if (__cache && __cache.enabled) {
@@ -31933,7 +31987,7 @@
           if (_cache3) {
             _cache3.reset(_bbox3, sx1, sy1);
           } else {
-            _cache3 = Cache.getInstance(root.uuid, _bbox3, sx1, sy1);
+            _cache3 = CanvasCache.getInstance(root.uuid, _bbox3, sx1, sy1);
           }
 
           if (_cache3 && _cache3.enabled) {
@@ -32120,13 +32174,10 @@
     var n, frameBuffer, texture;
 
     if (hasMbm) {
-      var _genFrameBufferWithTe21 = genFrameBufferWithTexture(gl, texCache, width, height);
-
-      var _genFrameBufferWithTe22 = _slicedToArray(_genFrameBufferWithTe21, 3);
-
-      n = _genFrameBufferWithTe22[0];
-      frameBuffer = _genFrameBufferWithTe22[1];
-      texture = _genFrameBufferWithTe22[2];
+      var t = genFrameBufferWithTexture(gl, texCache, width, height);
+      n = t.n;
+      frameBuffer = t.frameBuffer;
+      texture = t.texture;
     }
 
     for (var _i10 = 0, _len8 = __structs.length; _i10 < _len8; _i10++) {
@@ -32211,11 +32262,10 @@
           if (hasMbm && isValidMbm(_mixBlendMode)) {
             texCache.refresh(gl, cx, cy, true);
 
-            var _genFrameBufferWithTe23 = genFrameBufferWithTexture(gl, texCache, width, height),
-                _genFrameBufferWithTe24 = _slicedToArray(_genFrameBufferWithTe23, 3),
-                n2 = _genFrameBufferWithTe24[0],
-                frameBuffer2 = _genFrameBufferWithTe24[1],
-                texture2 = _genFrameBufferWithTe24[2];
+            var _genFrameBufferWithTe11 = genFrameBufferWithTexture(gl, texCache, width, height),
+                n2 = _genFrameBufferWithTe11.n,
+                frameBuffer2 = _genFrameBufferWithTe11.frameBuffer,
+                texture2 = _genFrameBufferWithTe11.texture;
 
             texCache.addTexAndDrawWhenLimit(gl, target, opacity, m, cx, cy, 0, 0, true);
             texCache.refresh(gl, cx, cy, true); // 合成结果作为当前frameBuffer，以及纹理和单元，等于替代了当前画布作为绘制对象
@@ -32252,11 +32302,10 @@
           if (hasMbm && isValidMbm(_mixBlendMode)) {
             texCache.refresh(gl, cx, cy, true);
 
-            var _genFrameBufferWithTe25 = genFrameBufferWithTexture(gl, texCache, width, height),
-                _genFrameBufferWithTe26 = _slicedToArray(_genFrameBufferWithTe25, 3),
-                _n = _genFrameBufferWithTe26[0],
-                _frameBuffer2 = _genFrameBufferWithTe26[1],
-                _texture3 = _genFrameBufferWithTe26[2];
+            var _genFrameBufferWithTe12 = genFrameBufferWithTexture(gl, texCache, width, height),
+                _n = _genFrameBufferWithTe12.n,
+                _frameBuffer2 = _genFrameBufferWithTe12.frameBuffer,
+                _texture3 = _genFrameBufferWithTe12.texture;
 
             texCache.addTexAndDrawWhenLimit(gl, _target5, opacity, m, cx, cy, 0, 0, true);
             texCache.refresh(gl, cx, cy, true); // 合成结果作为当前frameBuffer，以及纹理和单元，等于替代了当前画布作为绘制对象
@@ -32487,10 +32536,10 @@
             _i11 += countMaskNum(__structs, _i11 + 1, _hasMask7);
           }
 
-          var _oh = offscreenHash[_i11];
+          var _oh4 = offscreenHash[_i11];
 
-          if (_oh) {
-            ctx = applyOffscreen(ctx, _oh, width, height, true);
+          if (_oh4) {
+            ctx = applyOffscreen(ctx, _oh4, width, height, true);
           }
 
           continue;
@@ -32588,10 +32637,10 @@
 
           ctx.globalCompositeOperation = 'source-over'; // 父超限但子有total的时候，i此时已经增加到了末尾，也需要检查
 
-          var _oh2 = offscreenHash[_i11];
+          var _oh5 = offscreenHash[_i11];
 
-          if (_oh2) {
-            ctx = applyOffscreen(ctx, _oh2, _width2, _height2, false);
+          if (_oh5) {
+            ctx = applyOffscreen(ctx, _oh5, _width2, _height2, false);
           }
         } // 没有cacheTotal是普通节点绘制
         else {
@@ -32685,10 +32734,10 @@
           // 由于mask特殊索引影响，所有离屏都在最后一个mask索引判断，此时mask本身优先结算，以index序大到小判断
 
 
-          var _oh3 = offscreenHash[_i11];
+          var _oh6 = offscreenHash[_i11];
 
-          if (_oh3) {
-            ctx = applyOffscreen(ctx, _oh3, width, height, false);
+          if (_oh6) {
+            ctx = applyOffscreen(ctx, _oh6, width, height, false);
           }
         }
       }
@@ -41105,7 +41154,9 @@
     level: o$1,
     change: o$2,
     Page: Page,
-    Cache: Cache
+    Cache: Cache,
+    CanvasPage: CanvasPage,
+    CanvasCache: CanvasCache
   };
 
   var version = "0.79.4";

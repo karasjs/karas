@@ -28,8 +28,10 @@ class MockCache {
   }
 
   release() {
-    this.available = false;
-    this.gl.deleteTexture(this.page.texture);
+    if(this.available) {
+      this.available = false;
+      this.gl.deleteTexture(this.page.texture);
+    }
   }
 }
 

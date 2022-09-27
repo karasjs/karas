@@ -1,5 +1,3 @@
-import inject from '../util/inject';
-
 /**
  * 默认的动态合图配置，保守低端机8个纹理单元和最大2048px尺寸，一般chrome是16个和16384px
  * webgl初始化会调用获取参数动态进行更改，16px是最小划分基本单位1，后续成2倍增长
@@ -16,7 +14,7 @@ import inject from '../util/inject';
 const UNIT = 16;
 let MAX = 2048;
 let NUMBER = 128;
-const HASH_CANVAS = {};
+const HASH = {};
 
 let uuid = 0;
 let init = false;
@@ -26,7 +24,7 @@ class Page {
     this.__size = size;
     this.__number = number;
     this.__width = this.__height = size;
-    this.__offscreen = inject.getOffscreenCanvas(size, size, null, number);
+    // this.__offscreen = inject.getOffscreenCanvas(size, size, null, number);
     // 标识n*n个单元格是否空闲可用，一维数组表示
     let grid = [];
     for(let i = 0, len = number * number; i < len; i++) {
@@ -121,18 +119,6 @@ class Page {
     return this.__grid;
   }
 
-  get offscreen() {
-    return this.__offscreen;
-  }
-
-  get canvas() {
-    return this.__offscreen.canvas;
-  }
-
-  get ctx() {
-    return this.__offscreen.ctx;
-  }
-
   get update() {
     return this.__update;
   }
@@ -141,7 +127,7 @@ class Page {
     this.__update = v;
   }
 
-  static getInstance(rootId, size) {
+  static getInstance(rootId, size, klass) {
     if(size > MAX) {
       return;
     }
@@ -151,7 +137,7 @@ class Page {
       unitSize++;
     }
     // 每个root复用自己的合图，webgl中为了隔离不同实例
-    let list = HASH_CANVAS[rootId] = HASH_CANVAS[rootId] || [];
+    let list = HASH[rootId] = HASH[rootId] || [];
     let page, pos;
     for(let i = 0, len = list.length; i < len; i++) {
       let item = list[i];
@@ -161,7 +147,7 @@ class Page {
       }
     }
     if(!page) {
-      page = new Page(MAX, NUMBER);
+      page = new klass(MAX, NUMBER);
       pos = 0;
       list.push(page);
     }

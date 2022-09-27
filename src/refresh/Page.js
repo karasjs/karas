@@ -24,7 +24,6 @@ class Page {
     this.__size = size;
     this.__number = number;
     this.__width = this.__height = size;
-    // this.__offscreen = inject.getOffscreenCanvas(size, size, null, number);
     // 标识n*n个单元格是否空闲可用，一维数组表示
     let grid = [];
     for(let i = 0, len = number * number; i < len; i++) {

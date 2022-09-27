@@ -20,6 +20,7 @@ class Cache {
     this.__x = x;
     this.__y = y;
     this.__enabled = true;
+    this.__available = false;
     this.__appendData(x1, y1);
   }
 
@@ -35,17 +36,10 @@ class Cache {
   }
 
   update() {
-    this.page.__update = true;
+    this.__page.__update = true;
   }
 
   clear() {
-    // if(this.__available) {
-    //   this.__available = false;
-    //   let ctx = this.ctx;
-    //   ctx.setTransform(1, 0, 0, 1, 0, 0);
-    //   let size = this.__page.__size;
-    //   ctx.clearRect(this.__x, this.__y, size, size);
-    // }
   }
 
   // svg打标用会覆盖此方法
@@ -136,15 +130,6 @@ class Cache {
     }
     let { page, pos } = res;
     return new cacheKlass(rootId, w, h, bbox, page, pos, x1, y1);
-  }
-
-  static getCache(list) {
-    for(let i = 0, len = list.length; i < len; i++) {
-      let item = list[i];
-      if(item && item.available) {
-        return item;
-      }
-    }
   }
 }
 

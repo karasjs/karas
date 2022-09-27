@@ -100,7 +100,7 @@ class CanvasCache extends Cache {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = isClip ? 'source-out' : 'source-in';
-    Cache.drawCache(target, cacheMask);
+    CanvasCache.drawCache(target, cacheMask);
     ctx.globalCompositeOperation = 'source-over';
     return cacheMask;
   }
@@ -119,7 +119,7 @@ class CanvasCache extends Cache {
       let ctx = cacheOverflow.ctx;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.globalAlpha = 1;
-      Cache.drawCache(target, cacheOverflow);
+      CanvasCache.drawCache(target, cacheOverflow);
       ctx.globalCompositeOperation = 'destination-in';
       ctx.fillStyle = '#FFF';
       ctx.beginPath();

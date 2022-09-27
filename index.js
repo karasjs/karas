@@ -28042,6 +28042,7 @@
         this.__x = x;
         this.__y = y;
         this.__enabled = true;
+        this.__available = false;
 
         this.__appendData(x1, y1);
       }
@@ -28063,18 +28064,11 @@
     }, {
       key: "update",
       value: function update() {
-        this.page.__update = true;
+        this.__page.__update = true;
       }
     }, {
       key: "clear",
-      value: function clear() {// if(this.__available) {
-        //   this.__available = false;
-        //   let ctx = this.ctx;
-        //   ctx.setTransform(1, 0, 0, 1, 0, 0);
-        //   let size = this.__page.__size;
-        //   ctx.clearRect(this.__x, this.__y, size, size);
-        // }
-      } // svg打标用会覆盖此方法
+      value: function clear() {} // svg打标用会覆盖此方法
 
     }, {
       key: "release",
@@ -28190,17 +28184,6 @@
             pos = res.pos;
         return new cacheKlass(rootId, w, h, bbox, page, pos, x1, y1);
       }
-    }, {
-      key: "getCache",
-      value: function getCache(list) {
-        for (var i = 0, len = list.length; i < len; i++) {
-          var item = list[i];
-
-          if (item && item.available) {
-            return item;
-          }
-        }
-      }
     }]);
 
     return Cache;
@@ -28230,8 +28213,7 @@
     function Page(size, number) {
       this.__size = size;
       this.__number = number;
-      this.__width = this.__height = size; // this.__offscreen = inject.getOffscreenCanvas(size, size, null, number);
-      // 标识n*n个单元格是否空闲可用，一维数组表示
+      this.__width = this.__height = size; // 标识n*n个单元格是否空闲可用，一维数组表示
 
       var grid = [];
 
@@ -28613,7 +28595,7 @@
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.globalAlpha = 1;
         ctx.globalCompositeOperation = isClip ? 'source-out' : 'source-in';
-        Cache.drawCache(target, cacheMask);
+        CanvasCache.drawCache(target, cacheMask);
         ctx.globalCompositeOperation = 'source-over';
         return cacheMask;
       }
@@ -28638,7 +28620,7 @@
           var ctx = cacheOverflow.ctx;
           ctx.setTransform(1, 0, 0, 1, 0, 0);
           ctx.globalAlpha = 1;
-          Cache.drawCache(target, cacheOverflow);
+          CanvasCache.drawCache(target, cacheOverflow);
           ctx.globalCompositeOperation = 'destination-in';
           ctx.fillStyle = '#FFF';
           ctx.beginPath();

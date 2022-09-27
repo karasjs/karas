@@ -1045,7 +1045,7 @@ class Xom extends Node {
         let sx = matrixCache[1] = transform[1] = sin * x;
         let sy = matrixCache[4] = transform[4] = -sin * y;
         let cy = matrixCache[5] = transform[5] = cos * y;
-        let [ox, oy] = __computedStyle[TRANSFORM_ORIGIN];
+        let t = __computedStyle[TRANSFORM_ORIGIN], ox = t[0], oy = t[1];
         ox += __sx1;
         oy += __sy1;
         matrixCache[12] = transform[12] + ox - cx * ox - oy * sy;
@@ -1085,7 +1085,7 @@ class Xom extends Node {
           matrixCache[9] *= z;
           matrixCache[10] *= z;
         }
-        let [ox, oy] = __computedStyle[TRANSFORM_ORIGIN];
+        let t = __computedStyle[TRANSFORM_ORIGIN], ox = t[0], oy = t[1];
         ox += __sx1;
         oy += __sy1;
         matrixCache[12] = transform[12] + ox - transform[0] * ox - transform[4] * oy;

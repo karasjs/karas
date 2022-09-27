@@ -905,7 +905,7 @@ function genTotalWebgl(renderMode, gl, texCache, node, index, total, __structs, 
         continue;
       }
       if(transform && !isE(transform)) {
-        let [x, y] = transformOrigin;
+        let x = transformOrigin[0], y = transformOrigin[1];
         // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
         if(__cache && __cache.available) {
           x += __cache.sx1;

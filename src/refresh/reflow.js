@@ -474,12 +474,6 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
   if(removeDom) {
     // remove有没有向上影响，决定布局后的高度nowH
     let isRemoveSelf = top === node || node.isShadowRoot && node.__hostRoot === top;
-    let temp = node;
-    while(temp.isShadowRoot) {
-      temp = temp.__host;
-      temp.__destroy();
-    }
-    node.__destroy();
     if(isRemoveSelf) {
       nowH = 0;
     }

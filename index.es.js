@@ -25443,7 +25443,7 @@ var Geom = /*#__PURE__*/function (_Xom) {
     _this = _Xom.call(this, tagName, props) || this;
     _this.__isMulti = !!_this.props.multi;
     _this.__style = css.normalize(_this.style, reset.DOM_ENTRY_SET.concat(reset.GEOM_ENTRY_SET));
-    _this.__currentStyle = util.extend({}, _this.__style);
+    _this.__currentStyle = util.extend([], _this.__style);
     _this.__currentProps = util.clone(_this.props);
     _this.__cacheProps = {};
     return _this;
@@ -26851,15 +26851,6 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
   if (removeDom) {
     // remove有没有向上影响，决定布局后的高度nowH
     var isRemoveSelf = top === node || node.isShadowRoot && node.__hostRoot === top;
-    var temp = node;
-
-    while (temp.isShadowRoot) {
-      temp = temp.__host;
-
-      temp.__destroy();
-    }
-
-    node.__destroy();
 
     if (isRemoveSelf) {
       nowH = 0;
@@ -27330,7 +27321,7 @@ var Dom = /*#__PURE__*/function (_Xom) {
 
     _this.__style = css.normalize(style, reset.DOM_ENTRY_SET); // currentStyle/currentProps不深度clone，继承一层即可，动画时也是extend这样只改一层引用不动原始静态style
 
-    _this.__currentStyle = extend$1({}, _this.__style);
+    _this.__currentStyle = extend$1([], _this.__style);
     _this.__children = builder.buildChildren(_assertThisInitialized(_this), children);
     _this.__flexLine = []; // flex布局多行模式时存储行
 
@@ -37879,19 +37870,21 @@ var Root = /*#__PURE__*/function (_Dom) {
 
         if (top === this) {
           this.__reLayout();
-
-          if (removeDom) {
-            var temp = node;
-
-            while (temp.isShadowRoot) {
-              temp = temp.__host;
-
-              temp.__destroy();
-            }
-          }
         } // 布局影响next的所有节点，重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
         else {
           reflow.checkNext(this, top, node, hasZ, addDom, removeDom);
+        }
+
+        if (removeDom) {
+          var temp = node;
+
+          while (temp.isShadowRoot) {
+            temp = temp.__host;
+
+            temp.__destroy();
+          }
+
+          node.__destroy();
         }
       }
 
@@ -41055,7 +41048,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.79.5";
+var version = "0.79.6";
 
 Geom.register('$line', Line);
 Geom.register('$polyline', Polyline);

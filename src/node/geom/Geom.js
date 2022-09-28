@@ -46,7 +46,7 @@ class Geom extends Xom {
     super(tagName, props);
     this.__isMulti = !!this.props.multi;
     this.__style = css.normalize(this.style, reset.DOM_ENTRY_SET.concat(reset.GEOM_ENTRY_SET));
-    this.__currentStyle = util.extend({}, this.__style);
+    this.__currentStyle = util.extend([], this.__style);
     this.__currentProps = util.clone(this.props);
     this.__cacheProps = {};
   }

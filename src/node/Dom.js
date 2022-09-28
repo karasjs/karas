@@ -253,7 +253,7 @@ class Dom extends Xom {
     }
     this.__style = css.normalize(style, reset.DOM_ENTRY_SET);
     // currentStyle/currentProps不深度clone，继承一层即可，动画时也是extend这样只改一层引用不动原始静态style
-    this.__currentStyle = extend({}, this.__style);
+    this.__currentStyle = extend([], this.__style);
     this.__children = builder.buildChildren(this, children);
     this.__flexLine = []; // flex布局多行模式时存储行
     this.__ellipsis = null; // 虚拟节点，有的话渲染

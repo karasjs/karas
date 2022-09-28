@@ -25449,7 +25449,7 @@
       _this = _Xom.call(this, tagName, props) || this;
       _this.__isMulti = !!_this.props.multi;
       _this.__style = css.normalize(_this.style, reset.DOM_ENTRY_SET.concat(reset.GEOM_ENTRY_SET));
-      _this.__currentStyle = util.extend({}, _this.__style);
+      _this.__currentStyle = util.extend([], _this.__style);
       _this.__currentProps = util.clone(_this.props);
       _this.__cacheProps = {};
       return _this;
@@ -27327,7 +27327,7 @@
 
       _this.__style = css.normalize(style, reset.DOM_ENTRY_SET); // currentStyle/currentProps不深度clone，继承一层即可，动画时也是extend这样只改一层引用不动原始静态style
 
-      _this.__currentStyle = extend$1({}, _this.__style);
+      _this.__currentStyle = extend$1([], _this.__style);
       _this.__children = builder.buildChildren(_assertThisInitialized(_this), children);
       _this.__flexLine = []; // flex布局多行模式时存储行
 

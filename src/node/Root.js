@@ -1,3 +1,4 @@
+import Xom from './Xom';
 import Dom from './Dom';
 import Text from './Text';
 import Component from './Component';
@@ -23,6 +24,7 @@ import fragment from '../gl/main.frag';
 import vertexMask from '../gl/mask.vert';
 import fragmentMask from '../gl/mask.frag';
 import fragmentClip from '../gl/clip.frag';
+import vertexOverflow from '../gl/overflow.vert';
 import fragmentOverflow from '../gl/overflow.frag';
 import vertexCm from '../gl/filter/cm.vert';
 import fragmentCm from '../gl/filter/cm.frag';
@@ -30,7 +32,23 @@ import vertexDs from '../gl/filter/drops.vert'
 import fragmentDs from '../gl/filter/drops.frag';
 import webgl from '../gl/webgl';
 import ca from '../gl/ca';
-import TexCache from '../gl/TexCache';
+import TexHelper from '../gl/TexHelper';
+import vertexMbm from '../gl/mbm/mbm.vert';
+import fragmentMultiply from '../gl/mbm/multiply.frag';
+import fragmentScreen from '../gl/mbm/screen.frag';
+import fragmentOverlay from '../gl/mbm/overlay.frag';
+import fragmentDarken from '../gl/mbm/darken.frag';
+import fragmentLighten from '../gl/mbm/lighten.frag';
+import fragmentColorDodge from '../gl/mbm/color-dodge.frag';
+import fragmentColorBurn from '../gl/mbm/color-burn.frag';
+import fragmentHardLight from '../gl/mbm/hard-light.frag';
+import fragmentSoftLight from '../gl/mbm/soft-light.frag';
+import fragmentDifference from '../gl/mbm/difference.frag';
+import fragmentExclusion from '../gl/mbm/exclusion.frag';
+import fragmentHue from '../gl/mbm/hue.frag';
+import fragmentSaturation from '../gl/mbm/saturation.frag';
+import fragmentColor from '../gl/mbm/color.frag';
+import fragmentLuminosity from '../gl/mbm/luminosity.frag';
 
 const {
   STYLE_KEY: {
@@ -317,13 +335,28 @@ class Root extends Dom {
       gl.program = webgl.initShaders(gl, vertex, fragment);
       gl.programMask = webgl.initShaders(gl, vertexMask, fragmentMask);
       gl.programClip = webgl.initShaders(gl, vertexMask, fragmentClip);
-      gl.programOverflow = webgl.initShaders(gl, vertexMask, fragmentOverflow);
+      gl.programOverflow = webgl.initShaders(gl, vertexOverflow, fragmentOverflow);
       gl.programCm = webgl.initShaders(gl, vertexCm, fragmentCm);
       gl.programDs = webgl.initShaders(gl, vertexDs, fragmentDs);
+      gl.programMbmMp = webgl.initShaders(gl, vertexMbm, fragmentMultiply);
+      gl.programMbmSr = webgl.initShaders(gl, vertexMbm, fragmentScreen);
+      gl.programMbmOl = webgl.initShaders(gl, vertexMbm, fragmentOverlay);
+      gl.programMbmDk = webgl.initShaders(gl, vertexMbm, fragmentDarken);
+      gl.programMbmLt = webgl.initShaders(gl, vertexMbm, fragmentLighten);
+      gl.programMbmCd = webgl.initShaders(gl, vertexMbm, fragmentColorDodge);
+      gl.programMbmCb = webgl.initShaders(gl, vertexMbm, fragmentColorBurn);
+      gl.programMbmHl = webgl.initShaders(gl, vertexMbm, fragmentHardLight);
+      gl.programMbmSl = webgl.initShaders(gl, vertexMbm, fragmentSoftLight);
+      gl.programMbmDf = webgl.initShaders(gl, vertexMbm, fragmentDifference);
+      gl.programMbmEx = webgl.initShaders(gl, vertexMbm, fragmentExclusion);
+      gl.programMbmHue = webgl.initShaders(gl, vertexMbm, fragmentHue);
+      gl.programMbmSt = webgl.initShaders(gl, vertexMbm, fragmentSaturation);
+      gl.programMbmCl = webgl.initShaders(gl, vertexMbm, fragmentColor);
+      gl.programMbmLm = webgl.initShaders(gl, vertexMbm, fragmentLuminosity);
       gl.useProgram(gl.program);
       // 第一次渲染生成纹理缓存管理对象，收集渲染过程中生成的纹理并在gl纹理单元满了时进行绘制和清空，减少texImage2d耗时问题
       const MAX_TEXTURE_IMAGE_UNITS = Math.min(16, gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
-      this.__texCache = new TexCache(MAX_TEXTURE_IMAGE_UNITS);
+      this.__texHelper = new TexHelper(MAX_TEXTURE_IMAGE_UNITS);
     }
     this.refresh(true);
     // 第一次节点没有__root，渲染一次就有了才能diff
@@ -413,8 +446,8 @@ class Root extends Dom {
       n.__root = null;
     }
     let gl = this.ctx;
-    if(this.__texCache && gl) {
-      this.__texCache.release(gl);
+    if(this.__texHelper && gl) {
+      this.__texHelper.release(gl);
       if(gl.program) {
         gl.deleteShader(gl.program.vertexShader);
         gl.deleteShader(gl.program.fragmentShader);
@@ -450,68 +483,6 @@ class Root extends Dom {
     }
     else if(isFunction(cb)) {
       cb(-1);
-    }
-  }
-
-  addRefreshTask(cb) {
-    let { taskUp, isDestroyed } = this;
-    if(isDestroyed) {
-      return;
-    }
-    // 第一个添加延迟侦听，后续放队列等待一并执行
-    if(!taskUp.length) {
-      let clone;
-      frame.nextFrame({
-        __before: diff => {
-          if(this.isDestroyed) {
-            return;
-          }
-          clone = taskUp.splice(0);
-          // 前置一般是动画计算此帧样式应用，然后刷新后出发frame事件，图片加载等同
-          if(clone.length) {
-            clone.forEach((item, i) => {
-              if(isObject(item) && isFunction(item.__before)) {
-                item.__before(diff);
-              }
-            });
-          }
-        },
-        __after: diff => {
-          if(this.isDestroyed) {
-            return;
-          }
-          clone.forEach(item => {
-            if(isObject(item) && isFunction(item.__after)) {
-              item.__after(diff);
-            }
-            else if(isFunction(item)) {
-              item(diff);
-            }
-          });
-        }
-      });
-      this.__frameHook();
-    }
-    if(taskUp.indexOf(cb) === -1) {
-      taskUp.push(cb);
-    }
-  }
-
-  // addForceRefreshTask(cb) {
-  //   this.__hasRootUpdate = true;
-  //   this.addRefreshTask(cb);
-  // }
-
-  delRefreshTask(cb) {
-    if(!cb) {
-      return;
-    }
-    let { taskUp } = this;
-    for(let i = 0, len = taskUp.length; i < len; i++) {
-      if(taskUp[i] === cb) {
-        taskUp.splice(i, 1);
-        break;
-      }
     }
   }
 
@@ -683,9 +654,12 @@ class Root extends Dom {
       while(prev && (prev.__isMask)) {
         prev = prev.__prev;
       }
-      if(prev && prev.__cacheMask) {
-        prev.__cacheMask.release();
+      if(prev && (prev instanceof Xom || prev instanceof Component && prev.shadowRoot instanceof Xom)) {
         prev.__refreshLevel |= CACHE;
+        prev.__struct.hasMask = true;
+        if(prev.__cacheMask) {
+          prev.__cacheMask.release();
+        }
       }
     }
     let isRp = isRepaint(lv);
@@ -906,8 +880,8 @@ class Root extends Dom {
     return this.__animateController;
   }
 
-  get texCache() {
-    return this.__texCache;
+  get texHelper() {
+    return this.__texHelper;
   }
 }
 

@@ -173,7 +173,7 @@ class Text extends Node {
     this.__textWidth = 0; // 整体宽度
     this.__bp = null; // block父节点
     this.__widthHash = {}; // 存储当前字体样式key下的charWidth/textWidth
-    this.__limitCache = null;
+    this.__limitCache = false;
     this.__hasContent = false;
   }
 

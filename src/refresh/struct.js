@@ -15,7 +15,7 @@ import tf from '../style/transform';
 import mbm from '../style/mbm';
 import enums from '../util/enums';
 import webgl from '../gl/webgl';
-import MockCache from '../gl/MockCache';
+import TextureCache from '../gl/TextureCache';
 import blur from '../math/blur';
 import vertexBlur from '../gl/filter/blur.vert';
 import fragmentBlur from '../gl/filter/blur.frag';
@@ -35,6 +35,7 @@ import fragmentHue from '../gl/mbm/hue.frag';
 import fragmentSaturation from '../gl/mbm/saturation.frag';
 import fragmentColor from '../gl/mbm/color.frag';
 import fragmentLuminosity from '../gl/mbm/luminosity.frag';
+import MockCache from "../gl/MockCache";
 
 const {
   OFFSCREEN_OVERFLOW,
@@ -87,155 +88,113 @@ function getCache(list) {
 /**
  * 生成一个节点及其子节点所包含的矩形范围盒，canvas和webgl的最大尺寸限制不一样，由外部传入
  * 如果某个子节点超限，则视为整个超限，超限返回空
- * @param node
- * @param __structs
- * @param index
- * @param total
- * @param parentIndexHash
- * @param opacityHash
- * @param MAX
- * @param includeLimitCache webgl时即便超限也要强制生成total，所以标识不能跳出
- * @returns {*}
  */
-function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash, MAX, includeLimitCache) {
-  let { __sx1: sx1, __sy1: sy1, __cache } = node;
-  let {
-    [FILTER]: filter,
-    [PERSPECTIVE]: perspective,
-    [PERSPECTIVE_ORIGIN]: perspectiveOrigin,
-  } = node.__computedStyle;
+function genBboxTotal(node, __structs, index, total) {
+  let { __cache } = node;
+  assignMatrix(node.__matrixEvent, mx.identity());
+  node.__opacity = 1;
+  // let {
+  //   [PERSPECTIVE]: perspective,
+  //   [PERSPECTIVE_ORIGIN]: perspectiveOrigin,
+  // } = node.__computedStyle;
   // 先将局部根节点的bbox算好，可能没内容是空
   let bboxTotal;
   if(__cache && __cache.available) {
     bboxTotal = __cache.bbox;
   }
   else {
-    bboxTotal = node.filterBbox;
+    bboxTotal = node.bbox;
   }
   bboxTotal = bboxTotal.slice(0);
   // 局部根节点如有perspective，则计算pm，这里不会出现嵌套，因为每个出现都会生成局部根节点
-  let parentPm;
-  if(perspective) {
-    parentPm = tf.calPerspectiveMatrix(perspective, perspectiveOrigin[0], perspectiveOrigin[1]);
-  }
-  // 广度遍历，不断一层层循环下去，用2个hash暂存每层的父matrix和opacity，blur只需记住顶层，因为子的如果有一定是cacheFilter
-  let list = [index];
-  let d = 0;
-  filter.forEach(item => {
-    let { k, v } = item;
-    if(k === 'blur') {
-      d = blur.outerSize(v);
+  // let parentPm = isWebgl && node.__perspectiveMatrix;
+  // if(perspective) {
+  //   parentPm = tf.calPerspectiveMatrix(perspective, perspectiveOrigin[0], perspectiveOrigin[1]);
+  // }
+  let hasMbm;
+  for(let i = index + 1, len = index + total + 1; i < len; i++) {
+    let {
+      node,
+      total,
+      hasMask,
+    } = __structs[i];
+    if(node instanceof Text) {
+      if(node.__limitCache) {
+        inject.warn('Bbox of Text(' + index + ')' + ' is oversize'
+          + node.offsetWidth + ', ' + node.offsetHeight);
+        return;
+      }
+      let bbox = node.bbox, p = node.__domParent, matrix = p.__matrixEvent;
+      // if(parentPm) {
+      //   matrix = multiply(parentPm, matrix);
+      // }
+      if(!isE(matrix)) {
+        bbox = transformBbox(bbox, matrix, 0, 0);
+      }
+      mergeBbox(bboxTotal, bbox, 0, 0);
+      continue;
     }
-  });
-  opacityHash[index] = 1;
-  // opacity可以保存下来层级相乘结果供外部使用，但matrix不可以，因为这里按画布原点为坐标系计算，外部合并局部根节点以bbox左上角为原点
-  let matrixHash = [];
-  while(list.length) {
-    let arr = list.splice(0);
-    for(let i = 0, len = arr.length; i < len; i++) {
-      let parentIndex = arr[i];
-      let total = __structs[parentIndex].total || 0;
-      for(let i = parentIndex + 1, len = parentIndex + total + 1; i < len; i++) {
-        let {
-          node: node2,
-          total,
-        } = __structs[i];
-        // mask也不占bbox位置
-        if(node2.__isMask) {
-          continue;
-        }
-        let {
-          __sx1,
-          __sy1,
-          __cache,
-          __cacheTotal,
-          __cacheFilter,
-          __cacheMask,
-          __cacheOverflow,
-          __limitCache,
-          computedStyle: {
-            [DISPLAY]: display,
-            [VISIBILITY]: visibility,
-            [TRANSFORM]: transform,
-            [TRANSFORM_ORIGIN]: transformOrigin,
-            [OPACITY]: opacity,
-          },
-        } = node2;
-        // webgl不能跳过超限
-        if(__limitCache && !includeLimitCache) {
-          return;
-        }
-        // display:none跳过整个节点树，visibility只跳过自身
-        if(display === 'none') {
-          i += total || 0;
-          continue;
-        }
-        if(visibility === 'hidden') {
-          continue;
-        }
-        parentIndexHash[i] = parentIndex;
-        opacityHash[i] = opacityHash[parentIndex] * opacity;
-        let bbox, dx = 0, dy = 0, hasTotal;
-        // text不能用filter
-        if(node2 instanceof Text) {
-          bbox = node2.bbox;
-        }
-        else {
-          let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]);
-          if(target) {
-            bbox = target.bbox;
-            dx = target.dbx;
-            dy = target.dby;
-            i += total || 0;
-            hasTotal = true;
-          }
-          else if(__cache && __cache.available) {
-            bbox = __cache.bbox;
-            dx = __cache.dbx;
-            dy = __cache.dby;
-          }
-          else {
-            bbox = node2.filterBbox;
-          }
-        }
-        // 可能Xom没有内容
-        if(bbox) {
-          bbox = bbox.slice(0);
-          // 相对于根节点偏移
-          bbox[0] -= sx1;
-          bbox[1] -= sy1;
-          bbox[2] -= sx1;
-          bbox[3] -= sy1;
-          let matrix = matrixHash[parentIndex];
-          // 父级matrix初始化E为null，自身不为E时才运算，可以加速
-          if(transform && !isE(transform)) {
-            let tfo = transformOrigin;
-            // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
-            let m = tf.calMatrixByOrigin(transform, tfo[0] + __sx1 - sx1 + dx, tfo[1] + __sy1 - sy1 + dy);
-            if(matrix) {
-              matrix = multiply(matrix, m);
-            }
-            else {
-              matrix = m;
-            }
-          }
-          if(matrix) {
-            matrixHash[i] = matrix;
-          }
-          if(parentPm) {
-            matrix = multiply(parentPm, matrix);
-          }
-          bbox = transformBbox(bbox, matrix, d, d);
-          // 有孩子才继续存入下层级广度运算
-          if(total && !hasTotal) {
-            list.push(i);
-          }
-          mergeBbox(bboxTotal, bbox, sx1, sy1);
-        }
+    if(node.__limitCache) {
+      inject.warn('Bbox of ' + node.tagName + '(' + index + ')' + ' is oversize'
+        + node.offsetWidth + ', ' + node.offsetHeight);
+      return;
+    }
+    let {
+      __computedStyle: __computedStyle2,
+      __isMask,
+    } = node;
+    // 跳过display:none元素和它的所有子节点和mask，本身是mask除外
+    if(__computedStyle2[DISPLAY] === 'none' || i !== index && __isMask) {
+      i += (total || 0);
+      if(hasMask) {
+        i += countMaskNum(__structs, i + 1, hasMask);
+      }
+      continue;
+    }
+    if(!hasMbm) {
+      let mbm = __computedStyle2[MIX_BLEND_MODE];
+      if(isValidMbm(mbm)) {
+        hasMbm = true;
       }
     }
+    let {
+      __cache: __cache2,
+      __cacheTotal: __cacheTotal2,
+      __cacheFilter: __cacheFilter2,
+      __cacheMask: __cacheMask2,
+      __cacheOverflow: __cacheOverflow2,
+    } = node;
+    let p = node.__domParent;
+    node.__opacity = __computedStyle2[OPACITY] * p.__opacity;
+    let matrix = multiply(p.__matrixEvent, node.__matrix);
+    // if(parentPm) {
+    //   matrix = multiply(parentPm, matrix);
+    // }
+    assignMatrix(node.__matrixEvent, matrix);
+    let bbox;
+    // 子元素有cacheTotal优先使用
+    let target = getCache([__cacheMask2, __cacheFilter2, __cacheOverflow2, __cacheTotal2, __cache2]);
+    if(target) {
+      i += (total || 0);
+      if(hasMask) {
+        i += countMaskNum(__structs, i + 1, hasMask);
+      }
+      bbox = target.bbox;
+    }
+    else {
+      bbox = node.bbox; // 不能用filterBbox，子元素继承根节点的，如果有filter会是cacheFilter的bbox
+    }
+    // 老的不变，新的会各自重新生成，根据matrixEvent合并bboxTotal
+    bbox = transformBbox(bbox, matrix, 0, 0);
+    mergeBbox(bboxTotal, bbox, 0, 0);
   }
-  return { bboxTotal, parentPm };
+  if((bboxTotal[2] - bboxTotal[0] <= 0) || (bboxTotal[3] - bboxTotal[1] <= 0)) {
+    return {};
+  }
+  return {
+    bbox: bboxTotal,
+    hasMbm,
+  };
 }
 
 function mergeBbox(bbox, t, sx1, sy1) {
@@ -254,40 +213,70 @@ function mergeBbox(bbox, t, sx1, sy1) {
  * cacheMask基于overflow
  * cacheBlend基于mask
  */
-function genTotal(renderMode, root, node, index, lv, total, __structs, hasMask, width, height) {
+function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, width, height) {
   let __cacheTotal = node.__cacheTotal;
-  // 先绘制形成基础的total，有可能已经存在无变化，就可省略
-  if(!__cacheTotal || !__cacheTotal.available) {
-    let { __sx1: sx1, __sy1: sy1, bbox } = node;
-    // 局部根节点视为E且无透明度，用bbox，子节点用filterBbox
-    let bboxTotal = bbox.slice(0);
-    assignMatrix(node.__matrixEvent, mx.identity());
-    node.__opacity = 1;
-    // 先遍历每个节点，以局部根节点为E，求得所占的总的bbox，即合并所有bbox
-    for(let i = index + 1, len = index + (total || 0) + 1; i < len; i++) {
-      let {
-        node,
-        total,
-        hasMask,
-      } = __structs[i];
-      // Text特殊处理，因为有stroke描边
-      if(node instanceof Text) {
-        let bbox = node.filterBbox, matrix = node.__domParent.__matrixEvent;
-        if(!isE(matrix)) {
-          bbox = transformBbox(bbox, matrix, 0, 0);
-        }
-        mergeBbox(bboxTotal, bbox, 0, 0);
-        continue;
+  if(__cacheTotal && __cacheTotal.available) {
+    return __cacheTotal;
+  }
+  let { __sx1: sx1, __sy1: sy1 } = node;
+  let bboxTotal = genBboxTotal(node, __structs, index, total).bboxTotal;
+  if(!bboxTotal) {
+    return;
+  }
+
+  // 生成cacheTotal，获取偏移dx/dy
+  __cacheTotal = node.__cacheTotal = CanvasCache.getInstance(renderMode, ctx, root.uuid, bboxTotal, sx1, sy1, null);
+  if(!__cacheTotal || !__cacheTotal.__enabled) {
+    if((bboxTotal[2] - bboxTotal[0]) || (bboxTotal[3] - bboxTotal[1])) {
+      inject.warn('CanvasCache of ' + node.tagName + '(' + index + ')' + ' is oversize: '
+        + (bboxTotal[2] - bboxTotal[0]) + ', ' + (bboxTotal[3] - bboxTotal[1]));
+    }
+    return;
+  }
+  __cacheTotal.__available = true;
+  let { dx, dy, dbx, dby, x: tx, y: ty } = __cacheTotal;
+  let ctxTotal = __cacheTotal.ctx;
+
+  /**
+   * 再次遍历每个节点，以局部根节点左上角为基准原点，将所有节点绘制上去
+   * 每个子节点的opacity有父继承计算在上面循环已经做好了，直接获取
+   * 但matrixEvent可能需要重算，因为原点不一定是根节点的原点，影响tfo
+   * 另外每个节点的refreshLevel需要设置REPAINT
+   * 这样cacheTotal取消时子节点需确保重新计算一次matrix/opacity/filter，保证下次和父元素继承正确
+   */
+  let matrixList = [];
+  let parentMatrix = null;
+  let lastMatrix = null;
+  let lastLv = lv;
+  // 和外面没cache的类似，mask生成hash记录
+  let maskStartHash = [];
+  let offscreenHash = [];
+  for(let i = index, len = index + (total || 0) + 1; i < len; i++) {
+    let {
+      node,
+      lv,
+      total,
+      hasMask,
+    } = __structs[i];
+    // 排除Text
+    if(node instanceof Text) {
+      node.render(renderMode, ctxTotal, dx, dy);
+      let oh = offscreenHash[i];
+      if(oh) {
+        ctxTotal = applyOffscreen(ctxTotal, oh, width, height, false);
       }
-      let {
-        __computedStyle: __computedStyle2,
-        __isMask,
-      } = node;
-      // 跳过display:none元素和它的所有子节点和mask，本身是mask除外
-      if(__computedStyle2[DISPLAY] === 'none' || i !== index && __isMask) {
+    }
+    else {
+      let __computedStyle2 = node.__computedStyle;
+      // none跳过这棵子树，判断下最后一个节点的离屏应用即可
+      if(__computedStyle2[DISPLAY] === 'none') {
         i += (total || 0);
         if(hasMask) {
           i += countMaskNum(__structs, i + 1, hasMask);
+        }
+        let oh = offscreenHash[i];
+        if(oh) {
+          ctxTotal = applyOffscreen(ctxTotal, oh, width, height, true);
         }
         continue;
       }
@@ -297,177 +286,94 @@ function genTotal(renderMode, root, node, index, lv, total, __structs, hasMask, 
         __cacheMask: __cacheMask2,
         __cacheOverflow: __cacheOverflow2,
       } = node;
-      let p = node.__domParent;
-      node.__opacity = __computedStyle2[OPACITY] * p.__opacity;
-      let matrix = multiply(p.__matrixEvent, node.__matrix);
-      assignMatrix(node.__matrixEvent, matrix);
-      let bbox;
+      let {
+        [TRANSFORM]: transform,
+        [TRANSFORM_ORIGIN]: tfo,
+        [VISIBILITY]: visibility,
+      } = __computedStyle2;
+      let mh = maskStartHash[i];
+      if(mh) {
+        let { idx, hasMask, offscreenMask } = mh;
+        let target = inject.getOffscreenCanvas(width, height, null, 'mask2');
+        offscreenMask.mask = target; // 应用mask用到
+        offscreenMask.isClip = node.__isClip;
+        // 定位到最后一个mask元素上的末尾
+        let j = i + (total || 0) + 1;
+        while(--hasMask) {
+          let { total } = __structs[j];
+          j += (total || 0) + 1;
+        }
+        j--;
+        let list = offscreenHash[j] = offscreenHash[j] || [];
+        list.push({ idx, lv, type: OFFSCREEN_MASK, offscreen: offscreenMask });
+        list.push({ idx: j, lv, type: OFFSCREEN_MASK2, offscreen: {
+          ctx: ctxTotal, // 保存等待OFFSCREEN_MASK2时还原
+          target,
+        }});
+        ctxTotal = target.ctx;
+      }
+      // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理
+      if(i === index) {}
+      else if(lv > lastLv) {
+        parentMatrix = lastMatrix;
+        if(isE(parentMatrix)) {
+          parentMatrix = null;
+        }
+        matrixList.push(parentMatrix);
+      }
+      // 变小出栈索引需注意，可能不止一层，多层计算diff层级
+      else if(lv < lastLv) {
+        let diff = lastLv - lv;
+        matrixList.splice(-diff);
+        parentMatrix = matrixList[lv - 1];
+      }
+      // 不变是同级兄弟，无需特殊处理 else {}
+      lastLv = lv;
+      // 特殊渲染的matrix，局部根节点为原点考虑，当需要计算时（不为E）再计算
+      let m;
+      if(i !== index && (!isE(parentMatrix) || !isE(transform))) {
+        m = tf.calMatrixByOrigin(transform, tfo[0] + dbx + node.__sx1 - sx1 + tx, tfo[1] + dby + node.__sy1 - sy1 + ty);
+        if(!isE(parentMatrix)) {
+          m = multiply(parentMatrix, m);
+        }
+      }
+      lastMatrix = m;
       // 子元素有cacheTotal优先使用
-      let target = getCache([__cacheMask2, __cacheFilter2, __cacheOverflow2, __cacheTotal2]);
-      // 局部根节点的total不需要考虑filter，子节点要
+      let target = i > index && getCache([__cacheMask2, __cacheFilter2, __cacheOverflow2, __cacheTotal2]);
       if(target) {
         i += (total || 0);
         if(hasMask) {
           i += countMaskNum(__structs, i + 1, hasMask);
         }
-        bbox = target.bbox;
-      }
-      else {
-        bbox = node.filterBbox;
-      }
-      // 老的不变，新的会各自重新生成，根据matrixEvent合并bboxTotal
-      bbox = transformBbox(bbox, matrix, 0, 0);
-      mergeBbox(bboxTotal, bbox, 0, 0);
-    }
-
-    // 生成cacheTotal，获取偏移dx/dy
-    __cacheTotal = node.__cacheTotal = CanvasCache.getInstance(root.uuid, bboxTotal, sx1, sy1);
-    if(!__cacheTotal || !__cacheTotal.__enabled) {
-      if((bboxTotal[2] - bboxTotal[0]) || (bboxTotal[3] - bboxTotal[1])) {
-        inject.warn('CanvasCache of ' + node.tagName + '(' + index + ')' + ' is oversize: '
-          + (bboxTotal[2] - bboxTotal[0]) + ', ' + (bboxTotal[3] - bboxTotal[1]));
-      }
-      return;
-    }
-    __cacheTotal.__available = true;
-    let { dx, dy, dbx, dby, x: tx, y: ty } = __cacheTotal;
-    let ctxTotal = __cacheTotal.ctx;
-
-    /**
-     * 再次遍历每个节点，以局部根节点左上角为基准原点，将所有节点绘制上去
-     * 每个子节点的opacity有父继承计算在上面循环已经做好了，直接获取
-     * 但matrixEvent可能需要重算，因为原点不一定是根节点的原点，影响tfo
-     * 另外每个节点的refreshLevel需要设置REPAINT
-     * 这样cacheTotal取消时子节点需确保重新计算一次matrix/opacity/filter，保证下次和父元素继承正确
-     */
-    let matrixList = [];
-    let parentMatrix = null;
-    let lastMatrix = null;
-    let lastLv = lv;
-    // 和外面没cache的类似，mask生成hash记录
-    let maskStartHash = [];
-    let offscreenHash = [];
-    for(let i = index, len = index + (total || 0) + 1; i < len; i++) {
-      let {
-        node,
-        lv,
-        total,
-        hasMask,
-      } = __structs[i];
-      // 排除Text
-      if(node instanceof Text) {
-        node.render(renderMode, ctxTotal, dx, dy);
+        ctxTotal.globalAlpha = node.__opacity;
+        if(m) {
+          ctxTotal.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+        }
+        else {
+          ctxTotal.setTransform(1, 0, 0, 1, 0, 0);
+        }
+        let mixBlendMode = __computedStyle2[MIX_BLEND_MODE];
+        if(isValidMbm(mixBlendMode)) {
+          ctxTotal.globalCompositeOperation = mbmName(mixBlendMode);
+        }
+        CanvasCache.drawCache(target, __cacheTotal);
+        ctxTotal.globalCompositeOperation = 'source-over';
         let oh = offscreenHash[i];
         if(oh) {
           ctxTotal = applyOffscreen(ctxTotal, oh, width, height, false);
         }
       }
       else {
-        let __computedStyle2 = node.__computedStyle;
-        // none跳过这棵子树，判断下最后一个节点的离屏应用即可
-        if(__computedStyle2[DISPLAY] === 'none') {
-          i += (total || 0);
-          if(hasMask) {
-            i += countMaskNum(__structs, i + 1, hasMask);
-          }
-          let oh = offscreenHash[i];
-          if(oh) {
-            ctxTotal = applyOffscreen(ctxTotal, oh, width, height, true);
-          }
-          continue;
+        let offscreenBlend, offscreenMask, offscreenFilter, offscreenOverflow;
+        let offscreen = i > index && node.__calOffscreen(ctxTotal, __computedStyle2);
+        if(offscreen) {
+          ctxTotal = offscreen.ctx;
+          offscreenBlend = offscreen.offscreenBlend;
+          offscreenMask = offscreen.offscreenMask;
+          offscreenFilter = offscreen.offscreenFilter;
+          offscreenOverflow = offscreen.offscreenOverflow;
         }
-        let {
-          __cacheTotal: __cacheTotal2,
-          __cacheFilter: __cacheFilter2,
-          __cacheMask: __cacheMask2,
-          __cacheOverflow: __cacheOverflow2,
-        } = node;
-        let {
-          [TRANSFORM]: transform,
-          [TRANSFORM_ORIGIN]: tfo,
-        } = __computedStyle2;
-        let mh = maskStartHash[i];
-        if(mh) {
-          let { idx, hasMask, offscreenMask } = mh;
-          let target = inject.getOffscreenCanvas(width, height, null, 'mask2');
-          offscreenMask.mask = target; // 应用mask用到
-          offscreenMask.isClip = node.__isClip;
-          // 定位到最后一个mask元素上的末尾
-          let j = i + (total || 0) + 1;
-          while(--hasMask) {
-            let { total } = __structs[j];
-            j += (total || 0) + 1;
-          }
-          j--;
-          let list = offscreenHash[j] = offscreenHash[j] || [];
-          list.push({ idx, lv, type: OFFSCREEN_MASK, offscreen: offscreenMask });
-          list.push({ idx: j, lv, type: OFFSCREEN_MASK2, offscreen: {
-            ctx: ctxTotal, // 保存等待OFFSCREEN_MASK2时还原
-            target,
-          }});
-          ctxTotal = target.ctx;
-        }
-        // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理
-        if(i === index) {}
-        else if(lv > lastLv) {
-          parentMatrix = lastMatrix;
-          if(isE(parentMatrix)) {
-            parentMatrix = null;
-          }
-          matrixList.push(parentMatrix);
-        }
-        // 变小出栈索引需注意，可能不止一层，多层计算diff层级
-        else if(lv < lastLv) {
-          let diff = lastLv - lv;
-          matrixList.splice(-diff);
-          parentMatrix = matrixList[lv - 1];
-        }
-        // 不变是同级兄弟，无需特殊处理 else {}
-        lastLv = lv;
-        // 特殊渲染的matrix，局部根节点为原点考虑，当需要计算时（不为E）再计算
-        let m;
-        if(i !== index && (!isE(parentMatrix) || !isE(transform))) {
-          m = tf.calMatrixByOrigin(transform, tfo[0] + dbx + node.__sx1 - sx1 + tx, tfo[1] + dby + node.__sy1 - sy1 + ty);
-          if(!isE(parentMatrix)) {
-            m = multiply(parentMatrix, m);
-          }
-        }
-        lastMatrix = m;
-        // 子元素有cacheTotal优先使用
-        let target = i > index && getCache([__cacheMask2, __cacheFilter2, __cacheOverflow2, __cacheTotal2]);
-        if(target) {
-          i += (total || 0);
-          if(hasMask) {
-            i += countMaskNum(__structs, i + 1, hasMask);
-          }
-          ctxTotal.globalAlpha = node.__opacity;
-          if(m) {
-            ctxTotal.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
-          }
-          else {
-            ctxTotal.setTransform(1, 0, 0, 1, 0, 0);
-          }
-          let mixBlendMode = __computedStyle2[MIX_BLEND_MODE];
-          if(isValidMbm(mixBlendMode)) {
-            ctxTotal.globalCompositeOperation = mbmName(mixBlendMode);
-          }
-          CanvasCache.drawCache(target, __cacheTotal);
-          ctxTotal.globalCompositeOperation = 'source-over';
-          let oh = offscreenHash[i];
-          if(oh) {
-            ctxTotal = applyOffscreen(ctxTotal, oh, width, height, false);
-          }
-        }
-        else {
-          let offscreenBlend, offscreenMask, offscreenFilter, offscreenOverflow;
-          let offscreen = i > index && node.__calOffscreen(ctxTotal, __computedStyle2);
-          if(offscreen) {
-            ctxTotal = offscreen.ctx;
-            offscreenBlend = offscreen.offscreenBlend;
-            offscreenMask = offscreen.offscreenMask;
-            offscreenFilter = offscreen.offscreenFilter;
-            offscreenOverflow = offscreen.offscreenOverflow;
-          }
+        if(visibility === 'visible') {
           ctxTotal.globalAlpha = node.__opacity;
           if(m) {
             ctxTotal.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
@@ -476,49 +382,49 @@ function genTotal(renderMode, root, node, index, lv, total, __structs, hasMask, 
             ctxTotal.setTransform(1, 0, 0, 1, 0, 0);
           }
           node.render(renderMode, ctxTotal, dx, dy);
-          // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
-          if(offscreenBlend) {
-            let j = i + (total || 0);
-            if(hasMask) {
-              j += countMaskNum(__structs, j + 1, hasMask);
-            }
-            let list = offscreenHash[j] = offscreenHash[j] || [];
-            list.push({ idx: i, lv, type: OFFSCREEN_BLEND, offscreen: offscreenBlend });
+        }
+        // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
+        if(offscreenBlend) {
+          let j = i + (total || 0);
+          if(hasMask) {
+            j += countMaskNum(__structs, j + 1, hasMask);
           }
-          // 被遮罩的节点要为第一个遮罩和最后一个遮罩的索引打标，被遮罩的本身在一个离屏canvas，遮罩的元素在另外一个
-          // 最后一个遮罩索引因数量不好计算，放在maskStartHash做
-          if(offscreenMask) {
-            let j = i + (total || 0);
-            maskStartHash[j + 1] = {
-              idx: i,
-              hasMask,
-              offscreenMask,
-            };
+          let list = offscreenHash[j] = offscreenHash[j] || [];
+          list.push({ idx: i, lv, type: OFFSCREEN_BLEND, offscreen: offscreenBlend });
+        }
+        // 被遮罩的节点要为第一个遮罩和最后一个遮罩的索引打标，被遮罩的本身在一个离屏canvas，遮罩的元素在另外一个
+        // 最后一个遮罩索引因数量不好计算，放在maskStartHash做
+        if(offscreenMask) {
+          let j = i + (total || 0);
+          maskStartHash[j + 1] = {
+            idx: i,
+            hasMask,
+            offscreenMask,
+          };
+        }
+        // filter造成的离屏，需要将后续一段孩子节点区域的ctx替换，并在结束后应用结果，再替换回来
+        if(offscreenFilter) {
+          let j = i + (total || 0);
+          if(hasMask) {
+            j += countMaskNum(__structs, j + 1, hasMask);
           }
-          // filter造成的离屏，需要将后续一段孩子节点区域的ctx替换，并在结束后应用结果，再替换回来
-          if(offscreenFilter) {
-            let j = i + (total || 0);
-            if(hasMask) {
-              j += countMaskNum(__structs, j + 1, hasMask);
-            }
-            let list = offscreenHash[j] = offscreenHash[j] || [];
-            list.push({ idx: i, lv, type: OFFSCREEN_FILTER, offscreen: offscreenFilter });
+          let list = offscreenHash[j] = offscreenHash[j] || [];
+          list.push({ idx: i, lv, type: OFFSCREEN_FILTER, offscreen: offscreenFilter });
+        }
+        // overflow:hidden的离屏，最后孩子进行截取
+        if(offscreenOverflow) {
+          let j = i + (total || 0);
+          if(hasMask) {
+            j += countMaskNum(__structs, j + 1, hasMask);
           }
-          // overflow:hidden的离屏，最后孩子进行截取
-          if(offscreenOverflow) {
-            let j = i + (total || 0);
-            if(hasMask) {
-              j += countMaskNum(__structs, j + 1, hasMask);
-            }
-            let list = offscreenHash[j] = offscreenHash[j] || [];
-            list.push({ idx: i, lv, type: OFFSCREEN_OVERFLOW, offscreen: offscreenOverflow });
-          }
-          // 离屏应用，按照lv从大到小即子节点在前先应用，同一个节点多个效果按offscreen优先级从小到大来，
-          // 由于mask特殊索引影响，所有离屏都在最后一个mask索引判断，此时mask本身优先结算，以index序大到小判断
-          let oh = offscreenHash[i];
-          if(oh) {
-            ctxTotal = applyOffscreen(ctxTotal, oh, width, height, false);
-          }
+          let list = offscreenHash[j] = offscreenHash[j] || [];
+          list.push({ idx: i, lv, type: OFFSCREEN_OVERFLOW, offscreen: offscreenOverflow });
+        }
+        // 离屏应用，按照lv从大到小即子节点在前先应用，同一个节点多个效果按offscreen优先级从小到大来，
+        // 由于mask特殊索引影响，所有离屏都在最后一个mask索引判断，此时mask本身优先结算，以index序大到小判断
+        let oh = offscreenHash[i];
+        if(oh) {
+          ctxTotal = applyOffscreen(ctxTotal, oh, width, height, false);
         }
       }
     }
@@ -788,9 +694,7 @@ function countMaskNum(__structs, start, hasMask) {
 }
 
 // webgl不太一样，使用fbo离屏绘制到一个纹理上进行汇总
-function genFrameBufferWithTexture(gl, texCache, width, height) {
-  let n = texCache.lockOneChannel();
-  let texture = webgl.createTexture(gl, null, n, width, height);
+function genFrameBufferWithTexture(gl, texture, width, height) {
   let frameBuffer = gl.createFramebuffer();
   gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
@@ -800,163 +704,174 @@ function genFrameBufferWithTexture(gl, texCache, width, height) {
   }
   // 离屏窗口0开始
   gl.viewport(0, 0, width, height);
-  gl.clearColor(0, 0, 0, 0);
-  gl.clear(gl.COLOR_BUFFER_BIT);
-  return { n, frameBuffer, texture };
+  // gl.clearColor(0, 0, 0, 0);
+  // gl.clear(gl.COLOR_BUFFER_BIT);
+  return frameBuffer;
 }
 
 /**
  * 局部根节点复合图层生成，汇总所有子节点到一颗局部树上的位图缓存，包含超限特殊情况
  * 即便只有自己一个也要返回，因为webgl生成total的原因是有类似filter/mask等必须离屏处理的东西
- * @param renderMode
- * @param gl
- * @param texCache
- * @param node
- * @param index
- * @param total
- * @param __structs
- * @param cache
- * @param limitCache
- * @param W
- * @param H
- * @returns {*}
  */
-function genTotalWebgl(renderMode, gl, texCache, node, index, total, __structs, cache, limitCache, W, H) {
-  // 存每层父亲的matrix和opacity和index，bbox计算过程中生成，缓存给下面渲染过程用
-  let parentIndexHash = [];
-  let opacityHash = [];
-  let { bboxTotal, parentPm } = genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash,
-    gl.getParameter(gl.MAX_TEXTURE_SIZE), limitCache);
-  // 可能局部根节点合成过程中发现整体超限
-  let totalLimitCache;
+function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total, __structs, W, H) {
+  if(__cacheTotal && __cacheTotal.available) {
+    return __cacheTotal;
+  }
+  let { bboxTotal, hasMbm } = genBboxTotal(node, __structs, index, total);
   if(!bboxTotal) {
-    totalLimitCache = true;
+    return;
   }
-  // 超限情况生成画布大小的特殊纹理
-  if(limitCache || totalLimitCache) {
-    bboxTotal = [0, 0, W, H];
+  let { __sx1, __sy1, __cache } = node;
+  if(__cacheTotal) {
+    __cacheTotal.reset(bboxTotal, __sx1, __sy1);
   }
-  let width = bboxTotal[2] - bboxTotal[0];
-  let height = bboxTotal[3] - bboxTotal[1];
-  let { n, frameBuffer, texture } = genFrameBufferWithTexture(gl, texCache, width, height);
-  // 以bboxTotal的左上角为原点生成离屏texture
-  let { __sx1: sx1, __sy1: sy1 } = node;
-  let cx = width * 0.5, cy = height * 0.5;
-  let dx = -bboxTotal[0], dy = -bboxTotal[1];
-  let dbx = sx1 - bboxTotal[0], dby = sy1 - bboxTotal[1];
+  else {
+    __cacheTotal = TextureCache.getInstance(renderMode, gl, root.uuid, bboxTotal, __sx1, __sy1, null);
+  }
+  if(!__cacheTotal || !__cacheTotal.__enabled) {
+    if((bboxTotal[2] - bboxTotal[0]) || (bboxTotal[3] - bboxTotal[1])) {
+      inject.warn('TextureCache of ' + node.tagName + '(' + index + ')' + ' is oversize: '
+        + (bboxTotal[2] - bboxTotal[0]) + ', ' + (bboxTotal[3] - bboxTotal[1]));
+    }
+    return;
+  }
+  __cacheTotal.__available = true;
+  node.__cacheTotal = __cacheTotal;
+  let { dx, dy, dbx, dby, x: tx, y: ty } = __cacheTotal;
+  let page = __cacheTotal.__page, size = page.__size, texture = page.texture;
+  // fbo绘制对象纹理不用绑定单元，剩下的纹理绘制用0号
+  let frameBuffer = genFrameBufferWithTexture(gl, texture, size, size);
+  let cx = size * 0.5, cy = size * 0.5;
+  let lastPage, list = [];
   // 先绘制自己的cache，起点所以matrix视作E为空，opacity固定1
-  if(cache && cache.available) {
-    texCache.addTexAndDrawWhenLimit(gl, cache, 1, null, cx, cy, dx, dy, false);
+  if(__cache && __cache.available) {
+    lastPage = __cache.page;
+    list.push({ cache: __cache, opacity: 1 });
   }
-  // limitCache无cache需先绘制到统一的离屏画布上
-  else if(limitCache) {
-    let c = inject.getOffscreenCanvas(width, height, '__$$OVERSIZE$$__', null);
-    node.render(mode.CANVAS, c.ctx, 0, 0);
-    let j = texCache.lockOneChannel();
-    let texture = webgl.createTexture(gl, c.canvas, j, null, null);
-    let mockCache = new MockCache(gl, texture, 0, 0, width, height, [0, 0, width, height]);
-    texCache.addTexAndDrawWhenLimit(gl, mockCache, 1, null, cx, cy, 0, 0, false);
-    texCache.refresh(gl, cx, cy);
-    c.ctx.setTransform(1, 0, 0, 1, 0, 0);
-    c.ctx.globalAlpha = 1;
-    c.ctx.clearRect(0, 0, width, height);
-    mockCache.release();
-    texCache.releaseLockChannel(j);
-  }
-  // 因为cacheTotal不总是以左上角原点为开始，所以必须每个节点重算matrix，合并box时计算的无法用到
-  let matrixHash = {};
+  node.render(renderMode, gl, dx, dy);
+
+  let matrixList = [];
+  let parentMatrix = null;
+  let lastMatrix = null;
+  let lastLv = lv;
   // 先序遍历汇总到total
   for(let i = index + 1, len = index + (total || 0) + 1; i < len; i++) {
     let {
       node,
+      lv,
       total,
       hasMask,
     } = __structs[i];
-    let parentIndex = parentIndexHash[i];
-    let matrix = matrixHash[parentIndex]; // 父节点的在每个节点计算后保存，第一个为top的默认为E（空）
-    let opacity = opacityHash[i]; // opacity在合并box时已经计算可以直接用
+    // let parentIndex = parentIndexHash[i];
+    // let matrix = matrixHash[parentIndex]; // 父节点的在每个节点计算后保存，第一个为top的默认为E（空）
+    // let opacity = opacityHash[i]; // opacity在合并box时已经计算可以直接用
     // 先看text，visibility会在内部判断，display会被parent判断
     if(node instanceof Text) {
-      if(parentPm) {
-        matrix = multiply(parentPm, matrix);
+      // if(parentPm) {
+      //   matrix = multiply(parentPm, matrix);
+      // }
+      let __cache = node.__cache;
+      if(__cache && __cache.available) {
+        let {
+          __matrixEvent,
+          __opacity,
+        } = node.__domParent;
+        let p = __cache.__page;
+        if(lastPage && lastPage !== p) {
+          webgl.drawTextureCache(gl, list, cx, cy, dx, dy, true);
+          list.splice(0);
+        }
+        lastPage = p;
+        list.push({ cache: __cache, opacity: __opacity, matrix: __matrixEvent });
       }
-      texCache.addTexAndDrawWhenLimit(gl, node.__cache, opacity, matrix, cx, cy, dx, dy, false);
     }
     // 再看total缓存/cache，都没有的是无内容的Xom节点
     else {
-      let {
-        __cache,
-        __cacheTotal,
-        __cacheFilter,
-        __cacheMask,
-        __cacheOverflow,
-        __isMask,
-      } = node;
-      let {
-        [DISPLAY]: display,
-        [VISIBILITY]: visibility,
-        [TRANSFORM]: transform,
-        [TRANSFORM_ORIGIN]: transformOrigin,
-        [MIX_BLEND_MODE]: mixBlendMode,
-      } = node.__computedStyle;
-      if(display === 'none') {
+      let __computedStyle2 = node.__computedStyle;
+      if(__computedStyle2[DISPLAY] === 'none' || node.__isMask) {
         i += (total || 0);
         if(hasMask) {
           i += countMaskNum(__structs, i + 1, hasMask);
         }
         continue;
       }
-      // mask和不可见不能被汇总到top上
-      if((visibility === 'hidden' || __isMask)) {
-        node.render(renderMode, gl, dx, dy);
-        gl.useProgram(gl.program);
-        gl.viewport(0, 0, width, height);
-        continue;
-      }
-      if(transform && !isE(transform)) {
-        let x = transformOrigin[0], y = transformOrigin[1];
-        // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
-        if(__cache && __cache.available) {
-          x += __cache.sx1;
-          y += __cache.sy1;
+      let {
+        __cache,
+        __cacheTotal,
+        __cacheFilter,
+        __cacheMask,
+        __cacheOverflow,
+        __domParent,
+      } = node;
+      let {
+        [VISIBILITY]: visibility,
+        [TRANSFORM]: transform,
+        [TRANSFORM_ORIGIN]: tfo,
+        [MIX_BLEND_MODE]: mixBlendMode,
+      } = __computedStyle2;
+      // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理
+      if(i === index) {}
+      else if(lv > lastLv) {
+        parentMatrix = lastMatrix;
+        if(isE(parentMatrix)) {
+          parentMatrix = null;
         }
-        else {
-          x += node.__sx1;
-          y += node.__sy1;
+        matrixList.push(parentMatrix);
+      }
+      // 变小出栈索引需注意，可能不止一层，多层计算diff层级
+      else if(lv < lastLv) {
+        let diff = lastLv - lv;
+        matrixList.splice(-diff);
+        parentMatrix = matrixList[lv - 1];
+      }
+      // 不变是同级兄弟，无需特殊处理 else {}
+      lastLv = lv;
+      // 特殊渲染的matrix，局部根节点为原点考虑，当需要计算时（不为E）再计算
+      let m;
+      if(__domParent) {
+        let pm = __domParent.__perspectiveMatrix;
+        if(!isE(pm)) {
+          m = multiply(pm, m);
         }
-        let dx = -sx1 + dbx;
-        let dy = -sy1 + dby;
-        x += dx;
-        y += dy;
-        let m = tf.calMatrixByOrigin(transform, x, y);
-        if(matrix) {
-          matrix = multiply(matrix, m);
-        }
-        else {
-          matrix = m;
+        m = multiply(__domParent.__matrixEvent, m);
+      }
+      if(i !== index && !isE(transform)) {
+        m = tf.calMatrixByOrigin(transform, tfo[0] + dbx + node.__sx1 - sx1 + tx, tfo[1] + dby + node.__sy1 - sy1 + ty);
+        if(!isE(parentMatrix)) {
+          m = multiply(parentMatrix, m);
         }
       }
-      if(matrix) {
-        matrixHash[i] = matrix;
-      }
-      if(parentPm) {
-        matrix = multiply(parentPm, matrix);
-      }
+      lastMatrix = m;
       let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal, __cache]);
-      if(target) {
+      if(target && (target !== __cache || visibility === 'visible')) {
         // 局部的mbm和主画布一样，先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
         if(isValidMbm(mixBlendMode)) {
-          texCache.refresh(gl, cx, cy);
-          let { n: n2, frameBuffer: frameBuffer2, texture: texture2 } = genFrameBufferWithTexture(gl, texCache, width, height);
-          texCache.addTexAndDrawWhenLimit(gl, target, opacity, matrix, cx, cy, dx, dy, false);
-          texCache.refresh(gl, cx, cy);
-          // 合成结果作为当前frameBuffer，以及纹理和单元，等于替代了当前fbo作为绘制对象
-          [n, frameBuffer, texture] = genMbmWebgl(gl, texCache, n, n2, frameBuffer, texture, mbmName(mixBlendMode), width, height);
-          gl.deleteFramebuffer(frameBuffer2);
-          gl.deleteTexture(texture2);
+          if(list.length) {
+            webgl.drawTextureCache(gl, list, cx, cy, dx, dy, true);
+            list.splice(0);
+            lastPage = null;
+          }
+          // texHelper.refresh(gl, cx, cy);
+          // let {
+          //   n: n2,
+          //   frameBuffer: frameBuffer2,
+          //   texture: texture2
+          // } = genFrameBufferWithTexture(gl, texHelper, null, size, size);
+          // texHelper.addTexAndDrawWhenLimit(gl, target, node.__opacity, m, cx, cy, dx, dy, false);
+          // texHelper.refresh(gl, cx, cy);
+          // // 合成结果作为当前frameBuffer，以及纹理和单元，等于替代了当前fbo作为绘制对象
+          // [n, frameBuffer, texture] = genMbmWebgl(gl, texHelper, n, n2, frameBuffer, texture, mbmName(mixBlendMode), size, size);
+          // gl.deleteFramebuffer(frameBuffer2);
+          // gl.deleteTexture(texture2);
         }
         else {
-          texCache.addTexAndDrawWhenLimit(gl, target, opacity, matrix, cx, cy, dx, dy, false);
+          let p = target.__page;
+          if(lastPage && lastPage !== p) {
+            webgl.drawTextureCache(gl, list, cx, cy, dx, dy, true);
+            list.splice(0);
+          }
+          lastPage = p;
+          list.push({ cache: target, opacity: node.__opacity, matrix: m });
         }
         if(target !== __cache) {
           i += (total || 0);
@@ -964,82 +879,89 @@ function genTotalWebgl(renderMode, gl, texCache, node, index, total, __structs, 
             i += countMaskNum(__structs, i + 1, hasMask);
           }
         }
-        else {
-          // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
-          node.render(renderMode, gl, dx, dy);
-          gl.useProgram(gl.program);
-          gl.viewport(0, 0, width, height);
-        }
+        // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
+        node.render(renderMode, gl, dx, dy);
       }
     }
   }
-  node.render(renderMode, gl, dx, dy);
-  gl.useProgram(gl.program);
-  gl.viewport(0, 0, width, height);
   // 绘制到fbo的纹理对象上并删除fbo恢复
-  texCache.refresh(gl, cx, cy);
+  webgl.drawTextureCache(gl, list, cx, cy, dx, dy, false);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteFramebuffer(frameBuffer);
+  gl.bindTexture(gl.TEXTURE_2D, null);
   gl.viewport(0, 0, W, H);
-  // 生成的纹理对象本身已绑定一个纹理单元了，释放lock的同时可以给texCache的channel缓存，避免重复上传
-  let mockCache = new MockCache(gl, texture, sx1, sy1, width, height, bboxTotal);
-  texCache.releaseLockChannel(n, mockCache.page);
-  return [limitCache || totalLimitCache, mockCache];
+  return __cacheTotal;
 }
 
-function genFilterWebgl(gl, texCache, node, cache, filter, W, H) {
+function genFilterWebgl(renderMode, gl, node, cache, filter, W, H) {
   let { sx1, sy1, width, height, bbox } = cache;
-  let mockCache = cache;
+  let target = cache;
   filter.forEach(item => {
     let { k, v } = item;
     if(k === 'blur' && v > 0) {
-      let res = genBlurWebgl(gl, texCache, mockCache, v, width, height, sx1, sy1, bbox);
+      let res = genBlurWebgl(renderMode, gl, target, v);
       if(res) {
-        [mockCache, width, height, bbox] = res;
+        if(target !== cache) {
+          target.release();
+        }
+        target = res;
       }
     }
     else if(k === 'dropShadow') {
-      let res = genDropShadowWebgl(gl, texCache, mockCache, v, width, height, sx1, sy1, bbox);
+      let res = genDropShadowWebgl(renderMode, gl, target, v);
       if(res) {
-        [mockCache, width, height, bbox] = res;
+        if(target !== cache) {
+          target.release();
+        }
+        target = res;
       }
     }
     else if(k === 'hueRotate') {
       let rotation = geom.d2r(v % 360);
       let cosR = Math.cos(rotation);
       let sinR = Math.sin(rotation);
-      let res = genColorMatrixWebgl(gl, texCache, mockCache, [
+      let res = genColorMatrixWebgl(renderMode, gl, target, [
         0.213 + cosR * 0.787 - sinR * 0.213, 0.715 - cosR * 0.715 - sinR * 0.715, 0.072 - cosR * 0.072 + sinR * 0.928, 0, 0,
         0.213 - cosR * 0.213 + sinR * 0.143, 0.715 + cosR * 0.285 + sinR * 0.140, 0.072 - cosR * 0.072 - sinR * 0.283, 0, 0,
         0.213 - cosR * 0.213 - sinR * 0.787, 0.715 - cosR * 0.715 + sinR * 0.715, 0.072 + cosR * 0.928 + sinR * 0.072, 0, 0,
         0, 0, 0, 1, 0,
       ], width, height, sx1, sy1, bbox);
       if(res) {
-        [mockCache, width, height, bbox] = res;
+        if(target !== cache) {
+          target.release();
+        }
+        target = res;
       }
     }
     else if(k === 'saturate' && v !== 100) {
       let amount = v * 0.01;
-      let res = genColorMatrixWebgl(gl, texCache, mockCache, [
+      let res = genColorMatrixWebgl(renderMode, gl, target, [
         0.213 + 0.787 * amount,  0.715 - 0.715 * amount, 0.072 - 0.072 * amount, 0, 0,
         0.213 - 0.213 * amount,  0.715 + 0.285 * amount, 0.072 - 0.072 * amount, 0, 0,
         0.213 - 0.213 * amount,  0.715 - 0.715 * amount, 0.072 + 0.928 * amount, 0, 0,
         0, 0, 0, 1, 0,
       ], width, height, sx1, sy1, bbox);
       if(res) {
-        [mockCache, width, height, bbox] = res;
+        if(target !== cache) {
+          target.release();
+        }
+        target = res;
       }
     }
     else if(k === 'brightness' && v !== 100) {
       let b = v * 0.01;
-      let res = genColorMatrixWebgl(gl, texCache, mockCache, [
+      let res = genColorMatrixWebgl(renderMode, gl, target, [
         b, 0, 0, 0, 0,
         0, b, 0, 0, 0,
         0, 0, b, 0, 0,
         0, 0, 0, 1, 0,
       ], width, height, sx1, sy1, bbox);
       if(res) {
-        [mockCache, width, height, bbox] = res;
+        if(target !== cache) {
+          target.release();
+        }
+        target = res;
       }
     }
     else if(k === 'grayscale' && v > 0) {
@@ -1051,27 +973,33 @@ function genFilterWebgl(gl, texCache, node, cache, filter, W, H) {
       else if(oneMinusAmount > 1) {
         oneMinusAmount = 1;
       }
-      let res = genColorMatrixWebgl(gl, texCache, mockCache, [
+      let res = genColorMatrixWebgl(renderMode, gl, target, [
         0.2126 + 0.7874 * oneMinusAmount, 0.7152 - 0.7152 * oneMinusAmount, 0.0722 - 0.0722 * oneMinusAmount, 0, 0,
         0.2126 - 0.2126 * oneMinusAmount, 0.7152 + 0.2848 * oneMinusAmount, 0.0722 - 0.0722 * oneMinusAmount, 0, 0,
         0.2126 - 0.2126 * oneMinusAmount, 0.7152 - 0.7152 * oneMinusAmount, 0.0722 + 0.9278 * oneMinusAmount, 0, 0,
         0, 0, 0, 1, 0,
       ], width, height, sx1, sy1, bbox);
       if(res) {
-        [mockCache, width, height, bbox] = res;
+        if(target !== cache) {
+          target.release();
+        }
+        target = res;
       }
     }
     else if(k === 'contrast' && v !== 100) {
       let amount = v * 0.01;
       let o = -0.5 * amount + 0.5;
-      let res = genColorMatrixWebgl(gl, texCache, mockCache, [
+      let res = genColorMatrixWebgl(renderMode, gl, target, [
         amount, 0, 0, 0, o,
         0, amount, 0, 0, o,
         0, 0, amount, 0, o,
         0, 0, 0, 1, 0,
       ], width, height, sx1, sy1, bbox);
       if(res) {
-        [mockCache, width, height, bbox] = res;
+        if(target !== cache) {
+          target.release();
+        }
+        target = res;
       }
     }
     else if(k === 'sepia' && v > 0) {
@@ -1083,64 +1011,44 @@ function genFilterWebgl(gl, texCache, node, cache, filter, W, H) {
       else if(oneMinusAmount > 1) {
         oneMinusAmount = 1;
       }
-      let res = genColorMatrixWebgl(gl, texCache, mockCache, [
+      let res = genColorMatrixWebgl(renderMode, gl, target, [
         0.393 + 0.607 * oneMinusAmount, 0.769 - 0.769 * oneMinusAmount, 0.189 - 0.189 * oneMinusAmount, 0, 0,
         0.349 - 0.349 * oneMinusAmount, 0.686 + 0.314 * oneMinusAmount, 0.168 - 0.168 * oneMinusAmount, 0, 0,
         0.272 - 0.272 * oneMinusAmount, 0.534 - 0.534 * oneMinusAmount, 0.131 + 0.869 * oneMinusAmount, 0, 0,
         0, 0, 0, 1, 0,
       ], width, height, sx1, sy1, bbox);
       if(res) {
-        [mockCache, width, height, bbox] = res;
+        if(target !== cache) {
+          target.release();
+        }
+        target = res;
       }
     }
     else if(k === 'invert' && v > 0) {
       v = Math.min(v, 100);
       let o = v * 0.01;
       let amount = 1 - 2 * o;
-      let res = genColorMatrixWebgl(gl, texCache, mockCache, [
+      let res = genColorMatrixWebgl(renderMode, gl, target, [
         amount, 0, 0, 0, o,
         0, amount, 0, 0, o,
         0, 0, amount, 0, o,
         0, 0, 0, 1, 0,
       ], width, height, sx1, sy1, bbox);
       if(res) {
-        [mockCache, width, height, bbox] = res;
+        if(target !== cache) {
+          target.release();
+        }
+        target = res;
       }
     }
   });
   // 切换回主程序
   gl.useProgram(gl.program);
   gl.viewport(0, 0, W, H);
-  return mockCache;
+  return node.__cacheFilter = target;
 }
 
-/**
- * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement
- * 根据cacheTotal生成cacheFilter，按照css规范的优化方法执行3次，避免卷积核d扩大3倍性能慢
- * 规范的优化方法对d的值分奇偶优化，这里再次简化，d一定是奇数，即卷积核大小
- * 先动态生成gl程序，默认3核源码示例已注释，根据sigma获得d（一定奇数），再计算权重
- * 然后将d尺寸和权重拼接成真正程序并编译成program，再开始绘制
- */
-function genBlurWebgl(gl, texCache, cache, sigma, width, height, sx1, sy1, bbox) {
-  let d = blur.kernelSize(sigma);
-  let max = Math.max(15, gl.getParameter(gl.MAX_VARYING_VECTORS));
-  while(d > max) {
-    d -= 2;
-  }
-  let spread = blur.outerSizeByD(d);
-  // 防止超限，webgl最大纹理尺寸限制
-  let limit = gl.getParameter(gl.MAX_TEXTURE_SIZE);
-  if(width > limit || height > limit) {
-    return;
-  }
-  let bboxNew = bbox.slice(0);
-  bboxNew[0] -= spread;
-  bboxNew[1] -= spread;
-  bboxNew[2] += spread;
-  bboxNew[3] += spread;
-  let widthNew = width + spread * 2;
-  let heightNew = height + spread * 2;
-  let cx = widthNew * 0.5, cy = heightNew * 0.5;
+function genBlurShader(gl, sigma, d) {
   let weights = blur.gaussianWeight(sigma, d);
   let vert = '';
   let frag = '';
@@ -1159,125 +1067,130 @@ function genBlurWebgl(gl, texCache, cache, sigma, width, height, sx1, sy1, bbox)
   }
   vert = vertexBlur.replace('[3]', '[' + d + ']').replace(/}$/, vert + '}');
   frag = fragmentBlur.replace('[3]', '[' + d + ']').replace(/}$/, frag + '}');
-  let program = webgl.initShaders(gl, vert, frag);
+  return webgl.initShaders(gl, vert, frag);
+}
+
+/**
+ * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement
+ * 根据cacheTotal生成cacheFilter，按照css规范的优化方法执行3次，避免卷积核d扩大3倍性能慢
+ * 规范的优化方法对d的值分奇偶优化，这里再次简化，d一定是奇数，即卷积核大小
+ * 先动态生成gl程序，默认3核源码示例已注释，根据sigma获得d（一定奇数），再计算权重
+ * 然后将d尺寸和权重拼接成真正程序并编译成program，再开始绘制
+ */
+function genBlurWebgl(renderMode, gl, cache, sigma) {
+  let { sx1, sy1, bbox, width, height } = cache;
+  let d = blur.kernelSize(sigma);
+  let max = Math.max(15, gl.getParameter(gl.MAX_VARYING_VECTORS));
+  while(d > max) {
+    d -= 2;
+  }
+  let spread = blur.outerSizeByD(d);
+  // 防止超限，webgl最大纹理尺寸限制
+  if(width > Page.MAX + spread || height > Page.MAX + spread) {
+    inject.warn('Filter blur is oversize');
+    return;
+  }
+  let bboxNew = bbox.slice(0);
+  bboxNew[0] -= spread;
+  bboxNew[1] -= spread;
+  bboxNew[2] += spread;
+  bboxNew[3] += spread;
+  let program = genBlurShader(gl, sigma, d);
   gl.useProgram(program);
-  let { n: i, frameBuffer, texture } = genFrameBufferWithTexture(gl, texCache, widthNew, heightNew);
-  // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
-  let j = texCache.findExistTexChannel(cache.page);
-  if(j === -1) {
-    // 直接绑定，因为一定是个mockCache
-    j = texCache.lockOneChannel();
-    webgl.bindTexture(gl, cache.page.texture, j);
-  }
-  else {
-    texCache.lockChannel(j);
-  }
-  texture = webgl.drawBlur(gl, program, frameBuffer, texture, cache.page.texture, i, j,
-    width, height, spread, widthNew, heightNew, cx, cy);
+  // 绘制对象纹理需生成新的，不能和来源是同一个，因此至少需要2个纹理单元
+  let target = TextureCache.getInstance(renderMode, gl, cache.__rootId, bboxNew, sx1, sy1, cache.__page);
+  target.__available = true;
+  let page = target.__page, size = page.__size;
+  let frameBuffer = genFrameBufferWithTexture(gl, target.__page.texture, size, size);
+  // 还需要个临时纹理temp，不能和target同纹理，可能和cache同纹理，3次blur绘制在temp和target之间来回进行
+  let temp = TextureCache.getInstance(cache.__renderMode, gl, cache.__rootId, bboxNew, sx1, sy1, target.__page);
+  temp.__available = true;
+  webgl.drawBlur(gl, program, spread, target, temp, cache, size);
   // 销毁这个临时program
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.deleteFramebuffer(frameBuffer);
   gl.deleteShader(program.vertexShader);
   gl.deleteShader(program.fragmentShader);
   gl.deleteProgram(program);
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  gl.deleteFramebuffer(frameBuffer);
-  texCache.releaseLockChannel(j);
-  let mockCache = new MockCache(gl, texture, sx1, sy1, widthNew, heightNew, bboxNew);
-  texCache.releaseLockChannel(i, mockCache.page);
-  return [mockCache, widthNew, heightNew, bboxNew];
+  return target;
 }
 
-function genColorMatrixWebgl(gl, texCache, cache, m, width, height, sx1, sy1, bbox) {
-  // 生成最终纹理，尺寸为被遮罩节点大小
-  let { n: i, frameBuffer, texture } = genFrameBufferWithTexture(gl, texCache, width, height);
-  // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
-  let j = texCache.findExistTexChannel(cache.page);
-  if(j === -1) {
-    // 直接绑定，因为一定是个mockCache
-    j = texCache.lockOneChannel();
-    webgl.bindTexture(gl, cache.page.texture, j);
-  }
-  else {
-    texCache.lockChannel(j);
-  }
-  gl.useProgram(gl.programCm);
-  webgl.drawCm(gl, gl.programCm, j, m);
-  texCache.releaseLockChannel(j);
+function genColorMatrixWebgl(renderMode, gl, cache, m) {
+  let { sx1, sy1, bbox } = cache;
+  let target = TextureCache.getInstance(renderMode, gl, cache.__rootId, bbox.slice(0), sx1, sy1, cache.__page);
+  target.__available = true;
+  let page = target.__page, size = page.__size;
+  let frameBuffer = genFrameBufferWithTexture(gl, target.__page.texture, size, size);
+  webgl.drawCm(gl, gl.programCm, target, cache, m, size * 0.5, size);
   // 切回
   gl.useProgram(gl.program);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteFramebuffer(frameBuffer);
-  // 同total一样生成一个mockCache
-  let mockCache = new MockCache(gl, texture, sx1, sy1, width, height, bbox.slice(0));
-  texCache.releaseLockChannel(i, mockCache.page);
-  return [mockCache, width, height, bbox];
+  return target;
 }
 
-function genOverflowWebgl(gl, texCache, node, cache, W, H) {
+function genOverflowWebgl(renderMode, gl, root, node, cache, W, H) {
   let bbox = cache.bbox;
   let { __sx1, __sy1, __clientWidth, __clientHeight } = node;
-  let xe = __sx1 + __clientWidth;
-  let ye = __sy1 + __clientHeight;
+  let x = __sx1 + __clientWidth;
+  let y = __sy1 + __clientHeight;
   // 没超过无需生成
-  if(bbox[0] >= __sx1 && bbox[1] >= __sy1 && bbox[2] <= xe && ye) {
+  if(bbox[0] >= __sx1 && bbox[1] >= __sy1 && bbox[2] <= x &&  bbox[3] <= y) {
     return;
   }
-  let bboxNew = [__sx1, __sy1, xe, ye];
-  // 生成最终纹理，尺寸为被遮罩节点大小
-  let { n: i, frameBuffer, texture } = genFrameBufferWithTexture(gl, texCache, __clientWidth, __clientHeight);
-  // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
-  let j = texCache.findExistTexChannel(cache.page);
-  if(j === -1) {
-    // 直接绑定，因为一定是个mockCache
-    j = texCache.lockOneChannel();
-    webgl.bindTexture(gl, cache.page.texture, j);
+  let bboxNew = [__sx1, __sy1, x, y];
+  let __cacheOverflow = TextureCache.getInstance(renderMode, gl, root.uuid, bboxNew, __sx1, __sy1, cache.__page);
+  if(!__cacheOverflow) {
+    return;
   }
-  else {
-    texCache.lockChannel(j);
-  }
+  __cacheOverflow.__available = true;
+  node.__cacheOverflow = __cacheOverflow;
+  // let { dx, dy } = __cacheOverflow;
+  let page = __cacheOverflow.__page, size = page.__size, texture = page.texture;
+  let frameBuffer = genFrameBufferWithTexture(gl, texture, size, size);
+  let cx = size * 0.5, cy = size * 0.5;
   // 绘制，根据坐标裁剪使用原本纹理的一部分
-  gl.useProgram(gl.programOverflow);
-  webgl.drawOverflow(gl, j, bboxNew[0] - bbox[0], bboxNew[1] - bbox[1], __clientWidth, __clientHeight, cache.width, cache.height);
-  texCache.releaseLockChannel(j);
+  webgl.drawOverflow(gl, gl.programOverflow, __cacheOverflow, cache, cx, cy, size);
   // 切回
   gl.useProgram(gl.program);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  gl.viewport(0, 0, W, H);
   gl.deleteFramebuffer(frameBuffer);
-  // 同total一样生成一个mockCache
-  let overflowCache = new MockCache(gl, texture, cache.sx1, cache.sy1, __clientWidth, __clientHeight, bboxNew);
-  texCache.releaseLockChannel(i, overflowCache.page);
-  return overflowCache;
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  gl.viewport(0, 0, W, H);
+  return __cacheOverflow;
 }
 
-function genMaskWebgl(gl, texCache, node, cache, W, H, lv, __structs) {
-  let { sx1, sy1, width, height, bbox, dx, dy } = cache;
-  // cache一定是mockCache，可能是total/filter/overflow一种
-  let cx = width * 0.5, cy = height * 0.5;
-  // 先求得被遮罩的matrix，用作inverse给mask计算
+function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs) {
+  let { __sx1: sx1, __sy1: sy1, __clientWidth: clientWidth, __clientHeight: clientHeight } = node;
+  let bboxNew = [sx1, sy1, sx1 + clientWidth, sy1 + clientHeight];
+  // 结果不能和源同page纹理，一定符合尺寸要求，不会比源大
+  let __cacheMask = TextureCache.getInstance(renderMode, gl, root.uuid, bboxNew, sx1, sy1, cache.__page);
+  __cacheMask.__available = true;
+  node.__cacheMask = __cacheMask;
+  // 先求得被遮罩的matrix，用作inverse给mask计算，以被遮罩左上角为原点
   let {
     [TRANSFORM]: transform,
-    [TRANSFORM_ORIGIN]: transformOrigin,
+    [TRANSFORM_ORIGIN]: tfo,
   } = node.__computedStyle;
   let inverse;
   if(isE(transform)) {
     inverse = mx.identity();
   }
   else {
-    let tfo = transformOrigin;
-    inverse = tf.calMatrixByOrigin(transform, tfo[0] + sx1 + dx, tfo[1] + sy1 + dy);
+    inverse = tf.calMatrixByOrigin(transform, tfo[0], tfo[1]);
   }
   inverse = mx.inverse(inverse);
-  // 将所有mask绘入一个单独纹理中，尺寸和原点与被遮罩total相同，才能做到顶点坐标一致
-  let { n: i, frameBuffer, texture } = genFrameBufferWithTexture(gl, texCache, width, height);
+  // 将所有mask绘入一个单独纹理中，尺寸和原点与被遮罩相同
+  let texture = webgl.createTexture(gl, null, 0, clientWidth, clientHeight);
+  let cx = clientWidth * 0.5, cy = clientHeight * 0.5;
+  let frameBuffer = genFrameBufferWithTexture(gl, texture, clientWidth, clientHeight);
   let next = node.next;
   let isClip = next.__isClip;
-  let list = [];
+  let lastPage, list = [];
   while(next && next.__isMask && next.__isClip === isClip) {
-    list.push(next);
-    next = next.next;
-  }
-  for(let i = 0, len = list.length; i < len; i++) {
-    let item = list[i];
+    let total = __structs[i].total || 0;
     let matrixList = [];
     let parentMatrix;
     let lastMatrix;
@@ -1285,49 +1198,54 @@ function genMaskWebgl(gl, texCache, node, cache, W, H, lv, __structs) {
     let parentOpacity = 1;
     let lastOpacity;
     let lastLv = lv;
-    let struct = item.__struct;
-    let index = __structs.indexOf(struct);
-    // 可以忽略mbm，因为只有透明遮罩
-    for(let i = index, len = index + (struct.total || 0) + 1; i < len; i++) {
+    let index = i;
+    for(let len = i + (total || 0) + 1; i < len; i++) {
       let {
         node,
         lv,
         total,
         hasMask,
       } = __structs[i];
-      let __cache = node.__cache;
-      let __limitCache = node.__limitCache;
-      let computedStyle = node.__computedStyle;
-      // 跳过display:none元素和它的所有子节点和mask
-      if(computedStyle[DISPLAY] === 'none') {
-        i += (total || 0);
-        if(hasMask) {
-          i += countMaskNum(__structs, i + 1, hasMask);
-        }
-        continue;
-      }
       if(node instanceof Text) {
+        let __cache = node.__cache;
         if(__cache && __cache.available) {
-          // text用父级的matrixEvent，在之前texCache添加到末尾了
-          texCache.addTexAndDrawWhenLimit(gl, __cache, parentOpacity, texCache.last[2], cx, cy, 0, 0,true);
-        }
-        else if(__limitCache) {
-          return;
+          let {
+            __matrixEvent,
+            __opacity,
+          } = node.__domParent;
+          let p = __cache.__page;
+          if(lastPage && lastPage !== p) {
+            webgl.drawTextureCache(gl, list, cx, cy, -sx1, -sy1, false);
+            list.splice(0);
+          }
+          lastPage = p;
+          list.push({ cache: __cache, opacity: __opacity, matrix: __matrixEvent });
         }
       }
       else {
+        let __limitCache = node.__limitCache;
+        let computedStyle = node.__computedStyle;
+        // 跳过display:none元素和它的所有子节点和mask
+        if(computedStyle[DISPLAY] === 'none' || __limitCache) {
+          i += (total || 0);
+          if(hasMask) {
+            i += countMaskNum(__structs, i + 1, hasMask);
+          }
+          continue;
+        }
         let {
           __cache,
-          __cacheMask,
-          __cacheFilter,
-          __cacheOverflow,
           __cacheTotal,
+          __cacheFilter,
+          __cacheMask,
+          __cacheOverflow,
         } = node;
         let {
           [OPACITY]: opacity,
+          [VISIBILITY]: visibility,
           [TRANSFORM]: transform,
-          [TRANSFORM_ORIGIN]: transformOrigin,
-        } = node.__computedStyle;
+          [TRANSFORM_ORIGIN]: tfo,
+        } = computedStyle;
         // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理
         if(i === index) {}
         else if(lv > lastLv) {
@@ -1350,49 +1268,47 @@ function genMaskWebgl(gl, texCache, node, cache, W, H, lv, __structs) {
         // 不变是同级兄弟，无需特殊处理 else {}
         lastLv = lv;
         let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal, __cache]);
-        // total和自身cache的尝试，visibility不可见时没有cache
-        if(target) {
+        if(target && (target !== __cache || visibility === 'visible')) {
+          // 不考虑mbm
           let m;
           if(isE(transform)) {
             m = mx.identity();
           }
           else {
-            m = tf.calMatrixByOrigin(transform, transformOrigin[0] + target.bbox[0] + dx, transformOrigin[1] + target.bbox[1] + dy);
+            m = tf.calMatrixByOrigin(transform, tfo[0] + target.sx1 - sx1, tfo[1] + target.sy1 - sy1);
           }
-          m = mx.multiply(inverse, m);
-          lastMatrix = tf.calMatrixByOrigin(transform, transformOrigin[0] + target.bbox[0] + dx, transformOrigin[1] + target.bbox[1] + dy);
           if(!isE(parentMatrix)) {
             lastMatrix = multiply(parentMatrix, lastMatrix);
           }
+          m = mx.multiply(inverse, m);
+          lastMatrix = m;
           lastOpacity = parentOpacity * opacity;
-          texCache.addTexAndDrawWhenLimit(gl, target, lastOpacity, m, cx, cy, dx, dy, true);
+          let p = target.__page;
+          if(lastPage && lastPage !== p) {
+            webgl.drawTextureCache(gl, list, cx, cy, -sx1, -sy1, false);
+            list.splice(0);
+          }
+          lastPage = p;
+          list.push({ cache: target, opacity: lastOpacity, matrix: m });
           if(target !== __cache) {
             i += (total || 0);
             if(hasMask) {
               i += countMaskNum(__structs, i + 1, hasMask);
             }
           }
-        }
-        else if(__limitCache) {
-          return;
+          // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
+          node.render(renderMode, gl, -sx1, -sy1);
         }
       }
     }
+    next = next.__next;
   }
-  texCache.refresh(gl, cx, cy);
+  // 绘制到fbo的纹理对象上并删除fbo恢复
+  webgl.drawTextureCache(gl, list, cx, cy, -sx1, -sy1, false);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteFramebuffer(frameBuffer);
-  // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况mask变更引发的可能不在
-  let j = texCache.findExistTexChannel(cache.page);
-  if(j === -1) {
-    // 直接绑定，因为一定是个mockCache
-    j = texCache.lockOneChannel();
-    webgl.bindTexture(gl, cache.page.texture, j);
-  }
-  else {
-    texCache.lockChannel(j);
-  }
-  // 生成最终纹理，汇总total和maskCache
-  let { n, frameBuffer: frameBuffer2, texture: texture2 } = genFrameBufferWithTexture(gl, texCache, width, height);
+  gl.bindTexture(gl.TEXTURE_2D, null);
   let program;
   if(isClip) {
     program = gl.programClip;
@@ -1400,177 +1316,154 @@ function genMaskWebgl(gl, texCache, node, cache, W, H, lv, __structs) {
   else {
     program = gl.programMask;
   }
-  gl.useProgram(program);
-  webgl.drawMask(gl, i, j, program);
-  gl.deleteTexture(texture);
-  texCache.releaseLockChannel(i);
-  texCache.releaseLockChannel(j);
+  let page = __cacheMask.__page, size = page.size, tex = page.texture;
+  frameBuffer = genFrameBufferWithTexture(gl, tex, size, size);
+  webgl.drawMask(gl, program, __cacheMask, cache, texture, size * 0.5, size);
   // 切换回主程序
   gl.useProgram(gl.program);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.deleteFramebuffer(frameBuffer);
   gl.viewport(0, 0, W, H);
-  gl.deleteFramebuffer(frameBuffer2);
-  // 同total一样生成一个mockCache
-  let maskCache = new MockCache(gl, texture2, sx1, sy1, width, height, bbox);
-  texCache.releaseLockChannel(n, maskCache.page);
-  return maskCache;
+  return __cacheMask;
 }
 
 /**
  * webgl的dropShadow只生成阴影部分，模糊复用blur，然后进行拼合
- * @param gl
- * @param texCache
- * @param cache
- * @param v
- * @param width
- * @param height
- * @param sx1
- * @param sy1
- * @param bbox
- * @returns {*[]}
+ * 复用blur时生成的模糊是临时的，和主程序模糊不一样，需区分
  */
-function genDropShadowWebgl(gl, texCache, cache, v, width, height, sx1, sy1, bbox) {
-  // 先清空之前所有绘制遗留
-  texCache.refresh(gl, width * 0.5, height * 0.5);
+function genDropShadowWebgl(renderMode, gl, cache, v) {
+  let { sx1, sy1, bbox, width, height } = cache;
   // 先根据x/y/color生成单色阴影
-  let [x, y, blur, , color] = v;
-  let { n: i, frameBuffer, texture } = genFrameBufferWithTexture(gl, texCache, width, height);
-  // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
-  let j = texCache.findExistTexChannel(cache.page);
-  if(j === -1) {
-    // 直接绑定，因为一定是个mockCache
-    j = texCache.lockOneChannel();
-    webgl.bindTexture(gl, cache.page.texture, j);
+  let [x, y, sigma, , color] = v;
+  let d = blur.kernelSize(sigma);
+  let max = Math.max(15, gl.getParameter(gl.MAX_VARYING_VECTORS));
+  while(d > max) {
+    d -= 2;
   }
-  else {
-    texCache.lockChannel(j);
+  let spread = blur.outerSizeByD(d);
+  // 防止超限，webgl最大纹理尺寸限制
+  if(width > Page.MAX + spread || height > Page.MAX + spread) {
+    inject.warn('Filter dropShadow is oversize');
+    return;
   }
+  let w = width + spread * 2, h = height + spread * 2;
+  let tex1 = webgl.createTexture(gl, null, 0, w, h);
+  let frameBuffer = genFrameBufferWithTexture(gl, tex1, w, h);
   gl.useProgram(gl.programDs);
-  texture = webgl.drawDropShadow(gl, gl.programDs, frameBuffer, texture, cache.page.texture, i, j, width, height, color);
-  // 部分清除
+  webgl.drawDropShadow(gl, gl.programDs, frameBuffer, cache, color, width, w, height, h);
+  // 生成模糊的阴影
+  if(sigma) {
+    let program = genBlurShader(gl, sigma, d);
+    gl.useProgram(program);
+    webgl.bindTexture(gl, tex1, 0);
+    let tex2 = webgl.createTexture(gl, null, 1, w, h);
+    webgl.drawDropShadowBlur(gl, program, frameBuffer, tex1, tex2, w, h);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.deleteFramebuffer(frameBuffer);
+    gl.deleteTexture(tex2);
+    gl.deleteShader(program.vertexShader);
+    gl.deleteShader(program.fragmentShader);
+    gl.deleteProgram(program);
+  }
+  gl.useProgram(gl.program);
+  // 原图和模糊阴影合成
+  let bboxNew = bbox.slice(0);
+  bboxNew[0] += x;
+  bboxNew[1] += y;
+  bboxNew[2] += x;
+  bboxNew[3] += y;
+  bboxNew[0] -= spread;
+  bboxNew[1] -= spread;
+  bboxNew[2] += spread;
+  bboxNew[3] += spread;
+  let bboxMerge = bbox.slice(0);
+  mergeBbox(bboxMerge, bboxNew, 0, 0);
+  let target = TextureCache.getInstance(renderMode, gl, cache.__rootId, bboxMerge, sx1, sy1, cache.__page);
+  target.__available = true;
+  let page = target.__page, size = page.__size;
+  frameBuffer = genFrameBufferWithTexture(gl, page.texture, size, size);
+  let dx = bboxNew[0] - bboxMerge[0], dy = bboxNew[1] - bboxMerge[1];
+  webgl.drawDropShadowMerge(gl, target, cache, tex1, size, dx, dy, w, h);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteFramebuffer(frameBuffer);
-  let bboxOld = bbox;
-  let mockCache = new MockCache(gl, texture, sx1, sy1, width, height, bbox.slice(0));
-  // 复用blur先生成模糊的阴影
-  let res = genBlurWebgl(gl, texCache, mockCache, blur, width, height, sx1, sy1, bbox);
-  texCache.releaseLockChannel(j); // 不管后续成功如何，都先释放阴影的lock
-  gl.useProgram(gl.program);
-  if(res) {
-    gl.deleteTexture(texture); // 有模糊的阴影后删除之前无模糊的临时阴影
-    [mockCache, width, height, bbox] = res;
-    // 根据dropShadow的x/y偏移重置模糊阴影的相关数据
-    if(x || y) {
-      bbox[0] += x;
-      bbox[1] += y;
-      bbox[2] += x;
-      bbox[3] += y;
-      // 把模糊阴影当做一张普通的图片
-      mockCache.sx1 = bbox[0];
-      mockCache.sy1 = bbox[1];
-      mockCache.reOffset();
-    }
-    let bboxMerge = bboxOld.slice(0);
-    mergeBbox(bboxMerge, bbox, 0, 0);
-    // 合并原本cache和blur的纹理为最终对象，i是最初的cache，j是
-    width = bboxMerge[2] - bboxMerge[0];
-    height = bboxMerge[3] - bboxMerge[1];
-    let cx = width * 0.5, cy = height * 0.5;
-    let dx = -bboxMerge[0], dy = -bboxMerge[1];
-    let { n: k, frameBuffer, texture: texture2 } = genFrameBufferWithTexture(gl, texCache, width, height);
-    // 以merge的bbox的左上角为原点，每个cache要换算一下
-    texCache.addTexAndDrawWhenLimit(gl, cache, 1, null, cx, cy, dx, dy, false);
-    texCache.addTexAndDrawWhenLimit(gl, mockCache, 1, null, cx, cy, dx, dy, false);
-    texCache.refresh(gl, cx, cy, false);
-    // 回收
-    texCache.releaseLockChannel(i);
-    texCache.releaseLockChannel(k);
-    gl.deleteFramebuffer(frameBuffer);
-    // 同total一样生成一个mockCache，数据和本身一样
-    let mockCache2 = new MockCache(gl, texture2, sx1, sy1, width, height, bboxMerge);
-    texCache.releaseLockChannel(k, mockCache.page);
-    return [mockCache2, width, height, bboxMerge];
-  }
+  gl.deleteTexture(tex1);
+  return target;
 }
 
 /**
- * 生成blendMode混合fbo纹理结果，原本是所有元素向一个fbo记A进行绘制，当出现mbm时，进入到这里，
- * 先生成一个新的fbo记B，将A和待混合节点进行对应的mbm模式混合，结果绘制到B中，然后返回B来替换A，包括纹理单元
- * @param gl
- * @param texCache
- * @param i 之前已有的fbo和纹理单元
- * @param j 当前节点绘制的fbo和纹理单元
- * @param mbm
- * @param fbo 之前舞台绑定的fbo和纹理
- * @param tex
- * @param W
- * @param H
- * @returns {number|*}
+ * 生成blendMode混合fbo纹理结果，原本是所有元素向画布或一个fbo记A进行绘制，当出现mbm时，进入到这里，
+ * 先生成一个新的fbo记B，之前的绘制都先到B上，再把后续元素绘制到一个同尺寸的fbo纹理上，
+ * 两者进行mbm混合，返回到A上
  */
-function genMbmWebgl(gl, texCache, i, j, fbo, tex, mbm, W, H) {
-  let frag;
+function genMbmWebgl(gl, texture, cache, mbm, opacity, matrix, dx, dy, cx, cy, width, height) {
+  // 后续绘制到同尺寸纹理上
+  let tex = webgl.createTexture(gl, null, 0, width, height);
+  let frameBuffer = genFrameBufferWithTexture(gl, tex, width, height);
+  webgl.drawTextureCache(gl, [{ cache, opacity, matrix }], cx, cy, 0, 0, true);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.deleteFramebuffer(frameBuffer);
+  // 获取对应的mbm程序
+  let program;
   mbm = mbmName(mbm);
   if(mbm === 'multiply') {
-    frag = fragmentMultiply;
+    program = gl.programMbmMp;
   }
   else if(mbm === 'screen') {
-    frag = fragmentScreen;
+    program = gl.programMbmSr;
   }
   else if(mbm === 'overlay') {
-    frag = fragmentOverlay;
+    program = gl.programMbmOl;
   }
   else if(mbm === 'darken') {
-    frag = fragmentDarken;
+    program = gl.programMbmDk;
   }
   else if(mbm === 'lighten') {
-    frag = fragmentLighten;
+    program = gl.programMbmLt;
   }
   else if(mbm === 'color-dodge') {
-    frag = fragmentColorDodge;
+    program = gl.programMbmCd;
   }
   else if(mbm === 'color-burn') {
-    frag = fragmentColorBurn;
+    program = gl.programMbmCb;
   }
   else if(mbm === 'hard-light') {
-    frag = fragmentHardLight;
+    program = gl.programMbmHl;
   }
   else if(mbm === 'soft-light') {
-    frag = fragmentSoftLight;
+    program = gl.programMbmSl;
   }
   else if(mbm === 'difference') {
-    frag = fragmentDifference;
+    program = gl.programMbmDf;
   }
   else if(mbm === 'exclusion') {
-    frag = fragmentExclusion;
+    program = gl.programMbmEx;
   }
   else if(mbm === 'hue') {
-    frag = fragmentHue;
+    program = gl.programMbmHue;
   }
   else if(mbm === 'saturation') {
-    frag = fragmentSaturation;
+    program = gl.programMbmSt;
   }
   else if(mbm === 'color') {
-    frag = fragmentColor;
+    program = gl.programMbmCl;
   }
   else if(mbm === 'luminosity') {
-    frag = fragmentLuminosity;
+    program = gl.programMbmLm;
   }
-  let program = webgl.initShaders(gl, vertexMbm, frag);
   gl.useProgram(program);
   // 生成新的fbo，将混合结果绘入
-  let { n, frameBuffer, texture } = genFrameBufferWithTexture(gl, texCache, W, H);
-  webgl.drawMbm(gl, program, i, j, W, H);
-  // 切换回主程序并销毁这个临时program
+  let resTex = webgl.createTexture(gl, null, 0, width, height);
+  let resFrameBuffer = genFrameBufferWithTexture(gl, resTex, width, height);
+  webgl.drawMbm(gl, program, texture, tex);
   gl.useProgram(gl.program);
-  gl.viewport(0, 0, W, H);
-  gl.deleteShader(program.vertexShader);
-  gl.deleteShader(program.fragmentShader);
-  gl.deleteProgram(program);
-  gl.deleteFramebuffer(fbo);
-  gl.deleteTexture(tex);
-  texCache.releaseLockChannel(i);
-  texCache.releaseLockChannel(j);
-  return [n, frameBuffer, texture];
+  return {
+    texture: resTex,
+    frameBuffer: resFrameBuffer,
+  };
 }
 
 function renderSvg(renderMode, ctx, root, isFirst) {
@@ -1885,7 +1778,7 @@ function renderWebgl(renderMode, gl, root, isFirst) {
   if(isFirst) {
     Page.init(gl.getParameter(gl.MAX_TEXTURE_SIZE));
   }
-  let { __structs, width, height, texCache } = root;
+  let { __structs, width, height, texHelper } = root;
   let cx = width * 0.5, cy = height * 0.5;
   // 栈代替递归，存父节点的matrix/opacity，matrix为E时存null省略计算
   let lastRefreshLevel = NONE;
@@ -1915,7 +1808,7 @@ function renderWebgl(renderMode, gl, root, isFirst) {
           __cache.reset(bbox, sx, sy);
         }
         else {
-          __cache = CanvasCache.getInstance(root.uuid, bbox, sx, sy);
+          __cache = CanvasCache.getInstance(mode.CANVAS, gl, root.uuid, bbox, sx, sy, null);
         }
         if(__cache && __cache.enabled) {
           __cache.__bbox = bbox;
@@ -1954,19 +1847,29 @@ function renderWebgl(renderMode, gl, root, isFirst) {
      * 但其实不用检查，因为next变更一定会清空cacheMask，只要检查cacheMask即可
      * 如果没有或无效，直接添加，无视节点本身变化，后面防重即可
      */
-    if(__refreshLevel < REPAINT) {
-      let matrix = node.__matrix;
+    if(!__refreshLevel) {}
+    else if(__refreshLevel < REPAINT) {
       let mbm = __computedStyle[MIX_BLEND_MODE];
       let isMbm = contain(__refreshLevel, MBM) && isValidMbm(mbm);
-      let __domParent = node.__domParent;
-      let isPpt = !isE(__domParent && __domParent.__perspectiveMatrix) || tf.isPerspectiveMatrix(matrix);
+      let need = node.__cacheAsBitmap || hasMask;
+      if(!need && contain(__refreshLevel, FT)) {
+        let filter = __computedStyle[FILTER];
+        if(filter && filter.length) {
+          need = true;
+        }
+      }
+      if(!need && contain(__refreshLevel, PPT)) {
+        let __domParent = node.__domParent;
+        let isPpt = !isE(__domParent && __domParent.__perspectiveMatrix) || tf.isPerspectiveMatrix(node.__matrix);
+        if(isPpt) {
+          need = true;
+        }
+      }
       if(isMbm) {
         hasMbm = true;
       }
       // 这里和canvas不一样，前置cacheAsBitmap条件变成或条件之一，新的ppt层级且画中画需要新的fbo
-      if(contain(__refreshLevel, FT | MBM)
-        || contain(__refreshLevel, PPT) && node.__cacheAsBitmap
-        || isPpt) {
+      if(need) {
         mergeList.push({
           i,
           lv,
@@ -1978,7 +1881,7 @@ function renderWebgl(renderMode, gl, root, isFirst) {
       // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total
       if(__cacheTotal && __cacheTotal.available) {
         i += (total || 0);
-        if(__refreshLevel === NONE && hasMask) {
+        if(__refreshLevel === NONE && hasMask) { // TODO: add mask level
           i += countMaskNum(__structs, i + 1, hasMask);
         }
       }
@@ -1996,7 +1899,7 @@ function renderWebgl(renderMode, gl, root, isFirst) {
           __cache.reset(bbox, sx1, sy1);
         }
         else {
-          __cache = CanvasCache.getInstance(root.uuid, bbox, sx1, sy1);
+          __cache = CanvasCache.getInstance(mode.CANVAS, gl, root.uuid, bbox, sx1, sy1, null);
         }
         if(__cache && __cache.enabled) {
           __cache.__bbox = bbox;
@@ -2028,7 +1931,7 @@ function renderWebgl(renderMode, gl, root, isFirst) {
       if(node.__cacheAsBitmap
           || hasMask
           || isFilter
-          || isMbm
+          // || isMbm
           || isOverflow
           || isPpt) {
         mergeList.push({
@@ -2041,7 +1944,6 @@ function renderWebgl(renderMode, gl, root, isFirst) {
       }
     }
   }
-  let limitHash = [];
   // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
   // 这样保证子节点在前，后节点在前，后节点是为了mask先应用自身如filter之后再进行遮罩
   if(mergeList.length) {
@@ -2063,7 +1965,6 @@ function renderWebgl(renderMode, gl, root, isFirst) {
         hasMask,
       } = item;
       let {
-        __limitCache,
         __matrix,
         __domParent,
         __computedStyle,
@@ -2094,65 +1995,47 @@ function renderWebgl(renderMode, gl, root, isFirst) {
         }
       }
       let {
-        __cache,
+        __limitCache,
         __cacheTotal,
         __cacheFilter,
         __cacheMask,
         __cacheOverflow,
       } = node;
+      if(__limitCache) {
+        return;
+      }
       let needGen;
       // 可能没变化，比如被遮罩节点、filter变更等
       if(!__cacheTotal || !__cacheTotal.available) {
-        let [limit, res] = genTotalWebgl(renderMode, gl, texCache, node, i, total || 0, __structs, __cache, __limitCache, width, height);
+        let res = genTotalWebgl(renderMode, __cacheTotal, gl, root, node, i, lv, total || 0, __structs, width, height);
+        if(!res) {
+          return;
+        }
         __cacheTotal = res;
         needGen = true;
-        __limitCache = limit;
-        // 返回的limit包含各种情况超限，一旦超限，只能生成临时cacheTotal不能保存
-        if(!__limitCache) {
-          node.__cacheTotal = res;
-        }
       }
       // 即使超限，也有total结果
       let target = __cacheTotal;
       if(overflow === 'hidden') {
         if(!__cacheOverflow || !__cacheOverflow.available || needGen) {
-          let temp = genOverflowWebgl(gl, texCache, node, target, width, height);
-          if(temp) {
-            target = temp;
+          let res = genOverflowWebgl(renderMode, gl, root, node, target, width, height);
+          if(res) {
+            target = res;
             needGen = true;
-            if(!__limitCache) {
-              node.__cacheOverflow = target;
-            }
           }
-        }
-        if(__cacheOverflow && __cacheOverflow.available) {
-          target = __cacheOverflow;
         }
       }
       if(filter.length) {
         if(!__cacheFilter || !__cacheFilter.available || needGen) {
-          let old = target;
-          target = genFilterWebgl(gl, texCache, node, target, filter, width, height);
-          if(target !== old) {
+          let res = genFilterWebgl(renderMode, gl, node, target, filter, width, height);
+          if(res) {
+            target = res;
             needGen = true;
-            if(!__limitCache) {
-              node.__cacheFilter = target;
-            }
           }
-        }
-        if(__cacheFilter && __cacheFilter.available) {
-          target = __cacheFilter;
         }
       }
       if(hasMask && (!__cacheMask || !__cacheMask.available || needGen)) {
-        target = genMaskWebgl(gl, texCache, node, target, width, height, lv, __structs);
-        if(!__limitCache) {
-          node.__cacheMask = target;
-        }
-      }
-      // 保存临时的局部根节点
-      if(__limitCache) {
-        limitHash[i] = target;
+        genMaskWebgl(renderMode, gl, root, node, target, width, height, i + (total || 0) + 1, lv, __structs);
       }
     });
   }
@@ -2162,13 +2045,15 @@ function renderWebgl(renderMode, gl, root, isFirst) {
    * 前面循环时有记录是否出现mbm，只有出现才申请，否则不浪费直接输出到主画布
    * 超尺寸的要走无cache逻辑render，和canvas很像，除了离屏canvas超限，汇总total也会纹理超限
    */
-  let n, frameBuffer, texture;
+  let frameBuffer, texture;
   if(hasMbm) {
-    let t = genFrameBufferWithTexture(gl, texCache, width, height);
-    n = t.n;
-    frameBuffer = t.frameBuffer;
-    texture = t.texture;
+    texture = webgl.createTexture(gl, null, 0, width, height);
+    webgl.bindTexture(gl, null, 0);
+    frameBuffer = genFrameBufferWithTexture(gl, texture, width, height);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
   }
+  let lastPage, list = [];
   for(let i = 0, len = __structs.length; i < len; i++) {
     let {
       node,
@@ -2178,28 +2063,19 @@ function renderWebgl(renderMode, gl, root, isFirst) {
     // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
     if(node instanceof Text) {
       // text特殊之处，__config部分是复用parent的
-      let __cache = node.__cache, __domParent = node.__domParent;
-      let {
-        __matrixEvent,
-        __opacity,
-      } = __domParent;
+      let __cache = node.__cache;
       if(__cache && __cache.available) {
-        texCache.addTexAndDrawWhenLimit(gl, __cache, __opacity, __matrixEvent, cx, cy, 0, 0,true);
-      }
-      // 超限特殊处理，先生成画布尺寸大小的纹理然后原始位置绘制，超限一定有文字内容
-      else if(node.__limitCache && __domParent.__computedStyle[VISIBILITY] !== 'hidden') {
-        let c = inject.getOffscreenCanvas(width, height, '__$$OVERSIZE$$__', null);
-        node.render(mode.CANVAS, c.ctx, 0, 0);
-        let j = texCache.lockOneChannel();
-        let texture = webgl.createTexture(gl, c.canvas, j, null, null);
-        let mockCache = new MockCache(gl, texture, 0, 0, width, height, [0, 0, width, height]);
-        texCache.addTexAndDrawWhenLimit(gl, mockCache, node.__opacity, node.__matrixEvent, cx, cy, 0, 0, true);
-        texCache.refresh(gl, cx, cy, true);
-        c.ctx.setTransform(1, 0, 0, 1, 0, 0);
-        c.ctx.globalAlpha = 1;
-        c.ctx.clearRect(0, 0, width, height);
-        mockCache.release();
-        texCache.releaseLockChannel(j);
+        let {
+          __matrixEvent,
+          __opacity,
+        } = node.__domParent;
+        let p = target.__page;
+        if(lastPage && lastPage !== p) {
+          webgl.drawTextureCache(gl, list, cx, cy, 0, 0, true);
+          list.splice(0);
+        }
+        lastPage = p;
+        list.push({ cache: __cache, __opacity, matrix: __matrixEvent });
       }
     }
     else {
@@ -2236,26 +2112,34 @@ function renderWebgl(renderMode, gl, root, isFirst) {
       }
       node.__opacity = opacity;
       assignMatrix(node.__matrixEvent, m);
-      // 有total的可以直接绘制并跳过子节点索引，忽略total本身，其独占用纹理单元，注意特殊不取cacheTotal，
-      // 这种情况发生在只有overflow:hidden声明但无效没有生成__cacheOverflow的情况，
-      // 因为webgl纹理单元缓存原因，所以不用cacheTotal防止切换性能损耗
-      // 已取消，因为perspective需要进行独立上下文渲染
-      let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal, __cache]);
       // total和自身cache的尝试，visibility不可见时没有cache
+      let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal, __cache]);
       if(target) {
-        // 有mbm先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
-        if(hasMbm && isValidMbm(mixBlendMode)) {
-          texCache.refresh(gl, cx, cy, true);
-          let { n: n2, frameBuffer: frameBuffer2, texture: texture2 } = genFrameBufferWithTexture(gl, texCache, width, height);
-          texCache.addTexAndDrawWhenLimit(gl, target, opacity, m, cx, cy, 0, 0, true);
-          texCache.refresh(gl, cx, cy, true);
-          // 合成结果作为当前frameBuffer，以及纹理和单元，等于替代了当前画布作为绘制对象
-          [n, frameBuffer, texture] = genMbmWebgl(gl, texCache, n, n2, frameBuffer, texture, mbmName(mixBlendMode), width, height);
-          gl.deleteFramebuffer(frameBuffer2);
-          gl.deleteTexture(texture2);
+        // 有mbm则需要混合之前的纹理和新纹理到fbo上面，连续的mbm则依次交替绘制到画布或离屏fbo上
+        if(isValidMbm(mixBlendMode)) {
+          if(list.length) {
+            webgl.drawTextureCache(gl, list, cx, cy, 0, 0, true);
+            list.splice(0);
+            lastPage = null;
+          }
+          gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
+          gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+          gl.deleteFramebuffer(frameBuffer);
+          let res = genMbmWebgl(gl, texture, target, mixBlendMode, opacity, m, 0, 0, cx, cy, width, height);
+          if(res) {
+            gl.deleteTexture(texture);
+            texture = res.texture;
+            frameBuffer = res.frameBuffer;
+          }
         }
         else {
-          texCache.addTexAndDrawWhenLimit(gl, target, opacity, m, cx, cy, 0, 0, true);
+          let p = target.__page;
+          if(lastPage && lastPage !== p) {
+            webgl.drawTextureCache(gl, list, cx, cy, 0, 0, true);
+            list.splice(0);
+          }
+          lastPage = p;
+          list.push({ cache: target, opacity, matrix: m });
         }
         if(target !== __cache) {
           i += (total || 0);
@@ -2263,64 +2147,16 @@ function renderWebgl(renderMode, gl, root, isFirst) {
             i += countMaskNum(__structs, i + 1, hasMask);
           }
         }
-        else {
-          // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
-          node.render(renderMode, gl, 0, 0);
-          gl.useProgram(gl.program);
-          gl.viewport(0, 0, width, height);
-        }
-      }
-      else if(limitHash[i]) {
-        let target = limitHash[i];
-        if(hasMbm && isValidMbm(mixBlendMode)) {
-          texCache.refresh(gl, cx, cy, true);
-          let { n: n2, frameBuffer: frameBuffer2, texture: texture2 } = genFrameBufferWithTexture(gl, texCache, width, height);
-          texCache.addTexAndDrawWhenLimit(gl, target, opacity, m, cx, cy, 0, 0, true);
-          texCache.refresh(gl, cx, cy, true);
-          // 合成结果作为当前frameBuffer，以及纹理和单元，等于替代了当前画布作为绘制对象
-          [n, frameBuffer, texture] = genMbmWebgl(gl, texCache, n, n2, frameBuffer, texture, mbmName(mixBlendMode), width, height);
-          gl.deleteFramebuffer(frameBuffer2);
-          gl.deleteTexture(texture2);
-        }
-        else {
-          texCache.addTexAndDrawWhenLimit(gl, target, opacity, m, cx, cy, 0, 0, true);
-        }
-        i += (total || 0);
-        if(hasMask) {
-          i += countMaskNum(__structs, i + 1, hasMask);
-        }
         // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
         node.render(renderMode, gl, 0, 0);
-        gl.useProgram(gl.program);
-        gl.viewport(0, 0, width, height);
-      }
-      // 超限的情况，这里是普通单节点超限，没有合成total后再合成特殊cache如filter/mask/mbm之类的，
-      // 直接按原始位置绘制到离屏canvas，再作为纹理绘制即可，特殊的在total那做过降级了
-      else if(node.__limitCache && node.__hasContent) {
-        let c = inject.getOffscreenCanvas(width, height, '__$$OVERSIZE$$__', null);
-        node.render(mode.CANVAS, c.ctx, 0, 0);
-        let j = texCache.lockOneChannel();
-        let texture = webgl.createTexture(gl, c.canvas, j, null, null);
-        let mockCache = new MockCache(gl, texture, 0, 0, width, height, [0, 0, width, height]);
-        texCache.addTexAndDrawWhenLimit(gl, mockCache, opacity, m, cx, cy, 0, 0, true);
-        texCache.refresh(gl, cx, cy, true);
-        c.ctx.setTransform(1, 0, 0, 1, 0, 0);
-        c.ctx.globalAlpha = 1;
-        c.ctx.clearRect(0, 0, width, height);
-        mockCache.release();
-        texCache.releaseLockChannel(j);
-        // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
-        node.render(renderMode, gl, 0, 0);
-        gl.useProgram(gl.program);
-        gl.viewport(0, 0, width, height);
       }
     }
   }
-  texCache.refresh(gl, cx, cy, true);
+  webgl.drawTextureCache(gl, list, cx, cy, 0, 0, true);
   // 有mbm时将汇总的fbo绘入主画布，否则本身就是到主画布无需多余操作
   if(hasMbm) {
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    texCache.releaseLockChannel(n);
     gl.deleteFramebuffer(frameBuffer);
     // 顶点buffer
     let pointBuffer = gl.createBuffer();
@@ -2358,8 +2194,9 @@ function renderWebgl(renderMode, gl, root, isFirst) {
     gl.vertexAttribPointer(a_opacity, 1, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(a_opacity);
     // 纹理单元
+    webgl.bindTexture(gl, texture, 0);
     let u_texture = gl.getUniformLocation(gl.program, 'u_texture');
-    gl.uniform1i(u_texture, n);
+    gl.uniform1i(u_texture, 0);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
     gl.deleteBuffer(pointBuffer);
     gl.deleteBuffer(texBuffer);
@@ -2436,7 +2273,7 @@ function renderCanvas(renderMode, ctx, root) {
     });
     mergeList.forEach(item => {
       let { i, lv, total, node, hasMask } = item;
-      let __cacheTotal = genTotal(renderMode, root, node, i, lv, total || 0, __structs, hasMask, width, height);
+      let __cacheTotal = genTotal(renderMode, ctx, root, node, i, lv, total || 0, __structs, width, height);
       if(__cacheTotal) {
         genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width, height);
       }

@@ -243,6 +243,9 @@ function calPoint(point, m) {
         o.y += z * b3;
         o.z = x * c1 + y * c2 + c4 + z * c3;
       }
+      else if(c1 || c2 || c4) {
+        o.z = x * c1 + y * c2 + c4;
+      }
       return o;
     }
     // 6位类型

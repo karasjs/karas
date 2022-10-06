@@ -17,16 +17,16 @@ const { spreadFilter } = css;
 const { isE } = mx;
 
 class CanvasCache extends Cache {
-  constructor(rootId, w, h, bbox, page, pos, x1, y1) {
-    super(rootId, w, h, bbox, page, pos, x1, y1);
+  constructor(renderMode, ctx, rootId, w, h, bbox, page, pos, x1, y1) {
+    super(renderMode, ctx, rootId, w, h, bbox, page, pos, x1, y1);
   }
 
   clear() {
-    if(this.__available) {
+    if(super.clear()) {
       this.__available = false;
-      let page = this.__page, ctx = page.ctx, size = page.__size;
+      let page = this.__page, ctx = page.ctx;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.clearRect(this.__x, this.__y, size, size);
+      ctx.clearRect(this.__x, this.__y, this.__width, this.__height);
     }
   }
 
@@ -42,8 +42,8 @@ class CanvasCache extends Cache {
     return this.__page.ctx;
   }
 
-  static getInstance(rootId, bbox, x1, y1) {
-    return super.getInstance(rootId, bbox, x1, y1, this, CanvasPage);
+  static getInstance(renderMode, ctx, rootId, bbox, x1, y1, excludePage) {
+    return super.getInstance(renderMode, ctx, rootId, bbox, x1, y1, this, CanvasPage, excludePage);
   }
 
   /**

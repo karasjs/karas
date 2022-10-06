@@ -20,7 +20,7 @@ let uuid = 0;
 let init = false;
 
 class Page {
-  constructor(size, number) {
+  constructor(renderMode, ctx, size, number) {
     this.__size = size;
     this.__number = number;
     this.__width = this.__height = size;
@@ -31,7 +31,7 @@ class Page {
     }
     this.__grid = new Int32Array(grid);
     this.__uuid = uuid++;
-    // webgl贴图缓存使用，一旦更新则标识记录，绑定某号纹理单元查看变化才更新贴图
+    // webgl贴图缓存更新使用，canvas/img等发生变更需刷新重新生成texture，fbo的texture不需要
     this.__update = false;
     this.time = 0;
   }
@@ -49,8 +49,8 @@ class Page {
   del(pos) {
     let { number, grid } = this;
     let u = grid[pos];
-    if(!u) {
-      grid[pos] = 1;
+    if(u) {
+      grid[pos] = 0;
       for(let i = pos; i < pos + u; i++) {
         grid[i] = 0;
         for(let j = 1; j < u; j++) {
@@ -69,6 +69,7 @@ class Page {
 
   getFreePos(unitSize) {
     let { number, grid } = this;
+    outer:
     for(let i = 0; i < number; i++) {
       let u = grid[i];
       if(u) {
@@ -82,12 +83,16 @@ class Page {
           }
         }
         else {
-          // 直接增加unitSize，不能是u
-          i += unitSize;
+          i += u;
         }
       }
       else {
-        // 空白列
+        // 空白列检查尺寸是否符合
+        for(let j = i + 1, len = i + unitSize; j < len; j++) {
+          if(grid[i]) {
+            continue outer;
+          }
+        }
         return i;
       }
     }
@@ -126,27 +131,31 @@ class Page {
     this.__update = v;
   }
 
-  static getInstance(rootId, size, klass) {
+  static getInstance(renderMode, ctx, rootId, size, klass, excludePage) {
     if(size > MAX) {
       return;
     }
-    // 换算为每单位16px占多少单位，位移操作注意精度问题，只有恰好16倍数无需校准
-    let unitSize = size >> 4;
-    if(size > (unitSize << 4)) {
-      unitSize++;
+    // 换算为每单位16px占多少单位
+    let unitSize = 1;
+    while((UNIT * unitSize) < size) {
+      unitSize <<= 1;
     }
+    let key = rootId + ',' + renderMode;
     // 每个root复用自己的合图，webgl中为了隔离不同实例
-    let list = HASH[rootId] = HASH[rootId] || [];
+    let list = HASH[key] = HASH[key] || [];
     let page, pos;
     for(let i = 0, len = list.length; i < len; i++) {
       let item = list[i];
+      if(excludePage && item === excludePage) {
+        continue;
+      }
       if((pos = item.getFreePos(unitSize)) > -1) {
         page = item;
         break;
       }
     }
     if(!page) {
-      page = new klass(MAX, NUMBER);
+      page = new klass(renderMode, ctx, MAX, NUMBER);
       pos = 0;
       list.push(page);
     }
@@ -191,9 +200,9 @@ class Page {
       return;
     }
     init = true;
-    if(MAX_TEXTURE_SIZE !== 2048) {
+    if(MAX_TEXTURE_SIZE !== MAX) {
       // 超过8192会卡一下
-      Page.MAX = Math.min(MAX_TEXTURE_SIZE, 8192);
+      Page.MAX = Math.min(MAX_TEXTURE_SIZE, 512);
     }
   }
 }

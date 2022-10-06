@@ -4,8 +4,14 @@ import util from '../util/util';
  * canvas和texture合图的基类，和Page类配合，抽象出基础尺寸偏差等信息
  * 派生2个子类
  */
+
+let uuid = 0;
+
 class Cache {
-  constructor(rootId, w, h, bbox, page, pos, x1, y1) {
+  constructor(renderMode, ctx, rootId, w, h, bbox, page, pos, x1, y1) {
+    this.__uuid = uuid++;
+    this.__renderMode = renderMode;
+    this.__ctx = ctx;
     this.__rootId = rootId;
     this.__init(w, h, bbox, page, pos, x1, y1);
   }
@@ -40,6 +46,11 @@ class Cache {
   }
 
   clear() {
+    if(this.__available) {
+      this.__available = false;
+      this.update();
+      return true;
+    }
   }
 
   // svg打标用会覆盖此方法
@@ -55,14 +66,14 @@ class Cache {
 
   reset(bbox, x1, y1, klass) {
     // 尺寸没变复用之前的并清空
-    if(util.equalArr(this.__bbox, bbox) && this.__enabled) {
-      this.clear();
-      return;
-    }
+    // if(this.__enabled && util.equalArr(this.__bbox, bbox)) {
+    //   this.clear();
+    //   return;
+    // }
     this.release();
     let w = Math.ceil(bbox[2] - bbox[0]);
     let h = Math.ceil(bbox[3] - bbox[1]);
-    let res = klass.getInstance(this.__rootId, Math.max(w, h));
+    let res = klass.getInstance(this.__renderMode, this.__ctx, this.__rootId, Math.max(w, h), null);
     if(!res) {
       this.__enabled = false;
       return;
@@ -77,6 +88,10 @@ class Cache {
     bbox[1] += diff;
     bbox[3] += diff;
     this.dy -= diff;
+  }
+
+  get uuid() {
+    return this.__uuid;
   }
 
   // 是否功能可用，生成离屏canvas及尺寸超限
@@ -117,19 +132,27 @@ class Cache {
     return this.__pos;
   }
 
-  static getInstance(rootId, bbox, x1, y1, cacheKlass, pageKlass) {
+  get size() {
+    return this.__page.__size;
+  }
+
+  get texture() {
+    return this.__page.texture;
+  }
+
+  static getInstance(renderMode, ctx, rootId, bbox, x1, y1, cacheKlass, pageKlass, excludePage) {
     let w = Math.ceil(bbox[2] - bbox[0]);
     let h = Math.ceil(bbox[3] - bbox[1]);
     let n = Math.max(w, h);
     if(n <= 0) {
       return;
     }
-    let res = pageKlass.getInstance(rootId, n);
+    let res = pageKlass.getInstance(renderMode, ctx, rootId, n, excludePage);
     if(!res) {
       return;
     }
     let { page, pos } = res;
-    return new cacheKlass(rootId, w, h, bbox, page, pos, x1, y1);
+    return new cacheKlass(renderMode, ctx, rootId, w, h, bbox, page, pos, x1, y1);
   }
 }
 

@@ -400,7 +400,7 @@ function joinArr(arr, split) {
 }
 
 function transformBbox(bbox, matrix, dx = 0, dy = 0) {
-  if(matrix && !mx.isE(matrix)) {
+  if(!mx.isE(matrix)) {
     let [x1, y1, x2, y2] = bbox;
     // 可能因filter的原因扩展范围
     if(dx) {
@@ -433,14 +433,17 @@ function transformBbox(bbox, matrix, dx = 0, dy = 0) {
       ya = Math.min(ya, y);
       yb = Math.max(yb, y);
     }
-    bbox = [xa, ya, xb, yb];
+    return [xa, ya, xb, yb];
   }
-  else if(dx || dy) {
+  else {
     bbox = bbox.slice(0);
-    bbox[0] -= dx;
-    bbox[1] -= dy;
-    bbox[2] += dx;
-    bbox[3] += dy;
+    if(dx || dy) {
+      bbox = bbox.slice(0);
+      bbox[0] -= dx;
+      bbox[1] -= dy;
+      bbox[2] += dx;
+      bbox[3] += dy;
+    }
   }
   return bbox;
 }

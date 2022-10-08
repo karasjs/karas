@@ -1088,8 +1088,8 @@ function genBlurWebgl(renderMode, gl, cache, sigma) {
   let frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
   webgl.drawCache2Tex(gl, gl.program, cache, tex, w, h, spread);
   // 生成blur，同尺寸复用fbo
-  let program = genBlurShader(gl, sigma, d); console.log(sigma, d);
-  tex = webgl.drawBlur(gl, program, tex, width, height);
+  let program = genBlurShader(gl, sigma, d);
+  tex = webgl.drawBlur(gl, program, tex, w, h);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteFramebuffer(frameBuffer);

@@ -31232,8 +31232,7 @@
     webgl.drawCache2Tex(gl, gl.program, cache, tex, w, h, spread); // 生成blur，同尺寸复用fbo
 
     var program = genBlurShader(gl, sigma, d);
-    console.log(sigma, d);
-    tex = webgl.drawBlur(gl, program, tex, width, height);
+    tex = webgl.drawBlur(gl, program, tex, w, h);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.deleteFramebuffer(frameBuffer); // 写回一个cache中

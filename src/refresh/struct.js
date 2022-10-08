@@ -93,10 +93,10 @@ function genBboxTotal(node, __structs, index, total) {
   let { __cache } = node;
   assignMatrix(node.__matrixEvent, mx.identity());
   node.__opacity = 1;
-  // let {
-  //   [PERSPECTIVE]: perspective,
-  //   [PERSPECTIVE_ORIGIN]: perspectiveOrigin,
-  // } = node.__computedStyle;
+  let {
+    [PERSPECTIVE]: perspective,
+    [PERSPECTIVE_ORIGIN]: perspectiveOrigin,
+  } = node.__computedStyle;
   // 先将局部根节点的bbox算好，可能没内容是空
   let bboxTotal;
   if(__cache && __cache.available) {
@@ -107,10 +107,10 @@ function genBboxTotal(node, __structs, index, total) {
   }
   bboxTotal = bboxTotal.slice(0);
   // 局部根节点如有perspective，则计算pm，这里不会出现嵌套，因为每个出现都会生成局部根节点
-  // let parentPm = isWebgl && node.__perspectiveMatrix;
-  // if(perspective) {
-  //   parentPm = tf.calPerspectiveMatrix(perspective, perspectiveOrigin[0], perspectiveOrigin[1]);
-  // }
+  let pm;
+  if(perspective) {
+    pm = tf.calPerspectiveMatrix(perspective, perspectiveOrigin[0], perspectiveOrigin[1]);
+  }
   let hasMbm;
   for(let i = index + 1, len = index + total + 1; i < len; i++) {
     let {
@@ -125,9 +125,9 @@ function genBboxTotal(node, __structs, index, total) {
         return;
       }
       let bbox = node.bbox, p = node.__domParent, matrix = p.__matrixEvent;
-      // if(parentPm) {
-      //   matrix = multiply(parentPm, matrix);
-      // }
+      if(pm) {
+        matrix = multiply(parentPm, matrix);
+      }
       if(!isE(matrix)) {
         bbox = transformBbox(bbox, matrix, 0, 0);
       }
@@ -167,9 +167,9 @@ function genBboxTotal(node, __structs, index, total) {
     let p = node.__domParent;
     node.__opacity = __computedStyle2[OPACITY] * p.__opacity;
     let matrix = multiply(p.__matrixEvent, node.__matrix);
-    // if(parentPm) {
-    //   matrix = multiply(parentPm, matrix);
-    // }
+    if(pm) {
+      matrix = multiply(pm, matrix);
+    }
     assignMatrix(node.__matrixEvent, matrix);
     let bbox;
     // 子元素有cacheTotal优先使用
@@ -194,6 +194,7 @@ function genBboxTotal(node, __structs, index, total) {
   return {
     bbox: bboxTotal,
     hasMbm,
+    pm,
   };
 }
 
@@ -717,7 +718,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   if(__cacheTotal && __cacheTotal.available) {
     return __cacheTotal;
   }
-  let { bbox: bboxTotal, hasMbm } = genBboxTotal(node, __structs, index, total);
+  let { bbox: bboxTotal, hasMbm, pm } = genBboxTotal(node, __structs, index, total);
   if(!bboxTotal) {
     return;
   }
@@ -772,6 +773,10 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
       // }
       let __cache = node.__cache;
       if(__cache && __cache.available) {
+        let m = lastMatrix;
+        if(pm) {
+          m = multiply(pm, m);
+        }
         let {
           __opacity,
         } = node.__domParent;
@@ -781,7 +786,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
           list.splice(0);
         }
         lastPage = p;
-        list.push({ cache: __cache, opacity: __opacity, matrix: lastMatrix });
+        list.push({ cache: __cache, opacity: __opacity, matrix: m });
       }
     }
     // 再看total缓存/cache，都没有的是无内容的Xom节点
@@ -800,7 +805,6 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
         __cacheFilter,
         __cacheMask,
         __cacheOverflow,
-        __domParent,
       } = node;
       let {
         [VISIBILITY]: visibility,
@@ -827,15 +831,11 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
       lastLv = lv;
       // 特殊渲染的matrix，局部根节点为原点考虑，当需要计算时（不为E）再计算
       let m;
-      if(__domParent) {
-        let pm = __domParent.__perspectiveMatrix;
-        if(!isE(pm)) {
-          m = multiply(pm, m);
-        }
-        m = multiply(__domParent.__matrixEvent, m);
-      }
       if(i !== index && !isE(transform)) {
         m = tf.calMatrixByOrigin(transform, tfo[0] + dbx + node.__sx1 - sx1, tfo[1] + dby + node.__sy1 - sy1);
+        if(pm) {
+          m = multiply(pm, m);
+        }
         if(!isE(parentMatrix)) {
           m = multiply(parentMatrix, m);
         }
@@ -2064,7 +2064,7 @@ function renderWebgl(renderMode, gl, root, isFirst) {
           webgl.drawTextureCache(gl, list, cx, cy, 0, 0, true);
           list.splice(0);
         }
-        lastPage = p;
+        lastPage = p; console.log(i, __opacity, __matrixEvent, __cache.bbox, __cache.size, __cache.x, __cache.y, __cache.sx1, __cache.sy1)
         list.push({ cache: __cache, __opacity, matrix: __matrixEvent });
       }
     }

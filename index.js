@@ -28997,30 +28997,32 @@
    */
 
 
-  function drawOverflow(gl, program, target, source, cx, cy, size) {
+  function drawOverflow(gl, program, target, source, center, size) {
     gl.useProgram(program);
     var tx1 = target.x,
         ty1 = target.y,
         w1 = target.width,
-        h1 = target.height;
+        h1 = target.height,
+        bbox1 = target.bbox;
     var tx2 = source.x,
         ty2 = source.y,
-        dbx = source.dbx,
-        dby = source.dby;
+        bbox2 = source.bbox;
+    var dx = bbox1[0] - bbox2[0],
+        dy = bbox1[1] - bbox2[1];
     gl.viewport(0, 0, size, size);
 
-    var _convertCoords2Gl3 = convertCoords2Gl(tx1, ty1 + h1, 0, 1, cx, cy, false),
+    var _convertCoords2Gl3 = convertCoords2Gl(tx1, ty1 + h1, 0, 1, center, center, false),
         x1 = _convertCoords2Gl3.x,
         y2 = _convertCoords2Gl3.y;
 
-    var _convertCoords2Gl4 = convertCoords2Gl(tx1 + w1, ty1, 0, 1, cx, cy, false),
+    var _convertCoords2Gl4 = convertCoords2Gl(tx1 + w1, ty1, 0, 1, center, center, false),
         x2 = _convertCoords2Gl4.x,
         y1 = _convertCoords2Gl4.y;
 
-    var xa = (tx2 - dbx) / size,
-        ya = (ty2 - dby) / size,
-        xb = (tx2 + w1 - dbx) / size,
-        yb = (ty2 + h1 - dby) / size; // 顶点buffer
+    var xa = (tx2 + dx) / size,
+        ya = (ty2 + dy) / size,
+        xb = (tx2 + w1 + dx) / size,
+        yb = (ty2 + h1 + dy) / size; // 顶点buffer
 
     var pointBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
@@ -30840,12 +30842,12 @@
     __cacheTotal.__available = true;
     node.__cacheTotal = __cacheTotal;
     var _cacheTotal3 = __cacheTotal,
+        sx1 = _cacheTotal3.sx1,
+        sy1 = _cacheTotal3.sy1,
         dx = _cacheTotal3.dx,
         dy = _cacheTotal3.dy,
         dbx = _cacheTotal3.dbx,
-        dby = _cacheTotal3.dby,
-        tx = _cacheTotal3.x,
-        ty = _cacheTotal3.y;
+        dby = _cacheTotal3.dby;
     var page = __cacheTotal.__page,
         size = page.__size,
         texture = page.texture; // fbo绘制对象纹理不用绑定单元，剩下的纹理绘制用0号
@@ -30887,13 +30889,13 @@
         var _cache = _node4.__cache;
 
         if (_cache && _cache.available) {
-          var _node4$__domParent = _node4.__domParent,
-              __matrixEvent = _node4$__domParent.__matrixEvent,
-              __opacity = _node4$__domParent.__opacity;
+          var _node4$__domParent = _node4.__domParent;
+              _node4$__domParent.__matrixEvent;
+              var __opacity = _node4$__domParent.__opacity;
           var p = _cache.__page;
 
           if (lastPage && lastPage !== p) {
-            webgl.drawTextureCache(gl, list, cx, cy, dx, dy, true);
+            webgl.drawTextureCache(gl, list, cx, cy, dx, dy, false);
             list.splice(0);
           }
 
@@ -30901,7 +30903,7 @@
           list.push({
             cache: _cache,
             opacity: __opacity,
-            matrix: __matrixEvent
+            matrix: lastMatrix
           });
         }
       } // 再看total缓存/cache，都没有的是无内容的Xom节点
@@ -30960,7 +30962,7 @@
         }
 
         if (i !== index && !isE(transform)) {
-          m = transform$1.calMatrixByOrigin(transform, tfo[0] + dbx + _node4.__sx1 - sx1 + tx, tfo[1] + dby + _node4.__sy1 - sy1 + ty);
+          m = transform$1.calMatrixByOrigin(transform, tfo[0] + dbx + _node4.__sx1 - sx1, tfo[1] + dby + _node4.__sy1 - sy1);
 
           if (!isE(parentMatrix)) {
             m = multiply(parentMatrix, m);
@@ -30974,7 +30976,7 @@
           // 局部的mbm和主画布一样，先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
           if (isValidMbm(mixBlendMode)) {
             if (list.length) {
-              webgl.drawTextureCache(gl, list, cx, cy, dx, dy, true);
+              webgl.drawTextureCache(gl, list, cx, cy, dx, dy, false);
               list.splice(0);
               lastPage = null;
             }
@@ -30982,7 +30984,7 @@
             var _p2 = target.__page;
 
             if (lastPage && lastPage !== _p2) {
-              webgl.drawTextureCache(gl, list, cx, cy, dx, dy, true);
+              webgl.drawTextureCache(gl, list, cx, cy, dx, dy, false);
               list.splice(0);
             }
 
@@ -31299,11 +31301,9 @@
     var page = __cacheOverflow.__page,
         size = page.__size,
         texture = page.texture;
-    var frameBuffer = genFrameBufferWithTexture(gl, texture, size, size);
-    var cx = size * 0.5,
-        cy = size * 0.5; // 绘制，根据坐标裁剪使用原本纹理的一部分
+    var frameBuffer = genFrameBufferWithTexture(gl, texture, size, size); // 绘制，根据坐标裁剪使用原本纹理的一部分
 
-    webgl.drawOverflow(gl, gl.programOverflow, __cacheOverflow, cache, cx, cy, size); // 切回
+    webgl.drawOverflow(gl, gl.programOverflow, __cacheOverflow, cache, size * 0.5, size); // 切回
 
     gl.useProgram(gl.program);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -32165,13 +32165,13 @@
         if (hasContent) {
           var _bbox2 = node.bbox,
               _cache4 = node.__cache,
-              _sx = node.__sx1,
-              _sy = node.__sy1;
+              sx1 = node.__sx1,
+              sy1 = node.__sy1;
 
           if (_cache4) {
-            _cache4.reset(_bbox2, _sx, _sy);
+            _cache4.reset(_bbox2, sx1, sy1);
           } else {
-            _cache4 = CanvasCache.getInstance(mode.CANVAS, gl, root.uuid, _bbox2, _sx, _sy, null);
+            _cache4 = CanvasCache.getInstance(mode.CANVAS, gl, root.uuid, _bbox2, sx1, sy1, null);
           }
 
           if (_cache4 && _cache4.enabled) {
@@ -32720,13 +32720,13 @@
           var x = target.x,
               y = target.y,
               canvas = target.canvas,
-              _sx2 = target.sx1,
-              _sy2 = target.sy1,
+              sx1 = target.sx1,
+              sy1 = target.sy1,
               dbx = target.dbx,
               dby = target.dby,
               _width2 = target.width,
               _height2 = target.height;
-          ctx.drawImage(canvas, x, y, _width2, _height2, _sx2 - dbx, _sy2 - dby, _width2, _height2); // total应用后记得设置回来
+          ctx.drawImage(canvas, x, y, _width2, _height2, sx1 - dbx, sy1 - dby, _width2, _height2); // total应用后记得设置回来
 
           ctx.globalCompositeOperation = 'source-over'; // 父超限但子有total的时候，i此时已经增加到了末尾，也需要检查
 

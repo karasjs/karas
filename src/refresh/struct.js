@@ -737,7 +737,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   }
   __cacheTotal.__available = true;
   node.__cacheTotal = __cacheTotal;
-  let { dx, dy, dbx, dby, x: tx, y: ty } = __cacheTotal;
+  let { sx1, sy1, dx, dy, dbx, dby } = __cacheTotal;
   let page = __cacheTotal.__page, size = page.__size, texture = page.texture;
   // fbo绘制对象纹理不用绑定单元，剩下的纹理绘制用0号
   let frameBuffer = genFrameBufferWithTexture(gl, texture, size, size);
@@ -778,11 +778,11 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
         } = node.__domParent;
         let p = __cache.__page;
         if(lastPage && lastPage !== p) {
-          webgl.drawTextureCache(gl, list, cx, cy, dx, dy, true);
+          webgl.drawTextureCache(gl, list, cx, cy, dx, dy, false);
           list.splice(0);
         }
         lastPage = p;
-        list.push({ cache: __cache, opacity: __opacity, matrix: __matrixEvent });
+        list.push({ cache: __cache, opacity: __opacity, matrix: lastMatrix });
       }
     }
     // 再看total缓存/cache，都没有的是无内容的Xom节点
@@ -836,7 +836,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
         m = multiply(__domParent.__matrixEvent, m);
       }
       if(i !== index && !isE(transform)) {
-        m = tf.calMatrixByOrigin(transform, tfo[0] + dbx + node.__sx1 - sx1 + tx, tfo[1] + dby + node.__sy1 - sy1 + ty);
+        m = tf.calMatrixByOrigin(transform, tfo[0] + dbx + node.__sx1 - sx1, tfo[1] + dby + node.__sy1 - sy1);
         if(!isE(parentMatrix)) {
           m = multiply(parentMatrix, m);
         }
@@ -847,7 +847,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
         // 局部的mbm和主画布一样，先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
         if(isValidMbm(mixBlendMode)) {
           if(list.length) {
-            webgl.drawTextureCache(gl, list, cx, cy, dx, dy, true);
+            webgl.drawTextureCache(gl, list, cx, cy, dx, dy, false);
             list.splice(0);
             lastPage = null;
           }
@@ -855,7 +855,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
         else {
           let p = target.__page;
           if(lastPage && lastPage !== p) {
-            webgl.drawTextureCache(gl, list, cx, cy, dx, dy, true);
+            webgl.drawTextureCache(gl, list, cx, cy, dx, dy, false);
             list.splice(0);
           }
           lastPage = p;
@@ -1144,9 +1144,8 @@ function genOverflowWebgl(renderMode, gl, root, node, cache, W, H) {
   // let { dx, dy } = __cacheOverflow;
   let page = __cacheOverflow.__page, size = page.__size, texture = page.texture;
   let frameBuffer = genFrameBufferWithTexture(gl, texture, size, size);
-  let cx = size * 0.5, cy = size * 0.5;
   // 绘制，根据坐标裁剪使用原本纹理的一部分
-  webgl.drawOverflow(gl, gl.programOverflow, __cacheOverflow, cache, cx, cy, size);
+  webgl.drawOverflow(gl, gl.programOverflow, __cacheOverflow, cache, size * 0.5, size);
   // 切回
   gl.useProgram(gl.program);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);

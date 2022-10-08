@@ -425,14 +425,15 @@ function drawCm(gl, program, target, source, m, center, size) {
 /**
  * 根据total/filter生成overflow
  */
-function drawOverflow(gl, program, target, source, cx, cy, size) {
+function drawOverflow(gl, program, target, source, center, size) {
   gl.useProgram(program);
-  let { x: tx1, y: ty1, width: w1, height: h1 } = target;
-  let { x: tx2, y: ty2, dbx, dby } = source;
+  let { x: tx1, y: ty1, width: w1, height: h1, bbox: bbox1 } = target;
+  let { x: tx2, y: ty2, bbox: bbox2 } = source;
+  let dx = bbox1[0] - bbox2[0], dy = bbox1[1] - bbox2[1];
   gl.viewport(0, 0, size, size);
-  let { x: x1, y: y2 } = convertCoords2Gl(tx1, ty1 + h1, 0, 1, cx, cy, false);
-  let { x: x2, y: y1 } = convertCoords2Gl(tx1 + w1, ty1, 0, 1, cx, cy, false);
-  let xa = (tx2 - dbx) / size, ya = (ty2 - dby) / size, xb = (tx2 + w1 - dbx) / size, yb = (ty2 + h1 - dby) / size;
+  let { x: x1, y: y2 } = convertCoords2Gl(tx1, ty1 + h1, 0, 1, center, center, false);
+  let { x: x2, y: y1 } = convertCoords2Gl(tx1 + w1, ty1, 0, 1, center, center, false);
+  let xa = (tx2 + dx) / size, ya = (ty2 + dy) / size, xb = (tx2 + w1 + dx) / size, yb = (ty2 + h1 + dy) / size;
   // 顶点buffer
   let pointBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);

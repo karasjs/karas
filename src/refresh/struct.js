@@ -219,7 +219,7 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
     return __cacheTotal;
   }
   let { __sx1: sx1, __sy1: sy1 } = node;
-  let bboxTotal = genBboxTotal(node, __structs, index, total).bboxTotal;
+  let bboxTotal = genBboxTotal(node, __structs, index, total).bbox;
   if(!bboxTotal) {
     return;
   }
@@ -717,7 +717,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   if(__cacheTotal && __cacheTotal.available) {
     return __cacheTotal;
   }
-  let { bboxTotal, hasMbm } = genBboxTotal(node, __structs, index, total);
+  let { bbox: bboxTotal, hasMbm } = genBboxTotal(node, __structs, index, total);
   if(!bboxTotal) {
     return;
   }

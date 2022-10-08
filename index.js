@@ -30137,7 +30137,7 @@
 
     var sx1 = node.__sx1,
         sy1 = node.__sy1;
-    var bboxTotal = genBboxTotal(node, __structs, index, total).bboxTotal;
+    var bboxTotal = genBboxTotal(node, __structs, index, total).bbox;
 
     if (!bboxTotal) {
       return;
@@ -30808,7 +30808,7 @@
     }
 
     var _genBboxTotal = genBboxTotal(node, __structs, index, total),
-        bboxTotal = _genBboxTotal.bboxTotal;
+        bboxTotal = _genBboxTotal.bbox;
         _genBboxTotal.hasMbm;
 
     if (!bboxTotal) {

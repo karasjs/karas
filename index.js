@@ -30828,6 +30828,8 @@
       return;
     }
 
+    var w = bboxTotal[2] - bboxTotal[0],
+        h = bboxTotal[3] - bboxTotal[1];
     var __sx1 = node.__sx1,
         __sy1 = node.__sy1,
         __cache = node.__cache;
@@ -30839,8 +30841,8 @@
     }
 
     if (!__cacheTotal || !__cacheTotal.__enabled) {
-      if (bboxTotal[2] - bboxTotal[0] || bboxTotal[3] - bboxTotal[1]) {
-        inject.warn('TextureCache of ' + node.tagName + '(' + index + ')' + ' is oversize: ' + (bboxTotal[2] - bboxTotal[0]) + ', ' + (bboxTotal[3] - bboxTotal[1]));
+      if (w || h) {
+        inject.warn('TextureCache of ' + node.tagName + '(' + index + ')' + ' is oversize: ' + w + ', ' + h);
       }
 
       return;
@@ -30884,15 +30886,9 @@
           _node4 = _structs$i4.node,
           _lv3 = _structs$i4.lv,
           _total6 = _structs$i4.total,
-          hasMask = _structs$i4.hasMask; // let parentIndex = parentIndexHash[i];
-      // let matrix = matrixHash[parentIndex]; // 父节点的在每个节点计算后保存，第一个为top的默认为E（空）
-      // let opacity = opacityHash[i]; // opacity在合并box时已经计算可以直接用
-      // 先看text，visibility会在内部判断，display会被parent判断
+          hasMask = _structs$i4.hasMask; // 先看text，visibility会在内部判断，display会被parent判断
 
       if (_node4 instanceof Text) {
-        // if(parentPm) {
-        //   matrix = multiply(parentPm, matrix);
-        // }
         var _cache = _node4.__cache;
 
         if (_cache && _cache.available) {
@@ -30983,6 +30979,17 @@
               webgl.drawTextureCache(gl, list, cx, cy, dx, dy, false);
               list.splice(0);
               lastPage = null;
+            }
+
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            gl.deleteFramebuffer(frameBuffer);
+            var res = genMbmWebgl(gl, texture, target, mixBlendMode, _node4.__opacity, _m, 0, 0, cx, cy, w, h);
+
+            if (res) {
+              gl.deleteTexture(texture);
+              texture = res.texture;
+              frameBuffer = res.frameBuffer;
             }
           } else {
             var _p2 = target.__page;
@@ -32369,7 +32376,7 @@
           }
 
           lastPage = p;
-          console.log(_i5, __opacity, __matrixEvent, _cache5.bbox, _cache5.size, _cache5.x, _cache5.y, _cache5.sx1, _cache5.sy1);
+          console.log(_i5, 'aaaaa', __opacity, __matrixEvent, _cache5.bbox, _cache5.size, _cache5.x, _cache5.y, _cache5.sx1, _cache5.sy1);
           list.push({
             cache: _cache5,
             __opacity: __opacity,

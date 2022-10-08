@@ -722,6 +722,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   if(!bboxTotal) {
     return;
   }
+  let w = bboxTotal[2] - bboxTotal[0], h = bboxTotal[3] - bboxTotal[1];
   let { __sx1, __sy1, __cache } = node;
   if(__cacheTotal) {
     __cacheTotal.reset(bboxTotal, __sx1, __sy1);
@@ -730,9 +731,9 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
     __cacheTotal = TextureCache.getInstance(renderMode, gl, root.uuid, bboxTotal, __sx1, __sy1, null);
   }
   if(!__cacheTotal || !__cacheTotal.__enabled) {
-    if((bboxTotal[2] - bboxTotal[0]) || (bboxTotal[3] - bboxTotal[1])) {
+    if(w || h) {
       inject.warn('TextureCache of ' + node.tagName + '(' + index + ')' + ' is oversize: '
-        + (bboxTotal[2] - bboxTotal[0]) + ', ' + (bboxTotal[3] - bboxTotal[1]));
+        + w + ', ' + h);
     }
     return;
   }
@@ -763,14 +764,8 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
       total,
       hasMask,
     } = __structs[i];
-    // let parentIndex = parentIndexHash[i];
-    // let matrix = matrixHash[parentIndex]; // 父节点的在每个节点计算后保存，第一个为top的默认为E（空）
-    // let opacity = opacityHash[i]; // opacity在合并box时已经计算可以直接用
     // 先看text，visibility会在内部判断，display会被parent判断
     if(node instanceof Text) {
-      // if(parentPm) {
-      //   matrix = multiply(parentPm, matrix);
-      // }
       let __cache = node.__cache;
       if(__cache && __cache.available) {
         let m = lastMatrix;
@@ -849,6 +844,15 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
             webgl.drawTextureCache(gl, list, cx, cy, dx, dy, false);
             list.splice(0);
             lastPage = null;
+          }
+          gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
+          gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+          gl.deleteFramebuffer(frameBuffer);
+          let res = genMbmWebgl(gl, texture, target, mixBlendMode, node.__opacity, m, 0, 0, cx, cy, w, h);
+          if(res) {
+            gl.deleteTexture(texture);
+            texture = res.texture;
+            frameBuffer = res.frameBuffer;
           }
         }
         else {
@@ -2064,7 +2068,7 @@ function renderWebgl(renderMode, gl, root, isFirst) {
           webgl.drawTextureCache(gl, list, cx, cy, 0, 0, true);
           list.splice(0);
         }
-        lastPage = p; console.log(i, __opacity, __matrixEvent, __cache.bbox, __cache.size, __cache.x, __cache.y, __cache.sx1, __cache.sy1)
+        lastPage = p; console.log(i, 'aaaaa', __opacity, __matrixEvent, __cache.bbox, __cache.size, __cache.x, __cache.y, __cache.sx1, __cache.sy1)
         list.push({ cache: __cache, __opacity, matrix: __matrixEvent });
       }
     }

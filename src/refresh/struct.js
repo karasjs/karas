@@ -2068,7 +2068,7 @@ function renderWebgl(renderMode, gl, root, isFirst) {
           webgl.drawTextureCache(gl, list, cx, cy, 0, 0, true);
           list.splice(0);
         }
-        lastPage = p; console.log(i, 'aaaaa', __opacity, __matrixEvent, __cache.bbox, __cache.size, __cache.x, __cache.y, __cache.sx1, __cache.sy1)
+        lastPage = p; console.log(i, 'aaaaabbbbb', __opacity, __matrixEvent, __cache.bbox, __cache.size, __cache.x, __cache.y, __cache.sx1, __cache.sy1)
         list.push({ cache: __cache, __opacity, matrix: __matrixEvent });
       }
     }

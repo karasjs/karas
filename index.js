@@ -28863,162 +28863,42 @@
    */
 
 
-  function drawBlur(gl, program, spread, target, temp, cache, size) {
-    var tx1 = target.x,
-        ty1 = target.y,
-        w1 = target.width,
-        h1 = target.height;
-    var tx2 = temp.x,
-        ty2 = temp.y,
-        w2 = temp.width,
-        h2 = temp.height;
-    var tx3 = cache.x,
-        ty3 = cache.y;
-    gl.viewport(0, 0, size, size); // 首先将cache的纹理原状绘制到target上，为后续3次循环做准备，注意扩充的spread距离
-
-    var center = size * 0.5;
-
-    var _convertCoords2Gl = convertCoords2Gl(tx1 + spread, ty1 + h1 - spread, 0, 1, center, center, false),
-        x1 = _convertCoords2Gl.x,
-        y2 = _convertCoords2Gl.y;
-
-    var _convertCoords2Gl2 = convertCoords2Gl(tx1 + w1 - spread, ty1 + spread, 0, 1, center, center, false),
-        x2 = _convertCoords2Gl2.x,
-        y1 = _convertCoords2Gl2.y;
-
-    var _convertCoords2Gl3 = convertCoords2Gl(tx1, ty1 + h1, 0, 1, center, center, false),
-        x3 = _convertCoords2Gl3.x,
-        y4 = _convertCoords2Gl3.y;
-
-    var _convertCoords2Gl4 = convertCoords2Gl(tx1 + w1, ty1, 0, 1, center, center, false),
-        x4 = _convertCoords2Gl4.x,
-        y3 = _convertCoords2Gl4.y;
-
-    var _convertCoords2Gl5 = convertCoords2Gl(tx2, ty2 + h2, 0, 1, center, center, false),
-        x5 = _convertCoords2Gl5.x,
-        y6 = _convertCoords2Gl5.y;
-
-    var _convertCoords2Gl6 = convertCoords2Gl(tx2 + w2, ty2, 0, 1, center, center, false),
-        x6 = _convertCoords2Gl6.x,
-        y5 = _convertCoords2Gl6.y;
-
-    var xa = tx1 / size,
-        ya = ty1 / size,
-        xb = (tx1 + w1) / size,
-        yb = (ty1 + h1) / size;
-    var xc = tx2 / size,
-        yc = ty2 / size,
-        xd = (tx2 + w2) / size,
-        yd = (ty2 + h2) / size;
-    var xe = tx3 / size,
-        ye = ty3 / size,
-        xf = (tx3 + w1) / size,
-        yf = (ty3 + h1) / size; // 顶点buffer
-
-    var pointBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([x1, y1, x1, y2, x2, y1, x1, y2, x2, y1, x2, y2]), gl.STATIC_DRAW);
-    var a_position = gl.getAttribLocation(program, 'a_position');
-    gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_position); // 纹理buffer
-
-    var texBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([xe, ye, xe, yf, xf, ye, xe, yf, xf, ye, xf, yf]), gl.STATIC_DRAW);
-    var a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
-    gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_texCoords);
-    var u_direction = gl.getUniformLocation(program, 'u_direction');
-    gl.uniform2f(u_direction, 0, 0); // 纹理单元
-
-    var u_texture = gl.getUniformLocation(program, 'u_texture');
-    bindTexture(gl, cache.__page.texture, 0);
-    gl.uniform1i(u_texture, 0);
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
+  function drawBlur(gl, program, spread, tex1, width, height) {
+    gl.useProgram(program);
+    gl.viewport(0, 0, width, height);
     /**
      * 注意max和ratio的设置，当是100尺寸的正方形时，传给direction的始终为1
      * 当正方形<100时，direction相应地要扩大相对于100的倍数，反之则缩小，如此为了取相邻点坐标时是+-1
      * 当非正方形时，长轴一端为基准值不变，短的要二次扩大比例倍数
-     * temp和target来回3次，最后是到target
+     * tex1和tex2来回3次，最后是到tex1
      */
-
-    bindTexture(gl, target.__page.texture, 0);
-    bindTexture(gl, temp.__page.texture, 1);
-    var max = 100 / size;
-    var ratio = w1 / h1;
-
-    for (var n = 0; n < 3; n++) {
-      // target到temp
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, temp.__page.texture, 0);
-      gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([x5, y5, x5, y6, x6, y5, x5, y6, x6, y5, x6, y6]), gl.STATIC_DRAW);
-      gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([xa, ya, xa, yb, xb, ya, xa, yb, xb, ya, xb, yb]), gl.STATIC_DRAW);
-
-      if (w1 >= h1) {
-        gl.uniform2f(u_direction, max, 0);
-      } else {
-        gl.uniform2f(u_direction, max * ratio, 0);
-      }
-
-      gl.uniform1i(u_texture, 0);
-      gl.drawArrays(gl.TRIANGLES, 0, 6); // temp到target
-
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.__page.texture, 0);
-      gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([x3, y3, x3, y4, x4, y3, x3, y4, x4, y3, x4, y4]), gl.STATIC_DRAW);
-      gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([xc, yc, xc, yd, xd, yc, xc, yd, xd, yc, xd, yd]), gl.STATIC_DRAW);
-
-      if (w1 >= h1) {
-        gl.uniform2f(u_direction, 0, max * ratio);
-      } else {
-        gl.uniform2f(u_direction, 0, max);
-      }
-
-      gl.uniform1i(u_texture, 1);
-      gl.drawArrays(gl.TRIANGLES, 0, 6);
-    } // 回收
-
-
-    gl.deleteBuffer(pointBuffer);
-    gl.deleteBuffer(texBuffer);
-    gl.disableVertexAttribArray(a_position);
-    gl.disableVertexAttribArray(a_texCoords); // 0/1单元都解绑
-
-    bindTexture(gl, null, 0);
-    bindTexture(gl, null, 1);
-  }
-
-  function drawDropShadowBlur(gl, program, frameBuffer, tex1, tex2, w, h) {
-    var max = 100 / Math.max(w, h);
-    var ratio = w / h; // 顶点buffer
 
     var pointBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, -1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
     var a_position = gl.getAttribLocation(program, 'a_position');
     gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_position); // 纹理buffer
-
+    gl.enableVertexAttribArray(a_position);
     var texBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1]), gl.STATIC_DRAW);
     var a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
     gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(a_texCoords);
-    var u_direction = gl.getUniformLocation(program, 'u_direction');
-    gl.uniform2f(u_direction, 0, 0); // 纹理单元
-
     var u_texture = gl.getUniformLocation(program, 'u_texture');
+    var u_direction = gl.getUniformLocation(program, 'u_direction');
+    var recycle = []; // 3次过程中新生成的中间纹理需要回收
+
+    var max = 100 / Math.max(width, height);
+    var ratio = width / height;
 
     for (var n = 0; n < 3; n++) {
       // tex1到tex2
+      var tex2 = createTexture(gl, null, 1, width, height);
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex2, 0);
-      gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, -1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
-      gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1]), gl.STATIC_DRAW);
+      bindTexture(gl, tex1, 0);
 
-      if (w >= h) {
+      if (width >= height) {
         gl.uniform2f(u_direction, max, 0);
       } else {
         gl.uniform2f(u_direction, max * ratio, 0);
@@ -29027,13 +28907,11 @@
       gl.uniform1i(u_texture, 0);
       gl.drawArrays(gl.TRIANGLES, 0, 6); // tex2到tex1
 
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex1, 0);
-      gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, -1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
-      gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1]), gl.STATIC_DRAW);
+      var tex3 = createTexture(gl, null, 0, width, height);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex3, 0);
+      bindTexture(gl, tex2, 1);
 
-      if (w >= h) {
+      if (width >= height) {
         gl.uniform2f(u_direction, 0, max * ratio);
       } else {
         gl.uniform2f(u_direction, 0, max);
@@ -29041,7 +28919,23 @@
 
       gl.uniform1i(u_texture, 1);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
-    }
+      recycle.push(tex1);
+      recycle.push(tex2);
+      tex1 = tex3;
+    } // 0/1单元都解绑
+
+
+    bindTexture(gl, null, 0);
+    bindTexture(gl, null, 1); // 回收
+
+    gl.deleteBuffer(pointBuffer);
+    gl.deleteBuffer(texBuffer);
+    gl.disableVertexAttribArray(a_position);
+    gl.disableVertexAttribArray(a_texCoords);
+    recycle.forEach(function (item) {
+      return gl.deleteTexture(item);
+    });
+    return tex1;
   }
 
   function drawCm(gl, program, target, source, m, center, size) {
@@ -29057,13 +28951,13 @@
         w2 = source.width,
         h2 = source.height;
 
-    var _convertCoords2Gl7 = convertCoords2Gl(tx1, ty1 + h1, 0, 1, center, center, false),
-        x1 = _convertCoords2Gl7.x,
-        y2 = _convertCoords2Gl7.y;
+    var _convertCoords2Gl = convertCoords2Gl(tx1, ty1 + h1, 0, 1, center, center, false),
+        x1 = _convertCoords2Gl.x,
+        y2 = _convertCoords2Gl.y;
 
-    var _convertCoords2Gl8 = convertCoords2Gl(tx1 + w1, ty1, 0, 1, center, center, false),
-        x2 = _convertCoords2Gl8.x,
-        y1 = _convertCoords2Gl8.y;
+    var _convertCoords2Gl2 = convertCoords2Gl(tx1 + w1, ty1, 0, 1, center, center, false),
+        x2 = _convertCoords2Gl2.x,
+        y1 = _convertCoords2Gl2.y;
 
     var xa = tx2 / size,
         ya = ty2 / size,
@@ -29114,13 +29008,13 @@
         dby = source.dby;
     gl.viewport(0, 0, size, size);
 
-    var _convertCoords2Gl9 = convertCoords2Gl(tx1, ty1 + h1, 0, 1, cx, cy, false),
-        x1 = _convertCoords2Gl9.x,
-        y2 = _convertCoords2Gl9.y;
+    var _convertCoords2Gl3 = convertCoords2Gl(tx1, ty1 + h1, 0, 1, cx, cy, false),
+        x1 = _convertCoords2Gl3.x,
+        y2 = _convertCoords2Gl3.y;
 
-    var _convertCoords2Gl10 = convertCoords2Gl(tx1 + w1, ty1, 0, 1, cx, cy, false),
-        x2 = _convertCoords2Gl10.x,
-        y1 = _convertCoords2Gl10.y;
+    var _convertCoords2Gl4 = convertCoords2Gl(tx1 + w1, ty1, 0, 1, cx, cy, false),
+        x2 = _convertCoords2Gl4.x,
+        y1 = _convertCoords2Gl4.y;
 
     var xa = (tx2 - dbx) / size,
         ya = (ty2 - dby) / size,
@@ -29166,13 +29060,13 @@
         w2 = source.width,
         h2 = source.height;
 
-    var _convertCoords2Gl11 = convertCoords2Gl(tx1, ty1 + h1, 0, 1, center, center, false),
-        x1 = _convertCoords2Gl11.x,
-        y2 = _convertCoords2Gl11.y;
+    var _convertCoords2Gl5 = convertCoords2Gl(tx1, ty1 + h1, 0, 1, center, center, false),
+        x1 = _convertCoords2Gl5.x,
+        y2 = _convertCoords2Gl5.y;
 
-    var _convertCoords2Gl12 = convertCoords2Gl(tx1 + w1, ty1, 0, 1, center, center, false),
-        x2 = _convertCoords2Gl12.x,
-        y1 = _convertCoords2Gl12.y;
+    var _convertCoords2Gl6 = convertCoords2Gl(tx1 + w1, ty1, 0, 1, center, center, false),
+        x2 = _convertCoords2Gl6.x,
+        y1 = _convertCoords2Gl6.y;
 
     var xa = tx2 / size,
         ya = ty2 / size,
@@ -29297,13 +29191,13 @@
         height = target.height;
     var center = size * 0.5;
 
-    var _convertCoords2Gl13 = convertCoords2Gl(x + dx, y + h + dy, 0, 1, center, center, false),
-        x1 = _convertCoords2Gl13.x,
-        y2 = _convertCoords2Gl13.y;
+    var _convertCoords2Gl7 = convertCoords2Gl(x + dx, y + h + dy, 0, 1, center, center, false),
+        x1 = _convertCoords2Gl7.x,
+        y2 = _convertCoords2Gl7.y;
 
-    var _convertCoords2Gl14 = convertCoords2Gl(x + w + dx, y + dy, 0, 1, center, center, false),
-        x2 = _convertCoords2Gl14.x,
-        y1 = _convertCoords2Gl14.y; // 顶点buffer
+    var _convertCoords2Gl8 = convertCoords2Gl(x + w + dx, y + dy, 0, 1, center, center, false),
+        x2 = _convertCoords2Gl8.x,
+        y1 = _convertCoords2Gl8.y; // 顶点buffer
 
 
     var pointBuffer = gl.createBuffer();
@@ -29332,13 +29226,13 @@
     gl.uniform1i(u_texture, 0);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
-    var _convertCoords2Gl15 = convertCoords2Gl(x, y + height, 0, 1, center, center, false),
-        x3 = _convertCoords2Gl15.x,
-        y4 = _convertCoords2Gl15.y;
+    var _convertCoords2Gl9 = convertCoords2Gl(x, y + height, 0, 1, center, center, false),
+        x3 = _convertCoords2Gl9.x,
+        y4 = _convertCoords2Gl9.y;
 
-    var _convertCoords2Gl16 = convertCoords2Gl(x + width, y, 0, 1, center, center, false),
-        x4 = _convertCoords2Gl16.x,
-        y3 = _convertCoords2Gl16.y;
+    var _convertCoords2Gl10 = convertCoords2Gl(x + width, y, 0, 1, center, center, false),
+        x4 = _convertCoords2Gl10.x,
+        y3 = _convertCoords2Gl10.y;
 
     var tx2 = cache.x,
         ty2 = cache.y;
@@ -29358,6 +29252,114 @@
     bindTexture(gl, null, 0);
   }
 
+  function drawTex2Cache(gl, program, cache, tex, width, height) {
+    gl.useProgram(program);
+    var page = cache.__page,
+        size = page.__size;
+    gl.viewport(0, 0, size, size);
+    var x = cache.x,
+        y = cache.y,
+        center = size * 0.5;
+
+    var _convertCoords2Gl11 = convertCoords2Gl(x, y + height, 0, 1, center, center, false),
+        x1 = _convertCoords2Gl11.x,
+        y2 = _convertCoords2Gl11.y;
+
+    var _convertCoords2Gl12 = convertCoords2Gl(x + width, y, 0, 1, center, center, false),
+        x2 = _convertCoords2Gl12.x,
+        y1 = _convertCoords2Gl12.y;
+
+    bindTexture(gl, tex, 0); // 顶点buffer
+
+    var pointBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([x1, y1, x1, y2, x2, y1, x1, y2, x2, y1, x2, y2]), gl.STATIC_DRAW);
+    var a_position = gl.getAttribLocation(program, 'a_position');
+    gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_position); // 纹理buffer
+
+    var texBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1]), gl.STATIC_DRAW);
+    var a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
+    gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_texCoords); // 透明度buffer
+
+    var opacityBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, opacityBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([1, 1, 1, 1, 1, 1]), gl.STATIC_DRAW);
+    var a_opacity = gl.getAttribLocation(gl.program, 'a_opacity');
+    gl.vertexAttribPointer(a_opacity, 1, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_opacity); // 纹理单元
+
+    var u_texture = gl.getUniformLocation(program, 'u_texture');
+    bindTexture(gl, tex, 0);
+    gl.uniform1i(u_texture, 0);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    gl.deleteBuffer(pointBuffer);
+    gl.deleteBuffer(texBuffer);
+    gl.deleteBuffer(opacityBuffer);
+    gl.disableVertexAttribArray(a_position);
+    gl.disableVertexAttribArray(a_texCoords);
+    gl.disableVertexAttribArray(a_opacity);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+  }
+
+  function drawCache2Tex(gl, program, cache, tex, width, height, spread) {
+    var tx1 = cache.x,
+        ty1 = cache.y,
+        w1 = cache.width,
+        h1 = cache.height,
+        _cache$__page = cache.__page,
+        texture = _cache$__page.texture,
+        size = _cache$__page.size;
+    gl.useProgram(program);
+    gl.viewport(0, 0, width, height); // 首先将cache的纹理原状绘制到tex1上，为后续3次循环做准备，注意扩充的spread距离
+
+    var cx = width * 0.5,
+        cy = height * 0.5;
+
+    var _convertCoords2Gl13 = convertCoords2Gl(spread, height - spread, 0, 1, cx, cy, false),
+        x1 = _convertCoords2Gl13.x,
+        y2 = _convertCoords2Gl13.y;
+
+    var _convertCoords2Gl14 = convertCoords2Gl(width - spread, spread, 0, 1, cx, cy, false),
+        x2 = _convertCoords2Gl14.x,
+        y1 = _convertCoords2Gl14.y;
+
+    var xa = tx1 / size,
+        ya = ty1 / size,
+        xb = (tx1 + w1) / size,
+        yb = (ty1 + h1) / size; // 顶点buffer
+
+    var pointBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([x1, y1, x1, y2, x2, y1, x1, y2, x2, y1, x2, y2]), gl.STATIC_DRAW);
+    var a_position = gl.getAttribLocation(program, 'a_position');
+    gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_position); // 纹理buffer
+
+    var texBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([xa, ya, xa, yb, xb, ya, xa, yb, xb, ya, xb, yb]), gl.STATIC_DRAW);
+    var a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
+    gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_texCoords); // opacity buffer
+
+    var opacityBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, opacityBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([1, 1, 1, 1, 1, 1]), gl.STATIC_DRAW);
+    var a_opacity = gl.getAttribLocation(gl.program, 'a_opacity');
+    gl.vertexAttribPointer(a_opacity, 1, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_opacity); // 纹理单元
+
+    var u_texture = gl.getUniformLocation(program, 'u_texture');
+    bindTexture(gl, texture, 0);
+    gl.uniform1i(u_texture, 0);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    return tex;
+  }
+
   var webgl = {
     initShaders: initShaders,
     createTexture: createTexture,
@@ -29369,8 +29371,9 @@
     drawMbm: drawMbm,
     drawCm: drawCm,
     drawDropShadow: drawDropShadow,
-    drawDropShadowBlur: drawDropShadowBlur,
-    drawDropShadowMerge: drawDropShadowMerge
+    drawDropShadowMerge: drawDropShadowMerge,
+    drawTex2Cache: drawTex2Cache,
+    drawCache2Tex: drawCache2Tex
   };
 
   var CanvasPage = /*#__PURE__*/function (_Page) {
@@ -31231,26 +31234,34 @@
     bboxNew[0] -= spread;
     bboxNew[1] -= spread;
     bboxNew[2] += spread;
-    bboxNew[3] += spread;
+    bboxNew[3] += spread; // 写到一个tex中方便后续处理
+
+    var w = width + spread * 2,
+        h = height + spread * 2;
+    var tex = webgl.createTexture(gl, null, 0, w, h);
+    var frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
+    webgl.drawCache2Tex(gl, gl.program, cache, tex, w, h, spread); // 生成blur，同尺寸复用fbo
+
     var program = genBlurShader(gl, sigma, d);
-    gl.useProgram(program); // 绘制对象纹理需生成新的，不能和来源是同一个，因此至少需要2个纹理单元
-
-    var target = TextureCache.getInstance(renderMode, gl, cache.__rootId, bboxNew, sx1, sy1, cache.__page);
-    target.__available = true;
-    var page = target.__page,
-        size = page.__size;
-    var frameBuffer = genFrameBufferWithTexture(gl, target.__page.texture, size, size); // 还需要个临时纹理temp，不能和target同纹理，可能和cache同纹理，3次blur绘制在temp和target之间来回进行
-
-    var temp = TextureCache.getInstance(cache.__renderMode, gl, cache.__rootId, bboxNew, sx1, sy1, target.__page);
-    temp.__available = true;
-    webgl.drawBlur(gl, program, spread, target, temp, cache, size); // 销毁这个临时program
-
+    tex = webgl.drawBlur(gl, program, spread, tex, width, height);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.deleteFramebuffer(frameBuffer);
+    gl.deleteFramebuffer(frameBuffer); // 写回一个cache中
+
+    var target = TextureCache.getInstance(renderMode, gl, cache.__rootId, bboxNew, sx1, sy1, null);
+    target.__available = true;
+    var page = target.__page,
+        size = page.__size,
+        texture = page.texture;
+    frameBuffer = genFrameBufferWithTexture(gl, texture, size, size);
+    webgl.drawTex2Cache(gl, gl.program, target, tex, w, h); // 销毁这个临时program
+
     gl.deleteShader(program.vertexShader);
     gl.deleteShader(program.fragmentShader);
     gl.deleteProgram(program);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.deleteFramebuffer(frameBuffer);
     return target;
   }
 
@@ -31550,14 +31561,10 @@
 
     if (sigma) {
       var program = genBlurShader(gl, sigma, d);
-      gl.useProgram(program);
-      webgl.bindTexture(gl, tex1, 0);
-      var tex2 = webgl.createTexture(gl, null, 1, w, h);
-      webgl.drawDropShadowBlur(gl, program, frameBuffer, tex1, tex2, w, h);
+      tex1 = webgl.drawBlur(gl, program, spread, tex1, width, height);
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       gl.deleteFramebuffer(frameBuffer);
-      gl.deleteTexture(tex2);
       gl.deleteShader(program.vertexShader);
       gl.deleteShader(program.fragmentShader);
       gl.deleteProgram(program);
@@ -32030,7 +32037,6 @@
     var __structs = root.__structs,
         width = root.width,
         height = root.height;
-        root.texHelper;
     var cx = width * 0.5,
         cy = height * 0.5; // 栈代替递归，存父节点的matrix/opacity，matrix为E时存null省略计算
 

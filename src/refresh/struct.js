@@ -1095,24 +1095,30 @@ function genBlurWebgl(renderMode, gl, cache, sigma) {
   bboxNew[1] -= spread;
   bboxNew[2] += spread;
   bboxNew[3] += spread;
+  // 写到一个tex中方便后续处理
+  let w = width + spread * 2, h = height + spread * 2;
+  let tex = webgl.createTexture(gl, null, 0, w, h);
+  let frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
+  webgl.drawCache2Tex(gl, gl.program, cache, tex, w, h, spread);
+  // 生成blur，同尺寸复用fbo
   let program = genBlurShader(gl, sigma, d);
-  gl.useProgram(program);
-  // 绘制对象纹理需生成新的，不能和来源是同一个，因此至少需要2个纹理单元
-  let target = TextureCache.getInstance(renderMode, gl, cache.__rootId, bboxNew, sx1, sy1, cache.__page);
-  target.__available = true;
-  let page = target.__page, size = page.__size;
-  let frameBuffer = genFrameBufferWithTexture(gl, target.__page.texture, size, size);
-  // 还需要个临时纹理temp，不能和target同纹理，可能和cache同纹理，3次blur绘制在temp和target之间来回进行
-  let temp = TextureCache.getInstance(cache.__renderMode, gl, cache.__rootId, bboxNew, sx1, sy1, target.__page);
-  temp.__available = true;
-  webgl.drawBlur(gl, program, spread, target, temp, cache, size);
-  // 销毁这个临时program
+  tex = webgl.drawBlur(gl, program, spread, tex, width, height);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteFramebuffer(frameBuffer);
+  // 写回一个cache中
+  let target = TextureCache.getInstance(renderMode, gl, cache.__rootId, bboxNew, sx1, sy1, null);
+  target.__available = true;
+  let page = target.__page, size = page.__size, texture = page.texture;
+  frameBuffer = genFrameBufferWithTexture(gl, texture, size, size);
+  webgl.drawTex2Cache(gl, gl.program, target, tex, w, h);
+  // 销毁这个临时program
   gl.deleteShader(program.vertexShader);
   gl.deleteShader(program.fragmentShader);
   gl.deleteProgram(program);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.deleteFramebuffer(frameBuffer);
   return target;
 }
 
@@ -1355,14 +1361,10 @@ function genDropShadowWebgl(renderMode, gl, cache, v) {
   // 生成模糊的阴影
   if(sigma) {
     let program = genBlurShader(gl, sigma, d);
-    gl.useProgram(program);
-    webgl.bindTexture(gl, tex1, 0);
-    let tex2 = webgl.createTexture(gl, null, 1, w, h);
-    webgl.drawDropShadowBlur(gl, program, frameBuffer, tex1, tex2, w, h);
+    tex1 = webgl.drawBlur(gl, program, spread, tex1, width, height);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.deleteFramebuffer(frameBuffer);
-    gl.deleteTexture(tex2);
     gl.deleteShader(program.vertexShader);
     gl.deleteShader(program.fragmentShader);
     gl.deleteProgram(program);
@@ -1778,7 +1780,7 @@ function renderWebgl(renderMode, gl, root, isFirst) {
   if(isFirst) {
     Page.init(gl.getParameter(gl.MAX_TEXTURE_SIZE));
   }
-  let { __structs, width, height, texHelper } = root;
+  let { __structs, width, height } = root;
   let cx = width * 0.5, cy = height * 0.5;
   // 栈代替递归，存父节点的matrix/opacity，matrix为E时存null省略计算
   let lastRefreshLevel = NONE;

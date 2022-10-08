@@ -636,11 +636,11 @@ function drawDropShadow(gl, program, frameBuffer, cache, color, w1, w2, h1, h2) 
   bindTexture(gl, null, 0);
 }
 
-function drawDropShadowMerge(gl, target, cache, tex, size, dx, dy, w, h) {
-  let { x, y, width, height } = target;
+function drawDropShadowMerge(gl, target, size, tex1, dx1, dy1, w, h, tex2, dx2, dy2, width, height) {
+  let { x, y } = target;
   let center = size * 0.5;
-  let { x: x1, y: y2 } = convertCoords2Gl(x + dx, y + h + dy, 0, 1, center, center, false);
-  let { x: x2, y: y1 } = convertCoords2Gl(x + w + dx, y + dy, 0, 1, center, center, false);
+  let { x: x1, y: y2 } = convertCoords2Gl(x + dx1, y + h + dy1, 0, 1, center, center, false);
+  let { x: x2, y: y1 } = convertCoords2Gl(x + w + dx1, y + dy1, 0, 1, center, center, false);
   // 顶点buffer
   let pointBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
@@ -677,15 +677,13 @@ function drawDropShadowMerge(gl, target, cache, tex, size, dx, dy, w, h) {
   gl.vertexAttribPointer(a_opacity, 1, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(a_opacity);
   // 纹理单元
-  bindTexture(gl, tex, 0);
+  bindTexture(gl, tex1, 0);
   let u_texture = gl.getUniformLocation(gl.program, 'u_texture');
   gl.uniform1i(u_texture, 0);
   gl.drawArrays(gl.TRIANGLES, 0, 6);
 
-  let { x: x3, y: y4 } = convertCoords2Gl(x, y + height, 0, 1, center, center, false);
-  let { x: x4, y: y3 } = convertCoords2Gl(x + width, y, 0, 1, center, center, false);
-  let { x: tx2, y: ty2 } = cache;
-  let xa = tx2 / size, ya = ty2 / size, xb = (tx2 + width) / size, yb = (ty2 + height) / size;
+  let { x: x3, y: y4 } = convertCoords2Gl(x + dx2, y + height + dy2, 0, 1, center, center, false);
+  let { x: x4, y: y3 } = convertCoords2Gl(x + width + dx2, y + dy2, 0, 1, center, center, false);
   gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
     x3, y3,
@@ -695,18 +693,9 @@ function drawDropShadowMerge(gl, target, cache, tex, size, dx, dy, w, h) {
     x4, y3,
     x4, y4,
   ]), gl.STATIC_DRAW);
-  gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-    xa, ya,
-    xa, yb,
-    xb, ya,
-    xa, yb,
-    xb, ya,
-    xb, yb,
-  ]), gl.STATIC_DRAW);
   gl.bindBuffer(gl.ARRAY_BUFFER, opacityBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([1, 1, 1, 1, 1, 1]), gl.STATIC_DRAW);
-  bindTexture(gl, cache.__page.texture, 0);
+  bindTexture(gl, tex2, 0);
   gl.uniform1i(u_texture, 0);
   gl.drawArrays(gl.TRIANGLES, 0, 6);
   bindTexture(gl, null, 0);
@@ -769,7 +758,7 @@ function drawTex2Cache(gl, program, cache, tex, width, height) {
   gl.bindTexture(gl.TEXTURE_2D, null);
 }
 
-function drawCache2Tex(gl, program, cache, tex, width, height, spread) {
+function drawCache2Tex(gl, program, cache, width, height, spread) {
   let { x: tx1, y: ty1, width: w1, height: h1, __page: { texture, size } } = cache;
   gl.useProgram(program);
   gl.viewport(0, 0, width, height);
@@ -818,7 +807,6 @@ function drawCache2Tex(gl, program, cache, tex, width, height, spread) {
   bindTexture(gl, texture, 0);
   gl.uniform1i(u_texture, 0);
   gl.drawArrays(gl.TRIANGLES, 0, 6);
-  return tex;
 }
 
 export default {

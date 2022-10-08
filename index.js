@@ -29187,18 +29187,16 @@
     bindTexture(gl, null, 0);
   }
 
-  function drawDropShadowMerge(gl, target, cache, tex, size, dx, dy, w, h) {
+  function drawDropShadowMerge(gl, target, size, tex1, dx1, dy1, w, h, tex2, dx2, dy2, width, height) {
     var x = target.x,
-        y = target.y,
-        width = target.width,
-        height = target.height;
+        y = target.y;
     var center = size * 0.5;
 
-    var _convertCoords2Gl7 = convertCoords2Gl(x + dx, y + h + dy, 0, 1, center, center, false),
+    var _convertCoords2Gl7 = convertCoords2Gl(x + dx1, y + h + dy1, 0, 1, center, center, false),
         x1 = _convertCoords2Gl7.x,
         y2 = _convertCoords2Gl7.y;
 
-    var _convertCoords2Gl8 = convertCoords2Gl(x + w + dx, y + dy, 0, 1, center, center, false),
+    var _convertCoords2Gl8 = convertCoords2Gl(x + w + dx1, y + dy1, 0, 1, center, center, false),
         x2 = _convertCoords2Gl8.x,
         y1 = _convertCoords2Gl8.y; // 顶点buffer
 
@@ -29224,32 +29222,24 @@
     gl.vertexAttribPointer(a_opacity, 1, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(a_opacity); // 纹理单元
 
-    bindTexture(gl, tex, 0);
+    bindTexture(gl, tex1, 0);
     var u_texture = gl.getUniformLocation(gl.program, 'u_texture');
     gl.uniform1i(u_texture, 0);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
-    var _convertCoords2Gl9 = convertCoords2Gl(x, y + height, 0, 1, center, center, false),
+    var _convertCoords2Gl9 = convertCoords2Gl(x + dx2, y + height + dy2, 0, 1, center, center, false),
         x3 = _convertCoords2Gl9.x,
         y4 = _convertCoords2Gl9.y;
 
-    var _convertCoords2Gl10 = convertCoords2Gl(x + width, y, 0, 1, center, center, false),
+    var _convertCoords2Gl10 = convertCoords2Gl(x + width + dx2, y + dy2, 0, 1, center, center, false),
         x4 = _convertCoords2Gl10.x,
         y3 = _convertCoords2Gl10.y;
 
-    var tx2 = cache.x,
-        ty2 = cache.y;
-    var xa = tx2 / size,
-        ya = ty2 / size,
-        xb = (tx2 + width) / size,
-        yb = (ty2 + height) / size;
     gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([x3, y3, x3, y4, x4, y3, x3, y4, x4, y3, x4, y4]), gl.STATIC_DRAW);
-    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([xa, ya, xa, yb, xb, ya, xa, yb, xb, ya, xb, yb]), gl.STATIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER, opacityBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([1, 1, 1, 1, 1, 1]), gl.STATIC_DRAW);
-    bindTexture(gl, cache.__page.texture, 0);
+    bindTexture(gl, tex2, 0);
     gl.uniform1i(u_texture, 0);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
     bindTexture(gl, null, 0);
@@ -29308,7 +29298,7 @@
     gl.bindTexture(gl.TEXTURE_2D, null);
   }
 
-  function drawCache2Tex(gl, program, cache, tex, width, height, spread) {
+  function drawCache2Tex(gl, program, cache, width, height, spread) {
     var tx1 = cache.x,
         ty1 = cache.y,
         w1 = cache.width,
@@ -29360,7 +29350,6 @@
     bindTexture(gl, texture, 0);
     gl.uniform1i(u_texture, 0);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
-    return tex;
   }
 
   var webgl = {
@@ -31251,7 +31240,7 @@
         h = height + spread * 2;
     var tex = webgl.createTexture(gl, null, 0, w, h);
     var frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
-    webgl.drawCache2Tex(gl, gl.program, cache, tex, w, h, spread); // 生成blur，同尺寸复用fbo
+    webgl.drawCache2Tex(gl, gl.program, cache, w, h, spread); // 生成blur，同尺寸复用fbo
 
     var program = genBlurShader(gl, sigma, d);
     tex = webgl.drawBlur(gl, program, tex, w, h);
@@ -31576,16 +31565,22 @@
 
     if (sigma) {
       var program = genBlurShader(gl, sigma, d);
-      tex1 = webgl.drawBlur(gl, program, tex1, width, height);
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-      gl.deleteFramebuffer(frameBuffer);
+      tex1 = webgl.drawBlur(gl, program, tex1, w, h);
       gl.deleteShader(program.vertexShader);
       gl.deleteShader(program.fragmentShader);
       gl.deleteProgram(program);
     }
 
-    gl.useProgram(gl.program); // 原图和模糊阴影合成
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.deleteFramebuffer(frameBuffer); // cache绘制到一个单独的tex上
+
+    var tex2 = webgl.createTexture(gl, null, 0, width, height);
+    frameBuffer = genFrameBufferWithTexture(gl, tex2, width, height);
+    webgl.drawCache2Tex(gl, gl.program, cache, width, height, 0);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.deleteFramebuffer(frameBuffer); // 原图tex2和模糊阴影tex1合成
 
     var bboxNew = bbox.slice(0);
     bboxNew[0] += x;
@@ -31598,18 +31593,22 @@
     bboxNew[3] += spread;
     var bboxMerge = bbox.slice(0);
     mergeBbox(bboxMerge, bboxNew, 0, 0);
-    var target = TextureCache.getInstance(renderMode, gl, cache.__rootId, bboxMerge, sx1, sy1, cache.__page);
+    var target = TextureCache.getInstance(renderMode, gl, cache.__rootId, bboxMerge, sx1, sy1, null);
     target.__available = true;
     var page = target.__page,
         size = page.__size;
     frameBuffer = genFrameBufferWithTexture(gl, page.texture, size, size);
-    var dx = bboxNew[0] - bboxMerge[0],
-        dy = bboxNew[1] - bboxMerge[1];
-    webgl.drawDropShadowMerge(gl, target, cache, tex1, size, dx, dy, w, h);
+    var dx1 = bboxNew[0] - bboxMerge[0],
+        dy1 = bboxNew[1] - bboxMerge[1];
+    var dx2 = bbox[0] - bboxMerge[0],
+        dy2 = bbox[1] - bboxMerge[1];
+    webgl.drawDropShadowMerge(gl, target, size, tex1, dx1, dy1, w, h, tex2, dx2, dy2, width, height);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.deleteFramebuffer(frameBuffer);
+    webgl.bindTexture(gl, null, 0);
     gl.deleteTexture(tex1);
+    gl.deleteTexture(tex2);
     return target;
   }
   /**

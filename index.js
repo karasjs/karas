@@ -28864,7 +28864,7 @@
    */
 
 
-  function drawBlur(gl, program, spread, tex1, width, height) {
+  function drawBlur(gl, program, tex1, width, height) {
     gl.useProgram(program);
     gl.viewport(0, 0, width, height);
     /**
@@ -30889,9 +30889,7 @@
         var _cache = _node4.__cache;
 
         if (_cache && _cache.available) {
-          var _node4$__domParent = _node4.__domParent;
-              _node4$__domParent.__matrixEvent;
-              var __opacity = _node4$__domParent.__opacity;
+          var __opacity = _node4.__domParent.__opacity;
           var p = _cache.__page;
 
           if (lastPage && lastPage !== p) {
@@ -31234,7 +31232,8 @@
     webgl.drawCache2Tex(gl, gl.program, cache, tex, w, h, spread); // 生成blur，同尺寸复用fbo
 
     var program = genBlurShader(gl, sigma, d);
-    tex = webgl.drawBlur(gl, program, spread, tex, width, height);
+    console.log(sigma, d);
+    tex = webgl.drawBlur(gl, program, tex, width, height);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.deleteFramebuffer(frameBuffer); // 写回一个cache中
@@ -31556,7 +31555,7 @@
 
     if (sigma) {
       var program = genBlurShader(gl, sigma, d);
-      tex1 = webgl.drawBlur(gl, program, spread, tex1, width, height);
+      tex1 = webgl.drawBlur(gl, program, tex1, width, height);
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       gl.deleteFramebuffer(frameBuffer);

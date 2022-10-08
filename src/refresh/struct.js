@@ -773,7 +773,6 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
       let __cache = node.__cache;
       if(__cache && __cache.available) {
         let {
-          __matrixEvent,
           __opacity,
         } = node.__domParent;
         let p = __cache.__page;
@@ -1089,8 +1088,8 @@ function genBlurWebgl(renderMode, gl, cache, sigma) {
   let frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
   webgl.drawCache2Tex(gl, gl.program, cache, tex, w, h, spread);
   // 生成blur，同尺寸复用fbo
-  let program = genBlurShader(gl, sigma, d);
-  tex = webgl.drawBlur(gl, program, spread, tex, width, height);
+  let program = genBlurShader(gl, sigma, d); console.log(sigma, d);
+  tex = webgl.drawBlur(gl, program, tex, width, height);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteFramebuffer(frameBuffer);
@@ -1350,7 +1349,7 @@ function genDropShadowWebgl(renderMode, gl, cache, v) {
   // 生成模糊的阴影
   if(sigma) {
     let program = genBlurShader(gl, sigma, d);
-    tex1 = webgl.drawBlur(gl, program, spread, tex1, width, height);
+    tex1 = webgl.drawBlur(gl, program, tex1, width, height);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.deleteFramebuffer(frameBuffer);

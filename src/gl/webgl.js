@@ -289,7 +289,7 @@ function drawTextureCache(gl, list, cx, cy, dx, dy, revertY) {
  * i和j为filter和total的纹理单元，3次执行（x/y合起来算1次）需互换单元，来回执行源和结果
  * 由total变为filter时cache会各方向上扩展spread的大小到width/height
  */
-function drawBlur(gl, program, spread, tex1, width, height) {
+function drawBlur(gl, program, tex1, width, height) {
   gl.useProgram(program);
   gl.viewport(0, 0, width, height);
   /**

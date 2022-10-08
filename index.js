@@ -28701,6 +28701,7 @@
           height = cache.height,
           page = cache.page,
           bbox = cache.bbox;
+      var size = page.__size;
 
       if (!i) {
         // canvas需要生成texture，texture则强制不会进来
@@ -28791,10 +28792,10 @@
       vtPoint[j + 20] = x3;
       vtPoint[j + 21] = y3;
       vtPoint[j + 23] = w3;
-      var tx1 = x / page.width,
-          ty1 = (y + height) / page.height;
-      var tx2 = (x + width) / page.width,
-          ty2 = y / page.height; // vtTex.push(tx1, ty1, tx1, ty2, tx2, ty1, tx1, ty2, tx2, ty1, tx2, ty2);
+      var tx1 = x / size,
+          ty1 = (y + height) / size;
+      var tx2 = (x + width) / size,
+          ty2 = y / size; // vtTex.push(tx1, ty1, tx1, ty2, tx2, ty1, tx1, ty2, tx2, ty1, tx2, ty2);
 
       j = i * 12;
       vtTex[j] = tx1;
@@ -30976,19 +30977,7 @@
               webgl.drawTextureCache(gl, list, cx, cy, dx, dy, true);
               list.splice(0);
               lastPage = null;
-            } // texHelper.refresh(gl, cx, cy);
-            // let {
-            //   n: n2,
-            //   frameBuffer: frameBuffer2,
-            //   texture: texture2
-            // } = genFrameBufferWithTexture(gl, texHelper, null, size, size);
-            // texHelper.addTexAndDrawWhenLimit(gl, target, node.__opacity, m, cx, cy, dx, dy, false);
-            // texHelper.refresh(gl, cx, cy);
-            // // 合成结果作为当前frameBuffer，以及纹理和单元，等于替代了当前fbo作为绘制对象
-            // [n, frameBuffer, texture] = genMbmWebgl(gl, texHelper, n, n2, frameBuffer, texture, mbmName(mixBlendMode), size, size);
-            // gl.deleteFramebuffer(frameBuffer2);
-            // gl.deleteTexture(texture2);
-
+            }
           } else {
             var _p2 = target.__page;
 
@@ -31325,11 +31314,14 @@
   }
 
   function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs) {
-    var sx1 = node.__sx1,
-        sy1 = node.__sy1,
-        clientWidth = node.__clientWidth,
-        clientHeight = node.__clientHeight;
-    var bboxNew = [sx1, sy1, sx1 + clientWidth, sy1 + clientHeight]; // 结果不能和源同page纹理，一定符合尺寸要求，不会比源大
+    var sx1 = cache.sx1,
+        sy1 = cache.sy1,
+        width = cache.width,
+        height = cache.height,
+        bbox = cache.bbox,
+        dbx = cache.dbx,
+        dby = cache.dby;
+    var bboxNew = bbox.slice(0); // 结果不能和源同page纹理，一定符合尺寸要求，不会比源大
 
     var __cacheMask = TextureCache.getInstance(renderMode, gl, root.uuid, bboxNew, sx1, sy1, cache.__page);
 
@@ -31349,14 +31341,17 @@
 
     inverse = matrix.inverse(inverse); // 将所有mask绘入一个单独纹理中，尺寸和原点与被遮罩相同
 
-    var texture = webgl.createTexture(gl, null, 0, clientWidth, clientHeight);
-    var cx = clientWidth * 0.5,
-        cy = clientHeight * 0.5;
-    var frameBuffer = genFrameBufferWithTexture(gl, texture, clientWidth, clientHeight);
+    gl.viewport(0, 0, width, height);
+    var texture = webgl.createTexture(gl, null, 0, width, height);
+    var cx = width * 0.5,
+        cy = height * 0.5;
+    var frameBuffer = genFrameBufferWithTexture(gl, texture, width, height);
     var next = node.next;
     var isClip = next.__isClip;
     var lastPage,
         list = [];
+    var dx = -sx1 + dbx,
+        dy = -sy1 + dby;
 
     while (next && next.__isMask && next.__isClip === isClip) {
       var total = __structs[i].total || 0;
@@ -31386,7 +31381,7 @@
             var p = __cache.__page;
 
             if (lastPage && lastPage !== p) {
-              webgl.drawTextureCache(gl, list, cx, cy, -sx1, -sy1, false);
+              webgl.drawTextureCache(gl, list, cx, cy, dx, dy, false);
               list.splice(0);
             }
 
@@ -31464,7 +31459,7 @@
             var _p3 = target.__page;
 
             if (lastPage && lastPage !== _p3) {
-              webgl.drawTextureCache(gl, list, cx, cy, -sx1, -sy1, false);
+              webgl.drawTextureCache(gl, list, cx, cy, dx, dy, false);
               list.splice(0);
             }
 
@@ -31484,7 +31479,7 @@
             } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
 
 
-            _node5.render(renderMode, gl, -sx1, -sy1);
+            _node5.render(renderMode, gl, dx, dy);
           }
         }
       }
@@ -31493,7 +31488,7 @@
     } // 绘制到fbo的纹理对象上并删除fbo恢复
 
 
-    webgl.drawTextureCache(gl, list, cx, cy, -sx1, -sy1, false);
+    webgl.drawTextureCache(gl, list, cx, cy, dx, dy, false);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.deleteFramebuffer(frameBuffer);

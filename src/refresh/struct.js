@@ -851,18 +851,6 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
             list.splice(0);
             lastPage = null;
           }
-          // texHelper.refresh(gl, cx, cy);
-          // let {
-          //   n: n2,
-          //   frameBuffer: frameBuffer2,
-          //   texture: texture2
-          // } = genFrameBufferWithTexture(gl, texHelper, null, size, size);
-          // texHelper.addTexAndDrawWhenLimit(gl, target, node.__opacity, m, cx, cy, dx, dy, false);
-          // texHelper.refresh(gl, cx, cy);
-          // // 合成结果作为当前frameBuffer，以及纹理和单元，等于替代了当前fbo作为绘制对象
-          // [n, frameBuffer, texture] = genMbmWebgl(gl, texHelper, n, n2, frameBuffer, texture, mbmName(mixBlendMode), size, size);
-          // gl.deleteFramebuffer(frameBuffer2);
-          // gl.deleteTexture(texture2);
         }
         else {
           let p = target.__page;
@@ -1169,8 +1157,8 @@ function genOverflowWebgl(renderMode, gl, root, node, cache, W, H) {
 }
 
 function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs) {
-  let { __sx1: sx1, __sy1: sy1, __clientWidth: clientWidth, __clientHeight: clientHeight } = node;
-  let bboxNew = [sx1, sy1, sx1 + clientWidth, sy1 + clientHeight];
+  let { sx1, sy1, width, height, bbox, dbx, dby } = cache;
+  let bboxNew = bbox.slice(0);
   // 结果不能和源同page纹理，一定符合尺寸要求，不会比源大
   let __cacheMask = TextureCache.getInstance(renderMode, gl, root.uuid, bboxNew, sx1, sy1, cache.__page);
   __cacheMask.__available = true;
@@ -1189,12 +1177,14 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
   }
   inverse = mx.inverse(inverse);
   // 将所有mask绘入一个单独纹理中，尺寸和原点与被遮罩相同
-  let texture = webgl.createTexture(gl, null, 0, clientWidth, clientHeight);
-  let cx = clientWidth * 0.5, cy = clientHeight * 0.5;
-  let frameBuffer = genFrameBufferWithTexture(gl, texture, clientWidth, clientHeight);
+  gl.viewport(0, 0, width, height);
+  let texture = webgl.createTexture(gl, null, 0, width, height);
+  let cx = width * 0.5, cy = height * 0.5;
+  let frameBuffer = genFrameBufferWithTexture(gl, texture, width, height);
   let next = node.next;
   let isClip = next.__isClip;
   let lastPage, list = [];
+  let dx = -sx1 + dbx, dy = -sy1 + dby;
   while(next && next.__isMask && next.__isClip === isClip) {
     let total = __structs[i].total || 0;
     let matrixList = [];
@@ -1221,7 +1211,7 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
           } = node.__domParent;
           let p = __cache.__page;
           if(lastPage && lastPage !== p) {
-            webgl.drawTextureCache(gl, list, cx, cy, -sx1, -sy1, false);
+            webgl.drawTextureCache(gl, list, cx, cy, dx, dy, false);
             list.splice(0);
           }
           lastPage = p;
@@ -1291,7 +1281,7 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
           lastOpacity = parentOpacity * opacity;
           let p = target.__page;
           if(lastPage && lastPage !== p) {
-            webgl.drawTextureCache(gl, list, cx, cy, -sx1, -sy1, false);
+            webgl.drawTextureCache(gl, list, cx, cy, dx, dy, false);
             list.splice(0);
           }
           lastPage = p;
@@ -1303,14 +1293,14 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
             }
           }
           // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
-          node.render(renderMode, gl, -sx1, -sy1);
+          node.render(renderMode, gl, dx, dy);
         }
       }
     }
     next = next.__next;
   }
   // 绘制到fbo的纹理对象上并删除fbo恢复
-  webgl.drawTextureCache(gl, list, cx, cy, -sx1, -sy1, false);
+  webgl.drawTextureCache(gl, list, cx, cy, dx, dy, false);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteFramebuffer(frameBuffer);

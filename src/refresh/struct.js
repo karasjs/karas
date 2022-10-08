@@ -2069,7 +2069,7 @@ function renderWebgl(renderMode, gl, root, isFirst) {
           __matrixEvent,
           __opacity,
         } = node.__domParent;
-        let p = target.__page;
+        let p = __cache.__page;
         if(lastPage && lastPage !== p) {
           webgl.drawTextureCache(gl, list, cx, cy, 0, 0, true);
           list.splice(0);

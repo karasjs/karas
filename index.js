@@ -28493,7 +28493,7 @@
 
         if (MAX_TEXTURE_SIZE !== MAX) {
           // 超过8192会卡一下
-          Page.MAX = Math.min(MAX_TEXTURE_SIZE, 512);
+          Page.MAX = Math.min(MAX_TEXTURE_SIZE, 8192);
         }
       }
     }]);
@@ -30082,16 +30082,16 @@
       assignMatrix(_node.__matrixEvent, matrix$1);
       var bbox = void 0; // 子元素有cacheTotal优先使用
 
-      var _target = getCache([__cacheMask2, __cacheFilter2, __cacheOverflow2, __cacheTotal2, __cache2]);
+      var target = getCache([__cacheMask2, __cacheFilter2, __cacheOverflow2, __cacheTotal2, __cache2]);
 
-      if (_target) {
+      if (target) {
         i += _total || 0;
 
         if (hasMask) {
           i += countMaskNum(__structs, i + 1, hasMask);
         }
 
-        bbox = _target.bbox;
+        bbox = target.bbox;
       } else {
         bbox = _node.bbox; // 不能用filterBbox，子元素继承根节点的，如果有filter会是cacheFilter的bbox
       } // 老的不变，新的会各自重新生成，根据matrixEvent合并bboxTotal
@@ -30227,9 +30227,9 @@
               _hasMask = mh.hasMask,
               offscreenMask = mh.offscreenMask;
 
-          var _target3 = inject.getOffscreenCanvas(width, height, null, 'mask2');
+          var _target = inject.getOffscreenCanvas(width, height, null, 'mask2');
 
-          offscreenMask.mask = _target3; // 应用mask用到
+          offscreenMask.mask = _target; // 应用mask用到
 
           offscreenMask.isClip = _node2.__isClip; // 定位到最后一个mask元素上的末尾
 
@@ -30255,10 +30255,10 @@
             offscreen: {
               ctx: ctxTotal,
               // 保存等待OFFSCREEN_MASK2时还原
-              target: _target3
+              target: _target
             }
           });
-          ctxTotal = _target3.ctx;
+          ctxTotal = _target.ctx;
         } // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理
 
 
@@ -30292,9 +30292,9 @@
 
         lastMatrix = m; // 子元素有cacheTotal优先使用
 
-        var _target2 = i > index && getCache([__cacheMask2, __cacheFilter2, __cacheOverflow2, __cacheTotal2]);
+        var target = i > index && getCache([__cacheMask2, __cacheFilter2, __cacheOverflow2, __cacheTotal2]);
 
-        if (_target2) {
+        if (target) {
           i += _total2 || 0;
 
           if (hasMask) {
@@ -30315,7 +30315,7 @@
             ctxTotal.globalCompositeOperation = mbmName(mixBlendMode);
           }
 
-          CanvasCache.drawCache(_target2, __cacheTotal);
+          CanvasCache.drawCache(target, __cacheTotal);
           ctxTotal.globalCompositeOperation = 'source-over';
           var _oh2 = offscreenHash[i];
 
@@ -30524,9 +30524,9 @@
                   _hasMask3 = _maskStartHash$i.hasMask,
                   offscreenMask = _maskStartHash$i.offscreenMask;
 
-              var _target5 = inject.getOffscreenCanvas(width, height, null, 'mask2');
+              var _target3 = inject.getOffscreenCanvas(width, height, null, 'mask2');
 
-              offscreenMask.mask = _target5; // 应用mask用到
+              offscreenMask.mask = _target3; // 应用mask用到
 
               offscreenMask.isClip = _node3.__isClip; // 定位到最后一个mask元素上的末尾
 
@@ -30552,10 +30552,10 @@
                 offscreen: {
                   ctx: ctx,
                   // 保存等待OFFSCREEN_MASK2时还原
-                  target: _target5
+                  target: _target3
                 }
               });
-              ctx = _target5.ctx;
+              ctx = _target3.ctx;
             } // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理
 
 
@@ -30618,9 +30618,9 @@
             m = m || matrix.identity();
             assignMatrix(_node3.__matrixEvent, m); // 特殊渲染的matrix，局部根节点为原点考虑，本节点需inverse反向
 
-            var _target4 = getCache([_cacheMask, _cacheFilter, _cacheOverflow, _cacheTotal2]);
+            var _target2 = getCache([_cacheMask, _cacheFilter, _cacheOverflow, _cacheTotal2]);
 
-            if (_target4) {
+            if (_target2) {
               i += _total4 || 0;
 
               if (_hasMask2) {
@@ -30637,15 +30637,15 @@
                 ctx.globalCompositeOperation = 'source-over';
               }
 
-              var x = _target4.x,
-                  y = _target4.y,
-                  canvas = _target4.canvas,
-                  _width = _target4.width,
-                  _height = _target4.height,
-                  sx2 = _target4.sx1,
-                  sy2 = _target4.sy1,
-                  dbx2 = _target4.dbx,
-                  dby2 = _target4.dby;
+              var x = _target2.x,
+                  y = _target2.y,
+                  canvas = _target2.canvas,
+                  _width = _target2.width,
+                  _height = _target2.height,
+                  sx2 = _target2.sx1,
+                  sy2 = _target2.sy1,
+                  dbx2 = _target2.dbx,
+                  dby2 = _target2.dby;
               var ox = tx + sx2 - sx1 + dbx - dbx2;
               var oy = ty + sy2 - sy1 + dby - dby2;
               ctx.drawImage(canvas, x, y, _width, _height, ox, oy, _width, _height);
@@ -30964,10 +30964,9 @@
         }
 
         lastMatrix = m;
+        var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, _cacheTotal4, _cache2]);
 
-        var _target6 = getCache([__cacheMask, __cacheFilter, __cacheOverflow, _cacheTotal4, _cache2]);
-
-        if (_target6 && (_target6 !== _cache2 || visibility === 'visible')) {
+        if (target && (target !== _cache2 || visibility === 'visible')) {
           // 局部的mbm和主画布一样，先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
           if (isValidMbm(mixBlendMode)) {
             if (list.length) {
@@ -30988,7 +30987,7 @@
             // gl.deleteTexture(texture2);
 
           } else {
-            var _p2 = _target6.__page;
+            var _p2 = target.__page;
 
             if (lastPage && lastPage !== _p2) {
               webgl.drawTextureCache(gl, list, cx, cy, dx, dy, true);
@@ -30997,13 +30996,13 @@
 
             lastPage = _p2;
             list.push({
-              cache: _target6,
+              cache: target,
               opacity: _node4.__opacity,
               matrix: m
             });
           }
 
-          if (_target6 !== _cache2) {
+          if (target !== _cache2) {
             i += _total6 || 0;
 
             if (hasMask) {
@@ -31432,17 +31431,16 @@
 
 
           lastLv = _lv4;
+          var target = getCache([_cacheMask2, __cacheFilter, __cacheOverflow, __cacheTotal, _cache3]);
 
-          var _target7 = getCache([_cacheMask2, __cacheFilter, __cacheOverflow, __cacheTotal, _cache3]);
-
-          if (_target7 && (_target7 !== _cache3 || visibility === 'visible')) {
+          if (target && (target !== _cache3 || visibility === 'visible')) {
             // 不考虑mbm
             var m = void 0;
 
             if (isE(_transform)) {
               m = matrix.identity();
             } else {
-              m = transform$1.calMatrixByOrigin(_transform, _tfo[0] + _target7.sx1 - sx1, _tfo[1] + _target7.sy1 - sy1);
+              m = transform$1.calMatrixByOrigin(_transform, _tfo[0] + target.sx1 - sx1, _tfo[1] + target.sy1 - sy1);
             }
 
             if (!isE(parentMatrix)) {
@@ -31452,7 +31450,7 @@
             m = matrix.multiply(inverse, m);
             lastMatrix = m;
             lastOpacity = parentOpacity * opacity;
-            var _p3 = _target7.__page;
+            var _p3 = target.__page;
 
             if (lastPage && lastPage !== _p3) {
               webgl.drawTextureCache(gl, list, cx, cy, -sx1, -sy1, false);
@@ -31461,12 +31459,12 @@
 
             lastPage = _p3;
             list.push({
-              cache: _target7,
+              cache: target,
               opacity: lastOpacity,
               matrix: m
             });
 
-            if (_target7 !== _cache3) {
+            if (target !== _cache3) {
               i += _total7 || 0;
 
               if (hasMask) {
@@ -31900,8 +31898,8 @@
             _start2 = mh.start,
             _end2 = mh.end,
             isClip = mh.isClip;
-        var _target8 = __structs[index];
-        var dom = _target8.node;
+        var target = __structs[index];
+        var dom = target.node;
         var mChildren = []; // clip模式时，先添加兜底整个白色使得全部都可见，mask本身变反色（黑色）
 
         if (isClip) {
@@ -32358,7 +32356,7 @@
           var _node7$__domParent = _node7.__domParent,
               __matrixEvent = _node7$__domParent.__matrixEvent,
               __opacity = _node7$__domParent.__opacity;
-          var p = target.__page;
+          var p = _cache5.__page;
 
           if (lastPage && lastPage !== p) {
             webgl.drawTextureCache(gl, list, cx, cy, 0, 0, true);
@@ -32410,9 +32408,9 @@
         _node7.__opacity = opacity;
         assignMatrix(_node7.__matrixEvent, m); // total和自身cache的尝试，visibility不可见时没有cache
 
-        var _target9 = getCache([__cacheMask, __cacheFilter, __cacheOverflow, _cacheTotal5, _cache6]);
+        var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, _cacheTotal5, _cache6]);
 
-        if (_target9) {
+        if (target) {
           // 有mbm则需要混合之前的纹理和新纹理到fbo上面，连续的mbm则依次交替绘制到画布或离屏fbo上
           if (isValidMbm(_mixBlendMode)) {
             if (list.length) {
@@ -32424,7 +32422,7 @@
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             gl.deleteFramebuffer(frameBuffer);
-            var res = genMbmWebgl(gl, texture, _target9, _mixBlendMode, opacity, m, 0, 0, cx, cy, width, height);
+            var res = genMbmWebgl(gl, texture, target, _mixBlendMode, opacity, m, 0, 0, cx, cy, width, height);
 
             if (res) {
               gl.deleteTexture(texture);
@@ -32432,7 +32430,7 @@
               frameBuffer = res.frameBuffer;
             }
           } else {
-            var _p4 = _target9.__page;
+            var _p4 = target.__page;
 
             if (lastPage && lastPage !== _p4) {
               webgl.drawTextureCache(gl, list, cx, cy, 0, 0, true);
@@ -32441,13 +32439,13 @@
 
             lastPage = _p4;
             list.push({
-              cache: _target9,
+              cache: target,
               opacity: opacity,
               matrix: m
             });
           }
 
-          if (_target9 !== _cache6) {
+          if (target !== _cache6) {
             _i5 += _total8 || 0;
 
             if (_hasMask4) {
@@ -32655,9 +32653,9 @@
               _hasMask6 = msh.hasMask,
               offscreenMask = msh.offscreenMask;
 
-          var _target11 = inject.getOffscreenCanvas(width, height, null, 'mask2');
+          var _target4 = inject.getOffscreenCanvas(width, height, null, 'mask2');
 
-          offscreenMask.mask = _target11; // 应用mask用到
+          offscreenMask.mask = _target4; // 应用mask用到
 
           offscreenMask.isClip = _node8.__isClip; // 定位到最后一个mask元素上的末尾
 
@@ -32683,10 +32681,10 @@
             offscreen: {
               ctx: ctx,
               // 保存等待OFFSCREEN_MASK2时还原
-              target: _target11
+              target: _target4
             }
           });
-          ctx = _target11.ctx;
+          ctx = _target4.ctx;
         } // 设置opacity/matrix，根节点是没有父节点的不计算继承值
 
 
@@ -32701,9 +32699,9 @@
         _node8.__opacity = opacity;
         assignMatrix(_node8.__matrixEvent, m); // 有cache声明从而有total的可以直接绘制并跳过子节点索，total生成可能会因超限而失败
 
-        var _target10 = getCache([__cacheMask, __cacheFilter, __cacheOverflow, _cacheTotal6]);
+        var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, _cacheTotal6]);
 
-        if (_target10) {
+        if (target) {
           _i6 += _total9 || 0;
 
           if (_hasMask5) {
@@ -32718,15 +32716,15 @@
             ctx.globalCompositeOperation = mbmName(mixBlendMode);
           }
 
-          var x = _target10.x,
-              y = _target10.y,
-              canvas = _target10.canvas,
-              _sx2 = _target10.sx1,
-              _sy2 = _target10.sy1,
-              dbx = _target10.dbx,
-              dby = _target10.dby,
-              _width2 = _target10.width,
-              _height2 = _target10.height;
+          var x = target.x,
+              y = target.y,
+              canvas = target.canvas,
+              _sx2 = target.sx1,
+              _sy2 = target.sy1,
+              dbx = target.dbx,
+              dby = target.dby,
+              _width2 = target.width,
+              _height2 = target.height;
           ctx.drawImage(canvas, x, y, _width2, _height2, _sx2 - dbx, _sy2 - dby, _width2, _height2); // total应用后记得设置回来
 
           ctx.globalCompositeOperation = 'source-over'; // 父超限但子有total的时候，i此时已经增加到了末尾，也需要检查

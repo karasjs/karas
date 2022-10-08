@@ -168,7 +168,7 @@ function drawTextureCache(gl, list, cx, cy, dx, dy, revertY) {
     vtTex = lastVtTex = new Float32Array(length * 12);
   }
   if(lastVtOpacity && lastVtOpacity.length === length * 6) {
-    vtOpacity = lastVtPoint;
+    vtOpacity = lastVtOpacity;
   }
   else {
     vtOpacity = lastVtOpacity = new Float32Array(length * 6);

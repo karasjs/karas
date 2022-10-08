@@ -752,6 +752,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   }
   node.render(renderMode, gl, dx, dy);
 
+  let cacheTotal = __cacheTotal;
   let matrixList = [];
   let parentMatrix = null;
   let lastMatrix = null;
@@ -843,17 +844,24 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
           if(list.length) {
             webgl.drawTextureCache(gl, list, cx, cy, dx, dy, false);
             list.splice(0);
-            lastPage = null;
           }
           gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
           gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-          gl.deleteFramebuffer(frameBuffer);
-          let res = genMbmWebgl(gl, texture, target, mixBlendMode, node.__opacity, m, 0, 0, cx, cy, w, h);
+          let res = genMbmWebgl(gl, texture, target, mixBlendMode, node.__opacity, m, dx, dy, cx, cy, size, size, false);
           if(res) {
-            gl.deleteTexture(texture);
-            texture = res.texture;
-            frameBuffer = res.frameBuffer;
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            gl.deleteFramebuffer(res.frameBuffer);
+            cacheTotal.clear();
+            cacheTotal.__available = true;
+            gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+            webgl.drawTex2Cache(gl, gl.program, cacheTotal, res.texture, size, size);
+            gl.deleteTexture(res.texture);
           }
+          gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+          gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+          lastPage = null;
         }
         else {
           let p = target.__page;
@@ -1392,11 +1400,11 @@ function genDropShadowWebgl(renderMode, gl, cache, v) {
  * 先生成一个新的fbo记B，之前的绘制都先到B上，再把后续元素绘制到一个同尺寸的fbo纹理上，
  * 两者进行mbm混合，返回到A上
  */
-function genMbmWebgl(gl, texture, cache, mbm, opacity, matrix, dx, dy, cx, cy, width, height) {
+function genMbmWebgl(gl, texture, cache, mbm, opacity, matrix, dx, dy, cx, cy, width, height, revertY) {
   // 后续绘制到同尺寸纹理上
   let tex = webgl.createTexture(gl, null, 0, width, height);
   let frameBuffer = genFrameBufferWithTexture(gl, tex, width, height);
-  webgl.drawTextureCache(gl, [{ cache, opacity, matrix }], cx, cy, 0, 0, true);
+  webgl.drawTextureCache(gl, [{ cache, opacity, matrix }], cx, cy, dx, dy, revertY);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteFramebuffer(frameBuffer);
@@ -2044,8 +2052,8 @@ function renderWebgl(renderMode, gl, root, isFirst) {
     texture = webgl.createTexture(gl, null, 0, width, height);
     webgl.bindTexture(gl, null, 0);
     frameBuffer = genFrameBufferWithTexture(gl, texture, width, height);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
     gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
   }
   let lastPage, list = [];
   for(let i = 0, len = __structs.length; i < len; i++) {
@@ -2119,7 +2127,7 @@ function renderWebgl(renderMode, gl, root, isFirst) {
           gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
           gl.bindFramebuffer(gl.FRAMEBUFFER, null);
           gl.deleteFramebuffer(frameBuffer);
-          let res = genMbmWebgl(gl, texture, target, mixBlendMode, opacity, m, 0, 0, cx, cy, width, height);
+          let res = genMbmWebgl(gl, texture, target, mixBlendMode, opacity, m, 0, 0, cx, cy, width, height, true);
           if(res) {
             gl.deleteTexture(texture);
             texture = res.texture;

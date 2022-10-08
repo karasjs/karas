@@ -28685,7 +28685,7 @@
     }
 
     if (lastVtOpacity && lastVtOpacity.length === length * 6) {
-      vtOpacity = lastVtPoint;
+      vtOpacity = lastVtOpacity;
     } else {
       vtOpacity = lastVtOpacity = new Float32Array(length * 6);
     }
@@ -30876,6 +30876,7 @@
     }
 
     node.render(renderMode, gl, dx, dy);
+    var cacheTotal = __cacheTotal;
     var matrixList = [];
     var parentMatrix = null;
     var lastMatrix = null;
@@ -30978,19 +30979,27 @@
             if (list.length) {
               webgl.drawTextureCache(gl, list, cx, cy, dx, dy, false);
               list.splice(0);
-              lastPage = null;
             }
 
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-            gl.deleteFramebuffer(frameBuffer);
-            var res = genMbmWebgl(gl, texture, target, mixBlendMode, _node4.__opacity, _m, 0, 0, cx, cy, w, h);
+            var res = genMbmWebgl(gl, texture, target, mixBlendMode, _node4.__opacity, _m, dx, dy, cx, cy, size, size, false);
 
             if (res) {
-              gl.deleteTexture(texture);
-              texture = res.texture;
-              frameBuffer = res.frameBuffer;
+              gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
+              gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+              gl.deleteFramebuffer(res.frameBuffer);
+              cacheTotal.clear();
+              cacheTotal.__available = true;
+              gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+              gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+              webgl.drawTex2Cache(gl, gl.program, cacheTotal, res.texture, size, size);
+              gl.deleteTexture(res.texture);
             }
+
+            gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+            lastPage = null;
           } else {
             var _p2 = target.__page;
 
@@ -31610,7 +31619,7 @@
    */
 
 
-  function genMbmWebgl(gl, texture, cache, mbm, opacity, matrix, dx, dy, cx, cy, width, height) {
+  function genMbmWebgl(gl, texture, cache, mbm, opacity, matrix, dx, dy, cx, cy, width, height, revertY) {
     // 后续绘制到同尺寸纹理上
     var tex = webgl.createTexture(gl, null, 0, width, height);
     var frameBuffer = genFrameBufferWithTexture(gl, tex, width, height);
@@ -31618,7 +31627,7 @@
       cache: cache,
       opacity: opacity,
       matrix: matrix
-    }], cx, cy, 0, 0, true);
+    }], cx, cy, dx, dy, revertY);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.deleteFramebuffer(frameBuffer); // 获取对应的mbm程序
@@ -32347,8 +32356,8 @@
       texture = webgl.createTexture(gl, null, 0, width, height);
       webgl.bindTexture(gl, null, 0);
       frameBuffer = genFrameBufferWithTexture(gl, texture, width, height);
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
       gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
     }
 
     var lastPage,
@@ -32434,7 +32443,7 @@
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             gl.deleteFramebuffer(frameBuffer);
-            var res = genMbmWebgl(gl, texture, target, _mixBlendMode, opacity, m, 0, 0, cx, cy, width, height);
+            var res = genMbmWebgl(gl, texture, target, _mixBlendMode, opacity, m, 0, 0, cx, cy, width, height, true);
 
             if (res) {
               gl.deleteTexture(texture);

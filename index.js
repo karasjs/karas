@@ -28687,7 +28687,7 @@
     if (lastVtOpacity && lastVtOpacity.length === length * 6) {
       vtOpacity = lastVtPoint;
     } else {
-      vtOpacity = lastVtOpacity = new Float32Array(length * 24);
+      vtOpacity = lastVtOpacity = new Float32Array(length * 6);
     }
 
     for (var i = 0; i < length; i++) {
@@ -32376,10 +32376,9 @@
           }
 
           lastPage = p;
-          console.log(_i5, 'aaaaabbbbb', __opacity, __matrixEvent, _cache5.bbox, _cache5.size, _cache5.x, _cache5.y, _cache5.sx1, _cache5.sy1);
           list.push({
             cache: _cache5,
-            __opacity: __opacity,
+            opacity: __opacity,
             matrix: __matrixEvent
           });
         }

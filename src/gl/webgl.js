@@ -171,7 +171,7 @@ function drawTextureCache(gl, list, cx, cy, dx, dy, revertY) {
     vtOpacity = lastVtPoint;
   }
   else {
-    vtOpacity = lastVtOpacity = new Float32Array(length * 24);
+    vtOpacity = lastVtOpacity = new Float32Array(length * 6);
   }
   for(let i = 0; i < length; i++) {
     let { cache, opacity, matrix } = list[i];

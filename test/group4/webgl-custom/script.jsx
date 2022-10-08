@@ -88,7 +88,6 @@ class $custom extends karas.Geom {
   render(renderMode, ctx, dx, dy) {
     let res = super.render(renderMode, ctx, dx, dy);
     if(renderMode === karas.mode.WEBGL) {
-      let { root } = this;
       let gl = ctx;
       let vSource = `attribute vec4 a_position;
 void main() {
@@ -102,12 +101,12 @@ void main() {
       let pointBuffer = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-        -0.45, -0.45,
-        0.9, -0.9,
-        -0.9 ,0.9,
-        0.9, -0.9,
-        -0.9 ,0.9,
-        0.9, 0.9,
+        -0.5, -0.5,
+        -0.5, 0.5,
+        0.5, -0.5,
+        -0.5, 0.5,
+        0.5, -0.5,
+        0.5, 0.5,
       ]), gl.STATIC_DRAW);
       let a_position = gl.getAttribLocation(p, 'a_position');
       gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
@@ -116,8 +115,8 @@ void main() {
       gl.deleteBuffer(pointBuffer);
       gl.disableVertexAttribArray(a_position);
 
-      // gl.useProgram(gl.program);
-      // gl.viewport(0, 0, root.width, root.height);
+      gl.useProgram(gl.program);
+      gl.viewport(0, 0, 8192, 8192);
     }
     return res;
   }
@@ -126,7 +125,7 @@ karas.Geom.register('$custom', $custom);
 
 let o = karas.render(
   <webgl width="360" height="360">
-    <$custom style={{margin:20,width:100,height:100,filter:'blur(1)',rotateZ:30}}/>
+    <$custom style={{margin:20,width:100,height:100,background:'#F00',filter:'blur(1)',rotateZ:30}}/>
     <div>aaa</div>
   </webgl>,
   '#test'

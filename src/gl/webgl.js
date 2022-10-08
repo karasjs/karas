@@ -94,7 +94,7 @@ export function loadShader(gl, type, source) {
   return shader;
 }
 
-function convertCoords2Gl(x, y, z, w, cx, cy, revertY) {
+function convertCoords2Gl(x, y, z, w, cx, cy) {
   if(w && w !== 1) {
     x /= w;
     y /= w;
@@ -110,10 +110,7 @@ function convertCoords2Gl(x, y, z, w, cx, cy, revertY) {
     y = 0;
   }
   else {
-    y = (y - cy) / cy;
-    if(revertY) {
-      y = -y;
-    }
+    y = (cy - y) / cy;
   }
   return { x: x * w, y: y * w, z: z * w, w };
 }
@@ -121,7 +118,7 @@ function convertCoords2Gl(x, y, z, w, cx, cy, revertY) {
 function createTexture(gl, tex, n, width, height) {
   let texture = gl.createTexture();
   bindTexture(gl, texture, n);
-  // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, -1);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
   gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
   // 传入高宽时是绑定fbo，且tex一定为null
   if(width && height) {
@@ -149,7 +146,7 @@ let lastVtPoint, lastVtTex, lastVtOpacity;
  * 将所有dom的矩形顶点（经过transform变换后的）、贴图坐标、透明度存入3个buffer中，
  * 然后相同纹理单元的形成一批，设置uniform的纹理单元号进行绘制，如此循环
  */
-function drawTextureCache(gl, list, cx, cy, dx, dy, revertY) {
+function drawTextureCache(gl, list, cx, cy, dx, dy) {
   let length = list.length;
   if(!length) {
     return;
@@ -192,13 +189,13 @@ function drawTextureCache(gl, list, cx, cy, dx, dy, revertY) {
     let { x: x2, y: y2, w: w2 } = calPoint({ x: xb, y: ya, z: 0, w: 1 }, matrix);
     let { x: x3, y: y3, w: w3 } = calPoint({ x: xb, y: yb, z: 0, w: 1 }, matrix);
     let { x: x4, y: y4, w: w4 } = calPoint({ x: xa, y: yb, z: 0, w: 1 }, matrix);
-    let t = convertCoords2Gl(x1, y1, 0, w1, cx, cy, revertY);
+    let t = convertCoords2Gl(x1, y1, 0, w1, cx, cy);
     x1 = t.x; y1 = t.y;
-    t = convertCoords2Gl(x2, y2, 0, w2, cx, cy, revertY);
+    t = convertCoords2Gl(x2, y2, 0, w2, cx, cy);
     x2 = t.x; y2 = t.y;
-    t = convertCoords2Gl(x3, y3, 0, w3, cx, cy, revertY);
+    t = convertCoords2Gl(x3, y3, 0, w3, cx, cy);
     x3 = t.x; y3 = t.y;
-    t = convertCoords2Gl(x4, y4, 0, w4, cx, cy, revertY);
+    t = convertCoords2Gl(x4, y4, 0, w4, cx, cy);
     x4 = t.x; y4 = t.y;
     // vtPoint.push(x1, y1, 0, w1, x4, y4, 0, w4, x2, y2, 0, w2, x4, y4, 0, w4, x2, y2, 0, w2, x3, y3, 0, w3);
     let j = i * 24;
@@ -220,8 +217,8 @@ function drawTextureCache(gl, list, cx, cy, dx, dy, revertY) {
     vtPoint[j + 20] = x3;
     vtPoint[j + 21] = y3;
     vtPoint[j + 23] = w3;
-    let tx1 = x / size, ty1 = (y + height) / size;
-    let tx2 = (x + width) / size, ty2 = y / size;
+    let tx1 = x / size, ty1 = (size - y - height) / size;
+    let tx2 = (x + width) / size, ty2 = (size - y) / size;
     // vtTex.push(tx1, ty1, tx1, ty2, tx2, ty1, tx1, ty2, tx2, ty1, tx2, ty2);
     j = i * 12;
     vtTex[j] = tx1;
@@ -314,12 +311,12 @@ function drawBlur(gl, program, tex1, width, height) {
   let texBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    0, 1,
     0, 0,
-    0, 1,
-    1, 0,
-    0, 1,
-    1, 0,
     1, 1,
+    0, 0,
+    1, 1,
+    1, 0,
   ]), gl.STATIC_DRAW);
   let a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
   gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
@@ -376,9 +373,9 @@ function drawCm(gl, program, target, source, m, center, size) {
   gl.viewport(0, 0, size, size);
   let { x: tx1, y: ty1, width: w1, height: h1 } = target;
   let { x: tx2, y: ty2, width: w2, height: h2 } = source;
-  let { x: x1, y: y2 } = convertCoords2Gl(tx1, ty1 + h1, 0, 1, center, center, false);
-  let { x: x2, y: y1 } = convertCoords2Gl(tx1 + w1, ty1, 0, 1, center, center, false);
-  let xa = tx2 / size, ya = ty2 / size, xb = (tx2 + w2) / size, yb = (ty2 + h2) / size;
+  let { x: x1, y: y2 } = convertCoords2Gl(tx1, ty1 + h1, 0, 1, center, center);
+  let { x: x2, y: y1 } = convertCoords2Gl(tx1 + w1, ty1, 0, 1, center, center);
+  let xa = tx2 / size, ya = (size - ty2) / size, xb = (tx2 + w2) / size, yb = (size - ty2 - h2) / size;
   // 顶点buffer
   let pointBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
@@ -431,9 +428,9 @@ function drawOverflow(gl, program, target, source, center, size) {
   let { x: tx2, y: ty2, bbox: bbox2 } = source;
   let dx = bbox1[0] - bbox2[0], dy = bbox1[1] - bbox2[1];
   gl.viewport(0, 0, size, size);
-  let { x: x1, y: y2 } = convertCoords2Gl(tx1, ty1 + h1, 0, 1, center, center, false);
-  let { x: x2, y: y1 } = convertCoords2Gl(tx1 + w1, ty1, 0, 1, center, center, false);
-  let xa = (tx2 + dx) / size, ya = (ty2 + dy) / size, xb = (tx2 + w1 + dx) / size, yb = (ty2 + h1 + dy) / size;
+  let { x: x1, y: y2 } = convertCoords2Gl(tx1, ty1 + h1, 0, 1, center, center);
+  let { x: x2, y: y1 } = convertCoords2Gl(tx1 + w1, ty1, 0, 1, center, center);
+  let xa = (tx2 + dx) / size, ya = (size - ty2 - dy) / size, xb = (tx2 + w1 + dx) / size, yb = (size - ty2 - h1 - dy) / size;
   // 顶点buffer
   let pointBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
@@ -481,9 +478,9 @@ function drawMask(gl, program, target, source, temp, center, size) {
   gl.viewport(0, 0, size, size);
   let { x: tx1, y: ty1, width: w1, height: h1 } = target;
   let { x: tx2, y: ty2, width: w2, height: h2 } = source;
-  let { x: x1, y: y2 } = convertCoords2Gl(tx1, ty1 + h1, 0, 1, center, center, false);
-  let { x: x2, y: y1 } = convertCoords2Gl(tx1 + w1, ty1, 0, 1, center, center, false);
-  let xa = tx2 / size, ya = ty2 / size, xb = (tx2 + w2) / size, yb = (ty2 + h2) / size;
+  let { x: x1, y: y2 } = convertCoords2Gl(tx1, ty1 + h1, 0, 1, center, center);
+  let { x: x2, y: y1 } = convertCoords2Gl(tx1 + w1, ty1, 0, 1, center, center);
+  let xa = tx2 / size, ya = (size - ty2) / size, xb = (tx2 + w2) / size, yb = (size - ty2 - h2) / size;
   // 顶点buffer
   let pointBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
@@ -515,12 +512,12 @@ function drawMask(gl, program, target, source, temp, center, size) {
   let texBuffer2 = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer2);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    0, 1,
     0, 0,
-    0, 1,
-    1, 0,
-    0, 1,
-    1, 0,
     1, 1,
+    0, 0,
+    1, 1,
+    1, 0,
   ]), gl.STATIC_DRAW);
   let a_texCoords2 = gl.getAttribLocation(program, 'a_texCoords2');
   gl.vertexAttribPointer(a_texCoords2, 2, gl.FLOAT, false, 0, 0);
@@ -564,12 +561,12 @@ function drawMbm(gl, program, tex1, tex2) {
   let texBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    0, 1,
     0, 0,
-    0, 1,
-    1, 0,
-    0, 1,
-    1, 0,
     1, 1,
+    0, 0,
+    1, 1,
+    1, 0,
   ]), gl.STATIC_DRAW);
   let a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
   gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
@@ -590,7 +587,7 @@ function drawDropShadow(gl, program, frameBuffer, cache, color, w1, w2, h1, h2) 
   gl.useProgram(program);
   let { x, y, width, height, __page: page } = cache;
   let size = page.size, texture = page.texture;
-  let xa = x / size, ya = y / size, xb = (x + width) / size, yb = (y + height) / size;
+  let xa = x / size, ya = (size - y) / size, xb = (x + width) / size, yb = (size - y - height) / size;
   // 顶点buffer
   let pointBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
@@ -639,8 +636,8 @@ function drawDropShadow(gl, program, frameBuffer, cache, color, w1, w2, h1, h2) 
 function drawDropShadowMerge(gl, target, size, tex1, dx1, dy1, w, h, tex2, dx2, dy2, width, height) {
   let { x, y } = target;
   let center = size * 0.5;
-  let { x: x1, y: y2 } = convertCoords2Gl(x + dx1, y + h + dy1, 0, 1, center, center, false);
-  let { x: x2, y: y1 } = convertCoords2Gl(x + w + dx1, y + dy1, 0, 1, center, center, false);
+  let { x: x1, y: y2 } = convertCoords2Gl(x + dx1, y + h + dy1, 0, 1, center, center);
+  let { x: x2, y: y1 } = convertCoords2Gl(x + w + dx1, y + dy1, 0, 1, center, center);
   // 顶点buffer
   let pointBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
@@ -659,12 +656,12 @@ function drawDropShadowMerge(gl, target, size, tex1, dx1, dy1, w, h, tex2, dx2, 
   let texBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    0, 1,
     0, 0,
-    0, 1,
-    1, 0,
-    0, 1,
-    1, 0,
     1, 1,
+    0, 0,
+    1, 1,
+    1, 0,
   ]), gl.STATIC_DRAW);
   let a_texCoords = gl.getAttribLocation(gl.program, 'a_texCoords');
   gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
@@ -682,8 +679,8 @@ function drawDropShadowMerge(gl, target, size, tex1, dx1, dy1, w, h, tex2, dx2, 
   gl.uniform1i(u_texture, 0);
   gl.drawArrays(gl.TRIANGLES, 0, 6);
 
-  let { x: x3, y: y4 } = convertCoords2Gl(x + dx2, y + height + dy2, 0, 1, center, center, false);
-  let { x: x4, y: y3 } = convertCoords2Gl(x + width + dx2, y + dy2, 0, 1, center, center, false);
+  let { x: x3, y: y4 } = convertCoords2Gl(x + dx2, y + height + dy2, 0, 1, center, center);
+  let { x: x4, y: y3 } = convertCoords2Gl(x + width + dx2, y + dy2, 0, 1, center, center);
   gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
     x3, y3,
@@ -706,8 +703,8 @@ function drawTex2Cache(gl, program, cache, tex, width, height) {
   let page = cache.__page, size = page.__size;
   gl.viewport(0, 0, size, size);
   let x = cache.x, y = cache.y, center = size * 0.5;
-  let { x: x1, y: y2 } = convertCoords2Gl(x, y + height, 0, 1, center, center, false);
-  let { x: x2, y: y1 } = convertCoords2Gl(x + width, y, 0, 1, center, center, false);
+  let { x: x1, y: y2 } = convertCoords2Gl(x, y + height, 0, 1, center, center);
+  let { x: x2, y: y1 } = convertCoords2Gl(x + width, y, 0, 1, center, center);
   bindTexture(gl, tex, 0);
   // 顶点buffer
   let pointBuffer = gl.createBuffer();
@@ -727,12 +724,12 @@ function drawTex2Cache(gl, program, cache, tex, width, height) {
   let texBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    0, 1,
     0, 0,
-    0, 1,
-    1, 0,
-    0, 1,
-    1, 0,
     1, 1,
+    0, 0,
+    1, 1,
+    1, 0,
   ]), gl.STATIC_DRAW);
   let a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
   gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
@@ -764,9 +761,9 @@ function drawCache2Tex(gl, program, cache, width, height, spread) {
   gl.viewport(0, 0, width, height);
   // 首先将cache的纹理原状绘制到tex1上，为后续3次循环做准备，注意扩充的spread距离
   let cx = width * 0.5, cy = height * 0.5;
-  let { x: x1, y: y2 } = convertCoords2Gl(spread, height - spread, 0, 1, cx, cy, false);
-  let { x: x2, y: y1 } = convertCoords2Gl(width - spread, spread, 0, 1, cx, cy, false);
-  let xa = tx1 / size, ya = ty1 / size, xb = (tx1 + w1) / size, yb = (ty1 + h1) / size;
+  let { x: x1, y: y2 } = convertCoords2Gl(spread, height - spread, 0, 1, cx, cy);
+  let { x: x2, y: y1 } = convertCoords2Gl(width - spread, spread, 0, 1, cx, cy);
+  let xa = tx1 / size, ya = (size - ty1) / size, xb = (tx1 + w1) / size, yb = (size - ty1 - h1) / size;
   // 顶点buffer
   let pointBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);

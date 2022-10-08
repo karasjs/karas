@@ -111,7 +111,6 @@ function genBboxTotal(node, __structs, index, total) {
   if(perspective) {
     pm = tf.calPerspectiveMatrix(perspective, perspectiveOrigin[0], perspectiveOrigin[1]);
   }
-  let hasMbm;
   for(let i = index + 1, len = index + total + 1; i < len; i++) {
     let {
       node,
@@ -151,12 +150,6 @@ function genBboxTotal(node, __structs, index, total) {
       }
       continue;
     }
-    if(!hasMbm) {
-      let mbm = __computedStyle2[MIX_BLEND_MODE];
-      if(isValidMbm(mbm)) {
-        hasMbm = true;
-      }
-    }
     let {
       __cache: __cache2,
       __cacheTotal: __cacheTotal2,
@@ -193,7 +186,6 @@ function genBboxTotal(node, __structs, index, total) {
   }
   return {
     bbox: bboxTotal,
-    hasMbm,
     pm,
   };
 }
@@ -718,7 +710,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   if(__cacheTotal && __cacheTotal.available) {
     return __cacheTotal;
   }
-  let { bbox: bboxTotal, hasMbm, pm } = genBboxTotal(node, __structs, index, total);
+  let { bbox: bboxTotal, pm } = genBboxTotal(node, __structs, index, total);
   if(!bboxTotal) {
     return;
   }
@@ -747,8 +739,9 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   let lastPage, list = [];
   // 先绘制自己的cache，起点所以matrix视作E为空，opacity固定1
   if(__cache && __cache.available) {
-    lastPage = __cache.page;
     list.push({ cache: __cache, opacity: 1 });
+    webgl.drawTextureCache(gl, list, cx, cy, dx, dy);
+    list.splice(0);
   }
   node.render(renderMode, gl, dx, dy);
 
@@ -778,7 +771,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
         } = node.__domParent;
         let p = __cache.__page;
         if(lastPage && lastPage !== p) {
-          webgl.drawTextureCache(gl, list, cx, cy, dx, dy, false);
+          webgl.drawTextureCache(gl, list, cx, cy, dx, dy);
           list.splice(0);
         }
         lastPage = p;
@@ -842,12 +835,12 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
         // 局部的mbm和主画布一样，先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
         if(isValidMbm(mixBlendMode)) {
           if(list.length) {
-            webgl.drawTextureCache(gl, list, cx, cy, dx, dy, false);
+            webgl.drawTextureCache(gl, list, cx, cy, dx, dy);
             list.splice(0);
           }
           gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
           gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-          let res = genMbmWebgl(gl, texture, target, mixBlendMode, node.__opacity, m, dx, dy, cx, cy, size, size, false);
+          let res = genMbmWebgl(gl, texture, target, mixBlendMode, node.__opacity, m, dx, dy, cx, cy, size, size);
           if(res) {
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -866,7 +859,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
         else {
           let p = target.__page;
           if(lastPage && lastPage !== p) {
-            webgl.drawTextureCache(gl, list, cx, cy, dx, dy, false);
+            webgl.drawTextureCache(gl, list, cx, cy, dx, dy);
             list.splice(0);
           }
           lastPage = p;
@@ -884,7 +877,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
     }
   }
   // 绘制到fbo的纹理对象上并删除fbo恢复
-  webgl.drawTextureCache(gl, list, cx, cy, dx, dy, false);
+  webgl.drawTextureCache(gl, list, cx, cy, dx, dy);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteFramebuffer(frameBuffer);
@@ -1221,7 +1214,7 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
           } = node.__domParent;
           let p = __cache.__page;
           if(lastPage && lastPage !== p) {
-            webgl.drawTextureCache(gl, list, cx, cy, dx, dy, false);
+            webgl.drawTextureCache(gl, list, cx, cy, dx, dy);
             list.splice(0);
           }
           lastPage = p;
@@ -1291,7 +1284,7 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
           lastOpacity = parentOpacity * opacity;
           let p = target.__page;
           if(lastPage && lastPage !== p) {
-            webgl.drawTextureCache(gl, list, cx, cy, dx, dy, false);
+            webgl.drawTextureCache(gl, list, cx, cy, dx, dy);
             list.splice(0);
           }
           lastPage = p;
@@ -1310,7 +1303,7 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
     next = next.__next;
   }
   // 绘制到fbo的纹理对象上并删除fbo恢复
-  webgl.drawTextureCache(gl, list, cx, cy, dx, dy, false);
+  webgl.drawTextureCache(gl, list, cx, cy, dx, dy);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteFramebuffer(frameBuffer);
@@ -1409,11 +1402,11 @@ function genDropShadowWebgl(renderMode, gl, cache, v) {
  * 先生成一个新的fbo记B，之前的绘制都先到B上，再把后续元素绘制到一个同尺寸的fbo纹理上，
  * 两者进行mbm混合，返回到A上
  */
-function genMbmWebgl(gl, texture, cache, mbm, opacity, matrix, dx, dy, cx, cy, width, height, revertY) {
+function genMbmWebgl(gl, texture, cache, mbm, opacity, matrix, dx, dy, cx, cy, width, height) {
   // 后续绘制到同尺寸纹理上
   let tex = webgl.createTexture(gl, null, 0, width, height);
   let frameBuffer = genFrameBufferWithTexture(gl, tex, width, height);
-  webgl.drawTextureCache(gl, [{ cache, opacity, matrix }], cx, cy, dx, dy, revertY);
+  webgl.drawTextureCache(gl, [{ cache, opacity, matrix }], cx, cy, dx, dy);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteFramebuffer(frameBuffer);
@@ -2082,7 +2075,7 @@ function renderWebgl(renderMode, gl, root, isFirst) {
         } = node.__domParent;
         let p = __cache.__page;
         if(lastPage && lastPage !== p) {
-          webgl.drawTextureCache(gl, list, cx, cy, 0, 0, true);
+          webgl.drawTextureCache(gl, list, cx, cy, 0, 0);
           list.splice(0);
         }
         lastPage = p;
@@ -2129,14 +2122,14 @@ function renderWebgl(renderMode, gl, root, isFirst) {
         // 有mbm则需要混合之前的纹理和新纹理到fbo上面，连续的mbm则依次交替绘制到画布或离屏fbo上
         if(isValidMbm(mixBlendMode)) {
           if(list.length) {
-            webgl.drawTextureCache(gl, list, cx, cy, 0, 0, true);
+            webgl.drawTextureCache(gl, list, cx, cy, 0, 0);
             list.splice(0);
             lastPage = null;
           }
           gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
           gl.bindFramebuffer(gl.FRAMEBUFFER, null);
           gl.deleteFramebuffer(frameBuffer);
-          let res = genMbmWebgl(gl, texture, target, mixBlendMode, opacity, m, 0, 0, cx, cy, width, height, true);
+          let res = genMbmWebgl(gl, texture, target, mixBlendMode, opacity, m, 0, 0, cx, cy, width, height);
           if(res) {
             gl.deleteTexture(texture);
             texture = res.texture;
@@ -2146,7 +2139,7 @@ function renderWebgl(renderMode, gl, root, isFirst) {
         else {
           let p = target.__page;
           if(lastPage && lastPage !== p) {
-            webgl.drawTextureCache(gl, list, cx, cy, 0, 0, true);
+            webgl.drawTextureCache(gl, list, cx, cy, 0, 0);
             list.splice(0);
           }
           lastPage = p;
@@ -2159,11 +2152,13 @@ function renderWebgl(renderMode, gl, root, isFirst) {
           }
         }
         // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
-        node.render(renderMode, gl, 0, 0);
+        if(target === __cache) {
+          node.render(renderMode, gl, 0, 0);
+        }
       }
     }
   }
-  webgl.drawTextureCache(gl, list, cx, cy, 0, 0, true);
+  webgl.drawTextureCache(gl, list, cx, cy, 0, 0);
   // 有mbm时将汇总的fbo绘入主画布，否则本身就是到主画布无需多余操作
   if(hasMbm) {
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);

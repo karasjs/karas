@@ -2436,6 +2436,23 @@ class Xom extends Node {
     return res;
   }
 
+  // 强制刷新API
+  refresh(lv, cb) {
+    let root = this.__root;
+    if(isFunction(lv) || !arguments.length) {
+      lv = REPAINT;
+    }
+    if(root && !this.__isDestroyed) {
+      root.__addUpdate(this, {
+        focus: lv,
+        cb,
+      });
+    }
+    else if(isFunction(cb)) {
+      cb(-1);
+    }
+  }
+
   __destroy() {
     if(this.__isDestroyed) {
       return;
@@ -3182,7 +3199,7 @@ class Xom extends Node {
     if(this.__mask !== v) {
       this.__mask = v;
       let root = this.__root;
-      if(root) {
+      if(root && !this.__isDestroyed) {
         root.__addUpdate(this, {
           focus: MASK,
         });
@@ -3199,7 +3216,7 @@ class Xom extends Node {
     if(this.__clip !== v) {
       this.__clip = v;
       let root = this.__root;
-      if(root) {
+      if(root && !this.__isDestroyed) {
         root.__addUpdate(this, {
           focus: MASK,
         });
@@ -3216,7 +3233,7 @@ class Xom extends Node {
     if(this.__cacheAsBitmap !== v) {
       this.__cacheAsBitmap = v;
       let root = this.__root;
-      if(root) {
+      if(root && !this.__isDestroyed) {
         root.__addUpdate(this, {
           focus: REPAINT,
         });

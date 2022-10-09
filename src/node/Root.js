@@ -359,7 +359,7 @@ class Root extends Dom {
       const MAX_TEXTURE_IMAGE_UNITS = Math.min(16, gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
       this.__texHelper = new TexHelper(MAX_TEXTURE_IMAGE_UNITS);
     }
-    this.refresh(true);
+    this.draw(true);
     // 第一次节点没有__root，渲染一次就有了才能diff
     if(this.dom.__root && this.dom.__root instanceof Root) {
       this.dom.__root.destroy();
@@ -396,7 +396,7 @@ class Root extends Dom {
     this.__structs = this.__structure(0, 0);
   }
 
-  refresh(isFirst) {
+  draw(isFirst) {
     let { isDestroyed, renderMode, ctx, defs } = this;
     if(isDestroyed) {
       return;
@@ -819,18 +819,18 @@ class Root extends Dom {
     if(o.cb && !isFunction(o.cb)) {
       o.cb = null;
     }
-    this.__frameRefresh(o.cb);
+    this.__frameDraw(o.cb);
   }
 
   // 异步进行root刷新操作，多次调用缓存结果，刷新成功后回调
-  __frameRefresh(cb) {
+  __frameDraw(cb) {
     if(!this.__task.length) {
       frame.nextFrame(() => {
       });
       frame.__rootTask.push(() => {
         // 需要先获得累积的刷新回调再刷新，防止refresh触发事件中再次调用刷新
         let list = this.__task.splice(0);
-        this.refresh();
+        this.draw();
         list.forEach(item => {
           item && item();
         });

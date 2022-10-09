@@ -19113,6 +19113,25 @@
         }
 
         return res;
+      } // 强制刷新API
+
+    }, {
+      key: "refresh",
+      value: function refresh(lv, cb) {
+        var root = this.__root;
+
+        if (isFunction$5(lv) || !arguments.length) {
+          lv = REPAINT$3;
+        }
+
+        if (root && !this.__isDestroyed) {
+          root.__addUpdate(this, {
+            focus: lv,
+            cb: cb
+          });
+        } else if (isFunction$5(cb)) {
+          cb(-1);
+        }
       }
     }, {
       key: "__destroy",
@@ -20047,7 +20066,7 @@
           this.__mask = v;
           var root = this.__root;
 
-          if (root) {
+          if (root && !this.__isDestroyed) {
             root.__addUpdate(this, {
               focus: MASK$2
             });
@@ -20066,7 +20085,7 @@
           this.__clip = v;
           var root = this.__root;
 
-          if (root) {
+          if (root && !this.__isDestroyed) {
             root.__addUpdate(this, {
               focus: MASK$2
             });
@@ -20085,7 +20104,7 @@
           this.__cacheAsBitmap = v;
           var root = this.__root;
 
-          if (root) {
+          if (root && !this.__isDestroyed) {
             root.__addUpdate(this, {
               focus: REPAINT$3
             });
@@ -33652,7 +33671,7 @@
           this.__texHelper = new TexHelper(MAX_TEXTURE_IMAGE_UNITS);
         }
 
-        this.refresh(true); // 第一次节点没有__root，渲染一次就有了才能diff
+        this.draw(true); // 第一次节点没有__root，渲染一次就有了才能diff
 
         if (this.dom.__root && this.dom.__root instanceof Root) {
           this.dom.__root.destroy();
@@ -33693,8 +33712,8 @@
         this.__structs = this.__structure(0, 0);
       }
     }, {
-      key: "refresh",
-      value: function refresh(isFirst) {
+      key: "draw",
+      value: function draw(isFirst) {
         var isDestroyed = this.isDestroyed,
             renderMode = this.renderMode,
             ctx = this.ctx,
@@ -34196,12 +34215,12 @@
           o.cb = null;
         }
 
-        this.__frameRefresh(o.cb);
+        this.__frameDraw(o.cb);
       } // 异步进行root刷新操作，多次调用缓存结果，刷新成功后回调
 
     }, {
-      key: "__frameRefresh",
-      value: function __frameRefresh(cb) {
+      key: "__frameDraw",
+      value: function __frameDraw(cb) {
         var _this3 = this;
 
         if (!this.__task.length) {
@@ -34211,7 +34230,7 @@
             // 需要先获得累积的刷新回调再刷新，防止refresh触发事件中再次调用刷新
             var list = _this3.__task.splice(0);
 
-            _this3.refresh();
+            _this3.draw();
 
             list.forEach(function (item) {
               item && item();

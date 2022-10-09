@@ -2,7 +2,7 @@ import util from './util';
 import level from '../refresh/level';
 
 const { joinVd, joinDef } = util;
-const { contain, NONE, TRANSFORM_ALL, OPACITY, FILTER, MIX_BLEND_MODE } = level;
+const { NONE, TRANSFORM_ALL, OPACITY, FILTER, MIX_BLEND_MODE } = level;
 
 function diff(elem, ovd, nvd) {
   let cns = elem.childNodes;
@@ -200,7 +200,7 @@ function diffByLessLv(elem, ovd, nvd, lv) {
   else {
     elem.removeAttribute('mask');
   }
-  if(contain(lv, TRANSFORM_ALL)) {
+  if(lv & TRANSFORM_ALL) {
     if(transform) {
       elem.setAttribute('transform', transform);
     }
@@ -208,7 +208,7 @@ function diffByLessLv(elem, ovd, nvd, lv) {
       elem.removeAttribute('transform');
     }
   }
-  if(contain(lv, OPACITY)) {
+  if(lv & OPACITY) {
     if(opacity !== 1 && opacity !== undefined) {
       elem.setAttribute('opacity', opacity);
     }
@@ -216,7 +216,7 @@ function diffByLessLv(elem, ovd, nvd, lv) {
       elem.removeAttribute('opacity');
     }
   }
-  if(contain(lv, FILTER) || contain(lv, MIX_BLEND_MODE)) {
+  if((lv & FILTER) || (lv & MIX_BLEND_MODE)) {
     let s = (filter ? `filter:${filter};` : '') + (mixBlendMode ? `mix-blend-mode:${mixBlendMode};` : '');
     if(s) {
       elem.setAttribute('style', s);

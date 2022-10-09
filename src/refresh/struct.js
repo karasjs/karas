@@ -50,7 +50,6 @@ const {
   OPACITY: OP,
   FILTER: FT,
   REPAINT,
-  contain,
   MIX_BLEND_MODE: MBM,
   PERSPECTIVE: PPT,
   CACHE,
@@ -1503,7 +1502,7 @@ function renderSvg(renderMode, ctx, root, isFirst, rlv) {
       let __cacheDefs = node.__cacheDefs;
       let __refreshLevel = node.__refreshLevel;
       // 只要涉及到matrix和opacity就影响mask
-      let hasEffectMask = hasMask && (__refreshLevel >= REPAINT || contain(__refreshLevel, TRANSFORM_ALL | OP));
+      let hasEffectMask = hasMask && (__refreshLevel >= REPAINT || (__refreshLevel & (TRANSFORM_ALL | OP)));
       if(hasEffectMask) {
         let start = i + (total || 0) + 1;
         let end = start + hasMask;
@@ -1515,7 +1514,7 @@ function renderSvg(renderMode, ctx, root, isFirst, rlv) {
         // 特殊的mask判断，遮罩对象影响这个mask了，除去filter、遮罩对象无TRANSFORM变化外都可缓存
         let mh = maskEffectHash[i];
         if(mh) {
-          if(!contain(__refreshLevel, TRANSFORM_ALL) && mh < REPAINT && !contain(mh, TRANSFORM_ALL)) {
+          if(!(__refreshLevel & TRANSFORM_ALL) && mh < REPAINT && !(mh & TRANSFORM_ALL)) {
             __cacheDefs.forEach(item => {
               ctx.addCache(item);
             });
@@ -1615,7 +1614,7 @@ function renderSvg(renderMode, ctx, root, isFirst, rlv) {
           delete virtualDom.cache;
         }
       }
-      if(contain(__refreshLevel, TRANSFORM_ALL)) {
+      if(__refreshLevel & TRANSFORM_ALL) {
         let matrix = node.__matrix;
         if(!matrix || isE(matrix)) {
           delete virtualDom.transform;
@@ -1628,7 +1627,7 @@ function renderSvg(renderMode, ctx, root, isFirst, rlv) {
         }
         assignMatrix(node.__matrixEvent, matrix);
       }
-      if(contain(__refreshLevel, OP)) {
+      if(__refreshLevel & OP) {
         let opacity = computedStyle[OPACITY];
         if(opacity === 1) {
           delete virtualDom.opacity;
@@ -1637,7 +1636,7 @@ function renderSvg(renderMode, ctx, root, isFirst, rlv) {
           virtualDom.opacity = opacity;
         }
       }
-      if(contain(__refreshLevel, FT)) {
+      if(__refreshLevel & FT) {
         let filter = computedStyle[FILTER];
         let s = painter.svgFilter(filter);
         if(s) {
@@ -1647,7 +1646,7 @@ function renderSvg(renderMode, ctx, root, isFirst, rlv) {
           delete virtualDom.filter;
         }
       }
-      if(contain(__refreshLevel, MBM)) {
+      if(__refreshLevel & MBM) {
         let mixBlendMode = computedStyle[MIX_BLEND_MODE];
         if(isValidMbm(mixBlendMode)) {
           virtualDom.mixBlendMode = mbmName(mixBlendMode);
@@ -1697,7 +1696,7 @@ function renderSvg(renderMode, ctx, root, isFirst, rlv) {
     let mh = maskHash[i];
     if(mh && (maskEffectHash[i]
         || __refreshLevel >= REPAINT
-        || contain(__refreshLevel, TRANSFORM_ALL | OP))) {
+        || (__refreshLevel & (TRANSFORM_ALL | OP)))) {
       let { index, start, end, isClip } = mh;
       let target = __structs[index];
       let dom = target.node;
@@ -1815,7 +1814,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
    * 同时过程中计算出哪些节点要生成局部根，存下来
    * 第一次强制进入，后续不包含cache变更且<REPAINT的时候不进入省略循环
    */
-  if(isFirst || rlv >= REPAINT || contain(rlv, CACHE | FT | PPT | MASK)) {
+  if(isFirst || rlv >= REPAINT || (rlv & (CACHE | FT | PPT | MASK))) {
     for(let i = 0, len = __structs.length; i < len; i++) {
       let {
         node,
@@ -1876,15 +1875,15 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       }
       else if(__refreshLevel < REPAINT) {
         let mbm = __computedStyle[MIX_BLEND_MODE];
-        let isMbm = contain(__refreshLevel, MBM) && isValidMbm(mbm);
+        let isMbm = (__refreshLevel & MBM) && isValidMbm(mbm);
         let need = node.__cacheAsBitmap || hasMask;
-        if(!need && contain(__refreshLevel, FT)) {
+        if(!need && (__refreshLevel & FT)) {
           let filter = __computedStyle[FILTER];
           if(filter && filter.length) {
             need = true;
           }
         }
-        if(!need && contain(__refreshLevel, PPT)) {
+        if(!need && (__refreshLevel & PPT)) {
           let __domParent = node.__domParent;
           let isPpt = !isE(__domParent && __domParent.__perspectiveMatrix) || isPerspectiveMatrix(node.__matrix);
           if(isPpt) {
@@ -2247,7 +2246,7 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
    * 可能遇到已有缓存没变化的，这时候不要收集忽略掉，没有缓存的走后面遍历普通渲染
    * 第一次强制进入，后续不包含cache变更且<REPAINT的时候不进入省略循环
    */
-  if(isFirst || rlv >= REPAINT || contain(rlv, CACHE | FT | MASK)) {
+  if(isFirst || rlv >= REPAINT || (rlv & (CACHE | FT | MASK))) {
     for(let i = 0, len = __structs.length; i < len; i++) {
       let {
         node,
@@ -2276,7 +2275,7 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
       node.__refreshLevel = NONE;
       // filter变化需重新生成，cacheTotal本身就存在要判断下；CACHE取消重新生成则无需判断
       if(node.__cacheAsBitmap) {
-        if(contain(__refreshLevel, CACHE | FT) || __refreshLevel >= REPAINT) {
+        if((__refreshLevel & (CACHE | FT)) || __refreshLevel >= REPAINT) {
           mergeList.push({
             i,
             lv,

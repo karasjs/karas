@@ -16614,8 +16614,7 @@
       multiplyScaleX = matrix.multiplyScaleX,
       multiplyScaleY = matrix.multiplyScaleY,
       multiplyScaleZ = matrix.multiplyScaleZ;
-  var contain$3 = o$1.contain,
-      TF$1 = o$1.TRANSFORM,
+  var TF$1 = o$1.TRANSFORM,
       REFLOW$2 = o$1.REFLOW,
       REPAINT$3 = o$1.REPAINT,
       TX = o$1.TRANSLATE_X,
@@ -17171,14 +17170,14 @@
             if (top.u !== AUTO$4) {
               var n = calRelative(__currentStyle, TOP$3, top, parent);
 
-              this.__offsetY(n, false, null);
+              this.__offsetY(n, true, null);
 
               __computedStyle[TOP$3] = n;
               __computedStyle[BOTTOM$3] = 'auto';
             } else if (bottom.u !== AUTO$4) {
               var _n = calRelative(__currentStyle, BOTTOM$3, bottom, parent);
 
-              this.__offsetY(-_n, false, null);
+              this.__offsetY(-_n, true, null);
 
               __computedStyle[BOTTOM$3] = _n;
               __computedStyle[TOP$3] = 'auto';
@@ -17189,14 +17188,14 @@
             if (left.u !== AUTO$4) {
               var _n2 = calRelative(__currentStyle, LEFT$2, left, parent, true);
 
-              this.__offsetX(_n2, false, null);
+              this.__offsetX(_n2, true, null);
 
               __computedStyle[LEFT$2] = _n2;
               __computedStyle[RIGHT$2] = 'auto';
             } else if (right.u !== AUTO$4) {
               var _n3 = calRelative(__currentStyle, RIGHT$2, right, parent, true);
 
-              this.__offsetX(-_n3, false, null);
+              this.__offsetX(-_n3, true, null);
 
               __computedStyle[RIGHT$2] = _n3;
               __computedStyle[LEFT$2] = 'auto';
@@ -17484,8 +17483,8 @@
         var matrixCache = __cacheStyle[MATRIX$1],
             optimize; // 优化计算scale不能为0，无法计算倍数差，rotateZ优化不能包含rotateX/rotateY/skew
 
-        if (matrixCache && lv < REFLOW$2 && !contain$3(lv, TF$1)) {
-          if (contain$3(lv, SX) && !__computedStyle[SCALE_X] || contain$3(lv, SY) && !__computedStyle[SCALE_Y] || contain$3(lv, SZ) && !__computedStyle[SCALE_Z] || contain$3(lv, RZ) && (__computedStyle[ROTATE_X] || __computedStyle[ROTATE_Y] || __computedStyle[SKEW_X] || __computedStyle[SKEW_Y])) ; else {
+        if (matrixCache && lv < REFLOW$2 && !(lv & TF$1)) {
+          if (lv & SX && !__computedStyle[SCALE_X] || lv & SY && !__computedStyle[SCALE_Y] || lv & SZ && !__computedStyle[SCALE_Z] || lv & RZ && (__computedStyle[ROTATE_X] || __computedStyle[ROTATE_Y] || __computedStyle[SKEW_X] || __computedStyle[SKEW_Y])) ; else {
             optimize = true;
           }
         } // translate/scale变化特殊优化，d/h/l不能有值，否则不能这样直接简化运算，因为这里不包含perspective，所以一定没有
@@ -17494,7 +17493,7 @@
         if (optimize) {
           var transform = __computedStyle[TRANSFORM$3];
 
-          if (contain$3(lv, TX)) {
+          if (lv & TX) {
             var v = __currentStyle[TRANSLATE_X];
 
             if (!v) {
@@ -17511,7 +17510,7 @@
             matrixCache[12] += x;
           }
 
-          if (contain$3(lv, TY)) {
+          if (lv & TY) {
             var _v = __currentStyle[TRANSLATE_Y];
 
             if (!_v) {
@@ -17528,7 +17527,7 @@
             matrixCache[13] += y;
           }
 
-          if (contain$3(lv, TZ)) {
+          if (lv & TZ) {
             var _v2 = __currentStyle[TRANSLATE_Z];
 
             if (!_v2) {
@@ -17545,7 +17544,7 @@
             matrixCache[14] += z;
           }
 
-          if (contain$3(lv, RZ)) {
+          if (lv & RZ) {
             var _v3 = __currentStyle[ROTATE_Z].v;
             __computedStyle[ROTATE_Z] = _v3;
             _v3 = d2r(_v3);
@@ -17566,8 +17565,8 @@
             matrixCache[13] = transform[13] + oy - sx * ox - oy * cy;
           }
 
-          if (contain$3(lv, SCALE)) {
-            if (contain$3(lv, SX)) {
+          if (lv & SCALE) {
+            if (lv & SX) {
               var _v4 = __currentStyle[SCALE_X].v;
 
               var _x2 = _v4 / __computedStyle[SCALE_X];
@@ -17581,7 +17580,7 @@
               matrixCache[2] *= _x2;
             }
 
-            if (contain$3(lv, SY)) {
+            if (lv & SY) {
               var _v5 = __currentStyle[SCALE_Y].v;
 
               var _y2 = _v5 / __computedStyle[SCALE_Y];
@@ -17595,7 +17594,7 @@
               matrixCache[6] *= _y2;
             }
 
-            if (contain$3(lv, SZ)) {
+            if (lv & SZ) {
               var _v6 = __currentStyle[SCALE_Z].v;
 
               var _z = _v6 / __computedStyle[SCALE_Z];
@@ -17884,7 +17883,7 @@
         } // 特殊的判断，MATRIX不存在于样式key中，所有的transform共用一个
 
 
-        if (isNil$9(__cacheStyle[MATRIX$1]) || contain$3(lv, TRANSFORM_ALL$3)) {
+        if (isNil$9(__cacheStyle[MATRIX$1]) || lv & TRANSFORM_ALL$3) {
           this.__calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle);
         }
 
@@ -18487,7 +18486,7 @@
 
         if (renderMode === WEBGL$1) {
           return {};
-        } // 使用sx和sy渲染位置，考虑了relative和translate影响
+        } // 使用x和y渲染位置，考虑了relative和translate影响
 
 
         var __offsetWidth = this.__offsetWidth,
@@ -27133,8 +27132,7 @@
 
   var joinVd = util.joinVd,
       joinDef = util.joinDef;
-  var contain$2 = o$1.contain,
-      NONE$2 = o$1.NONE,
+  var NONE$2 = o$1.NONE,
       TRANSFORM_ALL$2 = o$1.TRANSFORM_ALL,
       OPACITY$2 = o$1.OPACITY,
       FILTER$1 = o$1.FILTER,
@@ -27355,7 +27353,7 @@
       elem.removeAttribute('mask');
     }
 
-    if (contain$2(lv, TRANSFORM_ALL$2)) {
+    if (lv & TRANSFORM_ALL$2) {
       if (transform) {
         elem.setAttribute('transform', transform);
       } else {
@@ -27363,7 +27361,7 @@
       }
     }
 
-    if (contain$2(lv, OPACITY$2)) {
+    if (lv & OPACITY$2) {
       if (opacity !== 1 && opacity !== undefined) {
         elem.setAttribute('opacity', opacity);
       } else {
@@ -27371,7 +27369,7 @@
       }
     }
 
-    if (contain$2(lv, FILTER$1) || contain$2(lv, MIX_BLEND_MODE$2)) {
+    if (lv & FILTER$1 || lv & MIX_BLEND_MODE$2) {
       var s = (filter ? "filter:".concat(filter, ";") : '') + (mixBlendMode ? "mix-blend-mode:".concat(mixBlendMode, ";") : '');
 
       if (s) {
@@ -29896,7 +29894,6 @@
       OP$1 = o$1.OPACITY,
       FT$1 = o$1.FILTER,
       REPAINT$1 = o$1.REPAINT,
-      contain$1 = o$1.contain,
       MBM$1 = o$1.MIX_BLEND_MODE,
       PPT$1 = o$1.PERSPECTIVE,
       CACHE$1 = o$1.CACHE,
@@ -31659,7 +31656,7 @@
         var __cacheDefs = node.__cacheDefs;
         var __refreshLevel = node.__refreshLevel; // 只要涉及到matrix和opacity就影响mask
 
-        var hasEffectMask = hasMask && (__refreshLevel >= REPAINT$1 || contain$1(__refreshLevel, TRANSFORM_ALL$1 | OP$1));
+        var hasEffectMask = hasMask && (__refreshLevel >= REPAINT$1 || __refreshLevel & (TRANSFORM_ALL$1 | OP$1));
 
         if (hasEffectMask) {
           var start = i + (total || 0) + 1;
@@ -31674,7 +31671,7 @@
           var mh = maskEffectHash[i];
 
           if (mh) {
-            if (!contain$1(__refreshLevel, TRANSFORM_ALL$1) && mh < REPAINT$1 && !contain$1(mh, TRANSFORM_ALL$1)) {
+            if (!(__refreshLevel & TRANSFORM_ALL$1) && mh < REPAINT$1 && !(mh & TRANSFORM_ALL$1)) {
               __cacheDefs.forEach(function (item) {
                 ctx.addCache(item);
               });
@@ -31784,7 +31781,7 @@
           }
         }
 
-        if (contain$1(__refreshLevel, TRANSFORM_ALL$1)) {
+        if (__refreshLevel & TRANSFORM_ALL$1) {
           var matrix$1 = node.__matrix;
 
           if (!matrix$1 || isE(matrix$1)) {
@@ -31800,7 +31797,7 @@
           assignMatrix(node.__matrixEvent, matrix$1);
         }
 
-        if (contain$1(__refreshLevel, OP$1)) {
+        if (__refreshLevel & OP$1) {
           var opacity = computedStyle[OPACITY$1];
 
           if (opacity === 1) {
@@ -31810,7 +31807,7 @@
           }
         }
 
-        if (contain$1(__refreshLevel, FT$1)) {
+        if (__refreshLevel & FT$1) {
           var filter = computedStyle[FILTER];
           var s = painter.svgFilter(filter);
 
@@ -31821,7 +31818,7 @@
           }
         }
 
-        if (contain$1(__refreshLevel, MBM$1)) {
+        if (__refreshLevel & MBM$1) {
           var mixBlendMode = computedStyle[MIX_BLEND_MODE$1];
 
           if (isValidMbm(mixBlendMode)) {
@@ -31878,7 +31875,7 @@
 
       var mh = maskHash[_i3];
 
-      if (mh && (maskEffectHash[_i3] || __refreshLevel >= REPAINT$1 || contain$1(__refreshLevel, TRANSFORM_ALL$1 | OP$1))) {
+      if (mh && (maskEffectHash[_i3] || __refreshLevel >= REPAINT$1 || __refreshLevel & (TRANSFORM_ALL$1 | OP$1))) {
         var index = mh.index,
             _start2 = mh.start,
             _end2 = mh.end,
@@ -32033,7 +32030,7 @@
      * 第一次强制进入，后续不包含cache变更且<REPAINT的时候不进入省略循环
      */
 
-    if (isFirst || rlv >= REPAINT$1 || contain$1(rlv, CACHE$1 | FT$1 | PPT$1 | MASK$1)) {
+    if (isFirst || rlv >= REPAINT$1 || rlv & (CACHE$1 | FT$1 | PPT$1 | MASK$1)) {
       for (var i = 0, len = __structs.length; i < len; i++) {
         var _structs$i7 = __structs[i],
             node = _structs$i7.node,
@@ -32098,10 +32095,10 @@
 
         if (!__refreshLevel) ; else if (__refreshLevel < REPAINT$1) {
           var _mbm = __computedStyle[MIX_BLEND_MODE$1];
-          var isMbm = contain$1(__refreshLevel, MBM$1) && isValidMbm(_mbm);
+          var isMbm = __refreshLevel & MBM$1 && isValidMbm(_mbm);
           var need = node.__cacheAsBitmap || hasMask;
 
-          if (!need && contain$1(__refreshLevel, FT$1)) {
+          if (!need && __refreshLevel & FT$1) {
             var filter = __computedStyle[FILTER];
 
             if (filter && filter.length) {
@@ -32109,7 +32106,7 @@
             }
           }
 
-          if (!need && contain$1(__refreshLevel, PPT$1)) {
+          if (!need && __refreshLevel & PPT$1) {
             var __domParent = node.__domParent;
             var isPpt = !isE(__domParent && __domParent.__perspectiveMatrix) || isPerspectiveMatrix(node.__matrix);
 
@@ -32506,7 +32503,7 @@
      * 第一次强制进入，后续不包含cache变更且<REPAINT的时候不进入省略循环
      */
 
-    if (isFirst || rlv >= REPAINT$1 || contain$1(rlv, CACHE$1 | FT$1 | MASK$1)) {
+    if (isFirst || rlv >= REPAINT$1 || rlv & (CACHE$1 | FT$1 | MASK$1)) {
       for (var i = 0, len = __structs.length; i < len; i++) {
         var _structs$i8 = __structs[i],
             node = _structs$i8.node,
@@ -32536,7 +32533,7 @@
         node.__refreshLevel = NONE$1; // filter变化需重新生成，cacheTotal本身就存在要判断下；CACHE取消重新生成则无需判断
 
         if (node.__cacheAsBitmap) {
-          if (contain$1(__refreshLevel, CACHE$1 | FT$1) || __refreshLevel >= REPAINT$1) {
+          if (__refreshLevel & (CACHE$1 | FT$1) || __refreshLevel >= REPAINT$1) {
             mergeList.push({
               i: i,
               lv: lv,
@@ -33257,13 +33254,11 @@
       TRANSFORM = _enums$STYLE_KEY.TRANSFORM,
       OPACITY = _enums$STYLE_KEY.OPACITY,
       MIX_BLEND_MODE = _enums$STYLE_KEY.MIX_BLEND_MODE;
-  var isNil$7 = util.isNil;
-      util.isObject;
-      var isFunction$1 = util.isFunction;
+  var isNil$7 = util.isNil,
+      isFunction$1 = util.isFunction;
   var PX = o$4.PX,
       INHERIT = o$4.INHERIT;
-  var contain = o$1.contain,
-      getLevel = o$1.getLevel,
+  var getLevel = o$1.getLevel,
       isRepaint = o$1.isRepaint,
       NONE = o$1.NONE,
       FT = o$1.FILTER,
@@ -33938,13 +33933,13 @@
         } // transform变化清空重算，比较特殊，MATRIX的cache需手动清理
 
 
-        if (contain(lv, TF)) {
+        if (lv & TF) {
           cacheStyle[MATRIX] = computedStyle[TRANSFORM] = undefined;
         } // mask需清除遮罩对象的缓存
 
 
         var hasRelease,
-            hasMask = contain(lv, MASK);
+            hasMask = lv & MASK;
 
         if (__mask || hasMask) {
           var prev = node.__prev;
@@ -33979,23 +33974,23 @@
             node.__calPerspective(currentStyle, computedStyle, cacheStyle);
           } // < REPAINT特殊的优化computedStyle计算
           else {
-            if (contain(lv, PPT)) {
+            if (lv & PPT) {
               node.__calPerspective(currentStyle, computedStyle, cacheStyle);
             }
 
-            if (contain(lv, TRANSFORM_ALL)) {
+            if (lv & TRANSFORM_ALL) {
               node.__calMatrix(lv, currentStyle, computedStyle, cacheStyle);
             }
 
-            if (contain(lv, OP)) {
+            if (lv & OP) {
               computedStyle[OPACITY] = currentStyle[OPACITY];
             }
 
-            if (contain(lv, FT)) {
+            if (lv & FT) {
               node.__calFilter(currentStyle, computedStyle, cacheStyle);
             }
 
-            if (contain(lv, MBM)) {
+            if (lv & MBM) {
               computedStyle[MIX_BLEND_MODE] = currentStyle[MIX_BLEND_MODE];
             }
           } // 影响子继承REPAINT的变化，如果被cache住需要清除
@@ -34047,7 +34042,7 @@
           } // perspective也特殊只清空total的cache，和>=REPAINT清空total共用
 
 
-          if (need || contain(lv, PPT)) {
+          if (need || lv & PPT) {
             if (node.__cacheTotal) {
               hasRelease || (hasRelease = node.__cacheTotal.release());
             }
@@ -34062,7 +34057,7 @@
           } // 特殊的filter清除cache
 
 
-          if ((need || contain(lv, FT)) && node.__cacheFilter) {
+          if ((need || lv & FT) && node.__cacheFilter) {
             hasRelease || (hasRelease = node.__cacheFilter.release());
           } // 向上清除cache汇总缓存信息，过程中可能会出现重复，根据refreshLevel判断，reflow已经自己清过了
 
@@ -34070,7 +34065,7 @@
           var p = __domParent;
 
           while (p) {
-            if (contain(p.__refreshLevel, CACHE | REPAINT | REFLOW)) {
+            if (p.__refreshLevel & (CACHE | REPAINT | REFLOW)) {
               break;
             }
 

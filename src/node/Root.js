@@ -74,10 +74,9 @@ const {
     MIX_BLEND_MODE,
   },
 } = enums;
-const { isNil, isObject, isFunction } = util;
+const { isNil, isFunction } = util;
 const { PX, INHERIT } = unit;
 const {
-  contain,
   getLevel,
   isRepaint,
   NONE,
@@ -646,11 +645,11 @@ class Root extends Dom {
       return;
     }
     // transform变化清空重算，比较特殊，MATRIX的cache需手动清理
-    if(contain(lv, TF)) {
+    if(lv & TF) {
       cacheStyle[MATRIX] = computedStyle[TRANSFORM] = undefined;
     }
     // mask需清除遮罩对象的缓存
-    let hasRelease, hasMask = contain(lv, MASK);
+    let hasRelease, hasMask = lv & MASK;
     if(__mask || hasMask) {
       let prev = node.__prev;
       while(prev && (prev.__mask)) {
@@ -677,19 +676,19 @@ class Root extends Dom {
       }
       // < REPAINT特殊的优化computedStyle计算
       else {
-        if(contain(lv, PPT)) {
+        if(lv & PPT) {
           node.__calPerspective(currentStyle, computedStyle, cacheStyle);
         }
-        if(contain(lv, TRANSFORM_ALL)) {
+        if(lv & TRANSFORM_ALL) {
           node.__calMatrix(lv, currentStyle, computedStyle, cacheStyle);
         }
-        if(contain(lv, OP)) {
+        if(lv & OP) {
           computedStyle[OPACITY] = currentStyle[OPACITY];
         }
-        if(contain(lv, FT)) {
+        if(lv & FT) {
           node.__calFilter(currentStyle, computedStyle, cacheStyle);
         }
-        if(contain(lv, MBM)) {
+        if(lv & MBM) {
           computedStyle[MIX_BLEND_MODE] = currentStyle[MIX_BLEND_MODE];
         }
       }
@@ -741,7 +740,7 @@ class Root extends Dom {
         }
       }
       // perspective也特殊只清空total的cache，和>=REPAINT清空total共用
-      if(need || contain(lv, PPT)) {
+      if(need || (lv & PPT)) {
         if(node.__cacheTotal) {
           hasRelease ||= node.__cacheTotal.release();
         }
@@ -753,13 +752,13 @@ class Root extends Dom {
         }
       }
       // 特殊的filter清除cache
-      if((need || contain(lv, FT)) && node.__cacheFilter) {
+      if((need || (lv & FT)) && node.__cacheFilter) {
         hasRelease ||= node.__cacheFilter.release();
       }
       // 向上清除cache汇总缓存信息，过程中可能会出现重复，根据refreshLevel判断，reflow已经自己清过了
       let p = __domParent;
       while(p) {
-        if(contain(p.__refreshLevel, CACHE | REPAINT | REFLOW)) {
+        if(p.__refreshLevel & (CACHE | REPAINT | REFLOW)) {
           break;
         }
         p.__refreshLevel |= CACHE;

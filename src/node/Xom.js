@@ -139,7 +139,6 @@ const { point2d,  multiply,
   multiplyScaleX, multiplyScaleY, multiplyScaleZ } = mx;
 
 const {
-  contain,
   TRANSFORM: TF,
   REFLOW,
   REPAINT,
@@ -671,13 +670,13 @@ class Xom extends Node {
         let {parent} = this;
         if(top.u !== AUTO) {
           let n = calRelative(__currentStyle, TOP, top, parent);
-          this.__offsetY(n, false, null);
+          this.__offsetY(n, true, null);
           __computedStyle[TOP] = n;
           __computedStyle[BOTTOM] = 'auto';
         }
         else if(bottom.u !== AUTO) {
           let n = calRelative(__currentStyle, BOTTOM, bottom, parent);
-          this.__offsetY(-n, false, null);
+          this.__offsetY(-n, true, null);
           __computedStyle[BOTTOM] = n;
           __computedStyle[TOP] = 'auto';
         }
@@ -686,13 +685,13 @@ class Xom extends Node {
         }
         if(left.u !== AUTO) {
           let n = calRelative(__currentStyle, LEFT, left, parent, true);
-          this.__offsetX(n, false, null);
+          this.__offsetX(n, true, null);
           __computedStyle[LEFT] = n;
           __computedStyle[RIGHT] = 'auto';
         }
         else if (right.u !== AUTO) {
           let n = calRelative(__currentStyle, RIGHT, right, parent, true);
-          this.__offsetX(-n, false, null);
+          this.__offsetX(-n, true, null);
           __computedStyle[RIGHT] = n;
           __computedStyle[LEFT] = 'auto';
         }
@@ -973,11 +972,11 @@ class Xom extends Node {
     }
     let matrixCache = __cacheStyle[MATRIX], optimize;
     // 优化计算scale不能为0，无法计算倍数差，rotateZ优化不能包含rotateX/rotateY/skew
-    if(matrixCache && lv < REFLOW && !contain(lv, TF)) {
-      if(contain(lv, SX) && !__computedStyle[SCALE_X]
-        || contain(lv, SY) && !__computedStyle[SCALE_Y]
-        || contain(lv, SZ) && !__computedStyle[SCALE_Z]
-        || contain(lv, RZ) && (__computedStyle[ROTATE_X] || __computedStyle[ROTATE_Y]
+    if(matrixCache && lv < REFLOW && !(lv & TF)) {
+      if((lv & SX) && !__computedStyle[SCALE_X]
+        || (lv & SY) && !__computedStyle[SCALE_Y]
+        || (lv & SZ) && !__computedStyle[SCALE_Z]
+        || (lv & RZ) && (__computedStyle[ROTATE_X] || __computedStyle[ROTATE_Y]
           || __computedStyle[SKEW_X] || __computedStyle[SKEW_Y])) {
       }
       else {
@@ -987,7 +986,7 @@ class Xom extends Node {
     // translate/scale变化特殊优化，d/h/l不能有值，否则不能这样直接简化运算，因为这里不包含perspective，所以一定没有
     if(optimize) {
       let transform = __computedStyle[TRANSFORM];
-      if(contain(lv, TX)) {
+      if((lv & TX)) {
         let v = __currentStyle[TRANSLATE_X];
         if(!v) {
           v = 0;
@@ -1003,7 +1002,7 @@ class Xom extends Node {
         transform[12] += x;
         matrixCache[12] += x;
       }
-      if(contain(lv, TY)) {
+      if((lv & TY)) {
         let v = __currentStyle[TRANSLATE_Y];
         if(!v) {
           v = 0;
@@ -1019,7 +1018,7 @@ class Xom extends Node {
         transform[13] += y;
         matrixCache[13] += y;
       }
-      if(contain(lv, TZ)) {
+      if((lv & TZ)) {
         let v = __currentStyle[TRANSLATE_Z];
         if(!v) {
           v = 0;
@@ -1035,7 +1034,7 @@ class Xom extends Node {
         transform[14] += z;
         matrixCache[14] += z;
       }
-      if(contain(lv, RZ)) {
+      if((lv & RZ)) {
         let v = __currentStyle[ROTATE_Z].v;
         __computedStyle[ROTATE_Z] = v;
         v = d2r(v);
@@ -1051,8 +1050,8 @@ class Xom extends Node {
         matrixCache[12] = transform[12] + ox - cx * ox - oy * sy;
         matrixCache[13] = transform[13] + oy - sx * ox - oy * cy;
       }
-      if(contain(lv, SCALE)) {
-        if(contain(lv, SX)) {
+      if((lv & SCALE)) {
+        if((lv & SX)) {
           let v = __currentStyle[SCALE_X].v;
           let x = v / __computedStyle[SCALE_X];
           __computedStyle[SCALE_X] = v;
@@ -1063,7 +1062,7 @@ class Xom extends Node {
           matrixCache[1] *= x;
           matrixCache[2] *= x;
         }
-        if(contain(lv, SY)) {
+        if((lv & SY)) {
           let v = __currentStyle[SCALE_Y].v;
           let y = v / __computedStyle[SCALE_Y];
           __computedStyle[SCALE_Y] = v;
@@ -1074,7 +1073,7 @@ class Xom extends Node {
           matrixCache[5] *= y;
           matrixCache[6] *= y;
         }
-        if(contain(lv, SZ)) {
+        if((lv & SZ)) {
           let v = __currentStyle[SCALE_Z].v;
           let z = v / __computedStyle[SCALE_Z];
           __computedStyle[SCALE_Z] = v;
@@ -1356,7 +1355,7 @@ class Xom extends Node {
       this.__calFilter(__currentStyle, __computedStyle, __cacheStyle);
     }
     // 特殊的判断，MATRIX不存在于样式key中，所有的transform共用一个
-    if(isNil(__cacheStyle[MATRIX]) || contain(lv, TRANSFORM_ALL)) {
+    if(isNil(__cacheStyle[MATRIX]) || (lv & TRANSFORM_ALL)) {
       this.__calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle);
     }
     if(isNil(__cacheStyle[BACKGROUND_POSITION_X])) {
@@ -1912,7 +1911,7 @@ class Xom extends Node {
     if(renderMode === WEBGL) {
       return {};
     }
-    // 使用sx和sy渲染位置，考虑了relative和translate影响
+    // 使用x和y渲染位置，考虑了relative和translate影响
     let {
       __offsetWidth,
       __offsetHeight,

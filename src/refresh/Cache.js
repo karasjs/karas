@@ -66,10 +66,6 @@ class Cache {
 
   reset(bbox, x1, y1, klass) {
     // 尺寸没变复用之前的并清空
-    // if(this.__enabled && util.equalArr(this.__bbox, bbox)) {
-    //   this.clear();
-    //   return;
-    // }
     this.release();
     let w = Math.ceil(bbox[2] - bbox[0]);
     let h = Math.ceil(bbox[3] - bbox[1]);

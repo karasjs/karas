@@ -2,7 +2,7 @@ import util from './util';
 import level from '../refresh/level';
 
 const { joinVd, joinDef } = util;
-const { contain, NONE, TRANSFORM_ALL, OPACITY, FILTER, MIX_BLEND_MODE, MASK } = level;
+const { contain, NONE, TRANSFORM_ALL, OPACITY, FILTER, MIX_BLEND_MODE } = level;
 
 function diff(elem, ovd, nvd) {
   let cns = elem.childNodes;
@@ -194,13 +194,11 @@ function diffByLessLv(elem, ovd, nvd, lv) {
   if(lv === NONE) {
     return;
   }
-  if(contain(lv, MASK)) {
-    if(mask) {
-      elem.setAttribute('mask', mask);
-    }
-    else {
-      elem.removeAttribute('mask');
-    }
+  if(mask) {
+    elem.setAttribute('mask', mask);
+  }
+  else {
+    elem.removeAttribute('mask');
   }
   if(contain(lv, TRANSFORM_ALL)) {
     if(transform) {

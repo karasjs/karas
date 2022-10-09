@@ -1773,6 +1773,7 @@ function renderSvg(renderMode, ctx, root, isFirst, rlv) {
         let item = __cacheDefs[i];
         if(item.tagName === 'mask') {
           __cacheDefs.splice(i, 1);
+          ctx.removeCache(item);
         }
       }
       let o = {

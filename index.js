@@ -10400,7 +10400,7 @@
 
   var PERSPECTIVE$3 = 4096; //                    1000000000000
 
-  var MASK$4 = 8192; //                          10000000000000
+  var MASK$3 = 8192; //                          10000000000000
 
   var REPAINT$4 = 16384; //                     100000000000000
   // 高位表示reflow
@@ -10428,7 +10428,7 @@
     FILTER: FILTER$5,
     MIX_BLEND_MODE: MIX_BLEND_MODE$4,
     PERSPECTIVE: PERSPECTIVE$3,
-    MASK: MASK$4,
+    MASK: MASK$3,
     REPAINT: REPAINT$4,
     REFLOW: REFLOW$3,
     REBUILD: REBUILD$1
@@ -16682,7 +16682,7 @@
       SCALE = o$1.SCALE,
       TRANSFORM_ALL$3 = o$1.TRANSFORM_ALL,
       CACHE$3 = o$1.CACHE,
-      MASK$3 = o$1.MASK;
+      MASK$2 = o$1.MASK;
   var d2r = geom.d2r;
   var calRotateX = transform$1.calRotateX,
       calRotateY = transform$1.calRotateY,
@@ -20049,7 +20049,7 @@
 
           if (root) {
             root.__addUpdate(this, {
-              focus: MASK$3
+              focus: MASK$2
             });
           }
         }
@@ -20068,7 +20068,7 @@
 
           if (root) {
             root.__addUpdate(this, {
-              focus: MASK$3
+              focus: MASK$2
             });
           }
         }
@@ -27189,8 +27189,7 @@
       TRANSFORM_ALL$2 = o$1.TRANSFORM_ALL,
       OPACITY$2 = o$1.OPACITY,
       FILTER$1 = o$1.FILTER,
-      MIX_BLEND_MODE$2 = o$1.MIX_BLEND_MODE,
-      MASK$2 = o$1.MASK;
+      MIX_BLEND_MODE$2 = o$1.MIX_BLEND_MODE;
 
   function diff(elem, ovd, nvd) {
     var cns = elem.childNodes;
@@ -27401,12 +27400,10 @@
       return;
     }
 
-    if (contain$2(lv, MASK$2)) {
-      if (mask) {
-        elem.setAttribute('mask', mask);
-      } else {
-        elem.removeAttribute('mask');
-      }
+    if (mask) {
+      elem.setAttribute('mask', mask);
+    } else {
+      elem.removeAttribute('mask');
     }
 
     if (contain$2(lv, TRANSFORM_ALL$2)) {
@@ -28157,10 +28154,6 @@
       key: "reset",
       value: function reset(bbox, x1, y1, klass) {
         // 尺寸没变复用之前的并清空
-        // if(this.__enabled && util.equalArr(this.__bbox, bbox)) {
-        //   this.clear();
-        //   return;
-        // }
         this.release();
         var w = Math.ceil(bbox[2] - bbox[0]);
         var h = Math.ceil(bbox[3] - bbox[1]);
@@ -32031,6 +32024,8 @@
 
           if (_item.tagName === 'mask') {
             __cacheDefs.splice(_i4, 1);
+
+            ctx.removeCache(_item);
           }
         }
 

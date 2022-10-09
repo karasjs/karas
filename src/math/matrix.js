@@ -229,7 +229,7 @@ function calPoint(point, m) {
       if(d1 || d2 || d3) {
         w = x * d1 + y * d2 + z * d3 + d4 * w;
       }
-      else {
+      else if(d4 !== 1) {
         w *= d4;
       }
       let o = {

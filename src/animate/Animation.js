@@ -169,7 +169,7 @@ function inherit(frames, keys, target) {
       if(k === TRANSFORM) {
         let ow = target.__outerWidth;
         let oh = target.__outerHeight;
-        let m = tf.calMatrix(v, ow, oh);
+        let m = tf.calMatrix(v, ow, oh, target.__root);
         style[k] = [{ k: MATRIX, v: m }];
       }
       else if(v.u === INHERIT) {

@@ -106,7 +106,7 @@ class Rect extends Geom {
     if(res.break || renderMode === mode.WEBGL) {
       return res;
     }
-    this.buildCache(res.sx3, res.sy3);
+    this.buildCache(res.x3, res.y3);
     this.__renderPolygon(renderMode, ctx, res);
     return res;
   }

@@ -38,8 +38,6 @@ class Ellipsis extends Node {
   render(renderMode, ctx, dx = 0, dy = 0) {
     let { x, y, parent, isUpright } = this;
     let {
-      ox,
-      oy,
       computedStyle,
       cacheStyle: {
         [COLOR]: color,
@@ -53,8 +51,8 @@ class Ellipsis extends Node {
     else {
       y += b;
     }
-    x += ox + dx;
-    y += oy + dy;
+    x += dx;
+    y += dy;
     if(renderMode === CANVAS || renderMode === WEBGL) {
       let font = css.setFontStyle(computedStyle);
       if(ctx.font !== font) {

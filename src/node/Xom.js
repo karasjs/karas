@@ -1882,7 +1882,7 @@ class Xom extends Node {
    * @param dx cache时偏移x
    * @param dy cache时偏移y
    * @return Object
-   * sx1/sx2/sx3/sx4/sx5/sx6/sy1/sy2/sy3/sy4/sy5/sy6 坐标
+   * x1/x2/x3/x4/x5/x6/y1/y2/y3/y4/y5/y6 坐标
    * break svg判断无变化提前跳出
    */
   render(renderMode, ctx, dx = 0, dy = 0) {
@@ -1928,25 +1928,25 @@ class Xom extends Node {
     } = computedStyle;
     let isRealInline = this.__isInline;
     // 考虑mpb的6个坐标，inline比较特殊单独计算
-    let sx1 = this.__x1;
-    let sx2 = this.__x2;
-    let sx3 = this.__x3;
-    let sx4 = this.__x4;
-    let sx5 = this.__x5;
-    let sx6 = this.__x6;
-    let sy1 = this.__y1;
-    let sy2 = this.__y2;
-    let sy3 = this.__y3;
-    let sy4 = this.__y4;
-    let sy5 = this.__y5;
-    let sy6 = this.__y6;
+    let x1 = this.__x1;
+    let x2 = this.__x2;
+    let x3 = this.__x3;
+    let x4 = this.__x4;
+    let x5 = this.__x5;
+    let x6 = this.__x6;
+    let y1 = this.__y1;
+    let y2 = this.__y2;
+    let y3 = this.__y3;
+    let y4 = this.__y4;
+    let y5 = this.__y5;
+    let y6 = this.__y6;
     let bx1 = this.__bx1;
     let bx2 = this.__bx2;
     let by1 = this.__by1;
     let by2 = this.__by2;
     let res = {
       ctx, dx, dy,
-      sx1, sx2, sx3, sx4, sx5, sx6, sy1, sy2, sy3, sy4, sy5, sy6,
+      x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6,
       bx1, bx2, by1, by2,
     };
     // cache的canvas模式已经提前计算好了，其它需要现在计算
@@ -2037,7 +2037,7 @@ class Xom extends Node {
     if(overflow === 'hidden' && display !== 'inline') {
       borderList = border.calRadius(bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
       if(renderMode === SVG) {
-        let d = svgPolygon(borderList) || `M${sx1},${sy1}L${sx1 + __offsetWidth},${sy1}L${sx1 + __offsetWidth},${sy1 + __offsetHeight}L${sx1},${sy1 + __offsetHeight},L${sx1},${sy1}`;
+        let d = svgPolygon(borderList) || `M${x1},${y1}L${x1 + __offsetWidth},${y1}L${x1 + __offsetWidth},${y1 + __offsetHeight}L${x1},${y1 + __offsetHeight},L${x1},${y1}`;
         let v = {
           tagName: 'clipPath',
           props: [],
@@ -2415,7 +2415,7 @@ class Xom extends Node {
     // boxShadow可能会有多个
     if(boxShadow) {
       boxShadow.forEach(item => {
-        bs.renderBoxShadow(this, renderMode, ctx, item, sx1, sy1, sx6, sy6, sx6 - sx1, sy6 - sy1, dx, dy);
+        bs.renderBoxShadow(this, renderMode, ctx, item, x1, y1, x6, y6, x6 - x1, y6 - y1, dx, dy);
       });
     }
     // 边框需考虑尖角，两条相交边平分45°夹角

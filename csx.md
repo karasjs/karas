@@ -448,13 +448,13 @@ x轴半径，相对于width百分比，取值[0, ∞)，默认1
 * ry: Number
 y轴半径，相对于height百分比，取值[0, ∞)，默认1
 ### $line
-* x1: Number
+* xa: Number
 开始点x坐标，相对于width百分比，取值(-∞, ∞)，默认0
-* y1: Number
+* ya: Number
 开始点y坐标，相对于height百分比，取值(-∞, ∞)，默认0
-* x2: Number
+* xb: Number
 结束点x坐标，相对于width百分比，取值(-∞, ∞)]，默认1
-* y2: Number
+* yb: Number
 结束点y坐标，相对于height百分比，取值(-∞, ∞)，默认1
 * controlA: Array\<Number>
 第1个贝塞尔曲线控制点坐标[x, y]，相对于[width, height]百分比，取值(-∞, ∞)，默认null没有

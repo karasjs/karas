@@ -197,8 +197,8 @@ class Geom extends Xom {
 
   __preSet(renderMode, res) {
     let { width, height, __cacheStyle, computedStyle } = this;
-    let cx = res.sx3 + width * 0.5;
-    let cy = res.sy3 + height * 0.5;
+    let cx = res.x3 + width * 0.5;
+    let cy = res.y3 + height * 0.5;
     let {
       [STROKE_DASHARRAY_STR]: strokeDasharrayStr,
     } = __cacheStyle;
@@ -214,13 +214,13 @@ class Geom extends Xom {
     } = computedStyle;
     stroke = stroke.map(item => {
       if(item.k) {
-        return this.__gradient(renderMode, res.ctx, res.sx3, res.sy3, res.sx4, res.sy4, item, res.dx, res.dy);
+        return this.__gradient(renderMode, res.ctx, res.x3, res.y3, res.x4, res.y4, item, res.dx, res.dy);
       }
       return int2rgba(item);
     });
     fill = fill.map(item => {
       if(item.k) {
-        return this.__gradient(renderMode, res.ctx, res.sx3, res.sy3, res.sx4, res.sy4, item, res.dx, res.dy);
+        return this.__gradient(renderMode, res.ctx, res.x3, res.y3, res.x4, res.y4, item, res.dx, res.dy);
       }
       return int2rgba(item);
     });

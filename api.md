@@ -967,8 +967,8 @@ karas.render(
 ```jsx
 karas.render(
   <canvas>
-    <$line x1={0} x2={1} y1={0} y2={1} style={{width: 100, height: 100}}/>
-    <$line x1={[0, 0.1]} x2={[1, 0.9]} y1={[0, 0.2]} y2={[1, 0.8]} style={{width: 100, height: 100}} multi={true}/>
+    <$line xa={0} xb={1} ya={0} yb={1} style={{width: 100, height: 100}}/>
+    <$line xa={[0, 0.1]} xb={[1, 0.9]} ya={[0, 0.2]} yb={[1, 0.8]} style={{width: 100, height: 100}} multi={true}/>
   </canvas>,
   '#selector'
 );

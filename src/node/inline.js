@@ -185,15 +185,6 @@ function getInlineBox(xom, isUpright, contentBoxList, start, end, lineBox, basel
       }
     }
   }
-  // 要考虑xom的ox/oy值
-  x1 += xom.ox;
-  x2 += xom.ox;
-  bx1 += xom.ox;
-  bx2 += xom.ox;
-  y1 += xom.oy;
-  y2 += xom.oy;
-  by1 += xom.oy;
-  by2 += xom.oy;
   return [x1, y1, x2, y2, bx1, by1, bx2, by2];
 }
 

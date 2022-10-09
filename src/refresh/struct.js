@@ -877,9 +877,11 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
           if(hasMask) {
             i += countMaskNum(__structs, i + 1, hasMask);
           }
-        }
+        }console.log(i, target === __cache);
         // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
-        node.render(renderMode, gl, dx, dy);
+        if(target === __cache) {
+          node.render(renderMode, gl, dx, dy);
+        }
       }
     }
   }
@@ -890,8 +892,8 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.deleteFramebuffer(frameBuffer);
     frameBuffer = genFrameBufferWithTexture(gl, page.texture, size, size);
-    webgl.drawTex2Cache(gl, gl.program, cacheTotal, tex, w, h);
-    gl.deleteTexture(tex);
+    webgl.drawTex2Cache(gl, gl.program, cacheTotal, texture, w, h);
+    gl.deleteTexture(texture);
   }
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);

@@ -28494,7 +28494,7 @@
 
         if (MAX_TEXTURE_SIZE !== MAX) {
           // 超过8192会卡一下
-          Page.MAX = Math.min(MAX_TEXTURE_SIZE, 8192);
+          Page.MAX = Math.min(MAX_TEXTURE_SIZE, 512);
         }
       }
     }]);
@@ -30990,10 +30990,13 @@
             if (hasMask) {
               i += countMaskNum(__structs, i + 1, hasMask);
             }
-          } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
+          }
 
+          console.log(i, target === _cache2); // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
 
-          _node4.render(renderMode, gl, dx, dy);
+          if (target === _cache2) {
+            _node4.render(renderMode, gl, dx, dy);
+          }
         }
       }
     } // 绘制到fbo的纹理对象上并删除fbo恢复
@@ -31006,8 +31009,8 @@
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       gl.deleteFramebuffer(frameBuffer);
       frameBuffer = genFrameBufferWithTexture(gl, page.texture, size, size);
-      webgl.drawTex2Cache(gl, gl.program, cacheTotal, tex, w, h);
-      gl.deleteTexture(tex);
+      webgl.drawTex2Cache(gl, gl.program, cacheTotal, texture, w, h);
+      gl.deleteTexture(texture);
     }
 
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);

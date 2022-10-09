@@ -877,7 +877,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
           if(hasMask) {
             i += countMaskNum(__structs, i + 1, hasMask);
           }
-        }console.log(i, target === __cache);
+        }
         // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
         if(target === __cache) {
           node.render(renderMode, gl, dx, dy);

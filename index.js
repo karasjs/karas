@@ -28494,7 +28494,7 @@
 
         if (MAX_TEXTURE_SIZE !== MAX) {
           // 超过8192会卡一下
-          Page.MAX = Math.min(MAX_TEXTURE_SIZE, 512);
+          Page.MAX = Math.min(MAX_TEXTURE_SIZE, 8192);
         }
       }
     }]);
@@ -30990,9 +30990,8 @@
             if (hasMask) {
               i += countMaskNum(__structs, i + 1, hasMask);
             }
-          }
+          } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
 
-          console.log(i, target === _cache2); // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
 
           if (target === _cache2) {
             _node4.render(renderMode, gl, dx, dy);

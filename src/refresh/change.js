@@ -95,7 +95,7 @@ let o = {
   },
 };
 
-o.addGeom('$line', ['x1', 'y1', 'x2', 'y2', 'controlA', 'controlB', 'start', 'end']);
+o.addGeom('$line', ['xa', 'ya', 'xb', 'yb', 'controlA', 'controlB', 'start', 'end']);
 o.addGeom('$circle', ['r']);
 o.addGeom('$ellipse', ['rx', 'ry']);
 o.addGeom('$rect', ['rx', 'ry']);

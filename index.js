@@ -7169,7 +7169,7 @@
       return false;
     }
   };
-  o$2.addGeom('$line', ['x1', 'y1', 'x2', 'y2', 'controlA', 'controlB', 'start', 'end']);
+  o$2.addGeom('$line', ['xa', 'ya', 'xb', 'yb', 'controlA', 'controlB', 'start', 'end']);
   o$2.addGeom('$circle', ['r']);
   o$2.addGeom('$ellipse', ['rx', 'ry']);
   o$2.addGeom('$rect', ['rx', 'ry']);

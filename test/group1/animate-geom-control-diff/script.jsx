@@ -1,6 +1,6 @@
 let o = karas.render(
   <canvas width="360" height="360">
-    <$line ref="t" x1="0" y1="0" x2="1" y2="1" style={{width:100,height:100}}/>
+    <$line ref="t" xa="0" ya="0" xb="1" yb="1" style={{width:100,height:100}}/>
   </canvas>,
   '#test'
 );

@@ -1023,10 +1023,6 @@
 
     s += '>';
     (vd.children || []).forEach(function (item) {
-      if (item.mask) {
-        return;
-      }
-
       s += joinVd$1(item);
     });
     s += '</g>';
@@ -1066,10 +1062,6 @@
 
       _s2 += '>';
       (vd.children || []).forEach(function (item) {
-        if (item.mask) {
-          return;
-        }
-
         _s2 += joinVd$1(item);
       });
       _s2 += '</g>';
@@ -10408,7 +10400,7 @@
 
   var PERSPECTIVE$3 = 4096; //                    1000000000000
 
-  var MASK$2 = 8192; //                          10000000000000
+  var MASK$3 = 8192; //                          10000000000000
 
   var REPAINT$4 = 16384; //                     100000000000000
   // 高位表示reflow
@@ -10436,7 +10428,7 @@
     FILTER: FILTER$5,
     MIX_BLEND_MODE: MIX_BLEND_MODE$4,
     PERSPECTIVE: PERSPECTIVE$3,
-    MASK: MASK$2,
+    MASK: MASK$3,
     REPAINT: REPAINT$4,
     REFLOW: REFLOW$3,
     REBUILD: REBUILD$1
@@ -16690,7 +16682,7 @@
       SCALE = o$1.SCALE,
       TRANSFORM_ALL$3 = o$1.TRANSFORM_ALL,
       CACHE$3 = o$1.CACHE,
-      MASK$1 = o$1.MASK;
+      MASK$2 = o$1.MASK;
   var d2r = geom.d2r;
   var calRotateX = transform$1.calRotateX,
       calRotateY = transform$1.calRotateY,
@@ -20057,7 +20049,7 @@
 
           if (root) {
             root.__addUpdate(this, {
-              focus: MASK$1
+              focus: MASK$2
             });
           }
         }
@@ -20076,7 +20068,7 @@
 
           if (root) {
             root.__addUpdate(this, {
-              focus: MASK$1
+              focus: MASK$2
             });
           }
         }
@@ -29970,7 +29962,8 @@
       contain$1 = o$1.contain,
       MBM$1 = o$1.MIX_BLEND_MODE,
       PPT$1 = o$1.PERSPECTIVE,
-      CACHE$1 = o$1.CACHE;
+      CACHE$1 = o$1.CACHE,
+      MASK$1 = o$1.MASK;
   var isE = matrix.isE,
       inverse = matrix.inverse,
       multiply = matrix.multiply;
@@ -32101,7 +32094,7 @@
      * 第一次强制进入，后续不包含cache变更且<REPAINT的时候不进入省略循环
      */
 
-    if (isFirst || rlv >= REPAINT$1 || contain$1(rlv, CACHE$1)) {
+    if (isFirst || rlv >= REPAINT$1 || contain$1(rlv, CACHE$1 | FT$1 | PPT$1 | MASK$1)) {
       for (var i = 0, len = __structs.length; i < len; i++) {
         var _structs$i7 = __structs[i],
             node = _structs$i7.node,
@@ -32574,7 +32567,7 @@
      * 第一次强制进入，后续不包含cache变更且<REPAINT的时候不进入省略循环
      */
 
-    if (isFirst || rlv >= REPAINT$1 || contain$1(rlv, CACHE$1)) {
+    if (isFirst || rlv >= REPAINT$1 || contain$1(rlv, CACHE$1 | FT$1 | MASK$1)) {
       for (var i = 0, len = __structs.length; i < len; i++) {
         var _structs$i8 = __structs[i],
             node = _structs$i8.node,
@@ -33754,8 +33747,7 @@
           this.dom.__vd = nvd;
           this.dom.__defs = defs;
         } else if (renderMode === mode.WEBGL) {
-          this.__clear(ctx, renderMode); // console.log(ctx.getParameter(ctx.MAX_TEXTURE_SIZE), ctx.getParameter(ctx.MAX_VARYING_VECTORS), ctx.getParameter(ctx.MAX_TEXTURE_IMAGE_UNITS))
-
+          this.__clear(ctx, renderMode);
 
           struct.renderWebgl(renderMode, ctx, this, isFirst, rlv);
         }

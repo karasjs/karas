@@ -432,7 +432,6 @@ class Root extends Dom {
     }
     else if(renderMode === mode.WEBGL) {
       this.__clear(ctx, renderMode);
-      // console.log(ctx.getParameter(ctx.MAX_TEXTURE_SIZE), ctx.getParameter(ctx.MAX_VARYING_VECTORS), ctx.getParameter(ctx.MAX_TEXTURE_IMAGE_UNITS))
       struct.renderWebgl(renderMode, ctx, this, isFirst, rlv);
     }
     this.emit(Event.REFRESH, rlv);

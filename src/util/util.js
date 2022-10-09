@@ -66,9 +66,6 @@ function joinVirtualDom(vd) {
   }
   s += '>';
   (vd.children || []).forEach(item => {
-    if(item.mask) {
-      return;
-    }
     s += joinVd(item);
   });
   s += '</g>';
@@ -106,9 +103,6 @@ function joinVd(vd) {
     }
     s += '>';
     (vd.children || []).forEach(item => {
-      if(item.mask) {
-        return;
-      }
       s += joinVd(item);
     });
     s += '</g>';

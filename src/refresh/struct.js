@@ -54,6 +54,7 @@ const {
   MIX_BLEND_MODE: MBM,
   PERSPECTIVE: PPT,
   CACHE,
+  MASK,
 } = level;
 const { isE, inverse, multiply } = mx;
 const { mbmName, isValidMbm } = mbm;
@@ -1813,7 +1814,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
    * 同时过程中计算出哪些节点要生成局部根，存下来
    * 第一次强制进入，后续不包含cache变更且<REPAINT的时候不进入省略循环
    */
-  if(isFirst || rlv >= REPAINT || contain(rlv, CACHE)) {
+  if(isFirst || rlv >= REPAINT || contain(rlv, CACHE | FT | PPT | MASK)) {
     for(let i = 0, len = __structs.length; i < len; i++) {
       let {
         node,
@@ -2245,7 +2246,7 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
    * 可能遇到已有缓存没变化的，这时候不要收集忽略掉，没有缓存的走后面遍历普通渲染
    * 第一次强制进入，后续不包含cache变更且<REPAINT的时候不进入省略循环
    */
-  if(isFirst || rlv >= REPAINT || contain(rlv, CACHE)) {
+  if(isFirst || rlv >= REPAINT || contain(rlv, CACHE | FT | MASK)) {
     for(let i = 0, len = __structs.length; i < len; i++) {
       let {
         node,

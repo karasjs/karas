@@ -61,7 +61,6 @@ class TextBox {
    */
   render(renderMode, ctx, computedStyle, cacheStyle, dx, dy) {
     let { content, x, y, parent, width, height, isUpright } = this;
-    let { ox, oy } = parent;
     let dom = parent.__domParent;
     let b = css.getBaseline(computedStyle);
     let bv = css.getVerticalBaseline(computedStyle);
@@ -73,8 +72,8 @@ class TextBox {
     else {
       y += b;
     }
-    x += ox + dx;
-    y += oy + dy;
+    x += dx;
+    y += dy;
     if(isUpright) {
       this.__endX = x;
       this.__endY = y + height;

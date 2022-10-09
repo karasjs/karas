@@ -198,11 +198,6 @@
     function Node() {
       this.__x = 0;
       this.__y = 0;
-      this.__ox = 0; // relative造成的偏移量
-
-      this.__oy = 0;
-      this.__sx = 0;
-      this.__sy = 0;
       this.__width = 0;
       this.__height = 0;
       this.__baseline = 0;
@@ -231,25 +226,13 @@
       }
     }, {
       key: "__offsetX",
-      value: function __offsetX(diff, isLayout) {
-        if (isLayout) {
-          this.__x += diff;
-        } else {
-          this.__ox += diff;
-        }
-
-        this.__sx += diff;
+      value: function __offsetX(diff) {
+        this.__x += diff;
       }
     }, {
       key: "__offsetY",
-      value: function __offsetY(diff, isLayout) {
-        if (isLayout) {
-          this.__y += diff;
-        } else {
-          this.__oy += diff;
-        }
-
-        this.__sy += diff;
+      value: function __offsetY(diff) {
+        this.__y += diff;
       }
     }, {
       key: "__destroy",
@@ -265,26 +248,6 @@
       key: "y",
       get: function get() {
         return this.__y;
-      }
-    }, {
-      key: "ox",
-      get: function get() {
-        return this.__ox;
-      }
-    }, {
-      key: "oy",
-      get: function get() {
-        return this.__oy;
-      }
-    }, {
-      key: "sx",
-      get: function get() {
-        return this.x + this.ox;
-      }
-    }, {
-      key: "sy",
-      get: function get() {
-        return this.y + this.oy;
       }
     }, {
       key: "width",
@@ -9839,8 +9802,6 @@
             width = this.width,
             height = this.height,
             isUpright = this.isUpright;
-        var ox = parent.ox,
-            oy = parent.oy;
         var dom = parent.__domParent;
         var b = css.getBaseline(computedStyle);
         var bv = css.getVerticalBaseline(computedStyle); // 垂直文本x/y互换，渲染时使用rotate模拟，因为是基于baseline绘制，顺时针90deg时tfo是文字左下角，
@@ -9852,8 +9813,8 @@
           y += b;
         }
 
-        x += ox + dx;
-        y += oy + dy;
+        x += dx;
+        y += dy;
 
         if (isUpright) {
           this.__endX = x;
@@ -10236,8 +10197,8 @@
       var _this;
 
       _this = _Node.call(this) || this;
-      _this.__x = _this.__sx1 = x;
-      _this.__y = _this.__sy1 = y;
+      _this.__x = _this.__x1 = x;
+      _this.__y = _this.__y1 = y;
       _this.__width = width;
       _this.__parent = _this.__domParent = parent;
       parent.__ellipsis = _assertThisInitialized(_this);
@@ -10753,8 +10714,8 @@
             lineClampCount = _data$lineClampCount === void 0 ? 0 : _data$lineClampCount,
             _data$isUpright = data.isUpright,
             isUpright = _data$isUpright === void 0 ? false : _data$isUpright;
-        this.__x = this.__sx = this.__sx1 = x;
-        this.__y = this.__sy = this.__sy1 = y;
+        this.__x = this.__x1 = x;
+        this.__y = this.__y1 = y;
         var __isDestroyed = this.__isDestroyed,
             content = this.content,
             computedStyle = this.computedStyle,
@@ -10764,9 +10725,8 @@
 
         if (__isDestroyed || computedStyle[DISPLAY$7] === 'none' || !content || lineClamp && lineClampCount >= lineClamp) {
           return lineClampCount;
-        }
+        } // 顺序尝试分割字符串为TextBox，形成多行，begin为每行起始索引，i是当前字符索引
 
-        this.__ox = this.__oy = 0; // 顺序尝试分割字符串为TextBox，形成多行，begin为每行起始索引，i是当前字符索引
 
         var i = 0;
         var length = content.length;
@@ -10943,9 +10903,9 @@
 
           if (lineCount) {
             if (isUpright) {
-              this.__y = this.__sy1 = ly;
+              this.__y = this.__y1 = ly;
             } else {
-              this.__x = this.__sx1 = lx;
+              this.__x = this.__x1 = lx;
             }
           }
         }
@@ -11299,7 +11259,7 @@
           });
         }
 
-        this.__sx1 += diff;
+        this.__x1 += diff;
       }
     }, {
       key: "__offsetY",
@@ -11312,7 +11272,7 @@
           });
         }
 
-        this.__sy1 += diff;
+        this.__y1 += diff;
       }
     }, {
       key: "__tryLayInline",
@@ -11334,14 +11294,12 @@
         });
 
         if (isUpright) {
-          this.__y = min;
-          this.__sy = this.__sy1 = min + this.oy;
-          this.__sx = this.__sx1;
+          this.__y = this.__y1 = min;
+          this.__x = this.__x1;
           this.__height = max - min;
         } else {
-          this.__x = min;
-          this.__sx = this.__sx1 = min + this.ox;
-          this.__sy = this.__sy1;
+          this.__x = this.__x1 = min;
+          this.__y = this.__y1;
           this.__width = max - min;
         }
       }
@@ -11715,14 +11673,14 @@
       key: "bbox",
       get: function get() {
         if (!this.__bbox) {
-          var __sx1 = this.__sx1,
-              __sy1 = this.__sy1,
+          var __x1 = this.__x1,
+              __y1 = this.__y1,
               width = this.width,
               height = this.height,
               textStrokeWidth = this.computedStyle[TEXT_STROKE_WIDTH$3]; // 文字描边暂时不清楚最大值是多少，影响不确定，先按描边宽算，因为会出现>>0.5宽的情况
 
           var half = textStrokeWidth;
-          this.__bbox = [__sx1 - half, __sy1 - half, __sx1 + width + half, __sy1 + height + half];
+          this.__bbox = [__x1 - half, __y1 - half, __x1 + width + half, __y1 + height + half];
         }
 
         return this.__bbox;
@@ -12161,19 +12119,7 @@
     return Component;
   }(Event);
 
-  Object.keys(o$2.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', // '__sx1',
-  // '__sx2',
-  // '__sx3',
-  // '__sx4',
-  // '__sx5',
-  // '__sx6',
-  // '__sy1',
-  // '__sy2',
-  // '__sy3',
-  // '__sy4',
-  // '__sy5',
-  // '__sy6',
-  'width', 'height', 'outerWidth', 'outerHeight', 'clientWidth', 'clientHeight', 'offsetWidth', 'offsetHeight', 'style', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'currentProps', 'baseline', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', '__layoutData', '__struct', 'bbox', 'contentBoxList', 'listener', 'matrix', 'matrixEvent']).forEach(function (fn) {
+  Object.keys(o$2.GEOM).concat(['x', 'y', 'width', 'height', 'outerWidth', 'outerHeight', 'clientWidth', 'clientHeight', 'offsetWidth', 'offsetHeight', 'style', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'currentProps', 'baseline', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', '__layoutData', '__struct', 'bbox', 'contentBoxList', 'listener', 'matrix', 'matrixEvent']).forEach(function (fn) {
     Object.defineProperty(Component.prototype, fn, {
       get: function get() {
         var sr = this.shadowRoot;
@@ -17178,8 +17124,6 @@
           }
         }
 
-        this.__ox = this.__oy = 0;
-
         if (__isDestroyed || display === 'none') {
           this.__x = data.x;
           this.__y = data.y;
@@ -17264,22 +17208,22 @@
           } // 计算结果存入computedStyle和6个坐标，inline在其inlineSize特殊处理
 
 
-          var x = this.__sx = this.__x + this.__ox;
-          var y = this.__sy = this.__y + this.__oy;
+          var x = this.__x;
+          var y = this.__y;
 
           if (!this.__isInline) {
-            x = this.__sx1 = x + __computedStyle[MARGIN_LEFT$5];
-            x = this.__sx2 = x + __computedStyle[BORDER_LEFT_WIDTH$5];
-            x = this.__sx3 = x + __computedStyle[PADDING_LEFT$5];
-            x = this.__sx4 = x + this.__width;
-            x = this.__sx5 = x + __computedStyle[PADDING_RIGHT$4];
-            this.__sx6 = x + __computedStyle[BORDER_RIGHT_WIDTH$4];
-            y = this.__sy1 = y + __computedStyle[MARGIN_TOP$3];
-            y = this.__sy2 = y + __computedStyle[BORDER_TOP_WIDTH$3];
-            y = this.__sy3 = y + __computedStyle[PADDING_TOP$3];
-            y = this.__sy4 = y + this.__height;
-            y = this.__sy5 = y + __computedStyle[PADDING_BOTTOM$2];
-            this.__sy6 = y + __computedStyle[BORDER_BOTTOM_WIDTH$2];
+            x = this.__x1 = x + __computedStyle[MARGIN_LEFT$5];
+            x = this.__x2 = x + __computedStyle[BORDER_LEFT_WIDTH$5];
+            x = this.__x3 = x + __computedStyle[PADDING_LEFT$5];
+            x = this.__x4 = x + this.__width;
+            x = this.__x5 = x + __computedStyle[PADDING_RIGHT$4];
+            this.__x6 = x + __computedStyle[BORDER_RIGHT_WIDTH$4];
+            y = this.__y1 = y + __computedStyle[MARGIN_TOP$3];
+            y = this.__y2 = y + __computedStyle[BORDER_TOP_WIDTH$3];
+            y = this.__y3 = y + __computedStyle[PADDING_TOP$3];
+            y = this.__y4 = y + this.__height;
+            y = this.__y5 = y + __computedStyle[PADDING_BOTTOM$2];
+            this.__y6 = y + __computedStyle[BORDER_BOTTOM_WIDTH$2];
           }
 
           __computedStyle[WIDTH$5] = this.__width;
@@ -17527,13 +17471,13 @@
       value: function __calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle) {
         var _this4 = this;
 
-        var __sx1 = this.__sx1,
-            __sy1 = this.__sy1,
+        var __x1 = this.__x1,
+            __y1 = this.__y1,
             __offsetWidth = this.__offsetWidth,
             __offsetHeight = this.__offsetHeight;
 
         if (this.__isInline) {
-          __computedStyle[TRANSFORM_ORIGIN$2] = [__sx1, __sy1];
+          __computedStyle[TRANSFORM_ORIGIN$2] = [__x1, __y1];
           return __cacheStyle[MATRIX$1] = this.__matrix = matrix.identity();
         }
 
@@ -17616,8 +17560,8 @@
             var t = __computedStyle[TRANSFORM_ORIGIN$2],
                 ox = t[0],
                 oy = t[1];
-            ox += __sx1;
-            oy += __sy1;
+            ox += __x1;
+            oy += __y1;
             matrixCache[12] = transform[12] + ox - cx * ox - oy * sy;
             matrixCache[13] = transform[13] + oy - sx * ox - oy * cy;
           }
@@ -17668,8 +17612,8 @@
             var _t = __computedStyle[TRANSFORM_ORIGIN$2],
                 _ox = _t[0],
                 _oy = _t[1];
-            _ox += __sx1;
-            _oy += __sy1;
+            _ox += __x1;
+            _oy += __y1;
             matrixCache[12] = transform[12] + _ox - transform[0] * _ox - transform[4] * _oy;
             matrixCache[13] = transform[13] + _oy - transform[1] * _ox - transform[5] * _oy;
             matrixCache[14] = transform[14] - transform[2] * _ox - transform[6] * _oy;
@@ -17879,7 +17823,7 @@
         if (!matrixCache) {
           var m = __computedStyle[TRANSFORM$3];
           var tfo = __computedStyle[TRANSFORM_ORIGIN$2];
-          matrixCache = __cacheStyle[MATRIX$1] = transform$1.calMatrixByOrigin(m, tfo[0] + __sx1, tfo[1] + __sy1);
+          matrixCache = __cacheStyle[MATRIX$1] = transform$1.calMatrixByOrigin(m, tfo[0] + __x1, tfo[1] + __y1);
         }
 
         return this.__matrix = matrixCache;
@@ -17893,35 +17837,35 @@
       value: function __calStyle(lv, __currentStyle, __computedStyle, __cacheStyle) {
         var _this5 = this;
 
-        var __sx1 = this.__sx1,
-            __sx2 = this.__sx2,
-            __sx3 = this.__sx3,
-            __sx4 = this.__sx4,
-            __sx5 = this.__sx5,
-            __sx6 = this.__sx6,
-            __sy1 = this.__sy1,
-            __sy2 = this.__sy2,
-            __sy3 = this.__sy3,
-            __sy4 = this.__sy4,
-            __sy5 = this.__sy5,
-            __sy6 = this.__sy6;
+        var __x1 = this.__x1,
+            __x2 = this.__x2,
+            __x3 = this.__x3,
+            __x4 = this.__x4,
+            __x5 = this.__x5,
+            __x6 = this.__x6,
+            __y1 = this.__y1,
+            __y2 = this.__y2,
+            __y3 = this.__y3,
+            __y4 = this.__y4,
+            __y5 = this.__y5,
+            __y6 = this.__y6;
         this.__bbox = null;
-        var bx1 = __sx1,
-            by1 = __sy1,
-            bx2 = __sx6,
-            by2 = __sy6;
+        var bx1 = __x1,
+            by1 = __y1,
+            bx2 = __x6,
+            by2 = __y6;
         var backgroundClip = __computedStyle[BACKGROUND_CLIP] = __currentStyle[BACKGROUND_CLIP]; // 默认border-box
 
         if (backgroundClip === 'paddingBox') {
-          bx1 = __sx2;
-          by1 = __sy2;
-          bx2 = __sx5;
-          by2 = __sy5;
+          bx1 = __x2;
+          by1 = __y2;
+          bx2 = __x5;
+          by2 = __y5;
         } else if (backgroundClip === 'contentBox') {
-          bx1 = __sx3;
-          by1 = __sy3;
-          bx2 = __sx4;
-          by2 = __sy4;
+          bx1 = __x3;
+          by1 = __y3;
+          bx2 = __x4;
+          by2 = __y4;
         }
 
         var isInline = this.__isInline;
@@ -18106,7 +18050,7 @@
                 if (!isInline) {
                   var deg1 = Math.atan(borderTopWidth / borderLeftWidth);
                   var deg2 = Math.atan(borderTopWidth / borderRightWidth);
-                  __cacheStyle[k2] = border.calPoints(borderTopWidth, __computedStyle[ks], deg1, deg2, __sx1, __sx2, __sx5, __sx6, __sy1, __sy2, __sy5, __sy6, 0, btlr, btrr);
+                  __cacheStyle[k2] = border.calPoints(borderTopWidth, __computedStyle[ks], deg1, deg2, __x1, __x2, __x5, __x6, __y1, __y2, __y5, __y6, 0, btlr, btrr);
                 }
               } else {
                 __cacheStyle[k2] = [];
@@ -18118,7 +18062,7 @@
 
                   var _deg2 = Math.atan(borderRightWidth / borderBottomWidth);
 
-                  __cacheStyle[k2] = border.calPoints(borderRightWidth, __computedStyle[ks], _deg, _deg2, __sx1, __sx2, __sx5, __sx6, __sy1, __sy2, __sy5, __sy6, 1, btrr, bbrr);
+                  __cacheStyle[k2] = border.calPoints(borderRightWidth, __computedStyle[ks], _deg, _deg2, __x1, __x2, __x5, __x6, __y1, __y2, __y5, __y6, 1, btrr, bbrr);
                 }
               } else {
                 __cacheStyle[k2] = [];
@@ -18130,7 +18074,7 @@
 
                   var _deg4 = Math.atan(borderBottomWidth / borderRightWidth);
 
-                  __cacheStyle[k2] = border.calPoints(borderBottomWidth, __computedStyle[ks], _deg3, _deg4, __sx1, __sx2, __sx5, __sx6, __sy1, __sy2, __sy5, __sy6, 2, bblr, bbrr);
+                  __cacheStyle[k2] = border.calPoints(borderBottomWidth, __computedStyle[ks], _deg3, _deg4, __x1, __x2, __x5, __x6, __y1, __y2, __y5, __y6, 2, bblr, bbrr);
                 }
               } else {
                 __cacheStyle[k2] = [];
@@ -18142,7 +18086,7 @@
 
                   var _deg6 = Math.atan(borderLeftWidth / borderBottomWidth);
 
-                  __cacheStyle[k2] = border.calPoints(borderLeftWidth, __computedStyle[ks], _deg5, _deg6, __sx1, __sx2, __sx5, __sx6, __sy1, __sy2, __sy5, __sy6, 3, btlr, bblr);
+                  __cacheStyle[k2] = border.calPoints(borderLeftWidth, __computedStyle[ks], _deg5, _deg6, __x1, __x2, __x5, __x6, __y1, __y2, __y5, __y6, 3, btlr, bblr);
                 }
               } else {
                 __cacheStyle[k2] = [];
@@ -18255,8 +18199,8 @@
 
         this.__perspectiveMatrix = null;
         var rebuild;
-        var __sx1 = this.__sx1,
-            __sy1 = this.__sy1;
+        var __x1 = this.__x1,
+            __y1 = this.__y1;
 
         if (isNil$9(__cacheStyle[PERSPECTIVE$1])) {
           __cacheStyle[PERSPECTIVE$1] = true;
@@ -18277,7 +18221,7 @@
 
         if (rebuild && ppt) {
           var po = __computedStyle[PERSPECTIVE_ORIGIN$1];
-          this.__perspectiveMatrix = transform$1.calPerspectiveMatrix(ppt, po[0] + __sx1, po[1] + __sy1);
+          this.__perspectiveMatrix = transform$1.calPerspectiveMatrix(ppt, po[0] + __x1, po[1] + __y1);
         }
 
         return this.__perspectiveMatrix;
@@ -18418,8 +18362,8 @@
             ctx: ctx,
             target: _c3,
             matrix: this.__matrixEvent,
-            x: this.__sx1,
-            y: this.__sy1,
+            x: this.__x1,
+            y: this.__y1,
             offsetWidth: this.__offsetWidth,
             offsetHeight: this.__offsetHeight,
             borderList: borderList
@@ -18558,18 +18502,18 @@
             borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$2];
         var isRealInline = this.__isInline; // 考虑mpb的6个坐标，inline比较特殊单独计算
 
-        var sx1 = this.__sx1;
-        var sx2 = this.__sx2;
-        var sx3 = this.__sx3;
-        var sx4 = this.__sx4;
-        var sx5 = this.__sx5;
-        var sx6 = this.__sx6;
-        var sy1 = this.__sy1;
-        var sy2 = this.__sy2;
-        var sy3 = this.__sy3;
-        var sy4 = this.__sy4;
-        var sy5 = this.__sy5;
-        var sy6 = this.__sy6;
+        var sx1 = this.__x1;
+        var sx2 = this.__x2;
+        var sx3 = this.__x3;
+        var sx4 = this.__x4;
+        var sx5 = this.__x5;
+        var sx6 = this.__x6;
+        var sy1 = this.__y1;
+        var sy2 = this.__y2;
+        var sy3 = this.__y3;
+        var sy4 = this.__y4;
+        var sy5 = this.__y5;
+        var sy6 = this.__y6;
         var bx1 = this.__bx1;
         var bx2 = this.__bx2;
         var by1 = this.__by1;
@@ -19120,7 +19064,7 @@
       value: function refresh(lv, cb) {
         var root = this.__root;
 
-        if (isFunction$5(lv) || !arguments.length) {
+        if (isFunction$5(lv) || !lv) {
           lv = REPAINT$3;
         }
 
@@ -19227,8 +19171,8 @@
       value: function willResponseEvent(e, ignore) {
         var x = e.x,
             y = e.y;
-        var __sx1 = this.__sx1,
-            __sy1 = this.__sy1,
+        var __x1 = this.__x1,
+            __y1 = this.__y1,
             __offsetWidth = this.__offsetWidth,
             __offsetHeight = this.__offsetHeight,
             __matrixEvent = this.__matrixEvent,
@@ -19238,7 +19182,7 @@
           return;
         }
 
-        var inThis = geom.pointInQuadrilateral(x, y, __sx1, __sy1, __sx1 + __offsetWidth, __sy1, __sx1 + __offsetWidth, __sy1 + __offsetHeight, __sx1, __sy1 + __offsetHeight, __matrixEvent);
+        var inThis = geom.pointInQuadrilateral(x, y, __x1, __y1, __x1 + __offsetWidth, __y1, __x1 + __offsetWidth, __y1 + __offsetHeight, __x1, __y1 + __offsetHeight, __matrixEvent);
 
         if (inThis) {
           if (!e.target && !ignore) {
@@ -19598,18 +19542,18 @@
           return;
         }
 
-        _get(_getPrototypeOf(Xom.prototype), "__offsetX", this).call(this, diff, isLayout);
+        _get(_getPrototypeOf(Xom.prototype), "__offsetX", this).call(this, diff);
 
         if (isLayout) {
           this.__layoutData.x += diff;
         }
 
-        this.__sx1 += diff;
-        this.__sx2 += diff;
-        this.__sx3 += diff;
-        this.__sx4 += diff;
-        this.__sx5 += diff;
-        this.__sx6 += diff;
+        this.__x1 += diff;
+        this.__x2 += diff;
+        this.__x3 += diff;
+        this.__x4 += diff;
+        this.__x5 += diff;
+        this.__x6 += diff;
 
         if (lv) {
           this.__refreshLevel |= lv;
@@ -19638,18 +19582,18 @@
           return;
         }
 
-        _get(_getPrototypeOf(Xom.prototype), "__offsetY", this).call(this, diff, isLayout);
+        _get(_getPrototypeOf(Xom.prototype), "__offsetY", this).call(this, diff);
 
         if (isLayout) {
           this.__layoutData && (this.__layoutData.y += diff);
         }
 
-        this.__sy1 += diff;
-        this.__sy2 += diff;
-        this.__sy3 += diff;
-        this.__sy4 += diff;
-        this.__sy5 += diff;
-        this.__sy6 += diff;
+        this.__y1 += diff;
+        this.__y2 += diff;
+        this.__y3 += diff;
+        this.__y4 += diff;
+        this.__y5 += diff;
+        this.__y6 += diff;
 
         if (lv) {
           this.__refreshLevel |= lv;
@@ -19703,9 +19647,9 @@
         this.__offsetWidth += diff;
         this.__outerWidth += diff;
         this.__layoutData && (this.__layoutData.w += diff);
-        this.__sx4 += diff;
-        this.__sx5 += diff;
-        this.__sx6 += diff;
+        this.__x4 += diff;
+        this.__x5 += diff;
+        this.__x6 += diff;
 
         if (diff < 0) {
           this.__limitCache = false;
@@ -19735,9 +19679,9 @@
         this.__offsetHeight += diff;
         this.__outerHeight += diff;
         this.__layoutData.h += diff;
-        this.__sy4 += diff;
-        this.__sy5 += diff;
-        this.__sy6 += diff;
+        this.__y4 += diff;
+        this.__y5 += diff;
+        this.__y6 += diff;
 
         if (diff < 0) {
           this.__limitCache = false;
@@ -19801,11 +19745,11 @@
         if (includeBbox) {
           box = this.bbox;
         } else {
-          var __sx1 = this.__sx1,
-              __sy1 = this.__sy1,
+          var __x1 = this.__x1,
+              __y1 = this.__y1,
               __offsetWidth = this.__offsetWidth,
               __offsetHeight = this.__offsetHeight;
-          box = [__sx1, __sy1, __sx1 + __offsetWidth, __sy1 + __offsetHeight];
+          box = [__x1, __y1, __x1 + __offsetWidth, __y1 + __offsetHeight];
         }
 
         var matrixEvent = this.__matrixEvent;
@@ -19905,16 +19849,6 @@
         return this.__tagName;
       }
     }, {
-      key: "sx",
-      get: function get() {
-        return this.__sx;
-      }
-    }, {
-      key: "sy",
-      get: function get() {
-        return this.__sy;
-      }
-    }, {
       key: "clientWidth",
       get: function get() {
         return this.__clientWidth || 0;
@@ -19949,12 +19883,12 @@
       key: "bbox",
       get: function get() {
         if (!this.__bbox) {
-          var __sx1 = this.__sx1,
-              __sy1 = this.__sy1,
+          var __x1 = this.__x1,
+              __y1 = this.__y1,
               __offsetWidth = this.__offsetWidth,
               __offsetHeight = this.__offsetHeight,
               boxShadow = this.__computedStyle[BOX_SHADOW];
-          this.__bbox = spreadBoxShadow([__sx1, __sy1, __sx1 + __offsetWidth, __sy1 + __offsetHeight], boxShadow);
+          this.__bbox = spreadBoxShadow([__x1, __y1, __x1 + __offsetWidth, __y1 + __offsetHeight], boxShadow);
         }
 
         return this.__bbox;
@@ -24957,9 +24891,9 @@
                 var old = item.height;
                 var v = item.__height = computedStyle[HEIGHT$2] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
                 var d = v - old;
-                item.__sy4 += d;
-                item.__sy5 += d;
-                item.__sy6 += d;
+                item.__y4 += d;
+                item.__y5 += d;
+                item.__y6 += d;
                 item.__height += d;
                 item.__clientHeight += d;
                 item.__offsetHeight += d;
@@ -25019,9 +24953,9 @@
 
                   var _d = _v - _old;
 
-                  item.__sy4 += _d;
-                  item.__sy5 += _d;
-                  item.__sy6 += _d;
+                  item.__y4 += _d;
+                  item.__y5 += _d;
+                  item.__y6 += _d;
                   item.__height += _d;
                   item.__clientHeight += _d;
                   item.__offsetHeight += _d;
@@ -25060,9 +24994,9 @@
 
                 var _d2 = _v2 - _old2;
 
-                item.__sx4 += _d2;
-                item.__sx5 += _d2;
-                item.__sx6 += _d2;
+                item.__x4 += _d2;
+                item.__x5 += _d2;
+                item.__x6 += _d2;
                 item.__width += _d2;
                 item.__clientWidth += _d2;
                 item.__offsetWidth += _d2;
@@ -25112,9 +25046,9 @@
 
                   var _d3 = _v3 - _old3;
 
-                  item.__sx4 += _d3;
-                  item.__sx5 += _d3;
-                  item.__sx6 += _d3;
+                  item.__x4 += _d3;
+                  item.__x5 += _d3;
+                  item.__x6 += _d3;
                   item.__width += _d3;
                   item.__clientWidth += _d3;
                   item.__offsetWidth += _d3;
@@ -25670,9 +25604,7 @@
       key: "__inlineSize",
       value: function __inlineSize(size, textAlign, isUpright) {
         var contentBoxList = this.contentBoxList,
-            computedStyle = this.computedStyle,
-            __ox = this.__ox,
-            __oy = this.__oy;
+            computedStyle = this.computedStyle;
         var display = computedStyle[DISPLAY$3],
             marginTop = computedStyle[MARGIN_TOP],
             marginRight = computedStyle[MARGIN_RIGHT$1],
@@ -25752,20 +25684,18 @@
           this.__offsetHeight = maxFY - minFY;
           this.__outerWidth = maxOX - minOX;
           this.__outerHeight = maxOY - minOY;
-          this.__sx = minOX + __ox;
-          this.__sy = minOY + __oy;
-          this.__sx1 = minFX + __ox;
-          this.__sy1 = minFY + __oy;
-          this.__sx2 = minCX + __ox;
-          this.__sy2 = minCY + __oy;
-          this.__sx3 = minX + __ox;
-          this.__sy3 = minY + __oy;
-          this.__sx4 = maxX + __ox;
-          this.__sy4 = maxY + __oy;
-          this.__sx5 = maxCX + __ox;
-          this.__sy5 = maxCY + __oy;
-          this.__sx6 = maxFX + __ox;
-          this.__sy6 = maxFY + __oy; // inline的text整体设置相同
+          this.__x1 = minFX;
+          this.__y1 = minFY;
+          this.__x2 = minCX;
+          this.__y2 = minCY;
+          this.__x3 = minX;
+          this.__y3 = minY;
+          this.__x4 = maxX;
+          this.__y4 = maxY;
+          this.__x5 = maxCX;
+          this.__y5 = maxCY;
+          this.__x6 = maxFX;
+          this.__y6 = maxFY; // inline的text整体设置相同
 
           if (['center', 'right'].indexOf(textAlign) > -1) {
             this.children.forEach(function (item) {
@@ -25800,29 +25730,29 @@
 
             this.__ioSize(tw, 0);
 
-            this.__sx -= marginLeft + paddingLeft + borderLeftWidth;
+            this.__x -= marginLeft + paddingLeft + borderLeftWidth;
           } else {
             th = lineHeight;
 
             this.__ioSize(0, th);
 
-            this.__sy -= marginTop + paddingTop + borderTopWidth;
+            this.__y -= marginTop + paddingTop + borderTopWidth;
           }
 
-          this.__sx1 = this.__sx + marginLeft;
-          this.__sy1 = this.__sy + marginTop;
-          this.__sx2 = this.__sx1 + borderLeftWidth;
-          this.__sy2 = this.__sy1 + borderTopWidth;
-          this.__sx4 = this.__sx3 = this.__sx2 + paddingLeft;
-          this.__sy4 = this.__sy3 = this.__sy2 + paddingTop;
-          this.__sx5 = this.__sx4 + tw + paddingRight;
-          this.__sy5 = this.__sy4 + th + paddingBottom;
-          this.__sx6 = this.__sx5 + borderRightWidth;
-          this.__sy6 = this.__sy5 + borderBottomWidth;
-          this.__clientWidth = this.__sx5 - this.__sx2;
-          this.__clientHeight = this.__sy5 - this.__sy2;
-          this.__offsetWidth = this.__sx6 - this.__sx1;
-          this.__offsetHeight = this.__sy6 - this.__sy1;
+          this.__x1 = this.__x + marginLeft;
+          this.__y1 = this.__y + marginTop;
+          this.__x2 = this.__x1 + borderLeftWidth;
+          this.__y2 = this.__y1 + borderTopWidth;
+          this.__x4 = this.__x3 = this.__x2 + paddingLeft;
+          this.__y4 = this.__y3 = this.__y2 + paddingTop;
+          this.__x5 = this.__x4 + tw + paddingRight;
+          this.__y5 = this.__y4 + th + paddingBottom;
+          this.__x6 = this.__x5 + borderRightWidth;
+          this.__y6 = this.__y5 + borderBottomWidth;
+          this.__clientWidth = this.__x5 - this.__x2;
+          this.__clientHeight = this.__y5 - this.__y2;
+          this.__offsetWidth = this.__x6 - this.__x1;
+          this.__offsetHeight = this.__y6 - this.__y1;
           this.__outerWidth = this.__offsetWidth + marginLeft + marginRight;
           this.__outerHeight = this.__offsetHeight + marginTop + marginBottom;
         }
@@ -25840,8 +25770,8 @@
       value: function __layoutAbs(container, data, target) {
         var _this6 = this;
 
-        var x = container.__sx,
-            y = container.__sy,
+        var x = container.__x,
+            y = container.__y,
             clientWidth = container.__clientWidth,
             clientHeight = container.__clientHeight,
             computedStyle = container.__computedStyle;
@@ -26013,7 +25943,7 @@
                 } else {
                   mbList.push(cps[MARGIN_BOTTOM]);
                   var t = reflow.getMergeMargin(mtList, mbList);
-                  y2 = prev.__sy1 + prev.offsetHeight + t.target;
+                  y2 = prev.__y1 + prev.offsetHeight + t.target;
                   break;
                 }
               }
@@ -29599,15 +29529,15 @@
       key: "genOverflow",
       value: function genOverflow(target, node) {
         var bbox = target.bbox;
-        var __sx1 = node.__sx1,
-            __sy1 = node.__sy1,
+        var __x1 = node.__x1,
+            __y1 = node.__y1,
             __clientWidth = node.__clientWidth,
             __clientHeight = node.__clientHeight;
-        var xe = __sx1 + __clientWidth;
-        var ye = __sy1 + __clientHeight;
+        var xe = __x1 + __clientWidth;
+        var ye = __y1 + __clientHeight;
 
-        if (bbox[0] < __sx1 || bbox[1] < __sy1 || bbox[2] > xe || bbox[3] > ye) {
-          var bboxNew = [__sx1, __sy1, xe, ye];
+        if (bbox[0] < __x1 || bbox[1] < __y1 || bbox[2] > xe || bbox[3] > ye) {
+          var bboxNew = [__x1, __y1, xe, ye];
           var cacheOverflow = genSingle(target, 'overflow', bboxNew);
           var ctx = cacheOverflow.ctx;
           ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -30144,8 +30074,8 @@
       return __cacheTotal;
     }
 
-    var sx1 = node.__sx1,
-        sy1 = node.__sy1;
+    var sx1 = node.__x1,
+        sy1 = node.__y1;
     var bboxTotal = genBboxTotal(node, __structs, index, total, false).bbox;
 
     if (!bboxTotal) {
@@ -30292,7 +30222,7 @@
         var m = void 0;
 
         if (i !== index && (!isE(parentMatrix) || !isE(transform))) {
-          m = transform$1.calMatrixByOrigin(transform, tfo[0] + dbx + _node2.__sx1 - sx1 + tx, tfo[1] + dby + _node2.__sy1 - sy1 + ty);
+          m = transform$1.calMatrixByOrigin(transform, tfo[0] + dbx + _node2.__x1 - sx1 + tx, tfo[1] + dby + _node2.__y1 - sy1 + ty);
 
           if (!isE(parentMatrix)) {
             m = multiply(parentMatrix, m);
@@ -30603,7 +30533,7 @@
             var m = void 0;
 
             if (!isE(transform)) {
-              m = transform$1.calMatrixByOrigin(transform, tfo[0] + dbx + _node3.__sx1 - sx1 + tx, tfo[1] + dby + _node3.__sy1 - sy1 + ty);
+              m = transform$1.calMatrixByOrigin(transform, tfo[0] + dbx + _node3.__x1 - sx1 + tx, tfo[1] + dby + _node3.__y1 - sy1 + ty);
 
               if (!isE(parentMatrix)) {
                 m = multiply(parentMatrix, m);
@@ -30827,14 +30757,14 @@
 
     var w = bboxTotal[2] - bboxTotal[0],
         h = bboxTotal[3] - bboxTotal[1];
-    var __sx1 = node.__sx1,
-        __sy1 = node.__sy1,
+    var __x1 = node.__x1,
+        __y1 = node.__y1,
         __cache = node.__cache;
 
     if (__cacheTotal) {
-      __cacheTotal.reset(bboxTotal, __sx1, __sy1);
+      __cacheTotal.reset(bboxTotal, __x1, __y1);
     } else {
-      __cacheTotal = TextureCache.getInstance(renderMode, gl, root.uuid, bboxTotal, __sx1, __sy1, null);
+      __cacheTotal = TextureCache.getInstance(renderMode, gl, root.uuid, bboxTotal, __x1, __y1, null);
     }
 
     if (!__cacheTotal || !__cacheTotal.__enabled) {
@@ -30970,7 +30900,7 @@
         var _m = void 0;
 
         if (i !== index && !isE(transform)) {
-          _m = transform$1.calMatrixByOrigin(transform, tfo[0] + dbx + _node4.__sx1 - sx1, tfo[1] + dby + _node4.__sy1 - sy1);
+          _m = transform$1.calMatrixByOrigin(transform, tfo[0] + dbx + _node4.__x1 - sx1, tfo[1] + dby + _node4.__y1 - sy1);
 
           if (!isE(parentMatrix)) {
             _m = multiply(parentMatrix, _m);
@@ -31319,20 +31249,20 @@
 
   function genOverflowWebgl(renderMode, gl, root, node, cache, W, H) {
     var bbox = cache.bbox;
-    var __sx1 = node.__sx1,
-        __sy1 = node.__sy1,
+    var __x1 = node.__x1,
+        __y1 = node.__y1,
         __clientWidth = node.__clientWidth,
         __clientHeight = node.__clientHeight;
-    var x = __sx1 + __clientWidth;
-    var y = __sy1 + __clientHeight; // 没超过无需生成
+    var x = __x1 + __clientWidth;
+    var y = __y1 + __clientHeight; // 没超过无需生成
 
-    if (bbox[0] >= __sx1 && bbox[1] >= __sy1 && bbox[2] <= x && bbox[3] <= y) {
+    if (bbox[0] >= __x1 && bbox[1] >= __y1 && bbox[2] <= x && bbox[3] <= y) {
       return;
     }
 
-    var bboxNew = [__sx1, __sy1, x, y];
+    var bboxNew = [__x1, __y1, x, y];
 
-    var __cacheOverflow = TextureCache.getInstance(renderMode, gl, root.uuid, bboxNew, __sx1, __sy1, cache.__page);
+    var __cacheOverflow = TextureCache.getInstance(renderMode, gl, root.uuid, bboxNew, __x1, __y1, cache.__page);
 
     if (!__cacheOverflow) {
       return;
@@ -32116,14 +32046,14 @@
         if (node instanceof Text) {
           if (lastRefreshLevel >= REPAINT$1) {
             var bbox = node.bbox,
-                sx = node.__sx,
-                sy = node.__sy;
+                x = node.__x,
+                y = node.__y;
             var __cache = node.__cache;
 
             if (__cache) {
-              __cache.reset(bbox, sx, sy);
+              __cache.reset(bbox, x, y);
             } else {
-              __cache = CanvasCache.getInstance(mode.CANVAS, gl, root.uuid, bbox, sx, sy, null);
+              __cache = CanvasCache.getInstance(mode.CANVAS, gl, root.uuid, bbox, x, y, null);
             }
 
             if (__cache && __cache.enabled) {
@@ -32223,8 +32153,8 @@
           if (hasContent) {
             var _bbox2 = node.bbox,
                 _cache4 = node.__cache,
-                sx1 = node.__sx1,
-                sy1 = node.__sy1;
+                sx1 = node.__x1,
+                sy1 = node.__y1;
 
             if (_cache4) {
               _cache4.reset(_bbox2, sx1, sy1);
@@ -33830,8 +33760,8 @@
       key: "getTargetAtPoint",
       value: function getTargetAtPoint(x, y, includeIgnore) {
         function scan(vd, x, y, path, zPath) {
-          var __sx1 = vd.__sx1,
-              __sy1 = vd.__sy1,
+          var __x1 = vd.__x1,
+              __y1 = vd.__y1,
               offsetWidth = vd.offsetWidth,
               offsetHeight = vd.offsetHeight,
               matrixEvent = vd.matrixEvent,
@@ -33873,7 +33803,7 @@
             return;
           }
 
-          var inThis = geom.pointInQuadrilateral(x, y, __sx1, __sy1, __sx1 + offsetWidth, __sy1, __sx1 + offsetWidth, __sy1 + offsetHeight, __sx1, __sy1 + offsetHeight, matrixEvent);
+          var inThis = geom.pointInQuadrilateral(x, y, __x1, __y1, __x1 + offsetWidth, __y1, __x1 + offsetWidth, __y1 + offsetHeight, __x1, __y1 + offsetHeight, matrixEvent);
 
           if (inThis) {
             return {
@@ -35729,8 +35659,8 @@
       get: function get() {
         var isMulti = this.isMulti,
             __cacheProps = this.__cacheProps,
-            originX = this.__sx3,
-            originY = this.__sy3,
+            originX = this.__x3,
+            originY = this.__y3,
             strokeWidth = this.computedStyle[STROKE_WIDTH$5];
         this.buildCache(originX, originY);
         var x1 = __cacheProps.x1,
@@ -39140,8 +39070,8 @@
         if (!this.__bbox) {
           var isMulti = this.isMulti,
               __cacheProps = this.__cacheProps,
-              originX = this.__sx3,
-              originY = this.__sy3,
+              originX = this.__x3,
+              originY = this.__y3,
               strokeWidth = this.computedStyle[STROKE_WIDTH$4];
           this.buildCache(originX, originY);
 
@@ -39622,8 +39552,8 @@
         if (!this.__bbox) {
           var isMulti = this.isMulti,
               __cacheProps = this.__cacheProps,
-              originX = this.__sx3,
-              originY = this.__sy3,
+              originX = this.__x3,
+              originY = this.__y3,
               width = this.width,
               height = this.height,
               strokeWidth = this.computedStyle[STROKE_WIDTH$3];
@@ -39812,8 +39742,8 @@
       key: "bbox",
       get: function get() {
         if (!this.__bbox) {
-          var originX = this.__sx3,
-              originY = this.__sy3,
+          var originX = this.__x3,
+              originY = this.__y3,
               width = this.width,
               height = this.height,
               strokeWidth = this.computedStyle[STROKE_WIDTH$2];
@@ -39930,8 +39860,8 @@
         if (!this.__bbox) {
           var isMulti = this.isMulti,
               __cacheProps = this.__cacheProps,
-              originX = this.__sx3,
-              originY = this.__sy3,
+              originX = this.__x3,
+              originY = this.__y3,
               width = this.width,
               height = this.height,
               strokeWidth = this.computedStyle[STROKE_WIDTH$1];
@@ -40115,8 +40045,8 @@
         if (!this.__bbox) {
           var isMulti = this.isMulti,
               __cacheProps = this.__cacheProps,
-              originX = this.__sx3,
-              originY = this.__sy3,
+              originX = this.__x3,
+              originY = this.__y3,
               width = this.width,
               height = this.height,
               strokeWidth = this.computedStyle[STROKE_WIDTH];

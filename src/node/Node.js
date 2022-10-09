@@ -2,10 +2,6 @@ class Node {
   constructor() {
     this.__x = 0;
     this.__y = 0;
-    this.__ox = 0; // relative造成的偏移量
-    this.__oy = 0;
-    this.__sx = 0;
-    this.__sy = 0;
     this.__width = 0;
     this.__height = 0;
     this.__baseline = 0;
@@ -31,24 +27,12 @@ class Node {
     };
   }
 
-  __offsetX(diff, isLayout) {
-    if(isLayout) {
-      this.__x += diff;
-    }
-    else {
-      this.__ox += diff;
-    }
-    this.__sx += diff;
+  __offsetX(diff) {
+    this.__x += diff;
   }
 
-  __offsetY(diff, isLayout) {
-    if(isLayout) {
-      this.__y += diff;
-    }
-    else {
-      this.__oy += diff;
-    }
-    this.__sy += diff;
+  __offsetY(diff) {
+    this.__y += diff;
   }
 
   __destroy() {
@@ -61,22 +45,6 @@ class Node {
 
   get y() {
     return this.__y;
-  }
-
-  get ox() {
-    return this.__ox;
-  }
-
-  get oy() {
-    return this.__oy;
-  }
-
-  get sx() {
-    return this.x + this.ox;
-  }
-
-  get sy() {
-    return this.y + this.oy;
   }
 
   get width() {

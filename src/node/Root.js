@@ -489,7 +489,7 @@ class Root extends Dom {
 
   getTargetAtPoint(x, y, includeIgnore) {
     function scan(vd, x, y, path, zPath) {
-      let { __sx1, __sy1, offsetWidth, offsetHeight, matrixEvent, children, zIndexChildren,
+      let { __x1, __y1, offsetWidth, offsetHeight, matrixEvent, children, zIndexChildren,
         computedStyle: { [DISPLAY]: display, [POINTER_EVENTS]: pointerEvents } } = vd;
       if(!includeIgnore && display === 'none') {
         return;
@@ -518,10 +518,10 @@ class Root extends Dom {
       }
       let inThis = geom.pointInQuadrilateral(
         x, y,
-        __sx1, __sy1,
-        __sx1 + offsetWidth, __sy1,
-        __sx1 + offsetWidth, __sy1 + offsetHeight,
-        __sx1, __sy1 + offsetHeight,
+        __x1, __y1,
+        __x1 + offsetWidth, __y1,
+        __x1 + offsetWidth, __y1 + offsetHeight,
+        __x1, __y1 + offsetHeight,
         matrixEvent
       );
       if(inThis) {

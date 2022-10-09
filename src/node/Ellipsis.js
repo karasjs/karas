@@ -25,8 +25,8 @@ const CHAR = '…';
 class Ellipsis extends Node {
   constructor(x, y, width, parent, isUpright) {
     super();
-    this.__x = this.__sx1 = x;
-    this.__y = this.__sy1 = y;
+    this.__x = this.__x1 = x;
+    this.__y = this.__y1 = y;
     this.__width = width;
     this.__parent = this.__domParent = parent;
     parent.__ellipsis = this;

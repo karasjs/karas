@@ -206,7 +206,7 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
   if(__cacheTotal && __cacheTotal.available) {
     return __cacheTotal;
   }
-  let { __sx1: sx1, __sy1: sy1 } = node;
+  let { __x1: sx1, __y1: sy1 } = node;
   let bboxTotal = genBboxTotal(node, __structs, index, total, false).bbox;
   if(!bboxTotal) {
     return;
@@ -320,7 +320,7 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
       // 特殊渲染的matrix，局部根节点为原点考虑，当需要计算时（不为E）再计算
       let m;
       if(i !== index && (!isE(parentMatrix) || !isE(transform))) {
-        m = tf.calMatrixByOrigin(transform, tfo[0] + dbx + node.__sx1 - sx1 + tx, tfo[1] + dby + node.__sy1 - sy1 + ty);
+        m = tf.calMatrixByOrigin(transform, tfo[0] + dbx + node.__x1 - sx1 + tx, tfo[1] + dby + node.__y1 - sy1 + ty);
         if(!isE(parentMatrix)) {
           m = multiply(parentMatrix, m);
         }
@@ -551,7 +551,7 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
           // 特殊渲染的matrix，局部根节点为原点且考虑根节点自身的transform
           let m;
           if(!isE(transform)) {
-            m = tf.calMatrixByOrigin(transform, tfo[0] + dbx + node.__sx1 - sx1 + tx, tfo[1] + dby + node.__sy1 - sy1 + ty);
+            m = tf.calMatrixByOrigin(transform, tfo[0] + dbx + node.__x1 - sx1 + tx, tfo[1] + dby + node.__y1 - sy1 + ty);
             if(!isE(parentMatrix)) {
               m = multiply(parentMatrix, m);
             }
@@ -710,12 +710,12 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
     return;
   }
   let w = bboxTotal[2] - bboxTotal[0], h = bboxTotal[3] - bboxTotal[1];
-  let { __sx1, __sy1, __cache } = node;
+  let { __x1, __y1, __cache } = node;
   if(__cacheTotal) {
-    __cacheTotal.reset(bboxTotal, __sx1, __sy1);
+    __cacheTotal.reset(bboxTotal, __x1, __y1);
   }
   else {
-    __cacheTotal = TextureCache.getInstance(renderMode, gl, root.uuid, bboxTotal, __sx1, __sy1, null);
+    __cacheTotal = TextureCache.getInstance(renderMode, gl, root.uuid, bboxTotal, __x1, __y1, null);
   }
   if(!__cacheTotal || !__cacheTotal.__enabled) {
     if(w || h) {
@@ -829,7 +829,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
       // 特殊渲染的matrix，局部根节点为原点考虑，当需要计算时（不为E）再计算
       let m;
       if(i !== index && !isE(transform)) {
-        m = tf.calMatrixByOrigin(transform, tfo[0] + dbx + node.__sx1 - sx1, tfo[1] + dby + node.__sy1 - sy1);
+        m = tf.calMatrixByOrigin(transform, tfo[0] + dbx + node.__x1 - sx1, tfo[1] + dby + node.__y1 - sy1);
         if(!isE(parentMatrix)) {
           m = multiply(parentMatrix, m);
         }
@@ -1149,15 +1149,15 @@ function genColorMatrixWebgl(renderMode, gl, cache, m) {
 
 function genOverflowWebgl(renderMode, gl, root, node, cache, W, H) {
   let bbox = cache.bbox;
-  let { __sx1, __sy1, __clientWidth, __clientHeight } = node;
-  let x = __sx1 + __clientWidth;
-  let y = __sy1 + __clientHeight;
+  let { __x1, __y1, __clientWidth, __clientHeight } = node;
+  let x = __x1 + __clientWidth;
+  let y = __y1 + __clientHeight;
   // 没超过无需生成
-  if(bbox[0] >= __sx1 && bbox[1] >= __sy1 && bbox[2] <= x &&  bbox[3] <= y) {
+  if(bbox[0] >= __x1 && bbox[1] >= __y1 && bbox[2] <= x &&  bbox[3] <= y) {
     return;
   }
-  let bboxNew = [__sx1, __sy1, x, y];
-  let __cacheOverflow = TextureCache.getInstance(renderMode, gl, root.uuid, bboxNew, __sx1, __sy1, cache.__page);
+  let bboxNew = [__x1, __y1, x, y];
+  let __cacheOverflow = TextureCache.getInstance(renderMode, gl, root.uuid, bboxNew, __x1, __y1, cache.__page);
   if(!__cacheOverflow) {
     return;
   }
@@ -1827,13 +1827,13 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       // Text特殊处理，webgl中先渲染为bitmap，再作为贴图绘制，缓存交由text内部判断，直接调用渲染纹理方法
       if(node instanceof Text) {
         if(lastRefreshLevel >= REPAINT) {
-          let bbox = node.bbox, sx = node.__sx, sy = node.__sy;
+          let bbox = node.bbox, x = node.__x, y = node.__y;
           let __cache = node.__cache;
           if(__cache) {
-            __cache.reset(bbox, sx, sy);
+            __cache.reset(bbox, x, y);
           }
           else {
-            __cache = CanvasCache.getInstance(mode.CANVAS, gl, root.uuid, bbox, sx, sy, null);
+            __cache = CanvasCache.getInstance(mode.CANVAS, gl, root.uuid, bbox, x, y, null);
           }
           if(__cache && __cache.enabled) {
             __cache.__bbox = bbox;
@@ -1920,7 +1920,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         let hasContent = node.calContent(__currentStyle, __computedStyle);
         // 有内容先以canvas模式绘制到离屏画布上，自定义渲染设置无内容不实现即可跳过
         if(hasContent) {
-          let bbox = node.bbox, __cache = node.__cache, sx1 = node.__sx1, sy1 = node.__sy1;
+          let bbox = node.bbox, __cache = node.__cache, sx1 = node.__x1, sy1 = node.__y1;
           if(__cache) {
             __cache.reset(bbox, sx1, sy1);
           }

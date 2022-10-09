@@ -499,7 +499,7 @@ class Polyline extends Geom {
     if(!this.__bbox) {
       let {
         isMulti, __cacheProps,
-        __sx3: originX, __sy3: originY,
+        __x3: originX, __y3: originY,
         computedStyle: {
           [STROKE_WIDTH]: strokeWidth,
         },

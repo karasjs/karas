@@ -110,11 +110,11 @@ class CanvasCache extends Cache {
    */
   static genOverflow(target, node) {
     let { bbox } = target;
-    let { __sx1, __sy1, __clientWidth, __clientHeight } = node;
-    let xe = __sx1 + __clientWidth;
-    let ye = __sy1 + __clientHeight;
-    if(bbox[0] < __sx1 || bbox[1] < __sy1 || bbox[2] > xe || bbox[3] > ye) {
-      let bboxNew = [__sx1, __sy1, xe, ye];
+    let { __x1, __y1, __clientWidth, __clientHeight } = node;
+    let xe = __x1 + __clientWidth;
+    let ye = __y1 + __clientHeight;
+    if(bbox[0] < __x1 || bbox[1] < __y1 || bbox[2] > xe || bbox[3] > ye) {
+      let bboxNew = [__x1, __y1, xe, ye];
       let cacheOverflow = genSingle(target, 'overflow', bboxNew);
       let ctx = cacheOverflow.ctx;
       ctx.setTransform(1, 0, 0, 1, 0, 0);

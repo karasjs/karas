@@ -104,7 +104,7 @@ class Ellipse extends Geom {
     if(!this.__bbox) {
       let {
         isMulti, __cacheProps,
-        __sx3: originX, __sy3: originY, width, height,
+        __x3: originX, __y3: originY, width, height,
         computedStyle: {
           [STROKE_WIDTH]: strokeWidth,
         }

@@ -124,9 +124,9 @@ function genBboxTotal(node, __structs, index, total) {
         return;
       }
       let bbox = node.bbox, p = node.__domParent, matrix = p.__matrixEvent;
-      if(pm) {
-        matrix = multiply(parentPm, matrix);
-      }
+      // if(pm) {
+      //   matrix = multiply(pm, matrix);
+      // }
       if(!isE(matrix)) {
         bbox = transformBbox(bbox, matrix, 0, 0);
       }
@@ -706,7 +706,7 @@ function genFrameBufferWithTexture(gl, texture, width, height) {
  * 局部根节点复合图层生成，汇总所有子节点到一颗局部树上的位图缓存，包含超限特殊情况
  * 即便只有自己一个也要返回，因为webgl生成total的原因是有类似filter/mask等必须离屏处理的东西
  */
-function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total, __structs, W, H) {
+function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total, __structs, W, H, isPerspective) {
   if(__cacheTotal && __cacheTotal.available) {
     return __cacheTotal;
   }
@@ -731,7 +731,8 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   }
   __cacheTotal.__available = true;
   node.__cacheTotal = __cacheTotal;
-  let { sx1, sy1, dx, dy, dbx, dby } = __cacheTotal;
+  let { sx1, sy1, dx, dy, dbx, dby } = __cacheTotal;console.log(index,dx,dy,dbx,dby)
+  // perspective计算
   let page = __cacheTotal.__page, size = page.__size, texture = page.texture;
   // fbo绘制对象纹理不用绑定单元，剩下的纹理绘制用0号
   let frameBuffer = genFrameBufferWithTexture(gl, texture, size, size);
@@ -763,9 +764,9 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
       let __cache = node.__cache;
       if(__cache && __cache.available) {
         let m = lastMatrix;
-        if(pm) {
-          m = multiply(pm, m);
-        }
+        // if(pm) {
+        //   m = multiply(pm, m);
+        // }
         let {
           __opacity,
         } = node.__domParent;
@@ -822,11 +823,11 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
       let m;
       if(i !== index && !isE(transform)) {
         m = tf.calMatrixByOrigin(transform, tfo[0] + dbx + node.__sx1 - sx1, tfo[1] + dby + node.__sy1 - sy1);
-        if(pm) {
-          m = multiply(pm, m);
-        }
         if(!isE(parentMatrix)) {
           m = multiply(parentMatrix, m);
+        }
+        if(pm) {
+          m = multiply(pm, m);
         }
       }
       lastMatrix = m;
@@ -1802,7 +1803,7 @@ function renderWebgl(renderMode, gl, root, isFirst) {
       total,
       hasMask,
     } = __structs[i];
-    node.__index = i;
+    node.__index = i; // 生成total需要
     // Text特殊处理，webgl中先渲染为bitmap，再作为贴图绘制，缓存交由text内部判断，直接调用渲染纹理方法
     if(node instanceof Text) {
       if(lastRefreshLevel >= REPAINT) {
@@ -1947,7 +1948,7 @@ function renderWebgl(renderMode, gl, root, isFirst) {
         });
       }
     }
-  }
+  }console.error(mergeList)
   // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
   // 这样保证子节点在前，后节点在前，后节点是为了mask先应用自身如filter之后再进行遮罩
   if(mergeList.length) {
@@ -1976,7 +1977,7 @@ function renderWebgl(renderMode, gl, root, isFirst) {
       let {
         [OVERFLOW]: overflow,
         [FILTER]: filter,
-      } = __computedStyle
+      } = __computedStyle;
       let isPerspective = !isE(__domParent && __domParent.__perspectiveMatrix) || tf.isPerspectiveMatrix(__matrix);
       // 有ppt的，向上查找所有父亲index记录，可能出现重复记得提前跳出
       if(isPerspective) {
@@ -1994,10 +1995,14 @@ function renderWebgl(renderMode, gl, root, isFirst) {
             pptHash[idx] = true;
           }
         }
-        if(!pptHash[i] && !hasMask && !filter.length && !(overflow === 'hidden' && total) && !node.__cacheAsBitmap) {
-          return;
+        // 最内层的ppt忽略
+        if(!pptHash[i]) {
+          isPerspective = false;
+          if(!hasMask && !filter.length && !(overflow === 'hidden' && total) && !node.__cacheAsBitmap) {
+            return;
+          }
         }
-      }
+      }console.warn(i);
       let {
         __limitCache,
         __cacheTotal,
@@ -2011,7 +2016,7 @@ function renderWebgl(renderMode, gl, root, isFirst) {
       let needGen;
       // 可能没变化，比如被遮罩节点、filter变更等
       if(!__cacheTotal || !__cacheTotal.available) {
-        let res = genTotalWebgl(renderMode, __cacheTotal, gl, root, node, i, lv, total || 0, __structs, width, height);
+        let res = genTotalWebgl(renderMode, __cacheTotal, gl, root, node, i, lv, total || 0, __structs, width, height, isPerspective);
         if(!res) {
           return;
         }

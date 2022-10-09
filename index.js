@@ -30020,11 +30020,9 @@
 
         var _bbox = _node.bbox,
             _p = _node.__domParent,
-            _matrix = _p.__matrixEvent;
-
-        if (pm) {
-          _matrix = multiply(parentPm, _matrix);
-        }
+            _matrix = _p.__matrixEvent; // if(pm) {
+        //   matrix = multiply(pm, matrix);
+        // }
 
         if (!isE(_matrix)) {
           _bbox = transformBbox(_bbox, _matrix, 0, 0);
@@ -30788,7 +30786,7 @@
    */
 
 
-  function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total, __structs, W, H) {
+  function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total, __structs, W, H, isPerspective) {
     if (__cacheTotal && __cacheTotal.available) {
       return __cacheTotal;
     }
@@ -30830,6 +30828,8 @@
         dy = _cacheTotal3.dy,
         dbx = _cacheTotal3.dbx,
         dby = _cacheTotal3.dby;
+    console.log(index, dx, dy, dbx, dby); // perspective计算
+
     var page = __cacheTotal.__page,
         size = page.__size,
         texture = page.texture; // fbo绘制对象纹理不用绑定单元，剩下的纹理绘制用0号
@@ -30867,11 +30867,9 @@
         var _cache = _node4.__cache;
 
         if (_cache && _cache.available) {
-          var m = lastMatrix;
-
-          if (pm) {
-            m = multiply(pm, m);
-          }
+          var m = lastMatrix; // if(pm) {
+          //   m = multiply(pm, m);
+          // }
 
           var __opacity = _node4.__domParent.__opacity;
           var p = _cache.__page;
@@ -30935,12 +30933,12 @@
         if (i !== index && !isE(transform)) {
           _m = transform$1.calMatrixByOrigin(transform, tfo[0] + dbx + _node4.__sx1 - sx1, tfo[1] + dby + _node4.__sy1 - sy1);
 
-          if (pm) {
-            _m = multiply(pm, _m);
-          }
-
           if (!isE(parentMatrix)) {
             _m = multiply(parentMatrix, _m);
+          }
+
+          if (pm) {
+            _m = multiply(pm, _m);
           }
         }
 
@@ -32057,7 +32055,8 @@
           lv = _structs$i7.lv,
           total = _structs$i7.total,
           hasMask = _structs$i7.hasMask;
-      node.__index = i; // Text特殊处理，webgl中先渲染为bitmap，再作为贴图绘制，缓存交由text内部判断，直接调用渲染纹理方法
+      node.__index = i; // 生成total需要
+      // Text特殊处理，webgl中先渲染为bitmap，再作为贴图绘制，缓存交由text内部判断，直接调用渲染纹理方法
 
       if (node instanceof Text) {
         if (lastRefreshLevel >= REPAINT$1) {
@@ -32219,9 +32218,10 @@
           });
         }
       }
-    } // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
-    // 这样保证子节点在前，后节点在前，后节点是为了mask先应用自身如filter之后再进行遮罩
+    }
 
+    console.error(mergeList); // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
+    // 这样保证子节点在前，后节点在前，后节点是为了mask先应用自身如filter之后再进行遮罩
 
     if (mergeList.length) {
       mergeList.sort(function (a, b) {
@@ -32266,13 +32266,19 @@
             if (parent && parent.__perspectiveMatrix) {
               pptHash[idx] = true;
             }
-          }
+          } // 最内层的ppt忽略
 
-          if (!pptHash[i] && !hasMask && !filter.length && !(overflow === 'hidden' && total) && !node.__cacheAsBitmap) {
-            return;
+
+          if (!pptHash[i]) {
+            isPerspective = false;
+
+            if (!hasMask && !filter.length && !(overflow === 'hidden' && total) && !node.__cacheAsBitmap) {
+              return;
+            }
           }
         }
 
+        console.warn(i);
         var __limitCache = node.__limitCache,
             __cacheTotal = node.__cacheTotal,
             __cacheFilter = node.__cacheFilter,

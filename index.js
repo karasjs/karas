@@ -12210,8 +12210,8 @@
       bx1 = lineBox.x + diff - pbStart + leading;
     } else {
       x1 = start.x;
-      y1 = lineBox.y + diff - bcStart + leading;
-      by1 = lineBox.y + diff - pbStart + leading;
+      y1 = lineBox.y + lineBox.oy + diff - bcStart + leading;
+      by1 = lineBox.y + lineBox.oy + diff - pbStart + leading;
     } // 容器内包含的inline节点，需考虑行首水平mbp（垂直排版为垂直头mbp）
 
 
@@ -12270,8 +12270,8 @@
       }
 
       x2 = end.x + end.outerWidth;
-      y2 = lineBox.y + diff + lineHeight + bcEnd - leading;
-      by2 = lineBox.y + diff + lineHeight + pbEnd - leading;
+      y2 = lineBox.y + lineBox.oy + diff + lineHeight + bcEnd - leading;
+      by2 = lineBox.y + lineBox.oy + diff + lineHeight + pbEnd - leading;
     } // TextBox的parent是Text，再是Dom，这里一定是inline，无嵌套就是xom本身，有则包含若干层最上层还是xom
 
 
@@ -17148,54 +17148,7 @@
 
 
         if (!isAbs && !isColumn && !isRow) {
-          // relative渲染时做偏移，百分比基于父元素，若父元素没有定高则为0
-          if (position === 'relative') {
-            var top = __currentStyle[TOP$3],
-                right = __currentStyle[RIGHT$2],
-                bottom = __currentStyle[BOTTOM$3],
-                left = __currentStyle[LEFT$2];
-            var parent = this.parent;
-
-            if (top.u !== AUTO$4) {
-              var n = calRelative(__currentStyle, TOP$3, top, parent);
-
-              this.__offsetY(n, true, null);
-
-              __computedStyle[TOP$3] = n;
-              __computedStyle[BOTTOM$3] = 'auto';
-            } else if (bottom.u !== AUTO$4) {
-              var _n = calRelative(__currentStyle, BOTTOM$3, bottom, parent);
-
-              this.__offsetY(-_n, true, null);
-
-              __computedStyle[BOTTOM$3] = _n;
-              __computedStyle[TOP$3] = 'auto';
-            } else {
-              __computedStyle[TOP$3] = __computedStyle[BOTTOM$3] = 'auto';
-            }
-
-            if (left.u !== AUTO$4) {
-              var _n2 = calRelative(__currentStyle, LEFT$2, left, parent, true);
-
-              this.__offsetX(_n2, true, null);
-
-              __computedStyle[LEFT$2] = _n2;
-              __computedStyle[RIGHT$2] = 'auto';
-            } else if (right.u !== AUTO$4) {
-              var _n3 = calRelative(__currentStyle, RIGHT$2, right, parent, true);
-
-              this.__offsetX(-_n3, true, null);
-
-              __computedStyle[RIGHT$2] = _n3;
-              __computedStyle[LEFT$2] = 'auto';
-            } else {
-              __computedStyle[LEFT$2] = __computedStyle[RIGHT$2] = 'auto';
-            }
-          } else if (position !== 'absolute') {
-            __computedStyle[TOP$3] = __computedStyle[BOTTOM$3] = __computedStyle[LEFT$2] = __computedStyle[RIGHT$2] = 'auto';
-          } // 计算结果存入computedStyle和6个坐标，inline在其inlineSize特殊处理
-
-
+          // 计算结果存入computedStyle和6个坐标，inline在其inlineSize特殊处理
           var x = this.__x;
           var y = this.__y;
 
@@ -17212,6 +17165,96 @@
             y = this.__y4 = y + this.__height;
             y = this.__y5 = y + __computedStyle[PADDING_BOTTOM$2];
             this.__y6 = y + __computedStyle[BORDER_BOTTOM_WIDTH$2];
+          } // relative渲染时做偏移，百分比基于父元素，若父元素没有定高则为0
+
+
+          if (position === 'relative') {
+            var top = __currentStyle[TOP$3],
+                right = __currentStyle[RIGHT$2],
+                bottom = __currentStyle[BOTTOM$3],
+                left = __currentStyle[LEFT$2];
+            var parent = this.parent;
+
+            if (top.u !== AUTO$4) {
+              var n = calRelative(__currentStyle, TOP$3, top, parent);
+
+              if (n) {
+                this.__offsetY(n, true, null);
+
+                if (this.__isInline) {
+                  var list = this.__contentBoxList;
+
+                  if (Array.isArray(list)) {
+                    var last;
+                    list.forEach(function (item) {
+                      var p = item.__parentLineBox;
+
+                      if (p && p !== last) {
+                        p.__oy += n;
+                      }
+
+                      last = p;
+                    });
+                  }
+                }
+              }
+
+              __computedStyle[TOP$3] = n;
+              __computedStyle[BOTTOM$3] = 'auto';
+            } else if (bottom.u !== AUTO$4) {
+              var _n = calRelative(__currentStyle, BOTTOM$3, bottom, parent);
+
+              if (_n) {
+                this.__offsetY(-_n, true, null);
+
+                if (this.__isInline) {
+                  var _list = this.__contentBoxList;
+
+                  if (Array.isArray(_list)) {
+                    var _last;
+
+                    _list.forEach(function (item) {
+                      var p = item.__parentLineBox;
+
+                      if (p && p !== _last) {
+                        p.__oy -= _n;
+                      }
+
+                      _last = p;
+                    });
+                  }
+                }
+              }
+
+              __computedStyle[BOTTOM$3] = _n;
+              __computedStyle[TOP$3] = 'auto';
+            } else {
+              __computedStyle[TOP$3] = __computedStyle[BOTTOM$3] = 'auto';
+            }
+
+            if (left.u !== AUTO$4) {
+              var _n2 = calRelative(__currentStyle, LEFT$2, left, parent, true);
+
+              if (_n2) {
+                this.__offsetX(_n2, true, null);
+              }
+
+              __computedStyle[LEFT$2] = _n2;
+              __computedStyle[RIGHT$2] = 'auto';
+            } else if (right.u !== AUTO$4) {
+              var _n3 = calRelative(__currentStyle, RIGHT$2, right, parent, true);
+
+              if (_n3) {
+                this.__offsetX(-_n3, true, null);
+              }
+
+              __computedStyle[RIGHT$2] = _n3;
+              __computedStyle[LEFT$2] = 'auto';
+            } else {
+              __computedStyle[LEFT$2] = __computedStyle[RIGHT$2] = 'auto';
+            }
+          } else if (position !== 'absolute') {
+            __computedStyle[TOP$3] = __computedStyle[BOTTOM$3] = __computedStyle[LEFT$2] = __computedStyle[RIGHT$2] = 'auto';
           }
 
           __computedStyle[WIDTH$5] = this.__width;
@@ -18837,9 +18880,9 @@
 
                       var _deg8 = Math.atan(borderBottomWidth / borderRightWidth);
 
-                      var _list = border.calPoints(borderBottomWidth, computedStyle[BORDER_BOTTOM_STYLE], _deg7, _deg8, bx1, bx1 + borderLeftWidth, bx2, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 2, isFirst ? btlr : [0, 0], [0, 0]);
+                      var _list2 = border.calPoints(borderBottomWidth, computedStyle[BORDER_BOTTOM_STYLE], _deg7, _deg8, bx1, bx1 + borderLeftWidth, bx2, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 2, isFirst ? btlr : [0, 0], [0, 0]);
 
-                      border.renderBorder(_this8, renderMode, ctx, _list, cacheStyle[BORDER_BOTTOM_COLOR], dx, dy);
+                      border.renderBorder(_this8, renderMode, ctx, _list2, cacheStyle[BORDER_BOTTOM_COLOR], dx, dy);
                     }
 
                     if (isFirst && borderLeftWidth > 0 && borderLeftColor[3] > 0) {
@@ -18847,9 +18890,9 @@
 
                       var _deg10 = Math.atan(borderLeftWidth / borderBottomWidth);
 
-                      var _list2 = border.calPoints(borderLeftWidth, computedStyle[BORDER_LEFT_STYLE], _deg9, _deg10, bx1, bx1 + borderLeftWidth, bx2 - borderRightWidth, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 3, btlr, btrr);
+                      var _list3 = border.calPoints(borderLeftWidth, computedStyle[BORDER_LEFT_STYLE], _deg9, _deg10, bx1, bx1 + borderLeftWidth, bx2 - borderRightWidth, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 3, btlr, btrr);
 
-                      border.renderBorder(_this8, renderMode, ctx, _list2, cacheStyle[BORDER_LEFT_COLOR], dx, dy);
+                      border.renderBorder(_this8, renderMode, ctx, _list3, cacheStyle[BORDER_LEFT_COLOR], dx, dy);
                     }
 
                     isFirst = false;
@@ -18941,9 +18984,9 @@
 
                       var _deg12 = Math.atan(borderRightWidth / borderBottomWidth);
 
-                      var _list3 = border.calPoints(borderRightWidth, computedStyle[BORDER_RIGHT_STYLE], _deg11, _deg12, bx1, bx1 + borderLeftWidth, bx2 - borderRightWidth, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 1, btlr, btrr);
+                      var _list4 = border.calPoints(borderRightWidth, computedStyle[BORDER_RIGHT_STYLE], _deg11, _deg12, bx1, bx1 + borderLeftWidth, bx2 - borderRightWidth, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 1, btlr, btrr);
 
-                      border.renderBorder(_this8, renderMode, ctx, _list3, cacheStyle[BORDER_RIGHT_COLOR], dx, dy);
+                      border.renderBorder(_this8, renderMode, ctx, _list4, cacheStyle[BORDER_RIGHT_COLOR], dx, dy);
                     }
 
                     if (borderBottomWidth > 0 && borderBottomColor[3] > 0) {
@@ -18951,9 +18994,9 @@
 
                       var _deg14 = Math.atan(borderBottomWidth / borderRightWidth);
 
-                      var _list4 = border.calPoints(borderBottomWidth, computedStyle[BORDER_BOTTOM_STYLE], _deg13, _deg14, bx1, bx1, bx2 - borderRightWidth, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 2, isFirst ? btlr : [0, 0], btrr);
+                      var _list5 = border.calPoints(borderBottomWidth, computedStyle[BORDER_BOTTOM_STYLE], _deg13, _deg14, bx1, bx1, bx2 - borderRightWidth, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 2, isFirst ? btlr : [0, 0], btrr);
 
-                      border.renderBorder(_this8, renderMode, ctx, _list4, cacheStyle[BORDER_BOTTOM_COLOR], dx, dy);
+                      border.renderBorder(_this8, renderMode, ctx, _list5, cacheStyle[BORDER_BOTTOM_COLOR], dx, dy);
                     }
 
                     if (isFirst && borderLeftWidth > 0 && borderLeftColor[3] > 0) {
@@ -18961,9 +19004,9 @@
 
                       var _deg16 = Math.atan(borderLeftWidth / borderBottomWidth);
 
-                      var _list5 = border.calPoints(borderLeftWidth, computedStyle[BORDER_LEFT_STYLE], _deg15, _deg16, bx1, bx1 + borderLeftWidth, bx2 - borderRightWidth, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 3, btlr, btrr);
+                      var _list6 = border.calPoints(borderLeftWidth, computedStyle[BORDER_LEFT_STYLE], _deg15, _deg16, bx1, bx1 + borderLeftWidth, bx2 - borderRightWidth, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 3, btlr, btrr);
 
-                      border.renderBorder(_this8, renderMode, ctx, _list5, cacheStyle[BORDER_LEFT_COLOR], dx, dy);
+                      border.renderBorder(_this8, renderMode, ctx, _list6, cacheStyle[BORDER_LEFT_COLOR], dx, dy);
                     }
                   })();
                 }
@@ -20075,6 +20118,8 @@
       this.__list = [];
       this.__x = x;
       this.__y = y;
+      this.__oy = 0; // 很难受，relative的offset不能直接加在x上，会引发重复以及block父尺寸问题
+
       this.__lineHeight = lineHeight; // 可能出现空的inline，因此一个inline进入布局时先设置当前lineBox的最小lineHeight/baseline
 
       this.__baseline = baseline;
@@ -20211,6 +20256,16 @@
       key: "y",
       get: function get() {
         return this.__y;
+      }
+    }, {
+      key: "ox",
+      get: function get() {
+        return this.__ox;
+      }
+    }, {
+      key: "oy",
+      get: function get() {
+        return this.__oy;
       }
     }, {
       key: "endX",

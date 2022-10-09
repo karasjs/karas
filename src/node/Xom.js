@@ -664,44 +664,6 @@ class Xom extends Node {
     }
     // 非虚拟布局才执行，防止重复
     if(!isAbs && !isColumn && !isRow) {
-      // relative渲染时做偏移，百分比基于父元素，若父元素没有定高则为0
-      if(position === 'relative') {
-        let {[TOP]: top, [RIGHT]: right, [BOTTOM]: bottom, [LEFT]: left} = __currentStyle;
-        let {parent} = this;
-        if(top.u !== AUTO) {
-          let n = calRelative(__currentStyle, TOP, top, parent);
-          this.__offsetY(n, true, null);
-          __computedStyle[TOP] = n;
-          __computedStyle[BOTTOM] = 'auto';
-        }
-        else if(bottom.u !== AUTO) {
-          let n = calRelative(__currentStyle, BOTTOM, bottom, parent);
-          this.__offsetY(-n, true, null);
-          __computedStyle[BOTTOM] = n;
-          __computedStyle[TOP] = 'auto';
-        }
-        else {
-          __computedStyle[TOP] = __computedStyle[BOTTOM] = 'auto';
-        }
-        if(left.u !== AUTO) {
-          let n = calRelative(__currentStyle, LEFT, left, parent, true);
-          this.__offsetX(n, true, null);
-          __computedStyle[LEFT] = n;
-          __computedStyle[RIGHT] = 'auto';
-        }
-        else if (right.u !== AUTO) {
-          let n = calRelative(__currentStyle, RIGHT, right, parent, true);
-          this.__offsetX(-n, true, null);
-          __computedStyle[RIGHT] = n;
-          __computedStyle[LEFT] = 'auto';
-        }
-        else {
-          __computedStyle[LEFT] = __computedStyle[RIGHT] = 'auto';
-        }
-      }
-      else if (position !== 'absolute') {
-        __computedStyle[TOP] = __computedStyle[BOTTOM] = __computedStyle[LEFT] = __computedStyle[RIGHT] = 'auto';
-      }
       // 计算结果存入computedStyle和6个坐标，inline在其inlineSize特殊处理
       let x = this.__x;
       let y = this.__y;
@@ -718,6 +680,78 @@ class Xom extends Node {
         y = this.__y4 = y + this.__height;
         y = this.__y5 = y + __computedStyle[PADDING_BOTTOM];
         this.__y6 = y + __computedStyle[BORDER_BOTTOM_WIDTH];
+      }
+      // relative渲染时做偏移，百分比基于父元素，若父元素没有定高则为0
+      if(position === 'relative') {
+        let {[TOP]: top, [RIGHT]: right, [BOTTOM]: bottom, [LEFT]: left} = __currentStyle;
+        let {parent} = this;
+        if(top.u !== AUTO) {
+          let n = calRelative(__currentStyle, TOP, top, parent);
+          if(n) {
+            this.__offsetY(n, true, null);
+            if(this.__isInline) {
+              let list = this.__contentBoxList;
+              if(Array.isArray(list)) {
+                let last;
+                list.forEach(item => {
+                  let p = item.__parentLineBox;
+                  if(p && p !== last) {
+                    p.__oy += n;
+                  }
+                  last = p;
+                });
+              }
+            }
+          }
+          __computedStyle[TOP] = n;
+          __computedStyle[BOTTOM] = 'auto';
+        }
+        else if(bottom.u !== AUTO) {
+          let n = calRelative(__currentStyle, BOTTOM, bottom, parent);
+          if(n) {
+            this.__offsetY(-n, true, null);
+            if(this.__isInline) {
+              let list = this.__contentBoxList;
+              if(Array.isArray(list)) {
+                let last;
+                list.forEach(item => {
+                  let p = item.__parentLineBox;
+                  if(p && p !== last) {
+                    p.__oy -= n;
+                  }
+                  last = p;
+                });
+              }
+            }
+          }
+          __computedStyle[BOTTOM] = n;
+          __computedStyle[TOP] = 'auto';
+        }
+        else {
+          __computedStyle[TOP] = __computedStyle[BOTTOM] = 'auto';
+        }
+        if(left.u !== AUTO) {
+          let n = calRelative(__currentStyle, LEFT, left, parent, true);
+          if(n) {
+            this.__offsetX(n, true, null);
+          }
+          __computedStyle[LEFT] = n;
+          __computedStyle[RIGHT] = 'auto';
+        }
+        else if (right.u !== AUTO) {
+          let n = calRelative(__currentStyle, RIGHT, right, parent, true);
+          if(n) {
+            this.__offsetX(-n, true, null);
+          }
+          __computedStyle[RIGHT] = n;
+          __computedStyle[LEFT] = 'auto';
+        }
+        else {
+          __computedStyle[LEFT] = __computedStyle[RIGHT] = 'auto';
+        }
+      }
+      else if (position !== 'absolute') {
+        __computedStyle[TOP] = __computedStyle[BOTTOM] = __computedStyle[LEFT] = __computedStyle[RIGHT] = 'auto';
       }
       __computedStyle[WIDTH] = this.__width;
       __computedStyle[HEIGHT] = this.__height;

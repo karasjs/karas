@@ -35,6 +35,7 @@ class LineBox {
     this.__list = [];
     this.__x = x;
     this.__y = y;
+    this.__oy = 0; // 很难受，relative的offset不能直接加在x上，会引发重复以及block父尺寸问题
     this.__lineHeight = lineHeight; // 可能出现空的inline，因此一个inline进入布局时先设置当前lineBox的最小lineHeight/baseline
     this.__baseline = baseline;
     this.__isUpright = isUpright;
@@ -148,6 +149,14 @@ class LineBox {
 
   get y() {
     return this.__y;
+  }
+
+  get ox() {
+    return this.__ox;
+  }
+
+  get oy() {
+    return this.__oy;
   }
 
   get endX() {

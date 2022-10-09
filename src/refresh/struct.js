@@ -726,20 +726,21 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   __cacheTotal.__available = true;
   node.__cacheTotal = __cacheTotal;
   let { sx1, sy1, dx, dy, dbx, dby } = __cacheTotal;
-  let page = __cacheTotal.__page, size = page.__size, cx, cy, tex;
+  let page = __cacheTotal.__page, size = page.__size, cx, cy, texture;
   let frameBuffer;
   if(hasPpt) {
     cx = w * 0.5;
     cy = h * 0.5;
     dx = -bboxTotal[0];
     dy = -bboxTotal[1];
-    tex = webgl.createTexture(gl, null, 0, w, h);
-    frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
+    texture = webgl.createTexture(gl, null, 0, w, h);
+    frameBuffer = genFrameBufferWithTexture(gl, texture, w, h);
     gl.viewport(0, 0, w, h);
   }
   else {
     cx = cy = size * 0.5;
-    frameBuffer = genFrameBufferWithTexture(gl, page.texture, size, size);
+    texture = page.texture;
+    frameBuffer = genFrameBufferWithTexture(gl, texture, size, size);
   }
   // fbo绘制对象纹理不用绑定单元，剩下的纹理绘制用0号
   let lastPage, list = [];

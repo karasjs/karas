@@ -66,7 +66,7 @@ function joinVirtualDom(vd) {
   }
   s += '>';
   (vd.children || []).forEach(item => {
-    if(item.isMask) {
+    if(item.mask) {
       return;
     }
     s += joinVd(item);
@@ -106,7 +106,7 @@ function joinVd(vd) {
     }
     s += '>';
     (vd.children || []).forEach(item => {
-      if(item.isMask) {
+      if(item.mask) {
         return;
       }
       s += joinVd(item);

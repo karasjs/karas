@@ -83,8 +83,8 @@ class CanvasCache extends Cache {
     let list = [];
     let { [TRANSFORM]: transform, [TRANSFORM_ORIGIN]: tfo } = node.__computedStyle;
     let next = node.next;
-    let isClip = next.__isClip;
-    while(next && next.__isMask) {
+    let isClip = next.__clip;
+    while(next && next.__mask) {
       list.push(next);
       next = next.next;
     }

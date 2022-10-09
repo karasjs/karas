@@ -125,10 +125,10 @@ function genBboxTotal(node, __structs, index, total, isWebgl) {
     }
     let {
       __computedStyle: __computedStyle2,
-      __isMask,
+      __mask,
     } = node;
     // 跳过display:none元素和它的所有子节点和mask，本身是mask除外
-    if(__computedStyle2[DISPLAY] === 'none' || i !== index && __isMask) {
+    if(__computedStyle2[DISPLAY] === 'none' || i !== index && __mask) {
       i += (total || 0);
       if(hasMask) {
         i += countMaskNum(__structs, i + 1, hasMask);
@@ -283,7 +283,7 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
         let { idx, hasMask, offscreenMask } = mh;
         let target = inject.getOffscreenCanvas(width, height, null, 'mask2');
         offscreenMask.mask = target; // 应用mask用到
-        offscreenMask.isClip = node.__isClip;
+        offscreenMask.isClip = node.__clip;
         // 定位到最后一个mask元素上的末尾
         let j = i + (total || 0) + 1;
         while(--hasMask) {
@@ -500,7 +500,7 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
             let { idx, hasMask, offscreenMask } = maskStartHash[i];
             let target = inject.getOffscreenCanvas(width, height, null, 'mask2');
             offscreenMask.mask = target; // 应用mask用到
-            offscreenMask.isClip = node.__isClip;
+            offscreenMask.isClip = node.__clip;
             // 定位到最后一个mask元素上的末尾
             let j = i + (total || 0) + 1;
             while(--hasMask) {
@@ -788,7 +788,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
     // 再看total缓存/cache，都没有的是无内容的Xom节点
     else {
       let __computedStyle2 = node.__computedStyle;
-      if(__computedStyle2[DISPLAY] === 'none' || node.__isMask) {
+      if(__computedStyle2[DISPLAY] === 'none' || node.__mask) {
         i += (total || 0);
         if(hasMask) {
           i += countMaskNum(__structs, i + 1, hasMask);
@@ -1202,10 +1202,10 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
   let cx = width * 0.5, cy = height * 0.5;
   let frameBuffer = genFrameBufferWithTexture(gl, texture, width, height);
   let next = node.next;
-  let isClip = next.__isClip;
+  let isClip = next.__clip;
   let lastPage, list = [];
   let dx = -sx1 + dbx, dy = -sy1 + dby;
-  while(next && next.__isMask && next.__isClip === isClip) {
+  while(next && next.__mask && next.__clip === isClip) {
     let total = __structs[i].total || 0;
     let matrixList = [];
     let parentMatrix;
@@ -1487,7 +1487,7 @@ function genMbmWebgl(gl, texture, cache, mbm, opacity, matrix, dx, dy, cx, cy, w
   };
 }
 
-function renderSvg(renderMode, ctx, root, isFirst) {
+function renderSvg(renderMode, ctx, root, isFirst, rlv) {
   let { __structs, width, height } = root;
   // mask节点很特殊，本身有matrix会影响，本身没改变但对象节点有改变也需要计算逆矩阵应用顶点
   let maskEffectHash = [];
@@ -1568,7 +1568,7 @@ function renderSvg(renderMode, ctx, root, isFirst) {
         index: i,
         start,
         end,
-        isClip: __structs[start].node.__isClip, // 第一个节点是clip为准
+        isClip: __structs[start].node.__clip, // 第一个节点是clip为准
       };
     }
     // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，Root节点第一个特殊处理
@@ -1785,7 +1785,7 @@ function renderSvg(renderMode, ctx, root, isFirst) {
       dom.virtualDom.mask = id;
     }
     // mask不入children
-    if(parentVd && !node.__isMask) {
+    if(parentVd && !node.__mask) {
       parentVd.children.push(virtualDom);
     }
     if(i === 0) {
@@ -1795,7 +1795,7 @@ function renderSvg(renderMode, ctx, root, isFirst) {
   }
 }
 
-function renderWebgl(renderMode, gl, root, isFirst) {
+function renderWebgl(renderMode, gl, root, isFirst, rlv) {
   if(isFirst) {
     Page.init(gl.getParameter(gl.MAX_TEXTURE_SIZE));
   }
@@ -1811,157 +1811,161 @@ function renderWebgl(renderMode, gl, root, isFirst) {
    * 首次绘制没有catchTotal等，后续则可能会有，在<REPAINT可据此跳过所有子节点加快循环，布局过程会提前删除它们。
    * lv的变化根据大小相等进行出入栈parent操作，实现获取节点parent数据的方式，
    * 同时过程中计算出哪些节点要生成局部根，存下来
+   * 第一次强制进入，后续不包含cache变更且<REPAINT的时候不进入省略循环
    */
-  for(let i = 0, len = __structs.length; i < len; i++) {
-    let {
-      node,
-      lv,
-      total,
-      hasMask,
-    } = __structs[i];
-    node.__index = i; // 生成total需要
-    // Text特殊处理，webgl中先渲染为bitmap，再作为贴图绘制，缓存交由text内部判断，直接调用渲染纹理方法
-    if(node instanceof Text) {
-      if(lastRefreshLevel >= REPAINT) {
-        let bbox = node.bbox, sx = node.__sx, sy = node.__sy;
-        let __cache = node.__cache;
-        if(__cache) {
-          __cache.reset(bbox, sx, sy);
+  if(isFirst || rlv >= REPAINT || contain(rlv, CACHE)) {
+    for(let i = 0, len = __structs.length; i < len; i++) {
+      let {
+        node,
+        lv,
+        total,
+        hasMask,
+      } = __structs[i];
+      node.__index = i; // 生成total需要
+      // Text特殊处理，webgl中先渲染为bitmap，再作为贴图绘制，缓存交由text内部判断，直接调用渲染纹理方法
+      if(node instanceof Text) {
+        if(lastRefreshLevel >= REPAINT) {
+          let bbox = node.bbox, sx = node.__sx, sy = node.__sy;
+          let __cache = node.__cache;
+          if(__cache) {
+            __cache.reset(bbox, sx, sy);
+          }
+          else {
+            __cache = CanvasCache.getInstance(mode.CANVAS, gl, root.uuid, bbox, sx, sy, null);
+          }
+          if(__cache && __cache.enabled) {
+            __cache.__bbox = bbox;
+            __cache.__available = true;
+            node.__cache = __cache;
+            node.render(mode.CANVAS, __cache.ctx, __cache.dx, __cache.dy);
+          }
+          else {
+            __cache && __cache.release();
+            node.__limitCache = true;
+          }
         }
-        else {
-          __cache = CanvasCache.getInstance(mode.CANVAS, gl, root.uuid, bbox, sx, sy, null);
-        }
-        if(__cache && __cache.enabled) {
-          __cache.__bbox = bbox;
-          __cache.__available = true;
-          node.__cache = __cache;
-          node.render(mode.CANVAS, __cache.ctx, __cache.dx, __cache.dy);
-        }
-        else {
-          __cache && __cache.release();
-          node.__limitCache = true;
-        }
+        continue;
       }
-      continue;
-    }
-    let __computedStyle = node.__computedStyle;
-    // 跳过display:none元素和它的所有子节点
-    if(__computedStyle[DISPLAY] === 'none') {
-      i += (total || 0);
-      if(hasMask) {
-        i += countMaskNum(__structs, i + 1, hasMask);
-      }
-      continue;
-    }
-    // 根据refreshLevel优化计算
-    let {
-      __refreshLevel,
-      __currentStyle,
-      __cacheTotal,
-    } = node;
-    lastRefreshLevel = __refreshLevel;
-    node.__refreshLevel = NONE;
-    /**
-     * lv<REPAINT，一般会有__cache，跳过渲染过程，快速运算，没有cache则是自身超限或无内容，目前不感知
-     * 可能有cacheTotal，为之前生成的局部根，清除逻辑在更新检查是否>=REPAINT那里，小变化不动
-     * 当有遮罩时，如果被遮罩节点本身无变更，需要检查其next的遮罩节点有无变更，
-     * 但其实不用检查，因为next变更一定会清空cacheMask，只要检查cacheMask即可
-     * 如果没有或无效，直接添加，无视节点本身变化，后面防重即可
-     */
-    if(!__refreshLevel) {}
-    else if(__refreshLevel < REPAINT) {
-      let mbm = __computedStyle[MIX_BLEND_MODE];
-      let isMbm = contain(__refreshLevel, MBM) && isValidMbm(mbm);
-      let need = node.__cacheAsBitmap || hasMask;
-      if(!need && contain(__refreshLevel, FT)) {
-        let filter = __computedStyle[FILTER];
-        if(filter && filter.length) {
-          need = true;
-        }
-      }
-      if(!need && contain(__refreshLevel, PPT)) {
-        let __domParent = node.__domParent;
-        let isPpt = !isE(__domParent && __domParent.__perspectiveMatrix) || isPerspectiveMatrix(node.__matrix);
-        if(isPpt) {
-          need = true;
-        }
-      }
-      if(isMbm) {
-        hasMbm = true;
-      }
-      // 这里和canvas不一样，前置cacheAsBitmap条件变成或条件之一，新的ppt层级且画中画需要新的fbo
-      if(need) {
-        mergeList.push({
-          i,
-          lv,
-          total,
-          node,
-          hasMask,
-        });
-      }
-      // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total
-      if(__cacheTotal && __cacheTotal.available) {
+      let __computedStyle = node.__computedStyle;
+      // 跳过display:none元素和它的所有子节点
+      if(__computedStyle[DISPLAY] === 'none') {
         i += (total || 0);
-        if(__refreshLevel === NONE && hasMask) { // TODO: add mask level
+        if(hasMask) {
           i += countMaskNum(__structs, i + 1, hasMask);
         }
+        continue;
       }
-    }
-    /**
-     * >=REPAINT重新渲染，并根据结果判断是否离屏限制错误
-     * Geom没有子节点无需汇总局部根，Dom中Img也是，它们的局部根等于自身的cache，其它符合条件的Dom需要生成
-     */
-    else {
-      let hasContent = node.calContent(__currentStyle, __computedStyle);
-      // 有内容先以canvas模式绘制到离屏画布上，自定义渲染设置无内容不实现即可跳过
-      if(hasContent) {
-        let bbox = node.bbox, __cache = node.__cache, sx1 = node.__sx1, sy1 = node.__sy1;
-        if(__cache) {
-          __cache.reset(bbox, sx1, sy1);
-        }
-        else {
-          __cache = CanvasCache.getInstance(mode.CANVAS, gl, root.uuid, bbox, sx1, sy1, null);
-        }
-        if(__cache && __cache.enabled) {
-          __cache.__bbox = bbox;
-          __cache.__available = true;
-          node.__cache = __cache;
-          node.render(mode.CANVAS, __cache.ctx, __cache.dx, __cache.dy);
-        }
-        else {
-          __cache && __cache.release();
-          node.__limitCache = true;
-        }
-      }
-      else {
-        node.__limitCache = false;
-      }
+      // 根据refreshLevel优化计算
       let {
-        [OVERFLOW]: overflow,
-        [FILTER]: filter,
-        [MIX_BLEND_MODE]: mixBlendMode,
-      } = __computedStyle;
-      let isMbm = isValidMbm(mixBlendMode);
-      let __domParent = node.__domParent;
-      let isPpt = !isE(__domParent && __domParent.__perspectiveMatrix) || isPerspectiveMatrix(node.__matrix);
-      let isOverflow = overflow === 'hidden' && total;
-      let isFilter = filter && filter.length;
-      if(isMbm) {
-        hasMbm = true;
+        __refreshLevel,
+        __currentStyle,
+        __cacheTotal,
+      } = node;
+      lastRefreshLevel = __refreshLevel;
+      node.__refreshLevel = NONE;
+      /**
+       * lv<REPAINT，一般会有__cache，跳过渲染过程，快速运算，没有cache则是自身超限或无内容，目前不感知
+       * 可能有cacheTotal，为之前生成的局部根，清除逻辑在更新检查是否>=REPAINT那里，小变化不动
+       * 当有遮罩时，如果被遮罩节点本身无变更，需要检查其next的遮罩节点有无变更，
+       * 但其实不用检查，因为next变更一定会清空cacheMask，只要检查cacheMask即可
+       * 如果没有或无效，直接添加，无视节点本身变化，后面防重即可
+       */
+      if(!__refreshLevel) {
       }
-      if(node.__cacheAsBitmap
+      else if(__refreshLevel < REPAINT) {
+        let mbm = __computedStyle[MIX_BLEND_MODE];
+        let isMbm = contain(__refreshLevel, MBM) && isValidMbm(mbm);
+        let need = node.__cacheAsBitmap || hasMask;
+        if(!need && contain(__refreshLevel, FT)) {
+          let filter = __computedStyle[FILTER];
+          if(filter && filter.length) {
+            need = true;
+          }
+        }
+        if(!need && contain(__refreshLevel, PPT)) {
+          let __domParent = node.__domParent;
+          let isPpt = !isE(__domParent && __domParent.__perspectiveMatrix) || isPerspectiveMatrix(node.__matrix);
+          if(isPpt) {
+            need = true;
+          }
+        }
+        if(isMbm) {
+          hasMbm = true;
+        }
+        // 这里和canvas不一样，前置cacheAsBitmap条件变成或条件之一，新的ppt层级且画中画需要新的fbo
+        if(need) {
+          mergeList.push({
+            i,
+            lv,
+            total,
+            node,
+            hasMask,
+          });
+        }
+        // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total
+        if(__cacheTotal && __cacheTotal.available) {
+          i += (total || 0);
+          if(__refreshLevel === NONE && hasMask) { // TODO: add mask level
+            i += countMaskNum(__structs, i + 1, hasMask);
+          }
+        }
+      }
+      /**
+       * >=REPAINT重新渲染，并根据结果判断是否离屏限制错误
+       * Geom没有子节点无需汇总局部根，Dom中Img也是，它们的局部根等于自身的cache，其它符合条件的Dom需要生成
+       */
+      else {
+        let hasContent = node.calContent(__currentStyle, __computedStyle);
+        // 有内容先以canvas模式绘制到离屏画布上，自定义渲染设置无内容不实现即可跳过
+        if(hasContent) {
+          let bbox = node.bbox, __cache = node.__cache, sx1 = node.__sx1, sy1 = node.__sy1;
+          if(__cache) {
+            __cache.reset(bbox, sx1, sy1);
+          }
+          else {
+            __cache = CanvasCache.getInstance(mode.CANVAS, gl, root.uuid, bbox, sx1, sy1, null);
+          }
+          if(__cache && __cache.enabled) {
+            __cache.__bbox = bbox;
+            __cache.__available = true;
+            node.__cache = __cache;
+            node.render(mode.CANVAS, __cache.ctx, __cache.dx, __cache.dy);
+          }
+          else {
+            __cache && __cache.release();
+            node.__limitCache = true;
+          }
+        }
+        else {
+          node.__limitCache = false;
+        }
+        let {
+          [OVERFLOW]: overflow,
+          [FILTER]: filter,
+          [MIX_BLEND_MODE]: mixBlendMode,
+        } = __computedStyle;
+        let isMbm = isValidMbm(mixBlendMode);
+        let __domParent = node.__domParent;
+        let isPpt = !isE(__domParent && __domParent.__perspectiveMatrix) || isPerspectiveMatrix(node.__matrix);
+        let isOverflow = overflow === 'hidden' && total;
+        let isFilter = filter && filter.length;
+        if(isMbm) {
+          hasMbm = true;
+        }
+        if(node.__cacheAsBitmap
           || hasMask
           || isFilter
           // || isMbm
           || isOverflow
           || isPpt) {
-        mergeList.push({
-          i,
-          lv,
-          total,
-          node,
-          hasMask,
-        });
+          mergeList.push({
+            i,
+            lv,
+            total,
+            node,
+            hasMask,
+          });
+        }
       }
     }
   }
@@ -2233,56 +2237,59 @@ function renderWebgl(renderMode, gl, root, isFirst) {
   }
 }
 
-function renderCanvas(renderMode, ctx, root) {
+function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
   let { __structs, width, height } = root;
   let mergeList = [];
   /**
    * 先一遍先序遍历收集cacheAsBitmap的节点，说明这棵子树需要缓存，可能出现嵌套，深层级优先、后面优先
    * 可能遇到已有缓存没变化的，这时候不要收集忽略掉，没有缓存的走后面遍历普通渲染
+   * 第一次强制进入，后续不包含cache变更且<REPAINT的时候不进入省略循环
    */
-  for(let i = 0, len = __structs.length; i < len; i++) {
-    let {
-      node,
-      lv,
-      total,
-      hasMask,
-    } = __structs[i];
-    // 排除Text，要么根节点直接绘制，要么被局部根节点汇总，自身并不缓存（fillText比位图更快）
-    if(node instanceof Text) {
-      continue;
-    }
-    let __computedStyle = node.__computedStyle;
-    // 跳过display:none元素和它的所有子节点
-    if(__computedStyle[DISPLAY] === 'none') {
-      i += (total || 0);
-      if(hasMask) {
-        i += countMaskNum(__structs, i + 1, hasMask);
+  if(isFirst || rlv >= REPAINT || contain(rlv, CACHE)) {
+    for(let i = 0, len = __structs.length; i < len; i++) {
+      let {
+        node,
+        lv,
+        total,
+        hasMask,
+      } = __structs[i];
+      // 排除Text，要么根节点直接绘制，要么被局部根节点汇总，自身并不缓存（fillText比位图更快）
+      if(node instanceof Text) {
+        continue;
       }
-      continue;
-    }
-    // 根据refreshLevel优化计算，处理其样式
-    let {
-      __refreshLevel,
-      __cacheTotal,
-    } = node;
-    node.__refreshLevel = NONE;
-    // filter变化需重新生成，cacheTotal本身就存在要判断下；CACHE取消重新生成则无需判断
-    if(node.__cacheAsBitmap) {
-      if(contain(__refreshLevel, CACHE | FT) || __refreshLevel >= REPAINT) {
-        mergeList.push({
-          i,
-          lv,
-          total,
-          node,
-          hasMask,
-        });
+      let __computedStyle = node.__computedStyle;
+      // 跳过display:none元素和它的所有子节点
+      if(__computedStyle[DISPLAY] === 'none') {
+        i += (total || 0);
+        if(hasMask) {
+          i += countMaskNum(__structs, i + 1, hasMask);
+        }
+        continue;
       }
-    }
-    // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total
-    if(__cacheTotal && __cacheTotal.available) {
-      i += (total || 0);
-      if(__refreshLevel === NONE && hasMask) {
-        i += countMaskNum(__structs, i + 1, hasMask);
+      // 根据refreshLevel优化计算，处理其样式
+      let {
+        __refreshLevel,
+        __cacheTotal,
+      } = node;
+      node.__refreshLevel = NONE;
+      // filter变化需重新生成，cacheTotal本身就存在要判断下；CACHE取消重新生成则无需判断
+      if(node.__cacheAsBitmap) {
+        if(contain(__refreshLevel, CACHE | FT) || __refreshLevel >= REPAINT) {
+          mergeList.push({
+            i,
+            lv,
+            total,
+            node,
+            hasMask,
+          });
+        }
+      }
+      // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total
+      if(__cacheTotal && __cacheTotal.available) {
+        i += (total || 0);
+        if(__refreshLevel === NONE && hasMask) {
+          i += countMaskNum(__structs, i + 1, hasMask);
+        }
       }
     }
   }
@@ -2363,7 +2370,7 @@ function renderCanvas(renderMode, ctx, root) {
         let { idx, hasMask, offscreenMask } = msh;
         let target = inject.getOffscreenCanvas(width, height, null, 'mask2');
         offscreenMask.mask = target; // 应用mask用到
-        offscreenMask.isClip = node.__isClip;
+        offscreenMask.isClip = node.__clip;
         // 定位到最后一个mask元素上的末尾
         let j = i + (total || 0) + 1;
         while(--hasMask) {

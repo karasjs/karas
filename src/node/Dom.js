@@ -83,7 +83,7 @@ function genZIndexChildren(dom) {
       item = item.shadowRoot;
     }
     // 遮罩单独保存后特殊排序
-    if(item instanceof Xom && item.__isMask) {
+    if(item instanceof Xom && item.__mask) {
       // 开头的mc忽略，后续的连续mc以第一次出现为准
       if(lastMaskIndex !== undefined) {
         mcHash[lastMaskIndex].push(item);
@@ -3209,8 +3209,8 @@ class Dom extends Xom {
     if(force) {
       return super.__emitEvent(e, force);
     }
-    let { __isDestroyed, __computedStyle: computedStyle, __isMask, __cacheTotal } = this;
-    if(__isDestroyed || computedStyle[DISPLAY] === 'none' || e.__stopPropagation || __isMask) {
+    let { __isDestroyed, __computedStyle: computedStyle, __mask, __cacheTotal } = this;
+    if(__isDestroyed || computedStyle[DISPLAY] === 'none' || e.__stopPropagation || __mask) {
       return;
     }
     // 检查perspective嵌套状态，自身有perspective则设置10位，自身有transform的p矩阵则设置01位

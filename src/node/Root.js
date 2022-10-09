@@ -91,6 +91,7 @@ const {
   TRANSFORM_ALL,
   OPACITY: OP,
   MIX_BLEND_MODE: MBM,
+  MASK,
 } = level;
 const { isGeom } = change;
 
@@ -408,13 +409,14 @@ class Root extends Dom {
     if(this.props.noRender) {
       return;
     }
+    let rlv = this.__rlv;
     if(renderMode === mode.CANVAS) {
       this.__clear(ctx, renderMode);
-      struct.renderCanvas(renderMode, ctx, this);
+      struct.renderCanvas(renderMode, ctx, this, isFirst, rlv);
     }
     // svg的特殊diff需要
     else if(renderMode === mode.SVG) {
-      struct.renderSvg(renderMode, defs, this, isFirst);
+      struct.renderSvg(renderMode, defs, this, isFirst, rlv);
       let nvd = this.virtualDom;
       nvd.defs = defs.value;
       if(this.dom.__vd) {
@@ -431,9 +433,9 @@ class Root extends Dom {
     else if(renderMode === mode.WEBGL) {
       this.__clear(ctx, renderMode);
       // console.log(ctx.getParameter(ctx.MAX_TEXTURE_SIZE), ctx.getParameter(ctx.MAX_VARYING_VECTORS), ctx.getParameter(ctx.MAX_TEXTURE_IMAGE_UNITS))
-      struct.renderWebgl(renderMode, ctx, this, isFirst);
+      struct.renderWebgl(renderMode, ctx, this, isFirst, rlv);
     }
-    this.emit(Event.REFRESH, this.__rlv);
+    this.emit(Event.REFRESH, rlv);
     this.__rlv = NONE;
   }
 
@@ -589,7 +591,7 @@ class Root extends Dom {
       currentStyle,
       cacheStyle,
       __cacheProps,
-      __isMask,
+      __mask,
       __domParent,
     } = node;
     let hasZ, hasVisibility, hasColor, hasDisplay, hasTsColor, hasTsWidth, hasTsOver;
@@ -649,16 +651,17 @@ class Root extends Dom {
       cacheStyle[MATRIX] = computedStyle[TRANSFORM] = undefined;
     }
     // mask需清除遮罩对象的缓存
-    if(__isMask) {
+    let hasRelease, hasMask = contain(lv, MASK);
+    if(__mask || hasMask) {
       let prev = node.__prev;
-      while(prev && (prev.__isMask)) {
+      while(prev && (prev.__mask)) {
         prev = prev.__prev;
       }
       if(prev && (prev instanceof Xom || prev instanceof Component && prev.shadowRoot instanceof Xom)) {
-        prev.__refreshLevel |= CACHE;
-        prev.__struct.hasMask = true;
+        prev.__refreshLevel |= CACHE | MASK;
+        prev.__struct.hasMask = prev.__hasMask = __mask;
         if(prev.__cacheMask) {
-          prev.__cacheMask.release();
+          hasRelease ||= prev.__cacheMask.release();
         }
       }
     }
@@ -668,7 +671,7 @@ class Root extends Dom {
       let need = lv >= REPAINT;
       if(need) {
         if(node.__cache) {
-          node.__cache.release();
+          hasRelease ||= node.__cache.release();
         }
         node.__calStyle(lv, currentStyle, computedStyle, cacheStyle);
         node.__calPerspective(currentStyle, computedStyle, cacheStyle);
@@ -741,18 +744,18 @@ class Root extends Dom {
       // perspective也特殊只清空total的cache，和>=REPAINT清空total共用
       if(need || contain(lv, PPT)) {
         if(node.__cacheTotal) {
-          node.__cacheTotal.release();
+          hasRelease ||= node.__cacheTotal.release();
         }
         if(node.__cacheMask) {
-          node.__cacheMask.release();
+          hasRelease ||= node.__cacheMask.release();
         }
         if(node.__cacheOverflow) {
-          node.__cacheOverflow.release();
+          hasRelease ||= node.__cacheOverflow.release();
         }
       }
       // 特殊的filter清除cache
       if((need || contain(lv, FT)) && node.__cacheFilter) {
-        node.__cacheFilter.release();
+        hasRelease ||= node.__cacheFilter.release();
       }
       // 向上清除cache汇总缓存信息，过程中可能会出现重复，根据refreshLevel判断，reflow已经自己清过了
       let p = __domParent;
@@ -762,16 +765,16 @@ class Root extends Dom {
         }
         p.__refreshLevel |= CACHE;
         if(p.__cacheTotal) {
-          p.__cacheTotal.release();
+          hasRelease ||= p.__cacheTotal.release();
         }
         if(p.__cacheFilter) {
-          p.__cacheFilter.release();
+          hasRelease ||= p.__cacheFilter.release();
         }
         if(p.__cacheMask) {
-          p.__cacheMask.release();
+          hasRelease ||= p.__cacheMask.release();
         }
         if(p.__cacheOverflow) {
-          p.__cacheOverflow.release();
+          hasRelease ||= p.__cacheOverflow.release();
         }
         p = p.__domParent;
       }
@@ -780,7 +783,7 @@ class Root extends Dom {
         __domParent.__zIndexChildren = null;
         __domParent.__updateStruct();
         if(this.renderMode === mode.SVG) {
-          node.__cacheTotal.release();
+          hasRelease ||= node.__cacheTotal.release();
           reflow.clearSvgCache(__domParent);
         }
       }
@@ -804,6 +807,10 @@ class Root extends Dom {
       }
     }
     node.__refreshLevel |= lv;
+    // 有被清除的cache则设置到Root上
+    if(hasRelease) {
+      lv |= CACHE;
+    }
     if(addDom || removeDom) {
       this.__rlv |= REBUILD;
     }

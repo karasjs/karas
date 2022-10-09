@@ -1023,7 +1023,7 @@
 
     s += '>';
     (vd.children || []).forEach(function (item) {
-      if (item.isMask) {
+      if (item.mask) {
         return;
       }
 
@@ -1066,7 +1066,7 @@
 
       _s2 += '>';
       (vd.children || []).forEach(function (item) {
-        if (item.isMask) {
+        if (item.mask) {
           return;
         }
 
@@ -10408,13 +10408,15 @@
 
   var PERSPECTIVE$3 = 4096; //                    1000000000000
 
-  var REPAINT$4 = 8192; //                       10000000000000
+  var MASK$2 = 8192; //                          10000000000000
+
+  var REPAINT$4 = 16384; //                     100000000000000
   // 高位表示reflow
 
-  var REFLOW$3 = 16384; //                      100000000000000
-  // 特殊高位表示rebuild，节点发生变化
+  var REFLOW$3 = 32768; //                     1000000000000000
+  // 特殊高位表示rebuild，节点发生增删变化
 
-  var REBUILD$1 = 32768; //                    1000000000000000
+  var REBUILD$1 = 65536; //                   10000000000000000
 
   var ENUM = {
     NONE: NONE$3,
@@ -10434,6 +10436,7 @@
     FILTER: FILTER$5,
     MIX_BLEND_MODE: MIX_BLEND_MODE$4,
     PERSPECTIVE: PERSPECTIVE$3,
+    MASK: MASK$2,
     REPAINT: REPAINT$4,
     REFLOW: REFLOW$3,
     REBUILD: REBUILD$1
@@ -16686,7 +16689,8 @@
       SZ = o$1.SCALE_Z,
       SCALE = o$1.SCALE,
       TRANSFORM_ALL$3 = o$1.TRANSFORM_ALL,
-      CACHE$3 = o$1.CACHE;
+      CACHE$3 = o$1.CACHE,
+      MASK$1 = o$1.MASK;
   var d2r = geom.d2r;
   var calRotateX = transform$1.calRotateX,
       calRotateY = transform$1.calRotateY,
@@ -16779,8 +16783,8 @@
 
       _this.__cacheDefs = []; // svg专用，缓存渲染时使用已有的defs，diff过程用，否则会defs被清空
 
-      var isClip = _this.__isClip = !!_this.props.clip;
-      _this.__isMask = isClip || !!_this.props.mask;
+      var isClip = _this.__clip = !!_this.props.clip;
+      _this.__mask = isClip || !!_this.props.mask;
       _this.__refreshLevel = REFLOW$2;
       _this.__limitCache = false;
       _this.__isInline = false;
@@ -17057,7 +17061,7 @@
             // 加载成功回调可能没注册信息，需要多判断一下
             if (o$3.hasRegister(item)) {
               root.__addUpdate(node, {
-                focus: o$1.REFLOW
+                focus: REFLOW$2
               });
             } // 后面低优先级的无需再看
 
@@ -17165,11 +17169,11 @@
           this.__isInline = false;
           var next = this.next; // mask关系只有布局才会变更，普通渲染关系不会改变，clip也是mask的一种
 
-          if (!this.__isMask && next && next.__isMask) {
+          if (!this.__mask && next && next.__mask) {
             var count = 0;
 
             while (next) {
-              if (next.__isMask) {
+              if (next.__mask) {
                 count++;
               } else {
                 break;
@@ -19154,9 +19158,9 @@
       value: function __emitEvent(e, force) {
         var __isDestroyed = this.__isDestroyed,
             computedStyle = this.__computedStyle,
-            __isMask = this.__isMask;
+            __mask = this.__mask;
 
-        if (__isDestroyed || computedStyle[DISPLAY$6] === 'none' || e.__stopPropagation || __isMask) {
+        if (__isDestroyed || computedStyle[DISPLAY$6] === 'none' || e.__stopPropagation || __mask) {
           return;
         }
 
@@ -19183,10 +19187,10 @@
           // 如果有mask，点在mask上才行，点在clip外才行
           if (__hasMask) {
             var next = this.next;
-            var isClip = next.__isClip;
+            var isClip = next.__clip;
             var hasEmitMask;
 
-            while (next && next.__isMask) {
+            while (next && next.__mask) {
               if (next.willResponseEvent(e, true)) {
                 hasEmitMask = true;
                 break;
@@ -20040,14 +20044,42 @@
         return this.offsetWidth;
       }
     }, {
-      key: "isMask",
+      key: "mask",
       get: function get() {
-        return this.__isMask;
+        return this.__mask;
+      },
+      set: function set(v) {
+        v = !!v;
+
+        if (this.__mask !== v) {
+          this.__mask = v;
+          var root = this.__root;
+
+          if (root) {
+            root.__addUpdate(this, {
+              focus: MASK$1
+            });
+          }
+        }
       }
     }, {
-      key: "isClip",
+      key: "clip",
       get: function get() {
-        return this.__isClip;
+        return this.__clip;
+      },
+      set: function set(v) {
+        v = !!v;
+
+        if (this.__clip !== v) {
+          this.__clip = v;
+          var root = this.__root;
+
+          if (root) {
+            root.__addUpdate(this, {
+              focus: MASK$1
+            });
+          }
+        }
       }
     }, {
       key: "cacheAsBitmap",
@@ -20055,7 +20087,18 @@
         return this.__cacheAsBitmap;
       },
       set: function set(v) {
-        this.__cacheAsBitmap = !!v;
+        v = !!v;
+
+        if (this.__cacheAsBitmap !== v) {
+          this.__cacheAsBitmap = v;
+          var root = this.__root;
+
+          if (root) {
+            root.__addUpdate(this, {
+              focus: REPAINT$3
+            });
+          }
+        }
       }
     }, {
       key: "parentLineBox",
@@ -22588,7 +22631,7 @@
       } // 遮罩单独保存后特殊排序
 
 
-      if (item instanceof Xom && item.__isMask) {
+      if (item instanceof Xom && item.__mask) {
         // 开头的mc忽略，后续的连续mc以第一次出现为准
         if (lastMaskIndex !== undefined) {
           mcHash[lastMaskIndex].push(item);
@@ -26089,10 +26132,10 @@
 
         var __isDestroyed = this.__isDestroyed,
             computedStyle = this.__computedStyle,
-            __isMask = this.__isMask,
+            __mask = this.__mask,
             __cacheTotal = this.__cacheTotal;
 
-        if (__isDestroyed || computedStyle[DISPLAY$3] === 'none' || e.__stopPropagation || __isMask) {
+        if (__isDestroyed || computedStyle[DISPLAY$3] === 'none' || e.__stopPropagation || __mask) {
           return;
         } // 检查perspective嵌套状态，自身有perspective则设置10位，自身有transform的p矩阵则设置01位
         // if(computedStyle[PERSPECTIVE]) {
@@ -29520,9 +29563,9 @@
             transform = _node$__computedStyle[TRANSFORM$2],
             tfo = _node$__computedStyle[TRANSFORM_ORIGIN$1];
         var next = node.next;
-        var isClip = next.__isClip;
+        var isClip = next.__clip;
 
-        while (next && next.__isMask) {
+        while (next && next.__mask) {
           list.push(next);
           next = next.next;
         }
@@ -30009,9 +30052,9 @@
       }
 
       var __computedStyle2 = _node.__computedStyle,
-          __isMask = _node.__isMask; // 跳过display:none元素和它的所有子节点和mask，本身是mask除外
+          __mask = _node.__mask; // 跳过display:none元素和它的所有子节点和mask，本身是mask除外
 
-      if (__computedStyle2[DISPLAY$1] === 'none' || i !== index && __isMask) {
+      if (__computedStyle2[DISPLAY$1] === 'none' || i !== index && __mask) {
         i += _total || 0;
 
         if (hasMask) {
@@ -30197,7 +30240,7 @@
 
           offscreenMask.mask = _target; // 应用mask用到
 
-          offscreenMask.isClip = _node2.__isClip; // 定位到最后一个mask元素上的末尾
+          offscreenMask.isClip = _node2.__clip; // 定位到最后一个mask元素上的末尾
 
           var j = i + (_total2 || 0) + 1;
 
@@ -30494,7 +30537,7 @@
 
               offscreenMask.mask = _target3; // 应用mask用到
 
-              offscreenMask.isClip = _node3.__isClip; // 定位到最后一个mask元素上的末尾
+              offscreenMask.isClip = _node3.__clip; // 定位到最后一个mask元素上的末尾
 
               var j = i + (_total4 || 0) + 1;
 
@@ -30886,7 +30929,7 @@
       else {
         var __computedStyle2 = _node4.__computedStyle;
 
-        if (__computedStyle2[DISPLAY$1] === 'none' || _node4.__isMask) {
+        if (__computedStyle2[DISPLAY$1] === 'none' || _node4.__mask) {
           i += _total6 || 0;
 
           if (hasMask) {
@@ -31347,13 +31390,13 @@
         cy = height * 0.5;
     var frameBuffer = genFrameBufferWithTexture(gl, texture, width, height);
     var next = node.next;
-    var isClip = next.__isClip;
+    var isClip = next.__clip;
     var lastPage,
         list = [];
     var dx = -sx1 + dbx,
         dy = -sy1 + dby;
 
-    while (next && next.__isMask && next.__isClip === isClip) {
+    while (next && next.__mask && next.__clip === isClip) {
       var total = __structs[i].total || 0;
       var matrixList = [];
       var parentMatrix = void 0;
@@ -31669,7 +31712,7 @@
     };
   }
 
-  function renderSvg(renderMode, ctx, root, isFirst) {
+  function renderSvg(renderMode, ctx, root, isFirst, rlv) {
     var __structs = root.__structs,
         width = root.width,
         height = root.height; // mask节点很特殊，本身有matrix会影响，本身没改变但对象节点有改变也需要计算逆矩阵应用顶点
@@ -31762,7 +31805,7 @@
           index: _i3,
           start: _start,
           end: _end,
-          isClip: __structs[_start].node.__isClip // 第一个节点是clip为准
+          isClip: __structs[_start].node.__clip // 第一个节点是clip为准
 
         };
       } // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，Root节点第一个特殊处理
@@ -32017,7 +32060,7 @@
       } // mask不入children
 
 
-      if (parentVd && !node.__isMask) {
+      if (parentVd && !node.__mask) {
         parentVd.children.push(virtualDom);
       }
 
@@ -32034,7 +32077,7 @@
     }
   }
 
-  function renderWebgl(renderMode, gl, root, isFirst) {
+  function renderWebgl(renderMode, gl, root, isFirst, rlv) {
     if (isFirst) {
       Page.init(gl.getParameter(gl.MAX_TEXTURE_SIZE));
     }
@@ -32055,175 +32098,178 @@
      * 首次绘制没有catchTotal等，后续则可能会有，在<REPAINT可据此跳过所有子节点加快循环，布局过程会提前删除它们。
      * lv的变化根据大小相等进行出入栈parent操作，实现获取节点parent数据的方式，
      * 同时过程中计算出哪些节点要生成局部根，存下来
+     * 第一次强制进入，后续不包含cache变更且<REPAINT的时候不进入省略循环
      */
 
-    for (var i = 0, len = __structs.length; i < len; i++) {
-      var _structs$i7 = __structs[i],
-          node = _structs$i7.node,
-          lv = _structs$i7.lv,
-          total = _structs$i7.total,
-          hasMask = _structs$i7.hasMask;
-      node.__index = i; // 生成total需要
-      // Text特殊处理，webgl中先渲染为bitmap，再作为贴图绘制，缓存交由text内部判断，直接调用渲染纹理方法
+    if (isFirst || rlv >= REPAINT$1 || contain$1(rlv, CACHE$1)) {
+      for (var i = 0, len = __structs.length; i < len; i++) {
+        var _structs$i7 = __structs[i],
+            node = _structs$i7.node,
+            lv = _structs$i7.lv,
+            total = _structs$i7.total,
+            hasMask = _structs$i7.hasMask;
+        node.__index = i; // 生成total需要
+        // Text特殊处理，webgl中先渲染为bitmap，再作为贴图绘制，缓存交由text内部判断，直接调用渲染纹理方法
 
-      if (node instanceof Text) {
-        if (lastRefreshLevel >= REPAINT$1) {
-          var bbox = node.bbox,
-              sx = node.__sx,
-              sy = node.__sy;
-          var __cache = node.__cache;
+        if (node instanceof Text) {
+          if (lastRefreshLevel >= REPAINT$1) {
+            var bbox = node.bbox,
+                sx = node.__sx,
+                sy = node.__sy;
+            var __cache = node.__cache;
 
-          if (__cache) {
-            __cache.reset(bbox, sx, sy);
-          } else {
-            __cache = CanvasCache.getInstance(mode.CANVAS, gl, root.uuid, bbox, sx, sy, null);
+            if (__cache) {
+              __cache.reset(bbox, sx, sy);
+            } else {
+              __cache = CanvasCache.getInstance(mode.CANVAS, gl, root.uuid, bbox, sx, sy, null);
+            }
+
+            if (__cache && __cache.enabled) {
+              __cache.__bbox = bbox;
+              __cache.__available = true;
+              node.__cache = __cache;
+              node.render(mode.CANVAS, __cache.ctx, __cache.dx, __cache.dy);
+            } else {
+              __cache && __cache.release();
+              node.__limitCache = true;
+            }
           }
 
-          if (__cache && __cache.enabled) {
-            __cache.__bbox = bbox;
-            __cache.__available = true;
-            node.__cache = __cache;
-            node.render(mode.CANVAS, __cache.ctx, __cache.dx, __cache.dy);
-          } else {
-            __cache && __cache.release();
-            node.__limitCache = true;
-          }
+          continue;
         }
 
-        continue;
-      }
+        var __computedStyle = node.__computedStyle; // 跳过display:none元素和它的所有子节点
 
-      var __computedStyle = node.__computedStyle; // 跳过display:none元素和它的所有子节点
-
-      if (__computedStyle[DISPLAY$1] === 'none') {
-        i += total || 0;
-
-        if (hasMask) {
-          i += countMaskNum(__structs, i + 1, hasMask);
-        }
-
-        continue;
-      } // 根据refreshLevel优化计算
-
-
-      var __refreshLevel = node.__refreshLevel,
-          __currentStyle = node.__currentStyle,
-          __cacheTotal = node.__cacheTotal;
-      lastRefreshLevel = __refreshLevel;
-      node.__refreshLevel = NONE$1;
-      /**
-       * lv<REPAINT，一般会有__cache，跳过渲染过程，快速运算，没有cache则是自身超限或无内容，目前不感知
-       * 可能有cacheTotal，为之前生成的局部根，清除逻辑在更新检查是否>=REPAINT那里，小变化不动
-       * 当有遮罩时，如果被遮罩节点本身无变更，需要检查其next的遮罩节点有无变更，
-       * 但其实不用检查，因为next变更一定会清空cacheMask，只要检查cacheMask即可
-       * 如果没有或无效，直接添加，无视节点本身变化，后面防重即可
-       */
-
-      if (!__refreshLevel) ; else if (__refreshLevel < REPAINT$1) {
-        var _mbm = __computedStyle[MIX_BLEND_MODE$1];
-        var isMbm = contain$1(__refreshLevel, MBM$1) && isValidMbm(_mbm);
-        var need = node.__cacheAsBitmap || hasMask;
-
-        if (!need && contain$1(__refreshLevel, FT$1)) {
-          var filter = __computedStyle[FILTER];
-
-          if (filter && filter.length) {
-            need = true;
-          }
-        }
-
-        if (!need && contain$1(__refreshLevel, PPT$1)) {
-          var __domParent = node.__domParent;
-          var isPpt = !isE(__domParent && __domParent.__perspectiveMatrix) || isPerspectiveMatrix(node.__matrix);
-
-          if (isPpt) {
-            need = true;
-          }
-        }
-
-        if (isMbm) {
-          hasMbm = true;
-        } // 这里和canvas不一样，前置cacheAsBitmap条件变成或条件之一，新的ppt层级且画中画需要新的fbo
-
-
-        if (need) {
-          mergeList.push({
-            i: i,
-            lv: lv,
-            total: total,
-            node: node,
-            hasMask: hasMask
-          });
-        } // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total
-
-
-        if (__cacheTotal && __cacheTotal.available) {
+        if (__computedStyle[DISPLAY$1] === 'none') {
           i += total || 0;
 
-          if (__refreshLevel === NONE$1 && hasMask) {
-            // TODO: add mask level
+          if (hasMask) {
             i += countMaskNum(__structs, i + 1, hasMask);
           }
-        }
-      }
-      /**
-       * >=REPAINT重新渲染，并根据结果判断是否离屏限制错误
-       * Geom没有子节点无需汇总局部根，Dom中Img也是，它们的局部根等于自身的cache，其它符合条件的Dom需要生成
-       */
-      else {
-        var hasContent = node.calContent(__currentStyle, __computedStyle); // 有内容先以canvas模式绘制到离屏画布上，自定义渲染设置无内容不实现即可跳过
 
-        if (hasContent) {
-          var _bbox2 = node.bbox,
-              _cache4 = node.__cache,
-              sx1 = node.__sx1,
-              sy1 = node.__sy1;
+          continue;
+        } // 根据refreshLevel优化计算
 
-          if (_cache4) {
-            _cache4.reset(_bbox2, sx1, sy1);
-          } else {
-            _cache4 = CanvasCache.getInstance(mode.CANVAS, gl, root.uuid, _bbox2, sx1, sy1, null);
+
+        var __refreshLevel = node.__refreshLevel,
+            __currentStyle = node.__currentStyle,
+            __cacheTotal = node.__cacheTotal;
+        lastRefreshLevel = __refreshLevel;
+        node.__refreshLevel = NONE$1;
+        /**
+         * lv<REPAINT，一般会有__cache，跳过渲染过程，快速运算，没有cache则是自身超限或无内容，目前不感知
+         * 可能有cacheTotal，为之前生成的局部根，清除逻辑在更新检查是否>=REPAINT那里，小变化不动
+         * 当有遮罩时，如果被遮罩节点本身无变更，需要检查其next的遮罩节点有无变更，
+         * 但其实不用检查，因为next变更一定会清空cacheMask，只要检查cacheMask即可
+         * 如果没有或无效，直接添加，无视节点本身变化，后面防重即可
+         */
+
+        if (!__refreshLevel) ; else if (__refreshLevel < REPAINT$1) {
+          var _mbm = __computedStyle[MIX_BLEND_MODE$1];
+          var isMbm = contain$1(__refreshLevel, MBM$1) && isValidMbm(_mbm);
+          var need = node.__cacheAsBitmap || hasMask;
+
+          if (!need && contain$1(__refreshLevel, FT$1)) {
+            var filter = __computedStyle[FILTER];
+
+            if (filter && filter.length) {
+              need = true;
+            }
           }
 
-          if (_cache4 && _cache4.enabled) {
-            _cache4.__bbox = _bbox2;
-            _cache4.__available = true;
-            node.__cache = _cache4;
-            node.render(mode.CANVAS, _cache4.ctx, _cache4.dx, _cache4.dy);
-          } else {
-            _cache4 && _cache4.release();
-            node.__limitCache = true;
+          if (!need && contain$1(__refreshLevel, PPT$1)) {
+            var __domParent = node.__domParent;
+            var isPpt = !isE(__domParent && __domParent.__perspectiveMatrix) || isPerspectiveMatrix(node.__matrix);
+
+            if (isPpt) {
+              need = true;
+            }
           }
-        } else {
-          node.__limitCache = false;
+
+          if (isMbm) {
+            hasMbm = true;
+          } // 这里和canvas不一样，前置cacheAsBitmap条件变成或条件之一，新的ppt层级且画中画需要新的fbo
+
+
+          if (need) {
+            mergeList.push({
+              i: i,
+              lv: lv,
+              total: total,
+              node: node,
+              hasMask: hasMask
+            });
+          } // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total
+
+
+          if (__cacheTotal && __cacheTotal.available) {
+            i += total || 0;
+
+            if (__refreshLevel === NONE$1 && hasMask) {
+              // TODO: add mask level
+              i += countMaskNum(__structs, i + 1, hasMask);
+            }
+          }
         }
+        /**
+         * >=REPAINT重新渲染，并根据结果判断是否离屏限制错误
+         * Geom没有子节点无需汇总局部根，Dom中Img也是，它们的局部根等于自身的cache，其它符合条件的Dom需要生成
+         */
+        else {
+          var hasContent = node.calContent(__currentStyle, __computedStyle); // 有内容先以canvas模式绘制到离屏画布上，自定义渲染设置无内容不实现即可跳过
 
-        var overflow = __computedStyle[OVERFLOW],
-            _filter = __computedStyle[FILTER],
-            mixBlendMode = __computedStyle[MIX_BLEND_MODE$1];
+          if (hasContent) {
+            var _bbox2 = node.bbox,
+                _cache4 = node.__cache,
+                sx1 = node.__sx1,
+                sy1 = node.__sy1;
 
-        var _isMbm = isValidMbm(mixBlendMode);
+            if (_cache4) {
+              _cache4.reset(_bbox2, sx1, sy1);
+            } else {
+              _cache4 = CanvasCache.getInstance(mode.CANVAS, gl, root.uuid, _bbox2, sx1, sy1, null);
+            }
 
-        var _domParent = node.__domParent;
+            if (_cache4 && _cache4.enabled) {
+              _cache4.__bbox = _bbox2;
+              _cache4.__available = true;
+              node.__cache = _cache4;
+              node.render(mode.CANVAS, _cache4.ctx, _cache4.dx, _cache4.dy);
+            } else {
+              _cache4 && _cache4.release();
+              node.__limitCache = true;
+            }
+          } else {
+            node.__limitCache = false;
+          }
 
-        var _isPpt = !isE(_domParent && _domParent.__perspectiveMatrix) || isPerspectiveMatrix(node.__matrix);
+          var overflow = __computedStyle[OVERFLOW],
+              _filter = __computedStyle[FILTER],
+              mixBlendMode = __computedStyle[MIX_BLEND_MODE$1];
 
-        var isOverflow = overflow === 'hidden' && total;
-        var isFilter = _filter && _filter.length;
+          var _isMbm = isValidMbm(mixBlendMode);
 
-        if (_isMbm) {
-          hasMbm = true;
-        }
+          var _domParent = node.__domParent;
 
-        if (node.__cacheAsBitmap || hasMask || isFilter // || isMbm
-        || isOverflow || _isPpt) {
-          mergeList.push({
-            i: i,
-            lv: lv,
-            total: total,
-            node: node,
-            hasMask: hasMask
-          });
+          var _isPpt = !isE(_domParent && _domParent.__perspectiveMatrix) || isPerspectiveMatrix(node.__matrix);
+
+          var isOverflow = overflow === 'hidden' && total;
+          var isFilter = _filter && _filter.length;
+
+          if (_isMbm) {
+            hasMbm = true;
+          }
+
+          if (node.__cacheAsBitmap || hasMask || isFilter // || isMbm
+          || isOverflow || _isPpt) {
+            mergeList.push({
+              i: i,
+              lv: lv,
+              total: total,
+              node: node,
+              hasMask: hasMask
+            });
+          }
         }
       }
     } // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
@@ -32517,7 +32563,7 @@
     }
   }
 
-  function renderCanvas(renderMode, ctx, root) {
+  function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
     var __structs = root.__structs,
         width = root.width,
         height = root.height;
@@ -32525,54 +32571,57 @@
     /**
      * 先一遍先序遍历收集cacheAsBitmap的节点，说明这棵子树需要缓存，可能出现嵌套，深层级优先、后面优先
      * 可能遇到已有缓存没变化的，这时候不要收集忽略掉，没有缓存的走后面遍历普通渲染
+     * 第一次强制进入，后续不包含cache变更且<REPAINT的时候不进入省略循环
      */
 
-    for (var i = 0, len = __structs.length; i < len; i++) {
-      var _structs$i8 = __structs[i],
-          node = _structs$i8.node,
-          lv = _structs$i8.lv,
-          total = _structs$i8.total,
-          hasMask = _structs$i8.hasMask; // 排除Text，要么根节点直接绘制，要么被局部根节点汇总，自身并不缓存（fillText比位图更快）
+    if (isFirst || rlv >= REPAINT$1 || contain$1(rlv, CACHE$1)) {
+      for (var i = 0, len = __structs.length; i < len; i++) {
+        var _structs$i8 = __structs[i],
+            node = _structs$i8.node,
+            lv = _structs$i8.lv,
+            total = _structs$i8.total,
+            hasMask = _structs$i8.hasMask; // 排除Text，要么根节点直接绘制，要么被局部根节点汇总，自身并不缓存（fillText比位图更快）
 
-      if (node instanceof Text) {
-        continue;
-      }
-
-      var __computedStyle = node.__computedStyle; // 跳过display:none元素和它的所有子节点
-
-      if (__computedStyle[DISPLAY$1] === 'none') {
-        i += total || 0;
-
-        if (hasMask) {
-          i += countMaskNum(__structs, i + 1, hasMask);
+        if (node instanceof Text) {
+          continue;
         }
 
-        continue;
-      } // 根据refreshLevel优化计算，处理其样式
+        var __computedStyle = node.__computedStyle; // 跳过display:none元素和它的所有子节点
+
+        if (__computedStyle[DISPLAY$1] === 'none') {
+          i += total || 0;
+
+          if (hasMask) {
+            i += countMaskNum(__structs, i + 1, hasMask);
+          }
+
+          continue;
+        } // 根据refreshLevel优化计算，处理其样式
 
 
-      var __refreshLevel = node.__refreshLevel,
-          __cacheTotal = node.__cacheTotal;
-      node.__refreshLevel = NONE$1; // filter变化需重新生成，cacheTotal本身就存在要判断下；CACHE取消重新生成则无需判断
+        var __refreshLevel = node.__refreshLevel,
+            __cacheTotal = node.__cacheTotal;
+        node.__refreshLevel = NONE$1; // filter变化需重新生成，cacheTotal本身就存在要判断下；CACHE取消重新生成则无需判断
 
-      if (node.__cacheAsBitmap) {
-        if (contain$1(__refreshLevel, CACHE$1 | FT$1) || __refreshLevel >= REPAINT$1) {
-          mergeList.push({
-            i: i,
-            lv: lv,
-            total: total,
-            node: node,
-            hasMask: hasMask
-          });
-        }
-      } // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total
+        if (node.__cacheAsBitmap) {
+          if (contain$1(__refreshLevel, CACHE$1 | FT$1) || __refreshLevel >= REPAINT$1) {
+            mergeList.push({
+              i: i,
+              lv: lv,
+              total: total,
+              node: node,
+              hasMask: hasMask
+            });
+          }
+        } // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total
 
 
-      if (__cacheTotal && __cacheTotal.available) {
-        i += total || 0;
+        if (__cacheTotal && __cacheTotal.available) {
+          i += total || 0;
 
-        if (__refreshLevel === NONE$1 && hasMask) {
-          i += countMaskNum(__structs, i + 1, hasMask);
+          if (__refreshLevel === NONE$1 && hasMask) {
+            i += countMaskNum(__structs, i + 1, hasMask);
+          }
         }
       }
     }
@@ -32674,7 +32723,7 @@
 
           offscreenMask.mask = _target4; // 应用mask用到
 
-          offscreenMask.isClip = _node8.__isClip; // 定位到最后一个mask元素上的末尾
+          offscreenMask.isClip = _node8.__clip; // 定位到最后一个mask元素上的末尾
 
           var j = _i6 + (_total9 || 0) + 1;
 
@@ -33294,7 +33343,8 @@
       TF = o$1.TRANSFORM,
       TRANSFORM_ALL = o$1.TRANSFORM_ALL,
       OP = o$1.OPACITY,
-      MBM = o$1.MIX_BLEND_MODE;
+      MBM = o$1.MIX_BLEND_MODE,
+      MASK = o$1.MASK;
   var isGeom = o$2.isGeom;
   var ROOT_DOM_NAME = {
     canvas: 'canvas',
@@ -33681,13 +33731,15 @@
           return;
         }
 
+        var rlv = this.__rlv;
+
         if (renderMode === mode.CANVAS) {
           this.__clear(ctx, renderMode);
 
-          struct.renderCanvas(renderMode, ctx, this);
+          struct.renderCanvas(renderMode, ctx, this, isFirst, rlv);
         } // svg的特殊diff需要
         else if (renderMode === mode.SVG) {
-          struct.renderSvg(renderMode, defs, this, isFirst);
+          struct.renderSvg(renderMode, defs, this, isFirst, rlv);
           var nvd = this.virtualDom;
           nvd.defs = defs.value;
 
@@ -33705,10 +33757,10 @@
           this.__clear(ctx, renderMode); // console.log(ctx.getParameter(ctx.MAX_TEXTURE_SIZE), ctx.getParameter(ctx.MAX_VARYING_VECTORS), ctx.getParameter(ctx.MAX_TEXTURE_IMAGE_UNITS))
 
 
-          struct.renderWebgl(renderMode, ctx, this, isFirst);
+          struct.renderWebgl(renderMode, ctx, this, isFirst, rlv);
         }
 
-        this.emit(Event.REFRESH, this.__rlv);
+        this.emit(Event.REFRESH, rlv);
         this.__rlv = NONE;
       }
     }, {
@@ -33902,7 +33954,7 @@
             currentStyle = _node.currentStyle,
             cacheStyle = _node.cacheStyle,
             __cacheProps = _node.__cacheProps,
-            __isMask = _node.__isMask,
+            __mask = _node.__mask,
             __domParent = _node.__domParent;
         var hasZ, hasVisibility, hasColor, hasDisplay, hasTsColor, hasTsWidth, hasTsOver;
         var lv = focus || NONE; // 清空对应改变的cacheStyle
@@ -33960,19 +34012,22 @@
         } // mask需清除遮罩对象的缓存
 
 
-        if (__isMask) {
+        var hasRelease,
+            hasMask = contain(lv, MASK);
+
+        if (__mask || hasMask) {
           var prev = node.__prev;
 
-          while (prev && prev.__isMask) {
+          while (prev && prev.__mask) {
             prev = prev.__prev;
           }
 
           if (prev && (prev instanceof Xom || prev instanceof Component && prev.shadowRoot instanceof Xom)) {
-            prev.__refreshLevel |= CACHE;
-            prev.__struct.hasMask = true;
+            prev.__refreshLevel |= CACHE | MASK;
+            prev.__struct.hasMask = prev.__hasMask = __mask;
 
             if (prev.__cacheMask) {
-              prev.__cacheMask.release();
+              hasRelease || (hasRelease = prev.__cacheMask.release());
             }
           }
         }
@@ -33985,7 +34040,7 @@
 
           if (need) {
             if (node.__cache) {
-              node.__cache.release();
+              hasRelease || (hasRelease = node.__cache.release());
             }
 
             node.__calStyle(lv, currentStyle, computedStyle, cacheStyle);
@@ -34063,21 +34118,21 @@
 
           if (need || contain(lv, PPT)) {
             if (node.__cacheTotal) {
-              node.__cacheTotal.release();
+              hasRelease || (hasRelease = node.__cacheTotal.release());
             }
 
             if (node.__cacheMask) {
-              node.__cacheMask.release();
+              hasRelease || (hasRelease = node.__cacheMask.release());
             }
 
             if (node.__cacheOverflow) {
-              node.__cacheOverflow.release();
+              hasRelease || (hasRelease = node.__cacheOverflow.release());
             }
           } // 特殊的filter清除cache
 
 
           if ((need || contain(lv, FT)) && node.__cacheFilter) {
-            node.__cacheFilter.release();
+            hasRelease || (hasRelease = node.__cacheFilter.release());
           } // 向上清除cache汇总缓存信息，过程中可能会出现重复，根据refreshLevel判断，reflow已经自己清过了
 
 
@@ -34091,19 +34146,19 @@
             p.__refreshLevel |= CACHE;
 
             if (p.__cacheTotal) {
-              p.__cacheTotal.release();
+              hasRelease || (hasRelease = p.__cacheTotal.release());
             }
 
             if (p.__cacheFilter) {
-              p.__cacheFilter.release();
+              hasRelease || (hasRelease = p.__cacheFilter.release());
             }
 
             if (p.__cacheMask) {
-              p.__cacheMask.release();
+              hasRelease || (hasRelease = p.__cacheMask.release());
             }
 
             if (p.__cacheOverflow) {
-              p.__cacheOverflow.release();
+              hasRelease || (hasRelease = p.__cacheOverflow.release());
             }
 
             p = p.__domParent;
@@ -34116,8 +34171,7 @@
             __domParent.__updateStruct();
 
             if (this.renderMode === mode.SVG) {
-              node.__cacheTotal.release();
-
+              hasRelease || (hasRelease = node.__cacheTotal.release());
               reflow.clearSvgCache(__domParent);
             }
           }
@@ -34144,7 +34198,11 @@
           }
         }
 
-        node.__refreshLevel |= lv;
+        node.__refreshLevel |= lv; // 有被清除的cache则设置到Root上
+
+        if (hasRelease) {
+          lv |= CACHE;
+        }
 
         if (addDom || removeDom) {
           this.__rlv |= REBUILD;

@@ -153,6 +153,7 @@ const {
   SCALE,
   TRANSFORM_ALL,
   CACHE,
+  MASK,
 } = level;
 const { d2r } = geom;
 const { calRotateX, calRotateY, calRotateZ, calRotate3d } = tf;
@@ -231,8 +232,8 @@ class Xom extends Node {
     };
     this.__cacheStyle = []; // 是否缓存重新计算computedStyle的样式key
     this.__cacheDefs = []; // svg专用，缓存渲染时使用已有的defs，diff过程用，否则会defs被清空
-    let isClip = this.__isClip = !!this.props.clip;
-    this.__isMask = isClip || !!this.props.mask;
+    let isClip = this.__clip = !!this.props.clip;
+    this.__mask = isClip || !!this.props.mask;
     this.__refreshLevel = REFLOW;
     this.__limitCache = false;
     this.__isInline = false;
@@ -513,7 +514,7 @@ class Xom extends Node {
         // 加载成功回调可能没注册信息，需要多判断一下
         if(font.hasRegister(item)) {
           root.__addUpdate(node, {
-            focus: level.REFLOW,
+            focus: REFLOW,
           });
         }
         // 后面低优先级的无需再看
@@ -619,10 +620,10 @@ class Xom extends Node {
       this.__isInline = false;
       let { next } = this;
       // mask关系只有布局才会变更，普通渲染关系不会改变，clip也是mask的一种
-      if(!this.__isMask && next && (next.__isMask)) {
+      if(!this.__mask && next && (next.__mask)) {
         let count = 0;
         while(next) {
-          if(next.__isMask) {
+          if(next.__mask) {
             count++;
           }
           else {
@@ -2461,8 +2462,8 @@ class Xom extends Node {
 
   // 先查找到注册了事件的节点，再捕获冒泡判断增加性能
   __emitEvent(e, force) {
-    let { __isDestroyed, __computedStyle: computedStyle, __isMask } = this;
-    if(__isDestroyed || computedStyle[DISPLAY] === 'none' || e.__stopPropagation || __isMask) {
+    let { __isDestroyed, __computedStyle: computedStyle, __mask } = this;
+    if(__isDestroyed || computedStyle[DISPLAY] === 'none' || e.__stopPropagation || __mask) {
       return;
     }
     let { event: { type } } = e;
@@ -2483,9 +2484,9 @@ class Xom extends Node {
       // 如果有mask，点在mask上才行，点在clip外才行
       if(__hasMask) {
         let next = this.next;
-        let isClip = next.__isClip;
+        let isClip = next.__clip;
         let hasEmitMask;
-        while(next && next.__isMask) {
+        while(next && next.__mask) {
           if(next.willResponseEvent(e, true)) {
             hasEmitMask = true;
             break;
@@ -3172,12 +3173,38 @@ class Xom extends Node {
     return this.offsetWidth;
   }
 
-  get isMask() {
-    return this.__isMask;
+  get mask() {
+    return this.__mask;
   }
 
-  get isClip() {
-    return this.__isClip;
+  set mask(v) {
+    v = !!v;
+    if(this.__mask !== v) {
+      this.__mask = v;
+      let root = this.__root;
+      if(root) {
+        root.__addUpdate(this, {
+          focus: MASK,
+        });
+      }
+    }
+  }
+
+  get clip() {
+    return this.__clip;
+  }
+
+  set clip(v) {
+    v = !!v;
+    if(this.__clip !== v) {
+      this.__clip = v;
+      let root = this.__root;
+      if(root) {
+        root.__addUpdate(this, {
+          focus: MASK,
+        });
+      }
+    }
   }
 
   get cacheAsBitmap() {
@@ -3185,7 +3212,16 @@ class Xom extends Node {
   }
 
   set cacheAsBitmap(v) {
-    this.__cacheAsBitmap = !!v;
+    v = !!v;
+    if(this.__cacheAsBitmap !== v) {
+      this.__cacheAsBitmap = v;
+      let root = this.__root;
+      if(root) {
+        root.__addUpdate(this, {
+          focus: REPAINT,
+        });
+      }
+    }
   }
 
   get parentLineBox() {

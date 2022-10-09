@@ -10400,7 +10400,7 @@
 
   var PERSPECTIVE$3 = 4096; //                    1000000000000
 
-  var MASK$3 = 8192; //                          10000000000000
+  var MASK$4 = 8192; //                          10000000000000
 
   var REPAINT$4 = 16384; //                     100000000000000
   // 高位表示reflow
@@ -10428,7 +10428,7 @@
     FILTER: FILTER$5,
     MIX_BLEND_MODE: MIX_BLEND_MODE$4,
     PERSPECTIVE: PERSPECTIVE$3,
-    MASK: MASK$3,
+    MASK: MASK$4,
     REPAINT: REPAINT$4,
     REFLOW: REFLOW$3,
     REBUILD: REBUILD$1
@@ -16682,7 +16682,7 @@
       SCALE = o$1.SCALE,
       TRANSFORM_ALL$3 = o$1.TRANSFORM_ALL,
       CACHE$3 = o$1.CACHE,
-      MASK$2 = o$1.MASK;
+      MASK$3 = o$1.MASK;
   var d2r = geom.d2r;
   var calRotateX = transform$1.calRotateX,
       calRotateY = transform$1.calRotateY,
@@ -20049,7 +20049,7 @@
 
           if (root) {
             root.__addUpdate(this, {
-              focus: MASK$2
+              focus: MASK$3
             });
           }
         }
@@ -20068,7 +20068,7 @@
 
           if (root) {
             root.__addUpdate(this, {
-              focus: MASK$2
+              focus: MASK$3
             });
           }
         }
@@ -27189,7 +27189,8 @@
       TRANSFORM_ALL$2 = o$1.TRANSFORM_ALL,
       OPACITY$2 = o$1.OPACITY,
       FILTER$1 = o$1.FILTER,
-      MIX_BLEND_MODE$2 = o$1.MIX_BLEND_MODE;
+      MIX_BLEND_MODE$2 = o$1.MIX_BLEND_MODE,
+      MASK$2 = o$1.MASK;
 
   function diff(elem, ovd, nvd) {
     var cns = elem.childNodes;
@@ -27370,15 +27371,7 @@
       } else {
         elem.removeAttribute('filter');
       }
-    } // if(ovd.filter !== filter) {
-    //   if(filter) {
-    //     elem.setAttribute('filter', filter);
-    //   }
-    //   else {
-    //     elem.removeAttribute('filter');
-    //   }
-    // }
-
+    }
 
     if (ovd.overflow !== overflow) {
       if (overflow) {
@@ -27404,14 +27397,16 @@
         filter = nvd.filter,
         mixBlendMode = nvd.mixBlendMode;
 
-    if (mask) {
-      elem.setAttribute('mask', mask);
-    } else {
-      elem.removeAttribute('mask');
-    }
-
     if (lv === NONE$2) {
       return;
+    }
+
+    if (contain$2(lv, MASK$2)) {
+      if (mask) {
+        elem.setAttribute('mask', mask);
+      } else {
+        elem.removeAttribute('mask');
+      }
     }
 
     if (contain$2(lv, TRANSFORM_ALL$2)) {

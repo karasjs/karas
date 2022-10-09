@@ -2,7 +2,7 @@ import util from './util';
 import level from '../refresh/level';
 
 const { joinVd, joinDef } = util;
-const { contain, NONE, TRANSFORM_ALL, OPACITY, FILTER, MIX_BLEND_MODE } = level;
+const { contain, NONE, TRANSFORM_ALL, OPACITY, FILTER, MIX_BLEND_MODE, MASK } = level;
 
 function diff(elem, ovd, nvd) {
   let cns = elem.childNodes;
@@ -171,14 +171,6 @@ function diffX2X(elem, ovd, nvd) {
       elem.removeAttribute('filter');
     }
   }
-  // if(ovd.filter !== filter) {
-  //   if(filter) {
-  //     elem.setAttribute('filter', filter);
-  //   }
-  //   else {
-  //     elem.removeAttribute('filter');
-  //   }
-  // }
   if(ovd.overflow !== overflow) {
     if(overflow) {
       elem.setAttribute('clipPath', overflow);
@@ -199,14 +191,16 @@ function diffX2X(elem, ovd, nvd) {
 
 function diffByLessLv(elem, ovd, nvd, lv) {
   let { transform, opacity, mask, filter, mixBlendMode } = nvd;
-  if(mask) {
-    elem.setAttribute('mask', mask);
-  }
-  else {
-    elem.removeAttribute('mask');
-  }
   if(lv === NONE) {
     return;
+  }
+  if(contain(lv, MASK)) {
+    if(mask) {
+      elem.setAttribute('mask', mask);
+    }
+    else {
+      elem.removeAttribute('mask');
+    }
   }
   if(contain(lv, TRANSFORM_ALL)) {
     if(transform) {

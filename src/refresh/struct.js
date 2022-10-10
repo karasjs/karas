@@ -2133,10 +2133,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       let m = __matrix;
       if(__domParent) {
         opacity *= __domParent.__opacity;
-        let pm = __domParent.__perspectiveMatrix;
-        if(!isE(pm)) {
-          m = multiply(pm, m);
-        }
+        m = multiply(__domParent.__perspectiveMatrix, m);
         m = multiply(__domParent.__matrixEvent, m);
       }
       node.__opacity = opacity;

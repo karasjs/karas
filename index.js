@@ -13448,7 +13448,7 @@
 
 
   function genBeforeRefresh(keys, root, node, aniParams, cb) {
-    if (!aniParams.allInFn) {
+    if (aniParams && !aniParams.allInFn) {
       aniParams = null;
     }
 
@@ -32525,12 +32525,7 @@
 
         if (_domParent2) {
           opacity *= _domParent2.__opacity;
-          var pm = _domParent2.__perspectiveMatrix;
-
-          if (!isE(pm)) {
-            m = multiply(pm, m);
-          }
-
+          m = multiply(_domParent2.__perspectiveMatrix, m);
           m = multiply(_domParent2.__matrixEvent, m);
         }
 

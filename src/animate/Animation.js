@@ -228,7 +228,7 @@ function inherit(frames, keys, target) {
  * @param cb
  */
 function genBeforeRefresh(keys, root, node, aniParams, cb) {
-  if(!aniParams.allInFn) {
+  if(aniParams && !aniParams.allInFn) {
     aniParams = null;
   }
   root.__addUpdate(node, {

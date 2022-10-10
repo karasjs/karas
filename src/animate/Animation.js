@@ -228,6 +228,9 @@ function inherit(frames, keys, target) {
  * @param cb
  */
 function genBeforeRefresh(keys, root, node, aniParams, cb) {
+  if(!aniParams.allInFn) {
+    aniParams = null;
+  }
   root.__addUpdate(node, {
     keys,
     aniParams,
@@ -1119,6 +1122,7 @@ function calFrame(prev, next, keys, target) {
     }
     else {
       prev.fixed.push(k);
+      allInFn = false;
     }
   }
   // translatePath需特殊处理translate，防止被覆盖

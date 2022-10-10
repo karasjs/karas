@@ -13448,6 +13448,10 @@
 
 
   function genBeforeRefresh(keys, root, node, aniParams, cb) {
+    if (!aniParams.allInFn) {
+      aniParams = null;
+    }
+
     root.__addUpdate(node, {
       keys: keys,
       aniParams: aniParams,
@@ -14367,6 +14371,7 @@
         prev.keys.push(k);
       } else {
         prev.fixed.push(k);
+        allInFn = false;
       }
     } // translatePath需特殊处理translate，防止被覆盖
 

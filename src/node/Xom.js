@@ -993,7 +993,7 @@ class Xom extends Node {
     }
   }
 
-  __calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle) {
+  __calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle, optimize) {
     let {
       __x1,
       __y1,
@@ -1004,9 +1004,10 @@ class Xom extends Node {
       __computedStyle[TRANSFORM_ORIGIN] = [__x1, __y1];
       return __cacheStyle[MATRIX] = this.__matrix = mx.identity();
     }
-    let matrixCache = __cacheStyle[MATRIX], optimize;
+    let matrixCache = __cacheStyle[MATRIX];
     // 优化计算scale不能为0，无法计算倍数差，rotateZ优化不能包含rotateX/rotateY/skew
-    if(matrixCache && lv < REFLOW && !(lv & TF)) {
+    if(!isNil(optimize)) {}
+    else if(matrixCache && lv < REFLOW && !(lv & TF)) {
       if((lv & SX) && !__computedStyle[SCALE_X]
         || (lv & SY) && !__computedStyle[SCALE_Y]
         || (lv & SZ) && !__computedStyle[SCALE_Z]
@@ -1390,7 +1391,7 @@ class Xom extends Node {
     }
     // 特殊的判断，MATRIX不存在于样式key中，所有的transform共用一个
     if(isNil(__cacheStyle[MATRIX]) || (lv & TRANSFORM_ALL)) {
-      this.__calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle);
+      this.__calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle, false);
     }
     if(isNil(__cacheStyle[BACKGROUND_POSITION_X])) {
       __cacheStyle[BACKGROUND_POSITION_X] = true;

@@ -10302,24 +10302,24 @@
   }(Node);
 
   var _enums$STYLE_KEY$e = enums.STYLE_KEY,
-      TX$1 = _enums$STYLE_KEY$e.TRANSLATE_X,
-      TY$1 = _enums$STYLE_KEY$e.TRANSLATE_Y,
-      TZ$1 = _enums$STYLE_KEY$e.TRANSLATE_Z,
+      TX$2 = _enums$STYLE_KEY$e.TRANSLATE_X,
+      TY$2 = _enums$STYLE_KEY$e.TRANSLATE_Y,
+      TZ$2 = _enums$STYLE_KEY$e.TRANSLATE_Z,
       OP$2 = _enums$STYLE_KEY$e.OPACITY,
       FT$2 = _enums$STYLE_KEY$e.FILTER,
       PPT$2 = _enums$STYLE_KEY$e.PERSPECTIVE,
       PERSPECTIVE_ORIGIN$3 = _enums$STYLE_KEY$e.PERSPECTIVE_ORIGIN,
       Z_INDEX$4 = _enums$STYLE_KEY$e.Z_INDEX,
-      SX$1 = _enums$STYLE_KEY$e.SCALE_X,
-      SY$1 = _enums$STYLE_KEY$e.SCALE_Y,
-      SZ$1 = _enums$STYLE_KEY$e.SCALE_Z,
+      SX$2 = _enums$STYLE_KEY$e.SCALE_X,
+      SY$2 = _enums$STYLE_KEY$e.SCALE_Y,
+      SZ$2 = _enums$STYLE_KEY$e.SCALE_Z,
       ROTATE_X$2 = _enums$STYLE_KEY$e.ROTATE_X,
       ROTATE_Y$2 = _enums$STYLE_KEY$e.ROTATE_Y,
-      RZ$1 = _enums$STYLE_KEY$e.ROTATE_Z,
+      RZ$2 = _enums$STYLE_KEY$e.ROTATE_Z,
       ROTATE_3D$2 = _enums$STYLE_KEY$e.ROTATE_3D,
       SKEW_X$2 = _enums$STYLE_KEY$e.SKEW_X,
       SKEW_Y$2 = _enums$STYLE_KEY$e.SKEW_Y,
-      TF$2 = _enums$STYLE_KEY$e.TRANSFORM,
+      TF$3 = _enums$STYLE_KEY$e.TRANSFORM,
       TRANSFORM_ORIGIN$4 = _enums$STYLE_KEY$e.TRANSFORM_ORIGIN;
   var isIgnore = o$2.isIgnore,
       isRepaint$2 = o$2.isRepaint; // 低位表示<repaint级别
@@ -10345,7 +10345,7 @@
 
   var SCALE_Z$2 = 128; //                              10000000
 
-  var SCALE$1 = 224; //                                11100000
+  var SCALE$2 = 224; //                                11100000
 
   var TRANSFORM$5 = 256; //                           100000000
 
@@ -10380,7 +10380,7 @@
     SCALE_X: SCALE_X$3,
     SCALE_Y: SCALE_Y$3,
     SCALE_Z: SCALE_Z$2,
-    SCALE: SCALE$1,
+    SCALE: SCALE$2,
     TRANSFORM: TRANSFORM$5,
     TRANSFORM_ALL: TRANSFORM_ALL$4,
     OPACITY: OPACITY$5,
@@ -10394,7 +10394,7 @@
   };
 
   function isTransforms(k) {
-    return k === ROTATE_X$2 || k === ROTATE_Y$2 || k === ROTATE_3D$2 || k === SKEW_X$2 || k === SKEW_Y$2 || k === TF$2 || k === TRANSFORM_ORIGIN$4;
+    return k === ROTATE_X$2 || k === ROTATE_Y$2 || k === ROTATE_3D$2 || k === SKEW_X$2 || k === SKEW_Y$2 || k === TF$3 || k === TRANSFORM_ORIGIN$4;
   }
 
   var o$1 = Object.assign({
@@ -10421,31 +10421,31 @@
         return CACHE$4;
       }
 
-      if (k === TX$1) {
+      if (k === TX$2) {
         return TRANSLATE_X$2;
       }
 
-      if (k === TY$1) {
+      if (k === TY$2) {
         return TRANSLATE_Y$2;
       }
 
-      if (k === TZ$1) {
+      if (k === TZ$2) {
         return TRANSLATE_Z$2;
       }
 
-      if (k === RZ$1) {
+      if (k === RZ$2) {
         return ROTATE_Z$2;
       }
 
-      if (k === SX$1) {
+      if (k === SX$2) {
         return SCALE_X$3;
       }
 
-      if (k === SY$1) {
+      if (k === SY$2) {
         return SCALE_Y$3;
       }
 
-      if (k === SZ$1) {
+      if (k === SZ$2) {
         return SCALE_Z$2;
       }
 
@@ -13314,11 +13314,19 @@
       o$1.REFLOW;
       o$1.REBUILD;
       o$1.CACHE;
-      o$1.TRANSFORM;
+      var TF$2 = o$1.TRANSFORM;
       o$1.TRANSFORM_ALL;
       o$1.OPACITY;
       o$1.MIX_BLEND_MODE;
       o$1.MASK;
+      var TX$1 = o$1.TRANSLATE_X,
+      TY$1 = o$1.TRANSLATE_Y,
+      TZ$1 = o$1.TRANSLATE_Z,
+      RZ$1 = o$1.ROTATE_Z,
+      SX$1 = o$1.SCALE_X,
+      SY$1 = o$1.SCALE_Y,
+      SZ$1 = o$1.SCALE_Z,
+      SCALE$1 = o$1.SCALE;
   var isColorKey = key.isColorKey,
       isExpandKey = key.isExpandKey,
       isLengthKey = key.isLengthKey,
@@ -14410,10 +14418,19 @@
         } else if (_k5 === TEXT_STROKE_OVER$2) {
           prev.hasTsOver = true;
         }
-      }
+      } // 提前计算
+
 
       prev.lv = lv;
-      prev.isRepaint = isRepaint$1(lv);
+      prev.isRepaint = isRepaint$1(lv); // 常见的几种动画matrix计算是否可优化提前计算
+
+      if (prev.isRepaint && lv & (TX$1 | TY$1 | TZ$1 | RZ$1 | SCALE$1)) {
+        if (lv & TF$2 || lv & SX$1 && !computedStyle[SCALE_X$1] || lv & SY$1 && !computedStyle[SCALE_Y$1] || lv & SZ$1 && !computedStyle[SCALE_Z$1] || lv & RZ$1 && (computedStyle[ROTATE_X$1] || computedStyle[ROTATE_Y$1] || computedStyle[SKEW_X$1] || computedStyle[SKEW_Y$1])) {
+          prev.optimize = false;
+        } else {
+          prev.optimize = true;
+        }
+      }
     }
 
     return next;
@@ -17573,7 +17590,7 @@
       }
     }, {
       key: "__calMatrix",
-      value: function __calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle) {
+      value: function __calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle, optimize) {
         var _this4 = this;
 
         var __x1 = this.__x1,
@@ -17586,10 +17603,9 @@
           return __cacheStyle[MATRIX$1] = this.__matrix = matrix.identity();
         }
 
-        var matrixCache = __cacheStyle[MATRIX$1],
-            optimize; // 优化计算scale不能为0，无法计算倍数差，rotateZ优化不能包含rotateX/rotateY/skew
+        var matrixCache = __cacheStyle[MATRIX$1]; // 优化计算scale不能为0，无法计算倍数差，rotateZ优化不能包含rotateX/rotateY/skew
 
-        if (matrixCache && lv < REFLOW$2 && !(lv & TF$1)) {
+        if (!isNil$9(optimize)) ; else if (matrixCache && lv < REFLOW$2 && !(lv & TF$1)) {
           if (lv & SX && !__computedStyle[SCALE_X] || lv & SY && !__computedStyle[SCALE_Y] || lv & SZ && !__computedStyle[SCALE_Z] || lv & RZ && (__computedStyle[ROTATE_X] || __computedStyle[ROTATE_Y] || __computedStyle[SKEW_X] || __computedStyle[SKEW_Y])) ; else {
             optimize = true;
           }
@@ -17990,7 +18006,7 @@
 
 
         if (isNil$9(__cacheStyle[MATRIX$1]) || lv & TRANSFORM_ALL$3) {
-          this.__calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle);
+          this.__calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle, false);
         }
 
         if (isNil$9(__cacheStyle[BACKGROUND_POSITION_X])) {
@@ -34002,7 +34018,7 @@
             __mask = _node.__mask,
             __domParent = _node.__domParent;
         var hasZ, hasVisibility, hasColor, hasDisplay, hasTsColor, hasTsWidth, hasTsOver;
-        var lv = focus || aniParams ? aniParams.lv : NONE; // 清空对应改变的cacheStyle
+        var lv = focus || (aniParams ? aniParams.lv : NONE); // 清空对应改变的cacheStyle
 
         if (keys) {
           if (aniParams) {
@@ -34091,7 +34107,7 @@
         } // aniParams在动画引擎提前计算好了
 
 
-        var isRp = aniParams.isRepaint || isRepaint(lv);
+        var isRp = aniParams && aniParams.isRepaint || isRepaint(lv);
 
         if (isRp) {
           // dom在>=REPAINT时total失效，svg的Geom比较特殊
@@ -34112,7 +34128,7 @@
             }
 
             if (lv & TRANSFORM_ALL) {
-              node.__calMatrix(lv, currentStyle, computedStyle, cacheStyle);
+              node.__calMatrix(lv, currentStyle, computedStyle, cacheStyle, aniParams && aniParams.optimize);
             }
 
             if (lv & OP) {

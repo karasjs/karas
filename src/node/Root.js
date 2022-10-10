@@ -594,7 +594,7 @@ class Root extends Dom {
       __domParent,
     } = node;
     let hasZ, hasVisibility, hasColor, hasDisplay, hasTsColor, hasTsWidth, hasTsOver;
-    let lv = focus || aniParams ? aniParams.lv : NONE;
+    let lv = focus || (aniParams ? aniParams.lv : NONE);
     // 清空对应改变的cacheStyle
     if(keys) {
       if(aniParams) {
@@ -678,7 +678,7 @@ class Root extends Dom {
       }
     }
     // aniParams在动画引擎提前计算好了
-    let isRp = aniParams.isRepaint || isRepaint(lv);
+    let isRp = aniParams && aniParams.isRepaint || isRepaint(lv);
     if(isRp) {
       // dom在>=REPAINT时total失效，svg的Geom比较特殊
       let need = lv >= REPAINT;
@@ -695,7 +695,7 @@ class Root extends Dom {
           node.__calPerspective(currentStyle, computedStyle, cacheStyle);
         }
         if(lv & TRANSFORM_ALL) {
-          node.__calMatrix(lv, currentStyle, computedStyle, cacheStyle);
+          node.__calMatrix(lv, currentStyle, computedStyle, cacheStyle, aniParams && aniParams.optimize);
         }
         if(lv & OP) {
           computedStyle[OPACITY] = currentStyle[OPACITY];

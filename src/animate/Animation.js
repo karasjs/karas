@@ -109,6 +109,14 @@ const {
   OPACITY: OP,
   MIX_BLEND_MODE: MBM,
   MASK,
+  TRANSLATE_X: TX,
+  TRANSLATE_Y: TY,
+  TRANSLATE_Z: TZ,
+  ROTATE_Z: RZ,
+  SCALE_X: SX,
+  SCALE_Y: SY,
+  SCALE_Z: SZ,
+  SCALE,
 } = level;
 
 const {
@@ -1156,8 +1164,24 @@ function calFrame(prev, next, keys, target) {
         prev.hasTsOver = true;
       }
     }
+    // 提前计算
     prev.lv = lv;
     prev.isRepaint = isRepaint(lv);
+    // 常见的几种动画matrix计算是否可优化提前计算
+    if(prev.isRepaint && (lv & (TX | TY | TZ | RZ | SCALE))) {
+      if((lv & TF) || (
+        (lv & SX) && !computedStyle[SCALE_X]
+        || (lv & SY) && !computedStyle[SCALE_Y]
+        || (lv & SZ) && !computedStyle[SCALE_Z]
+        || (lv & RZ) && (computedStyle[ROTATE_X] || computedStyle[ROTATE_Y]
+          || computedStyle[SKEW_X] || computedStyle[SKEW_Y])
+      )) {
+        prev.optimize = false;
+      }
+      else {
+        prev.optimize = true;
+      }
+    }
   }
   return next;
 }

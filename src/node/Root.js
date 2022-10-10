@@ -583,6 +583,7 @@ class Root extends Dom {
       focus,
       addDom,
       removeDom,
+      aniParams, // 动画特殊优化，大部分都是<REPAINT的情况，很多计算if可以跳过
     } = o;
     let {
       computedStyle,
@@ -593,45 +594,58 @@ class Root extends Dom {
       __domParent,
     } = node;
     let hasZ, hasVisibility, hasColor, hasDisplay, hasTsColor, hasTsWidth, hasTsOver;
-    let lv = focus || NONE;
+    let lv = focus || aniParams ? aniParams.lv : NONE;
     // 清空对应改变的cacheStyle
     if(keys) {
-      for(let i = 0, len = keys.length; i < len; i++) {
-        let k = keys[i];
-        if(node instanceof Geom && isGeom(node.tagName, k)) {
-          lv |= REPAINT;
-          __cacheProps[k] = undefined;
-        }
-        else {
-          // repaint置空，如果reflow会重新生成空的
+      if(aniParams) {
+        for(let i = 0, len = keys.length; i < len; i++) {
+          let k = keys[i];
           cacheStyle[k] = undefined;
-          // TRBL变化只对relative/absolute起作用，其它忽视
-          if((k === TOP || k === RIGHT || k === BOTTOM || k === LEFT)
-            && ['relative', 'absolute'].indexOf(computedStyle[POSITION]) === -1) {
-            continue;
+        }
+        hasZ = aniParams.hasZ;
+        hasColor = aniParams.hasColor;
+        hasTsColor = aniParams.hasTsColor;
+        hasTsWidth = aniParams.hasTsWidth;
+        hasTsOver = aniParams.hasTsOver;
+      }
+      else {
+        for(let i = 0, len = keys.length; i < len; i++) {
+          let k = keys[i];
+          if(node instanceof Geom && isGeom(node.tagName, k)) {
+            lv |= REPAINT;
+            __cacheProps[k] = undefined;
           }
-          // 细化等级
-          lv |= getLevel(k);
-          if(k === DISPLAY) {
-            hasDisplay = true;
-          }
-          else if(k === Z_INDEX) {
-            hasZ = node !== this && ['relative', 'absolute'].indexOf(computedStyle[POSITION]) > -1;
-          }
-          else if(k === VISIBILITY) {
-            hasVisibility = true;
-          }
-          else if(k === COLOR) {
-            hasColor = true;
-          }
-          else if(k === TEXT_STROKE_COLOR) {
-            hasTsColor = true;
-          }
-          else if(k === TEXT_STROKE_WIDTH) {
-            hasTsWidth = true;
-          }
-          else if(k === TEXT_STROKE_OVER) {
-            hasTsOver = true;
+          else {
+            // repaint置空，如果reflow会重新生成空的
+            cacheStyle[k] = undefined;
+            // TRBL变化只对relative/absolute起作用，其它忽视
+            if((k === TOP || k === RIGHT || k === BOTTOM || k === LEFT)
+              && ['relative', 'absolute'].indexOf(computedStyle[POSITION]) === -1) {
+              continue;
+            }
+            // 细化等级
+            lv |= getLevel(k);
+            if(k === DISPLAY) {
+              hasDisplay = true;
+            }
+            else if(k === Z_INDEX) {
+              hasZ = node !== this && ['relative', 'absolute'].indexOf(computedStyle[POSITION]) > -1;
+            }
+            else if(k === VISIBILITY) {
+              hasVisibility = true;
+            }
+            else if(k === COLOR) {
+              hasColor = true;
+            }
+            else if(k === TEXT_STROKE_COLOR) {
+              hasTsColor = true;
+            }
+            else if(k === TEXT_STROKE_WIDTH) {
+              hasTsWidth = true;
+            }
+            else if(k === TEXT_STROKE_OVER) {
+              hasTsOver = true;
+            }
           }
         }
       }
@@ -663,7 +677,8 @@ class Root extends Dom {
         }
       }
     }
-    let isRp = isRepaint(lv);
+    // aniParams在动画引擎提前计算好了
+    let isRp = aniParams.isRepaint || isRepaint(lv);
     if(isRp) {
       // dom在>=REPAINT时total失效，svg的Geom比较特殊
       let need = lv >= REPAINT;

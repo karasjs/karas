@@ -228,9 +228,6 @@ function inherit(frames, keys, target) {
  * @param cb
  */
 function genBeforeRefresh(keys, root, node, aniParams, cb) {
-  if(!keys || !keys.length) { // steps可能无变化
-    return;
-  }
   if(aniParams && !aniParams.allInFn) {
     aniParams = null;
   }

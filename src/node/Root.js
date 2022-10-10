@@ -594,7 +594,8 @@ class Root extends Dom {
       __domParent,
     } = node;
     let hasZ, hasVisibility, hasColor, hasDisplay, hasTsColor, hasTsWidth, hasTsOver;
-    let lv = focus || (aniParams ? aniParams.lv : NONE);
+    // 可能无keys但有aniParams，多防御一下，比如steps动画
+    let lv = focus || (aniParams && keys && keys.length ? aniParams.lv : NONE);
     // 清空对应改变的cacheStyle
     if(keys) {
       if(aniParams) {

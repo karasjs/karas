@@ -13448,6 +13448,11 @@
 
 
   function genBeforeRefresh(keys, root, node, aniParams, cb) {
+    if (!keys || !keys.length) {
+      // steps可能无变化
+      return;
+    }
+
     if (aniParams && !aniParams.allInFn) {
       aniParams = null;
     }
@@ -34017,8 +34022,9 @@
             __cacheProps = _node.__cacheProps,
             __mask = _node.__mask,
             __domParent = _node.__domParent;
-        var hasZ, hasVisibility, hasColor, hasDisplay, hasTsColor, hasTsWidth, hasTsOver;
-        var lv = focus || (aniParams ? aniParams.lv : NONE); // 清空对应改变的cacheStyle
+        var hasZ, hasVisibility, hasColor, hasDisplay, hasTsColor, hasTsWidth, hasTsOver; // 可能无keys但有aniParams，多防御一下，比如steps动画
+
+        var lv = focus || (aniParams && keys && keys.length ? aniParams.lv : NONE); // 清空对应改变的cacheStyle
 
         if (keys) {
           if (aniParams) {

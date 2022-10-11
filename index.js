@@ -13504,8 +13504,9 @@
       // 变化的属性
       keys: [],
       // 变化的k
-      fixed: [] // 不变的k
-
+      fixed: [],
+      // 不变的k
+      lastPercent: -1
     };
   }
 
@@ -15092,7 +15093,12 @@
       key: "__init",
       value: function __init(list, iterations, duration, easing, target) {
         if (list.length < 1) {
-          return [[], [], [], {}];
+          return {
+            frames: [],
+            framesR: [],
+            keys: [],
+            originStyle: {}
+          };
         } // 过滤时间非法的，过滤后续offset<=前面的
 
 
@@ -15348,6 +15354,7 @@
         var playbackRate = this.__playbackRate;
         var spfLimit = this.__spfLimit;
         var currentTime = this.__currentTime = this.__nextTime;
+        var lastFrame = this.__currentFrame;
         this.__isChange = false; // 定帧限制每帧时间间隔最大为spf
 
         if (spfLimit) {
@@ -15453,10 +15460,10 @@
         }
 
         var inEndDelay,
-            currentFrame = currentFrames[i]; // 对比前后两帧是否为同一关键帧，不是则清除之前关键帧上的percent标识
+            currentFrame = currentFrames[i]; // 对比前后两帧是否为同一关键帧，不是则清除之前关键帧上的percent标识为-1，这样可以识别跳帧和本轮第一次进入此帧
 
-        if (this.__currentFrame !== currentFrame) {
-          this.__currentFrame && (this.__currentFrame.lastPercent = -1);
+        if (lastFrame !== currentFrame) {
+          lastFrame && (lastFrame.lastPercent = -1);
           this.__currentFrame = currentFrame;
         }
         /** 这里要考虑全几种场景：

@@ -13386,7 +13386,7 @@
       });
     });
     return keys;
-  } // 每次初始化时处理继承值，以及转换transform为单matrix矩阵
+  } // 每次初始化时处理继承值，以及转换transform为单matrix矩阵，并复制clone样式供帧计算
 
 
   function inherit(frames, keys, target) {
@@ -13432,7 +13432,7 @@
           }
         }
       });
-      item.clone = cloneStyle(style);
+      item.clone = cloneStyle(style, null);
     });
   }
   /**
@@ -15048,11 +15048,10 @@
       var duration = _this.duration = op.duration;
 
       var _this$__init = _this.__init(list, iterations, duration, op.easing, target),
-          _this$__init2 = _slicedToArray(_this$__init, 4),
-          frames = _this$__init2[0],
-          framesR = _this$__init2[1],
-          keys = _this$__init2[2],
-          originStyle = _this$__init2[3];
+          frames = _this$__init.frames,
+          framesR = _this$__init.framesR,
+          keys = _this$__init.keys,
+          originStyle = _this$__init.originStyle;
 
       _this.__frames = frames;
       _this.__framesR = framesR;
@@ -15225,16 +15224,17 @@
         inherit(frames, keys, target);
         var framesR = clone$1(frames).reverse(); // 存储原本样式以便恢复用
 
-        var style = target.style,
-            props = target.props;
+        var __currentStyle = target.__currentStyle,
+            __currentProps = target.__currentProps;
         var originStyle = {};
         keys.forEach(function (k) {
           if (isGeom$1(target.tagName, k)) {
-            originStyle[k] = props[k];
+            originStyle[k] = __currentProps[k];
           }
 
-          originStyle[k] = style[k];
-        }); // 再计算两帧之间的变化，存入transition/fixed属性
+          originStyle[k] = __currentStyle[k];
+        });
+        originStyle = cloneStyle(originStyle, keys); // 再计算两帧之间的变化，存入transition/fixed属性
 
         var length = frames.length;
         var prev = frames[0];
@@ -15256,7 +15256,12 @@
           prev = calFrame(prev, _next, keys, target);
         }
 
-        return [frames, framesR, keys, originStyle];
+        return {
+          frames: frames,
+          framesR: framesR,
+          keys: keys,
+          originStyle: originStyle
+        };
       }
     }, {
       key: "__clean",
@@ -32731,6 +32736,7 @@
 
     var maskStartHash = [];
     var offscreenHash = [];
+    var lastOpacity = -1;
 
     for (var _i6 = 0, _len6 = __structs.length; _i6 < _len6; _i6++) {
       var _structs$_i3 = __structs[_i6],
@@ -32746,6 +32752,7 @@
 
         if (oh) {
           ctx = applyOffscreen(ctx, oh, width, height, false);
+          lastOpacity = -1;
         }
       } else {
         var _computedStyle3 = _node8.__computedStyle; // none跳过这棵子树，判断下最后一个节点的离屏应用即可
@@ -32761,6 +32768,7 @@
 
           if (_oh4) {
             ctx = applyOffscreen(ctx, _oh4, width, height, true);
+            lastOpacity = -1;
           }
 
           continue;
@@ -32837,7 +32845,11 @@
             _i6 += countMaskNum(__structs, _i6 + 1, _hasMask5);
           }
 
-          ctx.globalAlpha = opacity;
+          if (lastOpacity !== opacity) {
+            ctx.globalAlpha = opacity;
+            lastOpacity = opacity;
+          }
+
           ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
           var mixBlendMode = _computedStyle3[MIX_BLEND_MODE$1];
 
@@ -32862,6 +32874,7 @@
 
           if (_oh5) {
             ctx = applyOffscreen(ctx, _oh5, _width2, _height2, false);
+            lastOpacity = -1;
           }
         } // 没有cacheTotal是普通节点绘制
         else {
@@ -32882,7 +32895,11 @@
           } // 节点自身渲染
 
 
-          ctx.globalAlpha = opacity;
+          if (lastOpacity !== opacity) {
+            ctx.globalAlpha = opacity;
+            lastOpacity = opacity;
+          }
+
           ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
 
           _node8.render(renderMode, ctx, 0, 0); // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
@@ -32959,6 +32976,7 @@
 
           if (_oh6) {
             ctx = applyOffscreen(ctx, _oh6, width, height, false);
+            lastOpacity = -1;
           }
         }
       }

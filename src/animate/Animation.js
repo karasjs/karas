@@ -181,7 +181,7 @@ function unify(frames, target) {
   return keys;
 }
 
-// 每次初始化时处理继承值，以及转换transform为单matrix矩阵
+// 每次初始化时处理继承值，以及转换transform为单matrix矩阵，并复制clone样式供帧计算
 function inherit(frames, keys, target) {
   let computedStyle = target.__computedStyle;
   frames.forEach(item => {
@@ -213,7 +213,7 @@ function inherit(frames, keys, target) {
         }
       }
     });
-    item.clone = cloneStyle(style);
+    item.clone = cloneStyle(style, null);
   });
 }
 
@@ -1738,7 +1738,7 @@ class Animation extends Event {
     this.__firstEnter = true;
     let iterations = this.iterations = op.iterations;
     let duration = this.duration = op.duration;
-    let [frames, framesR, keys, originStyle] = this.__init(list, iterations, duration, op.easing, target);
+    let { frames, framesR, keys, originStyle } = this.__init(list, iterations, duration, op.easing, target);
     this.__frames = frames;
     this.__framesR = framesR;
     this.__keys = keys;
@@ -1881,14 +1881,15 @@ class Animation extends Event {
     inherit(frames, keys, target);
     let framesR = clone(frames).reverse();
     // 存储原本样式以便恢复用
-    let { style, props } = target;
+    let { __currentStyle, __currentProps } = target;
     let originStyle = {};
     keys.forEach(k => {
       if(isGeom(target.tagName, k)) {
-        originStyle[k] = props[k];
+        originStyle[k] = __currentProps[k];
       }
-      originStyle[k] = style[k];
+      originStyle[k] = __currentStyle[k];
     });
+    originStyle = cloneStyle(originStyle, keys);
     // 再计算两帧之间的变化，存入transition/fixed属性
     let length = frames.length;
     let prev = frames[0];
@@ -1906,7 +1907,7 @@ class Animation extends Event {
       let next = framesR[i];
       prev = calFrame(prev, next, keys, target);
     }
-    return [frames, framesR, keys, originStyle];
+    return { frames, framesR, keys, originStyle };
   }
 
   __clean(isFinish) {

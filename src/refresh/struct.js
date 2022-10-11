@@ -2323,6 +2323,7 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
    */
   let maskStartHash = [];
   let offscreenHash = [];
+  let lastOpacity = -1;
   for(let i = 0, len = __structs.length; i < len; i++) {
     let {
       node,
@@ -2336,6 +2337,7 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
       let oh = offscreenHash[i];
       if(oh) {
         ctx = applyOffscreen(ctx, oh, width, height, false);
+        lastOpacity = -1;
       }
     }
     else {
@@ -2349,6 +2351,7 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
         let oh = offscreenHash[i];
         if(oh) {
           ctx = applyOffscreen(ctx, oh, width, height, true);
+          lastOpacity = -1;
         }
         continue;
       }
@@ -2400,7 +2403,10 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
         if(hasMask) {
           i += countMaskNum(__structs, i + 1, hasMask);
         }
-        ctx.globalAlpha = opacity;
+        if(lastOpacity !== opacity) {
+          ctx.globalAlpha = opacity;
+          lastOpacity = opacity;
+        }
         ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
         let mixBlendMode = __computedStyle[MIX_BLEND_MODE];
         if(isValidMbm(mixBlendMode)) {
@@ -2414,6 +2420,7 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
         let oh = offscreenHash[i];
         if(oh) {
           ctx = applyOffscreen(ctx, oh, width, height, false);
+          lastOpacity = -1;
         }
       }
       // 没有cacheTotal是普通节点绘制
@@ -2429,7 +2436,10 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
           offscreenOverflow = offscreen.offscreenOverflow;
         }
         // 节点自身渲染
-        ctx.globalAlpha = opacity;
+        if(lastOpacity !== opacity) {
+          ctx.globalAlpha = opacity;
+          lastOpacity = opacity;
+        }
         ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
         node.render(renderMode, ctx, 0, 0);
         // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
@@ -2474,6 +2484,7 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
         let oh = offscreenHash[i];
         if(oh) {
           ctx = applyOffscreen(ctx, oh, width, height, false);
+          lastOpacity = -1;
         }
       }
     }

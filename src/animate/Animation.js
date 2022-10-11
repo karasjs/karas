@@ -181,7 +181,7 @@ function unify(frames, target) {
   return keys;
 }
 
-// 每次初始化时处理继承值，以及转换transform为单matrix矩阵
+// 每次初始化时处理继承值，以及转换transform为单matrix矩阵，并复制clone样式供帧计算
 function inherit(frames, keys, target) {
   let computedStyle = target.__computedStyle;
   frames.forEach(item => {
@@ -213,7 +213,7 @@ function inherit(frames, keys, target) {
         }
       }
     });
-    item.clone = cloneStyle(style);
+    item.clone = cloneStyle(style, null);
   });
 }
 
@@ -271,6 +271,7 @@ function framing(style, duration, es) {
     transition: [], // 变化的属性
     keys: [], // 变化的k
     fixed: [], // 不变的k
+    lastPercent: -1,
   };
 }
 
@@ -1738,7 +1739,7 @@ class Animation extends Event {
     this.__firstEnter = true;
     let iterations = this.iterations = op.iterations;
     let duration = this.duration = op.duration;
-    let [frames, framesR, keys, originStyle] = this.__init(list, iterations, duration, op.easing, target);
+    let { frames, framesR, keys, originStyle } = this.__init(list, iterations, duration, op.easing, target);
     this.__frames = frames;
     this.__framesR = framesR;
     this.__keys = keys;
@@ -1769,7 +1770,7 @@ class Animation extends Event {
 
   __init(list, iterations, duration, easing, target) {
     if(list.length < 1) {
-      return [[], [], [], {}];
+      return { frames: [], framesR: [], keys: [], originStyle: {} };
     }
     // 过滤时间非法的，过滤后续offset<=前面的
     let offset = -1;
@@ -1881,14 +1882,15 @@ class Animation extends Event {
     inherit(frames, keys, target);
     let framesR = clone(frames).reverse();
     // 存储原本样式以便恢复用
-    let { style, props } = target;
+    let { __currentStyle, __currentProps } = target;
     let originStyle = {};
     keys.forEach(k => {
       if(isGeom(target.tagName, k)) {
-        originStyle[k] = props[k];
+        originStyle[k] = __currentProps[k];
       }
-      originStyle[k] = style[k];
+      originStyle[k] = __currentStyle[k];
     });
+    originStyle = cloneStyle(originStyle, keys);
     // 再计算两帧之间的变化，存入transition/fixed属性
     let length = frames.length;
     let prev = frames[0];
@@ -1906,7 +1908,7 @@ class Animation extends Event {
       let next = framesR[i];
       prev = calFrame(prev, next, keys, target);
     }
-    return [frames, framesR, keys, originStyle];
+    return { frames, framesR, keys, originStyle };
   }
 
   __clean(isFinish) {
@@ -1980,6 +1982,7 @@ class Animation extends Event {
     let playbackRate = this.__playbackRate;
     let spfLimit = this.__spfLimit;
     let currentTime = this.__currentTime = this.__nextTime;
+    let lastFrame = this.__currentFrame;
     this.__isChange = false;
     // 定帧限制每帧时间间隔最大为spf
     if(spfLimit) {
@@ -2074,9 +2077,9 @@ class Animation extends Event {
       percent = (currentTime - frameTime) / total;
     }
     let inEndDelay, currentFrame = currentFrames[i];
-    // 对比前后两帧是否为同一关键帧，不是则清除之前关键帧上的percent标识
-    if(this.__currentFrame !== currentFrame) {
-      this.__currentFrame && (this.__currentFrame.lastPercent = -1);
+    // 对比前后两帧是否为同一关键帧，不是则清除之前关键帧上的percent标识为-1，这样可以识别跳帧和本轮第一次进入此帧
+    if(lastFrame !== currentFrame) {
+      lastFrame && (lastFrame.lastPercent = -1);
       this.__currentFrame = currentFrame;
     }
     /** 这里要考虑全几种场景：

@@ -1520,7 +1520,12 @@ function equalStyle(k, a, b, target) {
     if(a.u !== b.u) {
       return false;
     }
-    if(a.u === GRADIENT) {}
+    if(a.u === GRADIENT) {
+      return equal(a.v, b.v);
+    }
+    else if(a.u === INHERIT) {
+      return true;
+    }
     else if(a.u === RGBA) {
       return equalArr(a.v, b.v);
     }

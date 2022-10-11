@@ -177,6 +177,7 @@ class Root extends Dom {
     this.__updateHash = {};
     this.__uuid = uuid++;
     this.__rlv = REBUILD; // 每次刷新最大lv
+    this.__lastUpdateP = null; // 每帧addUpdate都会向上检查，很多时候同级无需继续，第一次检查暂存parent对象
     builder.buildRoot(this, this.__children);
   }
 
@@ -398,7 +399,7 @@ class Root extends Dom {
     if(isDestroyed) {
       return;
     }
-    defs.clear();
+    this.__lastUpdateP = null;
     // 首次递归测量整树的继承，后续更改各自更新机制做，防止每次整树遍历；root检查首次直接做，后续在checkUpdate()中插入
     if(isFirst) {
       this.__reLayout();
@@ -413,6 +414,7 @@ class Root extends Dom {
     }
     // svg的特殊diff需要
     else if(renderMode === mode.SVG) {
+      defs.clear();
       struct.renderSvg(renderMode, defs, this, isFirst, rlv);
       let nvd = this.virtualDom;
       nvd.defs = defs.value;
@@ -770,33 +772,36 @@ class Root extends Dom {
         hasRelease ||= node.__cacheFilter.release();
       }
       // 向上清除cache汇总缓存信息，过程中可能会出现重复，根据refreshLevel判断，reflow已经自己清过了
-      let p = __domParent;
-      while(p) {
-        if(p.__refreshLevel & (CACHE | REPAINT | REFLOW)) {
-          break;
+      if(__domParent !== this.__lastUpdateP) {
+        let p = __domParent;
+        this.__lastUpdateP = p; // 同层级避免重复进入查找，每次draw()重设
+        while(p) {
+          if(p.__refreshLevel & (CACHE | REPAINT | REFLOW)) {
+            break;
+          }
+          p.__refreshLevel |= CACHE;
+          if(p.__cacheTotal) {
+            hasRelease ||= p.__cacheTotal.release();
+          }
+          if(p.__cacheFilter) {
+            hasRelease ||= p.__cacheFilter.release();
+          }
+          if(p.__cacheMask) {
+            hasRelease ||= p.__cacheMask.release();
+          }
+          if(p.__cacheOverflow) {
+            hasRelease ||= p.__cacheOverflow.release();
+          }
+          p = p.__domParent;
         }
-        p.__refreshLevel |= CACHE;
-        if(p.__cacheTotal) {
-          hasRelease ||= p.__cacheTotal.release();
-        }
-        if(p.__cacheFilter) {
-          hasRelease ||= p.__cacheFilter.release();
-        }
-        if(p.__cacheMask) {
-          hasRelease ||= p.__cacheMask.release();
-        }
-        if(p.__cacheOverflow) {
-          hasRelease ||= p.__cacheOverflow.release();
-        }
-        p = p.__domParent;
-      }
-      // 清除parent的zIndexChildren缓存，强制所有孩子重新渲染
-      if(hasZ && __domParent) {
-        __domParent.__zIndexChildren = null;
-        __domParent.__updateStruct();
-        if(this.renderMode === mode.SVG) {
-          hasRelease ||= node.__cacheTotal.release();
-          reflow.clearSvgCache(__domParent);
+        // 清除parent的zIndexChildren缓存，强制所有孩子重新渲染
+        if(hasZ && __domParent) {
+          __domParent.__zIndexChildren = null;
+          __domParent.__updateStruct();
+          if(this.__renderMode === mode.SVG) {
+            hasRelease ||= node.__cacheTotal.release();
+            reflow.clearSvgCache(__domParent);
+          }
         }
       }
     }

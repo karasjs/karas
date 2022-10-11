@@ -375,9 +375,8 @@ let inject = {
           cache.state = LOADED;
           cache.success = true;
           cache.url = url;
-          cache.arrayBuffer = ab;
           let list = cache.task.splice(0);
-          list.forEach(cb => cb(cache));
+          list.forEach(cb => cb(cache, ab));
         }).catch(error);
       }
       function error() {

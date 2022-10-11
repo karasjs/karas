@@ -58,12 +58,12 @@ let o = {
     let fontInfo = info[name] = info[name] || {};
     if(url && !fontInfo.url) { // 不能覆盖
       fontInfo.url = url;
-      inject.loadFont(name, url, function(res) {
+      inject.loadFont(name, url, function(res, ab) {
         fontInfo.success = res.success;
         if(res.success) {
           // 手动指定更高优先级，不解析
-          if(!fontInfo.lhr) {
-            let r = opentype.parse(res.arrayBuffer);
+          if(!fontInfo.lhr && ab) {
+            let r = opentype.parse(ab);
             setData(r);
           }
           // 回调

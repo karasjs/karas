@@ -1936,10 +1936,9 @@
             cache.state = LOADED;
             cache.success = true;
             cache.url = url;
-            cache.arrayBuffer = ab;
             var list = cache.task.splice(0);
             list.forEach(function (cb) {
-              return cb(cache);
+              return cb(cache, ab);
             });
           })["catch"](error);
         };
@@ -2766,13 +2765,13 @@
       if (url && !fontInfo.url) {
         // 不能覆盖
         fontInfo.url = url;
-        inject.loadFont(name, url, function (res) {
+        inject.loadFont(name, url, function (res, ab) {
           fontInfo.success = res.success;
 
           if (res.success) {
             // 手动指定更高优先级，不解析
-            if (!fontInfo.lhr) {
-              var r = opentype.parse(res.arrayBuffer);
+            if (!fontInfo.lhr && ab) {
+              var r = opentype.parse(ab);
               setData(r);
             } // 回调
 

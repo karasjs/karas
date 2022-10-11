@@ -197,8 +197,8 @@ class Geom extends Xom {
 
   __preSet(renderMode, res) {
     let { width, height, __cacheStyle, computedStyle } = this;
-    let cx = res.sx3 + width * 0.5;
-    let cy = res.sy3 + height * 0.5;
+    let cx = res.x3 + width * 0.5;
+    let cy = res.y3 + height * 0.5;
     let {
       [STROKE_DASHARRAY_STR]: strokeDasharrayStr,
     } = __cacheStyle;
@@ -214,13 +214,13 @@ class Geom extends Xom {
     } = computedStyle;
     stroke = stroke.map(item => {
       if(item.k) {
-        return this.__gradient(renderMode, res.ctx, res.sx3, res.sy3, res.sx4, res.sy4, item, res.dx, res.dy);
+        return this.__gradient(renderMode, res.ctx, res.x3, res.y3, res.x4, res.y4, item, res.dx, res.dy);
       }
       return int2rgba(item);
     });
     fill = fill.map(item => {
       if(item.k) {
-        return this.__gradient(renderMode, res.ctx, res.sx3, res.sy3, res.sx4, res.sy4, item, res.dx, res.dy);
+        return this.__gradient(renderMode, res.ctx, res.x3, res.y3, res.x4, res.y4, item, res.dx, res.dy);
       }
       return int2rgba(item);
     });
@@ -510,9 +510,9 @@ class Geom extends Xom {
           }
           let arr = [];
           for(let i = 0, len = item.length; i < len; i += 2) {
-            let p = mx.calPoint([item[i] + dx, item[i + 1] + dy], t);
-            arr.push(p[0]);
-            arr.push(p[1]);
+            let p = mx.calPoint({ x: item[i] + dx, y: item[i + 1] + dy }, t);
+            arr.push(p.x);
+            arr.push(p.y);
           }
           return arr;
         });
@@ -525,9 +525,9 @@ class Geom extends Xom {
         }
         let arr = [];
         for(let i = 0, len = item.length; i < len; i += 2) {
-          let p = mx.calPoint([item[i] + dx, item[i + 1] + dy], t);
-          arr.push(p[0]);
-          arr.push(p[1]);
+          let p = mx.calPoint({ x: item[i] + dx, y: item[i + 1] + dy }, t);
+          arr.push(p.x);
+          arr.push(p.y);
         }
         return arr;
       });
@@ -612,7 +612,7 @@ class Geom extends Xom {
     if(renderMode === mode.CANVAS) {
       let [x1, y1, x2, y2] = bbox;
       let w = x2 - x1, h = y2 - y1;
-      let offscreen = inject.getCacheCanvas(w, h, '__$$CONIC_GRADIENT$$__');
+      let offscreen = inject.getOffscreenCanvas(w, h, '__$$CONIC_GRADIENT$$__', null);
       let imgData = offscreen.ctx.getImageData(0,0, w, h);
       gradient.getConicGradientImage(w * 0.5, h * 0.5, w, h, fill.v.stop, imgData.data);
       offscreen.ctx.putImageData(imgData, 0, 0);

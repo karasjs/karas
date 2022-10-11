@@ -46,14 +46,15 @@ const OPACITY = 512; //                            1000000000
 const FILTER = 1024; //                           10000000000
 const MIX_BLEND_MODE = 2048; //                  100000000000
 const PERSPECTIVE = 4096; //                    1000000000000
+const MASK = 8192; //                          10000000000000
 
-const REPAINT = 8192; //                       10000000000000
+const REPAINT = 16384; //                     100000000000000
 
 // 高位表示reflow
-const REFLOW = 16384; //                      100000000000000
+const REFLOW = 32768; //                     1000000000000000
 
-// 特殊高位表示rebuild，节点发生变化
-const REBUILD = 32768; //                    1000000000000000
+// 特殊高位表示rebuild，节点发生增删变化
+const REBUILD = 65536; //                   10000000000000000
 
 const ENUM = {
   NONE,
@@ -73,6 +74,7 @@ const ENUM = {
   FILTER,
   MIX_BLEND_MODE,
   PERSPECTIVE,
+  MASK,
   REPAINT,
   REFLOW,
   REBUILD,

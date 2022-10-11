@@ -215,40 +215,55 @@ function multiplyPerspective(m, v) {
 }
 
 function calPoint(point, m) {
-  let [x, y, z, w] = point;
-  if(w === undefined) {
-    w = 1;
-  }
   if(m && !isE(m)) {
+    let { x, y, z, w } = point;
     if(m.length === 16) {
       z = z || 0;
-      let [a1, b1, c1, d1, a2, b2, c2, d2, a3, b3, c3, d3, a4, b4, c4, d4] = m;
-      w *= x * d1 + y * d2 + z * d3 + d4;
-      return [
-        (x * a1 + y * a2 + z * a3 + a4),
-        (x * b1 + y * b2 + z * b3 + b4),
-        (x * c1 + y * c2 + z * c3 + c4),
-        w
-      ];
+      if(w === undefined || w === null) {
+        w = 1;
+      }
+      let a1 = m[0], b1 = m[1], c1 = m[2], d1 = m[3];
+      let a2 = m[4], b2 = m[5], c2 = m[6], d2 = m[7];
+      let a3 = m[8], b3 = m[9], c3 = m[10], d3 = m[11];
+      let a4 = m[12], b4 = m[13], c4 = m[14], d4 = m[15];
+      if(d1 || d2 || d3) {
+        w = x * d1 + y * d2 + z * d3 + d4 * w;
+      }
+      else if(d4 !== 1) {
+        w *= d4;
+      }
+      let o = {
+        x: x * a1 + y * a2 + a4,
+        y: x * b1 + y * b2 + b4,
+        z: 0,
+        w,
+      };
+      if(z) {
+        o.x += z * a3;
+        o.y += z * b3;
+        o.z = x * c1 + y * c2 + c4 + z * c3;
+      }
+      else if(c1 || c2 || c4) {
+        o.z = x * c1 + y * c2 + c4;
+      }
+      return o;
     }
     // 6位类型
-    let [a, b, c, d, e, f] = m;
-    return [a * x + c * y + e, b * x + d * y + f];
+    let a = m[0], b = m[1], c = m[2], d = m[3], e = m[4], f = m[5];
+    return { x: a * x + c * y + e, y: b * x + d * y + f };
   }
-  return [x, y, z, w];
+  return point;
 }
 
 /**
  * 初等行变换求3*3特定css的matrix方阵，一维6长度
  * https://blog.csdn.net/iloveas2014/article/details/82930946
- * @param m
- * @returns {number[]|*}
  */
 function inverse(m) {
   if(m.length === 16) {
     return inverse4(m);
   }
-  let [a, b, c, d, e, f] = m;
+  let a = m[0], b = m[1], c = m[2], d = m[3], e = m[4], f = m[5];
   if(a === 1 && b === 0 && c === 0 && d === 1 && e === 0 && f === 0) {
     return m;
   }

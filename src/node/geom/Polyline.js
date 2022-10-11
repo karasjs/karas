@@ -474,7 +474,7 @@ class Polyline extends Geom {
     if(res.break || renderMode === mode.WEBGL) {
       return res;
     }
-    this.buildCache(res.sx3, res.sy3);
+    this.buildCache(res.x3, res.y3);
     this.__renderPolygon(renderMode, ctx, res);
     return res;
   }
@@ -499,7 +499,7 @@ class Polyline extends Geom {
     if(!this.__bbox) {
       let {
         isMulti, __cacheProps,
-        __sx3: originX, __sy3: originY,
+        __x3: originX, __y3: originY,
         computedStyle: {
           [STROKE_WIDTH]: strokeWidth,
         },

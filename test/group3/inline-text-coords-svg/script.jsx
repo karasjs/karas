@@ -25,4 +25,4 @@ let o = karas.render(
   '#test'
 );
 let input = document.querySelector('#base64');
-input.value = o.ref.span1.children[0].sx + ',' + o.ref.span2.children[0].sx;
+input.value = o.ref.span1.children[0].x + ',' + o.ref.span2.children[0].x;

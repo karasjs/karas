@@ -47,9 +47,9 @@ function renderBgc(xom, renderMode, ctx, color, list, x, y, w, h, btlr, btrr, bb
       }
       let arr = [];
       for(let i = 0, len = item.length; i < len; i += 2) {
-        let p = mx.calPoint([item[i], item[i + 1]], t);
-        arr.push(p[0]);
-        arr.push(p[1]);
+        let p = mx.calPoint({ x: item[i], y: item[i + 1] }, t);
+        arr.push(p.x);
+        arr.push(p.y);
       }
       return arr;
     });
@@ -337,8 +337,8 @@ function renderImage(xom, renderMode, ctx, loadBgi,
         props.push(['transform', 'matrix(' + joinArr(mx.m2m6(matrix), ',') + ')']);
       }
       if(needMask) {
-        let p1 = [bx1, by1];
-        let p2 = [bx2, by2];
+        let p1 = { x: bx1, y: by1 };
+        let p2 = { x: bx2, y: by2 };
         if(needResize) {
           let inverse = mx.inverse(matrix);
           p1 = mx.calPoint(p1, inverse);
@@ -349,7 +349,7 @@ function renderImage(xom, renderMode, ctx, loadBgi,
           children: [{
             tagName: 'path',
             props: [
-              ['d', `M${p1[0]},${p1[1]}L${p2[0]},${p1[1]}L${p2[0]},${p2[1]}L${p1[0]},${p2[1]}L${p1[0]},${p1[1]}`],
+              ['d', `M${p1.x},${p1.y}L${p2.x},${p1.y}L${p2.x},${p2.y}L${p1.x},${p2.y}L${p1.x},${p1.y}`],
               ['fill', '#FFF'],
             ],
           }],

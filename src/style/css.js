@@ -992,11 +992,20 @@ function normalize(style, resetList = []) {
       }
     }
   }
+  // filter支持数组形式
   temp = style.filter;
   if(temp !== undefined) {
     let f = [];
     // 先替换掉rgba为#RGBA格式，然后分割
-    let arr = (replaceRgba2Hex(temp) || '').match(/[\w-]+\s*\(.+?\)/ig);
+    let arr;
+    if(Array.isArray(temp)) {
+      arr = temp.map(item => {
+        return (replaceRgba2Hex(item) || '').match(/[\w-]+\s*\(.+?\)/ig);
+      });
+    }
+    else {
+      arr = (replaceRgba2Hex(temp) || '').match(/[\w-]+\s*\(.+?\)/ig);
+    }
     if(arr) {
       arr.forEach(item => {
         let match = /([\w-]+)\s*\((\s*.+\s*)\)/i.exec(item);

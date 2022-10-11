@@ -83,7 +83,7 @@ function genZIndexChildren(dom) {
       item = item.shadowRoot;
     }
     // 遮罩单独保存后特殊排序
-    if(item instanceof Xom && item.__isMask) {
+    if(item instanceof Xom && item.__mask) {
       // 开头的mc忽略，后续的连续mc以第一次出现为准
       if(lastMaskIndex !== undefined) {
         mcHash[lastMaskIndex].push(item);
@@ -2121,9 +2121,9 @@ class Dom extends Xom {
             let old = item.height;
             let v = item.__height = computedStyle[HEIGHT] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
             let d = v - old;
-            item.__sy4 += d;
-            item.__sy5 += d;
-            item.__sy6 += d;
+            item.__y4 += d;
+            item.__y5 += d;
+            item.__y6 += d;
             item.__height += d;
             item.__clientHeight += d;
             item.__offsetHeight += d;
@@ -2180,9 +2180,9 @@ class Dom extends Xom {
               let old = item.height;
               let v = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
               let d = v - old;
-              item.__sy4 += d;
-              item.__sy5 += d;
-              item.__sy6 += d;
+              item.__y4 += d;
+              item.__y5 += d;
+              item.__y6 += d;
               item.__height += d;
               item.__clientHeight += d;
               item.__offsetHeight += d;
@@ -2220,9 +2220,9 @@ class Dom extends Xom {
             let old = item.width;
             let v = item.__width = computedStyle[WIDTH] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
             let d = v - old;
-            item.__sx4 += d;
-            item.__sx5 += d;
-            item.__sx6 += d;
+            item.__x4 += d;
+            item.__x5 += d;
+            item.__x6 += d;
             item.__width += d;
             item.__clientWidth += d;
             item.__offsetWidth += d;
@@ -2273,9 +2273,9 @@ class Dom extends Xom {
               let old = item.width;
               let v = item.__width = computedStyle[WIDTH] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
               let d = v - old;
-              item.__sx4 += d;
-              item.__sx5 += d;
-              item.__sx6 += d;
+              item.__x4 += d;
+              item.__x5 += d;
+              item.__x6 += d;
               item.__width += d;
               item.__clientWidth += d;
               item.__offsetWidth += d;
@@ -2787,7 +2787,7 @@ class Dom extends Xom {
    * @private
    */
   __inlineSize(size, textAlign, isUpright) {
-    let { contentBoxList, computedStyle, __ox, __oy } = this;
+    let { contentBoxList, computedStyle } = this;
     let {
       [DISPLAY]: display,
       [MARGIN_TOP]: marginTop,
@@ -2867,20 +2867,18 @@ class Dom extends Xom {
       this.__offsetHeight = maxFY - minFY;
       this.__outerWidth = maxOX - minOX;
       this.__outerHeight = maxOY - minOY;
-      this.__sx = minOX + __ox;
-      this.__sy = minOY + __oy;
-      this.__sx1 = minFX + __ox;
-      this.__sy1 = minFY + __oy;
-      this.__sx2 = minCX + __ox;
-      this.__sy2 = minCY + __oy;
-      this.__sx3 = minX + __ox;
-      this.__sy3 = minY + __oy;
-      this.__sx4 = maxX + __ox;
-      this.__sy4 = maxY + __oy;
-      this.__sx5 = maxCX + __ox;
-      this.__sy5 = maxCY + __oy;
-      this.__sx6 = maxFX + __ox;
-      this.__sy6 = maxFY + __oy;
+      this.__x1 = minFX;
+      this.__y1 = minFY;
+      this.__x2 = minCX;
+      this.__y2 = minCY;
+      this.__x3 = minX;
+      this.__y3 = minY;
+      this.__x4 = maxX;
+      this.__y4 = maxY;
+      this.__x5 = maxCX;
+      this.__y5 = maxCY;
+      this.__x6 = maxFX;
+      this.__y6 = maxFY;
       // inline的text整体设置相同
       if(['center', 'right'].indexOf(textAlign) > -1) {
         this.children.forEach(item => {
@@ -2910,27 +2908,27 @@ class Dom extends Xom {
       if(isUpright) {
         tw = lineHeight;
         this.__ioSize(tw, 0);
-        this.__sx -= marginLeft + paddingLeft + borderLeftWidth;
+        this.__x -= marginLeft + paddingLeft + borderLeftWidth;
       }
       else {
         th = lineHeight;
         this.__ioSize(0, th);
-        this.__sy -= marginTop + paddingTop + borderTopWidth;
+        this.__y -= marginTop + paddingTop + borderTopWidth;
       }
-      this.__sx1 = this.__sx + marginLeft;
-      this.__sy1 = this.__sy + marginTop;
-      this.__sx2 = this.__sx1 + borderLeftWidth;
-      this.__sy2 = this.__sy1 + borderTopWidth;
-      this.__sx4 = this.__sx3 = this.__sx2 + paddingLeft;
-      this.__sy4 = this.__sy3 = this.__sy2 + paddingTop;
-      this.__sx5 = this.__sx4 + tw + paddingRight;
-      this.__sy5 = this.__sy4 + th + paddingBottom;
-      this.__sx6 = this.__sx5 + borderRightWidth;
-      this.__sy6 = this.__sy5 + borderBottomWidth;
-      this.__clientWidth = this.__sx5 - this.__sx2;
-      this.__clientHeight = this.__sy5 - this.__sy2;
-      this.__offsetWidth = this.__sx6 - this.__sx1;
-      this.__offsetHeight = this.__sy6 - this.__sy1;
+      this.__x1 = this.__x + marginLeft;
+      this.__y1 = this.__y + marginTop;
+      this.__x2 = this.__x1 + borderLeftWidth;
+      this.__y2 = this.__y1 + borderTopWidth;
+      this.__x4 = this.__x3 = this.__x2 + paddingLeft;
+      this.__y4 = this.__y3 = this.__y2 + paddingTop;
+      this.__x5 = this.__x4 + tw + paddingRight;
+      this.__y5 = this.__y4 + th + paddingBottom;
+      this.__x6 = this.__x5 + borderRightWidth;
+      this.__y6 = this.__y5 + borderBottomWidth;
+      this.__clientWidth = this.__x5 - this.__x2;
+      this.__clientHeight = this.__y5 - this.__y2;
+      this.__offsetWidth = this.__x6 - this.__x1;
+      this.__offsetHeight = this.__y6 - this.__y1;
       this.__outerWidth = this.__offsetWidth + marginLeft + marginRight;
       this.__outerHeight = this.__offsetHeight + marginTop + marginBottom;
     }
@@ -2944,7 +2942,7 @@ class Dom extends Xom {
    * @private
    */
   __layoutAbs(container, data, target) {
-    let { __sx: x, __sy: y,
+    let { __x: x, __y: y,
       __clientWidth: clientWidth, __clientHeight: clientHeight,
       __computedStyle: computedStyle } = container;
     let { __isDestroyed: isDestroyed, children, absChildren } = this;
@@ -3105,7 +3103,7 @@ class Dom extends Xom {
             else {
               mbList.push(cps[MARGIN_BOTTOM]);
               let t = reflow.getMergeMargin(mtList, mbList);
-              y2 = prev.__sy1 + prev.offsetHeight + t.target;
+              y2 = prev.__y1 + prev.offsetHeight + t.target;
               break;
             }
           }
@@ -3209,8 +3207,8 @@ class Dom extends Xom {
     if(force) {
       return super.__emitEvent(e, force);
     }
-    let { __isDestroyed, __computedStyle: computedStyle, __isMask, __cacheTotal } = this;
-    if(__isDestroyed || computedStyle[DISPLAY] === 'none' || e.__stopPropagation || __isMask) {
+    let { __isDestroyed, __computedStyle: computedStyle, __mask, __cacheTotal } = this;
+    if(__isDestroyed || computedStyle[DISPLAY] === 'none' || e.__stopPropagation || __mask) {
       return;
     }
     // 检查perspective嵌套状态，自身有perspective则设置10位，自身有transform的p矩阵则设置01位
@@ -3224,7 +3222,7 @@ class Dom extends Xom {
     if(computedStyle[OVERFLOW] === 'hidden' && !this.willResponseEvent(e, true)) {
       return;
     }
-    // __cacheTotal可提前判断是否在bbox范围内，防止svg进入判断bbox
+    // __cacheTotal可提前判断是否在bbox范围内，svg没有bbox防止进入判断
     if(__cacheTotal && __cacheTotal.available && __cacheTotal.bbox) {
       // 不是E的话，因为缓存缘故影响cache的子元素，先左乘可能的父matrix（嵌套cache），再赋值给pm递归传下去
       if(!isE(this.__matrix)) {

@@ -1,22 +1,22 @@
 let o = karas.render(
   <canvas width="360" height="360">
-    <$line ref="t" x1="0" y1="0" x2="1" y2="1" style={{width:100,height:100}}/>
+    <$line ref="t" xa="0" ya="0" xb="1" yb="1" style={{width:100,height:100}}/>
   </canvas>,
   '#test'
 );
 let t = o.ref.t;
 let animation = t.animate([
   {
-    x1: 0,
-    y1: 0,
-    x2: 1,
-    y2: 1,
+    xa: 0,
+    ya: 0,
+    xb: 1,
+    yb: 1,
   },
   {
-    x1: 0.8,
-    y1: 0.2,
-    x2: 0.2,
-    y2: 0.8,
+    xa: 0.8,
+    ya: 0.2,
+    xb: 0.2,
+    yb: 0.8,
   }
 ], {
   duration: 200,
@@ -26,9 +26,9 @@ let input = document.querySelector('input');
 let n = 0;
 animation.on(karas.Event.FRAME, () => {
   if(n++ === 0) {
-    input.value = t.x1 + ',' + t.y1 + ',' + t.x2 + ',' + t.y2;
+    input.value = t.xa + ',' + t.ya + ',' + t.xb + ',' + t.yb;
   }
 });
 animation.on(karas.Event.FINISH, () => {
-  input.value += '/' + t.x1 + ',' + t.y1 + ',' + t.x2 + ',' + t.y2;
+  input.value += '/' + t.xa + ',' + t.ya + ',' + t.xb + ',' + t.yb;
 });

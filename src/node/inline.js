@@ -78,8 +78,8 @@ function getInlineBox(xom, isUpright, contentBoxList, start, end, lineBox, basel
   }
   else {
     x1 = start.x;
-    y1 = lineBox.y + diff - bcStart + leading;
-    by1 = lineBox.y + diff - pbStart + leading;
+    y1 = lineBox.y + lineBox.oy + diff - bcStart + leading;
+    by1 = lineBox.y + lineBox.oy + diff - pbStart + leading;
   }
   // 容器内包含的inline节点，需考虑行首水平mbp（垂直排版为垂直头mbp）
   let dom = start instanceof TextBox ? start.parent.domParent : start.domParent;
@@ -133,8 +133,8 @@ function getInlineBox(xom, isUpright, contentBoxList, start, end, lineBox, basel
       }
     }
     x2 = end.x + end.outerWidth;
-    y2 = lineBox.y + diff + lineHeight + bcEnd - leading;
-    by2 = lineBox.y + diff + lineHeight + pbEnd - leading;
+    y2 = lineBox.y + lineBox.oy + diff + lineHeight + bcEnd - leading;
+    by2 = lineBox.y + lineBox.oy + diff + lineHeight + pbEnd - leading;
   }
   // TextBox的parent是Text，再是Dom，这里一定是inline，无嵌套就是xom本身，有则包含若干层最上层还是xom
   dom = end instanceof TextBox ? end.parent.domParent : end.domParent;
@@ -185,15 +185,6 @@ function getInlineBox(xom, isUpright, contentBoxList, start, end, lineBox, basel
       }
     }
   }
-  // 要考虑xom的ox/oy值
-  x1 += xom.ox;
-  x2 += xom.ox;
-  bx1 += xom.ox;
-  bx2 += xom.ox;
-  y1 += xom.oy;
-  y2 += xom.oy;
-  by1 += xom.oy;
-  by2 += xom.oy;
   return [x1, y1, x2, y2, bx1, by1, bx2, by2];
 }
 

@@ -1,6 +1,7 @@
 import unit from '../style/unit';
 import enums from '../util/enums';
-import math from '../math/index';
+import matrix from '../math/matrix';
+import geom from '../math/geom';
 
 const { STYLE_KEY: {
   TRANSLATE_X,
@@ -20,7 +21,6 @@ const { STYLE_KEY: {
   FONT_SIZE,
 }} = enums;
 const { PX, PERCENT, REM, VW, VH, VMAX, VMIN } = unit;
-const { matrix, geom } = math;
 const { identity, multiply, multiplyTfo, tfoMultiply, isE,
   multiplyTranslateX, multiplyTranslateY, multiplyTranslateZ,
   multiplyRotateX, multiplyRotateY, multiplyRotateZ,
@@ -168,7 +168,8 @@ function calMatrix(transform, ow, oh, root) {
     else if(k === SCALE_Z) {
       m = multiplyScaleZ(m, v);
     }
-    else if(k === PERSPECTIVE) {
+    // 这种写法要求ppt必须在开头
+    else if(k === PERSPECTIVE && !i) {
       m = multiplyPerspective(m, v);
     }
     else if(k === ROTATE_3D) {

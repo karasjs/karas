@@ -25,8 +25,8 @@ const CHAR = '…';
 class Ellipsis extends Node {
   constructor(x, y, width, parent, isUpright) {
     super();
-    this.__x = this.__sx1 = x;
-    this.__y = this.__sy1 = y;
+    this.__x = this.__x1 = x;
+    this.__y = this.__y1 = y;
     this.__width = width;
     this.__parent = this.__domParent = parent;
     parent.__ellipsis = this;
@@ -38,8 +38,6 @@ class Ellipsis extends Node {
   render(renderMode, ctx, dx = 0, dy = 0) {
     let { x, y, parent, isUpright } = this;
     let {
-      ox,
-      oy,
       computedStyle,
       cacheStyle: {
         [COLOR]: color,
@@ -53,8 +51,8 @@ class Ellipsis extends Node {
     else {
       y += b;
     }
-    x += ox + dx;
-    y += oy + dy;
+    x += dx;
+    y += dy;
     if(renderMode === CANVAS || renderMode === WEBGL) {
       let font = css.setFontStyle(computedStyle);
       if(ctx.font !== font) {

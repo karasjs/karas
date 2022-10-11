@@ -11,6 +11,7 @@ import easing from './easing';
 import change from '../refresh/change';
 import key from './key';
 import mx from '../math/matrix';
+import level from '../refresh/level';
 
 const {
   STYLE_KEY: {
@@ -85,6 +86,7 @@ const {
     BORDER_LEFT_COLOR,
     BORDER_RIGHT_COLOR,
     BORDER_TOP_COLOR,
+    POSITION,
   },
 } = enums;
 const { AUTO, PX, PERCENT, INHERIT, RGBA, STRING, NUMBER, REM, VW, VH, VMAX, VMIN, GRADIENT, calUnit } = unit;
@@ -92,6 +94,30 @@ const { isNil, isFunction, isNumber, isObject, clone, equalArr } = util;
 const { linear } = easing;
 const { cloneStyle, equalStyle } = css;
 const { isGeom, GEOM } = change;
+const {
+  getLevel,
+  isRepaint,
+  NONE,
+  FILTER: FT,
+  PERSPECTIVE: PPT,
+  REPAINT,
+  REFLOW,
+  REBUILD,
+  CACHE,
+  TRANSFORM: TF,
+  TRANSFORM_ALL,
+  OPACITY: OP,
+  MIX_BLEND_MODE: MBM,
+  MASK,
+  TRANSLATE_X: TX,
+  TRANSLATE_Y: TY,
+  TRANSLATE_Z: TZ,
+  ROTATE_Z: RZ,
+  SCALE_X: SX,
+  SCALE_Y: SY,
+  SCALE_Z: SZ,
+  SCALE,
+} = level;
 
 const {
   isColorKey,
@@ -169,7 +195,7 @@ function inherit(frames, keys, target) {
       if(k === TRANSFORM) {
         let ow = target.__outerWidth;
         let oh = target.__outerHeight;
-        let m = tf.calMatrix(v, ow, oh);
+        let m = tf.calMatrix(v, ow, oh, target.__root);
         style[k] = [{ k: MATRIX, v: m }];
       }
       else if(v.u === INHERIT) {
@@ -198,11 +224,16 @@ function inherit(frames, keys, target) {
  * @param keys 样式所有的key
  * @param root
  * @param node
+ * @param aniParams 动画更新的特殊优化参数
  * @param cb
  */
-function genBeforeRefresh(keys, root, node, cb) {
+function genBeforeRefresh(keys, root, node, aniParams, cb) {
+  if(aniParams && !aniParams.allInFn) {
+    aniParams = null;
+  }
   root.__addUpdate(node, {
     keys,
+    aniParams,
     cb,
   });
 }
@@ -1070,22 +1101,30 @@ function calDiffGradient(p, n, target) {
  * 同时不变化的key也得存入fixed
  */
 function calFrame(prev, next, keys, target) {
-  let hasTp;
-  keys.forEach(k => {
+  let hasTp, allInFn = true;
+  for(let i = 0, len = keys.length; i < len; i++) {
+    let k = keys[i];
     if(k === TRANSLATE_PATH) {
       hasTp = true;
     }
     let ts = calDiff(prev, next, k, target);
     // 可以形成过渡的才会产生结果返回
     if(ts) {
-      ts.fn = CAL_HASH[k];
+      let fn = CAL_HASH[k];
+      if(fn) {
+        ts.fn = fn;
+      }
+      else {
+        allInFn = false;
+      }
       prev.transition.push(ts);
       prev.keys.push(k);
     }
     else {
       prev.fixed.push(k);
+      allInFn = false;
     }
-  });
+  }
   // translatePath需特殊处理translate，防止被覆盖
   if(hasTp) {
     let i = prev.keys.indexOf(TRANSLATE_X);
@@ -1103,6 +1142,49 @@ function calFrame(prev, next, keys, target) {
     i = prev.fixed.indexOf(TRANSLATE_Y);
     if(i > -1) {
       prev.fixed.splice(i, 1);
+    }
+  }
+  prev.allInFn = allInFn;
+  // 特殊优化，加速通知Root的更新
+  if(allInFn) {
+    let lv = NONE;
+    let computedStyle = target.__computedStyle;
+    for(let i = 0, len = keys.length; i < len; i++) {
+      let k = keys[i];
+      lv |= getLevel(k);
+      if(k === Z_INDEX) {
+        prev.hasZ = node !== this && ['relative', 'absolute'].indexOf(computedStyle[POSITION]) > -1;
+      }
+      else if(k === COLOR) {
+        prev.hasColor = true;
+      }
+      else if(k === TEXT_STROKE_COLOR) {
+        prev.hasTsColor = true;
+      }
+      else if(k === TEXT_STROKE_WIDTH) {
+        prev.hasTsWidth = true;
+      }
+      else if(k === TEXT_STROKE_OVER) {
+        prev.hasTsOver = true;
+      }
+    }
+    // 提前计算
+    prev.lv = lv;
+    prev.isRepaint = isRepaint(lv);
+    // 常见的几种动画matrix计算是否可优化提前计算
+    if(prev.isRepaint && (lv & (TX | TY | TZ | RZ | SCALE))) {
+      if((lv & TF) || (
+        (lv & SX) && !computedStyle[SCALE_X]
+        || (lv & SY) && !computedStyle[SCALE_Y]
+        || (lv & SZ) && !computedStyle[SCALE_Z]
+        || (lv & RZ) && (computedStyle[ROTATE_X] || computedStyle[ROTATE_Y]
+          || computedStyle[SKEW_X] || computedStyle[SKEW_Y])
+      )) {
+        prev.optimize = false;
+      }
+      else {
+        prev.optimize = true;
+      }
     }
   }
   return next;
@@ -1417,6 +1499,7 @@ function calIntermediateStyle(frame, percent, target) {
   let style = frame.style;
   let transition = frame.transition;
   let timingFunction = frame.timingFunction;
+  let allInFn = frame.allInFn;
   if(timingFunction && timingFunction !== linear) {
     percent = timingFunction(percent);
   }
@@ -1425,128 +1508,139 @@ function calIntermediateStyle(frame, percent, target) {
     return [];
   }
   frame.lastPercent = percent;
-  let currentStyle = target.__currentStyle, currentProps = target.__currentProps, res = frame.keys, modify;
-  for(let i = 0, len = transition.length; i < len; i++) {
-    let item = transition[i];
-    let k = item.k, v = item.v, st = item.st, cl = item.cl, fn = item.fn;
-    if(fn) {
+  let currentStyle = target.__currentStyle, res = frame.keys;
+  // 特殊性能优化，for拆开v8会提升不少
+  if(allInFn) {
+    for(let i = 0, len = transition.length; i < len; i++) {
+      let item = transition[i];
+      let k = item.k, v = item.v, st = item.st, cl = item.cl, fn = item.fn;
       fn(k, v, percent, st, cl, frame, currentStyle);
     }
-    else if(GEOM.hasOwnProperty(k)) {
-      let tagName = target.tagName;
-      if(GEOM[k][tagName] && isFunction(GEOM[k][tagName].calIncrease)) {
-        let fn = GEOM[k][tagName].calIncrease;
-        if(target.isMulti) {
-          st = st.map((item, i) => {
-            return fn(item, v[i], percent);
-          });
-        }
-        else {
-          st = fn(st, v, percent);
-        }
+  }
+  else {
+    let currentProps = target.__currentProps, modify;
+    for(let i = 0, len = transition.length; i < len; i++) {
+      let item = transition[i];
+      let k = item.k, v = item.v, st = item.st, cl = item.cl, fn = item.fn;
+      if(fn) {
+        fn(k, v, percent, st, cl, frame, currentStyle);
       }
-      else if(target.isMulti) {
-        if(k === 'points' || k === 'controls') {
-          for(let i = 0, len = Math.min(st.length, v.length); i < len; i++) {
-            let o = st[i];
-            let n = v[i];
-            let cli = cl[i];
-            if(!isNil(o) && !isNil(n)) {
-              for(let j = 0, len2 = Math.min(o.length, n.length); j < len2; j++) {
-                let o2 = o[j];
-                let n2 = n[j];
-                if(!isNil(o2) && !isNil(n2)) {
-                  for(let k = 0, len3 = Math.min(o2.length, n2.length); k < len3; k++) {
-                    if(!isNil(o2[k]) && !isNil(n2[k])) {
-                      o2[k] = cli[j][k] + n2[k] * percent;
+      else if(GEOM.hasOwnProperty(k)) {
+        let tagName = target.tagName;
+        if(GEOM[k][tagName] && isFunction(GEOM[k][tagName].calIncrease)) {
+          let fn = GEOM[k][tagName].calIncrease;
+          if(target.isMulti) {
+            st = st.map((item, i) => {
+              return fn(item, v[i], percent);
+            });
+          }
+          else {
+            st = fn(st, v, percent);
+          }
+        }
+        else if(target.isMulti) {
+          if(k === 'points' || k === 'controls') {
+            for(let i = 0, len = Math.min(st.length, v.length); i < len; i++) {
+              let o = st[i];
+              let n = v[i];
+              let cli = cl[i];
+              if(!isNil(o) && !isNil(n)) {
+                for(let j = 0, len2 = Math.min(o.length, n.length); j < len2; j++) {
+                  let o2 = o[j];
+                  let n2 = n[j];
+                  if(!isNil(o2) && !isNil(n2)) {
+                    for(let k = 0, len3 = Math.min(o2.length, n2.length); k < len3; k++) {
+                      if(!isNil(o2[k]) && !isNil(n2[k])) {
+                        o2[k] = cli[j][k] + n2[k] * percent;
+                      }
                     }
                   }
                 }
               }
             }
           }
-        }
-        else if(k === 'controlA' || k === 'controlB') {
-          v.forEach((item, i) => {
-            let st2 = st[i];
-            if(!isNil(item[0]) && !isNil(st2[0])) {
-              st2[0] = cl[i][0] + item[0] * percent;
-            }
-            if(!isNil(item[1]) && !isNil(st2[1])) {
-              st2[1] = cl[i][1] + item[1] * percent;
-            }
-          });
+          else if(k === 'controlA' || k === 'controlB') {
+            v.forEach((item, i) => {
+              let st2 = st[i];
+              if(!isNil(item[0]) && !isNil(st2[0])) {
+                st2[0] = cl[i][0] + item[0] * percent;
+              }
+              if(!isNil(item[1]) && !isNil(st2[1])) {
+                st2[1] = cl[i][1] + item[1] * percent;
+              }
+            });
+          }
+          else {
+            v.forEach((item, i) => {
+              if(!isNil(item) && !isNil(st[i])) {
+                st[i] = cl[i] + item * percent;
+              }
+            });
+          }
         }
         else {
-          v.forEach((item, i) => {
-            if(!isNil(item) && !isNil(st[i])) {
-              st[i] = cl[i] + item * percent;
-            }
-          });
-        }
-      }
-      else {
-        if(k === 'points' || k === 'controls') {
-          for(let i = 0, len = Math.min(st.length, v.length); i < len; i++) {
-            let o = st[i];
-            let n = v[i];
-            if(!isNil(o) && !isNil(n)) {
-              for(let j = 0, len2 = Math.min(o.length, n.length); j < len2; j++) {
-                if(!isNil(o[j]) && !isNil(n[j])) {
-                  o[j] = cl[i][j] + n[j] * percent;
+          if(k === 'points' || k === 'controls') {
+            for(let i = 0, len = Math.min(st.length, v.length); i < len; i++) {
+              let o = st[i];
+              let n = v[i];
+              if(!isNil(o) && !isNil(n)) {
+                for(let j = 0, len2 = Math.min(o.length, n.length); j < len2; j++) {
+                  if(!isNil(o[j]) && !isNil(n[j])) {
+                    o[j] = cl[i][j] + n[j] * percent;
+                  }
                 }
               }
             }
           }
+          else if(k === 'controlA' || k === 'controlB') {
+            if(!isNil(st[0]) && !isNil(v[0])) {
+              st[0] = cl[0] + v[0] * percent;
+            }
+            if(!isNil(st[1]) && !isNil(v[1])) {
+              st[1] = cl[1] + v[1] * percent;
+            }
+          }
+          else {
+            if(!isNil(st) && !isNil(v)) {
+              st = cl + v * percent;
+            }
+          }
         }
-        else if(k === 'controlA' || k === 'controlB') {
-          if(!isNil(st[0]) && !isNil(v[0])) {
-            st[0] = cl[0] + v[0] * percent;
-          }
-          if(!isNil(st[1]) && !isNil(v[1])) {
-            st[1] = cl[1] + v[1] * percent;
-          }
+        currentProps[k] = st;
+      }
+      // string的直接量，在不同帧之间可能存在变化，同帧变化后不再改变
+      else {
+        if(currentStyle[k] !== st) {
+          currentStyle[k] = st;
         }
         else {
-          if(!isNil(st) && !isNil(v)) {
-            st = cl + v * percent;
+          if(!modify) {
+            modify = true;
+            res = res.slice(0);
           }
+          let j = res.indexOf(k);
+          res.splice(j, 1);
         }
       }
-      currentProps[k] = st;
     }
-    // string的直接量，在不同帧之间可能存在变化，同帧变化后不再改变
-    else {
-      if(currentStyle[k] !== st) {
-        currentStyle[k] = st;
-      }
-      else {
+    // 无变化的也得检查是否和当前相等，防止跳到一个不变化的帧上，而前一帧有变化的情况，allInFn不会有这里
+    let fixed = frame.fixed;
+    for(let i = 0, len = fixed.length; i < len; i++) {
+      let k = fixed[i];
+      let isGeom = GEOM.hasOwnProperty(k);
+      if(!equalStyle(k, style[k], isGeom ? currentProps[k] : currentStyle[k], target)) {
+        if(GEOM.hasOwnProperty(k)) {
+          currentProps[k] = style[k];
+        }
+        else {
+          currentStyle[k] = style[k];
+        }
         if(!modify) {
           modify = true;
           res = res.slice(0);
         }
-        let j = res.indexOf(k);
-        res.splice(j, 1);
+        res.push(k);
       }
-    }
-  }
-  // 无变化的也得检查是否和当前相等，防止跳到一个不变化的帧上，而前一帧有变化的情况
-  let fixed = frame.fixed;
-  for(let i = 0, len = fixed.length; i < len; i++) {
-    let k = fixed[i];
-    let isGeom = GEOM.hasOwnProperty(k);
-    if(!equalStyle(k, style[k], isGeom ? currentProps[k] : currentStyle[k], target)) {
-      if(GEOM.hasOwnProperty(k)) {
-        currentProps[k] = style[k];
-      }
-      else {
-        currentStyle[k] = style[k];
-      }
-      if(!modify) {
-        modify = true;
-        res = res.slice(0);
-      }
-      res.push(k);
     }
   }
   return res;
@@ -1918,7 +2012,7 @@ class Animation extends Event {
         let currentFrame = this.__currentFrame = currentFrames[0];
         let keys = calLastStyle(currentFrame.style, target, this.__keys);
         this.__isChange = !!keys.length;
-        genBeforeRefresh(keys, root, target, null);
+        genBeforeRefresh(keys, root, target, currentFrame, null);
       }
       this.__begin = false; // 默认是true，delay置false防触发
       // 即便不刷新，依旧执行帧回调，同时标明让后续第一帧响应begin
@@ -2006,6 +2100,7 @@ class Animation extends Event {
       // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
       else {
         keys = calLastStyle(this.__originStyle, target, this.__keys);
+        currentFrame = null; // 特殊清空，genBeforeRefresh（）时不传过去
       }
       // 进入endDelay或结束阶段触发end事件，注意只触发一次，防重在触发的地方做
       this.__nextEnd = true;
@@ -2021,8 +2116,7 @@ class Animation extends Event {
       keys = calIntermediateStyle(currentFrame, percent, target);
     }
     this.__isChange = !keys.length;
-    // 无论两帧之间是否有变化，都生成计算结果赋给style，去重在root做
-    genBeforeRefresh(keys, root, target, null);
+    genBeforeRefresh(keys, root, target, currentFrame, null);
     if(needClean) {
       let playCb = this.__playCb;
       this.__clean(true);
@@ -2105,6 +2199,7 @@ class Animation extends Event {
       let target = this.__target;
       let style;
       // 是否停留在最后一帧
+      let currentFrame = null;
       if(this.__stayEnd) {
         let framesR = this.__framesR;
         let direction = this.__direction;
@@ -2113,10 +2208,12 @@ class Animation extends Event {
           [frames, framesR] = [framesR, frames];
         }
         if(iterations === Infinity || iterations % 2) {
-          style = frames[frames.length - 1].style;
+          currentFrame = frames[frames.length - 1];
+          style = currentFrame.style;
         }
         else {
-          style = framesR[framesR.length - 1].style;
+          frames[frames.length - 1] = framesR[framesR.length - 1];
+          style = currentFrame.style;
         }
       }
       else {
@@ -2124,7 +2221,7 @@ class Animation extends Event {
       }
       let keys = calLastStyle(style, target, this.__keys);
       this.__isChange = !keys.length;
-      genBeforeRefresh(keys, root, target, () => {
+      genBeforeRefresh(keys, root, target, currentFrame, () => {
         frameCb(this);
         this.emit(Event.FINISH, this.__isChange);
         if(isFunction(cb)) {
@@ -2158,7 +2255,7 @@ class Animation extends Event {
       let target = this.__target;
       let keys = calLastStyle(this.__originStyle, target, this.__keys);
       this.__isChange = !keys.length;
-      genBeforeRefresh(keys, root, target, () => {
+      genBeforeRefresh(keys, root, target, null,() => {
         frameCb(this);
         this.emit(Event.CANCEL, this.__isChange);
         if(isFunction(cb)) {

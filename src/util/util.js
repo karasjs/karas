@@ -66,9 +66,6 @@ function joinVirtualDom(vd) {
   }
   s += '>';
   (vd.children || []).forEach(item => {
-    if(item.isMask) {
-      return;
-    }
     s += joinVd(item);
   });
   s += '</g>';
@@ -106,9 +103,6 @@ function joinVd(vd) {
     }
     s += '>';
     (vd.children || []).forEach(item => {
-      if(item.isMask) {
-        return;
-      }
       s += joinVd(item);
     });
     s += '</g>';
@@ -400,7 +394,7 @@ function joinArr(arr, split) {
 }
 
 function transformBbox(bbox, matrix, dx = 0, dy = 0) {
-  if(matrix && !mx.isE(matrix)) {
+  if(!mx.isE(matrix)) {
     let [x1, y1, x2, y2] = bbox;
     // 可能因filter的原因扩展范围
     if(dx) {
@@ -413,7 +407,8 @@ function transformBbox(bbox, matrix, dx = 0, dy = 0) {
     }
     let list = [x2, y1, x1, y2, x2, y2];
     let w;
-    [x1, y1, , w] = mx.calPoint([x1, y1], matrix);
+    let t = mx.calPoint({ x: x1, y: y1 }, matrix);
+    x1 = t.x; y1 = t.y; w = t.w;
     if(w && w !== 1) {
       x1 /= w;
       y1 /= w;
@@ -421,7 +416,8 @@ function transformBbox(bbox, matrix, dx = 0, dy = 0) {
     let xa = x1, ya = y1, xb = x1, yb = y1;
     for(let i = 0; i < 6; i += 2) {
       let x = list[i], y = list[i + 1];
-      [x, y, , w] = mx.calPoint([x, y], matrix);
+      let t = mx.calPoint({ x, y }, matrix);
+      x = t.x; y = t.y; w = t.w;
       if(w && w !== 1) {
         x /= w;
         y /= w;
@@ -431,14 +427,17 @@ function transformBbox(bbox, matrix, dx = 0, dy = 0) {
       ya = Math.min(ya, y);
       yb = Math.max(yb, y);
     }
-    bbox = [xa, ya, xb, yb];
+    return [xa, ya, xb, yb];
   }
-  else if(dx || dy) {
+  else {
     bbox = bbox.slice(0);
-    bbox[0] -= dx;
-    bbox[1] -= dy;
-    bbox[2] += dx;
-    bbox[3] += dy;
+    if(dx || dy) {
+      bbox = bbox.slice(0);
+      bbox[0] -= dx;
+      bbox[1] -= dy;
+      bbox[2] += dx;
+      bbox[3] += dy;
+    }
   }
   return bbox;
 }
@@ -456,22 +455,24 @@ function isPlainObject(obj) {
 }
 
 function assignMatrix(t, v) {
-  t[0] = v[0];
-  t[1] = v[1];
-  t[2] = v[2];
-  t[3] = v[3];
-  t[4] = v[4];
-  t[5] = v[5];
-  t[6] = v[6];
-  t[7] = v[7];
-  t[8] = v[8];
-  t[9] = v[9];
-  t[10] = v[10];
-  t[11] = v[11];
-  t[12] = v[12];
-  t[13] = v[13];
-  t[14] = v[14];
-  t[15] = v[15];
+  if(t && v) {
+    t[0] = v[0];
+    t[1] = v[1];
+    t[2] = v[2];
+    t[3] = v[3];
+    t[4] = v[4];
+    t[5] = v[5];
+    t[6] = v[6];
+    t[7] = v[7];
+    t[8] = v[8];
+    t[9] = v[9];
+    t[10] = v[10];
+    t[11] = v[11];
+    t[12] = v[12];
+    t[13] = v[13];
+    t[14] = v[14];
+    t[15] = v[15];
+  }
   return t;
 }
 

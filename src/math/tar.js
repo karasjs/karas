@@ -161,8 +161,8 @@ function transform(source, target) {
   }
   // 目标三角反向旋转至x轴后的坐标
   // 源三角目前的第3点坐标y值即为长度，因为a点在原点0无需减去
-  let ls2 = Math.abs(matrix.calPoint([sx3, sy3], m)[1]);
-  let lt2 = Math.abs(matrix.calPoint([tx3, ty3], n)[1]);
+  let ls2 = Math.abs(matrix.calPoint({ x: sx3, y: sy3 }, m).y);
+  let lt2 = Math.abs(matrix.calPoint({ x: tx3, y: ty3 }, n).y);
   // 缩放y
   // if(ls2 !== lt2) {
     // let scale = lt / ls;
@@ -182,9 +182,9 @@ function transform(source, target) {
   }
   // 第4步，x轴倾斜，用余弦定理求目前a和A的夹角
   n = m;
-  let [ax1, ay1] = matrix.calPoint([sx1, sy1], n);
-  let [ax2, ay2] = matrix.calPoint([sx2, sy2], n);
-  let [ax3, ay3] = matrix.calPoint([sx3, sy3], n);
+  let { x: ax1, y: ay1 } = matrix.calPoint({ x: sx1, y: sy1 }, n);
+  let { x: ax2, y: ay2 } = matrix.calPoint({ x: sx2, y: sy2 }, n);
+  let { x: ax3, y: ay3 } = matrix.calPoint({ x: sx3, y: sy3 }, n);
   let ab = geom.pointsDistance(ax1, ay1, ax2, ay2);
   let ac = geom.pointsDistance(ax1, ay1, ax3, ay3);
   let bc = geom.pointsDistance(ax3, ay3, ax2, ay2);

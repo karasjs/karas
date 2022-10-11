@@ -46,13 +46,12 @@ function applyOffscreen(ctx, list, width, height) {
       }
       target.ctx.setTransform(1, 0, 0, 1, 0, 0);
       target.ctx.clearRect(0, 0, width, height);
-      inject.releaseCacheCanvas(target.canvas);
     }
     else if(type === OFFSCREEN_FILTER) {
       let { target, ctx: origin, filter } = offscreen;
       // 申请一个新的离屏，应用blur并绘制，如没有则降级，默认ctx.filter为'none'
       if(ctx.filter) {
-        let apply = inject.getCacheCanvas(width, height, null, 'filter2');
+        let apply = inject.getOffscreenCanvas(width, height, null, 'filter2');
         apply.ctx.filter = painter.canvasFilter(filter);
         if(width && height) {
           apply.ctx.drawImage(target.canvas, 0, 0, width, height, 0, 0, width, height);
@@ -66,7 +65,6 @@ function applyOffscreen(ctx, list, width, height) {
         }
         apply.ctx.setTransform(1, 0, 0, 1, 0, 0);
         apply.ctx.clearRect(0, 0, width, height);
-        inject.releaseCacheCanvas(apply.canvas);
       }
       // 绘制回主画布，如果不支持则等同无filter原样绘制
       ctx = origin;
@@ -78,7 +76,6 @@ function applyOffscreen(ctx, list, width, height) {
       target.ctx.setTransform(1, 0, 0, 1, 0, 0);
       target.ctx.globalAlpha = 1;
       target.ctx.clearRect(0, 0, width, height);
-      inject.releaseCacheCanvas(target.canvas);
     }
     else if(type === OFFSCREEN_MASK) {
       let { mask, isClip } = offscreen;
@@ -93,7 +90,6 @@ function applyOffscreen(ctx, list, width, height) {
         ctx.globalCompositeOperation = 'source-over';
         offscreen.target.ctx.setTransform(1, 0, 0, 1, 0, 0);
         offscreen.target.ctx.clearRect(0, 0, width, height);
-        inject.releaseCacheCanvas(offscreen.target.canvas);
         ctx = offscreen.ctx;
         ctx.globalAlpha = 1;
         ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -102,7 +98,6 @@ function applyOffscreen(ctx, list, width, height) {
         }
         mask.ctx.setTransform(1, 0, 0, 1, 0, 0);
         mask.ctx.clearRect(0, 0, width, height);
-        inject.releaseCacheCanvas(mask.canvas);
       }
       else {
         let target = offscreen.target;
@@ -116,7 +111,6 @@ function applyOffscreen(ctx, list, width, height) {
         ctx.globalCompositeOperation = 'source-over';
         mask.ctx.setTransform(1, 0, 0, 1, 0, 0);
         mask.ctx.clearRect(0, 0, width, height);
-        inject.releaseCacheCanvas(mask.canvas);
         ctx = offscreen.ctx;
         ctx.globalAlpha = 1;
         ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -125,7 +119,6 @@ function applyOffscreen(ctx, list, width, height) {
         }
         target.ctx.setTransform(1, 0, 0, 1, 0, 0);
         target.ctx.clearRect(0, 0, width, height);
-        inject.releaseCacheCanvas(target.canvas);
       }
     }
     else if(type === OFFSCREEN_BLEND) {
@@ -141,7 +134,6 @@ function applyOffscreen(ctx, list, width, height) {
       target.ctx.globalAlpha = 1;
       target.ctx.setTransform(1, 0, 0, 1, 0, 0);
       target.ctx.clearRect(0, 0, width, height);
-      inject.releaseCacheCanvas(target.canvas);
     }
     // 特殊的mask节点汇总结束，还原ctx
     else if(type === OFFSCREEN_MASK2) {

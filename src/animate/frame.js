@@ -24,7 +24,7 @@ class Frame {
   constructor() {
     this.__rootTask = []; // 动画刷新后，每个root注册的刷新回调执行
     this.__task = [];
-    this.__now = null;
+    this.__now = inject.now();
   }
 
   __init() {

@@ -173,7 +173,7 @@ class Text extends Node {
     this.__textWidth = 0; // 整体宽度
     this.__bp = null; // block父节点
     this.__widthHash = {}; // 存储当前字体样式key下的charWidth/textWidth
-    this.__limitCache = null;
+    this.__limitCache = false;
     this.__hasContent = false;
   }
 
@@ -192,15 +192,14 @@ class Text extends Node {
       __cache.release();
     }
     let { x, y, w, h, lx = x, ly = y, lineBoxManager, endSpace = 0, lineClamp = 0, lineClampCount = 0, isUpright = false } = data;
-    this.__x = this.__sx = this.__sx1 = x;
-    this.__y = this.__sy = this.__sy1 = y;
+    this.__x = this.__x1 = x;
+    this.__y = this.__y1 = y;
     let { __isDestroyed, content, computedStyle, textBoxes, root } = this;
     textBoxes.splice(0);
     // 空内容w/h都为0可以提前跳出，lineClamp超出一般不会进这，但有特例flex文本垂直预计算时，所以也要跳出
     if(__isDestroyed || computedStyle[DISPLAY] === 'none' || !content || lineClamp && lineClampCount >= lineClamp) {
       return lineClampCount;
     }
-    this.__ox = this.__oy = 0;
     // 顺序尝试分割字符串为TextBox，形成多行，begin为每行起始索引，i是当前字符索引
     let i = 0;
     let length = content.length;
@@ -351,10 +350,10 @@ class Text extends Node {
       // 换行后Text的x重设为lx
       if(lineCount) {
         if(isUpright) {
-          this.__y = this.__sy1 = ly;
+          this.__y = this.__y1 = ly;
         }
         else {
-          this.__x = this.__sx1 = lx;
+          this.__x = this.__x1 = lx;
         }
       }
     }
@@ -640,7 +639,7 @@ class Text extends Node {
         item.__offsetX(diff);
       });
     }
-    this.__sx1 += diff;
+    this.__x1 += diff;
   }
 
   __offsetY(diff, isLayout) {
@@ -650,7 +649,7 @@ class Text extends Node {
         item.__offsetY(diff);
       });
     }
-    this.__sy1 += diff;
+    this.__y1 += diff;
   }
 
   __tryLayInline(total) {
@@ -670,15 +669,13 @@ class Text extends Node {
       }
     });
     if(isUpright) {
-      this.__y = min;
-      this.__sy = this.__sy1 = min + this.oy;
-      this.__sx = this.__sx1;
+      this.__y = this.__y1 = min;
+      this.__x = this.__x1;
       this.__height = max - min;
     }
     else {
-      this.__x = min;
-      this.__sx = this.__sx1 = min + this.ox;
-      this.__sy = this.__sy1;
+      this.__x = this.__x1 = min;
+      this.__y = this.__y1;
       this.__width = max - min;
     }
   }
@@ -963,14 +960,14 @@ class Text extends Node {
   get bbox() {
     if(!this.__bbox) {
       let {
-        __sx1, __sy1, width, height,
+        __x1, __y1, width, height,
         computedStyle: {
           [TEXT_STROKE_WIDTH]: textStrokeWidth,
         },
       } = this;
       // 文字描边暂时不清楚最大值是多少，影响不确定，先按描边宽算，因为会出现>>0.5宽的情况
       let half = textStrokeWidth;
-      this.__bbox = [__sx1 - half, __sy1 - half, __sx1 + width + half, __sy1 + height + half];
+      this.__bbox = [__x1 - half, __y1 - half, __x1 + width + half, __y1 + height + half];
     }
     return this.__bbox;
   }

@@ -1,3 +1,4 @@
+import Xom from './Xom';
 import Dom from './Dom';
 import Text from './Text';
 import Component from './Component';
@@ -23,6 +24,7 @@ import fragment from '../gl/main.frag';
 import vertexMask from '../gl/mask.vert';
 import fragmentMask from '../gl/mask.frag';
 import fragmentClip from '../gl/clip.frag';
+import vertexOverflow from '../gl/overflow.vert';
 import fragmentOverflow from '../gl/overflow.frag';
 import vertexCm from '../gl/filter/cm.vert';
 import fragmentCm from '../gl/filter/cm.frag';
@@ -30,7 +32,23 @@ import vertexDs from '../gl/filter/drops.vert'
 import fragmentDs from '../gl/filter/drops.frag';
 import webgl from '../gl/webgl';
 import ca from '../gl/ca';
-import TexCache from '../gl/TexCache';
+import TexHelper from '../gl/TexHelper';
+import vertexMbm from '../gl/mbm/mbm.vert';
+import fragmentMultiply from '../gl/mbm/multiply.frag';
+import fragmentScreen from '../gl/mbm/screen.frag';
+import fragmentOverlay from '../gl/mbm/overlay.frag';
+import fragmentDarken from '../gl/mbm/darken.frag';
+import fragmentLighten from '../gl/mbm/lighten.frag';
+import fragmentColorDodge from '../gl/mbm/color-dodge.frag';
+import fragmentColorBurn from '../gl/mbm/color-burn.frag';
+import fragmentHardLight from '../gl/mbm/hard-light.frag';
+import fragmentSoftLight from '../gl/mbm/soft-light.frag';
+import fragmentDifference from '../gl/mbm/difference.frag';
+import fragmentExclusion from '../gl/mbm/exclusion.frag';
+import fragmentHue from '../gl/mbm/hue.frag';
+import fragmentSaturation from '../gl/mbm/saturation.frag';
+import fragmentColor from '../gl/mbm/color.frag';
+import fragmentLuminosity from '../gl/mbm/luminosity.frag';
 
 const {
   STYLE_KEY: {
@@ -56,10 +74,9 @@ const {
     MIX_BLEND_MODE,
   },
 } = enums;
-const { isNil, isObject, isFunction } = util;
+const { isNil, isFunction } = util;
 const { PX, INHERIT } = unit;
 const {
-  contain,
   getLevel,
   isRepaint,
   NONE,
@@ -73,6 +90,7 @@ const {
   TRANSFORM_ALL,
   OPACITY: OP,
   MIX_BLEND_MODE: MBM,
+  MASK,
 } = level;
 const { isGeom } = change;
 
@@ -317,15 +335,30 @@ class Root extends Dom {
       gl.program = webgl.initShaders(gl, vertex, fragment);
       gl.programMask = webgl.initShaders(gl, vertexMask, fragmentMask);
       gl.programClip = webgl.initShaders(gl, vertexMask, fragmentClip);
-      gl.programOverflow = webgl.initShaders(gl, vertexMask, fragmentOverflow);
+      gl.programOverflow = webgl.initShaders(gl, vertexOverflow, fragmentOverflow);
       gl.programCm = webgl.initShaders(gl, vertexCm, fragmentCm);
       gl.programDs = webgl.initShaders(gl, vertexDs, fragmentDs);
+      gl.programMbmMp = webgl.initShaders(gl, vertexMbm, fragmentMultiply);
+      gl.programMbmSr = webgl.initShaders(gl, vertexMbm, fragmentScreen);
+      gl.programMbmOl = webgl.initShaders(gl, vertexMbm, fragmentOverlay);
+      gl.programMbmDk = webgl.initShaders(gl, vertexMbm, fragmentDarken);
+      gl.programMbmLt = webgl.initShaders(gl, vertexMbm, fragmentLighten);
+      gl.programMbmCd = webgl.initShaders(gl, vertexMbm, fragmentColorDodge);
+      gl.programMbmCb = webgl.initShaders(gl, vertexMbm, fragmentColorBurn);
+      gl.programMbmHl = webgl.initShaders(gl, vertexMbm, fragmentHardLight);
+      gl.programMbmSl = webgl.initShaders(gl, vertexMbm, fragmentSoftLight);
+      gl.programMbmDf = webgl.initShaders(gl, vertexMbm, fragmentDifference);
+      gl.programMbmEx = webgl.initShaders(gl, vertexMbm, fragmentExclusion);
+      gl.programMbmHue = webgl.initShaders(gl, vertexMbm, fragmentHue);
+      gl.programMbmSt = webgl.initShaders(gl, vertexMbm, fragmentSaturation);
+      gl.programMbmCl = webgl.initShaders(gl, vertexMbm, fragmentColor);
+      gl.programMbmLm = webgl.initShaders(gl, vertexMbm, fragmentLuminosity);
       gl.useProgram(gl.program);
       // 第一次渲染生成纹理缓存管理对象，收集渲染过程中生成的纹理并在gl纹理单元满了时进行绘制和清空，减少texImage2d耗时问题
       const MAX_TEXTURE_IMAGE_UNITS = Math.min(16, gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
-      this.__texCache = new TexCache(MAX_TEXTURE_IMAGE_UNITS);
+      this.__texHelper = new TexHelper(MAX_TEXTURE_IMAGE_UNITS);
     }
-    this.refresh(true);
+    this.draw(true);
     // 第一次节点没有__root，渲染一次就有了才能diff
     if(this.dom.__root && this.dom.__root instanceof Root) {
       this.dom.__root.destroy();
@@ -362,7 +395,7 @@ class Root extends Dom {
     this.__structs = this.__structure(0, 0);
   }
 
-  refresh(isFirst) {
+  draw(isFirst) {
     let { isDestroyed, renderMode, ctx, defs } = this;
     if(isDestroyed) {
       return;
@@ -375,13 +408,14 @@ class Root extends Dom {
     if(this.props.noRender) {
       return;
     }
+    let rlv = this.__rlv;
     if(renderMode === mode.CANVAS) {
       this.__clear(ctx, renderMode);
-      struct.renderCanvas(renderMode, ctx, this);
+      struct.renderCanvas(renderMode, ctx, this, isFirst, rlv);
     }
     // svg的特殊diff需要
     else if(renderMode === mode.SVG) {
-      struct.renderSvg(renderMode, defs, this, isFirst);
+      struct.renderSvg(renderMode, defs, this, isFirst, rlv);
       let nvd = this.virtualDom;
       nvd.defs = defs.value;
       if(this.dom.__vd) {
@@ -397,10 +431,9 @@ class Root extends Dom {
     }
     else if(renderMode === mode.WEBGL) {
       this.__clear(ctx, renderMode);
-      // console.log(ctx.getParameter(ctx.MAX_TEXTURE_SIZE), ctx.getParameter(ctx.MAX_VARYING_VECTORS), ctx.getParameter(ctx.MAX_TEXTURE_IMAGE_UNITS))
-      struct.renderWebgl(renderMode, ctx, this, isFirst);
+      struct.renderWebgl(renderMode, ctx, this, isFirst, rlv);
     }
-    this.emit(Event.REFRESH, this.__rlv);
+    this.emit(Event.REFRESH, rlv);
     this.__rlv = NONE;
   }
 
@@ -413,8 +446,8 @@ class Root extends Dom {
       n.__root = null;
     }
     let gl = this.ctx;
-    if(this.__texCache && gl) {
-      this.__texCache.release(gl);
+    if(this.__texHelper && gl) {
+      this.__texHelper.release(gl);
       if(gl.program) {
         gl.deleteShader(gl.program.vertexShader);
         gl.deleteShader(gl.program.fragmentShader);
@@ -453,71 +486,9 @@ class Root extends Dom {
     }
   }
 
-  addRefreshTask(cb) {
-    let { taskUp, isDestroyed } = this;
-    if(isDestroyed) {
-      return;
-    }
-    // 第一个添加延迟侦听，后续放队列等待一并执行
-    if(!taskUp.length) {
-      let clone;
-      frame.nextFrame({
-        __before: diff => {
-          if(this.isDestroyed) {
-            return;
-          }
-          clone = taskUp.splice(0);
-          // 前置一般是动画计算此帧样式应用，然后刷新后出发frame事件，图片加载等同
-          if(clone.length) {
-            clone.forEach((item, i) => {
-              if(isObject(item) && isFunction(item.__before)) {
-                item.__before(diff);
-              }
-            });
-          }
-        },
-        __after: diff => {
-          if(this.isDestroyed) {
-            return;
-          }
-          clone.forEach(item => {
-            if(isObject(item) && isFunction(item.__after)) {
-              item.__after(diff);
-            }
-            else if(isFunction(item)) {
-              item(diff);
-            }
-          });
-        }
-      });
-      this.__frameHook();
-    }
-    if(taskUp.indexOf(cb) === -1) {
-      taskUp.push(cb);
-    }
-  }
-
-  // addForceRefreshTask(cb) {
-  //   this.__hasRootUpdate = true;
-  //   this.addRefreshTask(cb);
-  // }
-
-  delRefreshTask(cb) {
-    if(!cb) {
-      return;
-    }
-    let { taskUp } = this;
-    for(let i = 0, len = taskUp.length; i < len; i++) {
-      if(taskUp[i] === cb) {
-        taskUp.splice(i, 1);
-        break;
-      }
-    }
-  }
-
   getTargetAtPoint(x, y, includeIgnore) {
     function scan(vd, x, y, path, zPath) {
-      let { __sx1, __sy1, offsetWidth, offsetHeight, matrixEvent, children, zIndexChildren,
+      let { __x1, __y1, offsetWidth, offsetHeight, matrixEvent, children, zIndexChildren,
         computedStyle: { [DISPLAY]: display, [POINTER_EVENTS]: pointerEvents } } = vd;
       if(!includeIgnore && display === 'none') {
         return;
@@ -546,10 +517,10 @@ class Root extends Dom {
       }
       let inThis = geom.pointInQuadrilateral(
         x, y,
-        __sx1, __sy1,
-        __sx1 + offsetWidth, __sy1,
-        __sx1 + offsetWidth, __sy1 + offsetHeight,
-        __sx1, __sy1 + offsetHeight,
+        __x1, __y1,
+        __x1 + offsetWidth, __y1,
+        __x1 + offsetWidth, __y1 + offsetHeight,
+        __x1, __y1 + offsetHeight,
         matrixEvent
       );
       if(inThis) {
@@ -612,55 +583,70 @@ class Root extends Dom {
       focus,
       addDom,
       removeDom,
+      aniParams, // 动画特殊优化，大部分都是<REPAINT的情况，很多计算if可以跳过
     } = o;
     let {
       computedStyle,
       currentStyle,
       cacheStyle,
       __cacheProps,
-      __isMask,
+      __mask,
       __domParent,
     } = node;
     let hasZ, hasVisibility, hasColor, hasDisplay, hasTsColor, hasTsWidth, hasTsOver;
-    let lv = focus || NONE;
+    // 可能无keys但有aniParams，多防御一下，比如steps动画
+    let lv = focus || (aniParams && keys && keys.length ? aniParams.lv : NONE);
     // 清空对应改变的cacheStyle
     if(keys) {
-      for(let i = 0, len = keys.length; i < len; i++) {
-        let k = keys[i];
-        if(node instanceof Geom && isGeom(node.tagName, k)) {
-          lv |= REPAINT;
-          __cacheProps[k] = undefined;
-        }
-        else {
-          // repaint置空，如果reflow会重新生成空的
+      if(aniParams) {
+        for(let i = 0, len = keys.length; i < len; i++) {
+          let k = keys[i];
           cacheStyle[k] = undefined;
-          // TRBL变化只对relative/absolute起作用，其它忽视
-          if((k === TOP || k === RIGHT || k === BOTTOM || k === LEFT)
-            && ['relative', 'absolute'].indexOf(computedStyle[POSITION]) === -1) {
-            continue;
+        }
+        hasZ = aniParams.hasZ;
+        hasColor = aniParams.hasColor;
+        hasTsColor = aniParams.hasTsColor;
+        hasTsWidth = aniParams.hasTsWidth;
+        hasTsOver = aniParams.hasTsOver;
+      }
+      else {
+        for(let i = 0, len = keys.length; i < len; i++) {
+          let k = keys[i];
+          if(node instanceof Geom && isGeom(node.tagName, k)) {
+            lv |= REPAINT;
+            __cacheProps[k] = undefined;
           }
-          // 细化等级
-          lv |= getLevel(k);
-          if(k === DISPLAY) {
-            hasDisplay = true;
-          }
-          else if(k === Z_INDEX) {
-            hasZ = node !== this && ['relative', 'absolute'].indexOf(computedStyle[POSITION]) > -1;
-          }
-          else if(k === VISIBILITY) {
-            hasVisibility = true;
-          }
-          else if(k === COLOR) {
-            hasColor = true;
-          }
-          else if(k === TEXT_STROKE_COLOR) {
-            hasTsColor = true;
-          }
-          else if(k === TEXT_STROKE_WIDTH) {
-            hasTsWidth = true;
-          }
-          else if(k === TEXT_STROKE_OVER) {
-            hasTsOver = true;
+          else {
+            // repaint置空，如果reflow会重新生成空的
+            cacheStyle[k] = undefined;
+            // TRBL变化只对relative/absolute起作用，其它忽视
+            if((k === TOP || k === RIGHT || k === BOTTOM || k === LEFT)
+              && ['relative', 'absolute'].indexOf(computedStyle[POSITION]) === -1) {
+              continue;
+            }
+            // 细化等级
+            lv |= getLevel(k);
+            if(k === DISPLAY) {
+              hasDisplay = true;
+            }
+            else if(k === Z_INDEX) {
+              hasZ = node !== this && ['relative', 'absolute'].indexOf(computedStyle[POSITION]) > -1;
+            }
+            else if(k === VISIBILITY) {
+              hasVisibility = true;
+            }
+            else if(k === COLOR) {
+              hasColor = true;
+            }
+            else if(k === TEXT_STROKE_COLOR) {
+              hasTsColor = true;
+            }
+            else if(k === TEXT_STROKE_WIDTH) {
+              hasTsWidth = true;
+            }
+            else if(k === TEXT_STROKE_OVER) {
+              hasTsOver = true;
+            }
           }
         }
       }
@@ -674,46 +660,51 @@ class Root extends Dom {
       return;
     }
     // transform变化清空重算，比较特殊，MATRIX的cache需手动清理
-    if(contain(lv, TF)) {
+    if(lv & TF) {
       cacheStyle[MATRIX] = computedStyle[TRANSFORM] = undefined;
     }
     // mask需清除遮罩对象的缓存
-    if(__isMask) {
+    let hasRelease, hasMask = lv & MASK;
+    if(__mask || hasMask) {
       let prev = node.__prev;
-      while(prev && (prev.__isMask)) {
+      while(prev && (prev.__mask)) {
         prev = prev.__prev;
       }
-      if(prev && prev.__cacheMask) {
-        prev.__cacheMask.release();
-        prev.__refreshLevel |= CACHE;
+      if(prev && (prev instanceof Xom || prev instanceof Component && prev.shadowRoot instanceof Xom)) {
+        prev.__refreshLevel |= CACHE | MASK;
+        prev.__struct.hasMask = prev.__hasMask = __mask;
+        if(prev.__cacheMask) {
+          hasRelease ||= prev.__cacheMask.release();
+        }
       }
     }
-    let isRp = isRepaint(lv);
+    // aniParams在动画引擎提前计算好了
+    let isRp = aniParams && aniParams.isRepaint || isRepaint(lv);
     if(isRp) {
       // dom在>=REPAINT时total失效，svg的Geom比较特殊
       let need = lv >= REPAINT;
       if(need) {
         if(node.__cache) {
-          node.__cache.release();
+          hasRelease ||= node.__cache.release();
         }
         node.__calStyle(lv, currentStyle, computedStyle, cacheStyle);
         node.__calPerspective(currentStyle, computedStyle, cacheStyle);
       }
       // < REPAINT特殊的优化computedStyle计算
       else {
-        if(contain(lv, PPT)) {
+        if(lv & PPT) {
           node.__calPerspective(currentStyle, computedStyle, cacheStyle);
         }
-        if(contain(lv, TRANSFORM_ALL)) {
-          node.__calMatrix(lv, currentStyle, computedStyle, cacheStyle);
+        if(lv & TRANSFORM_ALL) {
+          node.__calMatrix(lv, currentStyle, computedStyle, cacheStyle, aniParams && aniParams.optimize);
         }
-        if(contain(lv, OP)) {
+        if(lv & OP) {
           computedStyle[OPACITY] = currentStyle[OPACITY];
         }
-        if(contain(lv, FT)) {
+        if(lv & FT) {
           node.__calFilter(currentStyle, computedStyle, cacheStyle);
         }
-        if(contain(lv, MBM)) {
+        if(lv & MBM) {
           computedStyle[MIX_BLEND_MODE] = currentStyle[MIX_BLEND_MODE];
         }
       }
@@ -765,39 +756,39 @@ class Root extends Dom {
         }
       }
       // perspective也特殊只清空total的cache，和>=REPAINT清空total共用
-      if(need || contain(lv, PPT)) {
+      if(need || (lv & PPT)) {
         if(node.__cacheTotal) {
-          node.__cacheTotal.release();
+          hasRelease ||= node.__cacheTotal.release();
         }
         if(node.__cacheMask) {
-          node.__cacheMask.release();
+          hasRelease ||= node.__cacheMask.release();
         }
         if(node.__cacheOverflow) {
-          node.__cacheOverflow.release();
+          hasRelease ||= node.__cacheOverflow.release();
         }
       }
       // 特殊的filter清除cache
-      if((need || contain(lv, FT)) && node.__cacheFilter) {
-        node.__cacheFilter.release();
+      if((need || (lv & FT)) && node.__cacheFilter) {
+        hasRelease ||= node.__cacheFilter.release();
       }
       // 向上清除cache汇总缓存信息，过程中可能会出现重复，根据refreshLevel判断，reflow已经自己清过了
       let p = __domParent;
       while(p) {
-        if(contain(p.__refreshLevel, CACHE | REPAINT | REFLOW)) {
+        if(p.__refreshLevel & (CACHE | REPAINT | REFLOW)) {
           break;
         }
         p.__refreshLevel |= CACHE;
         if(p.__cacheTotal) {
-          p.__cacheTotal.release();
+          hasRelease ||= p.__cacheTotal.release();
         }
         if(p.__cacheFilter) {
-          p.__cacheFilter.release();
+          hasRelease ||= p.__cacheFilter.release();
         }
         if(p.__cacheMask) {
-          p.__cacheMask.release();
+          hasRelease ||= p.__cacheMask.release();
         }
         if(p.__cacheOverflow) {
-          p.__cacheOverflow.release();
+          hasRelease ||= p.__cacheOverflow.release();
         }
         p = p.__domParent;
       }
@@ -806,7 +797,7 @@ class Root extends Dom {
         __domParent.__zIndexChildren = null;
         __domParent.__updateStruct();
         if(this.renderMode === mode.SVG) {
-          node.__cacheTotal.release();
+          hasRelease ||= node.__cacheTotal.release();
           reflow.clearSvgCache(__domParent);
         }
       }
@@ -830,6 +821,10 @@ class Root extends Dom {
       }
     }
     node.__refreshLevel |= lv;
+    // 有被清除的cache则设置到Root上
+    if(hasRelease) {
+      lv |= CACHE;
+    }
     if(addDom || removeDom) {
       this.__rlv |= REBUILD;
     }
@@ -839,18 +834,18 @@ class Root extends Dom {
     if(o.cb && !isFunction(o.cb)) {
       o.cb = null;
     }
-    this.__frameRefresh(o.cb);
+    this.__frameDraw(o.cb);
   }
 
   // 异步进行root刷新操作，多次调用缓存结果，刷新成功后回调
-  __frameRefresh(cb) {
+  __frameDraw(cb) {
     if(!this.__task.length) {
       frame.nextFrame(() => {
       });
       frame.__rootTask.push(() => {
         // 需要先获得累积的刷新回调再刷新，防止refresh触发事件中再次调用刷新
         let list = this.__task.splice(0);
-        this.refresh();
+        this.draw();
         list.forEach(item => {
           item && item();
         });
@@ -906,8 +901,8 @@ class Root extends Dom {
     return this.__animateController;
   }
 
-  get texCache() {
-    return this.__texCache;
+  get texHelper() {
+    return this.__texHelper;
   }
 }
 

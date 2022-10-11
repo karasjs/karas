@@ -9127,7 +9127,11 @@
         return false;
       }
 
-      if (a.u === GRADIENT$3) ; else if (a.u === RGBA$3) {
+      if (a.u === GRADIENT$3) {
+        return equal(a.v, b.v);
+      } else if (a.u === INHERIT$3) {
+        return true;
+      } else if (a.u === RGBA$3) {
         return equalArr$1(a.v, b.v);
       }
     } // multi都是纯值数组，equalArr本身即递归，非multi根据类型判断

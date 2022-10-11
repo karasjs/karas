@@ -1929,24 +1929,22 @@
       } else if (cache.state === LOADING) {
         cb && cache.task.push(cb);
       } else {
-        cache.state = LOADING;
-        cb && cache.task.push(cb);
+        var success = function success(ab) {
+          var f = new FontFace(fontFamily, ab);
+          f.load().then(function () {
+            document.fonts.add(f);
+            cache.state = LOADED;
+            cache.success = true;
+            cache.url = url;
+            cache.arrayBuffer = ab;
+            var list = cache.task.splice(0);
+            list.forEach(function (cb) {
+              return cb(cache);
+            });
+          })["catch"](error);
+        };
 
-        if (!(url instanceof ArrayBuffer) && !/url\(/.test(url)) {
-          url = "url(".concat(url, ")");
-        }
-
-        var f = new FontFace(fontFamily, url);
-        f.load().then(function () {
-          document.fonts.add(f);
-          cache.state = LOADED;
-          cache.success = true;
-          cache.url = url;
-          var list = cache.task.splice(0);
-          list.forEach(function (cb) {
-            return cb(cache);
-          });
-        })["catch"](function () {
+        var error = function error() {
           cache.state = LOADED;
           cache.success = false;
           cache.url = url;
@@ -1954,7 +1952,29 @@
           list.forEach(function (cb) {
             return cb(cache);
           });
-        });
+        };
+
+        cache.state = LOADING;
+        cb && cache.task.push(cb);
+
+        if (url instanceof ArrayBuffer) {
+          success(url);
+        } else {
+          var request = new XMLHttpRequest();
+          request.open('get', url, true);
+          request.responseType = 'arraybuffer';
+
+          request.onload = function () {
+            if (request.response) {
+              success(request.response);
+            } else {
+              error();
+            }
+          };
+
+          request.onerror = error;
+          request.send();
+        }
       }
     },
     loadComponent: function loadComponent(url, cb) {
@@ -2029,6 +2049,647 @@
     }
   };
 
+  var TINF_OK = 0;
+  var TINF_DATA_ERROR = -3;
+
+  function Tree() {
+    this.table = new Uint16Array(16);
+    /* table of code length counts */
+
+    this.trans = new Uint16Array(288);
+    /* code -> symbol translation table */
+  }
+
+  function Data(source, dest) {
+    this.source = source;
+    this.sourceIndex = 0;
+    this.tag = 0;
+    this.bitcount = 0;
+    this.dest = dest;
+    this.destLen = 0;
+    this.ltree = new Tree();
+    /* dynamic length/symbol tree */
+
+    this.dtree = new Tree();
+    /* dynamic distance tree */
+  }
+  /* --------------------------------------------------- *
+   * -- uninitialized global data (static structures) -- *
+   * --------------------------------------------------- */
+
+
+  var sltree = new Tree();
+  var sdtree = new Tree();
+  /* extra bits and base tables for length codes */
+
+  var length_bits = new Uint8Array(30);
+  var length_base = new Uint16Array(30);
+  /* extra bits and base tables for distance codes */
+
+  var dist_bits = new Uint8Array(30);
+  var dist_base = new Uint16Array(30);
+  /* special ordering of code length codes */
+
+  var clcidx = new Uint8Array([16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15]);
+  /* used by tinf_decode_trees, avoids allocations every call */
+
+  var code_tree = new Tree();
+  var lengths = new Uint8Array(288 + 32);
+  /* ----------------------- *
+   * -- utility functions -- *
+   * ----------------------- */
+
+  /* build extra bits and base tables */
+
+  function tinf_build_bits_base(bits, base, delta, first) {
+    var i, sum;
+    /* build bits table */
+
+    for (i = 0; i < delta; ++i) {
+      bits[i] = 0;
+    }
+
+    for (i = 0; i < 30 - delta; ++i) {
+      bits[i + delta] = i / delta | 0;
+    }
+    /* build base table */
+
+
+    for (sum = first, i = 0; i < 30; ++i) {
+      base[i] = sum;
+      sum += 1 << bits[i];
+    }
+  }
+  /* build the fixed huffman trees */
+
+
+  function tinf_build_fixed_trees(lt, dt) {
+    var i;
+    /* build fixed length tree */
+
+    for (i = 0; i < 7; ++i) {
+      lt.table[i] = 0;
+    }
+
+    lt.table[7] = 24;
+    lt.table[8] = 152;
+    lt.table[9] = 112;
+
+    for (i = 0; i < 24; ++i) {
+      lt.trans[i] = 256 + i;
+    }
+
+    for (i = 0; i < 144; ++i) {
+      lt.trans[24 + i] = i;
+    }
+
+    for (i = 0; i < 8; ++i) {
+      lt.trans[24 + 144 + i] = 280 + i;
+    }
+
+    for (i = 0; i < 112; ++i) {
+      lt.trans[24 + 144 + 8 + i] = 144 + i;
+    }
+    /* build fixed distance tree */
+
+
+    for (i = 0; i < 5; ++i) {
+      dt.table[i] = 0;
+    }
+
+    dt.table[5] = 32;
+
+    for (i = 0; i < 32; ++i) {
+      dt.trans[i] = i;
+    }
+  }
+  /* given an array of code lengths, build a tree */
+
+
+  var offs = new Uint16Array(16);
+
+  function tinf_build_tree(t, lengths, off, num) {
+    var i, sum;
+    /* clear code length count table */
+
+    for (i = 0; i < 16; ++i) {
+      t.table[i] = 0;
+    }
+    /* scan symbol lengths, and sum code length counts */
+
+
+    for (i = 0; i < num; ++i) {
+      t.table[lengths[off + i]]++;
+    }
+
+    t.table[0] = 0;
+    /* compute offset table for distribution sort */
+
+    for (sum = 0, i = 0; i < 16; ++i) {
+      offs[i] = sum;
+      sum += t.table[i];
+    }
+    /* create code->symbol translation table (symbols sorted by code) */
+
+
+    for (i = 0; i < num; ++i) {
+      if (lengths[off + i]) t.trans[offs[lengths[off + i]]++] = i;
+    }
+  }
+  /* ---------------------- *
+   * -- decode functions -- *
+   * ---------------------- */
+
+  /* get one bit from source stream */
+
+
+  function tinf_getbit(d) {
+    /* check if tag is empty */
+    if (!d.bitcount--) {
+      /* load next tag */
+      d.tag = d.source[d.sourceIndex++];
+      d.bitcount = 7;
+    }
+    /* shift bit out of tag */
+
+
+    var bit = d.tag & 1;
+    d.tag >>>= 1;
+    return bit;
+  }
+  /* read a num bit value from a stream and add base */
+
+
+  function tinf_read_bits(d, num, base) {
+    if (!num) return base;
+
+    while (d.bitcount < 24) {
+      d.tag |= d.source[d.sourceIndex++] << d.bitcount;
+      d.bitcount += 8;
+    }
+
+    var val = d.tag & 0xffff >>> 16 - num;
+    d.tag >>>= num;
+    d.bitcount -= num;
+    return val + base;
+  }
+  /* given a data stream and a tree, decode a symbol */
+
+
+  function tinf_decode_symbol(d, t) {
+    while (d.bitcount < 24) {
+      d.tag |= d.source[d.sourceIndex++] << d.bitcount;
+      d.bitcount += 8;
+    }
+
+    var sum = 0,
+        cur = 0,
+        len = 0;
+    var tag = d.tag;
+    /* get more bits while code value is above sum */
+
+    do {
+      cur = 2 * cur + (tag & 1);
+      tag >>>= 1;
+      ++len;
+      sum += t.table[len];
+      cur -= t.table[len];
+    } while (cur >= 0);
+
+    d.tag = tag;
+    d.bitcount -= len;
+    return t.trans[sum + cur];
+  }
+  /* given a data stream, decode dynamic trees from it */
+
+
+  function tinf_decode_trees(d, lt, dt) {
+    var hlit, hdist, hclen;
+    var i, num, length;
+    /* get 5 bits HLIT (257-286) */
+
+    hlit = tinf_read_bits(d, 5, 257);
+    /* get 5 bits HDIST (1-32) */
+
+    hdist = tinf_read_bits(d, 5, 1);
+    /* get 4 bits HCLEN (4-19) */
+
+    hclen = tinf_read_bits(d, 4, 4);
+
+    for (i = 0; i < 19; ++i) {
+      lengths[i] = 0;
+    }
+    /* read code lengths for code length alphabet */
+
+
+    for (i = 0; i < hclen; ++i) {
+      /* get 3 bits code length (0-7) */
+      var clen = tinf_read_bits(d, 3, 0);
+      lengths[clcidx[i]] = clen;
+    }
+    /* build code length tree */
+
+
+    tinf_build_tree(code_tree, lengths, 0, 19);
+    /* decode code lengths for the dynamic trees */
+
+    for (num = 0; num < hlit + hdist;) {
+      var sym = tinf_decode_symbol(d, code_tree);
+
+      switch (sym) {
+        case 16:
+          /* copy previous code length 3-6 times (read 2 bits) */
+          var prev = lengths[num - 1];
+
+          for (length = tinf_read_bits(d, 2, 3); length; --length) {
+            lengths[num++] = prev;
+          }
+
+          break;
+
+        case 17:
+          /* repeat code length 0 for 3-10 times (read 3 bits) */
+          for (length = tinf_read_bits(d, 3, 3); length; --length) {
+            lengths[num++] = 0;
+          }
+
+          break;
+
+        case 18:
+          /* repeat code length 0 for 11-138 times (read 7 bits) */
+          for (length = tinf_read_bits(d, 7, 11); length; --length) {
+            lengths[num++] = 0;
+          }
+
+          break;
+
+        default:
+          /* values 0-15 represent the actual code lengths */
+          lengths[num++] = sym;
+          break;
+      }
+    }
+    /* build dynamic trees */
+
+
+    tinf_build_tree(lt, lengths, 0, hlit);
+    tinf_build_tree(dt, lengths, hlit, hdist);
+  }
+  /* ----------------------------- *
+   * -- block inflate functions -- *
+   * ----------------------------- */
+
+  /* given a stream and two trees, inflate a block of data */
+
+
+  function tinf_inflate_block_data(d, lt, dt) {
+    while (1) {
+      var sym = tinf_decode_symbol(d, lt);
+      /* check for end of block */
+
+      if (sym === 256) {
+        return TINF_OK;
+      }
+
+      if (sym < 256) {
+        d.dest[d.destLen++] = sym;
+      } else {
+        var length = void 0,
+            dist = void 0,
+            _offs = void 0;
+
+        var i = void 0;
+        sym -= 257;
+        /* possibly get more bits from length code */
+
+        length = tinf_read_bits(d, length_bits[sym], length_base[sym]);
+        dist = tinf_decode_symbol(d, dt);
+        /* possibly get more bits from distance code */
+
+        _offs = d.destLen - tinf_read_bits(d, dist_bits[dist], dist_base[dist]);
+        /* copy match */
+
+        for (i = _offs; i < _offs + length; ++i) {
+          d.dest[d.destLen++] = d.dest[i];
+        }
+      }
+    }
+  }
+  /* inflate an uncompressed block of data */
+
+
+  function tinf_inflate_uncompressed_block(d) {
+    var length, invlength;
+    var i;
+    /* unread from bitbuffer */
+
+    while (d.bitcount > 8) {
+      d.sourceIndex--;
+      d.bitcount -= 8;
+    }
+    /* get length */
+
+
+    length = d.source[d.sourceIndex + 1];
+    length = 256 * length + d.source[d.sourceIndex];
+    /* get one's complement of length */
+
+    invlength = d.source[d.sourceIndex + 3];
+    invlength = 256 * invlength + d.source[d.sourceIndex + 2];
+    /* check length */
+
+    if (length !== (~invlength & 0x0000ffff)) return TINF_DATA_ERROR;
+    d.sourceIndex += 4;
+    /* copy block */
+
+    for (i = length; i; --i) {
+      d.dest[d.destLen++] = d.source[d.sourceIndex++];
+    }
+    /* make sure we start next block on a byte boundary */
+
+
+    d.bitcount = 0;
+    return TINF_OK;
+  }
+  /* inflate stream from source to dest */
+
+
+  function tinf_uncompress(source, dest) {
+    var d = new Data(source, dest);
+    var bfinal, btype, res;
+
+    do {
+      /* read final block flag */
+      bfinal = tinf_getbit(d);
+      /* read block type (2 bits) */
+
+      btype = tinf_read_bits(d, 2, 0);
+      /* decompress block */
+
+      switch (btype) {
+        case 0:
+          /* decompress uncompressed block */
+          res = tinf_inflate_uncompressed_block(d);
+          break;
+
+        case 1:
+          /* decompress block with fixed huffman trees */
+          res = tinf_inflate_block_data(d, sltree, sdtree);
+          break;
+
+        case 2:
+          /* decompress block with dynamic huffman trees */
+          tinf_decode_trees(d, d.ltree, d.dtree);
+          res = tinf_inflate_block_data(d, d.ltree, d.dtree);
+          break;
+
+        default:
+          res = TINF_DATA_ERROR;
+      }
+
+      if (res !== TINF_OK) throw new Error('Data error');
+    } while (!bfinal);
+
+    if (d.destLen < d.dest.length) {
+      if (typeof d.dest.slice === 'function') return d.dest.slice(0, d.destLen);else return d.dest.subarray(0, d.destLen);
+    }
+
+    return d.dest;
+  }
+  /* -------------------- *
+   * -- initialization -- *
+   * -------------------- */
+
+  /* build fixed huffman trees */
+
+
+  tinf_build_fixed_trees(sltree, sdtree);
+  /* build extra bits and base tables */
+
+  tinf_build_bits_base(length_bits, length_base, 4, 3);
+  tinf_build_bits_base(dist_bits, dist_base, 2, 1);
+  /* fix a special case */
+
+  length_bits[28] = 0;
+  length_base[28] = 258;
+
+  function getTag(dataView, offset) {
+    var tag = '';
+
+    for (var i = offset; i < offset + 4; i++) {
+      tag += String.fromCharCode(dataView.getInt8(i));
+    }
+
+    return tag;
+  }
+
+  function getUShort(dataView, offset) {
+    return dataView.getUint16(offset, false);
+  }
+
+  function getULong(dataView, offset) {
+    return dataView.getUint32(offset, false);
+  }
+
+  function getFixed(dataView, offset) {
+    var decimal = dataView.getInt16(offset, false);
+    var fraction = dataView.getUint16(offset + 2, false);
+    return decimal + fraction / 65535;
+  }
+
+  function parseOpenTypeTableEntries(data, numTables) {
+    var tableEntries = [];
+    var p = 12;
+
+    for (var i = 0; i < numTables; i += 1) {
+      var tag = getTag(data, p);
+      var checksum = getULong(data, p + 4);
+      var offset = getULong(data, p + 8);
+      var length = getULong(data, p + 12);
+      tableEntries.push({
+        tag: tag,
+        checksum: checksum,
+        offset: offset,
+        length: length,
+        compression: false
+      });
+      p += 16;
+    }
+
+    return tableEntries;
+  }
+
+  function parseWOFFTableEntries(data, numTables) {
+    var tableEntries = [];
+    var p = 44; // offset to the first table directory entry.
+
+    for (var i = 0; i < numTables; i += 1) {
+      var tag = getTag(data, p);
+      var offset = getULong(data, p + 4);
+      var compLength = getULong(data, p + 8);
+      var origLength = getULong(data, p + 12);
+      var compression = void 0;
+
+      if (compLength < origLength) {
+        compression = 'WOFF';
+      } else {
+        compression = false;
+      }
+
+      tableEntries.push({
+        tag: tag,
+        offset: offset,
+        compression: compression,
+        compressedLength: compLength,
+        length: origLength
+      });
+      p += 20;
+    }
+
+    return tableEntries;
+  }
+
+  function uncompressTable(data, tableEntry) {
+    if (tableEntry.compression === 'WOFF') {
+      var inBuffer = new Uint8Array(data.buffer, tableEntry.offset + 2, tableEntry.compressedLength - 2);
+      var outBuffer = new Uint8Array(tableEntry.length);
+      tinf_uncompress(inBuffer, outBuffer);
+
+      if (outBuffer.byteLength !== tableEntry.length) {
+        inject.error('Decompression error: ' + tableEntry.tag + ' decompressed length doesn\'t match recorded length');
+      }
+
+      var view = new DataView(outBuffer.buffer, 0);
+      return {
+        data: view,
+        offset: 0
+      };
+    } else {
+      return {
+        data: data,
+        offset: tableEntry.offset
+      };
+    }
+  }
+
+  var Parser = /*#__PURE__*/function () {
+    function Parser(data, offset) {
+      this.data = data;
+      this.offset = offset;
+      this.relativeOffset = 0;
+    }
+
+    _createClass(Parser, [{
+      key: "parseUShort",
+      value: function parseUShort() {
+        var v = this.data.getUint16(this.offset + this.relativeOffset);
+        this.relativeOffset += 2;
+        return v;
+      }
+    }, {
+      key: "parseULong",
+      value: function parseULong() {
+        var v = getULong(this.data, this.offset + this.relativeOffset);
+        this.relativeOffset += 4;
+        return v;
+      }
+    }, {
+      key: "parseShort",
+      value: function parseShort() {
+        var v = this.data.getInt16(this.offset + this.relativeOffset);
+        this.relativeOffset += 2;
+        return v;
+      }
+    }, {
+      key: "parseFixed",
+      value: function parseFixed() {
+        var v = getFixed(this.data, this.offset + this.relativeOffset);
+        this.relativeOffset += 4;
+        return v;
+      }
+    }, {
+      key: "parseVersion",
+      value: function parseVersion(minorBase) {
+        var major = getUShort(this.data, this.offset + this.relativeOffset);
+        var minor = getUShort(this.data, this.offset + this.relativeOffset + 2);
+        this.relativeOffset += 4;
+
+        if (minorBase === undefined) {
+          minorBase = 0x1000;
+        }
+
+        return major + minor / minorBase / 10;
+      }
+    }]);
+
+    return Parser;
+  }();
+
+  var opentype = {
+    parse: function parse(arrayBuffer) {
+      var data = new DataView(arrayBuffer, 0);
+      var signature = getTag(data, 0);
+      var numTables, tableEntries;
+
+      if (signature === String.fromCharCode(0, 1, 0, 0) || signature === 'true' || signature === 'typ1') {
+        numTables = getUShort(data, 4);
+        tableEntries = parseOpenTypeTableEntries(data, numTables);
+      } else if (signature === 'OTTO') {
+        numTables = getUShort(data, 4);
+        tableEntries = parseOpenTypeTableEntries(data, numTables);
+      } else if (signature === 'wOFF') {
+        var flavor = getTag(data, 4);
+
+        if (flavor !== String.fromCharCode(0, 1, 0, 0) && flavor !== 'OTTO') {
+          inject.error('Unsupported OpenType flavor ' + signature);
+          return;
+        }
+
+        numTables = getUShort(data, 12);
+        tableEntries = parseWOFFTableEntries(data, numTables);
+      } else {
+        inject.error('Unsupported OpenType signature ' + signature);
+      }
+
+      var emSquare = 2048,
+          ascent,
+          descent,
+          lineGap = 0;
+
+      for (var i = 0; i < numTables; i++) {
+        var tableEntry = tableEntries[i];
+
+        if (tableEntry.tag === 'head') {
+          var table = uncompressTable(data, tableEntry);
+          var p = new Parser(table.data, table.offset);
+          p.parseVersion();
+          p.parseFixed();
+          p.parseULong();
+          p.parseULong();
+          p.parseUShort();
+          emSquare = p.parseUShort();
+        } else if (tableEntry.tag === 'hhea') {
+          var _table = uncompressTable(data, tableEntry);
+
+          var _p = new Parser(_table.data, _table.offset);
+
+          _p.parseVersion();
+
+          ascent = Math.abs(_p.parseShort());
+          descent = Math.abs(_p.parseShort());
+          lineGap = Math.abs(_p.parseShort() || 0);
+        }
+      }
+
+      return {
+        emSquare: emSquare,
+        ascent: ascent,
+        descent: descent,
+        lineGap: lineGap
+      };
+    }
+  };
+
   var isString = util.isString;
   var CALLBACK = {};
   var o$3 = {
@@ -2100,15 +2761,22 @@
       }
 
       var info = this.info;
-      info[name] = info[name] || {};
+      var fontInfo = info[name] = info[name] || {};
 
-      if (url && !info[name].url) {
+      if (url && !fontInfo.url) {
         // 不能覆盖
-        info[name].url = url;
+        fontInfo.url = url;
         inject.loadFont(name, url, function (res) {
-          info[name].success = res.success;
+          fontInfo.success = res.success;
 
           if (res.success) {
+            // 手动指定更高优先级，不解析
+            if (!fontInfo.lhr) {
+              var r = opentype.parse(res.arrayBuffer);
+              setData(r);
+            } // 回调
+
+
             var list = CALLBACK[name] || [];
 
             while (list.length) {
@@ -2121,24 +2789,29 @@
       } // 防止先没url只注册，再调用只传url的情况
 
 
-      if (!data || info[name].lhr) {
+      if (!data || fontInfo.lhr) {
         return;
       }
 
-      var _ref = data || {},
-          _ref$emSquare = _ref.emSquare,
-          emSquare = _ref$emSquare === void 0 ? 2048 : _ref$emSquare,
-          _ref$ascent = _ref.ascent,
-          ascent = _ref$ascent === void 0 ? 1854 : _ref$ascent,
-          _ref$descent = _ref.descent,
-          descent = _ref$descent === void 0 ? 434 : _ref$descent,
-          _ref$lineGap = _ref.lineGap,
-          lineGap = _ref$lineGap === void 0 ? 0 : _ref$lineGap;
+      setData(data);
 
-      Object.assign(info[name], {
-        lhr: (ascent + descent + lineGap) / emSquare,
-        blr: ascent / emSquare
-      });
+      function setData(data) {
+        var _data$emSquare = data.emSquare,
+            emSquare = _data$emSquare === void 0 ? 2048 : _data$emSquare,
+            ascent = data.ascent,
+            descent = data.descent,
+            _data$lineGap = data.lineGap,
+            lineGap = _data$lineGap === void 0 ? 0 : _data$lineGap;
+
+        if (!ascent || !descent) {
+          return;
+        }
+
+        Object.assign(fontInfo, {
+          lhr: (ascent + descent + lineGap) / emSquare,
+          blr: ascent / emSquare
+        });
+      }
     },
     hasRegister: function hasRegister(fontFamily) {
       return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].hasOwnProperty('lhr');
@@ -33031,339 +33704,6 @@
 
   };
 
-  var TexHelper = /*#__PURE__*/function () {
-    function TexHelper(units) {
-      this.__units = units; // 通道数量限制，8~16
-
-      this.__pages = []; // 存当前page列表，通道数量8~16，缓存收留尽可能多的page
-
-      this.__list = []; // 本次渲染暂存的数据，[cache, opacity, matrix, dx, dy]
-
-      this.__channels = []; // 每个纹理通道记录还是个数组，下标即纹理单元，内容为Page
-
-      this.__locks = []; // 锁定纹理单元列表，下标即纹理单元，内容true为锁定
-
-      this.__lockUnits = 0;
-    }
-    /**
-     * webgl每次绘制为添加纹理并绘制，此处尝试尽可能收集所有纹理贴图，以达到尽可能多的共享纹理，再一次性绘制
-     * 收集的是Page对象（从cache中取得），里面包含了若干个节点的贴图，canvas本身是2的幂次方大小
-     * webgl最少有8个纹理单元最多16个，因此存了一个列表来放这些Page的canvas，刷新后清空，但纹理通道映射记录保留
-     * 当8个纹理单元全部满了，进行绘制并清空这个队列，外部主循环结束时也会检查队列是否还有余留并绘制
-     * 初始调用队列为空，存入Page对象，后续调用先查看是否存在以便复用，再决定是否存入Page，直到8个满了
-     * Page上存有update表示是否更新，每次cache绘制时会变true，以此表示是否有贴图更新，删除可以忽视
-     * 还需要一个记录上次纹理通道使用哪个Page的canvas的地方，即映射，清空后队列再次添加时，如果Page之前被添加过，
-     * 此次又被添加且没有变更update，可以直接复用上次的纹理单元号且无需再次上传纹理，节省性能
-     * 后续接入局部纹理更新也是复用单元号，如果update变更可以选择局部上传纹理而非整个重新上传
-     * 判断上传的逻辑在收集满8个后绘制前进行，因为添加队列过程中可能会变更Page及其update
-     */
-
-
-    _createClass(TexHelper, [{
-      key: "addTexAndDrawWhenLimit",
-      value: function addTexAndDrawWhenLimit(gl, cache, opacity, matrix, cx, cy) {
-        var dx = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : 0;
-        var dy = arguments.length > 7 && arguments[7] !== undefined ? arguments[7] : 0;
-        var revertY = arguments.length > 8 ? arguments[8] : undefined;
-        var pages = this.__pages;
-        var list = this.__list;
-        var page = cache.__page;
-        var i = pages.indexOf(page); // 找到说明已有page在此索引的通道中，记录下来info
-
-        if (i > -1) {
-          list.push({
-            cache: cache,
-            opacity: opacity,
-            matrix: matrix,
-            dx: dx,
-            dy: dy
-          });
-        } // 找不到说明是新的纹理贴图，此时看是否超过纹理单元限制，超过则刷新绘制并清空，然后/否则 存入纹理列表
-        else {
-          i = pages.length;
-
-          if (i >= this.__units - this.__lockUnits) {
-            // 绘制且清空，队列索引重新为0
-            this.refresh(gl, cx, cy, revertY);
-          }
-
-          pages.push(page);
-          list.push({
-            cache: cache,
-            opacity: opacity,
-            matrix: matrix,
-            dx: dx,
-            dy: dy
-          });
-        }
-      }
-      /**
-       * 刷新
-       * @param gl
-       * @param cx
-       * @param cy
-       * @param revertY
-       */
-
-    }, {
-      key: "refresh",
-      value: function refresh(gl, cx, cy, revertY) {
-        var pages = this.__pages;
-        var list = this.__list; // 防止空调用刷新，struct循环结尾会强制调用一次防止有未渲染的
-
-        if (pages.length) {
-          var channels = this.channels;
-          var locks = this.locks; // 先将上次渲染的纹理单元使用的Page形成一个hash，键为page的uuid，值为纹理单元
-
-          var lastHash = {};
-
-          for (var i = 0, len = channels.length; i < len; i++) {
-            var item = channels[i];
-
-            if (item) {
-              lastHash[item.__uuid] = i;
-            }
-          }
-
-          var units = this.__units; // 再遍历，查找相同的Page并保持其使用的纹理单元不变，存入相同索引下标oldList，不同的按顺序收集放newList
-
-          var oldList = new Array(units),
-              newList = [];
-
-          for (var _i = 0, _len = pages.length; _i < _len; _i++) {
-            var page = pages[_i],
-                uuid = page.__uuid;
-
-            if (lastHash.hasOwnProperty(uuid)) {
-              var index = lastHash[uuid];
-              oldList[index] = page;
-            } else {
-              newList.push(page);
-            }
-          }
-          /**
-           * 以oldList为基准，将newList依次存入oldList中
-           * 优先使用未用过的纹理单元，以便用过的可能下次用到无需重新上传
-           * 找不到未用过的后，尝试NRU算法，优先淘汰最近未使用的Page，相等则尺寸小的
-           */
-
-
-          if (newList.length) {
-            // 先循环找空的，oldList空且channels空且locks空
-            for (var _i2 = 0; _i2 < units; _i2++) {
-              if (!oldList[_i2] && !channels[_i2] && !locks[_i2]) {
-                oldList[_i2] = newList.shift();
-
-                if (!newList.length) {
-                  break;
-                }
-              }
-            }
-
-            var _len2 = newList.length;
-
-            if (_len2) {
-              // 按时间排序已使用channel且未被当前占用的，以便淘汰最久未使用的
-              var cl = [];
-
-              for (var _i3 = 0; _i3 < units; _i3++) {
-                if (!oldList[_i3] && !locks[_i3]) {
-                  cl.push({
-                    i: _i3,
-                    channel: channels[_i3]
-                  });
-                }
-              }
-
-              cl.sort(function (a, b) {
-                return a.channel.time - b.channel.time;
-              }); // cl靠前是时间小尺寸小的，优先使用替换
-
-              for (var _i4 = 0; _i4 < _len2; _i4++) {
-                oldList[cl[_i4].channel] = newList[_i4];
-              }
-            }
-          }
-          /**
-           * 对比上帧渲染的和这次纹理单元情况，Page相同且!update可以省略更新，其它均重新赋值纹理
-           * 后续局部更新Page相同但有update，会出现没有上帧的情况如初始渲染，此时先创建纹理单元再更新
-           * 将新的数据赋给老的，可能新的一帧使用的少于上一帧，老的没用到的需继续保留
-           */
-
-
-          var hash = {};
-
-          for (var _i5 = 0, _len3 = oldList.length; _i5 < _len3; _i5++) {
-            var _page = oldList[_i5]; // 可能为空，不满的情况下前面单元保留老tex先用的后面的单元
-
-            if (!_page) {
-              continue;
-            }
-
-            var last = channels[_i5];
-
-            if (!last || last !== _page || _page.__update) {
-              // page可能为一个已有fbo纹理，或者贴图
-              if (_page instanceof TexturePage) {
-                webgl.bindTexture(gl, _page.texture, _i5);
-              } else {
-                // 可能老的先删除，注意只删Page，MockPage是fbo生成的texture即total缓存不能自动清除
-                if (last && !(last instanceof TexturePage)) {
-                  gl.deleteTexture(last.texture);
-                }
-
-                if (!_page.texture) {
-                  _page.texture = webgl.createTexture(gl, _page.canvas, _i5, null, null);
-                  _page.texture.canvas = true;
-                  _page.texture.unit = _i5;
-                  console.warn('draw canvas texture unit', _i5, _page.texture);
-                } else {
-                  webgl.bindTexture(gl, _page.texture, _i5);
-                }
-              }
-
-              channels[_i5] = _page;
-            }
-
-            hash[_page.__uuid] = _i5; // 标识没有更新，以及最后使用时间
-
-            _page.update = false;
-            _page.time = frame.__now || inject.now();
-          } // 再次遍历开始本次渲染并清空
-
-
-          webgl.drawTextureCache(gl, list, hash, cx, cy, revertY);
-          pages.splice(0);
-          list.splice(0);
-        }
-      }
-    }, {
-      key: "findExistTexChannel",
-      value: function findExistTexChannel(page) {
-        return this.__channels.indexOf(page);
-      }
-      /**
-       * 获取并锁定一个纹理单元优先使用空的，其次最久未使用的
-       * @returns {number|*}
-       */
-
-    }, {
-      key: "lockOneChannel",
-      value: function lockOneChannel(texture) {
-        // 优先复用已有单元，再是空单元，最后是回收
-        var channels = this.__channels;
-        var locks = this.__locks;
-
-        for (var i = 0; i < this.__units; i++) {
-          if (texture && locks[i] === texture) {
-            return i;
-          }
-        }
-
-        for (var _i6 = 0; _i6 < this.__units; _i6++) {
-          if (!channels[_i6] && !locks[_i6]) {
-            locks[_i6] = texture || true;
-            this.__lockUnits++;
-            return _i6;
-          }
-        } // 根据NRU返回最久未使用的
-
-
-        var units = this.__units;
-        var cl = [];
-
-        for (var _i7 = 0; _i7 < units; _i7++) {
-          if (!locks[_i7]) {
-            cl.push({
-              i: _i7,
-              channel: channels[_i7]
-            });
-          }
-        }
-
-        if (cl.length) {
-          cl.sort(function (a, b) {
-            return a.channel.time - b.channel.time;
-          });
-          var _i8 = cl[0].i;
-          channels[_i8] = null;
-          locks[_i8] = texture || true;
-          this.__lockUnits++;
-          return _i8;
-        }
-
-        throw new Error('No free texture unit');
-      }
-      /**
-       * 释放掉i单元，并且设置内容到缓存channel中
-       * @param i
-       * @param setToChannel
-       */
-
-    }, {
-      key: "releaseLockChannel",
-      value: function releaseLockChannel(i, setToChannel) {
-        if (this.locks[i]) {
-          this.locks[i] = false;
-          this.__lockUnits--;
-
-          if (setToChannel) {
-            this.__channels[i] = setToChannel;
-          }
-        }
-      } // 指定锁定一个单元
-
-    }, {
-      key: "lockChannel",
-      value: function lockChannel(i, texture) {
-        var channels = this.__channels;
-        var locks = this.__locks;
-
-        if (!locks[i]) {
-          channels[i] = null;
-          locks[i] = texture || true;
-          this.__lockUnits++;
-        }
-      }
-      /**
-       * 释放纹理单元
-       * @param gl
-       */
-
-    }, {
-      key: "release",
-      value: function release(gl) {
-        this.channels.forEach(function (item) {
-          if (item) {
-            gl.deleteTexture(item.texture);
-          }
-        });
-      }
-    }, {
-      key: "channels",
-      get: function get() {
-        return this.__channels;
-      }
-    }, {
-      key: "locks",
-      get: function get() {
-        return this.__locks;
-      }
-    }, {
-      key: "last",
-      get: function get() {
-        var list = this.__list,
-            len = list.length;
-
-        if (len) {
-          return list[len - 1];
-        }
-      }
-    }]);
-
-    return TexHelper;
-  }();
-
   var vertexMbm = "#version 100\n#define GLSLIFY 1\nattribute vec4 a_position;attribute vec2 a_texCoords;varying vec2 v_texCoords;void main(){gl_Position=a_position;v_texCoords=a_texCoords;}"; // eslint-disable-line
 
   var fragmentMultiply = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture1;uniform sampler2D u_texture2;vec3 premultipliedAlpha(vec4 color){float a=color.a;if(a==0.0){return vec3(0.0,0.0,0.0);}return vec3(color.r/a,color.g/a,color.b/a);}float alphaCompose(float a1,float a2,float a3,float c1,float c2,float c3){return((1.0-a2/a3)*c1*255.0+a2/a3*((1.0-a1)*c2*255.0+a1*c3*255.0))/255.0;}void main(){vec4 color1=texture2D(u_texture1,v_texCoords);vec4 color2=texture2D(u_texture2,v_texCoords);if(color1.a==0.0){gl_FragColor=color2;}else if(color2.a==0.0){gl_FragColor=color1;}else{vec3 bottom=premultipliedAlpha(color1);vec3 top=premultipliedAlpha(color2);vec3 res=bottom*top;float a=color1.a+color2.a-color1.a*color2.a;gl_FragColor=vec4(alphaCompose(color1.a,color2.a,a,bottom.r,top.r,res.r)*a,alphaCompose(color1.a,color2.a,a,bottom.g,top.g,res.g)*a,alphaCompose(color1.a,color2.a,a,bottom.b,top.b,res.b)*a,a);}}"; // eslint-disable-line
@@ -33755,8 +34095,7 @@
           gl.programMbmLm = webgl.initShaders(gl, vertexMbm, fragmentLuminosity);
           gl.useProgram(gl.program); // 第一次渲染生成纹理缓存管理对象，收集渲染过程中生成的纹理并在gl纹理单元满了时进行绘制和清空，减少texImage2d耗时问题
 
-          var MAX_TEXTURE_IMAGE_UNITS = Math.min(16, gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
-          this.__texHelper = new TexHelper(MAX_TEXTURE_IMAGE_UNITS);
+          Math.min(16, gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
         }
 
         this.draw(true); // 第一次节点没有__root，渲染一次就有了才能diff
@@ -34398,11 +34737,6 @@
       key: "animateController",
       get: function get() {
         return this.__animateController;
-      }
-    }, {
-      key: "texHelper",
-      get: function get() {
-        return this.__texHelper;
       }
     }]);
 

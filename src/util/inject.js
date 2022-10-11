@@ -350,24 +350,43 @@ let inject = {
     else {
       cache.state = LOADING;
       cb && cache.task.push(cb);
-      if(!(url instanceof ArrayBuffer) && !/url\(/.test(url)) {
-        url = `url(${url})`;
+      if(url instanceof ArrayBuffer) {
+        success(url);
       }
-      let f = new FontFace(fontFamily, url);
-      f.load().then(function() {
-        document.fonts.add(f);
-        cache.state = LOADED;
-        cache.success = true;
-        cache.url = url;
-        let list = cache.task.splice(0);
-        list.forEach(cb => cb(cache));
-      }).catch(function() {
+      else {
+        let request = new XMLHttpRequest();
+        request.open('get', url, true);
+        request.responseType = 'arraybuffer';
+        request.onload = function() {
+          if(request.response) {
+            success(request.response);
+          }
+          else {
+            error();
+          }
+        };
+        request.onerror = error;
+        request.send();
+      }
+      function success(ab) {
+        let f = new FontFace(fontFamily, ab);
+        f.load().then(function() {
+          document.fonts.add(f);
+          cache.state = LOADED;
+          cache.success = true;
+          cache.url = url;
+          cache.arrayBuffer = ab;
+          let list = cache.task.splice(0);
+          list.forEach(cb => cb(cache));
+        }).catch(error);
+      }
+      function error() {
         cache.state = LOADED;
         cache.success = false;
         cache.url = url;
         let list = cache.task.splice(0);
         list.forEach(cb => cb(cache));
-      });
+      }
     }
   },
   loadComponent(url, cb) {

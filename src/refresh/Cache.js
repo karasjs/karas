@@ -1,5 +1,3 @@
-import util from '../util/util';
-
 /**
  * canvas和texture合图的基类，和Page类配合，抽象出基础尺寸偏差等信息
  * 派生2个子类
@@ -30,14 +28,14 @@ class Cache {
     this.__appendData(x1, y1);
   }
 
-  __appendData(sx1, sy1) {
-    this.sx1 = sx1; // 去除margin的左上角原点坐标
-    this.sy1 = sy1;
+  __appendData(x1, y1) {
+    this.x1 = x1; // 去除margin的左上角原点坐标
+    this.y1 = y1;
     let bbox = this.__bbox;
     this.dx = this.__x - bbox[0]; // cache坐标和box原点的差值
     this.dy = this.__y - bbox[1];
-    this.dbx = sx1 - bbox[0]; // 原始sx1/sy1和box原点的差值
-    this.dby = sy1 - bbox[1];
+    this.dbx = x1 - bbox[0]; // 原始sx1/sy1和box原点的差值
+    this.dby = y1 - bbox[1];
     this.update();
   }
 
@@ -71,7 +69,6 @@ class Cache {
     let h = Math.ceil(bbox[3] - bbox[1]);
     let res = klass.getInstance(this.__renderMode, this.__ctx, this.__rootId, Math.max(w, h), null);
     if(!res) {
-      this.__enabled = false;
       return;
     }
     let { page, pos } = res;
@@ -79,7 +76,7 @@ class Cache {
   }
 
   __offsetY(diff) {
-    this.sy1 += diff;
+    this.y1 += diff;
     let bbox = this.__bbox;
     bbox[1] += diff;
     bbox[3] += diff;

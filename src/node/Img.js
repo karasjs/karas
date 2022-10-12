@@ -129,25 +129,24 @@ class Img extends Dom {
   }
 
   __destroy() {
-    this.root.delRefreshTask(this.__task);
     super.__destroy();
-    this.__task = null;
   }
 
-  // img根据加载情况更新__hasContent
+  // img根据加载情况更新__hasContent，同时识别是否仅有图片内容本身，多个相同图片视为同一个资源
   calContent(__currentStyle, __computedStyle) {
     let res = super.calContent(__currentStyle, __computedStyle);
+    let {
+      __loadImg: loadImg,
+    } = this;
     if(!res) {
-      let {
-        __loadImg: loadImg,
-      } = this;
-      // if(loadImg.loading) {
-      //   this.__loadAndRefresh(loadImg, null);
-      // }
+      loadImg.onlyImg = true;
       if(__computedStyle[VISIBILITY] !== 'hidden' && (__computedStyle[WIDTH] || __computedStyle[HEIGHT])
         && loadImg.source) {
         res = true;
       }
+    }
+    else {
+      loadImg.onlyImg = false;
     }
     return res;
   }

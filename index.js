@@ -1522,15 +1522,15 @@
   var CANVAS$5 = {};
   var SUPPORT_OFFSCREEN_CANVAS = typeof OffscreenCanvas === 'function' && OffscreenCanvas.prototype.getContext;
 
-  function cache(key, width, height, hash, message) {
+  function offscreenCanvas(key, width, height, message) {
     var o;
 
     if (!key) {
       o = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
-    } else if (!hash[key]) {
-      o = hash[key] = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
+    } else if (!CANVAS$5[key]) {
+      o = CANVAS$5[key] = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
     } else {
-      o = hash[key];
+      o = CANVAS$5[key];
     }
 
     o.width = width;
@@ -1561,10 +1561,6 @@
         this.available = false;
       }
     };
-  }
-
-  function offscreenCanvas(key, width, height, message) {
-    return cache(key, width, height, CANVAS$5, message);
   }
 
   var IMG = {};
@@ -27467,26 +27463,24 @@
     }, {
       key: "__destroy",
       value: function __destroy() {
-        this.root.delRefreshTask(this.__task);
-
         _get(_getPrototypeOf(Img.prototype), "__destroy", this).call(this);
-
-        this.__task = null;
-      } // img根据加载情况更新__hasContent
+      } // img根据加载情况更新__hasContent，同时识别是否仅有图片内容本身，多个相同图片视为同一个资源
 
     }, {
       key: "calContent",
       value: function calContent(__currentStyle, __computedStyle) {
         var res = _get(_getPrototypeOf(Img.prototype), "calContent", this).call(this, __currentStyle, __computedStyle);
 
+        var loadImg = this.__loadImg;
+
         if (!res) {
-          var loadImg = this.__loadImg; // if(loadImg.loading) {
-          //   this.__loadAndRefresh(loadImg, null);
-          // }
+          loadImg.onlyImg = true;
 
           if (__computedStyle[VISIBILITY$2] !== 'hidden' && (__computedStyle[WIDTH$1] || __computedStyle[HEIGHT$1]) && loadImg.source) {
             res = true;
           }
+        } else {
+          loadImg.onlyImg = false;
         }
 
         return res;
@@ -28848,7 +28842,6 @@
    * canvas和texture合图的基类，和Page类配合，抽象出基础尺寸偏差等信息
    * 派生2个子类
    */
-
   var uuid$3 = 0;
 
   var Cache = /*#__PURE__*/function () {
@@ -28883,17 +28876,17 @@
       }
     }, {
       key: "__appendData",
-      value: function __appendData(sx1, sy1) {
-        this.sx1 = sx1; // 去除margin的左上角原点坐标
+      value: function __appendData(x1, y1) {
+        this.x1 = x1; // 去除margin的左上角原点坐标
 
-        this.sy1 = sy1;
+        this.y1 = y1;
         var bbox = this.__bbox;
         this.dx = this.__x - bbox[0]; // cache坐标和box原点的差值
 
         this.dy = this.__y - bbox[1];
-        this.dbx = sx1 - bbox[0]; // 原始sx1/sy1和box原点的差值
+        this.dbx = x1 - bbox[0]; // 原始sx1/sy1和box原点的差值
 
-        this.dby = sy1 - bbox[1];
+        this.dby = y1 - bbox[1];
         this.update();
       }
     }, {
@@ -28934,7 +28927,6 @@
         var res = klass.getInstance(this.__renderMode, this.__ctx, this.__rootId, Math.max(w, h), null);
 
         if (!res) {
-          this.__enabled = false;
           return;
         }
 
@@ -28946,7 +28938,7 @@
     }, {
       key: "__offsetY",
       value: function __offsetY(diff) {
-        this.sy1 += diff;
+        this.y1 += diff;
         var bbox = this.__bbox;
         bbox[1] += diff;
         bbox[3] += diff;
@@ -29056,7 +29048,7 @@
   var UNIT = 16;
   var MAX = 2048;
   var NUMBER = 128;
-  var HASH = {};
+  var HASH$1 = {};
   var uuid$2 = 0;
   var _init = false;
 
@@ -29213,7 +29205,7 @@
 
         var key = rootId + ',' + renderMode; // 每个root复用自己的合图，webgl中为了隔离不同实例
 
-        var list = HASH[key] = HASH[key] || [];
+        var list = HASH$1[key] = HASH$1[key] || [];
         var page, pos;
 
         for (var i = 0, len = list.length; i < len; i++) {
@@ -30279,8 +30271,8 @@
             y = cache.y,
             size = cache.size,
             canvas = cache.canvas,
-            sx1 = cache.sx1,
-            sy1 = cache.sy1,
+            x1 = cache.x1,
+            y1 = cache.y1,
             width = cache.width,
             height = cache.height,
             bbox = cache.bbox;
@@ -30298,8 +30290,8 @@
         offscreen.x = 0;
         offscreen.y = 0;
         offscreen.size = size;
-        offscreen.sx1 = sx1;
-        offscreen.sy1 = sy1;
+        offscreen.x1 = x1;
+        offscreen.y1 = y1;
         offscreen.dx = -bbox[0];
         offscreen.dy = -bbox[1];
         offscreen.dbx = cache.dbx + d;
@@ -30383,22 +30375,22 @@
       value: function drawCache(source, target) {
         var tx = target.x,
             ty = target.y,
-            sx1 = target.sx1,
-            sy1 = target.sy1,
+            x1 = target.x1,
+            y1 = target.y1,
             ctx = target.ctx,
             dbx = target.dbx,
             dby = target.dby;
         var x = source.x,
             y = source.y,
             canvas = source.canvas,
-            sx2 = source.sx1,
-            sy2 = source.sy1,
+            x2 = source.x1,
+            y2 = source.y1,
             dbx2 = source.dbx,
             dby2 = source.dby,
             width = source.width,
             height = source.height;
-        var ox = tx + sx2 - sx1 + dbx - dbx2;
-        var oy = ty + sy2 - sy1 + dby - dby2;
+        var ox = tx + x2 - x1 + dbx - dbx2;
+        var oy = ty + y2 - y1 + dby - dby2;
         ctx.drawImage(canvas, x, y, width, height, ox, oy, width, height);
       }
     }]);
@@ -30409,8 +30401,8 @@
 
   function genSingle(cache, message, bboxNew) {
     var size = cache.size,
-        sx1 = cache.sx1,
-        sy1 = cache.sy1,
+        x1 = cache.x1,
+        y1 = cache.y1,
         bbox = cache.bbox;
     bboxNew = bboxNew || bbox;
     var width = bboxNew[2] - bboxNew[0];
@@ -30422,8 +30414,8 @@
     offscreen.y = 0;
     offscreen.bbox = bboxNew;
     offscreen.size = size;
-    offscreen.sx1 = sx1;
-    offscreen.sy1 = sy1;
+    offscreen.x1 = x1;
+    offscreen.y1 = y1;
     offscreen.dx = -bboxNew[0];
     offscreen.dy = -bboxNew[1];
     offscreen.dbx = cache.dbx - dx;
@@ -30698,6 +30690,150 @@
 
   var fragmentBlur = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoordsBlur[3];uniform sampler2D u_texture;void main(){gl_FragColor=vec4(0.0);}"; // eslint-disable-line
 
+  var HASH = {};
+  /**
+   * 相同的图片且尺寸相同时，复用一个source，如果尺寸和原图相等直接用，否则生成一个离屏canvas
+   */
+
+  var ImgCanvasCache = /*#__PURE__*/function (_CanvasCache) {
+    _inherits(ImgCanvasCache, _CanvasCache);
+
+    function ImgCanvasCache(renderMode, ctx, rootId, w, h, bbox, page, x1, y1) {
+      return _CanvasCache.call(this, renderMode, ctx, rootId, w, h, bbox, page, null, x1, y1) || this;
+    }
+
+    _createClass(ImgCanvasCache, [{
+      key: "__init",
+      value: function __init(w, h, bbox, page, pos, x1, y1) {
+        this.__width = w;
+        this.__height = h;
+        this.__bbox = bbox; // 相等就不生成新的离屏canvas，直接用原始资源比如<img>节点内容
+
+        if (page.width === w && page.height === h) {
+          this.__canvas = page.source;
+        } // 不等则一个url只生成一份OffscreenCanvas
+        else {
+          var key = w + ',' + h + ',' + page.url;
+
+          if (HASH.hasOwnProperty(key)) {
+            var o = HASH[key];
+            o.count++;
+            this.__canvas = o.canvas;
+          } else {
+            var offscreenCanvas = inject.getOffscreenCanvas(w, h, null, null);
+            var ctx = offscreenCanvas.ctx;
+            ctx.globalAlpha = 1;
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.drawImage(page.source, 0, 0, w, h);
+            this.__canvas = offscreenCanvas.canvas;
+            HASH[key] = {
+              canvas: offscreenCanvas.canvas,
+              count: 1
+            };
+          }
+        }
+
+        this.__x = 0;
+        this.__y = 0;
+        this.__enabled = true;
+        this.__available = false;
+
+        this.__appendData(x1, y1);
+      }
+    }, {
+      key: "update",
+      value: function update() {}
+    }, {
+      key: "clear",
+      value: function clear() {
+        if (this.__available) {
+          this.__available = false;
+          return true;
+        }
+      }
+    }, {
+      key: "release",
+      value: function release() {
+        if (this.__enabled) {
+          this.clear();
+          var key = this.__width + ',' + this.__height + ',' + this.__page.url;
+
+          if (HASH.hasOwnProperty(key)) {
+            var o = HASH[key];
+            o.count--;
+
+            if (!o.count) {
+              delete HASH[key];
+            }
+          }
+
+          this.__enabled = false;
+          this.__page = null;
+          return true;
+        }
+      }
+    }, {
+      key: "reset",
+      value: function reset(bbox, x1, y1) {
+        this.release();
+        var w = Math.ceil(bbox[2] - bbox[0]);
+        var h = Math.ceil(bbox[3] - bbox[1]);
+        var n = Math.max(w, h);
+
+        if (n <= 0) {
+          return;
+        }
+
+        this.__init(w, h, bbox, this.__page, null, x1, y1);
+      }
+    }, {
+      key: "canvas",
+      get: function get() {
+        return this.__canvas;
+      }
+    }, {
+      key: "ctx",
+      get: function get() {
+        return this.__ctx;
+      }
+    }, {
+      key: "x",
+      get: function get() {
+        return this.__x;
+      }
+    }, {
+      key: "y",
+      get: function get() {
+        return this.__y;
+      }
+    }, {
+      key: "width",
+      get: function get() {
+        return this.__width;
+      }
+    }, {
+      key: "height",
+      get: function get() {
+        return this.__height;
+      }
+    }], [{
+      key: "getInstance",
+      value: function getInstance(renderMode, ctx, rootId, bbox, loadImg, x1, y1) {
+        var w = Math.ceil(bbox[2] - bbox[0]);
+        var h = Math.ceil(bbox[3] - bbox[1]);
+        var n = Math.max(w, h);
+
+        if (n <= 0) {
+          return;
+        }
+
+        return new ImgCanvasCache(renderMode, ctx, rootId, w, h, bbox, loadImg, x1, y1);
+      }
+    }]);
+
+    return ImgCanvasCache;
+  }(CanvasCache);
+
   var OFFSCREEN_OVERFLOW = offscreen.OFFSCREEN_OVERFLOW,
       OFFSCREEN_FILTER = offscreen.OFFSCREEN_FILTER,
       OFFSCREEN_MASK = offscreen.OFFSCREEN_MASK,
@@ -30874,11 +31010,11 @@
     };
   }
 
-  function mergeBbox(bbox, t, sx1, sy1) {
-    bbox[0] = Math.min(bbox[0], sx1 + t[0]);
-    bbox[1] = Math.min(bbox[1], sy1 + t[1]);
-    bbox[2] = Math.max(bbox[2], sx1 + t[2]);
-    bbox[3] = Math.max(bbox[3], sy1 + t[3]);
+  function mergeBbox(bbox, t, x1, y1) {
+    bbox[0] = Math.min(bbox[0], x1 + t[0]);
+    bbox[1] = Math.min(bbox[1], y1 + t[1]);
+    bbox[2] = Math.max(bbox[2], x1 + t[2]);
+    bbox[3] = Math.max(bbox[3], y1 + t[3]);
   }
   /**
    * 生成局部根节点离屏缓存，超限时除外
@@ -30898,16 +31034,23 @@
       return __cacheTotal;
     }
 
-    var sx1 = node.__x1,
-        sy1 = node.__y1;
+    var x1 = node.__x1,
+        y1 = node.__y1;
     var bboxTotal = genBboxTotal(node, __structs, index, total, false).bbox;
 
     if (!bboxTotal) {
       return;
+    } // img节点特殊对待，如果只包含图片内容本身，多个相同引用可复用图片
+
+
+    if (node instanceof Img && node.__loadImg.onlyImg) {
+      __cacheTotal = node.__cacheTotal = ImgCanvasCache.getInstance(renderMode, ctx, root.__uuid, bboxTotal, node.__loadImg, x1, y1);
+      __cacheTotal.__available = true;
+      return __cacheTotal;
     } // 生成cacheTotal，获取偏移dx/dy
 
 
-    __cacheTotal = node.__cacheTotal = CanvasCache.getInstance(renderMode, ctx, root.uuid, bboxTotal, sx1, sy1, null);
+    __cacheTotal = node.__cacheTotal = CanvasCache.getInstance(renderMode, ctx, root.__uuid, bboxTotal, x1, y1, null);
 
     if (!__cacheTotal || !__cacheTotal.__enabled) {
       if (bboxTotal[2] - bboxTotal[0] || bboxTotal[3] - bboxTotal[1]) {
@@ -31046,7 +31189,7 @@
         var m = void 0;
 
         if (i !== index && (!isE(parentMatrix) || !isE(transform))) {
-          m = transform$1.calMatrixByOrigin(transform, tfo[0] + dbx + _node2.__x1 - sx1 + tx, tfo[1] + dby + _node2.__y1 - sy1 + ty);
+          m = transform$1.calMatrixByOrigin(transform, tfo[0] + dbx + _node2.__x1 - x1 + tx, tfo[1] + dby + _node2.__y1 - y1 + ty);
 
           if (!isE(parentMatrix)) {
             m = multiply(parentMatrix, m);
@@ -31230,8 +31373,8 @@
             tx = cacheMask.x,
             ty = cacheMask.y,
             ctx = cacheMask.ctx,
-            sx1 = cacheMask.sx1,
-            sy1 = cacheMask.sy1;
+            x1 = cacheMask.x1,
+            y1 = cacheMask.y1;
         var struct = item.__struct,
             root = item.__root,
             structs = root.__structs;
@@ -31357,7 +31500,7 @@
             var m = void 0;
 
             if (!isE(transform)) {
-              m = transform$1.calMatrixByOrigin(transform, tfo[0] + dbx + _node3.__x1 - sx1 + tx, tfo[1] + dby + _node3.__y1 - sy1 + ty);
+              m = transform$1.calMatrixByOrigin(transform, tfo[0] + dbx + _node3.__x1 - x1 + tx, tfo[1] + dby + _node3.__y1 - y1 + ty);
 
               if (!isE(parentMatrix)) {
                 m = multiply(parentMatrix, m);
@@ -31405,12 +31548,12 @@
                   canvas = _target2.canvas,
                   _width = _target2.width,
                   _height = _target2.height,
-                  sx2 = _target2.sx1,
-                  sy2 = _target2.sy1,
+                  x2 = _target2.x1,
+                  y2 = _target2.y1,
                   dbx2 = _target2.dbx,
                   dby2 = _target2.dby;
-              var ox = tx + sx2 - sx1 + dbx - dbx2;
-              var oy = ty + sy2 - sy1 + dby - dby2;
+              var ox = tx + x2 - x1 + dbx - dbx2;
+              var oy = ty + y2 - y1 + dby - dby2;
               ctx.drawImage(canvas, x, y, _width, _height, ox, oy, _width, _height);
               ctx.globalCompositeOperation = 'source-over';
 
@@ -31588,7 +31731,7 @@
     if (__cacheTotal) {
       __cacheTotal.reset(bboxTotal, __x1, __y1);
     } else {
-      __cacheTotal = TextureCache.getInstance(renderMode, gl, root.uuid, bboxTotal, __x1, __y1, null);
+      __cacheTotal = TextureCache.getInstance(renderMode, gl, root.__uuid, bboxTotal, __x1, __y1, null);
     }
 
     if (!__cacheTotal || !__cacheTotal.__enabled) {
@@ -31602,8 +31745,8 @@
     __cacheTotal.__available = true;
     node.__cacheTotal = __cacheTotal;
     var _cacheTotal3 = __cacheTotal,
-        sx1 = _cacheTotal3.sx1,
-        sy1 = _cacheTotal3.sy1,
+        x1 = _cacheTotal3.x1,
+        y1 = _cacheTotal3.y1,
         dx = _cacheTotal3.dx,
         dy = _cacheTotal3.dy,
         dbx = _cacheTotal3.dbx,
@@ -31724,7 +31867,7 @@
         var _m = void 0;
 
         if (i !== index && !isE(transform)) {
-          _m = transform$1.calMatrixByOrigin(transform, tfo[0] + dbx + _node4.__x1 - sx1, tfo[1] + dby + _node4.__y1 - sy1);
+          _m = transform$1.calMatrixByOrigin(transform, tfo[0] + dbx + _node4.__x1 - x1, tfo[1] + dby + _node4.__y1 - y1);
 
           if (!isE(parentMatrix)) {
             _m = multiply(parentMatrix, _m);
@@ -31818,8 +31961,8 @@
   }
 
   function genFilterWebgl(renderMode, gl, node, cache, filter, W, H) {
-    cache.sx1;
-        cache.sy1;
+    cache.x1;
+        cache.y1;
         cache.width;
         cache.height;
         cache.bbox;
@@ -31999,8 +32142,8 @@
 
 
   function genBlurWebgl(renderMode, gl, cache, sigma) {
-    var sx1 = cache.sx1,
-        sy1 = cache.sy1,
+    var x1 = cache.x1,
+        y1 = cache.y1,
         bbox = cache.bbox,
         width = cache.width,
         height = cache.height;
@@ -32036,7 +32179,7 @@
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.deleteFramebuffer(frameBuffer); // 写回一个cache中
 
-    var target = TextureCache.getInstance(renderMode, gl, cache.__rootId, bboxNew, sx1, sy1, null);
+    var target = TextureCache.getInstance(renderMode, gl, cache.__rootId, bboxNew, x1, y1, null);
     target.__available = true;
     var page = target.__page,
         size = page.__size,
@@ -32054,10 +32197,10 @@
   }
 
   function genColorMatrixWebgl(renderMode, gl, cache, m) {
-    var sx1 = cache.sx1,
-        sy1 = cache.sy1,
+    var x1 = cache.x1,
+        y1 = cache.y1,
         bbox = cache.bbox;
-    var target = TextureCache.getInstance(renderMode, gl, cache.__rootId, bbox.slice(0), sx1, sy1, cache.__page);
+    var target = TextureCache.getInstance(renderMode, gl, cache.__rootId, bbox.slice(0), x1, y1, cache.__page);
     target.__available = true;
     var page = target.__page,
         size = page.__size;
@@ -32086,7 +32229,7 @@
 
     var bboxNew = [__x1, __y1, x, y];
 
-    var __cacheOverflow = TextureCache.getInstance(renderMode, gl, root.uuid, bboxNew, __x1, __y1, cache.__page);
+    var __cacheOverflow = TextureCache.getInstance(renderMode, gl, root.__uuid, bboxNew, __x1, __y1, cache.__page);
 
     if (!__cacheOverflow) {
       return;
@@ -32111,8 +32254,8 @@
   }
 
   function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs) {
-    var sx1 = cache.sx1,
-        sy1 = cache.sy1,
+    var x1 = cache.x1,
+        y1 = cache.y1,
         width = cache.width,
         height = cache.height,
         bbox = cache.bbox,
@@ -32120,7 +32263,7 @@
         dby = cache.dby;
     var bboxNew = bbox.slice(0); // 结果不能和源同page纹理，一定符合尺寸要求，不会比源大
 
-    var __cacheMask = TextureCache.getInstance(renderMode, gl, root.uuid, bboxNew, sx1, sy1, cache.__page);
+    var __cacheMask = TextureCache.getInstance(renderMode, gl, root.__uuid, bboxNew, x1, y1, cache.__page);
 
     __cacheMask.__available = true;
     node.__cacheMask = __cacheMask; // 先求得被遮罩的matrix，用作inverse给mask计算，以被遮罩左上角为原点
@@ -32147,8 +32290,8 @@
     var isClip = next.__clip;
     var lastPage,
         list = [];
-    var dx = -sx1 + dbx,
-        dy = -sy1 + dby;
+    var dx = -x1 + dbx,
+        dy = -y1 + dby;
 
     while (next && next.__mask && next.__clip === isClip) {
       var total = __structs[i].total || 0;
@@ -32243,7 +32386,7 @@
             if (isE(_transform)) {
               m = matrix.identity();
             } else {
-              m = transform$1.calMatrixByOrigin(_transform, _tfo[0] + target.sx1 - sx1, _tfo[1] + target.sy1 - sy1);
+              m = transform$1.calMatrixByOrigin(_transform, _tfo[0] + target.x1 - x1, _tfo[1] + target.y1 - y1);
             }
 
             if (!isE(parentMatrix)) {
@@ -32318,8 +32461,8 @@
 
 
   function genDropShadowWebgl(renderMode, gl, cache, v) {
-    var sx1 = cache.sx1,
-        sy1 = cache.sy1,
+    var x1 = cache.x1,
+        y1 = cache.y1,
         bbox = cache.bbox,
         width = cache.width,
         height = cache.height; // 先根据x/y/color生成单色阴影
@@ -32381,7 +32524,7 @@
     bboxNew[3] += spread;
     var bboxMerge = bbox.slice(0);
     mergeBbox(bboxMerge, bboxNew, 0, 0);
-    var target = TextureCache.getInstance(renderMode, gl, cache.__rootId, bboxMerge, sx1, sy1, null);
+    var target = TextureCache.getInstance(renderMode, gl, cache.__rootId, bboxMerge, x1, y1, null);
     target.__available = true;
     var page = target.__page,
         size = page.__size;
@@ -32877,7 +33020,7 @@
             if (__cache) {
               __cache.reset(bbox, x, y);
             } else {
-              __cache = CanvasCache.getInstance(mode.CANVAS, gl, root.uuid, bbox, x, y, null);
+              __cache = CanvasCache.getInstance(mode.CANVAS, gl, root.__uuid, bbox, x, y, null);
             }
 
             if (__cache && __cache.enabled) {
@@ -32962,7 +33105,6 @@
             i += total || 0;
 
             if (__refreshLevel === NONE$1 && hasMask) {
-              // TODO: add mask level
               i += countMaskNum(__structs, i + 1, hasMask);
             }
           }
@@ -32977,13 +33119,13 @@
           if (hasContent) {
             var _bbox2 = node.bbox,
                 _cache4 = node.__cache,
-                sx1 = node.__x1,
-                sy1 = node.__y1;
+                x1 = node.__x1,
+                y1 = node.__y1;
 
             if (_cache4) {
-              _cache4.reset(_bbox2, sx1, sy1);
+              _cache4.reset(_bbox2, x1, y1);
             } else {
-              _cache4 = CanvasCache.getInstance(mode.CANVAS, gl, root.uuid, _bbox2, sx1, sy1, null);
+              _cache4 = CanvasCache.getInstance(mode.CANVAS, gl, root.__uuid, _bbox2, x1, y1, null);
             }
 
             if (_cache4 && _cache4.enabled) {
@@ -33353,17 +33495,27 @@
         var __refreshLevel = node.__refreshLevel,
             __cacheTotal = node.__cacheTotal;
         node.__refreshLevel = NONE$1; // filter变化需重新生成，cacheTotal本身就存在要判断下；CACHE取消重新生成则无需判断
+        // img在只有自身的情况下自动生成并特殊对待，多个相同引用的img使用同一份资源
 
-        if (node.__cacheAsBitmap) {
-          if (__refreshLevel & (CACHE$1 | FT$1) || __refreshLevel >= REPAINT$1) {
-            mergeList.push({
-              i: i,
-              lv: lv,
-              total: total,
-              node: node,
-              hasMask: hasMask
-            });
+        var need = node.__cacheAsBitmap && (__refreshLevel & (CACHE$1 | FT$1) || __refreshLevel >= REPAINT$1);
+
+        if (!need && node instanceof Img) {
+          node.calContent(node.__currentStyle, node.__computedStyle);
+          var loadImg = node.__loadImg;
+
+          if (loadImg.onlyImg && !loadImg.error && loadImg.source) {
+            need = true;
           }
+        }
+
+        if (need) {
+          mergeList.push({
+            i: i,
+            lv: lv,
+            total: total,
+            node: node,
+            hasMask: hasMask
+          });
         } // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total
 
 
@@ -33543,13 +33695,13 @@
           var x = target.x,
               y = target.y,
               canvas = target.canvas,
-              sx1 = target.sx1,
-              sy1 = target.sy1,
+              x1 = target.x1,
+              y1 = target.y1,
               dbx = target.dbx,
               dby = target.dby,
               _width2 = target.width,
               _height2 = target.height;
-          ctx.drawImage(canvas, x, y, _width2, _height2, sx1 - dbx, sy1 - dby, _width2, _height2); // total应用后记得设置回来
+          ctx.drawImage(canvas, x, y, _width2, _height2, x1 - dbx, y1 - dby, _width2, _height2); // total应用后记得设置回来
 
           ctx.globalCompositeOperation = 'source-over'; // 父超限但子有total的时候，i此时已经增加到了末尾，也需要检查
 

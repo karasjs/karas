@@ -6,16 +6,16 @@ const SPF = 1000 / 60;
 const CANVAS = {};
 const SUPPORT_OFFSCREEN_CANVAS = typeof OffscreenCanvas === 'function' && OffscreenCanvas.prototype.getContext;
 
-function cache(key, width, height, hash, message) {
+function offscreenCanvas(key, width, height, message) {
   let o;
   if(!key) {
     o = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
   }
-  else if(!hash[key]) {
-    o = hash[key] = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
+  else if(!CANVAS[key]) {
+    o = CANVAS[key] = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
   }
   else {
-    o = hash[key];
+    o = CANVAS[key];
   }
   o.width = width;
   o.height = height;
@@ -40,10 +40,6 @@ function cache(key, width, height, hash, message) {
       this.available = false;
     },
   };
-}
-
-function offscreenCanvas(key, width, height, message) {
-  return cache(key, width, height, CANVAS, message);
 }
 
 const IMG = {};

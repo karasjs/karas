@@ -1943,25 +1943,6 @@ class Xom extends Node {
     if(display === 'none') {
       return { break: true };
     }
-    if(renderMode === WEBGL) {
-      return {};
-    }
-    // 使用x和y渲染位置，考虑了relative和translate影响
-    let {
-      __offsetWidth,
-      __offsetHeight,
-    } = this;
-    let {
-      [PADDING_TOP]: paddingTop,
-      [PADDING_RIGHT]: paddingRight,
-      [PADDING_BOTTOM]: paddingBottom,
-      [PADDING_LEFT]: paddingLeft,
-      [BORDER_LEFT_WIDTH]: borderLeftWidth,
-      [BORDER_RIGHT_WIDTH]: borderRightWidth,
-      [BORDER_TOP_WIDTH]: borderTopWidth,
-      [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
-    } = computedStyle;
-    let isRealInline = this.__isInline;
     // 考虑mpb的6个坐标，inline比较特殊单独计算
     let x1 = this.__x1;
     let x2 = this.__x2;
@@ -1984,6 +1965,25 @@ class Xom extends Node {
       x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6,
       bx1, bx2, by1, by2,
     };
+    if(renderMode === WEBGL) {
+      return res;
+    }
+    // 使用x和y渲染位置，考虑了relative和translate影响
+    let {
+      __offsetWidth,
+      __offsetHeight,
+    } = this;
+    let {
+      [PADDING_TOP]: paddingTop,
+      [PADDING_RIGHT]: paddingRight,
+      [PADDING_BOTTOM]: paddingBottom,
+      [PADDING_LEFT]: paddingLeft,
+      [BORDER_LEFT_WIDTH]: borderLeftWidth,
+      [BORDER_RIGHT_WIDTH]: borderRightWidth,
+      [BORDER_TOP_WIDTH]: borderTopWidth,
+      [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
+    } = computedStyle;
+    let isRealInline = this.__isInline;
     // cache的canvas模式已经提前计算好了，其它需要现在计算
     let matrix = this.__matrix;
     let {

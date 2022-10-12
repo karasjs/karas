@@ -2285,7 +2285,7 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
       if(!need && node instanceof Img) {
         node.calContent(node.__currentStyle, node.__computedStyle);
         let loadImg = node.__loadImg;
-        if(loadImg.onlyImg && !loadImg.error && loadImg.source) {
+        if(loadImg.onlyImg && !loadImg.error && loadImg.source && __computedStyle[VISIBILITY] === 'visible') {
           need = true;
         }
       }

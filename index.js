@@ -19293,24 +19293,8 @@
           return {
             "break": true
           };
-        }
+        } // 考虑mpb的6个坐标，inline比较特殊单独计算
 
-        if (renderMode === WEBGL$1) {
-          return {};
-        } // 使用x和y渲染位置，考虑了relative和translate影响
-
-
-        var __offsetWidth = this.__offsetWidth,
-            __offsetHeight = this.__offsetHeight;
-        var paddingTop = computedStyle[PADDING_TOP$3],
-            paddingRight = computedStyle[PADDING_RIGHT$4],
-            paddingBottom = computedStyle[PADDING_BOTTOM$2],
-            paddingLeft = computedStyle[PADDING_LEFT$5],
-            borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$5],
-            borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$4],
-            borderTopWidth = computedStyle[BORDER_TOP_WIDTH$3],
-            borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$2];
-        var isRealInline = this.__isInline; // 考虑mpb的6个坐标，inline比较特殊单独计算
 
         var x1 = this.__x1;
         var x2 = this.__x2;
@@ -19348,7 +19332,24 @@
           bx2: bx2,
           by1: by1,
           by2: by2
-        }; // cache的canvas模式已经提前计算好了，其它需要现在计算
+        };
+
+        if (renderMode === WEBGL$1) {
+          return res;
+        } // 使用x和y渲染位置，考虑了relative和translate影响
+
+
+        var __offsetWidth = this.__offsetWidth,
+            __offsetHeight = this.__offsetHeight;
+        var paddingTop = computedStyle[PADDING_TOP$3],
+            paddingRight = computedStyle[PADDING_RIGHT$4],
+            paddingBottom = computedStyle[PADDING_BOTTOM$2],
+            paddingLeft = computedStyle[PADDING_LEFT$5],
+            borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$5],
+            borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$4],
+            borderTopWidth = computedStyle[BORDER_TOP_WIDTH$3],
+            borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$2];
+        var isRealInline = this.__isInline; // cache的canvas模式已经提前计算好了，其它需要现在计算
 
         var matrix$1 = this.__matrix;
         var backgroundColor = computedStyle[BACKGROUND_COLOR],
@@ -33506,7 +33507,7 @@
           node.calContent(node.__currentStyle, node.__computedStyle);
           var loadImg = node.__loadImg;
 
-          if (loadImg.onlyImg && !loadImg.error && loadImg.source) {
+          if (loadImg.onlyImg && !loadImg.error && loadImg.source && __computedStyle[VISIBILITY$1] === 'visible') {
             need = true;
           }
         }

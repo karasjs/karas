@@ -1973,7 +1973,6 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
           hasMbm = true;
         }
         if(node.__cacheAsBitmap
-          || onlyImg // TODO: 图片可以不生成，但是不知为何频繁发生次要垃圾回收
           || hasMask
           || isFilter
           || isOverflow

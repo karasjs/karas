@@ -29258,7 +29258,7 @@
 
         if (MAX_TEXTURE_SIZE !== MAX) {
           // 超过8192会卡一下
-          Page.MAX = Math.min(MAX_TEXTURE_SIZE, 512);
+          Page.MAX = Math.min(MAX_TEXTURE_SIZE, 8192);
         }
       }
     }]);
@@ -34260,7 +34260,7 @@
         } else if (this.tagName === 'svg') {
           this.__renderMode = mode.SVG;
         } else if (this.tagName === 'webgl') {
-          var gl = this.__ctx = this.__dom.getContext('webgl', params);
+          var gl = this.__ctx = this.__dom.getContext('webgl2', params) || this.__dom.getContext('webgl', params);
 
           this.__renderMode = mode.WEBGL;
           gl.program = webgl.initShaders(gl, vertex, fragment);

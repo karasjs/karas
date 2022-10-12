@@ -330,7 +330,8 @@ class Root extends Dom {
       this.__renderMode = mode.SVG;
     }
     else if(this.tagName === 'webgl') {
-      let gl = this.__ctx = this.__dom.getContext('webgl', params);
+      let gl = this.__ctx = this.__dom.getContext('webgl2', params)
+        || this.__dom.getContext('webgl', params);
       this.__renderMode = mode.WEBGL;
       gl.program = webgl.initShaders(gl, vertex, fragment);
       gl.programMask = webgl.initShaders(gl, vertexMask, fragmentMask);

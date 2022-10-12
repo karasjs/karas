@@ -2150,9 +2150,15 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       } = __computedStyle;
       let m = __matrix;
       if(__domParent) {
-        opacity *= __domParent.__opacity;
-        m = multiply(__domParent.__perspectiveMatrix, m);
-        m = multiply(__domParent.__matrixEvent, m);
+        let op = __domParent.__opacity;
+        if(op !== 1) {
+          opacity *= __domParent.__opacity;
+        }
+        let pm = __domParent.__perspectiveMatrix, me = __domParent.__matrixEvent;
+        if(pm && pm.length || me && me.length) {
+          m = multiply(__domParent.__perspectiveMatrix, m);
+          m = multiply(__domParent.__matrixEvent, m);
+        }
       }
       node.__opacity = opacity;
       assignMatrix(node.__matrixEvent, m);
@@ -2417,8 +2423,14 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
       let opacity = __computedStyle[OPACITY];
       let m = __matrix;
       if(__domParent) {
-        opacity *= __domParent.__opacity;
-        m = multiply(__domParent.__matrixEvent, m);
+        let op = __domParent.__opacity;
+        if(op !== 1) {
+          opacity *= __domParent.__opacity;
+        }
+        let me = __domParent.__matrixEvent;
+        if(me && me.length) {
+          m = multiply(me, m);
+        }
       }
       node.__opacity = opacity;
       assignMatrix(node.__matrixEvent, m);

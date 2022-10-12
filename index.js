@@ -28844,6 +28844,11 @@
 
         this.__x = x;
         this.__y = y;
+        var size = page.__size;
+        this.__tx1 = x / size;
+        this.__ty1 = (size - y - h) / size;
+        this.__tx2 = (x + w) / size;
+        this.__ty2 = (size - y) / size;
         this.__enabled = true;
         this.__available = false;
 
@@ -29456,13 +29461,14 @@
           cache = _list$i.cache,
           opacity = _list$i.opacity,
           matrix = _list$i.matrix;
-      var x = cache.x,
-          y = cache.y,
-          width = cache.width,
-          height = cache.height,
-          page = cache.page,
-          bbox = cache.bbox;
-      var size = page.__size;
+      var width = cache.__width,
+          height = cache.__height,
+          tx1 = cache.__tx1,
+          ty1 = cache.__ty1,
+          tx2 = cache.__tx2,
+          ty2 = cache.__ty2,
+          page = cache.__page,
+          bbox = cache.__bbox;
 
       if (!i) {
         // canvas需要生成texture，texture则强制不会进来
@@ -29552,11 +29558,7 @@
       vtPoint[j + 19] = w2;
       vtPoint[j + 20] = x3;
       vtPoint[j + 21] = y3;
-      vtPoint[j + 23] = w3;
-      var tx1 = x / size,
-          ty1 = (size - y - height) / size;
-      var tx2 = (x + width) / size,
-          ty2 = (size - y) / size; // vtTex.push(tx1, ty1, tx1, ty2, tx2, ty1, tx1, ty2, tx2, ty1, tx2, ty2);
+      vtPoint[j + 23] = w3; // vtTex.push(tx1, ty1, tx1, ty2, tx2, ty1, tx1, ty2, tx2, ty1, tx2, ty2);
 
       j = i * 12;
       vtTex[j] = tx1;
@@ -33391,9 +33393,19 @@
         var m = __matrix;
 
         if (_domParent2) {
-          opacity *= _domParent2.__opacity;
-          m = multiply(_domParent2.__perspectiveMatrix, m);
-          m = multiply(_domParent2.__matrixEvent, m);
+          var op = _domParent2.__opacity;
+
+          if (op !== 1) {
+            opacity *= _domParent2.__opacity;
+          }
+
+          var pm = _domParent2.__perspectiveMatrix,
+              me = _domParent2.__matrixEvent;
+
+          if (pm && pm.length || me && me.length) {
+            m = multiply(_domParent2.__perspectiveMatrix, m);
+            m = multiply(_domParent2.__matrixEvent, m);
+          }
         }
 
         _node7.__opacity = opacity;
@@ -33701,8 +33713,17 @@
         var m = __matrix;
 
         if (__domParent) {
-          opacity *= __domParent.__opacity;
-          m = multiply(__domParent.__matrixEvent, m);
+          var op = __domParent.__opacity;
+
+          if (op !== 1) {
+            opacity *= __domParent.__opacity;
+          }
+
+          var me = __domParent.__matrixEvent;
+
+          if (me && me.length) {
+            m = multiply(me, m);
+          }
         }
 
         _node8.__opacity = opacity;

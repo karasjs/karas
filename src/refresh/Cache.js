@@ -23,6 +23,11 @@ class Cache {
     let { x, y } = page.getCoords(pos);
     this.__x = x;
     this.__y = y;
+    let size = page.__size;
+    this.__tx1 = x / size;
+    this.__ty1 = (size - y - h) / size;
+    this.__tx2 = (x + w) / size;
+    this.__ty2 = (size - y) / size;
     this.__enabled = true;
     this.__available = false;
     this.__appendData(x1, y1);

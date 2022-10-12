@@ -172,8 +172,9 @@ function drawTextureCache(gl, list, cx, cy, dx, dy) {
   }
   for(let i = 0; i < length; i++) {
     let { cache, opacity, matrix } = list[i];
-    let { x, y, width, height, page, bbox } = cache;
-    let size = page.__size;
+    let { __width: width, __height: height,
+      __tx1: tx1, __ty1: ty1, __tx2: tx2, __ty2: ty2,
+      __page: page, __bbox: bbox } = cache;
     if(!i) {
       // canvas需要生成texture，texture则强制不会进来
       if(page.__update) {
@@ -217,8 +218,6 @@ function drawTextureCache(gl, list, cx, cy, dx, dy) {
     vtPoint[j + 20] = x3;
     vtPoint[j + 21] = y3;
     vtPoint[j + 23] = w3;
-    let tx1 = x / size, ty1 = (size - y - height) / size;
-    let tx2 = (x + width) / size, ty2 = (size - y) / size;
     // vtTex.push(tx1, ty1, tx1, ty2, tx2, ty1, tx1, ty2, tx2, ty1, tx2, ty2);
     j = i * 12;
     vtTex[j] = tx1;

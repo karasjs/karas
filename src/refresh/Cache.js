@@ -55,7 +55,7 @@ class Cache {
   release() {
     if(this.__enabled) {
       this.clear();
-      this.__page.del(this.pos);
+      this.__page.del(this.__pos);
       this.__page = null;
       this.__enabled = false;
       return true;

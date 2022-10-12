@@ -53,8 +53,8 @@ class Img extends Dom {
       }
       else if(ca && ca.state === inject.LOADED) {
         loadImg.source = ca.source;
-        loadImg.width = ca.width;
-        loadImg.height = ca.height;
+        loadImg.width = loadImg.__width = ca.width;
+        loadImg.height = loadImg.__height = ca.height;
       }
     }
   }
@@ -80,8 +80,8 @@ class Img extends Dom {
       }
       else if(cache && cache.state === inject.LOADED && cache.success) {
         loadImg.source = cache.source;
-        loadImg.width = cache.width;
-        loadImg.height = cache.height;
+        loadImg.width = loadImg.__width = cache.width;
+        loadImg.height = loadImg.__height = cache.height;
       }
       loadImg.cache = false;
     }
@@ -121,15 +121,11 @@ class Img extends Dom {
 
   __addGeom(tagName, props) {
     props = util.hash2arr(props);
-    this.virtualDom.children.push({
+    this.__virtualDom.children.push({
       type: 'item',
       tagName,
       props,
     });
-  }
-
-  __destroy() {
-    super.__destroy();
   }
 
   // img根据加载情况更新__hasContent，同时识别是否仅有图片内容本身，多个相同图片视为同一个资源

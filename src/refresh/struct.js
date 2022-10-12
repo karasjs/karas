@@ -20,6 +20,7 @@ import blur from '../math/blur';
 import vertexBlur from '../gl/filter/blur.vert';
 import fragmentBlur from '../gl/filter/blur.frag';
 import ImgCanvasCache from './ImgCanvasCache';
+import ImgWebglCache from '../gl/ImgWebglCache';
 
 const {
   OFFSCREEN_OVERFLOW,
@@ -110,9 +111,6 @@ function genBboxTotal(node, __structs, index, total, isWebgl) {
         return;
       }
       let bbox = node.bbox, p = node.__domParent, matrix = p.__matrixEvent;
-      // if(pm) {
-      //   matrix = multiply(pm, matrix);
-      // }
       if(!isE(matrix)) {
         bbox = transformBbox(bbox, matrix, 0, 0);
       }
@@ -215,16 +213,16 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
   // img节点特殊对待，如果只包含图片内容本身，多个相同引用可复用图片
   if(node instanceof Img && node.__loadImg.onlyImg) {
     __cacheTotal = node.__cacheTotal = ImgCanvasCache.getInstance(renderMode, ctx, root.__uuid, bboxTotal, node.__loadImg, x1, y1);
-    __cacheTotal.__available = true;
     return __cacheTotal;
   }
 
   // 生成cacheTotal，获取偏移dx/dy
+  let w = bboxTotal[2] - bboxTotal[0], h = bboxTotal[3] - bboxTotal[1];
   __cacheTotal = node.__cacheTotal = CanvasCache.getInstance(renderMode, ctx, root.__uuid, bboxTotal, x1, y1, null);
   if(!__cacheTotal || !__cacheTotal.__enabled) {
-    if((bboxTotal[2] - bboxTotal[0]) || (bboxTotal[3] - bboxTotal[1])) {
+    if(w || h) {
       inject.warn('CanvasCache of ' + node.tagName + '(' + index + ')' + ' is oversize: '
-        + (bboxTotal[2] - bboxTotal[0]) + ', ' + (bboxTotal[3] - bboxTotal[1]));
+        + w + ', ' + h);
     }
     return;
   }
@@ -716,8 +714,9 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   if(!bboxTotal) {
     return;
   }
-  let w = bboxTotal[2] - bboxTotal[0], h = bboxTotal[3] - bboxTotal[1];
+
   let { __x1, __y1, __cache } = node;
+  let w = bboxTotal[2] - bboxTotal[0], h = bboxTotal[3] - bboxTotal[1];
   if(__cacheTotal) {
     __cacheTotal.reset(bboxTotal, __x1, __y1);
   }
@@ -731,6 +730,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
     }
     return;
   }
+
   __cacheTotal.__available = true;
   node.__cacheTotal = __cacheTotal;
   let { x1, y1, dx, dy, dbx, dby } = __cacheTotal;
@@ -1924,15 +1924,25 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
        * Geom没有子节点无需汇总局部根，Dom中Img也是，它们的局部根等于自身的cache，其它符合条件的Dom需要生成
        */
       else {
-        let hasContent = node.calContent(__currentStyle, __computedStyle);
+        let hasContent = node.calContent(__currentStyle, __computedStyle), onlyImg;
         // 有内容先以canvas模式绘制到离屏画布上，自定义渲染设置无内容不实现即可跳过
         if(hasContent) {
           let bbox = node.bbox, __cache = node.__cache, x1 = node.__x1, y1 = node.__y1;
-          if(__cache) {
-            __cache.reset(bbox, x1, y1);
+          // 单图特殊对待缓存
+          if(node instanceof Img) {
+            let loadImg = node.__loadImg;
+            if(loadImg.onlyImg && !loadImg.error && loadImg.source) {
+              onlyImg = true;
+              __cache = node.__cache = ImgWebglCache.getInstance(mode.CANVAS, gl, root.__uuid, bbox, loadImg, x1, y1);
+            }
           }
-          else {
-            __cache = CanvasCache.getInstance(mode.CANVAS, gl, root.__uuid, bbox, x1, y1, null);
+          if(!onlyImg) {
+            if(__cache) {
+              __cache.reset(bbox, x1, y1);
+            }
+            else {
+              __cache = CanvasCache.getInstance(mode.CANVAS, gl, root.__uuid, bbox, x1, y1, null);
+            }
           }
           if(__cache && __cache.enabled) {
             __cache.__bbox = bbox;
@@ -1943,6 +1953,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
           else {
             __cache && __cache.release();
             node.__limitCache = true;
+            return;
           }
         }
         else {
@@ -1962,9 +1973,9 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
           hasMbm = true;
         }
         if(node.__cacheAsBitmap
+          || onlyImg // TODO: 图片可以不生成，但是不知为何频繁发生次要垃圾回收
           || hasMask
           || isFilter
-          // || isMbm
           || isOverflow
           || isPpt) {
           mergeList.push({
@@ -2283,9 +2294,9 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
       let need = node.__cacheAsBitmap &&
         ((__refreshLevel & (CACHE | FT)) || __refreshLevel >= REPAINT);
       if(!need && node instanceof Img) {
-        node.calContent(node.__currentStyle, node.__computedStyle);
+        let hasContent = node.calContent(node.__currentStyle, node.__computedStyle);
         let loadImg = node.__loadImg;
-        if(loadImg.onlyImg && !loadImg.error && loadImg.source && __computedStyle[VISIBILITY] === 'visible') {
+        if(loadImg.onlyImg && hasContent) {
           need = true;
         }
       }

@@ -15,13 +15,14 @@ class ImgCanvasCache extends CanvasCache {
     this.__width = w;
     this.__height = h;
     this.__bbox = bbox;
+    this.__page = page;
     // 相等就不生成新的离屏canvas，直接用原始资源比如<img>节点内容
     if(page.width === w && page.height === h) {
       this.__canvas = page.source;
     }
     // 不等则一个url只生成一份OffscreenCanvas
     else {
-      let key = w + ',' + h + ',' + page.url;
+      let key = this.key = w + ' ' + h + ' ' + page.src;
       if(HASH.hasOwnProperty(key)) {
         let o = HASH[key];
         o.count++;
@@ -43,11 +44,9 @@ class ImgCanvasCache extends CanvasCache {
     this.__x = 0;
     this.__y = 0;
     this.__enabled = true;
-    this.__available = false;
+    this.__available = true;
     this.__appendData(x1, y1);
   }
-
-  update() {}
 
   clear() {
     if(this.__available) {
@@ -59,7 +58,7 @@ class ImgCanvasCache extends CanvasCache {
   release() {
     if(this.__enabled) {
       this.clear();
-      let key = this.__width + ',' + this.__height + ',' + this.__page.url;
+      let key = this.key;
       if(HASH.hasOwnProperty(key)) {
         let o = HASH[key];
         o.count--;
@@ -90,22 +89,6 @@ class ImgCanvasCache extends CanvasCache {
 
   get ctx() {
     return this.__ctx;
-  }
-
-  get x() {
-    return this.__x;
-  }
-
-  get y() {
-    return this.__y;
-  }
-
-  get width() {
-    return this.__width;
-  }
-
-  get height() {
-    return this.__height;
   }
 
   get size() {}

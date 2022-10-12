@@ -2856,10 +2856,6 @@ class Xom extends Node {
     });
   }
 
-  __deepScan(cb, options) {
-    return cb(this, options);
-  }
-
   // isLayout为false时，为relative，true则是absolute/justify/marginAuto等直接改layoutData数据的
   // lv是reflow偏移时传入，需要清除cacheStyle，并且对位图cache进行偏移设置
   // 注意所有的offset/resize都要避免display:none的，比如合并margin导致block的孩子inline因clamp为none时没有layoutData

@@ -737,10 +737,6 @@ class Text extends Node {
     }
   }
 
-  __deepScan(cb) {
-    cb(this);
-  }
-
   __destroy() {
     if(this.__isDestroyed) {
       return;

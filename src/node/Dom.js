@@ -3271,16 +3271,6 @@ class Dom extends Xom {
     return super.__emitEvent(e, false);
   }
 
-  // 深度遍历执行所有子节点，包含自己，如果cb返回true，提前跳出不继续深度遍历
-  __deepScan(cb, options) {
-    if(super.__deepScan(cb, options)) {
-      return;
-    }
-    this.children.forEach(node => {
-      node.__deepScan(cb, options);
-    });
-  }
-
   appendChild(child, cb) {
     let { __root: root, __host: host, __children: children } = this;
     if(!(child instanceof Node || child instanceof Component)) {

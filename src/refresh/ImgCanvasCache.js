@@ -108,6 +108,8 @@ class ImgCanvasCache extends CanvasCache {
     return this.__height;
   }
 
+  get size() {}
+
   static getInstance(renderMode, ctx, rootId, bbox, loadImg, x1, y1) {
     let w = Math.ceil(bbox[2] - bbox[0]);
     let h = Math.ceil(bbox[3] - bbox[1]);

@@ -30816,6 +30816,9 @@
       get: function get() {
         return this.__height;
       }
+    }, {
+      key: "size",
+      get: function get() {}
     }], [{
       key: "getInstance",
       value: function getInstance(renderMode, ctx, rootId, bbox, loadImg, x1, y1) {

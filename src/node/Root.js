@@ -32,7 +32,6 @@ import vertexDs from '../gl/filter/drops.vert'
 import fragmentDs from '../gl/filter/drops.frag';
 import webgl from '../gl/webgl';
 import ca from '../gl/ca';
-import TexHelper from '../gl/TexHelper';
 import vertexMbm from '../gl/mbm/mbm.vert';
 import fragmentMultiply from '../gl/mbm/multiply.frag';
 import fragmentScreen from '../gl/mbm/screen.frag';
@@ -356,7 +355,6 @@ class Root extends Dom {
       gl.useProgram(gl.program);
       // 第一次渲染生成纹理缓存管理对象，收集渲染过程中生成的纹理并在gl纹理单元满了时进行绘制和清空，减少texImage2d耗时问题
       const MAX_TEXTURE_IMAGE_UNITS = Math.min(16, gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
-      this.__texHelper = new TexHelper(MAX_TEXTURE_IMAGE_UNITS);
     }
     this.draw(true);
     // 第一次节点没有__root，渲染一次就有了才能diff
@@ -439,30 +437,42 @@ class Root extends Dom {
 
   destroy() {
     this.__destroy();
-    this.animateController.__destroy();
+    this.__animateController.__destroy();
     let n = this.dom;
     if(n) {
       removeEvent(n, this.__eventCbList || []);
       n.__root = null;
     }
     let gl = this.ctx;
-    if(this.__texHelper && gl) {
-      this.__texHelper.release(gl);
-      if(gl.program) {
-        gl.deleteShader(gl.program.vertexShader);
-        gl.deleteShader(gl.program.fragmentShader);
-        gl.deleteProgram(gl.program);
-      }
-      if(gl.programMask) {
-        gl.deleteShader(gl.programMask.vertexShader);
-        gl.deleteShader(gl.programMask.fragmentShader);
-        gl.deleteProgram(gl.programMask);
-      }
-      if(gl.programOverflow) {
-        gl.deleteShader(gl.programOverflow.vertexShader);
-        gl.deleteShader(gl.programOverflow.fragmentShader);
-        gl.deleteProgram(gl.programOverflow);
-      }
+    if(this.renderMode === mode.WEBGL) {
+      [
+        'program',
+        'programMask',
+        'programClip',
+        'programOverflow',
+        'programCm',
+        'programDs',
+        'programMbmMp',
+        'programMbmSr',
+        'programMbmOl',
+        'programMbmDk',
+        'programMbmLt',
+        'programMbmCd',
+        'programMbmCb',
+        'programMbmHl',
+        'programMbmSl',
+        'programMbmDf',
+        'programMbmEx',
+        'programMbmHue',
+        'programMbmSt',
+        'programMbmCl',
+        'programMbmLm',
+      ].forEach(k =>  {
+        let p = gl[k];
+        gl.deleteShader(p.vertexShader);
+        gl.deleteShader(p.fragmentShader);
+        gl.deleteProgram(p);
+      });
     }
   }
 
@@ -899,10 +909,6 @@ class Root extends Dom {
 
   get animateController() {
     return this.__animateController;
-  }
-
-  get texHelper() {
-    return this.__texHelper;
   }
 }
 

@@ -1,6 +1,6 @@
 {
   "name": "karas",
-  "version": "0.80.0",
+  "version": "0.80.1",
   "description": "A flexible JavaScript framework for RIA on Canvas/Svg/Webgl.",
   "maintainers": [
     {
@@ -22,16 +22,14 @@
     "type": "git",
     "url": "git://github.com/karasjs/karas.git"
   },
-  "dependencies": {
-    "pixi.js": "^6.5.4"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@babel/core": "^7.18.9",
     "@babel/plugin-proposal-class-properties": "^7.18.6",
     "@babel/preset-env": "^7.18.9",
     "@rollup/plugin-babel": "^5.3.1",
     "@rollup/plugin-json": "^4.0.3",
-    "chromedriver": "^105.0.0",
+    "chromedriver": "^106.0.0",
     "expect.js": "^0.3.1",
     "gulp": "^4.0.0",
     "gulp-rename": "^1.4.0",

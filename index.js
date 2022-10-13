@@ -19104,8 +19104,6 @@
         }
 
         if (overflow === 'hidden' && display !== 'inline') {
-          console.log(this.tagName);
-
           var _c3 = inject.getOffscreenCanvas(width, height, null, 'overflow');
 
           var bx1 = this.__bx1;
@@ -30967,7 +30965,8 @@
 
     var x1 = node.__x1,
         y1 = node.__y1,
-        bbox = node.bbox;
+        __offsetWidth = node.__offsetWidth,
+        __offsetHeight = node.__offsetHeight;
     var bboxTotal = genBboxTotal(node, __structs, index, total, false).bbox;
 
     if (!bboxTotal) {
@@ -30986,9 +30985,11 @@
     var overflow = node.__computedStyle[OVERFLOW],
         isOverflow;
 
-    if ((bbox[0] !== bboxTotal[0] || bbox[1] !== bboxTotal[1] || bbox[2] !== bboxTotal[2] || bbox[3] !== bboxTotal[3]) && overflow === 'hidden') {
-      w = bbox[2] - bbox[0];
-      h = bbox[3] - bbox[1];
+    if ((x1 !== bboxTotal[0] || y1 !== bboxTotal[1] || __offsetWidth !== bboxTotal[2] - bboxTotal[0] || __offsetHeight !== bboxTotal[3] - bboxTotal[1]) && overflow === 'hidden') {
+      // geom可能超限，不能直接用bbox
+      bboxTotal = [x1, y1, x1 + __offsetWidth, y1 + __offsetHeight];
+      w = __offsetWidth;
+      h = __offsetHeight;
       dx = -x1;
       dy = -y1;
       dbx = 0;
@@ -31285,7 +31286,7 @@
 
 
     if (isOverflow) {
-      var t = node.__cacheTotal = CanvasCache.getInstance(renderMode, ctx, root.__uuid, bbox.slice(0), x1, y1, null);
+      var t = node.__cacheTotal = CanvasCache.getInstance(renderMode, ctx, root.__uuid, bboxTotal, x1, y1, null);
       t.__available = true;
       t.ctx.drawImage(__cacheTotal.canvas, t.x, t.y);
 
@@ -31667,7 +31668,8 @@
     var x1 = node.__x1,
         y1 = node.__y1,
         __cache = node.__cache,
-        bbox = node.bbox;
+        __offsetWidth = node.__offsetWidth,
+        __offsetHeight = node.__offsetHeight;
 
     var _genBboxTotal = genBboxTotal(node, __structs, index, total, true),
         bboxTotal = _genBboxTotal.bbox,
@@ -31683,9 +31685,11 @@
     var overflow = node.__computedStyle[OVERFLOW],
         isOverflow;
 
-    if ((bbox[0] !== bboxTotal[0] || bbox[1] !== bboxTotal[1] || bbox[2] !== bboxTotal[2] || bbox[3] !== bboxTotal[3]) && overflow === 'hidden') {
-      w = bbox[2] - bbox[0];
-      h = bbox[3] - bbox[1];
+    if ((x1 !== bboxTotal[0] || y1 !== bboxTotal[1] || __offsetWidth !== bboxTotal[2] - bboxTotal[0] || __offsetHeight !== bboxTotal[3] - bboxTotal[1]) && overflow === 'hidden') {
+      // geom可能超限，不能直接用bbox
+      bboxTotal = [x1, y1, x1 + __offsetWidth, y1 + __offsetHeight];
+      w = __offsetWidth;
+      h = __offsetHeight;
       dx = -x1;
       dy = -y1;
       dbx = 0;

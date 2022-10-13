@@ -1794,7 +1794,7 @@ class Xom extends Node {
       };
       ctx = c.ctx;
     }
-    if(overflow === 'hidden' && display !== 'inline') {console.log(this.tagName)
+    if(overflow === 'hidden' && display !== 'inline') {
       let c = inject.getOffscreenCanvas(width, height, null, 'overflow');
       let bx1 = this.__bx1;
       let bx2 = this.__bx2;

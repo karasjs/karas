@@ -31015,8 +31015,8 @@
       dy = __cacheTotal.dy;
       dbx = __cacheTotal.dbx;
       dby = __cacheTotal.dby;
-      tx = __cacheTotal.tx;
-      ty = __cacheTotal.ty;
+      tx = __cacheTotal.x;
+      ty = __cacheTotal.y;
     }
 
     var ctxTotal = __cacheTotal.ctx;

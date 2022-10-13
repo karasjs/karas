@@ -222,7 +222,10 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
   // 否则用一个单独临时的离屏获取包含hidden的结果，再绘入total
   let w, h, dx, dy, dbx, dby, tx, ty;
   let overflow = node.__computedStyle[OVERFLOW], isOverflow;
-  if((bbox[0] !== bboxTotal[0] || bbox[3] !== bboxTotal[3]) && overflow === 'hidden') {
+  if((bbox[0] !== bboxTotal[0]
+    || bbox[1] !== bboxTotal[1]
+    || bbox[2] !== bboxTotal[2]
+    || bbox[3] !== bboxTotal[3]) && overflow === 'hidden') {
     w = bbox[2] - bbox[0];
     h = bbox[3] - bbox[1];
     dx = -x1;
@@ -743,7 +746,10 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   // overflow:hidden和canvas一样特殊考虑
   let w, h, dx, dy, dbx, dby, cx, cy, texture, frameBuffer;
   let overflow = node.__computedStyle[OVERFLOW], isOverflow;
-  if((bbox[0] !== bboxTotal[0] || bbox[3] !== bboxTotal[3]) && overflow === 'hidden') {
+  if((bbox[0] !== bboxTotal[0]
+    || bbox[1] !== bboxTotal[1]
+    || bbox[2] !== bboxTotal[2]
+    || bbox[3] !== bboxTotal[3])  && overflow === 'hidden') {
     w = bbox[2] - bbox[0];
     h = bbox[3] - bbox[1];
     dx = -x1;

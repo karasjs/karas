@@ -30986,7 +30986,7 @@
     var overflow = node.__computedStyle[OVERFLOW],
         isOverflow;
 
-    if ((bbox[0] !== bboxTotal[0] || bbox[3] !== bboxTotal[3]) && overflow === 'hidden') {
+    if ((bbox[0] !== bboxTotal[0] || bbox[1] !== bboxTotal[1] || bbox[2] !== bboxTotal[2] || bbox[3] !== bboxTotal[3]) && overflow === 'hidden') {
       w = bbox[2] - bbox[0];
       h = bbox[3] - bbox[1];
       dx = -x1;
@@ -31683,7 +31683,7 @@
     var overflow = node.__computedStyle[OVERFLOW],
         isOverflow;
 
-    if ((bbox[0] !== bboxTotal[0] || bbox[3] !== bboxTotal[3]) && overflow === 'hidden') {
+    if ((bbox[0] !== bboxTotal[0] || bbox[1] !== bboxTotal[1] || bbox[2] !== bboxTotal[2] || bbox[3] !== bboxTotal[3]) && overflow === 'hidden') {
       w = bbox[2] - bbox[0];
       h = bbox[3] - bbox[1];
       dx = -x1;

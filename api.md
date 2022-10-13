@@ -894,6 +894,11 @@ console.log(root);
 * **说明**  
 新建上下文参数。此举在getContext('2d')或getContext('webgl')时会传递给第2个参数。默认alpha/antialias/premultipliedAlpha/preserveDrawingBuffer为true。
 
+#### webgl2
+* **类型** `boolean`
+* **说明**  
+当使用webgl节点时，可手动指定是否是webgl2上下文。不指定或不支持则自动判断降级为webgl。
+
 ### 类方法method
 
 #### getTargetAtPoint
@@ -2341,7 +2346,7 @@ let id = karas.inject.requestAnimationFrame(function() {
 karas.inject.cancelAnimationFrame(id);
 ```
 
-### getCacheCanvas
+### getOffscreenCanvas
 * **类型** `Function`
 * **参数**
   * width `Number`
@@ -2350,21 +2355,7 @@ karas.inject.cancelAnimationFrame(id);
 * **说明**  
 从缓存池中获取指定高宽的离屏canvas缓存，如果指定key，则为唯一实例，否则自动从缓存列表中存取。
 
-### delCacheCanvas
-* **类型** `Function`
-* **参数**
-  * key `String`
-* **说明**  
-删除离屏canvas缓存实例。
-
-### releaseCacheCanvas
-* **类型** `Function`
-* **参数**
-  * target `CANVAS`
-* **说明**  
-回收离屏canvas到缓存池中。
-
-### hasCacheWebgl
+### hasOffscreenCanvas
 * **类型** `Function`
 * **参数**
   * key `String`

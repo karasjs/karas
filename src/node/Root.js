@@ -271,7 +271,6 @@ class Root extends Dom {
    */
   appendTo(dom) {
     dom = getDom(dom);
-    // this.__children = builder.initRoot(this.__cd, this);
     this.__isDestroyed = false;
     this.__initProps();
     let tagName = this.tagName;
@@ -303,33 +302,46 @@ class Root extends Dom {
     }
     this.__defs = this.dom.__defs || Defs.getInstance(this.__uuid);
     // 没有设置width/height则采用css计算形式
-    if(!this.width || !this.height) {
+    if(!this.__width || !this.__height) {
       let domCss = window.getComputedStyle(dom, null);
-      if(!this.width) {
+      if(!this.__width) {
         this.__width = parseFloat(domCss.getPropertyValue('width')) || 0;
         dom.setAttribute('width', this.width);
       }
-      if(!this.height) {
+      if(!this.__height) {
         this.__height = parseFloat(domCss.getPropertyValue('height')) || 0;
         dom.setAttribute('height', this.height);
       }
     }
     // 最终无宽高给出警告
-    if(!this.width || !this.height) {
+    if(!this.__width || !this.__height) {
       inject.warn('Karas render target with a width or height of 0.')
     }
     let params = Object.assign({}, ca, this.props.contextAttributes);
     // 只有canvas有ctx，svg用真实dom
-    if(this.tagName === 'canvas') {
+    if(tagName === 'canvas') {
       this.__ctx = this.__dom.getContext('2d', params);
       this.__renderMode = mode.CANVAS;
     }
-    else if(this.tagName === 'svg') {
+    else if(tagName === 'svg') {
       this.__renderMode = mode.SVG;
     }
-    else if(this.tagName === 'webgl') {
-      let gl = this.__ctx = this.__dom.getContext('webgl2', params)
-        || this.__dom.getContext('webgl', params);
+    else if(tagName === 'webgl') {
+      // 优先手动指定，再自动判断，最后兜底
+      let gl, webgl2 = this.props.webgl2;
+      if(!isNil(webgl2)) {
+        if(webgl2) {
+          gl = this.__dom.getContext('webgl2', params);
+        }
+        if(!gl) {
+          gl = this.__dom.getContext('webgl', params);
+        }
+        this.__ctx = gl;
+      }
+      else {
+        gl = this.__ctx = this.__dom.getContext('webgl2', params)
+          || this.__dom.getContext('webgl', params);
+      }
       this.__renderMode = mode.WEBGL;
       gl.program = webgl.initShaders(gl, vertex, fragment);
       gl.programMask = webgl.initShaders(gl, vertexMask, fragmentMask);

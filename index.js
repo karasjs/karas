@@ -13545,17 +13545,17 @@
 
   var isFunction$7 = util.isFunction;
 
-  function traversal(list, length, diff, after) {
-    if (after) {
-      for (var i = 0; i < length; i++) {
-        var item = list[i];
-        item.__after && item.__after(diff);
-      }
-    } else {
-      for (var _i = 0; _i < length; _i++) {
-        var _item = list[_i];
-        _item.__before && _item.__before(diff);
-      }
+  function traversalBefore(list, length, diff) {
+    for (var i = 0; i < length; i++) {
+      var item = list[i];
+      item.__before && item.__before(diff);
+    }
+  }
+
+  function traversalAfter(list, length, diff) {
+    for (var i = 0; i < length; i++) {
+      var item = list[i];
+      item.__after && item.__after(diff);
     }
   }
 
@@ -13594,7 +13594,7 @@
             var clone = task.slice(0);
             var length = clone.length; // 普通的before/after，动画计算在before，所有回调在after
 
-            traversal(clone, length, diff, false);
+            traversalBefore(clone, length, diff);
 
             var list = self.__rootTask.splice(0);
 
@@ -13604,7 +13604,7 @@
             } // 刷新成功后调用after，确保图像生成
 
 
-            traversal(clone, length, diff, true); // 执行每个Root的刷新并清空
+            traversalAfter(clone, length, diff); // 执行每个Root的刷新并清空
             // 还有则继续，没有则停止节省性能
 
             if (task.length) {
@@ -15004,7 +15004,8 @@
 
 
   function calFrame(prev, next, keys, target) {
-    var hasTp,
+    var currentStyle = target.__currentStyle,
+        hasTp,
         allInFn = true;
 
     for (var i = 0, len = keys.length; i < len; i++) {
@@ -15017,6 +15018,7 @@
       var ts = calDiff(prev, next, k, target); // 可以形成过渡的才会产生结果返回
 
       if (ts) {
+        ts.cs = currentStyle[k];
         var fn = CAL_HASH[k];
 
         if (fn) {
@@ -15189,8 +15191,6 @@
     for (var i = 0; i < 16; i++) {
       st[0].v[i] = cl[0].v[i] + v[i] * percent;
     }
-
-    currentStyle[k] = st;
   }
 
   function calRotate3d$1(k, v, percent, st, cl, frame, currentStyle) {
@@ -15198,7 +15198,6 @@
     st[1] = cl[1] + v[1] * percent;
     st[2] = cl[2] + v[2] * percent;
     st[3].v = cl[3].v + v[3] * percent;
-    currentStyle[k] = st;
   }
 
   function calFilter(k, v, percent, st, cl, frame, currentStyle) {
@@ -15226,8 +15225,6 @@
         }
       }
     }
-
-    currentStyle[k] = st;
   }
 
   function calOrigin(k, v, percent, st, cl, frame, currentStyle) {
@@ -15238,8 +15235,6 @@
     if (v[1] !== 0) {
       st[1].v = cl[1].v + v[1] * percent;
     }
-
-    currentStyle[k] = st;
   }
 
   function calPosition(k, v, percent, st, cl, frame, currentStyle) {
@@ -15248,7 +15243,6 @@
         item.v = cl[i].v + v[i] * percent;
       }
     });
-    currentStyle[k] = st;
   }
 
   function calBoxShadow(k, v, percent, st, cl, frame, currentStyle) {
@@ -15267,8 +15261,6 @@
         st[i][4][_j5] = cl[i][4][_j5] + v[i][4][_j5] * percent;
       }
     }
-
-    currentStyle[k] = st;
   }
 
   function calBgSize(k, v, percent, st, cl, frame, currentStyle) {
@@ -15280,21 +15272,9 @@
         item[1].v = cl[i][1].v + o[1] * percent;
       }
     });
-    currentStyle[k] = st;
   }
 
   function calNumber(k, v, percent, st, cl, frame, currentStyle) {
-    st = cl + v * percent; // 精度问题可能会超过[0,1]区间
-
-    if (k === OPACITY$4) {
-      if (st < 0) {
-        st = 0;
-      } else if (st > 1) {
-        st = 1;
-      }
-    }
-
-    currentStyle[k] = st;
   } // 特殊的曲线运动计算，转换为translateXY，出现在最后一定会覆盖原本的translate防重
 
 
@@ -15324,7 +15304,6 @@
 
   function calLength(k, v, percent, st, cl, frame, currentStyle) {
     st.v = cl + v * percent;
-    currentStyle[k] = st;
   }
 
   function calGradient(k, v, percent, st, cl, frame, currentStyle) {
@@ -15393,7 +15372,6 @@
         st2[3] = cli[3] + v2[3] * percent;
       }
     });
-    currentStyle[k] = st;
   } // color可能超限[0,255]，但浏览器已经做了限制，无需关心
 
 
@@ -15403,7 +15381,6 @@
     t[1] = cl[1] + v[1] * percent;
     t[2] = cl[2] + v[2] * percent;
     t[3] = cl[3] + v[3] * percent;
-    currentStyle[k] = st;
   }
   /**
    * 根据百分比和缓动函数计算中间态样式
@@ -15411,11 +15388,12 @@
    * @param frame 当前帧
    * @param percent 到下一帧时间的百分比
    * @param target vd
+   * @param notSameFrame 是否发生了帧切换
    * @return {[]} 发生变更的样式key
    */
 
 
-  function calIntermediateStyle(frame, percent, target) {
+  function calIntermediateStyle(frame, percent, target, notSameFrame) {
     var style = frame.style;
     var transition = frame.transition;
     var timingFunction = frame.timingFunction;
@@ -15439,10 +15417,15 @@
         var item = transition[i];
         var k = item.k,
             v = item.v,
-            st = item.st,
+            cs = item.cs,
             cl = item.cl,
-            fn = item.fn;
-        fn(k, v, percent, st, cl, frame, currentStyle);
+            fn = item.fn; // 同一帧内计算可避免赋值currentStyle
+
+        if (notSameFrame) {
+          cs = item.cs = currentStyle[k] = item.st;
+        }
+
+        fn(k, v, percent, cs, cl, frame, currentStyle);
       }
     } else {
       var currentProps = target.__currentProps,
@@ -15452,12 +15435,13 @@
         var item = transition[_i18];
         var k = item.k,
             v = item.v,
+            cs = item.cs,
             st = item.st,
             cl = item.cl,
             fn = item.fn;
 
         if (fn) {
-          fn(k, v, percent, st, cl, frame, currentStyle);
+          fn(k, v, percent, st, cl, frame, currentStyle, cs, notSameFrame);
         } else if (GEOM$1.hasOwnProperty(k)) {
           var tagName = target.tagName;
 
@@ -16113,9 +16097,10 @@
         }
 
         var inEndDelay,
-            currentFrame = currentFrames[i]; // 对比前后两帧是否为同一关键帧，不是则清除之前关键帧上的percent标识为-1，这样可以识别跳帧和本轮第一次进入此帧
+            currentFrame = currentFrames[i];
+        var notSameFrame = lastFrame !== currentFrame; // 对比前后两帧是否为同一关键帧，不是则清除之前关键帧上的percent标识为-1，这样可以识别跳帧和本轮第一次进入此帧
 
-        if (lastFrame !== currentFrame) {
+        if (notSameFrame) {
           lastFrame && (lastFrame.lastPercent = -1);
           this.__currentFrame = currentFrame;
         }
@@ -16156,7 +16141,7 @@
             this.__nextTime = 0;
           }
         } else {
-          keys = calIntermediateStyle(currentFrame, percent, target);
+          keys = calIntermediateStyle(currentFrame, percent, target, notSameFrame);
         }
 
         this.__isChange = !keys.length;

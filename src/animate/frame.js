@@ -3,18 +3,17 @@ import util from '../util/util';
 
 const { isFunction } = util;
 
-function traversal(list, length, diff, after) {
-  if(after) {
-    for(let i = 0; i < length; i++) {
-      let item = list[i];
-      item.__after && item.__after(diff);
-    }
+function traversalBefore(list, length, diff) {
+  for(let i = 0; i < length; i++) {
+    let item = list[i];
+    item.__before && item.__before(diff);
   }
-  else {
-    for(let i = 0; i < length; i++) {
-      let item = list[i];
-      item.__before && item.__before(diff);
-    }
+}
+
+function traversalAfter(list, length, diff) {
+  for(let i = 0; i < length; i++) {
+    let item = list[i];
+    item.__after && item.__after(diff);
   }
 }
 
@@ -48,14 +47,14 @@ class Frame {
         let clone = task.slice(0);
         let length = clone.length;
         // 普通的before/after，动画计算在before，所有回调在after
-        traversal(clone, length, diff, false);
+        traversalBefore(clone, length, diff);
         let list = self.__rootTask.splice(0);
         for(let i = 0, len = list.length; i < len; i++) {
           let item = list[i];
           item && item(diff);
         }
         // 刷新成功后调用after，确保图像生成
-        traversal(clone, length, diff, true);
+        traversalAfter(clone, length, diff);
         // 执行每个Root的刷新并清空
         // 还有则继续，没有则停止节省性能
         if(task.length) {

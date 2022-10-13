@@ -439,30 +439,42 @@ class Root extends Dom {
 
   destroy() {
     this.__destroy();
-    this.animateController.__destroy();
+    this.__animateController.__destroy();
     let n = this.dom;
     if(n) {
       removeEvent(n, this.__eventCbList || []);
       n.__root = null;
     }
     let gl = this.ctx;
-    if(this.__texHelper && gl) {
-      this.__texHelper.release(gl);
-      if(gl.program) {
-        gl.deleteShader(gl.program.vertexShader);
-        gl.deleteShader(gl.program.fragmentShader);
-        gl.deleteProgram(gl.program);
-      }
-      if(gl.programMask) {
-        gl.deleteShader(gl.programMask.vertexShader);
-        gl.deleteShader(gl.programMask.fragmentShader);
-        gl.deleteProgram(gl.programMask);
-      }
-      if(gl.programOverflow) {
-        gl.deleteShader(gl.programOverflow.vertexShader);
-        gl.deleteShader(gl.programOverflow.fragmentShader);
-        gl.deleteProgram(gl.programOverflow);
-      }
+    if(this.renderMode === mode.WEBGL) {
+      [
+        'program',
+        'programMask',
+        'programClip',
+        'programOverflow',
+        'programCm',
+        'programDs',
+        'programMbmMp',
+        'programMbmSr',
+        'programMbmOl',
+        'programMbmDk',
+        'programMbmLt',
+        'programMbmCd',
+        'programMbmCb',
+        'programMbmHl',
+        'programMbmSl',
+        'programMbmDf',
+        'programMbmEx',
+        'programMbmHue',
+        'programMbmSt',
+        'programMbmCl',
+        'programMbmLm',
+      ].forEach(k =>  {
+        let p = gl[k];
+        gl.deleteShader(p.vertexShader);
+        gl.deleteShader(p.fragmentShader);
+        gl.deleteProgram(p);
+      });
     }
   }
 

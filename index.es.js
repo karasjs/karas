@@ -41849,7 +41849,7 @@ var refresh = {
   CanvasCache: CanvasCache
 };
 
-var version = "0.81.0-beta";
+var version = "0.81.0";
 
 Geom.register('$line', Line);
 Geom.register('$polyline', Polyline);

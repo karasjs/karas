@@ -933,6 +933,10 @@ class Text extends Node {
     return this.__domParent.__currentStyle;
   }
 
+  get __currentStyle() {
+    return this.__domParent.__currentStyle;
+  }
+
   get style() {
     return this.__domParent.__style;
   }
@@ -941,7 +945,15 @@ class Text extends Node {
     return this.__domParent.__computedStyle;
   }
 
+  get __computedStyle() {
+    return this.__domParent.__computedStyle;
+  }
+
   get cacheStyle() {
+    return this.__domParent.__cacheStyle;
+  }
+
+  get __cacheStyle() {
     return this.__domParent.__cacheStyle;
   }
 

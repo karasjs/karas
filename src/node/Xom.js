@@ -1017,9 +1017,9 @@ class Xom extends Node {
       }
     }
     // translate/scale变化特殊优化，d/h/l不能有值，否则不能这样直接简化运算，因为这里不包含perspective，所以一定没有
-    if(optimize) {
+    if(optimize && matrixCache) {
       let transform = __computedStyle[TRANSFORM];
-      if((lv & TX)) {
+      if(lv & TX) {
         let v = __currentStyle[TRANSLATE_X];
         if(!v) {
           v = 0;
@@ -1035,7 +1035,7 @@ class Xom extends Node {
         transform[12] += x;
         matrixCache[12] += x;
       }
-      if((lv & TY)) {
+      if(lv & TY) {
         let v = __currentStyle[TRANSLATE_Y];
         if(!v) {
           v = 0;
@@ -1051,7 +1051,7 @@ class Xom extends Node {
         transform[13] += y;
         matrixCache[13] += y;
       }
-      if((lv & TZ)) {
+      if(lv & TZ) {
         let v = __currentStyle[TRANSLATE_Z];
         if(!v) {
           v = 0;
@@ -1067,7 +1067,7 @@ class Xom extends Node {
         transform[14] += z;
         matrixCache[14] += z;
       }
-      if((lv & RZ)) {
+      if(lv & RZ) {
         let v = __currentStyle[ROTATE_Z].v;
         __computedStyle[ROTATE_Z] = v;
         v = d2r(v);
@@ -1083,8 +1083,11 @@ class Xom extends Node {
         matrixCache[12] = transform[12] + ox - cx * ox - oy * sy;
         matrixCache[13] = transform[13] + oy - sx * ox - oy * cy;
       }
-      if((lv & SCALE)) {
-        if((lv & SX)) {
+      if(lv & SCALE) {
+        if(lv & SX) {
+          if(!__computedStyle[SCALE_X]) {
+            return this.__calMatrix(REFLOW, __currentStyle, __computedStyle, __cacheStyle, false);
+          }
           let v = __currentStyle[SCALE_X].v;
           let x = v / __computedStyle[SCALE_X];
           __computedStyle[SCALE_X] = v;
@@ -1095,7 +1098,10 @@ class Xom extends Node {
           matrixCache[1] *= x;
           matrixCache[2] *= x;
         }
-        if((lv & SY)) {
+        if(lv & SY) {
+          if(!__computedStyle[SCALE_Y]) {
+            return this.__calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle, false);
+          }
           let v = __currentStyle[SCALE_Y].v;
           let y = v / __computedStyle[SCALE_Y];
           __computedStyle[SCALE_Y] = v;
@@ -1106,7 +1112,10 @@ class Xom extends Node {
           matrixCache[5] *= y;
           matrixCache[6] *= y;
         }
-        if((lv & SZ)) {
+        if(lv & SZ) {
+          if(!__computedStyle[SCALE_Z]) {
+            return this.__calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle, false);
+          }
           let v = __currentStyle[SCALE_Z].v;
           let z = v / __computedStyle[SCALE_Z];
           __computedStyle[SCALE_Z] = v;
@@ -1321,11 +1330,11 @@ class Xom extends Node {
         }
         __computedStyle[TRANSFORM] = matrix || mx.identity();
       }
-    }
-    if(!matrixCache) {
-      let m = __computedStyle[TRANSFORM];
-      let tfo = __computedStyle[TRANSFORM_ORIGIN];
-      matrixCache = __cacheStyle[MATRIX] = tf.calMatrixByOrigin(m, tfo[0] + __x1, tfo[1] + __y1);
+      if(!matrixCache) {
+        let m = __computedStyle[TRANSFORM];
+        let tfo = __computedStyle[TRANSFORM_ORIGIN];
+        matrixCache = __cacheStyle[MATRIX] = tf.calMatrixByOrigin(m, tfo[0] + __x1, tfo[1] + __y1);
+      }
     }
     return this.__matrix = matrixCache;
   }

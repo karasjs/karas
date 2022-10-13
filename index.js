@@ -12314,6 +12314,11 @@
         return this.__domParent.__currentStyle;
       }
     }, {
+      key: "__currentStyle",
+      get: function get() {
+        return this.__domParent.__currentStyle;
+      }
+    }, {
       key: "style",
       get: function get() {
         return this.__domParent.__style;
@@ -12324,7 +12329,17 @@
         return this.__domParent.__computedStyle;
       }
     }, {
+      key: "__computedStyle",
+      get: function get() {
+        return this.__domParent.__computedStyle;
+      }
+    }, {
       key: "cacheStyle",
+      get: function get() {
+        return this.__domParent.__cacheStyle;
+      }
+    }, {
+      key: "__cacheStyle",
       get: function get() {
         return this.__domParent.__cacheStyle;
       }
@@ -12778,7 +12793,7 @@
     return Component;
   }(Event);
 
-  Object.keys(o$2.GEOM).concat(['x', 'y', 'width', 'height', 'outerWidth', 'outerHeight', 'clientWidth', 'clientHeight', 'offsetWidth', 'offsetHeight', 'style', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'currentProps', 'baseline', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', '__layoutData', '__struct', 'bbox', 'contentBoxList', 'listener', 'matrix', 'matrixEvent']).forEach(function (fn) {
+  Object.keys(o$2.GEOM).concat(['x', 'y', 'width', 'height', 'outerWidth', 'outerHeight', 'clientWidth', 'clientHeight', 'offsetWidth', 'offsetHeight', 'style', 'animationList', 'currentStyle', 'computedStyle', 'cacheStyle', '__currentStyle', '__computedStyle', '__cacheStyle', 'currentProps', '__currentProps', 'cacheProps', '__cacheProps', 'baseline', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', '__layoutData', '__struct', 'bbox', 'contentBoxList', 'listener', 'matrix', 'matrixEvent']).forEach(function (fn) {
     Object.defineProperty(Component.prototype, fn, {
       get: function get() {
         var sr = this.shadowRoot;
@@ -18284,7 +18299,7 @@
         } // translate/scale变化特殊优化，d/h/l不能有值，否则不能这样直接简化运算，因为这里不包含perspective，所以一定没有
 
 
-        if (optimize) {
+        if (optimize && matrixCache) {
           var transform = __computedStyle[TRANSFORM$3];
 
           if (lv & TX) {
@@ -18361,6 +18376,10 @@
 
           if (lv & SCALE) {
             if (lv & SX) {
+              if (!__computedStyle[SCALE_X]) {
+                return this.__calMatrix(REFLOW$3, __currentStyle, __computedStyle, __cacheStyle, false);
+              }
+
               var _v4 = __currentStyle[SCALE_X].v;
 
               var _x2 = _v4 / __computedStyle[SCALE_X];
@@ -18375,6 +18394,10 @@
             }
 
             if (lv & SY) {
+              if (!__computedStyle[SCALE_Y]) {
+                return this.__calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle, false);
+              }
+
               var _v5 = __currentStyle[SCALE_Y].v;
 
               var _y2 = _v5 / __computedStyle[SCALE_Y];
@@ -18389,6 +18412,10 @@
             }
 
             if (lv & SZ) {
+              if (!__computedStyle[SCALE_Z]) {
+                return this.__calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle, false);
+              }
+
               var _v6 = __currentStyle[SCALE_Z].v;
 
               var _z = _v6 / __computedStyle[SCALE_Z];
@@ -18611,12 +18638,12 @@
 
             __computedStyle[TRANSFORM$3] = matrix$1 || matrix.identity();
           }
-        }
 
-        if (!matrixCache) {
-          var m = __computedStyle[TRANSFORM$3];
-          var tfo = __computedStyle[TRANSFORM_ORIGIN$2];
-          matrixCache = __cacheStyle[MATRIX$1] = transform$1.calMatrixByOrigin(m, tfo[0] + __x1, tfo[1] + __y1);
+          if (!matrixCache) {
+            var m = __computedStyle[TRANSFORM$3];
+            var tfo = __computedStyle[TRANSFORM_ORIGIN$2];
+            matrixCache = __cacheStyle[MATRIX$1] = transform$1.calMatrixByOrigin(m, tfo[0] + __x1, tfo[1] + __y1);
+          }
         }
 
         return this.__matrix = matrixCache;
@@ -29431,33 +29458,48 @@
 
       var _calPoint2 = calPoint({
         x: xb,
-        y: ya,
-        z: 0,
-        w: 1
-      }, matrix),
-          x2 = _calPoint2.x,
-          y2 = _calPoint2.y,
-          w2 = _calPoint2.w;
-
-      var _calPoint3 = calPoint({
-        x: xb,
         y: yb,
         z: 0,
         w: 1
       }, matrix),
-          x3 = _calPoint3.x,
-          y3 = _calPoint3.y,
-          w3 = _calPoint3.w;
+          x3 = _calPoint2.x,
+          y3 = _calPoint2.y,
+          w3 = _calPoint2.w;
 
-      var _calPoint4 = calPoint({
-        x: xa,
-        y: yb,
-        z: 0,
-        w: 1
-      }, matrix),
-          x4 = _calPoint4.x,
-          y4 = _calPoint4.y,
-          w4 = _calPoint4.w;
+      var x2 = void 0,
+          y2 = void 0,
+          w2 = void 0,
+          x4 = void 0,
+          y4 = void 0,
+          w4 = void 0; // 无旋转的时候可以少算2个点
+
+      if (w1 === 1 && w3 === 1 && (!matrix || !matrix.length || !matrix[1] && !matrix[4])) {
+        x2 = x3;
+        y2 = y1;
+        x4 = x1;
+        y4 = y3;
+        w2 = w4 = 1;
+      } else {
+        var _t = calPoint({
+          x: xb,
+          y: ya,
+          z: 0,
+          w: 1
+        }, matrix);
+
+        x2 = _t.x;
+        y2 = _t.y;
+        w2 = _t.w;
+        _t = calPoint({
+          x: xa,
+          y: yb,
+          z: 0,
+          w: 1
+        }, matrix);
+        x4 = _t.x;
+        y4 = _t.y;
+        w4 = _t.w;
+      }
 
       var t = convertCoords2Gl(x1, y1, 0, w1, cx, cy);
       x1 = t.x;
@@ -29512,7 +29554,7 @@
       vtOpacity[j + 2] = opacity;
       vtOpacity[j + 3] = opacity;
       vtOpacity[j + 4] = opacity;
-      vtOpacity[j + 5] = opacity; // record.num++;
+      vtOpacity[j + 5] = opacity;
     } // 顶点buffer
 
 
@@ -29546,7 +29588,6 @@
     gl.disableVertexAttribArray(a_position);
     gl.disableVertexAttribArray(a_texCoords);
     gl.disableVertexAttribArray(a_opacity);
-    gl.bindTexture(gl.TEXTURE_2D, null);
   }
   /**
    * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement
@@ -34472,9 +34513,9 @@
         }
 
         var _node = node,
-            computedStyle = _node.computedStyle,
-            currentStyle = _node.currentStyle,
-            cacheStyle = _node.cacheStyle,
+            computedStyle = _node.__computedStyle,
+            currentStyle = _node.__currentStyle,
+            cacheStyle = _node.__cacheStyle,
             __cacheProps = _node.__cacheProps,
             __mask = _node.__mask,
             __domParent = _node.__domParent;
@@ -34534,7 +34575,7 @@
         // 本身节点为none，变更无效，此时没有display变化，add/remove在操作时已经判断不会进入
 
 
-        if (lv === NONE || computedStyle[DISPLAY] === 'none' && !hasDisplay) {
+        if (lv === NONE || lv >= REFLOW && computedStyle[DISPLAY] === 'none' && !hasDisplay) {
           if (cb && isFunction$1(cb)) {
             cb();
           }

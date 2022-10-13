@@ -286,11 +286,11 @@ class Root extends Dom {
     // 已有root节点
     else if(dom.nodeName.toLowerCase() === domName) {
       this.__dom = dom;
-      if(this.width) {
-        dom.setAttribute('width', this.width);
+      if(this.__width) {
+        dom.setAttribute('width', this.__width);
       }
-      if(this.height) {
-        dom.setAttribute('height', this.height);
+      if(this.__height) {
+        dom.setAttribute('height', this.__height);
       }
     }
     // 没有canvas/svg节点则生成一个新的
@@ -417,16 +417,17 @@ class Root extends Dom {
       renderSvg(renderMode, defs, this, isFirst, rlv);
       let nvd = this.virtualDom;
       nvd.defs = defs.value;
-      if(this.dom.__vd) {
+      let dom = this.__dom;
+      if(dom.__vd) {
         // console.log(this.dom.__vd);
         // console.log(nvd);
-        domDiff(this.dom, this.dom.__vd, nvd);
+        domDiff(dom, dom.__vd, nvd);
       }
       else {
-        this.dom.innerHTML = util.joinVirtualDom(nvd);
+        dom.innerHTML = util.joinVirtualDom(nvd);
       }
-      this.dom.__vd = nvd;
-      this.dom.__defs = defs;
+      dom.__vd = nvd;
+      dom.__defs = defs;
     }
     else if(renderMode === mode.WEBGL) {
       this.__clearWebgl(ctx);

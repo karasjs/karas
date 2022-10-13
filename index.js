@@ -15441,7 +15441,12 @@
             fn = item.fn;
 
         if (fn) {
-          fn(k, v, percent, st, cl, frame, currentStyle, cs, notSameFrame);
+          // 同一帧内计算可避免赋值currentStyle
+          if (notSameFrame) {
+            cs = item.cs = currentStyle[k] = item.st;
+          }
+
+          fn(k, v, percent, cs, cl, frame, currentStyle);
         } else if (GEOM$1.hasOwnProperty(k)) {
           var tagName = target.tagName;
 

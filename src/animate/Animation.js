@@ -1515,7 +1515,11 @@ function calIntermediateStyle(frame, percent, target, notSameFrame) {
       let item = transition[i];
       let k = item.k, v = item.v, cs = item.cs, st = item.st, cl = item.cl, fn = item.fn;
       if(fn) {
-        fn(k, v, percent, st, cl, frame, currentStyle, cs, notSameFrame);
+        // 同一帧内计算可避免赋值currentStyle
+        if(notSameFrame) {
+          cs = item.cs = currentStyle[k] = item.st;
+        }
+        fn(k, v, percent, cs, cl, frame, currentStyle);
       }
       else if(GEOM.hasOwnProperty(k)) {
         let tagName = target.tagName;

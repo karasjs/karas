@@ -187,26 +187,9 @@ function drawTextureCache(gl, list, cx, cy, dx, dy) {
     let xa = bx + dx, ya = by + height + dy;
     let xb = bx + width + dx, yb = by + dy;
     let { x: x1, y: y1, w: w1 } = calPoint({ x: xa, y: ya, z: 0, w: 1 }, matrix);
-    let x2, y2, w2, x4, y4, w4;
+    let { x: x2, y: y2, w: w2 } = calPoint({ x: xb, y: ya, z: 0, w: 1 }, matrix);
     let { x: x3, y: y3, w: w3 } = calPoint({ x: xb, y: yb, z: 0, w: 1 }, matrix);
-    // 无透视情况可省略计算，矩形4个顶点只需算2个，另外2个相同
-    if(w1 === 1 && w3 === 1) {
-      w2 = w4 = 1;
-      x2 = x3;
-      y2 = y1;
-      x4 = x1;
-      y4 = y3;
-    }
-    else {
-      let t = calPoint({ x: xb, y: ya, z: 0, w: 1 }, matrix);
-      x2 = t.x;
-      y2 = t.y;
-      w2 = t.w;
-      t = calPoint({ x: xa, y: yb, z: 0, w: 1 }, matrix);
-      x4 = t.x;
-      y4 = t.y;
-      w4 = t.y;
-    }
+    let { x: x4, y: y4, w: w4 } = calPoint({ x: xa, y: yb, z: 0, w: 1 }, matrix);
     let t = convertCoords2Gl(x1, y1, 0, w1, cx, cy);
     x1 = t.x; y1 = t.y;
     t = convertCoords2Gl(x2, y2, 0, w2, cx, cy);

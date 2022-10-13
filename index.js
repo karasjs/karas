@@ -29440,51 +29440,35 @@
           y1 = _calPoint.y,
           w1 = _calPoint.w;
 
-      var x2 = void 0,
-          y2 = void 0,
-          w2 = void 0,
-          x4 = void 0,
-          y4 = void 0,
-          w4 = void 0;
-
       var _calPoint2 = calPoint({
+        x: xb,
+        y: ya,
+        z: 0,
+        w: 1
+      }, matrix),
+          x2 = _calPoint2.x,
+          y2 = _calPoint2.y,
+          w2 = _calPoint2.w;
+
+      var _calPoint3 = calPoint({
         x: xb,
         y: yb,
         z: 0,
         w: 1
       }, matrix),
-          x3 = _calPoint2.x,
-          y3 = _calPoint2.y,
-          w3 = _calPoint2.w; // 无透视情况可省略计算，矩形4个顶点只需算2个，另外2个相同
+          x3 = _calPoint3.x,
+          y3 = _calPoint3.y,
+          w3 = _calPoint3.w;
 
-
-      if (w1 === 1 && w3 === 1) {
-        w2 = w4 = 1;
-        x2 = x3;
-        y2 = y1;
-        x4 = x1;
-        y4 = y3;
-      } else {
-        var _t = calPoint({
-          x: xb,
-          y: ya,
-          z: 0,
-          w: 1
-        }, matrix);
-
-        x2 = _t.x;
-        y2 = _t.y;
-        w2 = _t.w;
-        _t = calPoint({
-          x: xa,
-          y: yb,
-          z: 0,
-          w: 1
-        }, matrix);
-        x4 = _t.x;
-        y4 = _t.y;
-        w4 = _t.y;
-      }
+      var _calPoint4 = calPoint({
+        x: xa,
+        y: yb,
+        z: 0,
+        w: 1
+      }, matrix),
+          x4 = _calPoint4.x,
+          y4 = _calPoint4.y,
+          w4 = _calPoint4.w;
 
       var t = convertCoords2Gl(x1, y1, 0, w1, cx, cy);
       x1 = t.x;

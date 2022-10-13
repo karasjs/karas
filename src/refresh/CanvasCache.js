@@ -105,31 +105,6 @@ class CanvasCache extends Cache {
     return cacheMask;
   }
 
-  /**
-   * 如果不超过bbox，直接用已有的total/filter/mask，否则生成一个新的
-   */
-  static genOverflow(target, node) {
-    let { bbox } = target;
-    let { __x1, __y1, __clientWidth, __clientHeight } = node;
-    let xe = __x1 + __clientWidth;
-    let ye = __y1 + __clientHeight;
-    if(bbox[0] < __x1 || bbox[1] < __y1 || bbox[2] > xe || bbox[3] > ye) {
-      let bboxNew = [__x1, __y1, xe, ye];
-      let cacheOverflow = genSingle(target, 'overflow', bboxNew);
-      let ctx = cacheOverflow.ctx;
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.globalAlpha = 1;
-      CanvasCache.drawCache(target, cacheOverflow);
-      ctx.globalCompositeOperation = 'destination-in';
-      ctx.fillStyle = '#FFF';
-      ctx.beginPath();
-      ctx.rect(0, 0, __clientWidth, __clientHeight);
-      ctx.fill();
-      ctx.closePath();
-      ctx.globalCompositeOperation = 'source-over';
-      return cacheOverflow;
-    }
-  }
 
   static drawCache(source, target) {
     let { x: tx, y: ty, x1, y1, ctx, dbx, dby } = target;

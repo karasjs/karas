@@ -37,6 +37,9 @@ function offscreenCanvas(key, width, height, message) {
     enabled: true,
     available: true,
     release() {
+      ctx.globalAlpha = 1;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, width, height);
       this.available = false;
     },
   };

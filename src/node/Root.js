@@ -756,9 +756,6 @@ class Root extends Dom {
         if(node.__cacheMask) {
           hasRelease ||= node.__cacheMask.release();
         }
-        if(node.__cacheOverflow) {
-          hasRelease ||= node.__cacheOverflow.release();
-        }
       }
       // 特殊的filter清除cache
       if((need || (lv & FT)) && node.__cacheFilter) {
@@ -781,9 +778,6 @@ class Root extends Dom {
           }
           if(p.__cacheMask) {
             hasRelease ||= p.__cacheMask.release();
-          }
-          if(p.__cacheOverflow) {
-            hasRelease ||= p.__cacheOverflow.release();
           }
           p = p.__domParent;
         }

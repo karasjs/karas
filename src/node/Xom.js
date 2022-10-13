@@ -244,7 +244,7 @@ class Xom extends Node {
     this.__frameAnimateList = [];
     this.__contentBoxList = []; // inline存储内容用
     this.__cacheAsBitmap = !!this.props.cacheAsBitmap;
-    this.__cache = this.__cacheTotal = this.__cacheFilter = this.__cacheMask = this.__cacheOverflow = null;
+    this.__cache = this.__cacheTotal = this.__cacheFilter = this.__cacheMask;
     this.__layoutData = null; // 缓存上次布局x/y/w/h数据
     this.__hasComputeReflow = false; // 每次布局计算缓存标，使得每次开始只computeReflow一次
     this.__parentLineBox = null; // inline时指向
@@ -1794,7 +1794,7 @@ class Xom extends Node {
       };
       ctx = c.ctx;
     }
-    if(overflow === 'hidden' && display !== 'inline') {
+    if(overflow === 'hidden' && display !== 'inline') {console.log(this.tagName)
       let c = inject.getOffscreenCanvas(width, height, null, 'overflow');
       let bx1 = this.__bx1;
       let bx2 = this.__bx2;
@@ -2700,7 +2700,6 @@ class Xom extends Node {
     let __cacheTotal = this.__cacheTotal;
     let __cacheFilter = this.__cacheFilter;
     let __cacheMask = this.__cacheMask;
-    let __cacheOverflow = this.__cacheOverflow;
     let __cache = this.__cache;
     if(__cache) {
       __cache.release();
@@ -2714,9 +2713,6 @@ class Xom extends Node {
     if(__cacheMask) {
       __cacheMask.release();
     }
-    if(__cacheOverflow) {
-      __cacheOverflow.release();
-    }
     this.__refreshLevel |= CACHE;
     if(lookUp) {
       let p = this.__domParent;
@@ -2724,7 +2720,6 @@ class Xom extends Node {
         let __cacheTotal = p.__cacheTotal;
         let __cacheFilter = p.__cacheFilter;
         let __cacheMask = p.__cacheMask;
-        let __cacheOverflow = p.__cacheOverflow;
         p.__refreshLevel |= CACHE;
         if(__cacheTotal) {
           __cacheTotal.release();
@@ -2734,9 +2729,6 @@ class Xom extends Node {
         }
         if(__cacheMask) {
           __cacheMask.release();
-        }
-        if(__cacheOverflow) {
-          __cacheOverflow.release();
         }
         p = p.__domParent;
       }
@@ -2913,9 +2905,6 @@ class Xom extends Node {
       }
       if(this.__cacheTotal) {
         this.__cacheTotal.__offsetY(diff);
-      }
-      if(this.__cacheOverflow) {
-        this.__cacheOverflow.__offsetY(diff);
       }
       if(this.__cacheFilter) {
         this.__cacheFilter.__offsetY(diff);

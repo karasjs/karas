@@ -34320,7 +34320,7 @@
       value: function destroy() {
         this.__destroy();
 
-        this.animateController.__destroy();
+        this.__animateController.__destroy();
 
         var n = this.dom;
 
@@ -34331,26 +34331,13 @@
 
         var gl = this.ctx;
 
-        if (this.__texHelper && gl) {
-          this.__texHelper.release(gl);
-
-          if (gl.program) {
-            gl.deleteShader(gl.program.vertexShader);
-            gl.deleteShader(gl.program.fragmentShader);
-            gl.deleteProgram(gl.program);
-          }
-
-          if (gl.programMask) {
-            gl.deleteShader(gl.programMask.vertexShader);
-            gl.deleteShader(gl.programMask.fragmentShader);
-            gl.deleteProgram(gl.programMask);
-          }
-
-          if (gl.programOverflow) {
-            gl.deleteShader(gl.programOverflow.vertexShader);
-            gl.deleteShader(gl.programOverflow.fragmentShader);
-            gl.deleteProgram(gl.programOverflow);
-          }
+        if (this.renderMode === mode.WEBGL) {
+          ['program', 'programMask', 'programClip', 'programOverflow', 'programCm', 'programDs', 'programMbmMp', 'programMbmSr', 'programMbmOl', 'programMbmDk', 'programMbmLt', 'programMbmCd', 'programMbmCb', 'programMbmHl', 'programMbmSl', 'programMbmDf', 'programMbmEx', 'programMbmHue', 'programMbmSt', 'programMbmCl', 'programMbmLm'].forEach(function (k) {
+            var p = gl[k];
+            gl.deleteShader(p.vertexShader);
+            gl.deleteShader(p.fragmentShader);
+            gl.deleteProgram(p);
+          });
         }
       }
     }, {
@@ -41863,7 +41850,7 @@
     CanvasCache: CanvasCache
   };
 
-  var version = "0.80.0";
+  var version = "0.80.1";
 
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);

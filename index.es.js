@@ -707,66 +707,51 @@ function calPoint$2(point, m) {
         y = point.y,
         z = point.z,
         w = point.w;
+    z = z || 0;
 
-    if (m.length === 16) {
-      z = z || 0;
+    if (w === undefined || w === null) {
+      w = 1;
+    }
 
-      if (w === undefined || w === null) {
-        w = 1;
-      }
+    var a1 = m[0],
+        b1 = m[1],
+        c1 = m[2],
+        d1 = m[3];
+    var a2 = m[4],
+        b2 = m[5],
+        c2 = m[6],
+        d2 = m[7];
+    var a3 = m[8],
+        b3 = m[9],
+        c3 = m[10],
+        d3 = m[11];
+    var a4 = m[12],
+        b4 = m[13],
+        c4 = m[14],
+        d4 = m[15];
 
-      var a1 = m[0],
-          b1 = m[1],
-          c1 = m[2],
-          d1 = m[3];
-      var a2 = m[4],
-          b2 = m[5],
-          c2 = m[6],
-          d2 = m[7];
-      var a3 = m[8],
-          b3 = m[9],
-          c3 = m[10],
-          d3 = m[11];
-      var a4 = m[12],
-          b4 = m[13],
-          c4 = m[14],
-          d4 = m[15];
+    if (d1 || d2 || d3) {
+      w = x * d1 + y * d2 + z * d3 + d4 * w;
+    } else if (d4 !== 1) {
+      w *= d4;
+    }
 
-      if (d1 || d2 || d3) {
-        w = x * d1 + y * d2 + z * d3 + d4 * w;
-      } else if (d4 !== 1) {
-        w *= d4;
-      }
-
-      var o = {
-        x: x * a1 + y * a2 + a4,
-        y: x * b1 + y * b2 + b4,
-        z: 0,
-        w: w
-      };
-
-      if (z) {
-        o.x += z * a3;
-        o.y += z * b3;
-        o.z = x * c1 + y * c2 + c4 + z * c3;
-      } else if (c1 || c2 || c4) {
-        o.z = x * c1 + y * c2 + c4;
-      }
-
-      return o;
-    } // 6位类型
-
-
-    var a = m[0],
-        b = m[1],
-        c = m[2],
-        d = m[3],
-        e = m[4],
-        f = m[5];
-    return {
-      x: a * x + c * y + e,
-      y: b * x + d * y + f
+    var o = {
+      x: (a1 === 1 ? x : x * a1) + (a2 ? y * a2 : 0) + a4,
+      y: (b1 === 1 ? x : x * b1) + (b2 ? y * b2 : 0) + b4,
+      z: 0,
+      w: w
     };
+
+    if (z) {
+      o.x += z * a3;
+      o.y += z * b3;
+      o.z = x * c1 + y * c2 + c4 + z * c3;
+    } else if (c1 || c2 || c4) {
+      o.z = x * c1 + y * c2 + c4;
+    }
+
+    return o;
   }
 
   return point;
@@ -1516,15 +1501,15 @@ var SPF = 1000 / 60;
 var CANVAS$5 = {};
 var SUPPORT_OFFSCREEN_CANVAS = typeof OffscreenCanvas === 'function' && OffscreenCanvas.prototype.getContext;
 
-function cache(key, width, height, hash, message) {
+function offscreenCanvas(key, width, height, message) {
   var o;
 
   if (!key) {
     o = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
-  } else if (!hash[key]) {
-    o = hash[key] = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
+  } else if (!CANVAS$5[key]) {
+    o = CANVAS$5[key] = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
   } else {
-    o = hash[key];
+    o = CANVAS$5[key];
   }
 
   o.width = width;
@@ -1552,13 +1537,12 @@ function cache(key, width, height, hash, message) {
     enabled: true,
     available: true,
     release: function release() {
+      ctx.globalAlpha = 1;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, width, height);
       this.available = false;
     }
   };
-}
-
-function offscreenCanvas(key, width, height, message) {
-  return cache(key, width, height, CANVAS$5, message);
 }
 
 var IMG = {};
@@ -1923,24 +1907,21 @@ var inject = {
     } else if (cache.state === LOADING) {
       cb && cache.task.push(cb);
     } else {
-      cache.state = LOADING;
-      cb && cache.task.push(cb);
+      var success = function success(ab) {
+        var f = new FontFace(fontFamily, ab);
+        f.load().then(function () {
+          document.fonts.add(f);
+          cache.state = LOADED;
+          cache.success = true;
+          cache.url = url;
+          var list = cache.task.splice(0);
+          list.forEach(function (cb) {
+            return cb(cache, ab);
+          });
+        })["catch"](error);
+      };
 
-      if (!(url instanceof ArrayBuffer) && !/url\(/.test(url)) {
-        url = "url(".concat(url, ")");
-      }
-
-      var f = new FontFace(fontFamily, url);
-      f.load().then(function () {
-        document.fonts.add(f);
-        cache.state = LOADED;
-        cache.success = true;
-        cache.url = url;
-        var list = cache.task.splice(0);
-        list.forEach(function (cb) {
-          return cb(cache);
-        });
-      })["catch"](function () {
+      var error = function error() {
         cache.state = LOADED;
         cache.success = false;
         cache.url = url;
@@ -1948,7 +1929,29 @@ var inject = {
         list.forEach(function (cb) {
           return cb(cache);
         });
-      });
+      };
+
+      cache.state = LOADING;
+      cb && cache.task.push(cb);
+
+      if (url instanceof ArrayBuffer) {
+        success(url);
+      } else {
+        var request = new XMLHttpRequest();
+        request.open('get', url, true);
+        request.responseType = 'arraybuffer';
+
+        request.onload = function () {
+          if (request.response) {
+            success(request.response);
+          } else {
+            error();
+          }
+        };
+
+        request.onerror = error;
+        request.send();
+      }
     }
   },
   loadComponent: function loadComponent(url, cb) {
@@ -2023,6 +2026,647 @@ var inject = {
   }
 };
 
+var TINF_OK = 0;
+var TINF_DATA_ERROR = -3;
+
+function Tree() {
+  this.table = new Uint16Array(16);
+  /* table of code length counts */
+
+  this.trans = new Uint16Array(288);
+  /* code -> symbol translation table */
+}
+
+function Data(source, dest) {
+  this.source = source;
+  this.sourceIndex = 0;
+  this.tag = 0;
+  this.bitcount = 0;
+  this.dest = dest;
+  this.destLen = 0;
+  this.ltree = new Tree();
+  /* dynamic length/symbol tree */
+
+  this.dtree = new Tree();
+  /* dynamic distance tree */
+}
+/* --------------------------------------------------- *
+ * -- uninitialized global data (static structures) -- *
+ * --------------------------------------------------- */
+
+
+var sltree = new Tree();
+var sdtree = new Tree();
+/* extra bits and base tables for length codes */
+
+var length_bits = new Uint8Array(30);
+var length_base = new Uint16Array(30);
+/* extra bits and base tables for distance codes */
+
+var dist_bits = new Uint8Array(30);
+var dist_base = new Uint16Array(30);
+/* special ordering of code length codes */
+
+var clcidx = new Uint8Array([16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15]);
+/* used by tinf_decode_trees, avoids allocations every call */
+
+var code_tree = new Tree();
+var lengths = new Uint8Array(288 + 32);
+/* ----------------------- *
+ * -- utility functions -- *
+ * ----------------------- */
+
+/* build extra bits and base tables */
+
+function tinf_build_bits_base(bits, base, delta, first) {
+  var i, sum;
+  /* build bits table */
+
+  for (i = 0; i < delta; ++i) {
+    bits[i] = 0;
+  }
+
+  for (i = 0; i < 30 - delta; ++i) {
+    bits[i + delta] = i / delta | 0;
+  }
+  /* build base table */
+
+
+  for (sum = first, i = 0; i < 30; ++i) {
+    base[i] = sum;
+    sum += 1 << bits[i];
+  }
+}
+/* build the fixed huffman trees */
+
+
+function tinf_build_fixed_trees(lt, dt) {
+  var i;
+  /* build fixed length tree */
+
+  for (i = 0; i < 7; ++i) {
+    lt.table[i] = 0;
+  }
+
+  lt.table[7] = 24;
+  lt.table[8] = 152;
+  lt.table[9] = 112;
+
+  for (i = 0; i < 24; ++i) {
+    lt.trans[i] = 256 + i;
+  }
+
+  for (i = 0; i < 144; ++i) {
+    lt.trans[24 + i] = i;
+  }
+
+  for (i = 0; i < 8; ++i) {
+    lt.trans[24 + 144 + i] = 280 + i;
+  }
+
+  for (i = 0; i < 112; ++i) {
+    lt.trans[24 + 144 + 8 + i] = 144 + i;
+  }
+  /* build fixed distance tree */
+
+
+  for (i = 0; i < 5; ++i) {
+    dt.table[i] = 0;
+  }
+
+  dt.table[5] = 32;
+
+  for (i = 0; i < 32; ++i) {
+    dt.trans[i] = i;
+  }
+}
+/* given an array of code lengths, build a tree */
+
+
+var offs = new Uint16Array(16);
+
+function tinf_build_tree(t, lengths, off, num) {
+  var i, sum;
+  /* clear code length count table */
+
+  for (i = 0; i < 16; ++i) {
+    t.table[i] = 0;
+  }
+  /* scan symbol lengths, and sum code length counts */
+
+
+  for (i = 0; i < num; ++i) {
+    t.table[lengths[off + i]]++;
+  }
+
+  t.table[0] = 0;
+  /* compute offset table for distribution sort */
+
+  for (sum = 0, i = 0; i < 16; ++i) {
+    offs[i] = sum;
+    sum += t.table[i];
+  }
+  /* create code->symbol translation table (symbols sorted by code) */
+
+
+  for (i = 0; i < num; ++i) {
+    if (lengths[off + i]) t.trans[offs[lengths[off + i]]++] = i;
+  }
+}
+/* ---------------------- *
+ * -- decode functions -- *
+ * ---------------------- */
+
+/* get one bit from source stream */
+
+
+function tinf_getbit(d) {
+  /* check if tag is empty */
+  if (!d.bitcount--) {
+    /* load next tag */
+    d.tag = d.source[d.sourceIndex++];
+    d.bitcount = 7;
+  }
+  /* shift bit out of tag */
+
+
+  var bit = d.tag & 1;
+  d.tag >>>= 1;
+  return bit;
+}
+/* read a num bit value from a stream and add base */
+
+
+function tinf_read_bits(d, num, base) {
+  if (!num) return base;
+
+  while (d.bitcount < 24) {
+    d.tag |= d.source[d.sourceIndex++] << d.bitcount;
+    d.bitcount += 8;
+  }
+
+  var val = d.tag & 0xffff >>> 16 - num;
+  d.tag >>>= num;
+  d.bitcount -= num;
+  return val + base;
+}
+/* given a data stream and a tree, decode a symbol */
+
+
+function tinf_decode_symbol(d, t) {
+  while (d.bitcount < 24) {
+    d.tag |= d.source[d.sourceIndex++] << d.bitcount;
+    d.bitcount += 8;
+  }
+
+  var sum = 0,
+      cur = 0,
+      len = 0;
+  var tag = d.tag;
+  /* get more bits while code value is above sum */
+
+  do {
+    cur = 2 * cur + (tag & 1);
+    tag >>>= 1;
+    ++len;
+    sum += t.table[len];
+    cur -= t.table[len];
+  } while (cur >= 0);
+
+  d.tag = tag;
+  d.bitcount -= len;
+  return t.trans[sum + cur];
+}
+/* given a data stream, decode dynamic trees from it */
+
+
+function tinf_decode_trees(d, lt, dt) {
+  var hlit, hdist, hclen;
+  var i, num, length;
+  /* get 5 bits HLIT (257-286) */
+
+  hlit = tinf_read_bits(d, 5, 257);
+  /* get 5 bits HDIST (1-32) */
+
+  hdist = tinf_read_bits(d, 5, 1);
+  /* get 4 bits HCLEN (4-19) */
+
+  hclen = tinf_read_bits(d, 4, 4);
+
+  for (i = 0; i < 19; ++i) {
+    lengths[i] = 0;
+  }
+  /* read code lengths for code length alphabet */
+
+
+  for (i = 0; i < hclen; ++i) {
+    /* get 3 bits code length (0-7) */
+    var clen = tinf_read_bits(d, 3, 0);
+    lengths[clcidx[i]] = clen;
+  }
+  /* build code length tree */
+
+
+  tinf_build_tree(code_tree, lengths, 0, 19);
+  /* decode code lengths for the dynamic trees */
+
+  for (num = 0; num < hlit + hdist;) {
+    var sym = tinf_decode_symbol(d, code_tree);
+
+    switch (sym) {
+      case 16:
+        /* copy previous code length 3-6 times (read 2 bits) */
+        var prev = lengths[num - 1];
+
+        for (length = tinf_read_bits(d, 2, 3); length; --length) {
+          lengths[num++] = prev;
+        }
+
+        break;
+
+      case 17:
+        /* repeat code length 0 for 3-10 times (read 3 bits) */
+        for (length = tinf_read_bits(d, 3, 3); length; --length) {
+          lengths[num++] = 0;
+        }
+
+        break;
+
+      case 18:
+        /* repeat code length 0 for 11-138 times (read 7 bits) */
+        for (length = tinf_read_bits(d, 7, 11); length; --length) {
+          lengths[num++] = 0;
+        }
+
+        break;
+
+      default:
+        /* values 0-15 represent the actual code lengths */
+        lengths[num++] = sym;
+        break;
+    }
+  }
+  /* build dynamic trees */
+
+
+  tinf_build_tree(lt, lengths, 0, hlit);
+  tinf_build_tree(dt, lengths, hlit, hdist);
+}
+/* ----------------------------- *
+ * -- block inflate functions -- *
+ * ----------------------------- */
+
+/* given a stream and two trees, inflate a block of data */
+
+
+function tinf_inflate_block_data(d, lt, dt) {
+  while (1) {
+    var sym = tinf_decode_symbol(d, lt);
+    /* check for end of block */
+
+    if (sym === 256) {
+      return TINF_OK;
+    }
+
+    if (sym < 256) {
+      d.dest[d.destLen++] = sym;
+    } else {
+      var length = void 0,
+          dist = void 0,
+          _offs = void 0;
+
+      var i = void 0;
+      sym -= 257;
+      /* possibly get more bits from length code */
+
+      length = tinf_read_bits(d, length_bits[sym], length_base[sym]);
+      dist = tinf_decode_symbol(d, dt);
+      /* possibly get more bits from distance code */
+
+      _offs = d.destLen - tinf_read_bits(d, dist_bits[dist], dist_base[dist]);
+      /* copy match */
+
+      for (i = _offs; i < _offs + length; ++i) {
+        d.dest[d.destLen++] = d.dest[i];
+      }
+    }
+  }
+}
+/* inflate an uncompressed block of data */
+
+
+function tinf_inflate_uncompressed_block(d) {
+  var length, invlength;
+  var i;
+  /* unread from bitbuffer */
+
+  while (d.bitcount > 8) {
+    d.sourceIndex--;
+    d.bitcount -= 8;
+  }
+  /* get length */
+
+
+  length = d.source[d.sourceIndex + 1];
+  length = 256 * length + d.source[d.sourceIndex];
+  /* get one's complement of length */
+
+  invlength = d.source[d.sourceIndex + 3];
+  invlength = 256 * invlength + d.source[d.sourceIndex + 2];
+  /* check length */
+
+  if (length !== (~invlength & 0x0000ffff)) return TINF_DATA_ERROR;
+  d.sourceIndex += 4;
+  /* copy block */
+
+  for (i = length; i; --i) {
+    d.dest[d.destLen++] = d.source[d.sourceIndex++];
+  }
+  /* make sure we start next block on a byte boundary */
+
+
+  d.bitcount = 0;
+  return TINF_OK;
+}
+/* inflate stream from source to dest */
+
+
+function tinf_uncompress(source, dest) {
+  var d = new Data(source, dest);
+  var bfinal, btype, res;
+
+  do {
+    /* read final block flag */
+    bfinal = tinf_getbit(d);
+    /* read block type (2 bits) */
+
+    btype = tinf_read_bits(d, 2, 0);
+    /* decompress block */
+
+    switch (btype) {
+      case 0:
+        /* decompress uncompressed block */
+        res = tinf_inflate_uncompressed_block(d);
+        break;
+
+      case 1:
+        /* decompress block with fixed huffman trees */
+        res = tinf_inflate_block_data(d, sltree, sdtree);
+        break;
+
+      case 2:
+        /* decompress block with dynamic huffman trees */
+        tinf_decode_trees(d, d.ltree, d.dtree);
+        res = tinf_inflate_block_data(d, d.ltree, d.dtree);
+        break;
+
+      default:
+        res = TINF_DATA_ERROR;
+    }
+
+    if (res !== TINF_OK) throw new Error('Data error');
+  } while (!bfinal);
+
+  if (d.destLen < d.dest.length) {
+    if (typeof d.dest.slice === 'function') return d.dest.slice(0, d.destLen);else return d.dest.subarray(0, d.destLen);
+  }
+
+  return d.dest;
+}
+/* -------------------- *
+ * -- initialization -- *
+ * -------------------- */
+
+/* build fixed huffman trees */
+
+
+tinf_build_fixed_trees(sltree, sdtree);
+/* build extra bits and base tables */
+
+tinf_build_bits_base(length_bits, length_base, 4, 3);
+tinf_build_bits_base(dist_bits, dist_base, 2, 1);
+/* fix a special case */
+
+length_bits[28] = 0;
+length_base[28] = 258;
+
+function getTag(dataView, offset) {
+  var tag = '';
+
+  for (var i = offset; i < offset + 4; i++) {
+    tag += String.fromCharCode(dataView.getInt8(i));
+  }
+
+  return tag;
+}
+
+function getUShort(dataView, offset) {
+  return dataView.getUint16(offset, false);
+}
+
+function getULong(dataView, offset) {
+  return dataView.getUint32(offset, false);
+}
+
+function getFixed(dataView, offset) {
+  var decimal = dataView.getInt16(offset, false);
+  var fraction = dataView.getUint16(offset + 2, false);
+  return decimal + fraction / 65535;
+}
+
+function parseOpenTypeTableEntries(data, numTables) {
+  var tableEntries = [];
+  var p = 12;
+
+  for (var i = 0; i < numTables; i += 1) {
+    var tag = getTag(data, p);
+    var checksum = getULong(data, p + 4);
+    var offset = getULong(data, p + 8);
+    var length = getULong(data, p + 12);
+    tableEntries.push({
+      tag: tag,
+      checksum: checksum,
+      offset: offset,
+      length: length,
+      compression: false
+    });
+    p += 16;
+  }
+
+  return tableEntries;
+}
+
+function parseWOFFTableEntries(data, numTables) {
+  var tableEntries = [];
+  var p = 44; // offset to the first table directory entry.
+
+  for (var i = 0; i < numTables; i += 1) {
+    var tag = getTag(data, p);
+    var offset = getULong(data, p + 4);
+    var compLength = getULong(data, p + 8);
+    var origLength = getULong(data, p + 12);
+    var compression = void 0;
+
+    if (compLength < origLength) {
+      compression = 'WOFF';
+    } else {
+      compression = false;
+    }
+
+    tableEntries.push({
+      tag: tag,
+      offset: offset,
+      compression: compression,
+      compressedLength: compLength,
+      length: origLength
+    });
+    p += 20;
+  }
+
+  return tableEntries;
+}
+
+function uncompressTable(data, tableEntry) {
+  if (tableEntry.compression === 'WOFF') {
+    var inBuffer = new Uint8Array(data.buffer, tableEntry.offset + 2, tableEntry.compressedLength - 2);
+    var outBuffer = new Uint8Array(tableEntry.length);
+    tinf_uncompress(inBuffer, outBuffer);
+
+    if (outBuffer.byteLength !== tableEntry.length) {
+      inject.error('Decompression error: ' + tableEntry.tag + ' decompressed length doesn\'t match recorded length');
+    }
+
+    var view = new DataView(outBuffer.buffer, 0);
+    return {
+      data: view,
+      offset: 0
+    };
+  } else {
+    return {
+      data: data,
+      offset: tableEntry.offset
+    };
+  }
+}
+
+var Parser = /*#__PURE__*/function () {
+  function Parser(data, offset) {
+    this.data = data;
+    this.offset = offset;
+    this.relativeOffset = 0;
+  }
+
+  _createClass(Parser, [{
+    key: "parseUShort",
+    value: function parseUShort() {
+      var v = this.data.getUint16(this.offset + this.relativeOffset);
+      this.relativeOffset += 2;
+      return v;
+    }
+  }, {
+    key: "parseULong",
+    value: function parseULong() {
+      var v = getULong(this.data, this.offset + this.relativeOffset);
+      this.relativeOffset += 4;
+      return v;
+    }
+  }, {
+    key: "parseShort",
+    value: function parseShort() {
+      var v = this.data.getInt16(this.offset + this.relativeOffset);
+      this.relativeOffset += 2;
+      return v;
+    }
+  }, {
+    key: "parseFixed",
+    value: function parseFixed() {
+      var v = getFixed(this.data, this.offset + this.relativeOffset);
+      this.relativeOffset += 4;
+      return v;
+    }
+  }, {
+    key: "parseVersion",
+    value: function parseVersion(minorBase) {
+      var major = getUShort(this.data, this.offset + this.relativeOffset);
+      var minor = getUShort(this.data, this.offset + this.relativeOffset + 2);
+      this.relativeOffset += 4;
+
+      if (minorBase === undefined) {
+        minorBase = 0x1000;
+      }
+
+      return major + minor / minorBase / 10;
+    }
+  }]);
+
+  return Parser;
+}();
+
+var opentype = {
+  parse: function parse(arrayBuffer) {
+    var data = new DataView(arrayBuffer, 0);
+    var signature = getTag(data, 0);
+    var numTables, tableEntries;
+
+    if (signature === String.fromCharCode(0, 1, 0, 0) || signature === 'true' || signature === 'typ1') {
+      numTables = getUShort(data, 4);
+      tableEntries = parseOpenTypeTableEntries(data, numTables);
+    } else if (signature === 'OTTO') {
+      numTables = getUShort(data, 4);
+      tableEntries = parseOpenTypeTableEntries(data, numTables);
+    } else if (signature === 'wOFF') {
+      var flavor = getTag(data, 4);
+
+      if (flavor !== String.fromCharCode(0, 1, 0, 0) && flavor !== 'OTTO') {
+        inject.error('Unsupported OpenType flavor ' + signature);
+        return;
+      }
+
+      numTables = getUShort(data, 12);
+      tableEntries = parseWOFFTableEntries(data, numTables);
+    } else {
+      inject.error('Unsupported OpenType signature ' + signature);
+    }
+
+    var emSquare = 2048,
+        ascent,
+        descent,
+        lineGap = 0;
+
+    for (var i = 0; i < numTables; i++) {
+      var tableEntry = tableEntries[i];
+
+      if (tableEntry.tag === 'head') {
+        var table = uncompressTable(data, tableEntry);
+        var p = new Parser(table.data, table.offset);
+        p.parseVersion();
+        p.parseFixed();
+        p.parseULong();
+        p.parseULong();
+        p.parseUShort();
+        emSquare = p.parseUShort();
+      } else if (tableEntry.tag === 'hhea') {
+        var _table = uncompressTable(data, tableEntry);
+
+        var _p = new Parser(_table.data, _table.offset);
+
+        _p.parseVersion();
+
+        ascent = Math.abs(_p.parseShort());
+        descent = Math.abs(_p.parseShort());
+        lineGap = Math.abs(_p.parseShort() || 0);
+      }
+    }
+
+    return {
+      emSquare: emSquare,
+      ascent: ascent,
+      descent: descent,
+      lineGap: lineGap
+    };
+  }
+};
+
 var isString = util.isString;
 var CALLBACK = {};
 var o$3 = {
@@ -2094,15 +2738,22 @@ var o$3 = {
     }
 
     var info = this.info;
-    info[name] = info[name] || {};
+    var fontInfo = info[name] = info[name] || {};
 
-    if (url && !info[name].url) {
+    if (url && !fontInfo.url) {
       // 不能覆盖
-      info[name].url = url;
-      inject.loadFont(name, url, function (res) {
-        info[name].success = res.success;
+      fontInfo.url = url;
+      inject.loadFont(name, url, function (res, ab) {
+        fontInfo.success = res.success;
 
         if (res.success) {
+          // 手动指定更高优先级，不解析
+          if (!fontInfo.lhr && ab) {
+            var r = opentype.parse(ab);
+            setData(r);
+          } // 回调
+
+
           var list = CALLBACK[name] || [];
 
           while (list.length) {
@@ -2115,24 +2766,29 @@ var o$3 = {
     } // 防止先没url只注册，再调用只传url的情况
 
 
-    if (!data || info[name].lhr) {
+    if (!data || fontInfo.lhr) {
       return;
     }
 
-    var _ref = data || {},
-        _ref$emSquare = _ref.emSquare,
-        emSquare = _ref$emSquare === void 0 ? 2048 : _ref$emSquare,
-        _ref$ascent = _ref.ascent,
-        ascent = _ref$ascent === void 0 ? 1854 : _ref$ascent,
-        _ref$descent = _ref.descent,
-        descent = _ref$descent === void 0 ? 434 : _ref$descent,
-        _ref$lineGap = _ref.lineGap,
-        lineGap = _ref$lineGap === void 0 ? 0 : _ref$lineGap;
+    setData(data);
 
-    Object.assign(info[name], {
-      lhr: (ascent + descent + lineGap) / emSquare,
-      blr: ascent / emSquare
-    });
+    function setData(data) {
+      var _data$emSquare = data.emSquare,
+          emSquare = _data$emSquare === void 0 ? 2048 : _data$emSquare,
+          ascent = data.ascent,
+          descent = data.descent,
+          _data$lineGap = data.lineGap,
+          lineGap = _data$lineGap === void 0 ? 0 : _data$lineGap;
+
+      if (!ascent || !descent) {
+        return;
+      }
+
+      Object.assign(fontInfo, {
+        lhr: (ascent + descent + lineGap) / emSquare,
+        blr: ascent / emSquare
+      });
+    }
   },
   hasRegister: function hasRegister(fontFamily) {
     return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].hasOwnProperty('lhr');
@@ -10362,7 +11018,7 @@ var MASK$3 = 8192; //                          10000000000000
 var REPAINT$4 = 16384; //                     100000000000000
 // 高位表示reflow
 
-var REFLOW$3 = 32768; //                     1000000000000000
+var REFLOW$4 = 32768; //                     1000000000000000
 // 特殊高位表示rebuild，节点发生增删变化
 
 var REBUILD$1 = 65536; //                   10000000000000000
@@ -10387,7 +11043,7 @@ var ENUM = {
   PERSPECTIVE: PERSPECTIVE$3,
   MASK: MASK$3,
   REPAINT: REPAINT$4,
-  REFLOW: REFLOW$3,
+  REFLOW: REFLOW$4,
   REBUILD: REBUILD$1
 };
 
@@ -10467,13 +11123,13 @@ var o$1 = Object.assign({
       return REPAINT$4;
     }
 
-    return REFLOW$3;
+    return REFLOW$4;
   },
   isReflow: function isReflow(lv) {
-    return lv >= REFLOW$3;
+    return lv >= REFLOW$4;
   },
   isRepaint: function isRepaint(lv) {
-    return lv < REFLOW$3;
+    return lv < REFLOW$4;
   }
 }, ENUM);
 
@@ -11379,11 +12035,6 @@ var Text = /*#__PURE__*/function (_Node) {
       }
     }
   }, {
-    key: "__deepScan",
-    value: function __deepScan(cb) {
-      cb(this);
-    }
-  }, {
     key: "__destroy",
     value: function __destroy() {
       if (this.__isDestroyed) {
@@ -11418,10 +12069,7 @@ var Text = /*#__PURE__*/function (_Node) {
 
       this.__content = s;
 
-      this.__root.__addUpdate(this.__domParent, {
-        focus: o$1.REFLOW,
-        cb: cb
-      });
+      this.__root.__addUpdate(this.__domParent, null, o$1.REFLOW, null, null, null, cb);
     }
   }, {
     key: "remove",
@@ -11474,13 +12122,7 @@ var Text = /*#__PURE__*/function (_Node) {
       } // 可见在reflow逻辑做结构关系等，text视为父变更
 
 
-      var res = {
-        focus: o$1.REFLOW,
-        removeDom: true,
-        cb: cb
-      };
-
-      root.__addUpdate(this, res);
+      root.__addUpdate(this, null, o$1.REFLOW, null, true, null, cb);
     }
   }, {
     key: "content",
@@ -11651,6 +12293,11 @@ var Text = /*#__PURE__*/function (_Node) {
       return this.__domParent.__currentStyle;
     }
   }, {
+    key: "__currentStyle",
+    get: function get() {
+      return this.__domParent.__currentStyle;
+    }
+  }, {
     key: "style",
     get: function get() {
       return this.__domParent.__style;
@@ -11661,7 +12308,17 @@ var Text = /*#__PURE__*/function (_Node) {
       return this.__domParent.__computedStyle;
     }
   }, {
+    key: "__computedStyle",
+    get: function get() {
+      return this.__domParent.__computedStyle;
+    }
+  }, {
     key: "cacheStyle",
+    get: function get() {
+      return this.__domParent.__cacheStyle;
+    }
+  }, {
+    key: "__cacheStyle",
     get: function get() {
       return this.__domParent.__cacheStyle;
     }
@@ -12115,7 +12772,7 @@ var Component = /*#__PURE__*/function (_Event) {
   return Component;
 }(Event);
 
-Object.keys(o$2.GEOM).concat(['x', 'y', 'width', 'height', 'outerWidth', 'outerHeight', 'clientWidth', 'clientHeight', 'offsetWidth', 'offsetHeight', 'style', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'currentProps', 'baseline', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', '__layoutData', '__struct', 'bbox', 'contentBoxList', 'listener', 'matrix', 'matrixEvent']).forEach(function (fn) {
+Object.keys(o$2.GEOM).concat(['x', 'y', 'width', 'height', 'outerWidth', 'outerHeight', 'clientWidth', 'clientHeight', 'offsetWidth', 'offsetHeight', 'style', 'animationList', 'currentStyle', 'computedStyle', 'cacheStyle', '__currentStyle', '__computedStyle', '__cacheStyle', 'currentProps', '__currentProps', 'cacheProps', '__cacheProps', 'baseline', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', '__layoutData', '__struct', 'bbox', 'contentBoxList', 'listener', 'matrix', 'matrixEvent']).forEach(function (fn) {
   Object.defineProperty(Component.prototype, fn, {
     get: function get() {
       var sr = this.shadowRoot;
@@ -12126,7 +12783,7 @@ Object.keys(o$2.GEOM).concat(['x', 'y', 'width', 'height', 'outerWidth', 'outerH
     }
   });
 });
-['__layout', '__layoutFlow', '__layoutStyle', '__layoutAbs', '__layoutNone', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__computeReflow', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'frameAnimate', 'updateStyle', 'getBoundingClientRect', 'getComputedStyle', '__deepScan', 'clearCache', '__structure', '__modifyStruct', '__updateStruct', 'flowChildren', 'absChildren', '__isRealInline', '__calBasis', '__calMinMax', '__computeMeasure', 'appendChild', 'prependChild', 'insertBefore', 'insertAfter', 'removeChild', 'remove'].forEach(function (fn) {
+['__layout', '__layoutFlow', '__layoutStyle', '__layoutAbs', '__layoutNone', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__computeReflow', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'frameAnimate', 'updateStyle', 'getBoundingClientRect', 'getComputedStyle', 'clearCache', '__structure', '__modifyStruct', '__updateStruct', 'flowChildren', 'absChildren', '__isRealInline', '__calBasis', '__calMinMax', '__computeMeasure', 'appendChild', 'prependChild', 'insertBefore', 'insertAfter', 'removeChild', 'remove'].forEach(function (fn) {
   Component.prototype[fn] = function () {
     var sr = this.shadowRoot;
 
@@ -13450,11 +14107,7 @@ function genBeforeRefresh(keys, root, node, aniParams, cb) {
     aniParams = null;
   }
 
-  root.__addUpdate(node, {
-    keys: keys,
-    aniParams: aniParams,
-    cb: cb
-  });
+  root.__addUpdate(node, keys, null, null, null, aniParams, cb);
 }
 /**
  * 将每帧的样式格式化，提取出offset属性并转化为时间，提取出缓动曲线easing
@@ -14989,7 +15642,7 @@ function frameCb(self) {
   }
 }
 
-var uuid$4 = 0;
+var uuid$3 = 0;
 
 var Animation = /*#__PURE__*/function (_Event) {
   _inherits(Animation, _Event);
@@ -14998,7 +15651,7 @@ var Animation = /*#__PURE__*/function (_Event) {
     var _this;
 
     _this = _Event.call(this) || this;
-    _this.__id = uuid$4++;
+    _this.__id = uuid$3++;
     list = clone$1(list || []);
 
     if (Array.isArray(list)) {
@@ -16710,7 +17363,7 @@ var point2d = matrix.point2d,
     multiplyScaleY = matrix.multiplyScaleY,
     multiplyScaleZ = matrix.multiplyScaleZ;
 var TF$1 = o$1.TRANSFORM,
-    REFLOW$2 = o$1.REFLOW,
+    REFLOW$3 = o$1.REFLOW,
     REPAINT$3 = o$1.REPAINT,
     TX = o$1.TRANSLATE_X,
     TY = o$1.TRANSLATE_Y,
@@ -16817,7 +17470,7 @@ var Xom = /*#__PURE__*/function (_Node) {
 
     var isClip = _this.__clip = !!_this.props.clip;
     _this.__mask = isClip || !!_this.props.mask;
-    _this.__refreshLevel = REFLOW$2;
+    _this.__refreshLevel = REFLOW$3;
     _this.__limitCache = false;
     _this.__isInline = false;
     _this.__hasContent = false;
@@ -16829,7 +17482,7 @@ var Xom = /*#__PURE__*/function (_Node) {
     _this.__contentBoxList = []; // inline存储内容用
 
     _this.__cacheAsBitmap = !!_this.props.cacheAsBitmap;
-    _this.__cache = _this.__cacheTotal = _this.__cacheFilter = _this.__cacheMask = _this.__cacheOverflow = null;
+    _this.__cache = _this.__cacheTotal = _this.__cacheFilter = _this.__cacheMask;
     _this.__layoutData = null; // 缓存上次布局x/y/w/h数据
 
     _this.__hasComputeReflow = false; // 每次布局计算缓存标，使得每次开始只computeReflow一次
@@ -17092,9 +17745,7 @@ var Xom = /*#__PURE__*/function (_Node) {
         if (item === fontFamily) {
           // 加载成功回调可能没注册信息，需要多判断一下
           if (o$3.hasRegister(item)) {
-            root.__addUpdate(node, {
-              focus: REFLOW$2
-            });
+            root.__addUpdate(node, null, REFLOW$3, null, null, null, null);
           } // 后面低优先级的无需再看
 
 
@@ -17196,7 +17847,7 @@ var Xom = /*#__PURE__*/function (_Node) {
       if (!isAbs && !isColumn && !isRow) {
         this.clearCache();
         this.__cacheStyle = [];
-        this.__refreshLevel = REFLOW$2;
+        this.__refreshLevel = REFLOW$3;
         this.__limitCache = false;
         this.__isInline = false;
         var next = this.next; // mask关系只有布局才会变更，普通渲染关系不会改变，clip也是mask的一种
@@ -17620,14 +18271,14 @@ var Xom = /*#__PURE__*/function (_Node) {
 
       var matrixCache = __cacheStyle[MATRIX$1]; // 优化计算scale不能为0，无法计算倍数差，rotateZ优化不能包含rotateX/rotateY/skew
 
-      if (!isNil$9(optimize)) ; else if (matrixCache && lv < REFLOW$2 && !(lv & TF$1)) {
+      if (!isNil$9(optimize)) ; else if (matrixCache && lv < REFLOW$3 && !(lv & TF$1)) {
         if (lv & SX && !__computedStyle[SCALE_X] || lv & SY && !__computedStyle[SCALE_Y] || lv & SZ && !__computedStyle[SCALE_Z] || lv & RZ && (__computedStyle[ROTATE_X] || __computedStyle[ROTATE_Y] || __computedStyle[SKEW_X] || __computedStyle[SKEW_Y])) ; else {
           optimize = true;
         }
       } // translate/scale变化特殊优化，d/h/l不能有值，否则不能这样直接简化运算，因为这里不包含perspective，所以一定没有
 
 
-      if (optimize) {
+      if (optimize && matrixCache) {
         var transform = __computedStyle[TRANSFORM$3];
 
         if (lv & TX) {
@@ -17704,6 +18355,10 @@ var Xom = /*#__PURE__*/function (_Node) {
 
         if (lv & SCALE) {
           if (lv & SX) {
+            if (!__computedStyle[SCALE_X]) {
+              return this.__calMatrix(REFLOW$3, __currentStyle, __computedStyle, __cacheStyle, false);
+            }
+
             var _v4 = __currentStyle[SCALE_X].v;
 
             var _x2 = _v4 / __computedStyle[SCALE_X];
@@ -17718,6 +18373,10 @@ var Xom = /*#__PURE__*/function (_Node) {
           }
 
           if (lv & SY) {
+            if (!__computedStyle[SCALE_Y]) {
+              return this.__calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle, false);
+            }
+
             var _v5 = __currentStyle[SCALE_Y].v;
 
             var _y2 = _v5 / __computedStyle[SCALE_Y];
@@ -17732,6 +18391,10 @@ var Xom = /*#__PURE__*/function (_Node) {
           }
 
           if (lv & SZ) {
+            if (!__computedStyle[SCALE_Z]) {
+              return this.__calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle, false);
+            }
+
             var _v6 = __currentStyle[SCALE_Z].v;
 
             var _z = _v6 / __computedStyle[SCALE_Z];
@@ -17954,12 +18617,12 @@ var Xom = /*#__PURE__*/function (_Node) {
 
           __computedStyle[TRANSFORM$3] = matrix$1 || matrix.identity();
         }
-      }
 
-      if (!matrixCache) {
-        var m = __computedStyle[TRANSFORM$3];
-        var tfo = __computedStyle[TRANSFORM_ORIGIN$2];
-        matrixCache = __cacheStyle[MATRIX$1] = transform$1.calMatrixByOrigin(m, tfo[0] + __x1, tfo[1] + __y1);
+        if (!matrixCache) {
+          var m = __computedStyle[TRANSFORM$3];
+          var tfo = __computedStyle[TRANSFORM_ORIGIN$2];
+          matrixCache = __cacheStyle[MATRIX$1] = transform$1.calMatrixByOrigin(m, tfo[0] + __x1, tfo[1] + __y1);
+        }
       }
 
       return this.__matrix = matrixCache;
@@ -18105,9 +18768,7 @@ var Xom = /*#__PURE__*/function (_Node) {
                   loadBgi.height = data.height;
                   __cacheStyle[BACKGROUND_IMAGE] = undefined;
 
-                  root.__addUpdate(node, {
-                    focus: REPAINT$3
-                  });
+                  root.__addUpdate(node, null, REPAINT$3, null, null, null, null);
                 }
               }, {
                 ctx: ctx,
@@ -18619,24 +19280,8 @@ var Xom = /*#__PURE__*/function (_Node) {
         return {
           "break": true
         };
-      }
+      } // 考虑mpb的6个坐标，inline比较特殊单独计算
 
-      if (renderMode === WEBGL$1) {
-        return {};
-      } // 使用x和y渲染位置，考虑了relative和translate影响
-
-
-      var __offsetWidth = this.__offsetWidth,
-          __offsetHeight = this.__offsetHeight;
-      var paddingTop = computedStyle[PADDING_TOP$3],
-          paddingRight = computedStyle[PADDING_RIGHT$4],
-          paddingBottom = computedStyle[PADDING_BOTTOM$2],
-          paddingLeft = computedStyle[PADDING_LEFT$5],
-          borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$5],
-          borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$4],
-          borderTopWidth = computedStyle[BORDER_TOP_WIDTH$3],
-          borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$2];
-      var isRealInline = this.__isInline; // 考虑mpb的6个坐标，inline比较特殊单独计算
 
       var x1 = this.__x1;
       var x2 = this.__x2;
@@ -18674,7 +19319,24 @@ var Xom = /*#__PURE__*/function (_Node) {
         bx2: bx2,
         by1: by1,
         by2: by2
-      }; // cache的canvas模式已经提前计算好了，其它需要现在计算
+      };
+
+      if (renderMode === WEBGL$1) {
+        return res;
+      } // 使用x和y渲染位置，考虑了relative和translate影响
+
+
+      var __offsetWidth = this.__offsetWidth,
+          __offsetHeight = this.__offsetHeight;
+      var paddingTop = computedStyle[PADDING_TOP$3],
+          paddingRight = computedStyle[PADDING_RIGHT$4],
+          paddingBottom = computedStyle[PADDING_BOTTOM$2],
+          paddingLeft = computedStyle[PADDING_LEFT$5],
+          borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$5],
+          borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$4],
+          borderTopWidth = computedStyle[BORDER_TOP_WIDTH$3],
+          borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$2];
+      var isRealInline = this.__isInline; // cache的canvas模式已经提前计算好了，其它需要现在计算
 
       var matrix$1 = this.__matrix;
       var backgroundColor = computedStyle[BACKGROUND_COLOR],
@@ -19205,10 +19867,7 @@ var Xom = /*#__PURE__*/function (_Node) {
       }
 
       if (root && !this.__isDestroyed) {
-        root.__addUpdate(this, {
-          focus: lv,
-          cb: cb
-        });
+        root.__addUpdate(this, null, lv, null, null, null, cb);
       } else if (isFunction$5(cb)) {
         cb(-1);
       }
@@ -19474,7 +20133,6 @@ var Xom = /*#__PURE__*/function (_Node) {
       var __cacheTotal = this.__cacheTotal;
       var __cacheFilter = this.__cacheFilter;
       var __cacheMask = this.__cacheMask;
-      var __cacheOverflow = this.__cacheOverflow;
       var __cache = this.__cache;
 
       if (__cache) {
@@ -19493,10 +20151,6 @@ var Xom = /*#__PURE__*/function (_Node) {
         __cacheMask.release();
       }
 
-      if (__cacheOverflow) {
-        __cacheOverflow.release();
-      }
-
       this.__refreshLevel |= CACHE$3;
 
       if (lookUp) {
@@ -19506,7 +20160,6 @@ var Xom = /*#__PURE__*/function (_Node) {
           var _cacheTotal = p.__cacheTotal;
           var _cacheFilter = p.__cacheFilter;
           var _cacheMask = p.__cacheMask;
-          var _cacheOverflow = p.__cacheOverflow;
           p.__refreshLevel |= CACHE$3;
 
           if (_cacheTotal) {
@@ -19519,10 +20172,6 @@ var Xom = /*#__PURE__*/function (_Node) {
 
           if (_cacheMask) {
             _cacheMask.release();
-          }
-
-          if (_cacheOverflow) {
-            _cacheOverflow.release();
           }
 
           p = p.__domParent;
@@ -19572,10 +20221,7 @@ var Xom = /*#__PURE__*/function (_Node) {
       }
 
       if (root) {
-        root.__addUpdate(this, {
-          keys: keys,
-          cb: cb
-        });
+        root.__addUpdate(this, keys, null, null, null, null, cb);
       }
     }
   }, {
@@ -19662,11 +20308,6 @@ var Xom = /*#__PURE__*/function (_Node) {
       this.__frameAnimateList.splice(0).forEach(function (o) {
         frame.offFrame(o);
       });
-    }
-  }, {
-    key: "__deepScan",
-    value: function __deepScan(cb, options) {
-      return cb(this, options);
     } // isLayout为false时，为relative，true则是absolute/justify/marginAuto等直接改layoutData数据的
     // lv是reflow偏移时传入，需要清除cacheStyle，并且对位图cache进行偏移设置
     // 注意所有的offset/resize都要避免display:none的，比如合并margin导致block的孩子inline因clamp为none时没有layoutData
@@ -19694,7 +20335,7 @@ var Xom = /*#__PURE__*/function (_Node) {
       if (lv) {
         this.__refreshLevel |= lv;
 
-        if (lv >= REFLOW$2) {
+        if (lv >= REFLOW$3) {
           this.__cacheStyle = [];
 
           this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
@@ -19734,7 +20375,7 @@ var Xom = /*#__PURE__*/function (_Node) {
       if (lv) {
         this.__refreshLevel |= lv;
 
-        if (lv >= REFLOW$2) {
+        if (lv >= REFLOW$3) {
           this.__cacheStyle = [];
 
           this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
@@ -19756,10 +20397,6 @@ var Xom = /*#__PURE__*/function (_Node) {
 
         if (this.__cacheTotal) {
           this.__cacheTotal.__offsetY(diff);
-        }
-
-        if (this.__cacheOverflow) {
-          this.__cacheOverflow.__offsetY(diff);
         }
 
         if (this.__cacheFilter) {
@@ -19794,7 +20431,7 @@ var Xom = /*#__PURE__*/function (_Node) {
       if (lv) {
         this.__refreshLevel |= lv;
 
-        if (lv >= REFLOW$2) {
+        if (lv >= REFLOW$3) {
           this.__cacheStyle = [];
 
           this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
@@ -19826,7 +20463,7 @@ var Xom = /*#__PURE__*/function (_Node) {
       if (lv) {
         this.__refreshLevel |= lv;
 
-        if (lv >= REFLOW$2) {
+        if (lv >= REFLOW$3) {
           this.__cacheStyle = [];
 
           this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
@@ -19971,13 +20608,7 @@ var Xom = /*#__PURE__*/function (_Node) {
       } // 可见在reflow逻辑做结构关系等
 
 
-      var res = {
-        focus: REFLOW$2,
-        removeDom: true,
-        cb: cb
-      };
-
-      root.__addUpdate(this, res);
+      root.__addUpdate(this, null, REFLOW$3, null, true, null, cb);
     }
   }, {
     key: "tagName",
@@ -20137,9 +20768,7 @@ var Xom = /*#__PURE__*/function (_Node) {
         var root = this.__root;
 
         if (root && !this.__isDestroyed) {
-          root.__addUpdate(this, {
-            focus: MASK$2
-          });
+          root.__addUpdate(this, null, MASK$2, null, null, null, null);
         }
       }
     }
@@ -20156,9 +20785,7 @@ var Xom = /*#__PURE__*/function (_Node) {
         var root = this.__root;
 
         if (root && !this.__isDestroyed) {
-          root.__addUpdate(this, {
-            focus: MASK$2
-          });
+          root.__addUpdate(this, null, MASK$2, null, null, null, null);
         }
       }
     }
@@ -20175,9 +20802,7 @@ var Xom = /*#__PURE__*/function (_Node) {
         var root = this.__root;
 
         if (root && !this.__isDestroyed) {
-          root.__addUpdate(this, {
-            focus: REPAINT$3
-          });
+          root.__addUpdate(this, null, REPAINT$3, null, null, null, null);
         }
       }
     }
@@ -21933,7 +22558,7 @@ var AUTO$2 = o$4.AUTO,
     VMIN$2 = o$4.VMIN,
     PERCENT$2 = o$4.PERCENT;
 var REPAINT$2 = o$1.REPAINT,
-    REFLOW$1 = o$1.REFLOW,
+    REFLOW$2 = o$1.REFLOW,
     CACHE$2 = o$1.CACHE;
 var isRelativeOrAbsolute$1 = css.isRelativeOrAbsolute;
 
@@ -22044,13 +22669,13 @@ function offsetNext(next, diff, parentFixed, absList) {
     var cs = next.currentStyle; // flow流和auto/px/rem的absolute流需要偏移diff值
 
     if (cs[POSITION$2] !== 'absolute' || cs[TOP$2].u === AUTO$2 && cs[BOTTOM$2].u === AUTO$2 || cs[TOP$2].u === AUTO$2 && [PX$3, REM$2, VW$2, VH$2, VMAX$2, VMIN$2].indexOf(cs[BOTTOM$2].u) > -1) {
-      next.__offsetY(diff, true, REFLOW$1);
+      next.__offsetY(diff, true, REFLOW$2);
     } // absolute中百分比的特殊计算偏移，但要排除parent固定尺寸
     else if (!parentFixed && cs[POSITION$2] === 'absolute' && (cs[TOP$2].u === PERCENT$2 || cs[BOTTOM$2].u === PERCENT$2)) {
       if (cs[TOP$2].u === PERCENT$2) {
-        next.__offsetY(diff * 0.01 * cs[TOP$2].v, true, REFLOW$1);
+        next.__offsetY(diff * 0.01 * cs[TOP$2].v, true, REFLOW$2);
       } else {
-        next.__offsetY(diff * (1 - 0.01 * cs[BOTTOM$2].v), true, REFLOW$1);
+        next.__offsetY(diff * (1 - 0.01 * cs[BOTTOM$2].v), true, REFLOW$2);
       }
     } // abs的percent调整，记录
 
@@ -22461,7 +23086,7 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
 
 
   if (!removeDom && d3) {
-    top.__offsetY(d3, true, REFLOW$1);
+    top.__offsetY(d3, true, REFLOW$2);
   } // 差值计算注意考虑margin合并前的值，和合并后的差值，height使用offsetHeight不考虑margin
 
 
@@ -22475,7 +23100,7 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
   var parentFixed = isFixedWidthOrHeight(parent, HEIGHT$3);
 
   if (!parentFixed) {
-    parent.__resizeY(diff, REFLOW$1);
+    parent.__resizeY(diff, REFLOW$2);
   } // 调整的同时遇到百分比高度的abs需记录下来最后重新布局
 
 
@@ -22489,7 +23114,7 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
     parentFixed = parent && isFixedWidthOrHeight(parent, HEIGHT$3);
 
     if (!parentFixed) {
-      parent.__resizeY(diff, REFLOW$1);
+      parent.__resizeY(diff, REFLOW$2);
     }
 
     offsetNext(next, diff, parentFixed, absList);
@@ -22708,7 +23333,8 @@ var CANVAS = mode.CANVAS,
     SVG = mode.SVG,
     WEBGL = mode.WEBGL;
 var isE$2 = matrix.isE,
-    multiply$1 = matrix.multiply; // 渲染获取zIndex顺序
+    multiply$1 = matrix.multiply;
+var REFLOW$1 = o$1.REFLOW; // 渲染获取zIndex顺序
 
 function genZIndexChildren(dom) {
   var normal = [];
@@ -26290,18 +26916,6 @@ var Dom = /*#__PURE__*/function (_Xom) {
 
 
       return _get(_getPrototypeOf(Dom.prototype), "__emitEvent", this).call(this, e, false);
-    } // 深度遍历执行所有子节点，包含自己，如果cb返回true，提前跳出不继续深度遍历
-
-  }, {
-    key: "__deepScan",
-    value: function __deepScan(cb, options) {
-      if (_get(_getPrototypeOf(Dom.prototype), "__deepScan", this).call(this, cb, options)) {
-        return;
-      }
-
-      this.children.forEach(function (node) {
-        node.__deepScan(cb, options);
-      });
     }
   }, {
     key: "appendChild",
@@ -26357,11 +26971,7 @@ var Dom = /*#__PURE__*/function (_Xom) {
         child = this;
       }
 
-      root.__addUpdate(child, {
-        focus: o$1.REFLOW,
-        addDom: true,
-        cb: cb
-      });
+      root.__addUpdate(child, null, REFLOW$1, true, null, null, cb);
     }
   }, {
     key: "prependChild",
@@ -26417,11 +27027,7 @@ var Dom = /*#__PURE__*/function (_Xom) {
         child = this;
       }
 
-      root.__addUpdate(child, {
-        focus: o$1.REFLOW,
-        addDom: true,
-        cb: cb
-      });
+      root.__addUpdate(child, null, REFLOW$1, true, null, null, cb);
     }
   }, {
     key: "insertBefore",
@@ -26488,11 +27094,7 @@ var Dom = /*#__PURE__*/function (_Xom) {
         child = parent;
       }
 
-      root.__addUpdate(child, {
-        focus: o$1.REFLOW,
-        addDom: true,
-        cb: cb
-      });
+      root.__addUpdate(child, null, REFLOW$1, true, null, null, cb);
     }
   }, {
     key: "insertAfter",
@@ -26552,11 +27154,7 @@ var Dom = /*#__PURE__*/function (_Xom) {
         child = parent;
       }
 
-      root.__addUpdate(child, {
-        focus: o$1.REFLOW,
-        addDom: true,
-        cb: cb
-      });
+      root.__addUpdate(child, null, REFLOW$1, true, null, null, cb);
     }
   }, {
     key: "removeChild",
@@ -26706,8 +27304,8 @@ var Img = /*#__PURE__*/function (_Dom) {
         inject.measureImg(src, null);
       } else if (ca && ca.state === inject.LOADED) {
         loadImg.source = ca.source;
-        loadImg.width = ca.width;
-        loadImg.height = ca.height;
+        loadImg.width = loadImg.__width = ca.width;
+        loadImg.height = loadImg.__height = ca.height;
       }
     }
 
@@ -26740,8 +27338,8 @@ var Img = /*#__PURE__*/function (_Dom) {
           }
         } else if (cache && cache.state === inject.LOADED && cache.success) {
           loadImg.source = cache.source;
-          loadImg.width = cache.width;
-          loadImg.height = cache.height;
+          loadImg.width = loadImg.__width = cache.width;
+          loadImg.height = loadImg.__height = cache.height;
         }
 
         loadImg.cache = false;
@@ -26780,35 +27378,29 @@ var Img = /*#__PURE__*/function (_Dom) {
     key: "__addGeom",
     value: function __addGeom(tagName, props) {
       props = util.hash2arr(props);
-      this.virtualDom.children.push({
+
+      this.__virtualDom.children.push({
         type: 'item',
         tagName: tagName,
         props: props
       });
-    }
-  }, {
-    key: "__destroy",
-    value: function __destroy() {
-      this.root.delRefreshTask(this.__task);
-
-      _get(_getPrototypeOf(Img.prototype), "__destroy", this).call(this);
-
-      this.__task = null;
-    } // img根据加载情况更新__hasContent
+    } // img根据加载情况更新__hasContent，同时识别是否仅有图片内容本身，多个相同图片视为同一个资源
 
   }, {
     key: "calContent",
     value: function calContent(__currentStyle, __computedStyle) {
       var res = _get(_getPrototypeOf(Img.prototype), "calContent", this).call(this, __currentStyle, __computedStyle);
 
+      var loadImg = this.__loadImg;
+
       if (!res) {
-        var loadImg = this.__loadImg; // if(loadImg.loading) {
-        //   this.__loadAndRefresh(loadImg, null);
-        // }
+        loadImg.onlyImg = true;
 
         if (__computedStyle[VISIBILITY$2] !== 'hidden' && (__computedStyle[WIDTH$1] || __computedStyle[HEIGHT$1]) && loadImg.source) {
           res = true;
         }
+      } else {
+        loadImg.onlyImg = false;
       }
 
       return res;
@@ -27114,16 +27706,9 @@ var Img = /*#__PURE__*/function (_Dom) {
                 height = _self$__currentStyle[HEIGHT$1];
 
             if (width.u !== AUTO && height.u !== AUTO) {
-              root.__addUpdate(self, {
-                focus: o$1.REPAINT,
-                // 已知宽高无需重新布局
-                cb: cb
-              });
+              root.__addUpdate(self, null, o$1.REPAINT, null, null, null, cb);
             } else {
-              root.__addUpdate(self, {
-                focus: o$1.REFLOW,
-                cb: cb
-              });
+              root.__addUpdate(self, null, o$1.REFLOW, null, null, null, cb);
             }
           };
 
@@ -28170,12 +28755,11 @@ var Controller = /*#__PURE__*/function () {
  * canvas和texture合图的基类，和Page类配合，抽象出基础尺寸偏差等信息
  * 派生2个子类
  */
-
-var uuid$3 = 0;
+var uuid$2 = 0;
 
 var Cache = /*#__PURE__*/function () {
   function Cache(renderMode, ctx, rootId, w, h, bbox, page, pos, x1, y1) {
-    this.__uuid = uuid$3++;
+    this.__uuid = uuid$2++;
     this.__renderMode = renderMode;
     this.__ctx = ctx;
     this.__rootId = rootId;
@@ -28198,6 +28782,11 @@ var Cache = /*#__PURE__*/function () {
 
       this.__x = x;
       this.__y = y;
+      var size = page.__size;
+      this.__tx1 = x / size;
+      this.__ty1 = (size - y - h) / size;
+      this.__tx2 = (x + w) / size;
+      this.__ty2 = (size - y) / size;
       this.__enabled = true;
       this.__available = false;
 
@@ -28205,17 +28794,17 @@ var Cache = /*#__PURE__*/function () {
     }
   }, {
     key: "__appendData",
-    value: function __appendData(sx1, sy1) {
-      this.sx1 = sx1; // 去除margin的左上角原点坐标
+    value: function __appendData(x1, y1) {
+      this.x1 = x1; // 去除margin的左上角原点坐标
 
-      this.sy1 = sy1;
+      this.y1 = y1;
       var bbox = this.__bbox;
       this.dx = this.__x - bbox[0]; // cache坐标和box原点的差值
 
       this.dy = this.__y - bbox[1];
-      this.dbx = sx1 - bbox[0]; // 原始sx1/sy1和box原点的差值
+      this.dbx = x1 - bbox[0]; // 原始sx1/sy1和box原点的差值
 
-      this.dby = sy1 - bbox[1];
+      this.dby = y1 - bbox[1];
       this.update();
     }
   }, {
@@ -28239,7 +28828,7 @@ var Cache = /*#__PURE__*/function () {
       if (this.__enabled) {
         this.clear();
 
-        this.__page.del(this.pos);
+        this.__page.del(this.__pos);
 
         this.__page = null;
         this.__enabled = false;
@@ -28256,7 +28845,6 @@ var Cache = /*#__PURE__*/function () {
       var res = klass.getInstance(this.__renderMode, this.__ctx, this.__rootId, Math.max(w, h), null);
 
       if (!res) {
-        this.__enabled = false;
         return;
       }
 
@@ -28268,7 +28856,7 @@ var Cache = /*#__PURE__*/function () {
   }, {
     key: "__offsetY",
     value: function __offsetY(diff) {
-      this.sy1 += diff;
+      this.y1 += diff;
       var bbox = this.__bbox;
       bbox[1] += diff;
       bbox[3] += diff;
@@ -28378,8 +28966,8 @@ var Cache = /*#__PURE__*/function () {
 var UNIT = 16;
 var MAX = 2048;
 var NUMBER = 128;
-var HASH = {};
-var uuid$2 = 0;
+var HASH$2 = {};
+var uuid$1 = 0;
 var _init = false;
 
 var Page = /*#__PURE__*/function () {
@@ -28395,7 +28983,7 @@ var Page = /*#__PURE__*/function () {
     }
 
     this.__grid = new Int32Array(grid);
-    this.__uuid = uuid$2++; // webgl贴图缓存更新使用，canvas/img等发生变更需刷新重新生成texture，fbo的texture不需要
+    this.__uuid = uuid$1++; // webgl贴图缓存更新使用，canvas/img等发生变更需刷新重新生成texture，fbo的texture不需要
 
     this.__update = false;
     this.time = 0;
@@ -28535,7 +29123,7 @@ var Page = /*#__PURE__*/function () {
 
       var key = rootId + ',' + renderMode; // 每个root复用自己的合图，webgl中为了隔离不同实例
 
-      var list = HASH[key] = HASH[key] || [];
+      var list = HASH$2[key] = HASH$2[key] || [];
       var page, pos;
 
       for (var i = 0, len = list.length; i < len; i++) {
@@ -28600,7 +29188,7 @@ var Page = /*#__PURE__*/function () {
   }, {
     key: "genUuid",
     value: function genUuid() {
-      return uuid$2++;
+      return uuid$1++;
     }
   }, {
     key: "init",
@@ -28811,13 +29399,14 @@ function drawTextureCache(gl, list, cx, cy, dx, dy) {
         cache = _list$i.cache,
         opacity = _list$i.opacity,
         matrix = _list$i.matrix;
-    var x = cache.x,
-        y = cache.y,
-        width = cache.width,
-        height = cache.height,
-        page = cache.page,
-        bbox = cache.bbox;
-    var size = page.__size;
+    var width = cache.__width,
+        height = cache.__height,
+        tx1 = cache.__tx1,
+        ty1 = cache.__ty1,
+        tx2 = cache.__tx2,
+        ty2 = cache.__ty2,
+        page = cache.__page,
+        bbox = cache.__bbox;
 
     if (!i) {
       // canvas需要生成texture，texture则强制不会进来
@@ -28848,33 +29437,48 @@ function drawTextureCache(gl, list, cx, cy, dx, dy) {
 
     var _calPoint2 = calPoint({
       x: xb,
-      y: ya,
-      z: 0,
-      w: 1
-    }, matrix),
-        x2 = _calPoint2.x,
-        y2 = _calPoint2.y,
-        w2 = _calPoint2.w;
-
-    var _calPoint3 = calPoint({
-      x: xb,
       y: yb,
       z: 0,
       w: 1
     }, matrix),
-        x3 = _calPoint3.x,
-        y3 = _calPoint3.y,
-        w3 = _calPoint3.w;
+        x3 = _calPoint2.x,
+        y3 = _calPoint2.y,
+        w3 = _calPoint2.w;
 
-    var _calPoint4 = calPoint({
-      x: xa,
-      y: yb,
-      z: 0,
-      w: 1
-    }, matrix),
-        x4 = _calPoint4.x,
-        y4 = _calPoint4.y,
-        w4 = _calPoint4.w;
+    var x2 = void 0,
+        y2 = void 0,
+        w2 = void 0,
+        x4 = void 0,
+        y4 = void 0,
+        w4 = void 0; // 无旋转的时候可以少算2个点
+
+    if (w1 === 1 && w3 === 1 && (!matrix || !matrix.length || !matrix[1] && !matrix[4])) {
+      x2 = x3;
+      y2 = y1;
+      x4 = x1;
+      y4 = y3;
+      w2 = w4 = 1;
+    } else {
+      var _t = calPoint({
+        x: xb,
+        y: ya,
+        z: 0,
+        w: 1
+      }, matrix);
+
+      x2 = _t.x;
+      y2 = _t.y;
+      w2 = _t.w;
+      _t = calPoint({
+        x: xa,
+        y: yb,
+        z: 0,
+        w: 1
+      }, matrix);
+      x4 = _t.x;
+      y4 = _t.y;
+      w4 = _t.w;
+    }
 
     var t = convertCoords2Gl(x1, y1, 0, w1, cx, cy);
     x1 = t.x;
@@ -28907,11 +29511,7 @@ function drawTextureCache(gl, list, cx, cy, dx, dy) {
     vtPoint[j + 19] = w2;
     vtPoint[j + 20] = x3;
     vtPoint[j + 21] = y3;
-    vtPoint[j + 23] = w3;
-    var tx1 = x / size,
-        ty1 = (size - y - height) / size;
-    var tx2 = (x + width) / size,
-        ty2 = (size - y) / size; // vtTex.push(tx1, ty1, tx1, ty2, tx2, ty1, tx1, ty2, tx2, ty1, tx2, ty2);
+    vtPoint[j + 23] = w3; // vtTex.push(tx1, ty1, tx1, ty2, tx2, ty1, tx1, ty2, tx2, ty1, tx2, ty2);
 
     j = i * 12;
     vtTex[j] = tx1;
@@ -28933,7 +29533,7 @@ function drawTextureCache(gl, list, cx, cy, dx, dy) {
     vtOpacity[j + 2] = opacity;
     vtOpacity[j + 3] = opacity;
     vtOpacity[j + 4] = opacity;
-    vtOpacity[j + 5] = opacity; // record.num++;
+    vtOpacity[j + 5] = opacity;
   } // 顶点buffer
 
 
@@ -28967,7 +29567,6 @@ function drawTextureCache(gl, list, cx, cy, dx, dy) {
   gl.disableVertexAttribArray(a_position);
   gl.disableVertexAttribArray(a_texCoords);
   gl.disableVertexAttribArray(a_opacity);
-  gl.bindTexture(gl.TEXTURE_2D, null);
 }
 /**
  * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement
@@ -29601,8 +30200,8 @@ var CanvasCache = /*#__PURE__*/function (_Cache) {
           y = cache.y,
           size = cache.size,
           canvas = cache.canvas,
-          sx1 = cache.sx1,
-          sy1 = cache.sy1,
+          x1 = cache.x1,
+          y1 = cache.y1,
           width = cache.width,
           height = cache.height,
           bbox = cache.bbox;
@@ -29620,8 +30219,8 @@ var CanvasCache = /*#__PURE__*/function (_Cache) {
       offscreen.x = 0;
       offscreen.y = 0;
       offscreen.size = size;
-      offscreen.sx1 = sx1;
-      offscreen.sy1 = sy1;
+      offscreen.x1 = x1;
+      offscreen.y1 = y1;
       offscreen.dx = -bbox[0];
       offscreen.dy = -bbox[1];
       offscreen.dbx = cache.dbx + d;
@@ -29668,59 +30267,27 @@ var CanvasCache = /*#__PURE__*/function (_Cache) {
       ctx.globalCompositeOperation = 'source-over';
       return cacheMask;
     }
-    /**
-     * 如果不超过bbox，直接用已有的total/filter/mask，否则生成一个新的
-     */
-
-  }, {
-    key: "genOverflow",
-    value: function genOverflow(target, node) {
-      var bbox = target.bbox;
-      var __x1 = node.__x1,
-          __y1 = node.__y1,
-          __clientWidth = node.__clientWidth,
-          __clientHeight = node.__clientHeight;
-      var xe = __x1 + __clientWidth;
-      var ye = __y1 + __clientHeight;
-
-      if (bbox[0] < __x1 || bbox[1] < __y1 || bbox[2] > xe || bbox[3] > ye) {
-        var bboxNew = [__x1, __y1, xe, ye];
-        var cacheOverflow = genSingle(target, 'overflow', bboxNew);
-        var ctx = cacheOverflow.ctx;
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.globalAlpha = 1;
-        CanvasCache.drawCache(target, cacheOverflow);
-        ctx.globalCompositeOperation = 'destination-in';
-        ctx.fillStyle = '#FFF';
-        ctx.beginPath();
-        ctx.rect(0, 0, __clientWidth, __clientHeight);
-        ctx.fill();
-        ctx.closePath();
-        ctx.globalCompositeOperation = 'source-over';
-        return cacheOverflow;
-      }
-    }
   }, {
     key: "drawCache",
     value: function drawCache(source, target) {
       var tx = target.x,
           ty = target.y,
-          sx1 = target.sx1,
-          sy1 = target.sy1,
+          x1 = target.x1,
+          y1 = target.y1,
           ctx = target.ctx,
           dbx = target.dbx,
           dby = target.dby;
       var x = source.x,
           y = source.y,
           canvas = source.canvas,
-          sx2 = source.sx1,
-          sy2 = source.sy1,
+          x2 = source.x1,
+          y2 = source.y1,
           dbx2 = source.dbx,
           dby2 = source.dby,
           width = source.width,
           height = source.height;
-      var ox = tx + sx2 - sx1 + dbx - dbx2;
-      var oy = ty + sy2 - sy1 + dby - dby2;
+      var ox = tx + x2 - x1 + dbx - dbx2;
+      var oy = ty + y2 - y1 + dby - dby2;
       ctx.drawImage(canvas, x, y, width, height, ox, oy, width, height);
     }
   }]);
@@ -29731,8 +30298,8 @@ var CanvasCache = /*#__PURE__*/function (_Cache) {
 
 function genSingle(cache, message, bboxNew) {
   var size = cache.size,
-      sx1 = cache.sx1,
-      sy1 = cache.sy1,
+      x1 = cache.x1,
+      y1 = cache.y1,
       bbox = cache.bbox;
   bboxNew = bboxNew || bbox;
   var width = bboxNew[2] - bboxNew[0];
@@ -29744,8 +30311,8 @@ function genSingle(cache, message, bboxNew) {
   offscreen.y = 0;
   offscreen.bbox = bboxNew;
   offscreen.size = size;
-  offscreen.sx1 = sx1;
-  offscreen.sy1 = sy1;
+  offscreen.x1 = x1;
+  offscreen.y1 = y1;
   offscreen.dx = -bboxNew[0];
   offscreen.dy = -bboxNew[1];
   offscreen.dbx = cache.dbx - dx;
@@ -29942,8 +30509,6 @@ var offscreen = {
   applyOffscreen: applyOffscreen$1
 };
 
-var uuid$1 = 0;
-
 var TexturePage = /*#__PURE__*/function (_Page) {
   _inherits(TexturePage, _Page);
 
@@ -29955,7 +30520,6 @@ var TexturePage = /*#__PURE__*/function (_Page) {
     _this.texture = webgl.createTexture(gl, null, 0, size, size); // 默认0单元
 
     gl.bindTexture(gl.TEXTURE_2D, null);
-    _this.texture.uuid = uuid$1++;
     return _this;
   }
 
@@ -30019,6 +30583,204 @@ var TextureCache = /*#__PURE__*/function (_Cache) {
 var vertexBlur = "#version 100\n#define GLSLIFY 1\nattribute vec4 a_position;attribute vec2 a_texCoords;varying vec2 v_texCoordsBlur[3];uniform vec2 u_direction;void main(){gl_Position=a_position;}"; // eslint-disable-line
 
 var fragmentBlur = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoordsBlur[3];uniform sampler2D u_texture;void main(){gl_FragColor=vec4(0.0);}"; // eslint-disable-line
+
+var HASH$1 = {};
+/**
+ * 相同的图片且尺寸相同时，复用一个source，如果尺寸和原图相等直接用，否则生成一个离屏canvas
+ */
+
+var ImgCanvasCache = /*#__PURE__*/function (_CanvasCache) {
+  _inherits(ImgCanvasCache, _CanvasCache);
+
+  function ImgCanvasCache(renderMode, ctx, rootId, w, h, bbox, page, x1, y1) {
+    return _CanvasCache.call(this, renderMode, ctx, rootId, w, h, bbox, page, null, x1, y1) || this;
+  }
+
+  _createClass(ImgCanvasCache, [{
+    key: "__init",
+    value: function __init(w, h, bbox, page, pos, x1, y1) {
+      this.__width = w;
+      this.__height = h;
+      this.__bbox = bbox;
+      this.__page = page; // 相等就不生成新的离屏canvas，直接用原始资源比如<img>节点内容
+
+      if (page.width === w && page.height === h) {
+        this.__canvas = page.source;
+      } // 不等则一个url只生成一份OffscreenCanvas
+      else {
+        var key = this.key = w + ' ' + h + ' ' + page.src;
+
+        if (HASH$1.hasOwnProperty(key)) {
+          var o = HASH$1[key];
+          o.count++;
+          this.__canvas = o.canvas;
+        } else {
+          var offscreenCanvas = inject.getOffscreenCanvas(w, h, null, null);
+          var ctx = offscreenCanvas.ctx;
+          ctx.globalAlpha = 1;
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.drawImage(page.source, 0, 0, w, h);
+          this.__canvas = offscreenCanvas.canvas;
+          HASH$1[key] = {
+            canvas: offscreenCanvas.canvas,
+            count: 1
+          };
+        }
+      }
+
+      this.__x = 0;
+      this.__y = 0;
+      this.__enabled = true;
+      this.__available = true;
+
+      this.__appendData(x1, y1);
+    }
+  }, {
+    key: "clear",
+    value: function clear() {
+      if (this.__available) {
+        this.__available = false;
+        return true;
+      }
+    }
+  }, {
+    key: "release",
+    value: function release() {
+      if (this.__enabled) {
+        this.clear();
+        var key = this.key;
+
+        if (HASH$1.hasOwnProperty(key)) {
+          var o = HASH$1[key];
+          o.count--;
+
+          if (!o.count) {
+            delete HASH$1[key];
+          }
+        }
+
+        this.__enabled = false;
+        this.__page = null;
+        return true;
+      }
+    }
+  }, {
+    key: "reset",
+    value: function reset(bbox, x1, y1) {
+      this.release();
+      var w = Math.ceil(bbox[2] - bbox[0]);
+      var h = Math.ceil(bbox[3] - bbox[1]);
+      var n = Math.max(w, h);
+
+      if (n <= 0) {
+        return;
+      }
+
+      this.__init(w, h, bbox, this.__page, null, x1, y1);
+    }
+  }, {
+    key: "canvas",
+    get: function get() {
+      return this.__canvas;
+    }
+  }, {
+    key: "ctx",
+    get: function get() {
+      return this.__ctx;
+    }
+  }, {
+    key: "size",
+    get: function get() {}
+  }], [{
+    key: "getInstance",
+    value: function getInstance(renderMode, ctx, rootId, bbox, loadImg, x1, y1) {
+      var w = Math.ceil(bbox[2] - bbox[0]);
+      var h = Math.ceil(bbox[3] - bbox[1]);
+      var n = Math.max(w, h);
+
+      if (n <= 0) {
+        return;
+      }
+
+      return new ImgCanvasCache(renderMode, ctx, rootId, w, h, bbox, loadImg, x1, y1);
+    }
+  }]);
+
+  return ImgCanvasCache;
+}(CanvasCache);
+
+var HASH = {};
+
+var ImgWebglCache = /*#__PURE__*/function (_CanvasCache) {
+  _inherits(ImgWebglCache, _CanvasCache);
+
+  function ImgWebglCache(renderMode, ctx, rootId, w, h, bbox, page, pos, x1, y1) {
+    return _CanvasCache.call(this, renderMode, ctx, rootId, w, h, bbox, page, pos, x1, y1) || this;
+  }
+
+  _createClass(ImgWebglCache, [{
+    key: "clear",
+    value: function clear() {
+      if (this.__available) {
+        this.__available = false;
+        this.update();
+        return true;
+      }
+    }
+  }, {
+    key: "release",
+    value: function release() {
+      if (this.__enabled) {
+        this.clear();
+        var key = this.key;
+
+        if (HASH.hasOwnProperty(key)) {
+          var o = HASH[key];
+          o.count--;
+
+          if (!o.count) {
+            delete HASH[key];
+
+            this.__page.del(this.__pos);
+          }
+        }
+
+        this.__page = null;
+        this.__enabled = false;
+        return true;
+      }
+    }
+  }], [{
+    key: "getInstance",
+    value: function getInstance(renderMode, ctx, rootId, bbox, loadImg, x1, y1) {
+      var key = rootId + ',' + loadImg.width + ' ' + loadImg.height + ' ' + loadImg.src;
+
+      if (HASH.hasOwnProperty(key)) {
+        var o = HASH[key];
+        o.count++;
+        var w = bbox[2] - bbox[0],
+            h = bbox[3] - bbox[1];
+        var _cache = o.cache;
+        var res = new ImgWebglCache(renderMode, ctx, rootId, w, h, bbox, _cache.page, _cache.pos, x1, y1);
+        res.key = key;
+        return res;
+      }
+
+      var cache = Cache.getInstance(renderMode, ctx, rootId, bbox, x1, y1, this, CanvasPage, null);
+      cache.key = key;
+
+      if (cache) {
+        HASH[key] = {
+          cache: cache,
+          count: 1
+        };
+        return cache;
+      }
+    }
+  }]);
+
+  return ImgWebglCache;
+}(CanvasCache);
 
 var OFFSCREEN_OVERFLOW = offscreen.OFFSCREEN_OVERFLOW,
     OFFSCREEN_FILTER = offscreen.OFFSCREEN_FILTER,
@@ -30110,15 +30872,16 @@ function genBboxTotal(node, __structs, index, total, isWebgl) {
 
       var _bbox = _node.bbox,
           _p = _node.__domParent,
-          _matrix = _p.__matrixEvent; // if(pm) {
-      //   matrix = multiply(pm, matrix);
-      // }
+          _matrix = _p.__matrixEvent;
 
-      if (!isE(_matrix)) {
-        _bbox = transformBbox(_bbox, _matrix, 0, 0);
+      if (_bbox[2] - _bbox[0] && _bbox[3] - _bbox[1]) {
+        if (!isE(_matrix)) {
+          _bbox = transformBbox(_bbox, _matrix, 0, 0);
+        }
+
+        mergeBbox(bboxTotal, _bbox);
       }
 
-      mergeBbox(bboxTotal, _bbox, 0, 0);
       continue;
     }
 
@@ -30143,8 +30906,7 @@ function genBboxTotal(node, __structs, index, total, isWebgl) {
     var __cache2 = _node.__cache,
         __cacheTotal2 = _node.__cacheTotal,
         __cacheFilter2 = _node.__cacheFilter,
-        __cacheMask2 = _node.__cacheMask,
-        __cacheOverflow2 = _node.__cacheOverflow;
+        __cacheMask2 = _node.__cacheMask;
     var p = _node.__domParent;
     _node.__opacity = __computedStyle2[OPACITY$1] * p.__opacity;
     var m = _node.__matrix;
@@ -30162,7 +30924,7 @@ function genBboxTotal(node, __structs, index, total, isWebgl) {
     assignMatrix(_node.__matrixEvent, matrix$1);
     var bbox = void 0; // 子元素有cacheTotal优先使用
 
-    var target = getCache([__cacheMask2, __cacheFilter2, __cacheOverflow2, __cacheTotal2, __cache2]);
+    var target = getCache([__cacheMask2, __cacheFilter2, __cacheTotal2, __cache2]);
 
     if (target) {
       i += _total || 0;
@@ -30174,11 +30936,13 @@ function genBboxTotal(node, __structs, index, total, isWebgl) {
       bbox = target.bbox;
     } else {
       bbox = _node.bbox; // 不能用filterBbox，子元素继承根节点的，如果有filter会是cacheFilter的bbox
-    } // 老的不变，新的会各自重新生成，根据matrixEvent合并bboxTotal
+    }
 
-
-    bbox = transformBbox(bbox, matrix$1, 0, 0);
-    mergeBbox(bboxTotal, bbox, 0, 0);
+    if (bbox[2] - bbox[0] && bbox[3] - bbox[1]) {
+      // 老的不变，新的会各自重新生成，根据matrixEvent合并bboxTotal
+      bbox = transformBbox(bbox, matrix$1, 0, 0);
+      mergeBbox(bboxTotal, bbox);
+    }
   }
 
   if (bboxTotal[2] - bboxTotal[0] <= 0 || bboxTotal[3] - bboxTotal[1] <= 0) {
@@ -30196,19 +30960,18 @@ function genBboxTotal(node, __structs, index, total, isWebgl) {
   };
 }
 
-function mergeBbox(bbox, t, sx1, sy1) {
-  bbox[0] = Math.min(bbox[0], sx1 + t[0]);
-  bbox[1] = Math.min(bbox[1], sy1 + t[1]);
-  bbox[2] = Math.max(bbox[2], sx1 + t[2]);
-  bbox[3] = Math.max(bbox[3], sy1 + t[3]);
+function mergeBbox(bbox, t) {
+  bbox[0] = Math.min(bbox[0], t[0]);
+  bbox[1] = Math.min(bbox[1], t[1]);
+  bbox[2] = Math.max(bbox[2], t[2]);
+  bbox[3] = Math.max(bbox[3], t[3]);
 }
 /**
  * 生成局部根节点离屏缓存，超限时除外
  * cache是每个节点自身的缓存，且共享离屏canvas
  * cacheTotal是基础
  * cacheFilter基于total
- * cacheOverflow基于filter
- * cacheMask基于overflow
+ * cacheMask基于filter
  * cacheBlend基于mask
  */
 
@@ -30220,33 +30983,63 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
     return __cacheTotal;
   }
 
-  var sx1 = node.__x1,
-      sy1 = node.__y1;
+  var x1 = node.__x1,
+      y1 = node.__y1,
+      __offsetWidth = node.__offsetWidth,
+      __offsetHeight = node.__offsetHeight;
   var bboxTotal = genBboxTotal(node, __structs, index, total, false).bbox;
 
   if (!bboxTotal) {
     return;
-  } // 生成cacheTotal，获取偏移dx/dy
+  } // img节点特殊对待，如果只包含图片内容本身，多个相同引用可复用图片
 
 
-  __cacheTotal = node.__cacheTotal = CanvasCache.getInstance(renderMode, ctx, root.uuid, bboxTotal, sx1, sy1, null);
+  if (node instanceof Img && node.__loadImg.onlyImg) {
+    __cacheTotal = node.__cacheTotal = ImgCanvasCache.getInstance(renderMode, ctx, root.__uuid, bboxTotal, node.__loadImg, x1, y1);
+    return __cacheTotal;
+  } // 生成cacheTotal，获取偏移dx/dy，连带考虑overflow:hidden的情况，当hidden尺寸一致无效时可忽略
+  // 否则用一个单独临时的离屏获取包含hidden的结果，再绘入total
 
-  if (!__cacheTotal || !__cacheTotal.__enabled) {
-    if (bboxTotal[2] - bboxTotal[0] || bboxTotal[3] - bboxTotal[1]) {
-      inject.warn('CanvasCache of ' + node.tagName + '(' + index + ')' + ' is oversize: ' + (bboxTotal[2] - bboxTotal[0]) + ', ' + (bboxTotal[3] - bboxTotal[1]));
+
+  var w, h, dx, dy, dbx, dby, tx, ty;
+  var overflow = node.__computedStyle[OVERFLOW],
+      isOverflow;
+
+  if ((x1 !== bboxTotal[0] || y1 !== bboxTotal[1] || __offsetWidth !== bboxTotal[2] - bboxTotal[0] || __offsetHeight !== bboxTotal[3] - bboxTotal[1]) && overflow === 'hidden') {
+    // geom可能超限，不能直接用bbox
+    bboxTotal = [x1, y1, x1 + __offsetWidth, y1 + __offsetHeight];
+    w = __offsetWidth;
+    h = __offsetHeight;
+    dx = -x1;
+    dy = -y1;
+    dbx = 0;
+    dby = 0;
+    tx = 0;
+    ty = 0;
+    isOverflow = true;
+    __cacheTotal = inject.getOffscreenCanvas(w, h, 'overflow', null);
+  } else {
+    w = bboxTotal[2] - bboxTotal[0];
+    h = bboxTotal[3] - bboxTotal[1];
+    __cacheTotal = node.__cacheTotal = CanvasCache.getInstance(renderMode, ctx, root.__uuid, bboxTotal, x1, y1, null);
+
+    if (!__cacheTotal || !__cacheTotal.__enabled) {
+      if (w || h) {
+        inject.warn('CanvasCache of ' + node.tagName + '(' + index + ')' + ' is oversize: ' + w + ', ' + h);
+      }
+
+      return;
     }
 
-    return;
+    __cacheTotal.__available = true;
+    dx = __cacheTotal.dx;
+    dy = __cacheTotal.dy;
+    dbx = __cacheTotal.dbx;
+    dby = __cacheTotal.dby;
+    tx = __cacheTotal.x;
+    ty = __cacheTotal.y;
   }
 
-  __cacheTotal.__available = true;
-  var _cacheTotal = __cacheTotal,
-      dx = _cacheTotal.dx,
-      dy = _cacheTotal.dy,
-      dbx = _cacheTotal.dbx,
-      dby = _cacheTotal.dby,
-      tx = _cacheTotal.x,
-      ty = _cacheTotal.y;
   var ctxTotal = __cacheTotal.ctx;
   /**
    * 再次遍历每个节点，以局部根节点左上角为基准原点，将所有节点绘制上去
@@ -30300,8 +31093,7 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
 
       var __cacheTotal2 = _node2.__cacheTotal,
           __cacheFilter2 = _node2.__cacheFilter,
-          __cacheMask2 = _node2.__cacheMask,
-          __cacheOverflow2 = _node2.__cacheOverflow;
+          __cacheMask2 = _node2.__cacheMask;
       var transform = __computedStyle2[TRANSFORM$1],
           tfo = __computedStyle2[TRANSFORM_ORIGIN],
           visibility = __computedStyle2[VISIBILITY$1];
@@ -30368,7 +31160,7 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
       var m = void 0;
 
       if (i !== index && (!isE(parentMatrix) || !isE(transform))) {
-        m = transform$1.calMatrixByOrigin(transform, tfo[0] + dbx + _node2.__x1 - sx1 + tx, tfo[1] + dby + _node2.__y1 - sy1 + ty);
+        m = transform$1.calMatrixByOrigin(transform, tfo[0] + dbx + _node2.__x1 - x1 + tx, tfo[1] + dby + _node2.__y1 - y1 + ty);
 
         if (!isE(parentMatrix)) {
           m = multiply(parentMatrix, m);
@@ -30377,7 +31169,7 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
 
       lastMatrix = m; // 子元素有cacheTotal优先使用
 
-      var target = i > index && getCache([__cacheMask2, __cacheFilter2, __cacheOverflow2, __cacheTotal2]);
+      var target = i > index && getCache([__cacheMask2, __cacheFilter2, __cacheTotal2]);
 
       if (target) {
         i += _total2 || 0;
@@ -30510,6 +31302,17 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
         }
       }
     }
+  } // overflow写回整体离屏
+
+
+  if (isOverflow) {
+    var t = node.__cacheTotal = CanvasCache.getInstance(renderMode, ctx, root.__uuid, bboxTotal, x1, y1, null);
+    t.__available = true;
+    t.ctx.drawImage(__cacheTotal.canvas, t.x, t.y);
+
+    __cacheTotal.release();
+
+    __cacheTotal = t;
   }
 
   return __cacheTotal;
@@ -30518,20 +31321,11 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
 
 function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width, height) {
   var __computedStyle = node.__computedStyle,
-      __cacheOverflow = node.__cacheOverflow,
       __cacheFilter = node.__cacheFilter,
       __cacheMask = node.__cacheMask;
-  var overflow = __computedStyle[OVERFLOW],
-      filter = __computedStyle[FILTER];
+  var filter = __computedStyle[FILTER];
   var target = __cacheTotal,
       needGen;
-
-  if (overflow === 'hidden') {
-    if (!__cacheOverflow || !__cacheOverflow.available) {
-      target = node.__cacheOverflow = CanvasCache.genOverflow(target, node);
-      needGen = true;
-    }
-  }
 
   if (filter && filter.length) {
     if (!__cacheFilter || !__cacheFilter.available || needGen) {
@@ -30552,8 +31346,8 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
           tx = cacheMask.x,
           ty = cacheMask.y,
           ctx = cacheMask.ctx,
-          sx1 = cacheMask.sx1,
-          sy1 = cacheMask.sy1;
+          x1 = cacheMask.x1,
+          y1 = cacheMask.y1;
       var struct = item.__struct,
           root = item.__root,
           structs = root.__structs;
@@ -30598,10 +31392,9 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
             continue;
           }
 
-          var _cacheTotal2 = _node3.__cacheTotal,
+          var _cacheTotal = _node3.__cacheTotal,
               _cacheFilter = _node3.__cacheFilter,
-              _cacheMask = _node3.__cacheMask,
-              _cacheOverflow = _node3.__cacheOverflow;
+              _cacheMask = _node3.__cacheMask;
 
           if (maskStartHash.hasOwnProperty(i)) {
             var _maskStartHash$i = maskStartHash[i],
@@ -30679,7 +31472,7 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
           var m = void 0;
 
           if (!isE(transform)) {
-            m = transform$1.calMatrixByOrigin(transform, tfo[0] + dbx + _node3.__x1 - sx1 + tx, tfo[1] + dby + _node3.__y1 - sy1 + ty);
+            m = transform$1.calMatrixByOrigin(transform, tfo[0] + dbx + _node3.__x1 - x1 + tx, tfo[1] + dby + _node3.__y1 - y1 + ty);
 
             if (!isE(parentMatrix)) {
               m = multiply(parentMatrix, m);
@@ -30703,7 +31496,7 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
           m = m || matrix.identity();
           assignMatrix(_node3.__matrixEvent, m); // 特殊渲染的matrix，局部根节点为原点考虑，本节点需inverse反向
 
-          var _target2 = getCache([_cacheMask, _cacheFilter, _cacheOverflow, _cacheTotal2]);
+          var _target2 = getCache([_cacheMask, _cacheFilter, _cacheTotal]);
 
           if (_target2) {
             i += _total4 || 0;
@@ -30727,12 +31520,12 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
                 canvas = _target2.canvas,
                 _width = _target2.width,
                 _height = _target2.height,
-                sx2 = _target2.sx1,
-                sy2 = _target2.sy1,
+                x2 = _target2.x1,
+                y2 = _target2.y1,
                 dbx2 = _target2.dbx,
                 dby2 = _target2.dby;
-            var ox = tx + sx2 - sx1 + dbx - dbx2;
-            var oy = ty + sy2 - sy1 + dby - dby2;
+            var ox = tx + x2 - x1 + dbx - dbx2;
+            var oy = ty + y2 - y1 + dby - dby2;
             ctx.drawImage(canvas, x, y, _width, _height, ox, oy, _width, _height);
             ctx.globalCompositeOperation = 'source-over';
 
@@ -30892,6 +31685,12 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
     return __cacheTotal;
   }
 
+  var x1 = node.__x1,
+      y1 = node.__y1,
+      __cache = node.__cache,
+      __offsetWidth = node.__offsetWidth,
+      __offsetHeight = node.__offsetHeight;
+
   var _genBboxTotal = genBboxTotal(node, __structs, index, total, true),
       bboxTotal = _genBboxTotal.bbox,
       pm = _genBboxTotal.pm,
@@ -30899,18 +31698,32 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
 
   if (!bboxTotal) {
     return;
+  } // overflow:hidden和canvas一样特殊考虑
+
+
+  var w, h, dx, dy, dbx, dby, cx, cy, texture, frameBuffer;
+  var overflow = node.__computedStyle[OVERFLOW],
+      isOverflow;
+
+  if ((x1 !== bboxTotal[0] || y1 !== bboxTotal[1] || __offsetWidth !== bboxTotal[2] - bboxTotal[0] || __offsetHeight !== bboxTotal[3] - bboxTotal[1]) && overflow === 'hidden') {
+    // geom可能超限，不能直接用bbox
+    bboxTotal = [x1, y1, x1 + __offsetWidth, y1 + __offsetHeight];
+    w = __offsetWidth;
+    h = __offsetHeight;
+    dx = -x1;
+    dy = -y1;
+    dbx = 0;
+    dby = 0;
+    isOverflow = true;
+  } else {
+    w = bboxTotal[2] - bboxTotal[0];
+    h = bboxTotal[3] - bboxTotal[1];
   }
 
-  var w = bboxTotal[2] - bboxTotal[0],
-      h = bboxTotal[3] - bboxTotal[1];
-  var __x1 = node.__x1,
-      __y1 = node.__y1,
-      __cache = node.__cache;
-
   if (__cacheTotal) {
-    __cacheTotal.reset(bboxTotal, __x1, __y1);
+    __cacheTotal.reset(bboxTotal, x1, y1);
   } else {
-    __cacheTotal = TextureCache.getInstance(renderMode, gl, root.uuid, bboxTotal, __x1, __y1, null);
+    __cacheTotal = TextureCache.getInstance(renderMode, gl, root.__uuid, bboxTotal, x1, y1, null);
   }
 
   if (!__cacheTotal || !__cacheTotal.__enabled) {
@@ -30923,25 +31736,26 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
 
   __cacheTotal.__available = true;
   node.__cacheTotal = __cacheTotal;
-  var _cacheTotal3 = __cacheTotal,
-      sx1 = _cacheTotal3.sx1,
-      sy1 = _cacheTotal3.sy1,
-      dx = _cacheTotal3.dx,
-      dy = _cacheTotal3.dy,
-      dbx = _cacheTotal3.dbx,
-      dby = _cacheTotal3.dby;
-  var page = __cacheTotal.__page,
-      size = page.__size,
-      cx,
-      cy,
-      texture;
-  var frameBuffer;
 
-  if (hasPpt) {
+  if (!isOverflow) {
+    dx = __cacheTotal.dx;
+    dy = __cacheTotal.dy;
+    dbx = __cacheTotal.dbx;
+    dby = __cacheTotal.dby;
+  }
+
+  var page = __cacheTotal.__page,
+      size = page.__size;
+
+  if (hasPpt || isOverflow) {
     cx = w * 0.5;
     cy = h * 0.5;
-    dx = -bboxTotal[0];
-    dy = -bboxTotal[1];
+
+    if (hasPpt) {
+      dx = -bboxTotal[0];
+      dy = -bboxTotal[1];
+    }
+
     texture = webgl.createTexture(gl, null, 0, w, h);
     frameBuffer = genFrameBufferWithTexture(gl, texture, w, h);
     gl.viewport(0, 0, w, h);
@@ -30982,10 +31796,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
       var _cache = _node4.__cache;
 
       if (_cache && _cache.available) {
-        var m = lastMatrix; // if(pm) {
-        //   m = multiply(pm, m);
-        // }
-
+        var m = lastMatrix;
         var __opacity = _node4.__domParent.__opacity;
         var p = _cache.__page;
 
@@ -31016,10 +31827,9 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
       }
 
       var _cache2 = _node4.__cache,
-          _cacheTotal4 = _node4.__cacheTotal,
+          _cacheTotal2 = _node4.__cacheTotal,
           __cacheFilter = _node4.__cacheFilter,
-          __cacheMask = _node4.__cacheMask,
-          __cacheOverflow = _node4.__cacheOverflow;
+          __cacheMask = _node4.__cacheMask;
       var visibility = __computedStyle2[VISIBILITY$1],
           transform = __computedStyle2[TRANSFORM$1],
           tfo = __computedStyle2[TRANSFORM_ORIGIN],
@@ -31046,7 +31856,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
       var _m = void 0;
 
       if (i !== index && !isE(transform)) {
-        _m = transform$1.calMatrixByOrigin(transform, tfo[0] + dbx + _node4.__x1 - sx1, tfo[1] + dby + _node4.__y1 - sy1);
+        _m = transform$1.calMatrixByOrigin(transform, tfo[0] + dbx + _node4.__x1 - x1, tfo[1] + dby + _node4.__y1 - y1);
 
         if (!isE(parentMatrix)) {
           _m = multiply(parentMatrix, _m);
@@ -31058,7 +31868,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
       }
 
       lastMatrix = _m;
-      var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, _cacheTotal4, _cache2]);
+      var target = getCache([__cacheMask, __cacheFilter, _cacheTotal2, _cache2]);
 
       if (target && (target !== _cache2 || visibility === 'visible')) {
         // 局部的mbm和主画布一样，先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
@@ -31122,7 +31932,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
 
   webgl.drawTextureCache(gl, list, cx, cy, dx, dy);
 
-  if (hasPpt) {
+  if (hasPpt || isOverflow) {
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.deleteFramebuffer(frameBuffer);
@@ -31140,8 +31950,8 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
 }
 
 function genFilterWebgl(renderMode, gl, node, cache, filter, W, H) {
-  cache.sx1;
-      cache.sy1;
+  cache.x1;
+      cache.y1;
       cache.width;
       cache.height;
       cache.bbox;
@@ -31321,8 +32131,8 @@ function genBlurShader(gl, sigma, d) {
 
 
 function genBlurWebgl(renderMode, gl, cache, sigma) {
-  var sx1 = cache.sx1,
-      sy1 = cache.sy1,
+  var x1 = cache.x1,
+      y1 = cache.y1,
       bbox = cache.bbox,
       width = cache.width,
       height = cache.height;
@@ -31358,7 +32168,7 @@ function genBlurWebgl(renderMode, gl, cache, sigma) {
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteFramebuffer(frameBuffer); // 写回一个cache中
 
-  var target = TextureCache.getInstance(renderMode, gl, cache.__rootId, bboxNew, sx1, sy1, null);
+  var target = TextureCache.getInstance(renderMode, gl, cache.__rootId, bboxNew, x1, y1, null);
   target.__available = true;
   var page = target.__page,
       size = page.__size,
@@ -31376,10 +32186,10 @@ function genBlurWebgl(renderMode, gl, cache, sigma) {
 }
 
 function genColorMatrixWebgl(renderMode, gl, cache, m) {
-  var sx1 = cache.sx1,
-      sy1 = cache.sy1,
+  var x1 = cache.x1,
+      y1 = cache.y1,
       bbox = cache.bbox;
-  var target = TextureCache.getInstance(renderMode, gl, cache.__rootId, bbox.slice(0), sx1, sy1, cache.__page);
+  var target = TextureCache.getInstance(renderMode, gl, cache.__rootId, bbox.slice(0), x1, y1, cache.__page);
   target.__available = true;
   var page = target.__page,
       size = page.__size;
@@ -31393,48 +32203,9 @@ function genColorMatrixWebgl(renderMode, gl, cache, m) {
   return target;
 }
 
-function genOverflowWebgl(renderMode, gl, root, node, cache, W, H) {
-  var bbox = cache.bbox;
-  var __x1 = node.__x1,
-      __y1 = node.__y1,
-      __clientWidth = node.__clientWidth,
-      __clientHeight = node.__clientHeight;
-  var x = __x1 + __clientWidth;
-  var y = __y1 + __clientHeight; // 没超过无需生成
-
-  if (bbox[0] >= __x1 && bbox[1] >= __y1 && bbox[2] <= x && bbox[3] <= y) {
-    return;
-  }
-
-  var bboxNew = [__x1, __y1, x, y];
-
-  var __cacheOverflow = TextureCache.getInstance(renderMode, gl, root.uuid, bboxNew, __x1, __y1, cache.__page);
-
-  if (!__cacheOverflow) {
-    return;
-  }
-
-  __cacheOverflow.__available = true;
-  node.__cacheOverflow = __cacheOverflow; // let { dx, dy } = __cacheOverflow;
-
-  var page = __cacheOverflow.__page,
-      size = page.__size,
-      texture = page.texture;
-  var frameBuffer = genFrameBufferWithTexture(gl, texture, size, size); // 绘制，根据坐标裁剪使用原本纹理的一部分
-
-  webgl.drawOverflow(gl, gl.programOverflow, __cacheOverflow, cache, size * 0.5, size); // 切回
-
-  gl.useProgram(gl.program);
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  gl.deleteFramebuffer(frameBuffer);
-  gl.bindTexture(gl.TEXTURE_2D, null);
-  gl.viewport(0, 0, W, H);
-  return __cacheOverflow;
-}
-
 function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs) {
-  var sx1 = cache.sx1,
-      sy1 = cache.sy1,
+  var x1 = cache.x1,
+      y1 = cache.y1,
       width = cache.width,
       height = cache.height,
       bbox = cache.bbox,
@@ -31442,7 +32213,7 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
       dby = cache.dby;
   var bboxNew = bbox.slice(0); // 结果不能和源同page纹理，一定符合尺寸要求，不会比源大
 
-  var __cacheMask = TextureCache.getInstance(renderMode, gl, root.uuid, bboxNew, sx1, sy1, cache.__page);
+  var __cacheMask = TextureCache.getInstance(renderMode, gl, root.__uuid, bboxNew, x1, y1, cache.__page);
 
   __cacheMask.__available = true;
   node.__cacheMask = __cacheMask; // 先求得被遮罩的matrix，用作inverse给mask计算，以被遮罩左上角为原点
@@ -31469,8 +32240,8 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
   var isClip = next.__clip;
   var lastPage,
       list = [];
-  var dx = -sx1 + dbx,
-      dy = -sy1 + dby;
+  var dx = -x1 + dbx,
+      dy = -y1 + dby;
 
   while (next && next.__mask && next.__clip === isClip) {
     var total = __structs[i].total || 0;
@@ -31528,8 +32299,7 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
         var _cache3 = _node5.__cache,
             __cacheTotal = _node5.__cacheTotal,
             __cacheFilter = _node5.__cacheFilter,
-            _cacheMask2 = _node5.__cacheMask,
-            __cacheOverflow = _node5.__cacheOverflow;
+            _cacheMask2 = _node5.__cacheMask;
         var opacity = computedStyle[OPACITY$1],
             visibility = computedStyle[VISIBILITY$1],
             _transform = computedStyle[TRANSFORM$1],
@@ -31556,7 +32326,7 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
 
 
         lastLv = _lv4;
-        var target = getCache([_cacheMask2, __cacheFilter, __cacheOverflow, __cacheTotal, _cache3]);
+        var target = getCache([_cacheMask2, __cacheFilter, __cacheTotal, _cache3]);
 
         if (target && (target !== _cache3 || visibility === 'visible')) {
           // 不考虑mbm
@@ -31565,7 +32335,7 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
           if (isE(_transform)) {
             m = matrix.identity();
           } else {
-            m = transform$1.calMatrixByOrigin(_transform, _tfo[0] + target.sx1 - sx1, _tfo[1] + target.sy1 - sy1);
+            m = transform$1.calMatrixByOrigin(_transform, _tfo[0] + target.x1 - x1, _tfo[1] + target.y1 - y1);
           }
 
           if (!isE(parentMatrix)) {
@@ -31640,8 +32410,8 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
 
 
 function genDropShadowWebgl(renderMode, gl, cache, v) {
-  var sx1 = cache.sx1,
-      sy1 = cache.sy1,
+  var x1 = cache.x1,
+      y1 = cache.y1,
       bbox = cache.bbox,
       width = cache.width,
       height = cache.height; // 先根据x/y/color生成单色阴影
@@ -31702,8 +32472,8 @@ function genDropShadowWebgl(renderMode, gl, cache, v) {
   bboxNew[2] += spread;
   bboxNew[3] += spread;
   var bboxMerge = bbox.slice(0);
-  mergeBbox(bboxMerge, bboxNew, 0, 0);
-  var target = TextureCache.getInstance(renderMode, gl, cache.__rootId, bboxMerge, sx1, sy1, null);
+  mergeBbox(bboxMerge, bboxNew);
+  var target = TextureCache.getInstance(renderMode, gl, cache.__rootId, bboxMerge, x1, y1, null);
   target.__available = true;
   var page = target.__page,
       size = page.__size;
@@ -31788,7 +32558,7 @@ function genMbmWebgl(gl, texture, cache, mbm, opacity, matrix, dx, dy, cx, cy, w
   };
 }
 
-function renderSvg(renderMode, ctx, root, isFirst, rlv) {
+function renderSvg$1(renderMode, ctx, root, isFirst, rlv) {
   var __structs = root.__structs,
       width = root.width,
       height = root.height; // mask节点很特殊，本身有matrix会影响，本身没改变但对象节点有改变也需要计算逆矩阵应用顶点
@@ -32155,7 +32925,7 @@ function renderSvg(renderMode, ctx, root, isFirst, rlv) {
   }
 }
 
-function renderWebgl(renderMode, gl, root, isFirst, rlv) {
+function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
   if (isFirst) {
     Page.init(gl.getParameter(gl.MAX_TEXTURE_SIZE));
   }
@@ -32199,7 +32969,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
           if (__cache) {
             __cache.reset(bbox, x, y);
           } else {
-            __cache = CanvasCache.getInstance(mode.CANVAS, gl, root.uuid, bbox, x, y, null);
+            __cache = CanvasCache.getInstance(mode.CANVAS, gl, root.__uuid, bbox, x, y, null);
           }
 
           if (__cache && __cache.enabled) {
@@ -32284,7 +33054,6 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
           i += total || 0;
 
           if (__refreshLevel === NONE$1 && hasMask) {
-            // TODO: add mask level
             i += countMaskNum(__structs, i + 1, hasMask);
           }
         }
@@ -32294,18 +33063,30 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
        * Geom没有子节点无需汇总局部根，Dom中Img也是，它们的局部根等于自身的cache，其它符合条件的Dom需要生成
        */
       else {
-        var hasContent = node.calContent(__currentStyle, __computedStyle); // 有内容先以canvas模式绘制到离屏画布上，自定义渲染设置无内容不实现即可跳过
+        var hasContent = node.calContent(__currentStyle, __computedStyle),
+            onlyImg = void 0; // 有内容先以canvas模式绘制到离屏画布上，自定义渲染设置无内容不实现即可跳过
 
         if (hasContent) {
           var _bbox2 = node.bbox,
               _cache4 = node.__cache,
-              sx1 = node.__x1,
-              sy1 = node.__y1;
+              x1 = node.__x1,
+              y1 = node.__y1; // 单图特殊对待缓存
 
-          if (_cache4) {
-            _cache4.reset(_bbox2, sx1, sy1);
-          } else {
-            _cache4 = CanvasCache.getInstance(mode.CANVAS, gl, root.uuid, _bbox2, sx1, sy1, null);
+          if (node instanceof Img) {
+            var loadImg = node.__loadImg;
+
+            if (loadImg.onlyImg && !loadImg.error && loadImg.source) {
+              onlyImg = true;
+              _cache4 = node.__cache = ImgWebglCache.getInstance(mode.CANVAS, gl, root.__uuid, _bbox2, loadImg, x1, y1);
+            }
+          }
+
+          if (!onlyImg) {
+            if (_cache4) {
+              _cache4.reset(_bbox2, x1, y1);
+            } else {
+              _cache4 = CanvasCache.getInstance(mode.CANVAS, gl, root.__uuid, _bbox2, x1, y1, null);
+            }
           }
 
           if (_cache4 && _cache4.enabled) {
@@ -32316,6 +33097,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
           } else {
             _cache4 && _cache4.release();
             node.__limitCache = true;
+            return;
           }
         } else {
           node.__limitCache = false;
@@ -32338,8 +33120,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
           hasMbm = true;
         }
 
-        if (node.__cacheAsBitmap || hasMask || isFilter // || isMbm
-        || isOverflow || _isPpt) {
+        if (node.__cacheAsBitmap || hasMask || isFilter || isOverflow || _isPpt) {
           mergeList.push({
             i: i,
             lv: lv,
@@ -32410,8 +33191,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       var __limitCache = node.__limitCache,
           __cacheTotal = node.__cacheTotal,
           __cacheFilter = node.__cacheFilter,
-          __cacheMask = node.__cacheMask,
-          __cacheOverflow = node.__cacheOverflow;
+          __cacheMask = node.__cacheMask;
 
       if (__limitCache) {
         return;
@@ -32433,23 +33213,12 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
 
       var target = __cacheTotal;
 
-      if (overflow === 'hidden') {
-        if (!__cacheOverflow || !__cacheOverflow.available || needGen) {
-          var _res9 = genOverflowWebgl(renderMode, gl, root, node, target, width, height);
+      if (filter.length) {
+        if (!__cacheFilter || !__cacheFilter.available || needGen) {
+          var _res9 = genFilterWebgl(renderMode, gl, node, target, filter, width, height);
 
           if (_res9) {
             target = _res9;
-            needGen = true;
-          }
-        }
-      }
-
-      if (filter.length) {
-        if (!__cacheFilter || !__cacheFilter.available || needGen) {
-          var _res10 = genFilterWebgl(renderMode, gl, node, target, filter, width, height);
-
-          if (_res10) {
-            target = _res10;
             needGen = true;
           }
         }
@@ -32523,10 +33292,9 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       }
 
       var _cache6 = _node7.__cache,
-          _cacheTotal5 = _node7.__cacheTotal,
+          _cacheTotal3 = _node7.__cacheTotal,
           __cacheFilter = _node7.__cacheFilter,
           __cacheMask = _node7.__cacheMask,
-          __cacheOverflow = _node7.__cacheOverflow,
           _domParent2 = _node7.__domParent,
           __matrix = _node7.__matrix;
       var opacity = _computedStyle2[OPACITY$1],
@@ -32534,15 +33302,25 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       var m = __matrix;
 
       if (_domParent2) {
-        opacity *= _domParent2.__opacity;
-        m = multiply(_domParent2.__perspectiveMatrix, m);
-        m = multiply(_domParent2.__matrixEvent, m);
+        var op = _domParent2.__opacity;
+
+        if (op !== 1) {
+          opacity *= _domParent2.__opacity;
+        }
+
+        var pm = _domParent2.__perspectiveMatrix,
+            me = _domParent2.__matrixEvent;
+
+        if (pm && pm.length || me && me.length) {
+          m = multiply(_domParent2.__perspectiveMatrix, m);
+          m = multiply(_domParent2.__matrixEvent, m);
+        }
       }
 
       _node7.__opacity = opacity;
       assignMatrix(_node7.__matrixEvent, m); // total和自身cache的尝试，visibility不可见时没有cache
 
-      var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, _cacheTotal5, _cache6]);
+      var target = getCache([__cacheMask, __cacheFilter, _cacheTotal3, _cache6]);
 
       if (target) {
         // 有mbm则需要混合之前的纹理和新纹理到fbo上面，连续的mbm则依次交替绘制到画布或离屏fbo上
@@ -32636,7 +33414,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
   }
 }
 
-function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
+function renderCanvas$1(renderMode, ctx, root, isFirst, rlv) {
   var __structs = root.__structs,
       width = root.width,
       height = root.height;
@@ -32675,17 +33453,27 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
       var __refreshLevel = node.__refreshLevel,
           __cacheTotal = node.__cacheTotal;
       node.__refreshLevel = NONE$1; // filter变化需重新生成，cacheTotal本身就存在要判断下；CACHE取消重新生成则无需判断
+      // img在只有自身的情况下自动生成并特殊对待，多个相同引用的img使用同一份资源
 
-      if (node.__cacheAsBitmap) {
-        if (__refreshLevel & (CACHE$1 | FT$1) || __refreshLevel >= REPAINT$1) {
-          mergeList.push({
-            i: i,
-            lv: lv,
-            total: total,
-            node: node,
-            hasMask: hasMask
-          });
+      var need = node.__cacheAsBitmap && (__refreshLevel & (CACHE$1 | FT$1) || __refreshLevel >= REPAINT$1);
+
+      if (!need && node instanceof Img) {
+        var hasContent = node.calContent(node.__currentStyle, node.__computedStyle);
+        var loadImg = node.__loadImg;
+
+        if (loadImg.onlyImg && hasContent) {
+          need = true;
         }
+      }
+
+      if (need) {
+        mergeList.push({
+          i: i,
+          lv: lv,
+          total: total,
+          node: node,
+          hasMask: hasMask
+        });
       } // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total
 
 
@@ -32779,10 +33567,9 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
         continue;
       }
 
-      var _cacheTotal6 = _node8.__cacheTotal,
+      var _cacheTotal4 = _node8.__cacheTotal,
           __cacheFilter = _node8.__cacheFilter,
           __cacheMask = _node8.__cacheMask,
-          __cacheOverflow = _node8.__cacheOverflow,
           __domParent = _node8.__domParent,
           __matrix = _node8.__matrix; // 遮罩对象申请了个离屏，其第一个mask申请另外一个离屏mask2，开始聚集所有mask元素的绘制，
       // 这是一个十分特殊的逻辑，保存的index是最后一个节点的索引，OFFSCREEN_MASK2是最低优先级，
@@ -32834,14 +33621,23 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
       var m = __matrix;
 
       if (__domParent) {
-        opacity *= __domParent.__opacity;
-        m = multiply(__domParent.__matrixEvent, m);
+        var op = __domParent.__opacity;
+
+        if (op !== 1) {
+          opacity *= __domParent.__opacity;
+        }
+
+        var me = __domParent.__matrixEvent;
+
+        if (me && me.length) {
+          m = multiply(me, m);
+        }
       }
 
       _node8.__opacity = opacity;
       assignMatrix(_node8.__matrixEvent, m); // 有cache声明从而有total的可以直接绘制并跳过子节点索，total生成可能会因超限而失败
 
-      var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, _cacheTotal6]);
+      var target = getCache([__cacheMask, __cacheFilter, _cacheTotal4]);
 
       if (target) {
         _i6 += _total9 || 0;
@@ -32865,13 +33661,13 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
         var x = target.x,
             y = target.y,
             canvas = target.canvas,
-            sx1 = target.sx1,
-            sy1 = target.sy1,
+            x1 = target.x1,
+            y1 = target.y1,
             dbx = target.dbx,
             dby = target.dby,
             _width2 = target.width,
             _height2 = target.height;
-        ctx.drawImage(canvas, x, y, _width2, _height2, sx1 - dbx, sy1 - dby, _width2, _height2); // total应用后记得设置回来
+        ctx.drawImage(canvas, x, y, _width2, _height2, x1 - dbx, y1 - dby, _width2, _height2); // total应用后记得设置回来
 
         ctx.globalCompositeOperation = 'source-over'; // 父超限但子有total的时候，i此时已经增加到了末尾，也需要检查
 
@@ -32989,9 +33785,9 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
 }
 
 var struct = {
-  renderCanvas: renderCanvas,
-  renderSvg: renderSvg,
-  renderWebgl: renderWebgl
+  renderCanvas: renderCanvas$1,
+  renderSvg: renderSvg$1,
+  renderWebgl: renderWebgl$1
 };
 
 var vertex = "#version 100\n#define GLSLIFY 1\nattribute vec4 a_position;attribute vec2 a_texCoords;varying vec2 v_texCoords;attribute float a_opacity;varying float v_opacity;void main(){gl_Position=a_position;v_texCoords=a_texCoords;v_opacity=a_opacity;}"; // eslint-disable-line
@@ -33024,339 +33820,6 @@ var ca = {
   // stencil: true,
 
 };
-
-var TexHelper = /*#__PURE__*/function () {
-  function TexHelper(units) {
-    this.__units = units; // 通道数量限制，8~16
-
-    this.__pages = []; // 存当前page列表，通道数量8~16，缓存收留尽可能多的page
-
-    this.__list = []; // 本次渲染暂存的数据，[cache, opacity, matrix, dx, dy]
-
-    this.__channels = []; // 每个纹理通道记录还是个数组，下标即纹理单元，内容为Page
-
-    this.__locks = []; // 锁定纹理单元列表，下标即纹理单元，内容true为锁定
-
-    this.__lockUnits = 0;
-  }
-  /**
-   * webgl每次绘制为添加纹理并绘制，此处尝试尽可能收集所有纹理贴图，以达到尽可能多的共享纹理，再一次性绘制
-   * 收集的是Page对象（从cache中取得），里面包含了若干个节点的贴图，canvas本身是2的幂次方大小
-   * webgl最少有8个纹理单元最多16个，因此存了一个列表来放这些Page的canvas，刷新后清空，但纹理通道映射记录保留
-   * 当8个纹理单元全部满了，进行绘制并清空这个队列，外部主循环结束时也会检查队列是否还有余留并绘制
-   * 初始调用队列为空，存入Page对象，后续调用先查看是否存在以便复用，再决定是否存入Page，直到8个满了
-   * Page上存有update表示是否更新，每次cache绘制时会变true，以此表示是否有贴图更新，删除可以忽视
-   * 还需要一个记录上次纹理通道使用哪个Page的canvas的地方，即映射，清空后队列再次添加时，如果Page之前被添加过，
-   * 此次又被添加且没有变更update，可以直接复用上次的纹理单元号且无需再次上传纹理，节省性能
-   * 后续接入局部纹理更新也是复用单元号，如果update变更可以选择局部上传纹理而非整个重新上传
-   * 判断上传的逻辑在收集满8个后绘制前进行，因为添加队列过程中可能会变更Page及其update
-   */
-
-
-  _createClass(TexHelper, [{
-    key: "addTexAndDrawWhenLimit",
-    value: function addTexAndDrawWhenLimit(gl, cache, opacity, matrix, cx, cy) {
-      var dx = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : 0;
-      var dy = arguments.length > 7 && arguments[7] !== undefined ? arguments[7] : 0;
-      var revertY = arguments.length > 8 ? arguments[8] : undefined;
-      var pages = this.__pages;
-      var list = this.__list;
-      var page = cache.__page;
-      var i = pages.indexOf(page); // 找到说明已有page在此索引的通道中，记录下来info
-
-      if (i > -1) {
-        list.push({
-          cache: cache,
-          opacity: opacity,
-          matrix: matrix,
-          dx: dx,
-          dy: dy
-        });
-      } // 找不到说明是新的纹理贴图，此时看是否超过纹理单元限制，超过则刷新绘制并清空，然后/否则 存入纹理列表
-      else {
-        i = pages.length;
-
-        if (i >= this.__units - this.__lockUnits) {
-          // 绘制且清空，队列索引重新为0
-          this.refresh(gl, cx, cy, revertY);
-        }
-
-        pages.push(page);
-        list.push({
-          cache: cache,
-          opacity: opacity,
-          matrix: matrix,
-          dx: dx,
-          dy: dy
-        });
-      }
-    }
-    /**
-     * 刷新
-     * @param gl
-     * @param cx
-     * @param cy
-     * @param revertY
-     */
-
-  }, {
-    key: "refresh",
-    value: function refresh(gl, cx, cy, revertY) {
-      var pages = this.__pages;
-      var list = this.__list; // 防止空调用刷新，struct循环结尾会强制调用一次防止有未渲染的
-
-      if (pages.length) {
-        var channels = this.channels;
-        var locks = this.locks; // 先将上次渲染的纹理单元使用的Page形成一个hash，键为page的uuid，值为纹理单元
-
-        var lastHash = {};
-
-        for (var i = 0, len = channels.length; i < len; i++) {
-          var item = channels[i];
-
-          if (item) {
-            lastHash[item.__uuid] = i;
-          }
-        }
-
-        var units = this.__units; // 再遍历，查找相同的Page并保持其使用的纹理单元不变，存入相同索引下标oldList，不同的按顺序收集放newList
-
-        var oldList = new Array(units),
-            newList = [];
-
-        for (var _i = 0, _len = pages.length; _i < _len; _i++) {
-          var page = pages[_i],
-              uuid = page.__uuid;
-
-          if (lastHash.hasOwnProperty(uuid)) {
-            var index = lastHash[uuid];
-            oldList[index] = page;
-          } else {
-            newList.push(page);
-          }
-        }
-        /**
-         * 以oldList为基准，将newList依次存入oldList中
-         * 优先使用未用过的纹理单元，以便用过的可能下次用到无需重新上传
-         * 找不到未用过的后，尝试NRU算法，优先淘汰最近未使用的Page，相等则尺寸小的
-         */
-
-
-        if (newList.length) {
-          // 先循环找空的，oldList空且channels空且locks空
-          for (var _i2 = 0; _i2 < units; _i2++) {
-            if (!oldList[_i2] && !channels[_i2] && !locks[_i2]) {
-              oldList[_i2] = newList.shift();
-
-              if (!newList.length) {
-                break;
-              }
-            }
-          }
-
-          var _len2 = newList.length;
-
-          if (_len2) {
-            // 按时间排序已使用channel且未被当前占用的，以便淘汰最久未使用的
-            var cl = [];
-
-            for (var _i3 = 0; _i3 < units; _i3++) {
-              if (!oldList[_i3] && !locks[_i3]) {
-                cl.push({
-                  i: _i3,
-                  channel: channels[_i3]
-                });
-              }
-            }
-
-            cl.sort(function (a, b) {
-              return a.channel.time - b.channel.time;
-            }); // cl靠前是时间小尺寸小的，优先使用替换
-
-            for (var _i4 = 0; _i4 < _len2; _i4++) {
-              oldList[cl[_i4].channel] = newList[_i4];
-            }
-          }
-        }
-        /**
-         * 对比上帧渲染的和这次纹理单元情况，Page相同且!update可以省略更新，其它均重新赋值纹理
-         * 后续局部更新Page相同但有update，会出现没有上帧的情况如初始渲染，此时先创建纹理单元再更新
-         * 将新的数据赋给老的，可能新的一帧使用的少于上一帧，老的没用到的需继续保留
-         */
-
-
-        var hash = {};
-
-        for (var _i5 = 0, _len3 = oldList.length; _i5 < _len3; _i5++) {
-          var _page = oldList[_i5]; // 可能为空，不满的情况下前面单元保留老tex先用的后面的单元
-
-          if (!_page) {
-            continue;
-          }
-
-          var last = channels[_i5];
-
-          if (!last || last !== _page || _page.__update) {
-            // page可能为一个已有fbo纹理，或者贴图
-            if (_page instanceof TexturePage) {
-              webgl.bindTexture(gl, _page.texture, _i5);
-            } else {
-              // 可能老的先删除，注意只删Page，MockPage是fbo生成的texture即total缓存不能自动清除
-              if (last && !(last instanceof TexturePage)) {
-                gl.deleteTexture(last.texture);
-              }
-
-              if (!_page.texture) {
-                _page.texture = webgl.createTexture(gl, _page.canvas, _i5, null, null);
-                _page.texture.canvas = true;
-                _page.texture.unit = _i5;
-                console.warn('draw canvas texture unit', _i5, _page.texture);
-              } else {
-                webgl.bindTexture(gl, _page.texture, _i5);
-              }
-            }
-
-            channels[_i5] = _page;
-          }
-
-          hash[_page.__uuid] = _i5; // 标识没有更新，以及最后使用时间
-
-          _page.update = false;
-          _page.time = frame.__now || inject.now();
-        } // 再次遍历开始本次渲染并清空
-
-
-        webgl.drawTextureCache(gl, list, hash, cx, cy, revertY);
-        pages.splice(0);
-        list.splice(0);
-      }
-    }
-  }, {
-    key: "findExistTexChannel",
-    value: function findExistTexChannel(page) {
-      return this.__channels.indexOf(page);
-    }
-    /**
-     * 获取并锁定一个纹理单元优先使用空的，其次最久未使用的
-     * @returns {number|*}
-     */
-
-  }, {
-    key: "lockOneChannel",
-    value: function lockOneChannel(texture) {
-      // 优先复用已有单元，再是空单元，最后是回收
-      var channels = this.__channels;
-      var locks = this.__locks;
-
-      for (var i = 0; i < this.__units; i++) {
-        if (texture && locks[i] === texture) {
-          return i;
-        }
-      }
-
-      for (var _i6 = 0; _i6 < this.__units; _i6++) {
-        if (!channels[_i6] && !locks[_i6]) {
-          locks[_i6] = texture || true;
-          this.__lockUnits++;
-          return _i6;
-        }
-      } // 根据NRU返回最久未使用的
-
-
-      var units = this.__units;
-      var cl = [];
-
-      for (var _i7 = 0; _i7 < units; _i7++) {
-        if (!locks[_i7]) {
-          cl.push({
-            i: _i7,
-            channel: channels[_i7]
-          });
-        }
-      }
-
-      if (cl.length) {
-        cl.sort(function (a, b) {
-          return a.channel.time - b.channel.time;
-        });
-        var _i8 = cl[0].i;
-        channels[_i8] = null;
-        locks[_i8] = texture || true;
-        this.__lockUnits++;
-        return _i8;
-      }
-
-      throw new Error('No free texture unit');
-    }
-    /**
-     * 释放掉i单元，并且设置内容到缓存channel中
-     * @param i
-     * @param setToChannel
-     */
-
-  }, {
-    key: "releaseLockChannel",
-    value: function releaseLockChannel(i, setToChannel) {
-      if (this.locks[i]) {
-        this.locks[i] = false;
-        this.__lockUnits--;
-
-        if (setToChannel) {
-          this.__channels[i] = setToChannel;
-        }
-      }
-    } // 指定锁定一个单元
-
-  }, {
-    key: "lockChannel",
-    value: function lockChannel(i, texture) {
-      var channels = this.__channels;
-      var locks = this.__locks;
-
-      if (!locks[i]) {
-        channels[i] = null;
-        locks[i] = texture || true;
-        this.__lockUnits++;
-      }
-    }
-    /**
-     * 释放纹理单元
-     * @param gl
-     */
-
-  }, {
-    key: "release",
-    value: function release(gl) {
-      this.channels.forEach(function (item) {
-        if (item) {
-          gl.deleteTexture(item.texture);
-        }
-      });
-    }
-  }, {
-    key: "channels",
-    get: function get() {
-      return this.__channels;
-    }
-  }, {
-    key: "locks",
-    get: function get() {
-      return this.__locks;
-    }
-  }, {
-    key: "last",
-    get: function get() {
-      var list = this.__list,
-          len = list.length;
-
-      if (len) {
-        return list[len - 1];
-      }
-    }
-  }]);
-
-  return TexHelper;
-}();
 
 var vertexMbm = "#version 100\n#define GLSLIFY 1\nattribute vec4 a_position;attribute vec2 a_texCoords;varying vec2 v_texCoords;void main(){gl_Position=a_position;v_texCoords=a_texCoords;}"; // eslint-disable-line
 
@@ -33430,6 +33893,9 @@ var getLevel = o$1.getLevel,
     MBM = o$1.MIX_BLEND_MODE,
     MASK = o$1.MASK;
 var isGeom = o$2.isGeom;
+var renderCanvas = struct.renderCanvas,
+    renderSvg = struct.renderSvg,
+    renderWebgl = struct.renderWebgl;
 var ROOT_DOM_NAME = {
   canvas: 'canvas',
   svg: 'svg',
@@ -33521,18 +33987,14 @@ var Root = /*#__PURE__*/function (_Dom) {
     _this.__mh = 0; // this.__scx = 1; // 默认缩放，css改变canvas/svg缩放后影响事件坐标，有值手动指定，否则自动计算
     // this.__scy = 1;
 
-    _this.__taskUp = [];
     _this.__task = [];
     _this.__ref = {};
-    _this.__reflowList = [{
-      node: _assertThisInitialized(_this)
-    }]; // 初始化填自己，第一次布局时复用逻辑完全重新布局
-
     _this.__animateController = new Controller();
     Event.mix(_assertThisInitialized(_this));
-    _this.__updateHash = {};
     _this.__uuid = uuid++;
     _this.__rlv = REBUILD; // 每次刷新最大lv
+
+    _this.__lastUpdateP = null; // 每帧addUpdate都会向上检查，很多时候同级无需继续，第一次检查暂存parent对象
 
     builder.buildRoot(_assertThisInitialized(_this), _this.__children);
     return _this;
@@ -33677,12 +34139,12 @@ var Root = /*#__PURE__*/function (_Dom) {
       else if (dom.nodeName.toLowerCase() === domName) {
         this.__dom = dom;
 
-        if (this.width) {
-          dom.setAttribute('width', this.width);
+        if (this.__width) {
+          dom.setAttribute('width', this.__width);
         }
 
-        if (this.height) {
-          dom.setAttribute('height', this.height);
+        if (this.__height) {
+          dom.setAttribute('height', this.__height);
         }
       } // 没有canvas/svg节点则生成一个新的
       else {
@@ -33723,7 +34185,7 @@ var Root = /*#__PURE__*/function (_Dom) {
       } else if (this.tagName === 'svg') {
         this.__renderMode = mode.SVG;
       } else if (this.tagName === 'webgl') {
-        var gl = this.__ctx = this.__dom.getContext('webgl', params);
+        var gl = this.__ctx = this.__dom.getContext('webgl2', params) || this.__dom.getContext('webgl', params);
 
         this.__renderMode = mode.WEBGL;
         gl.program = webgl.initShaders(gl, vertex, fragment);
@@ -33749,8 +34211,7 @@ var Root = /*#__PURE__*/function (_Dom) {
         gl.programMbmLm = webgl.initShaders(gl, vertexMbm, fragmentLuminosity);
         gl.useProgram(gl.program); // 第一次渲染生成纹理缓存管理对象，收集渲染过程中生成的纹理并在gl纹理单元满了时进行绘制和清空，减少texImage2d耗时问题
 
-        var MAX_TEXTURE_IMAGE_UNITS = Math.min(16, gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
-        this.__texHelper = new TexHelper(MAX_TEXTURE_IMAGE_UNITS);
+        Math.min(16, gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
       }
 
       this.draw(true); // 第一次节点没有__root，渲染一次就有了才能diff
@@ -33805,7 +34266,7 @@ var Root = /*#__PURE__*/function (_Dom) {
         return;
       }
 
-      defs.clear(); // 首次递归测量整树的继承，后续更改各自更新机制做，防止每次整树遍历；root检查首次直接做，后续在checkUpdate()中插入
+      this.__lastUpdateP = null; // 首次递归测量整树的继承，后续更改各自更新机制做，防止每次整树遍历；root检查首次直接做，后续在checkUpdate()中插入
 
       if (isFirst) {
         this.__reLayout();
@@ -33818,29 +34279,31 @@ var Root = /*#__PURE__*/function (_Dom) {
       var rlv = this.__rlv;
 
       if (renderMode === mode.CANVAS) {
-        this.__clear(ctx, renderMode);
+        this.__clearCanvas(ctx);
 
-        struct.renderCanvas(renderMode, ctx, this, isFirst, rlv);
+        renderCanvas(renderMode, ctx, this, isFirst, rlv);
       } // svg的特殊diff需要
       else if (renderMode === mode.SVG) {
-        struct.renderSvg(renderMode, defs, this, isFirst, rlv);
+        defs.clear();
+        renderSvg(renderMode, defs, this, isFirst, rlv);
         var nvd = this.virtualDom;
         nvd.defs = defs.value;
+        var dom = this.__dom;
 
-        if (this.dom.__vd) {
+        if (dom.__vd) {
           // console.log(this.dom.__vd);
           // console.log(nvd);
-          diff(this.dom, this.dom.__vd, nvd);
+          diff(dom, dom.__vd, nvd);
         } else {
-          this.dom.innerHTML = util.joinVirtualDom(nvd);
+          dom.innerHTML = util.joinVirtualDom(nvd);
         }
 
-        this.dom.__vd = nvd;
-        this.dom.__defs = defs;
+        dom.__vd = nvd;
+        dom.__defs = defs;
       } else if (renderMode === mode.WEBGL) {
-        this.__clear(ctx, renderMode);
+        this.__clearWebgl(ctx);
 
-        struct.renderWebgl(renderMode, ctx, this, isFirst, rlv);
+        renderWebgl(renderMode, ctx, this, isFirst, rlv);
       }
 
       this.emit(Event.REFRESH, rlv);
@@ -34023,20 +34486,15 @@ var Root = /*#__PURE__*/function (_Dom) {
 
   }, {
     key: "__addUpdate",
-    value: function __addUpdate(node, o) {
+    value: function __addUpdate(node, keys, focus, addDom, removeDom, aniParams, cb) {
       if (node instanceof Component) {
         node = node.shadowRoot;
       }
 
-      var keys = o.keys,
-          focus = o.focus,
-          addDom = o.addDom,
-          removeDom = o.removeDom,
-          aniParams = o.aniParams;
       var _node = node,
-          computedStyle = _node.computedStyle,
-          currentStyle = _node.currentStyle,
-          cacheStyle = _node.cacheStyle,
+          computedStyle = _node.__computedStyle,
+          currentStyle = _node.__currentStyle,
+          cacheStyle = _node.__cacheStyle,
           __cacheProps = _node.__cacheProps,
           __mask = _node.__mask,
           __domParent = _node.__domParent;
@@ -34097,8 +34555,8 @@ var Root = /*#__PURE__*/function (_Dom) {
 
 
       if (lv === NONE || computedStyle[DISPLAY] === 'none' && !hasDisplay) {
-        if (isFunction$1(o.cb)) {
-          o.cb();
+        if (cb && isFunction$1(cb)) {
+          cb();
         }
 
         return;
@@ -34223,10 +34681,6 @@ var Root = /*#__PURE__*/function (_Dom) {
           if (node.__cacheMask) {
             hasRelease || (hasRelease = node.__cacheMask.release());
           }
-
-          if (node.__cacheOverflow) {
-            hasRelease || (hasRelease = node.__cacheOverflow.release());
-          }
         } // 特殊的filter清除cache
 
 
@@ -34235,43 +34689,42 @@ var Root = /*#__PURE__*/function (_Dom) {
         } // 向上清除cache汇总缓存信息，过程中可能会出现重复，根据refreshLevel判断，reflow已经自己清过了
 
 
-        var p = __domParent;
+        if (__domParent !== this.__lastUpdateP) {
+          var p = __domParent;
+          this.__lastUpdateP = p; // 同层级避免重复进入查找，每次draw()重设
 
-        while (p) {
-          if (p.__refreshLevel & (CACHE | REPAINT | REFLOW)) {
-            break;
-          }
+          while (p) {
+            if (p.__refreshLevel & (CACHE | REPAINT | REFLOW)) {
+              break;
+            }
 
-          p.__refreshLevel |= CACHE;
+            p.__refreshLevel |= CACHE;
 
-          if (p.__cacheTotal) {
-            hasRelease || (hasRelease = p.__cacheTotal.release());
-          }
+            if (p.__cacheTotal) {
+              hasRelease || (hasRelease = p.__cacheTotal.release());
+            }
 
-          if (p.__cacheFilter) {
-            hasRelease || (hasRelease = p.__cacheFilter.release());
-          }
+            if (p.__cacheFilter) {
+              hasRelease || (hasRelease = p.__cacheFilter.release());
+            }
 
-          if (p.__cacheMask) {
-            hasRelease || (hasRelease = p.__cacheMask.release());
-          }
+            if (p.__cacheMask) {
+              hasRelease || (hasRelease = p.__cacheMask.release());
+            }
 
-          if (p.__cacheOverflow) {
-            hasRelease || (hasRelease = p.__cacheOverflow.release());
-          }
-
-          p = p.__domParent;
-        } // 清除parent的zIndexChildren缓存，强制所有孩子重新渲染
+            p = p.__domParent;
+          } // 清除parent的zIndexChildren缓存，强制所有孩子重新渲染
 
 
-        if (hasZ && __domParent) {
-          __domParent.__zIndexChildren = null;
+          if (hasZ && __domParent) {
+            __domParent.__zIndexChildren = null;
 
-          __domParent.__updateStruct();
+            __domParent.__updateStruct();
 
-          if (this.renderMode === mode.SVG) {
-            hasRelease || (hasRelease = node.__cacheTotal.release());
-            reflow.clearSvgCache(__domParent);
+            if (this.__renderMode === mode.SVG) {
+              hasRelease || (hasRelease = node.__cacheTotal.release());
+              reflow.clearSvgCache(__domParent);
+            }
           }
         }
       } else {
@@ -34309,11 +34762,11 @@ var Root = /*#__PURE__*/function (_Dom) {
         this.__rlv |= lv;
       }
 
-      if (o.cb && !isFunction$1(o.cb)) {
-        o.cb = null;
+      if (cb && !isFunction$1(cb)) {
+        cb = null;
       }
 
-      this.__frameDraw(o.cb);
+      this.__frameDraw(cb);
     } // 异步进行root刷新操作，多次调用缓存结果，刷新成功后回调
 
   }, {
@@ -34328,30 +34781,33 @@ var Root = /*#__PURE__*/function (_Dom) {
           // 需要先获得累积的刷新回调再刷新，防止refresh触发事件中再次调用刷新
           var list = _this3.__task.splice(0);
 
-          _this3.draw();
+          _this3.draw(false);
 
           list.forEach(function (item) {
             item && item();
           });
         });
-      }
 
-      this.__task.push(cb);
+        this.__task.push(cb);
+      } else if (cb) {
+        this.__task.push(cb);
+      }
     }
   }, {
-    key: "__clear",
-    value: function __clear(ctx, renderMode) {
-      if (renderMode === mode.CANVAS) {
-        // 可能会调整宽高，所以每次清除用最大值
-        this.__mw = Math.max(this.__mw, this.width);
-        this.__mh = Math.max(this.__mh, this.height); // 清除前得恢复默认matrix，防止每次布局改变了属性
+    key: "__clearCanvas",
+    value: function __clearCanvas(ctx) {
+      // 可能会调整宽高，所以每次清除用最大值
+      this.__mw = Math.max(this.__mw, this.width);
+      this.__mh = Math.max(this.__mh, this.height); // 清除前得恢复默认matrix，防止每次布局改变了属性
 
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.clearRect(0, 0, this.__mw, this.__mh);
-      } else if (renderMode === mode.WEBGL) {
-        ctx.clearColor(0, 0, 0, 0);
-        ctx.clear(ctx.COLOR_BUFFER_BIT);
-      }
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, this.__mw, this.__mh);
+    }
+  }, {
+    key: "__clearWebgl",
+    value: function __clearWebgl(ctx) {
+      ctx.clearColor(0, 0, 0, 0);
+      ctx.clear(ctx.COLOR_BUFFER_BIT);
     }
   }, {
     key: "dom",
@@ -34379,11 +34835,6 @@ var Root = /*#__PURE__*/function (_Dom) {
       return this.__defs;
     }
   }, {
-    key: "taskUp",
-    get: function get() {
-      return this.__taskUp;
-    }
-  }, {
     key: "ref",
     get: function get() {
       return this.__ref;
@@ -34392,11 +34843,6 @@ var Root = /*#__PURE__*/function (_Dom) {
     key: "animateController",
     get: function get() {
       return this.__animateController;
-    }
-  }, {
-    key: "texHelper",
-    get: function get() {
-      return this.__texHelper;
     }
   }]);
 

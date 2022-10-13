@@ -646,7 +646,7 @@ class Root extends Dom {
     }
     // 没有变化，add/remove强制focus
     // 本身节点为none，变更无效，此时没有display变化，add/remove在操作时已经判断不会进入
-    if(lv === NONE || lv >= REFLOW && computedStyle[DISPLAY] === 'none' && !hasDisplay) {
+    if(lv === NONE || computedStyle[DISPLAY] === 'none' && !hasDisplay) {
       if(cb && isFunction(cb)) {
         cb();
       }

@@ -1865,6 +1865,7 @@
 
       return SUPPORT_FONT[ff] = false;
     },
+    FONT: FONT,
     loadFont: function loadFont(fontFamily, url, cb) {
       if (util.isFunction(url)) {
         cb = url;
@@ -1916,7 +1917,10 @@
         var success = function success(ab) {
           var f = new FontFace(fontFamily, ab);
           f.load().then(function () {
-            document.fonts.add(f);
+            if (typeof document !== 'undefined') {
+              document.fonts.add(f);
+            }
+
             cache.state = LOADED;
             cache.success = true;
             cache.url = url;
@@ -18755,7 +18759,7 @@
                 loadBgi.source = null;
                 var node = _this5;
                 var root = _this5.__root;
-                var ctx = _this5.ctx;
+                _this5.ctx;
                 inject.measureImg(bgi.v, function (data) {
                   // 还需判断url，防止重复加载时老的替换新的，失败不绘制bgi
                   if (data.success && data.url === loadBgi.url && !_this5.isDestroyed) {
@@ -18766,11 +18770,6 @@
 
                     root.__addUpdate(node, null, REPAINT$3, null, null, null, null);
                   }
-                }, {
-                  ctx: ctx,
-                  root: root,
-                  width: bx2 - bx1,
-                  height: by2 - by1
                 });
               }
 
@@ -27743,11 +27742,6 @@
               reload();
             }
           }
-        }, {
-          ctx: ctx,
-          root: root,
-          width: width,
-          height: height
         });
       }
     }, {
@@ -33947,7 +33941,7 @@
             while (target) {
               target.__emitEvent(event, null, true);
 
-              target = target.domParent;
+              target = target.__domParent;
             }
           } else {
             root.__cb(e);
@@ -34067,13 +34061,13 @@
           if (!isNil$7(__scx)) {
             x /= __scx;
           } else {
-            x *= this.width / width;
+            x *= this.__width / width;
           }
 
           if (!isNil$7(__scy)) {
             y /= __scy;
           } else {
-            y *= this.height / height;
+            y *= this.__height / height;
           }
         }
 
@@ -34149,9 +34143,8 @@
             dom.innerHTML = this.__genHtml(domName);
             this.__dom = dom.querySelector(domName);
           }
-        }
+        } // 没有设置width/height则采用css计算形式
 
-        this.__defs = this.dom.__defs || Defs.getInstance(this.__uuid); // 没有设置width/height则采用css计算形式
 
         if (!this.__width || !this.__height) {
           var domCss = window.getComputedStyle(dom, null);
@@ -34178,6 +34171,7 @@
           this.__ctx = this.__dom.getContext('2d', params);
           this.__renderMode = mode.CANVAS;
         } else if (tagName === 'svg') {
+          this.__defs = this.dom.__defs || Defs.getInstance(this.__uuid);
           this.__renderMode = mode.SVG;
         } else if (tagName === 'webgl') {
           // 优先手动指定，再自动判断，最后兜底
@@ -34198,41 +34192,45 @@
             gl = this.__ctx = this.__dom.getContext('webgl2', params) || this.__dom.getContext('webgl', params);
           }
 
-          this.__renderMode = mode.WEBGL;
-          gl.program = webgl.initShaders(gl, vertex, fragment);
-          gl.programMask = webgl.initShaders(gl, vertexMask, fragmentMask);
-          gl.programClip = webgl.initShaders(gl, vertexMask, fragmentClip);
-          gl.programOverflow = webgl.initShaders(gl, vertexOverflow, fragmentOverflow);
-          gl.programCm = webgl.initShaders(gl, vertexCm, fragmentCm);
-          gl.programDs = webgl.initShaders(gl, vertexDs, fragmentDs);
-          gl.programMbmMp = webgl.initShaders(gl, vertexMbm, fragmentMultiply);
-          gl.programMbmSr = webgl.initShaders(gl, vertexMbm, fragmentScreen);
-          gl.programMbmOl = webgl.initShaders(gl, vertexMbm, fragmentOverlay);
-          gl.programMbmDk = webgl.initShaders(gl, vertexMbm, fragmentDarken);
-          gl.programMbmLt = webgl.initShaders(gl, vertexMbm, fragmentLighten);
-          gl.programMbmCd = webgl.initShaders(gl, vertexMbm, fragmentColorDodge);
-          gl.programMbmCb = webgl.initShaders(gl, vertexMbm, fragmentColorBurn);
-          gl.programMbmHl = webgl.initShaders(gl, vertexMbm, fragmentHardLight);
-          gl.programMbmSl = webgl.initShaders(gl, vertexMbm, fragmentSoftLight);
-          gl.programMbmDf = webgl.initShaders(gl, vertexMbm, fragmentDifference);
-          gl.programMbmEx = webgl.initShaders(gl, vertexMbm, fragmentExclusion);
-          gl.programMbmHue = webgl.initShaders(gl, vertexMbm, fragmentHue);
-          gl.programMbmSt = webgl.initShaders(gl, vertexMbm, fragmentSaturation);
-          gl.programMbmCl = webgl.initShaders(gl, vertexMbm, fragmentColor);
-          gl.programMbmLm = webgl.initShaders(gl, vertexMbm, fragmentLuminosity);
-          gl.useProgram(gl.program); // 第一次渲染生成纹理缓存管理对象，收集渲染过程中生成的纹理并在gl纹理单元满了时进行绘制和清空，减少texImage2d耗时问题
+          this.__initShader(gl);
 
-          Math.min(16, gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
+          this.__renderMode = mode.WEBGL;
         }
 
         this.draw(true); // 第一次节点没有__root，渲染一次就有了才能diff
 
-        if (this.dom.__root && this.dom.__root instanceof Root) {
-          this.dom.__root.destroy();
+        if (this.__dom.__root && this.__dom.__root instanceof Root) {
+          this.__dom.__root.destroy();
         }
 
-        this.__eventCbList = initEvent(this.dom, Root);
-        this.dom.__root = this;
+        this.__eventCbList = initEvent(this.__dom, Root);
+        this.__dom.__root = this;
+      }
+    }, {
+      key: "__initShader",
+      value: function __initShader(gl) {
+        gl.program = webgl.initShaders(gl, vertex, fragment);
+        gl.programMask = webgl.initShaders(gl, vertexMask, fragmentMask);
+        gl.programClip = webgl.initShaders(gl, vertexMask, fragmentClip);
+        gl.programOverflow = webgl.initShaders(gl, vertexOverflow, fragmentOverflow);
+        gl.programCm = webgl.initShaders(gl, vertexCm, fragmentCm);
+        gl.programDs = webgl.initShaders(gl, vertexDs, fragmentDs);
+        gl.programMbmMp = webgl.initShaders(gl, vertexMbm, fragmentMultiply);
+        gl.programMbmSr = webgl.initShaders(gl, vertexMbm, fragmentScreen);
+        gl.programMbmOl = webgl.initShaders(gl, vertexMbm, fragmentOverlay);
+        gl.programMbmDk = webgl.initShaders(gl, vertexMbm, fragmentDarken);
+        gl.programMbmLt = webgl.initShaders(gl, vertexMbm, fragmentLighten);
+        gl.programMbmCd = webgl.initShaders(gl, vertexMbm, fragmentColorDodge);
+        gl.programMbmCb = webgl.initShaders(gl, vertexMbm, fragmentColorBurn);
+        gl.programMbmHl = webgl.initShaders(gl, vertexMbm, fragmentHardLight);
+        gl.programMbmSl = webgl.initShaders(gl, vertexMbm, fragmentSoftLight);
+        gl.programMbmDf = webgl.initShaders(gl, vertexMbm, fragmentDifference);
+        gl.programMbmEx = webgl.initShaders(gl, vertexMbm, fragmentExclusion);
+        gl.programMbmHue = webgl.initShaders(gl, vertexMbm, fragmentHue);
+        gl.programMbmSt = webgl.initShaders(gl, vertexMbm, fragmentSaturation);
+        gl.programMbmCl = webgl.initShaders(gl, vertexMbm, fragmentColor);
+        gl.programMbmLm = webgl.initShaders(gl, vertexMbm, fragmentLuminosity);
+        gl.useProgram(gl.program);
       }
     }, {
       key: "__reLayout",
@@ -41912,33 +41910,19 @@
           return new Img(tagName, props);
         } else {
           return new Dom(tagName, props, children);
-        } // return {
-        //   tagName,
-        //   props,
-        //   children,
-        //   $$type: $$type.TYPE_VD,
-        // };
-
+        }
       }
 
       throw new Error("Can not use <".concat(tagName, ">"));
     },
     createGm: function createGm(tagName, props) {
       var klass = Geom.getRegister(tagName);
-      return new klass(tagName, props); // return {
-      //   tagName,
-      //   props,
-      //   $$type: $$type.TYPE_GM,
-      // };
+      return new klass(tagName, props);
     },
     createCp: function createCp(klass, props) {
       var children = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
       props.children = children;
-      return new klass(props, children); // return {
-      //   klass,
-      //   props,
-      //   $$type: $$type.TYPE_CP,
-      // };
+      return new klass(props, children);
     },
     parse: function parse(json, dom, options) {
       return o.parse(this, json, dom, options);
@@ -41964,6 +41948,7 @@
     math: math,
     refresh: refresh,
     enums: enums,
+    ca: ca,
 
     set debug(v) {
       debug.flag = !!v;

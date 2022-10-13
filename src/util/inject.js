@@ -302,6 +302,7 @@ let inject = {
     }
     return SUPPORT_FONT[ff] = false;
   },
+  FONT,
   loadFont(fontFamily, url, cb) {
     if(util.isFunction(url)) {
       cb = url;
@@ -370,7 +371,9 @@ let inject = {
       function success(ab) {
         let f = new FontFace(fontFamily, ab);
         f.load().then(function() {
-          document.fonts.add(f);
+          if(typeof document !== 'undefined') {
+            document.fonts.add(f);
+          }
           cache.state = LOADED;
           cache.success = true;
           cache.url = url;

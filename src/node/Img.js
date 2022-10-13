@@ -496,11 +496,6 @@ class Img extends Dom {
           reload();
         }
       }
-    }, {
-      ctx,
-      root,
-      width,
-      height,
     });
   }
 

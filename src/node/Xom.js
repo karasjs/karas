@@ -1479,11 +1479,6 @@ class Xom extends Node {
                 __cacheStyle[BACKGROUND_IMAGE] = undefined;
                 root.__addUpdate(node, null, REPAINT, null, null, null, null);
               }
-            }, {
-              ctx,
-              root,
-              width: bx2 - bx1,
-              height: by2 - by1,
             });
           }
           return true;

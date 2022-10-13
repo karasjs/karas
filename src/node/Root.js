@@ -139,7 +139,7 @@ function initEvent(dom, Root) {
           event.target = target;
           while(target) {
             target.__emitEvent(event, null, true);
-            target = target.domParent;
+            target = target.__domParent;
           }
         }
         else {
@@ -226,13 +226,13 @@ class Root extends Dom {
         x /= __scx;
       }
       else {
-        x *= this.width / width;
+        x *= this.__width / width;
       }
       if(!isNil(__scy)) {
         y /= __scy;
       }
       else {
-        y *= this.height / height;
+        y *= this.__height / height;
       }
     }
     return {
@@ -300,7 +300,6 @@ class Root extends Dom {
         this.__dom = dom.querySelector(domName);
       }
     }
-    this.__defs = this.dom.__defs || Defs.getInstance(this.__uuid);
     // 没有设置width/height则采用css计算形式
     if(!this.__width || !this.__height) {
       let domCss = window.getComputedStyle(dom, null);
@@ -324,6 +323,7 @@ class Root extends Dom {
       this.__renderMode = mode.CANVAS;
     }
     else if(tagName === 'svg') {
+      this.__defs = this.dom.__defs || Defs.getInstance(this.__uuid);
       this.__renderMode = mode.SVG;
     }
     else if(tagName === 'webgl') {
@@ -342,39 +342,41 @@ class Root extends Dom {
         gl = this.__ctx = this.__dom.getContext('webgl2', params)
           || this.__dom.getContext('webgl', params);
       }
+      this.__initShader(gl);
       this.__renderMode = mode.WEBGL;
-      gl.program = webgl.initShaders(gl, vertex, fragment);
-      gl.programMask = webgl.initShaders(gl, vertexMask, fragmentMask);
-      gl.programClip = webgl.initShaders(gl, vertexMask, fragmentClip);
-      gl.programOverflow = webgl.initShaders(gl, vertexOverflow, fragmentOverflow);
-      gl.programCm = webgl.initShaders(gl, vertexCm, fragmentCm);
-      gl.programDs = webgl.initShaders(gl, vertexDs, fragmentDs);
-      gl.programMbmMp = webgl.initShaders(gl, vertexMbm, fragmentMultiply);
-      gl.programMbmSr = webgl.initShaders(gl, vertexMbm, fragmentScreen);
-      gl.programMbmOl = webgl.initShaders(gl, vertexMbm, fragmentOverlay);
-      gl.programMbmDk = webgl.initShaders(gl, vertexMbm, fragmentDarken);
-      gl.programMbmLt = webgl.initShaders(gl, vertexMbm, fragmentLighten);
-      gl.programMbmCd = webgl.initShaders(gl, vertexMbm, fragmentColorDodge);
-      gl.programMbmCb = webgl.initShaders(gl, vertexMbm, fragmentColorBurn);
-      gl.programMbmHl = webgl.initShaders(gl, vertexMbm, fragmentHardLight);
-      gl.programMbmSl = webgl.initShaders(gl, vertexMbm, fragmentSoftLight);
-      gl.programMbmDf = webgl.initShaders(gl, vertexMbm, fragmentDifference);
-      gl.programMbmEx = webgl.initShaders(gl, vertexMbm, fragmentExclusion);
-      gl.programMbmHue = webgl.initShaders(gl, vertexMbm, fragmentHue);
-      gl.programMbmSt = webgl.initShaders(gl, vertexMbm, fragmentSaturation);
-      gl.programMbmCl = webgl.initShaders(gl, vertexMbm, fragmentColor);
-      gl.programMbmLm = webgl.initShaders(gl, vertexMbm, fragmentLuminosity);
-      gl.useProgram(gl.program);
-      // 第一次渲染生成纹理缓存管理对象，收集渲染过程中生成的纹理并在gl纹理单元满了时进行绘制和清空，减少texImage2d耗时问题
-      const MAX_TEXTURE_IMAGE_UNITS = Math.min(16, gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
     }
     this.draw(true);
     // 第一次节点没有__root，渲染一次就有了才能diff
-    if(this.dom.__root && this.dom.__root instanceof Root) {
-      this.dom.__root.destroy();
+    if(this.__dom.__root && this.__dom.__root instanceof Root) {
+      this.__dom.__root.destroy();
     }
-    this.__eventCbList = initEvent(this.dom, Root);
-    this.dom.__root = this;
+    this.__eventCbList = initEvent(this.__dom, Root);
+    this.__dom.__root = this;
+  }
+
+  __initShader(gl) {
+    gl.program = webgl.initShaders(gl, vertex, fragment);
+    gl.programMask = webgl.initShaders(gl, vertexMask, fragmentMask);
+    gl.programClip = webgl.initShaders(gl, vertexMask, fragmentClip);
+    gl.programOverflow = webgl.initShaders(gl, vertexOverflow, fragmentOverflow);
+    gl.programCm = webgl.initShaders(gl, vertexCm, fragmentCm);
+    gl.programDs = webgl.initShaders(gl, vertexDs, fragmentDs);
+    gl.programMbmMp = webgl.initShaders(gl, vertexMbm, fragmentMultiply);
+    gl.programMbmSr = webgl.initShaders(gl, vertexMbm, fragmentScreen);
+    gl.programMbmOl = webgl.initShaders(gl, vertexMbm, fragmentOverlay);
+    gl.programMbmDk = webgl.initShaders(gl, vertexMbm, fragmentDarken);
+    gl.programMbmLt = webgl.initShaders(gl, vertexMbm, fragmentLighten);
+    gl.programMbmCd = webgl.initShaders(gl, vertexMbm, fragmentColorDodge);
+    gl.programMbmCb = webgl.initShaders(gl, vertexMbm, fragmentColorBurn);
+    gl.programMbmHl = webgl.initShaders(gl, vertexMbm, fragmentHardLight);
+    gl.programMbmSl = webgl.initShaders(gl, vertexMbm, fragmentSoftLight);
+    gl.programMbmDf = webgl.initShaders(gl, vertexMbm, fragmentDifference);
+    gl.programMbmEx = webgl.initShaders(gl, vertexMbm, fragmentExclusion);
+    gl.programMbmHue = webgl.initShaders(gl, vertexMbm, fragmentHue);
+    gl.programMbmSt = webgl.initShaders(gl, vertexMbm, fragmentSaturation);
+    gl.programMbmCl = webgl.initShaders(gl, vertexMbm, fragmentColor);
+    gl.programMbmLm = webgl.initShaders(gl, vertexMbm, fragmentLuminosity);
+    gl.useProgram(gl.program);
   }
 
   __reLayout() {

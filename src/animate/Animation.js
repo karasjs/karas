@@ -231,11 +231,7 @@ function genBeforeRefresh(keys, root, node, aniParams, cb) {
   if(aniParams && !aniParams.allInFn) {
     aniParams = null;
   }
-  root.__addUpdate(node, {
-    keys,
-    aniParams,
-    cb,
-  });
+  root.__addUpdate(node, keys, null, null, null, aniParams, cb);
 }
 
 /**

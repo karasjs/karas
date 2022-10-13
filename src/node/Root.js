@@ -92,6 +92,7 @@ const {
   MASK,
 } = level;
 const { isGeom } = change;
+const { renderCanvas, renderSvg, renderWebgl } = struct;
 
 const ROOT_DOM_NAME = {
   canvas: 'canvas',
@@ -168,13 +169,10 @@ class Root extends Dom {
     this.__mh = 0;
     // this.__scx = 1; // 默认缩放，css改变canvas/svg缩放后影响事件坐标，有值手动指定，否则自动计算
     // this.__scy = 1;
-    this.__taskUp = [];
     this.__task = [];
     this.__ref = {};
-    this.__reflowList = [{ node: this }]; // 初始化填自己，第一次布局时复用逻辑完全重新布局
     this.__animateController = new Controller();
     Event.mix(this);
-    this.__updateHash = {};
     this.__uuid = uuid++;
     this.__rlv = REBUILD; // 每次刷新最大lv
     this.__lastUpdateP = null; // 每帧addUpdate都会向上检查，很多时候同级无需继续，第一次检查暂存parent对象
@@ -410,13 +408,13 @@ class Root extends Dom {
     }
     let rlv = this.__rlv;
     if(renderMode === mode.CANVAS) {
-      this.__clear(ctx, renderMode);
-      struct.renderCanvas(renderMode, ctx, this, isFirst, rlv);
+      this.__clearCanvas(ctx);
+      renderCanvas(renderMode, ctx, this, isFirst, rlv);
     }
     // svg的特殊diff需要
     else if(renderMode === mode.SVG) {
       defs.clear();
-      struct.renderSvg(renderMode, defs, this, isFirst, rlv);
+      renderSvg(renderMode, defs, this, isFirst, rlv);
       let nvd = this.virtualDom;
       nvd.defs = defs.value;
       if(this.dom.__vd) {
@@ -431,8 +429,8 @@ class Root extends Dom {
       this.dom.__defs = defs;
     }
     else if(renderMode === mode.WEBGL) {
-      this.__clear(ctx, renderMode);
-      struct.renderWebgl(renderMode, ctx, this, isFirst, rlv);
+      this.__clearWebgl(ctx);
+      renderWebgl(renderMode, ctx, this, isFirst, rlv);
     }
     this.emit(Event.REFRESH, rlv);
     this.__rlv = NONE;
@@ -575,17 +573,10 @@ class Root extends Dom {
   /**
    * 添加更新，分析repaint/reflow和上下影响，异步刷新
    */
-  __addUpdate(node, o) {
+  __addUpdate(node, keys, focus, addDom, removeDom, aniParams, cb) {
     if(node instanceof Component) {
       node = node.shadowRoot;
     }
-    let {
-      keys,
-      focus,
-      addDom,
-      removeDom,
-      aniParams, // 动画特殊优化，大部分都是<REPAINT的情况，很多计算if可以跳过
-    } = o;
     let {
       computedStyle,
       currentStyle,
@@ -655,8 +646,8 @@ class Root extends Dom {
     // 没有变化，add/remove强制focus
     // 本身节点为none，变更无效，此时没有display变化，add/remove在操作时已经判断不会进入
     if(lv === NONE || computedStyle[DISPLAY] === 'none' && !hasDisplay) {
-      if(isFunction(o.cb)) {
-        o.cb();
+      if(cb && isFunction(cb)) {
+        cb();
       }
       return;
     }
@@ -835,10 +826,10 @@ class Root extends Dom {
     else {
       this.__rlv |= lv;
     }
-    if(o.cb && !isFunction(o.cb)) {
-      o.cb = null;
+    if(cb && !isFunction(cb)) {
+      cb = null;
     }
-    this.__frameDraw(o.cb);
+    this.__frameDraw(cb);
   }
 
   // 异步进行root刷新操作，多次调用缓存结果，刷新成功后回调
@@ -849,28 +840,30 @@ class Root extends Dom {
       frame.__rootTask.push(() => {
         // 需要先获得累积的刷新回调再刷新，防止refresh触发事件中再次调用刷新
         let list = this.__task.splice(0);
-        this.draw();
+        this.draw(false);
         list.forEach(item => {
           item && item();
         });
       });
+      this.__task.push(cb);
     }
-    this.__task.push(cb);
+    else if(cb) {
+      this.__task.push(cb);
+    }
   }
 
-  __clear(ctx, renderMode) {
-    if(renderMode === mode.CANVAS) {
-      // 可能会调整宽高，所以每次清除用最大值
-      this.__mw = Math.max(this.__mw, this.width);
-      this.__mh = Math.max(this.__mh, this.height);
-      // 清除前得恢复默认matrix，防止每次布局改变了属性
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.clearRect(0, 0, this.__mw, this.__mh);
-    }
-    else if(renderMode === mode.WEBGL) {
-      ctx.clearColor(0, 0, 0, 0);
-      ctx.clear(ctx.COLOR_BUFFER_BIT);
-    }
+  __clearCanvas(ctx) {
+    // 可能会调整宽高，所以每次清除用最大值
+    this.__mw = Math.max(this.__mw, this.width);
+    this.__mh = Math.max(this.__mh, this.height);
+    // 清除前得恢复默认matrix，防止每次布局改变了属性
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, this.__mw, this.__mh);
+  }
+
+  __clearWebgl(ctx) {
+    ctx.clearColor(0, 0, 0, 0);
+    ctx.clear(ctx.COLOR_BUFFER_BIT);
   }
 
   get dom() {
@@ -891,10 +884,6 @@ class Root extends Dom {
 
   get defs() {
     return this.__defs;
-  }
-
-  get taskUp() {
-    return this.__taskUp;
   }
 
   get ref() {

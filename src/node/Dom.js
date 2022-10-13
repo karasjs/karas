@@ -69,6 +69,7 @@ const { isRelativeOrAbsolute, getBaseline, getVerticalBaseline } = css;
 const { extend, isNil, isFunction, assignMatrix } = util;
 const { CANVAS, SVG, WEBGL } = mode;
 const { isE, multiply } = mx;
+const { REFLOW } = level;
 
 // 渲染获取zIndex顺序
 function genZIndexChildren(dom) {
@@ -3309,11 +3310,7 @@ class Dom extends Xom {
     if(child instanceof Text) {
       child = this;
     }
-    root.__addUpdate(child, {
-      focus: level.REFLOW,
-      addDom: true,
-      cb,
-    });
+    root.__addUpdate(child, null, REFLOW, true, null, null, cb);
   }
 
   prependChild(child, cb) {
@@ -3354,11 +3351,7 @@ class Dom extends Xom {
     if(child instanceof Text) {
       child = this;
     }
-    root.__addUpdate(child, {
-      focus: level.REFLOW,
-      addDom: true,
-      cb,
-    });
+    root.__addUpdate(child, null, REFLOW, true, null, null, cb);
   }
 
   insertBefore(child, cb) {
@@ -3410,11 +3403,7 @@ class Dom extends Xom {
     if(child instanceof Text) {
       child = parent;
     }
-    root.__addUpdate(child, {
-      focus: level.REFLOW,
-      addDom: true,
-      cb,
-    });
+    root.__addUpdate(child, null, REFLOW, true, null, null, cb);
   }
 
   insertAfter(child, cb) {
@@ -3461,11 +3450,7 @@ class Dom extends Xom {
     if(child instanceof Text) {
       child = parent;
     }
-    root.__addUpdate(child, {
-      focus: level.REFLOW,
-      addDom: true,
-      cb,
-    });
+    root.__addUpdate(child, null, REFLOW, true, null, null, cb);
   }
 
   removeChild(target, cb) {

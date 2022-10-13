@@ -458,16 +458,10 @@ class Img extends Dom {
         function reload() {
           let { __currentStyle: { [WIDTH]: width, [HEIGHT]: height } } = self;
           if(width.u !== AUTO && height.u !== AUTO) {
-            root.__addUpdate(self, {
-              focus: level.REPAINT, // 已知宽高无需重新布局
-              cb,
-            });
+            root.__addUpdate(self, null, level.REPAINT, null, null, null, cb);
           }
           else {
-            root.__addUpdate(self, {
-              focus: level.REFLOW,
-              cb,
-            });
+            root.__addUpdate(self, null, level.REFLOW, null, null, null, cb);
           }
         }
         if(data.success) {

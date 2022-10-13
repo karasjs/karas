@@ -11036,7 +11036,7 @@
   var REPAINT$4 = 16384; //                     100000000000000
   // 高位表示reflow
 
-  var REFLOW$3 = 32768; //                     1000000000000000
+  var REFLOW$4 = 32768; //                     1000000000000000
   // 特殊高位表示rebuild，节点发生增删变化
 
   var REBUILD$1 = 65536; //                   10000000000000000
@@ -11061,7 +11061,7 @@
     PERSPECTIVE: PERSPECTIVE$3,
     MASK: MASK$3,
     REPAINT: REPAINT$4,
-    REFLOW: REFLOW$3,
+    REFLOW: REFLOW$4,
     REBUILD: REBUILD$1
   };
 
@@ -11141,13 +11141,13 @@
         return REPAINT$4;
       }
 
-      return REFLOW$3;
+      return REFLOW$4;
     },
     isReflow: function isReflow(lv) {
-      return lv >= REFLOW$3;
+      return lv >= REFLOW$4;
     },
     isRepaint: function isRepaint(lv) {
-      return lv < REFLOW$3;
+      return lv < REFLOW$4;
     }
   }, ENUM);
 
@@ -12087,10 +12087,7 @@
 
         this.__content = s;
 
-        this.__root.__addUpdate(this.__domParent, {
-          focus: o$1.REFLOW,
-          cb: cb
-        });
+        this.__root.__addUpdate(this.__domParent, null, o$1.REFLOW, null, null, null, cb);
       }
     }, {
       key: "remove",
@@ -12143,13 +12140,7 @@
         } // 可见在reflow逻辑做结构关系等，text视为父变更
 
 
-        var res = {
-          focus: o$1.REFLOW,
-          removeDom: true,
-          cb: cb
-        };
-
-        root.__addUpdate(this, res);
+        root.__addUpdate(this, null, o$1.REFLOW, null, true, null, cb);
       }
     }, {
       key: "content",
@@ -14119,11 +14110,7 @@
       aniParams = null;
     }
 
-    root.__addUpdate(node, {
-      keys: keys,
-      aniParams: aniParams,
-      cb: cb
-    });
+    root.__addUpdate(node, keys, null, null, null, aniParams, cb);
   }
   /**
    * 将每帧的样式格式化，提取出offset属性并转化为时间，提取出缓动曲线easing
@@ -17379,7 +17366,7 @@
       multiplyScaleY = matrix.multiplyScaleY,
       multiplyScaleZ = matrix.multiplyScaleZ;
   var TF$1 = o$1.TRANSFORM,
-      REFLOW$2 = o$1.REFLOW,
+      REFLOW$3 = o$1.REFLOW,
       REPAINT$3 = o$1.REPAINT,
       TX = o$1.TRANSLATE_X,
       TY = o$1.TRANSLATE_Y,
@@ -17486,7 +17473,7 @@
 
       var isClip = _this.__clip = !!_this.props.clip;
       _this.__mask = isClip || !!_this.props.mask;
-      _this.__refreshLevel = REFLOW$2;
+      _this.__refreshLevel = REFLOW$3;
       _this.__limitCache = false;
       _this.__isInline = false;
       _this.__hasContent = false;
@@ -17761,9 +17748,7 @@
           if (item === fontFamily) {
             // 加载成功回调可能没注册信息，需要多判断一下
             if (o$3.hasRegister(item)) {
-              root.__addUpdate(node, {
-                focus: REFLOW$2
-              });
+              root.__addUpdate(node, null, REFLOW$3, null, null, null, null);
             } // 后面低优先级的无需再看
 
 
@@ -17865,7 +17850,7 @@
         if (!isAbs && !isColumn && !isRow) {
           this.clearCache();
           this.__cacheStyle = [];
-          this.__refreshLevel = REFLOW$2;
+          this.__refreshLevel = REFLOW$3;
           this.__limitCache = false;
           this.__isInline = false;
           var next = this.next; // mask关系只有布局才会变更，普通渲染关系不会改变，clip也是mask的一种
@@ -18289,7 +18274,7 @@
 
         var matrixCache = __cacheStyle[MATRIX$1]; // 优化计算scale不能为0，无法计算倍数差，rotateZ优化不能包含rotateX/rotateY/skew
 
-        if (!isNil$9(optimize)) ; else if (matrixCache && lv < REFLOW$2 && !(lv & TF$1)) {
+        if (!isNil$9(optimize)) ; else if (matrixCache && lv < REFLOW$3 && !(lv & TF$1)) {
           if (lv & SX && !__computedStyle[SCALE_X] || lv & SY && !__computedStyle[SCALE_Y] || lv & SZ && !__computedStyle[SCALE_Z] || lv & RZ && (__computedStyle[ROTATE_X] || __computedStyle[ROTATE_Y] || __computedStyle[SKEW_X] || __computedStyle[SKEW_Y])) ; else {
             optimize = true;
           }
@@ -18774,9 +18759,7 @@
                     loadBgi.height = data.height;
                     __cacheStyle[BACKGROUND_IMAGE] = undefined;
 
-                    root.__addUpdate(node, {
-                      focus: REPAINT$3
-                    });
+                    root.__addUpdate(node, null, REPAINT$3, null, null, null, null);
                   }
                 }, {
                   ctx: ctx,
@@ -19875,10 +19858,7 @@
         }
 
         if (root && !this.__isDestroyed) {
-          root.__addUpdate(this, {
-            focus: lv,
-            cb: cb
-          });
+          root.__addUpdate(this, null, lv, null, null, null, cb);
         } else if (isFunction$5(cb)) {
           cb(-1);
         }
@@ -20242,10 +20222,7 @@
         }
 
         if (root) {
-          root.__addUpdate(this, {
-            keys: keys,
-            cb: cb
-          });
+          root.__addUpdate(this, keys, null, null, null, null, cb);
         }
       }
     }, {
@@ -20359,7 +20336,7 @@
         if (lv) {
           this.__refreshLevel |= lv;
 
-          if (lv >= REFLOW$2) {
+          if (lv >= REFLOW$3) {
             this.__cacheStyle = [];
 
             this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
@@ -20399,7 +20376,7 @@
         if (lv) {
           this.__refreshLevel |= lv;
 
-          if (lv >= REFLOW$2) {
+          if (lv >= REFLOW$3) {
             this.__cacheStyle = [];
 
             this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
@@ -20459,7 +20436,7 @@
         if (lv) {
           this.__refreshLevel |= lv;
 
-          if (lv >= REFLOW$2) {
+          if (lv >= REFLOW$3) {
             this.__cacheStyle = [];
 
             this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
@@ -20491,7 +20468,7 @@
         if (lv) {
           this.__refreshLevel |= lv;
 
-          if (lv >= REFLOW$2) {
+          if (lv >= REFLOW$3) {
             this.__cacheStyle = [];
 
             this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
@@ -20636,13 +20613,7 @@
         } // 可见在reflow逻辑做结构关系等
 
 
-        var res = {
-          focus: REFLOW$2,
-          removeDom: true,
-          cb: cb
-        };
-
-        root.__addUpdate(this, res);
+        root.__addUpdate(this, null, REFLOW$3, null, true, null, cb);
       }
     }, {
       key: "tagName",
@@ -20802,9 +20773,7 @@
           var root = this.__root;
 
           if (root && !this.__isDestroyed) {
-            root.__addUpdate(this, {
-              focus: MASK$2
-            });
+            root.__addUpdate(this, null, MASK$2, null, null, null, null);
           }
         }
       }
@@ -20821,9 +20790,7 @@
           var root = this.__root;
 
           if (root && !this.__isDestroyed) {
-            root.__addUpdate(this, {
-              focus: MASK$2
-            });
+            root.__addUpdate(this, null, MASK$2, null, null, null, null);
           }
         }
       }
@@ -20840,9 +20807,7 @@
           var root = this.__root;
 
           if (root && !this.__isDestroyed) {
-            root.__addUpdate(this, {
-              focus: REPAINT$3
-            });
+            root.__addUpdate(this, null, REPAINT$3, null, null, null, null);
           }
         }
       }
@@ -22598,7 +22563,7 @@
       VMIN$2 = o$4.VMIN,
       PERCENT$2 = o$4.PERCENT;
   var REPAINT$2 = o$1.REPAINT,
-      REFLOW$1 = o$1.REFLOW,
+      REFLOW$2 = o$1.REFLOW,
       CACHE$2 = o$1.CACHE;
   var isRelativeOrAbsolute$1 = css.isRelativeOrAbsolute;
 
@@ -22709,13 +22674,13 @@
       var cs = next.currentStyle; // flow流和auto/px/rem的absolute流需要偏移diff值
 
       if (cs[POSITION$2] !== 'absolute' || cs[TOP$2].u === AUTO$2 && cs[BOTTOM$2].u === AUTO$2 || cs[TOP$2].u === AUTO$2 && [PX$3, REM$2, VW$2, VH$2, VMAX$2, VMIN$2].indexOf(cs[BOTTOM$2].u) > -1) {
-        next.__offsetY(diff, true, REFLOW$1);
+        next.__offsetY(diff, true, REFLOW$2);
       } // absolute中百分比的特殊计算偏移，但要排除parent固定尺寸
       else if (!parentFixed && cs[POSITION$2] === 'absolute' && (cs[TOP$2].u === PERCENT$2 || cs[BOTTOM$2].u === PERCENT$2)) {
         if (cs[TOP$2].u === PERCENT$2) {
-          next.__offsetY(diff * 0.01 * cs[TOP$2].v, true, REFLOW$1);
+          next.__offsetY(diff * 0.01 * cs[TOP$2].v, true, REFLOW$2);
         } else {
-          next.__offsetY(diff * (1 - 0.01 * cs[BOTTOM$2].v), true, REFLOW$1);
+          next.__offsetY(diff * (1 - 0.01 * cs[BOTTOM$2].v), true, REFLOW$2);
         }
       } // abs的percent调整，记录
 
@@ -23126,7 +23091,7 @@
 
 
     if (!removeDom && d3) {
-      top.__offsetY(d3, true, REFLOW$1);
+      top.__offsetY(d3, true, REFLOW$2);
     } // 差值计算注意考虑margin合并前的值，和合并后的差值，height使用offsetHeight不考虑margin
 
 
@@ -23140,7 +23105,7 @@
     var parentFixed = isFixedWidthOrHeight(parent, HEIGHT$3);
 
     if (!parentFixed) {
-      parent.__resizeY(diff, REFLOW$1);
+      parent.__resizeY(diff, REFLOW$2);
     } // 调整的同时遇到百分比高度的abs需记录下来最后重新布局
 
 
@@ -23154,7 +23119,7 @@
       parentFixed = parent && isFixedWidthOrHeight(parent, HEIGHT$3);
 
       if (!parentFixed) {
-        parent.__resizeY(diff, REFLOW$1);
+        parent.__resizeY(diff, REFLOW$2);
       }
 
       offsetNext(next, diff, parentFixed, absList);
@@ -23373,7 +23338,8 @@
       SVG = mode.SVG,
       WEBGL = mode.WEBGL;
   var isE$2 = matrix.isE,
-      multiply$1 = matrix.multiply; // 渲染获取zIndex顺序
+      multiply$1 = matrix.multiply;
+  var REFLOW$1 = o$1.REFLOW; // 渲染获取zIndex顺序
 
   function genZIndexChildren(dom) {
     var normal = [];
@@ -27010,11 +26976,7 @@
           child = this;
         }
 
-        root.__addUpdate(child, {
-          focus: o$1.REFLOW,
-          addDom: true,
-          cb: cb
-        });
+        root.__addUpdate(child, null, REFLOW$1, true, null, null, cb);
       }
     }, {
       key: "prependChild",
@@ -27070,11 +27032,7 @@
           child = this;
         }
 
-        root.__addUpdate(child, {
-          focus: o$1.REFLOW,
-          addDom: true,
-          cb: cb
-        });
+        root.__addUpdate(child, null, REFLOW$1, true, null, null, cb);
       }
     }, {
       key: "insertBefore",
@@ -27141,11 +27099,7 @@
           child = parent;
         }
 
-        root.__addUpdate(child, {
-          focus: o$1.REFLOW,
-          addDom: true,
-          cb: cb
-        });
+        root.__addUpdate(child, null, REFLOW$1, true, null, null, cb);
       }
     }, {
       key: "insertAfter",
@@ -27205,11 +27159,7 @@
           child = parent;
         }
 
-        root.__addUpdate(child, {
-          focus: o$1.REFLOW,
-          addDom: true,
-          cb: cb
-        });
+        root.__addUpdate(child, null, REFLOW$1, true, null, null, cb);
       }
     }, {
       key: "removeChild",
@@ -27761,16 +27711,9 @@
                   height = _self$__currentStyle[HEIGHT$1];
 
               if (width.u !== AUTO && height.u !== AUTO) {
-                root.__addUpdate(self, {
-                  focus: o$1.REPAINT,
-                  // 已知宽高无需重新布局
-                  cb: cb
-                });
+                root.__addUpdate(self, null, o$1.REPAINT, null, null, null, cb);
               } else {
-                root.__addUpdate(self, {
-                  focus: o$1.REFLOW,
-                  cb: cb
-                });
+                root.__addUpdate(self, null, o$1.REFLOW, null, null, null, cb);
               }
             };
 
@@ -32636,7 +32579,7 @@
     };
   }
 
-  function renderSvg(renderMode, ctx, root, isFirst, rlv) {
+  function renderSvg$1(renderMode, ctx, root, isFirst, rlv) {
     var __structs = root.__structs,
         width = root.width,
         height = root.height; // mask节点很特殊，本身有matrix会影响，本身没改变但对象节点有改变也需要计算逆矩阵应用顶点
@@ -33003,7 +32946,7 @@
     }
   }
 
-  function renderWebgl(renderMode, gl, root, isFirst, rlv) {
+  function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
     if (isFirst) {
       Page.init(gl.getParameter(gl.MAX_TEXTURE_SIZE));
     }
@@ -33505,7 +33448,7 @@
     }
   }
 
-  function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
+  function renderCanvas$1(renderMode, ctx, root, isFirst, rlv) {
     var __structs = root.__structs,
         width = root.width,
         height = root.height;
@@ -33877,9 +33820,9 @@
   }
 
   var struct = {
-    renderCanvas: renderCanvas,
-    renderSvg: renderSvg,
-    renderWebgl: renderWebgl
+    renderCanvas: renderCanvas$1,
+    renderSvg: renderSvg$1,
+    renderWebgl: renderWebgl$1
   };
 
   var vertex = "#version 100\n#define GLSLIFY 1\nattribute vec4 a_position;attribute vec2 a_texCoords;varying vec2 v_texCoords;attribute float a_opacity;varying float v_opacity;void main(){gl_Position=a_position;v_texCoords=a_texCoords;v_opacity=a_opacity;}"; // eslint-disable-line
@@ -33985,6 +33928,9 @@
       MBM = o$1.MIX_BLEND_MODE,
       MASK = o$1.MASK;
   var isGeom = o$2.isGeom;
+  var renderCanvas = struct.renderCanvas,
+      renderSvg = struct.renderSvg,
+      renderWebgl = struct.renderWebgl;
   var ROOT_DOM_NAME = {
     canvas: 'canvas',
     svg: 'svg',
@@ -34076,16 +34022,10 @@
       _this.__mh = 0; // this.__scx = 1; // 默认缩放，css改变canvas/svg缩放后影响事件坐标，有值手动指定，否则自动计算
       // this.__scy = 1;
 
-      _this.__taskUp = [];
       _this.__task = [];
       _this.__ref = {};
-      _this.__reflowList = [{
-        node: _assertThisInitialized(_this)
-      }]; // 初始化填自己，第一次布局时复用逻辑完全重新布局
-
       _this.__animateController = new Controller();
       Event.mix(_assertThisInitialized(_this));
-      _this.__updateHash = {};
       _this.__uuid = uuid++;
       _this.__rlv = REBUILD; // 每次刷新最大lv
 
@@ -34374,13 +34314,13 @@
         var rlv = this.__rlv;
 
         if (renderMode === mode.CANVAS) {
-          this.__clear(ctx, renderMode);
+          this.__clearCanvas(ctx);
 
-          struct.renderCanvas(renderMode, ctx, this, isFirst, rlv);
+          renderCanvas(renderMode, ctx, this, isFirst, rlv);
         } // svg的特殊diff需要
         else if (renderMode === mode.SVG) {
           defs.clear();
-          struct.renderSvg(renderMode, defs, this, isFirst, rlv);
+          renderSvg(renderMode, defs, this, isFirst, rlv);
           var nvd = this.virtualDom;
           nvd.defs = defs.value;
 
@@ -34395,9 +34335,9 @@
           this.dom.__vd = nvd;
           this.dom.__defs = defs;
         } else if (renderMode === mode.WEBGL) {
-          this.__clear(ctx, renderMode);
+          this.__clearWebgl(ctx);
 
-          struct.renderWebgl(renderMode, ctx, this, isFirst, rlv);
+          renderWebgl(renderMode, ctx, this, isFirst, rlv);
         }
 
         this.emit(Event.REFRESH, rlv);
@@ -34580,16 +34520,11 @@
 
     }, {
       key: "__addUpdate",
-      value: function __addUpdate(node, o) {
+      value: function __addUpdate(node, keys, focus, addDom, removeDom, aniParams, cb) {
         if (node instanceof Component) {
           node = node.shadowRoot;
         }
 
-        var keys = o.keys,
-            focus = o.focus,
-            addDom = o.addDom,
-            removeDom = o.removeDom,
-            aniParams = o.aniParams;
         var _node = node,
             computedStyle = _node.computedStyle,
             currentStyle = _node.currentStyle,
@@ -34654,8 +34589,8 @@
 
 
         if (lv === NONE || computedStyle[DISPLAY] === 'none' && !hasDisplay) {
-          if (isFunction$1(o.cb)) {
-            o.cb();
+          if (cb && isFunction$1(cb)) {
+            cb();
           }
 
           return;
@@ -34869,11 +34804,11 @@
           this.__rlv |= lv;
         }
 
-        if (o.cb && !isFunction$1(o.cb)) {
-          o.cb = null;
+        if (cb && !isFunction$1(cb)) {
+          cb = null;
         }
 
-        this.__frameDraw(o.cb);
+        this.__frameDraw(cb);
       } // 异步进行root刷新操作，多次调用缓存结果，刷新成功后回调
 
     }, {
@@ -34888,30 +34823,33 @@
             // 需要先获得累积的刷新回调再刷新，防止refresh触发事件中再次调用刷新
             var list = _this3.__task.splice(0);
 
-            _this3.draw();
+            _this3.draw(false);
 
             list.forEach(function (item) {
               item && item();
             });
           });
-        }
 
-        this.__task.push(cb);
+          this.__task.push(cb);
+        } else if (cb) {
+          this.__task.push(cb);
+        }
       }
     }, {
-      key: "__clear",
-      value: function __clear(ctx, renderMode) {
-        if (renderMode === mode.CANVAS) {
-          // 可能会调整宽高，所以每次清除用最大值
-          this.__mw = Math.max(this.__mw, this.width);
-          this.__mh = Math.max(this.__mh, this.height); // 清除前得恢复默认matrix，防止每次布局改变了属性
+      key: "__clearCanvas",
+      value: function __clearCanvas(ctx) {
+        // 可能会调整宽高，所以每次清除用最大值
+        this.__mw = Math.max(this.__mw, this.width);
+        this.__mh = Math.max(this.__mh, this.height); // 清除前得恢复默认matrix，防止每次布局改变了属性
 
-          ctx.setTransform(1, 0, 0, 1, 0, 0);
-          ctx.clearRect(0, 0, this.__mw, this.__mh);
-        } else if (renderMode === mode.WEBGL) {
-          ctx.clearColor(0, 0, 0, 0);
-          ctx.clear(ctx.COLOR_BUFFER_BIT);
-        }
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, this.__mw, this.__mh);
+      }
+    }, {
+      key: "__clearWebgl",
+      value: function __clearWebgl(ctx) {
+        ctx.clearColor(0, 0, 0, 0);
+        ctx.clear(ctx.COLOR_BUFFER_BIT);
       }
     }, {
       key: "dom",
@@ -34937,11 +34875,6 @@
       key: "defs",
       get: function get() {
         return this.__defs;
-      }
-    }, {
-      key: "taskUp",
-      get: function get() {
-        return this.__taskUp;
       }
     }, {
       key: "ref",

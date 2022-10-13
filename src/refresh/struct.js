@@ -792,6 +792,10 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   if(hasPpt || isOverflow) {
     cx = w * 0.5;
     cy = h * 0.5;
+    if(hasPpt) {
+      dx = -bboxTotal[0];
+      dy = -bboxTotal[1];
+    }
     texture = webgl.createTexture(gl, null, 0, w, h);
     frameBuffer = genFrameBufferWithTexture(gl, texture, w, h);
     gl.viewport(0, 0, w, h);

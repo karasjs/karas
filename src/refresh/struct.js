@@ -93,10 +93,9 @@ function genBboxTotal(node, __structs, index, total, isWebgl) {
   }
   bboxTotal = bboxTotal.slice(0);
   // 局部根节点如有perspective，则计算pm，这里不会出现嵌套，因为每个出现都会生成局部根节点
-  let pm, hasPpt;
+  let pm;
   if(isWebgl && perspective) {
     pm = tf.calPerspectiveMatrix(perspective, perspectiveOrigin[0], perspectiveOrigin[1]);
-    hasPpt = true;
   }
   for(let i = index + 1, len = index + total + 1; i < len; i++) {
     let {
@@ -145,9 +144,6 @@ function genBboxTotal(node, __structs, index, total, isWebgl) {
     let p = node.__domParent;
     node.__opacity = __computedStyle2[OPACITY] * p.__opacity;
     let m = node.__matrix;
-    if(isWebgl && !hasPpt && isPerspectiveMatrix(m)) {
-      hasPpt = true;
-    }
     let matrix = multiply(p.__matrixEvent, m);
     // 因为以局部根节点为原点，所以pm是最左边父矩阵乘
     if(pm) {
@@ -176,13 +172,9 @@ function genBboxTotal(node, __structs, index, total, isWebgl) {
   if((bboxTotal[2] - bboxTotal[0] <= 0) || (bboxTotal[3] - bboxTotal[1] <= 0)) {
     return {};
   }
-  if(pm) {
-    hasPpt = true;
-  }
   return {
     bbox: bboxTotal,
     pm,
-    hasPpt,
   };
 }
 
@@ -735,19 +727,19 @@ function genFrameBufferWithTexture(gl, texture, width, height) {
  * 局部根节点复合图层生成，汇总所有子节点到一颗局部树上的位图缓存，包含超限特殊情况
  * 即便只有自己一个也要返回，因为webgl生成total的原因是有类似filter/mask等必须离屏处理的东西
  */
-function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total, __structs, W, H, isPerspective) {
+function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total, __structs, W, H) {
   if(__cacheTotal && __cacheTotal.available) {
     return __cacheTotal;
   }
   let { __x1: x1, __y1: y1, __cache, __offsetWidth, __offsetHeight } = node;
-  let { bbox: bboxTotal, pm, hasPpt } = genBboxTotal(node, __structs, index, total, true);
+  let { bbox: bboxTotal, pm } = genBboxTotal(node, __structs, index, total, true);
   if(!bboxTotal) {
     return;
   }
 
   // overflow:hidden和canvas一样特殊考虑
   let w, h, dx, dy, dbx, dby, cx, cy, texture, frameBuffer;
-  let overflow = node.__computedStyle[OVERFLOW], isOverflow;
+  let overflow = node.__computedStyle[OVERFLOW];
   if((x1 !== bboxTotal[0]
     || y1 !== bboxTotal[1]
     || __offsetWidth !== (bboxTotal[2] - bboxTotal[0])
@@ -760,7 +752,6 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
     dy = -y1;
     dbx = 0;
     dby = 0;
-    isOverflow = true;
   }
   else {
     w = bboxTotal[2] - bboxTotal[0];
@@ -781,30 +772,19 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   }
   __cacheTotal.__available = true;
   node.__cacheTotal = __cacheTotal;
-  if(!isOverflow) {
-    dx = __cacheTotal.dx;
-    dy = __cacheTotal.dy;
-    dbx = __cacheTotal.dbx;
-    dby = __cacheTotal.dby;
-  }
+  cx = w * 0.5;
+  cy = h * 0.5;
+  dx = -bboxTotal[0];
+  dy = -bboxTotal[1];
+  dbx = __cacheTotal.dbx;
+  dby = __cacheTotal.dby;
 
   let page = __cacheTotal.__page, size = page.__size;
-  if(hasPpt || isOverflow) {
-    cx = w * 0.5;
-    cy = h * 0.5;
-    if(hasPpt) {
-      dx = -bboxTotal[0];
-      dy = -bboxTotal[1];
-    }
-    texture = webgl.createTexture(gl, null, 0, w, h);
-    frameBuffer = genFrameBufferWithTexture(gl, texture, w, h);
-    gl.viewport(0, 0, w, h);
-  }
-  else {
-    cx = cy = size * 0.5;
-    texture = page.texture;
-    frameBuffer = genFrameBufferWithTexture(gl, texture, size, size);
-  }
+  // 先绘制到一张单独的纹理，防止children中和cacheTotal重复texture不能绘制
+  texture = webgl.createTexture(gl, null, 0, w, h);
+  frameBuffer = genFrameBufferWithTexture(gl, texture, w, h);
+  gl.viewport(0, 0, w, h);
+
   // fbo绘制对象纹理不用绑定单元，剩下的纹理绘制用0号
   let lastPage, list = [];
   // 先绘制自己的cache，起点所以matrix视作E为空，opacity固定1
@@ -910,16 +890,13 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
           if(res) {
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-            gl.deleteFramebuffer(res.frameBuffer);
-            cacheTotal.clear();
-            cacheTotal.__available = true;
+            gl.deleteFramebuffer(frameBuffer);
+            gl.deleteTexture(texture);
+            texture = res.texture;
+            frameBuffer = res.frameBuffer;
             gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
-            webgl.drawTex2Cache(gl, gl.program, cacheTotal, res.texture, size, size);
-            gl.deleteTexture(res.texture);
           }
-          gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
-          gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
           lastPage = null;
         }
         else {
@@ -946,14 +923,12 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   }
   // 绘制到fbo的纹理对象上并删除fbo恢复
   webgl.drawTextureCache(gl, list, cx, cy, dx, dy);
-  if(hasPpt || isOverflow) {
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.deleteFramebuffer(frameBuffer);
-    frameBuffer = genFrameBufferWithTexture(gl, page.texture, size, size);
-    webgl.drawTex2Cache(gl, gl.program, cacheTotal, texture, w, h);
-    gl.deleteTexture(texture);
-  }
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.deleteFramebuffer(frameBuffer);
+  frameBuffer = genFrameBufferWithTexture(gl, page.texture, size, size);
+  webgl.drawTex2Cache(gl, gl.program, cacheTotal, texture, w, h);
+  gl.deleteTexture(texture);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteFramebuffer(frameBuffer);
@@ -2073,7 +2048,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       let needGen;
       // 可能没变化，比如被遮罩节点、filter变更等
       if(!__cacheTotal || !__cacheTotal.available) {
-        let res = genTotalWebgl(renderMode, __cacheTotal, gl, root, node, i, lv, total || 0, __structs, width, height, isPerspective);
+        let res = genTotalWebgl(renderMode, __cacheTotal, gl, root, node, i, lv, total || 0, __structs, width, height);
         if(!res) {
           return;
         }
@@ -2458,8 +2433,8 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
         if(isValidMbm(mixBlendMode)) {
           ctx.globalCompositeOperation = mbmName(mixBlendMode);
         }
-        let { x, y, canvas, x1, y1, dbx, dby, width, height } = target;
-        ctx.drawImage(canvas, x, y, width, height, x1 - dbx, y1 - dby, width, height);
+        let { x, y, canvas, x1, y1, dbx, dby, width: w, height: h } = target;
+        ctx.drawImage(canvas, x, y, w, h, x1 - dbx, y1 - dby, w, h);
         // total应用后记得设置回来
         ctx.globalCompositeOperation = 'source-over';
         // 父超限但子有total的时候，i此时已经增加到了末尾，也需要检查

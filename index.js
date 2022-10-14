@@ -15279,6 +15279,17 @@
   }
 
   function calNumber(k, v, percent, st, cl, frame, currentStyle) {
+    st = cl + v * percent; // 精度问题可能会超过[0,1]区间
+
+    if (k === OPACITY$4) {
+      if (st < 0) {
+        st = 0;
+      } else if (st > 1) {
+        st = 1;
+      }
+    }
+
+    currentStyle[k] = st;
   } // 特殊的曲线运动计算，转换为translateXY，出现在最后一定会覆盖原本的translate防重
 
 
@@ -29601,7 +29612,7 @@
     gl.enableVertexAttribArray(a_position);
     var texBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0]), gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1]), gl.STATIC_DRAW);
     var a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
     gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(a_texCoords);
@@ -30562,11 +30573,14 @@
       value: function clear() {
         if (_get(_getPrototypeOf(TextureCache.prototype), "clear", this).call(this)) {
           var page = this.__page,
-              gl = page.gl; // 尺寸必须对上才行
+              gl = page.gl,
+              size = page.__size; // 尺寸必须对上才行
 
           var data = new Uint8Array(this.__width * this.__height * 4);
-          gl.bindTexture(gl.TEXTURE_2D, page.texture);
-          gl.texSubImage2D(gl.TEXTURE_2D, 0, this.__x, this.__y, this.__width, this.__height, gl.RGBA, gl.UNSIGNED_BYTE, data);
+          gl.bindTexture(gl.TEXTURE_2D, page.texture); // 注意y镜像和原点左下
+
+          gl.texSubImage2D(gl.TEXTURE_2D, 0, this.__x, size - this.__y - this.__height, this.__width, this.__height, gl.RGBA, gl.UNSIGNED_BYTE, data);
+          gl.bindTexture(gl.TEXTURE_2D, null);
         }
       }
     }, {
@@ -30855,11 +30869,10 @@
 
     bboxTotal = bboxTotal.slice(0); // 局部根节点如有perspective，则计算pm，这里不会出现嵌套，因为每个出现都会生成局部根节点
 
-    var pm, hasPpt;
+    var pm;
 
     if (isWebgl && perspective) {
       pm = transform$1.calPerspectiveMatrix(perspective, perspectiveOrigin[0], perspectiveOrigin[1]);
-      hasPpt = true;
     }
 
     for (var i = index + 1, len = index + total + 1; i < len; i++) {
@@ -30914,11 +30927,6 @@
       var p = _node.__domParent;
       _node.__opacity = __computedStyle2[OPACITY$1] * p.__opacity;
       var m = _node.__matrix;
-
-      if (isWebgl && !hasPpt && isPerspectiveMatrix(m)) {
-        hasPpt = true;
-      }
-
       var matrix$1 = multiply(p.__matrixEvent, m); // 因为以局部根节点为原点，所以pm是最左边父矩阵乘
 
       if (pm) {
@@ -30953,14 +30961,9 @@
       return {};
     }
 
-    if (pm) {
-      hasPpt = true;
-    }
-
     return {
       bbox: bboxTotal,
-      pm: pm,
-      hasPpt: hasPpt
+      pm: pm
     };
   }
 
@@ -31684,7 +31687,7 @@
    */
 
 
-  function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total, __structs, W, H, isPerspective) {
+  function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total, __structs, W, H) {
     if (__cacheTotal && __cacheTotal.available) {
       return __cacheTotal;
     }
@@ -31697,8 +31700,7 @@
 
     var _genBboxTotal = genBboxTotal(node, __structs, index, total, true),
         bboxTotal = _genBboxTotal.bbox,
-        pm = _genBboxTotal.pm,
-        hasPpt = _genBboxTotal.hasPpt;
+        pm = _genBboxTotal.pm;
 
     if (!bboxTotal) {
       return;
@@ -31706,8 +31708,7 @@
 
 
     var w, h, dx, dy, dbx, dby, cx, cy, texture, frameBuffer;
-    var overflow = node.__computedStyle[OVERFLOW],
-        isOverflow;
+    var overflow = node.__computedStyle[OVERFLOW];
 
     if ((x1 !== bboxTotal[0] || y1 !== bboxTotal[1] || __offsetWidth !== bboxTotal[2] - bboxTotal[0] || __offsetHeight !== bboxTotal[3] - bboxTotal[1]) && overflow === 'hidden') {
       // geom可能超限，不能直接用bbox
@@ -31718,7 +31719,6 @@
       dy = -y1;
       dbx = 0;
       dby = 0;
-      isOverflow = true;
     } else {
       w = bboxTotal[2] - bboxTotal[0];
       h = bboxTotal[3] - bboxTotal[1];
@@ -31740,35 +31740,18 @@
 
     __cacheTotal.__available = true;
     node.__cacheTotal = __cacheTotal;
-
-    if (!isOverflow) {
-      dx = __cacheTotal.dx;
-      dy = __cacheTotal.dy;
-      dbx = __cacheTotal.dbx;
-      dby = __cacheTotal.dby;
-    }
-
+    cx = w * 0.5;
+    cy = h * 0.5;
+    dx = -bboxTotal[0];
+    dy = -bboxTotal[1];
+    dbx = __cacheTotal.dbx;
+    dby = __cacheTotal.dby;
     var page = __cacheTotal.__page,
-        size = page.__size;
+        size = page.__size; // 先绘制到一张单独的纹理，防止children中和cacheTotal重复texture不能绘制
 
-    if (hasPpt || isOverflow) {
-      cx = w * 0.5;
-      cy = h * 0.5;
-
-      if (hasPpt) {
-        dx = -bboxTotal[0];
-        dy = -bboxTotal[1];
-      }
-
-      texture = webgl.createTexture(gl, null, 0, w, h);
-      frameBuffer = genFrameBufferWithTexture(gl, texture, w, h);
-      gl.viewport(0, 0, w, h);
-    } else {
-      cx = cy = size * 0.5;
-      texture = page.texture;
-      frameBuffer = genFrameBufferWithTexture(gl, texture, size, size);
-    } // fbo绘制对象纹理不用绑定单元，剩下的纹理绘制用0号
-
+    texture = webgl.createTexture(gl, null, 0, w, h);
+    frameBuffer = genFrameBufferWithTexture(gl, texture, w, h);
+    gl.viewport(0, 0, w, h); // fbo绘制对象纹理不用绑定单元，剩下的纹理绘制用0号
 
     var lastPage,
         list = []; // 先绘制自己的cache，起点所以matrix视作E为空，opacity固定1
@@ -31889,17 +31872,14 @@
             if (res) {
               gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
               gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-              gl.deleteFramebuffer(res.frameBuffer);
-              cacheTotal.clear();
-              cacheTotal.__available = true;
+              gl.deleteFramebuffer(frameBuffer);
+              gl.deleteTexture(texture);
+              texture = res.texture;
+              frameBuffer = res.frameBuffer;
               gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
               gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
-              webgl.drawTex2Cache(gl, gl.program, cacheTotal, res.texture, size, size);
-              gl.deleteTexture(res.texture);
             }
 
-            gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
             lastPage = null;
           } else {
             var _p2 = target.__page;
@@ -31935,16 +31915,12 @@
 
 
     webgl.drawTextureCache(gl, list, cx, cy, dx, dy);
-
-    if (hasPpt || isOverflow) {
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-      gl.deleteFramebuffer(frameBuffer);
-      frameBuffer = genFrameBufferWithTexture(gl, page.texture, size, size);
-      webgl.drawTex2Cache(gl, gl.program, cacheTotal, texture, w, h);
-      gl.deleteTexture(texture);
-    }
-
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.deleteFramebuffer(frameBuffer);
+    frameBuffer = genFrameBufferWithTexture(gl, page.texture, size, size);
+    webgl.drawTex2Cache(gl, gl.program, cacheTotal, texture, w, h);
+    gl.deleteTexture(texture);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.deleteFramebuffer(frameBuffer);
@@ -33669,16 +33645,16 @@
               y1 = target.y1,
               dbx = target.dbx,
               dby = target.dby,
-              _width2 = target.width,
-              _height2 = target.height;
-          ctx.drawImage(canvas, x, y, _width2, _height2, x1 - dbx, y1 - dby, _width2, _height2); // total应用后记得设置回来
+              w = target.width,
+              h = target.height;
+          ctx.drawImage(canvas, x, y, w, h, x1 - dbx, y1 - dby, w, h); // total应用后记得设置回来
 
           ctx.globalCompositeOperation = 'source-over'; // 父超限但子有total的时候，i此时已经增加到了末尾，也需要检查
 
           var _oh5 = offscreenHash[_i6];
 
           if (_oh5) {
-            ctx = applyOffscreen(ctx, _oh5, _width2, _height2, false);
+            ctx = applyOffscreen(ctx, _oh5, width, height, false);
             lastOpacity = -1;
           }
         } // 没有cacheTotal是普通节点绘制

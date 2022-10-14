@@ -17,12 +17,14 @@ class TextureCache extends Cache {
 
   clear() {
     if(super.clear()) {
-      let page = this.__page, gl = page.gl;
+      let page = this.__page, gl = page.gl, size = page.__size;
       // 尺寸必须对上才行
       let data = new Uint8Array(this.__width * this.__height * 4);
       gl.bindTexture(gl.TEXTURE_2D, page.texture);
-      gl.texSubImage2D(gl.TEXTURE_2D, 0, this.__x, this.__y, this.__width, this.__height, gl.RGBA,
-        gl.UNSIGNED_BYTE, data);
+      // 注意y镜像和原点左下
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, this.__x, size - this.__y - this.__height,
+        this.__width, this.__height, gl.RGBA, gl.UNSIGNED_BYTE, data);
+      gl.bindTexture(gl.TEXTURE_2D, null);
     }
   }
 

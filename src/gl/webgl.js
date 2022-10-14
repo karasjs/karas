@@ -322,12 +322,12 @@ function drawBlur(gl, program, tex1, width, height) {
   let texBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    0, 0,
     0, 1,
-    0, 0,
-    1, 1,
-    0, 0,
-    1, 1,
     1, 0,
+    0, 1,
+    1, 0,
+    1, 1,
   ]), gl.STATIC_DRAW);
   let a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
   gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);

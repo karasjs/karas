@@ -1496,7 +1496,7 @@ function calIntermediateStyle(frame, percent, target, notSameFrame) {
     return [];
   }
   frame.lastPercent = percent;
-  let currentStyle = target.__currentStyle, res = frame.keys;
+  let currentStyle = target.__currentStyle, cacheStyle = target.__cacheStyle, res = frame.keys;
   // 特殊性能优化，for拆开v8会提升不少
   if(allInFn) {
     for(let i = 0, len = transition.length; i < len; i++) {
@@ -1507,6 +1507,7 @@ function calIntermediateStyle(frame, percent, target, notSameFrame) {
         cs = item.cs = currentStyle[k] = item.st;
       }
       fn(k, v, percent, cs, cl, frame, currentStyle);
+      cacheStyle[k] = undefined;
     }
   }
   else {
@@ -1604,7 +1605,7 @@ function calIntermediateStyle(frame, percent, target, notSameFrame) {
         }
         currentProps[k] = st;
       }
-      // string的直接量，在不同帧之间可能存在变化，同帧变化后不再改变
+      // string等的直接量，在不同帧之间可能存在变化，同帧变化后不再改变
       else {
         if(currentStyle[k] !== st) {
           currentStyle[k] = st;

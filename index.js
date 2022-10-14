@@ -15414,6 +15414,7 @@
 
     frame.lastPercent = percent;
     var currentStyle = target.__currentStyle,
+        cacheStyle = target.__cacheStyle,
         res = frame.keys; // 特殊性能优化，for拆开v8会提升不少
 
     if (allInFn) {
@@ -15430,6 +15431,7 @@
         }
 
         fn(k, v, percent, cs, cl, frame, currentStyle);
+        cacheStyle[k] = undefined;
       }
     } else {
       var currentProps = target.__currentProps,
@@ -15535,7 +15537,7 @@
           }
 
           currentProps[k] = st;
-        } // string的直接量，在不同帧之间可能存在变化，同帧变化后不再改变
+        } // string等的直接量，在不同帧之间可能存在变化，同帧变化后不再改变
         else {
           if (currentStyle[k] !== st) {
             currentStyle[k] = st;
@@ -34500,47 +34502,42 @@
 
         if (keys) {
           if (aniParams) {
-            for (var i = 0, len = keys.length; i < len; i++) {
-              var k = keys[i];
-              cacheStyle[k] = undefined;
-            }
-
             hasZ = aniParams.hasZ;
             hasColor = aniParams.hasColor;
             hasTsColor = aniParams.hasTsColor;
             hasTsWidth = aniParams.hasTsWidth;
             hasTsOver = aniParams.hasTsOver;
           } else {
-            for (var _i2 = 0, _len = keys.length; _i2 < _len; _i2++) {
-              var _k = keys[_i2];
+            for (var i = 0, len = keys.length; i < len; i++) {
+              var k = keys[i];
 
-              if (node instanceof Geom && isGeom(node.tagName, _k)) {
+              if (node instanceof Geom && isGeom(node.tagName, k)) {
                 lv |= REPAINT;
-                __cacheProps[_k] = undefined;
+                __cacheProps[k] = undefined;
               } else {
                 // repaint置空，如果reflow会重新生成空的
-                cacheStyle[_k] = undefined; // TRBL变化只对relative/absolute起作用，其它忽视
+                cacheStyle[k] = undefined; // TRBL变化只对relative/absolute起作用，其它忽视
 
-                if ((_k === TOP || _k === RIGHT || _k === BOTTOM || _k === LEFT) && ['relative', 'absolute'].indexOf(computedStyle[POSITION]) === -1) {
+                if ((k === TOP || k === RIGHT || k === BOTTOM || k === LEFT) && ['relative', 'absolute'].indexOf(computedStyle[POSITION]) === -1) {
                   continue;
                 } // 细化等级
 
 
-                lv |= getLevel(_k);
+                lv |= getLevel(k);
 
-                if (_k === DISPLAY) {
+                if (k === DISPLAY) {
                   hasDisplay = true;
-                } else if (_k === Z_INDEX) {
+                } else if (k === Z_INDEX) {
                   hasZ = node !== this && ['relative', 'absolute'].indexOf(computedStyle[POSITION]) > -1;
-                } else if (_k === VISIBILITY) {
+                } else if (k === VISIBILITY) {
                   hasVisibility = true;
-                } else if (_k === COLOR) {
+                } else if (k === COLOR) {
                   hasColor = true;
-                } else if (_k === TEXT_STROKE_COLOR) {
+                } else if (k === TEXT_STROKE_COLOR) {
                   hasTsColor = true;
-                } else if (_k === TEXT_STROKE_WIDTH) {
+                } else if (k === TEXT_STROKE_WIDTH) {
                   hasTsWidth = true;
-                } else if (_k === TEXT_STROKE_OVER) {
+                } else if (k === TEXT_STROKE_OVER) {
                   hasTsOver = true;
                 }
               }
@@ -34624,8 +34621,8 @@
 
 
           if (hasVisibility || hasColor || hasTsColor || hasTsWidth || hasTsOver) {
-            for (var __structs = this.__structs, __struct = node.__struct, _i3 = __structs.indexOf(__struct) + 1, _len2 = _i3 + (__struct.total || 0); _i3 < _len2; _i3++) {
-              var _structs$_i = __structs[_i3],
+            for (var __structs = this.__structs, __struct = node.__struct, _i2 = __structs.indexOf(__struct) + 1, _len = _i2 + (__struct.total || 0); _i2 < _len; _i2++) {
+              var _structs$_i = __structs[_i2],
                   _node2 = _structs$_i.node,
                   total = _structs$_i.total; // text的style指向parent，不用管
 
@@ -34663,7 +34660,7 @@
                 _node2.__calStyle(REPAINT, _currentStyle, _node2.__computedStyle, _cacheStyle);
               } // 不为inherit此子树可跳过，因为不影响
               else {
-                _i3 += total || 0;
+                _i2 += total || 0;
               }
             }
           } // perspective也特殊只清空total的cache，和>=REPAINT清空total共用

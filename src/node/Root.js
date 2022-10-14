@@ -618,10 +618,6 @@ class Root extends Dom {
     // 清空对应改变的cacheStyle
     if(keys) {
       if(aniParams) {
-        for(let i = 0, len = keys.length; i < len; i++) {
-          let k = keys[i];
-          cacheStyle[k] = undefined;
-        }
         hasZ = aniParams.hasZ;
         hasColor = aniParams.hasColor;
         hasTsColor = aniParams.hasTsColor;

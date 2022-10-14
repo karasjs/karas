@@ -15279,6 +15279,17 @@
   }
 
   function calNumber(k, v, percent, st, cl, frame, currentStyle) {
+    st = cl + v * percent; // 精度问题可能会超过[0,1]区间
+
+    if (k === OPACITY$4) {
+      if (st < 0) {
+        st = 0;
+      } else if (st > 1) {
+        st = 1;
+      }
+    }
+
+    currentStyle[k] = st;
   } // 特殊的曲线运动计算，转换为translateXY，出现在最后一定会覆盖原本的translate防重
 
 

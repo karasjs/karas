@@ -15529,7 +15529,7 @@ function calIntermediateStyle(frame, percent, target, notSameFrame) {
         }
 
         currentProps[k] = st;
-      } // string的直接量，在不同帧之间可能存在变化，同帧变化后不再改变
+      } // string等的直接量，在不同帧之间可能存在变化，同帧变化后不再改变
       else {
         if (currentStyle[k] !== st) {
           currentStyle[k] = st;
@@ -16030,7 +16030,19 @@ var Animation = /*#__PURE__*/function (_Event) {
         if (stayBegin && !this.__isDelay) {
           var _currentFrame = this.__currentFrame = currentFrames[0];
 
-          var _keys = calLastStyle(_currentFrame.style, target, this.__keys);
+          var _keys = calLastStyle(_currentFrame.style, target, this.__keys); // 特殊处理，将ts上的cs指向当前currentStyle，一些继承样式如color被更新，否则delay后计算会报错
+
+
+          var transition = _currentFrame.transition;
+
+          if (transition) {
+            var currentStyle = target.__currentStyle;
+
+            for (var _i26 = 0, _len16 = transition.length; _i26 < _len16; _i26++) {
+              var item = transition[_i26];
+              item.cs = currentStyle[item.k] = item.st;
+            }
+          }
 
           this.__isChange = !!_keys.length;
           genBeforeRefresh(_keys, root, target, _currentFrame, null);
@@ -16272,13 +16284,14 @@ var Animation = /*#__PURE__*/function (_Event) {
             currentFrame = frames[frames.length - 1];
             style = currentFrame.style;
           } else {
-            frames[frames.length - 1] = framesR[framesR.length - 1];
+            currentFrame = framesR[framesR.length - 1];
             style = currentFrame.style;
           }
         } else {
           style = this.__originStyle;
         }
 
+        this.__currentFrame = currentFrame;
         var keys = calLastStyle(style, target, this.__keys);
         this.__isChange = !keys.length;
         genBeforeRefresh(keys, root, target, currentFrame, function () {
@@ -16320,6 +16333,7 @@ var Animation = /*#__PURE__*/function (_Event) {
 
       this.__begin = this.__end = this.__isDelay = this.__finished = this.__inFps = this.__enterFrame = false;
       this.__playState = 'idle';
+      this.__currentFrame = null;
       var root = this.__root;
 
       if (root) {
@@ -23082,7 +23096,7 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
   var diff = t3 + t4 - t1 - t2 + nowH - oldH; // console.log('t3', t3, 'd3', d3, 't4', t4, 'd4', d4, 't1', t1, 'd1', d1, 't2', t2, 'd2', d2, nowH, oldH, diff);
 
   if (!diff) {
-    parent.clearCache(true);
+    top.clearCache(true);
     return;
   }
 
@@ -23095,7 +23109,7 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
 
   var absList = [];
   offsetNext(next, diff, parentFixed, absList);
-  parent.clearCache(true); // 影响完next之后，向上递归，所有parent的next都影响，遇到固定尺寸或absolute跳出
+  top.clearCache(true); // 影响完next之后，向上递归，所有parent的next都影响，遇到固定尺寸或absolute跳出
 
   while (parent && !parentFixed && parent.__computedStyle[POSITION$2] !== 'absolute') {
     next = parent.__next;
@@ -23109,7 +23123,7 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
     offsetNext(next, diff, parentFixed, absList);
 
     if (parentFixed) {
-      parent.clearCache(true);
+      parent.clearCache(false);
     }
   } // 记录的受影响的abs节点，都是百分比高度，需重新布局
 

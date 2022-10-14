@@ -495,7 +495,7 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
   let diff = t3 + t4 - t1 - t2 + nowH - oldH;
   // console.log('t3', t3, 'd3', d3, 't4', t4, 'd4', d4, 't1', t1, 'd1', d1, 't2', t2, 'd2', d2, nowH, oldH, diff);
   if(!diff) {
-    parent.clearCache(true);
+    top.clearCache(true);
     return;
   }
   let parentFixed = isFixedWidthOrHeight(parent, HEIGHT);
@@ -505,7 +505,7 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
   // 调整的同时遇到百分比高度的abs需记录下来最后重新布局
   let absList = [];
   offsetNext(next, diff, parentFixed, absList);
-  parent.clearCache(true);
+  top.clearCache(true);
   // 影响完next之后，向上递归，所有parent的next都影响，遇到固定尺寸或absolute跳出
   while(parent && !parentFixed && parent.__computedStyle[POSITION] !== 'absolute') {
     next = parent.__next;
@@ -516,7 +516,7 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
     }
     offsetNext(next, diff, parentFixed, absList);
     if(parentFixed) {
-      parent.clearCache(true);
+      parent.clearCache(false);
     }
   }
   // 记录的受影响的abs节点，都是百分比高度，需重新布局

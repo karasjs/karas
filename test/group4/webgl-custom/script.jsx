@@ -102,11 +102,11 @@ void main() {
       gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
         -1, 1,
-        -1, 0.99,
-        -0.99, 1,
-        -1, 0.99,
-        -0.99, 1,
-        -0.99, 0.99,
+        -1, 0.5,
+        -0.5, 1,
+        -1, 0.5,
+        -0.5, 1,
+        -0.5, 0.5,
       ]), gl.STATIC_DRAW);
       let a_position = gl.getAttribLocation(p, 'a_position');
       gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);

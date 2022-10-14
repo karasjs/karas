@@ -747,7 +747,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
 
   // overflow:hidden和canvas一样特殊考虑
   let w, h, dx, dy, dbx, dby, cx, cy, texture, frameBuffer;
-  let overflow = node.__computedStyle[OVERFLOW], isOverflow;
+  let overflow = node.__computedStyle[OVERFLOW];
   if((x1 !== bboxTotal[0]
     || y1 !== bboxTotal[1]
     || __offsetWidth !== (bboxTotal[2] - bboxTotal[0])
@@ -760,7 +760,6 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
     dy = -y1;
     dbx = 0;
     dby = 0;
-    isOverflow = true;
   }
   else {
     w = bboxTotal[2] - bboxTotal[0];
@@ -781,21 +780,15 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   }
   __cacheTotal.__available = true;
   node.__cacheTotal = __cacheTotal;
-  if(!isOverflow) {
-    dx = __cacheTotal.dx;
-    dy = __cacheTotal.dy;
-    dbx = __cacheTotal.dbx;
-    dby = __cacheTotal.dby;
-  }
+  cx = w * 0.5;
+  cy = h * 0.5;
+  dx = -bboxTotal[0];
+  dy = -bboxTotal[1];
+  dbx = __cacheTotal.dbx;
+  dby = __cacheTotal.dby;
 
   let page = __cacheTotal.__page, size = page.__size;
   // 先绘制到一张单独的纹理，防止children中和cacheTotal重复texture不能绘制
-  cx = w * 0.5;
-  cy = h * 0.5;
-  if(hasPpt) {
-    dx = -bboxTotal[0];
-    dy = -bboxTotal[1];
-  }
   texture = webgl.createTexture(gl, null, 0, w, h);
   frameBuffer = genFrameBufferWithTexture(gl, texture, w, h);
   gl.viewport(0, 0, w, h);

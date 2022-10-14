@@ -15414,7 +15414,6 @@
 
     frame.lastPercent = percent;
     var currentStyle = target.__currentStyle,
-        cacheStyle = target.__cacheStyle,
         res = frame.keys; // 特殊性能优化，for拆开v8会提升不少
 
     if (allInFn) {
@@ -15431,7 +15430,6 @@
         }
 
         fn(k, v, percent, cs, cl, frame, currentStyle);
-        cacheStyle[k] = undefined;
       }
     } else {
       var currentProps = target.__currentProps,
@@ -16038,7 +16036,19 @@
           if (stayBegin && !this.__isDelay) {
             var _currentFrame = this.__currentFrame = currentFrames[0];
 
-            var _keys = calLastStyle(_currentFrame.style, target, this.__keys);
+            var _keys = calLastStyle(_currentFrame.style, target, this.__keys); // 特殊处理，将ts上的cs指向当前currentStyle，一些继承样式如color被更新，否则delay后计算会报错
+
+
+            var transition = _currentFrame.transition;
+
+            if (transition) {
+              var currentStyle = target.__currentStyle;
+
+              for (var _i26 = 0, _len16 = transition.length; _i26 < _len16; _i26++) {
+                var item = transition[_i26];
+                item.cs = currentStyle[item.k] = item.st;
+              }
+            }
 
             this.__isChange = !!_keys.length;
             genBeforeRefresh(_keys, root, target, _currentFrame, null);
@@ -16280,13 +16290,14 @@
               currentFrame = frames[frames.length - 1];
               style = currentFrame.style;
             } else {
-              frames[frames.length - 1] = framesR[framesR.length - 1];
+              currentFrame = framesR[framesR.length - 1];
               style = currentFrame.style;
             }
           } else {
             style = this.__originStyle;
           }
 
+          this.__currentFrame = currentFrame;
           var keys = calLastStyle(style, target, this.__keys);
           this.__isChange = !keys.length;
           genBeforeRefresh(keys, root, target, currentFrame, function () {
@@ -16328,6 +16339,7 @@
 
         this.__begin = this.__end = this.__isDelay = this.__finished = this.__inFps = this.__enterFrame = false;
         this.__playState = 'idle';
+        this.__currentFrame = null;
         var root = this.__root;
 
         if (root) {
@@ -34502,42 +34514,47 @@
 
         if (keys) {
           if (aniParams) {
+            for (var i = 0, len = keys.length; i < len; i++) {
+              var k = keys[i];
+              cacheStyle[k] = undefined;
+            }
+
             hasZ = aniParams.hasZ;
             hasColor = aniParams.hasColor;
             hasTsColor = aniParams.hasTsColor;
             hasTsWidth = aniParams.hasTsWidth;
             hasTsOver = aniParams.hasTsOver;
           } else {
-            for (var i = 0, len = keys.length; i < len; i++) {
-              var k = keys[i];
+            for (var _i2 = 0, _len = keys.length; _i2 < _len; _i2++) {
+              var _k = keys[_i2];
 
-              if (node instanceof Geom && isGeom(node.tagName, k)) {
+              if (node instanceof Geom && isGeom(node.tagName, _k)) {
                 lv |= REPAINT;
-                __cacheProps[k] = undefined;
+                __cacheProps[_k] = undefined;
               } else {
                 // repaint置空，如果reflow会重新生成空的
-                cacheStyle[k] = undefined; // TRBL变化只对relative/absolute起作用，其它忽视
+                cacheStyle[_k] = undefined; // TRBL变化只对relative/absolute起作用，其它忽视
 
-                if ((k === TOP || k === RIGHT || k === BOTTOM || k === LEFT) && ['relative', 'absolute'].indexOf(computedStyle[POSITION]) === -1) {
+                if ((_k === TOP || _k === RIGHT || _k === BOTTOM || _k === LEFT) && ['relative', 'absolute'].indexOf(computedStyle[POSITION]) === -1) {
                   continue;
                 } // 细化等级
 
 
-                lv |= getLevel(k);
+                lv |= getLevel(_k);
 
-                if (k === DISPLAY) {
+                if (_k === DISPLAY) {
                   hasDisplay = true;
-                } else if (k === Z_INDEX) {
+                } else if (_k === Z_INDEX) {
                   hasZ = node !== this && ['relative', 'absolute'].indexOf(computedStyle[POSITION]) > -1;
-                } else if (k === VISIBILITY) {
+                } else if (_k === VISIBILITY) {
                   hasVisibility = true;
-                } else if (k === COLOR) {
+                } else if (_k === COLOR) {
                   hasColor = true;
-                } else if (k === TEXT_STROKE_COLOR) {
+                } else if (_k === TEXT_STROKE_COLOR) {
                   hasTsColor = true;
-                } else if (k === TEXT_STROKE_WIDTH) {
+                } else if (_k === TEXT_STROKE_WIDTH) {
                   hasTsWidth = true;
-                } else if (k === TEXT_STROKE_OVER) {
+                } else if (_k === TEXT_STROKE_OVER) {
                   hasTsOver = true;
                 }
               }
@@ -34621,8 +34638,8 @@
 
 
           if (hasVisibility || hasColor || hasTsColor || hasTsWidth || hasTsOver) {
-            for (var __structs = this.__structs, __struct = node.__struct, _i2 = __structs.indexOf(__struct) + 1, _len = _i2 + (__struct.total || 0); _i2 < _len; _i2++) {
-              var _structs$_i = __structs[_i2],
+            for (var __structs = this.__structs, __struct = node.__struct, _i3 = __structs.indexOf(__struct) + 1, _len2 = _i3 + (__struct.total || 0); _i3 < _len2; _i3++) {
+              var _structs$_i = __structs[_i3],
                   _node2 = _structs$_i.node,
                   total = _structs$_i.total; // text的style指向parent，不用管
 
@@ -34660,7 +34677,7 @@
                 _node2.__calStyle(REPAINT, _currentStyle, _node2.__computedStyle, _cacheStyle);
               } // 不为inherit此子树可跳过，因为不影响
               else {
-                _i2 += total || 0;
+                _i3 += total || 0;
               }
             }
           } // perspective也特殊只清空total的cache，和>=REPAINT清空total共用

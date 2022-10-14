@@ -8,5 +8,5 @@ let o = karas.render(
 );
 o.on('refresh', function() {
   let input = document.querySelector('#base64');
-  input.value = JSON.stringify(o.virtualDom);
+  input.value = document.querySelector('canvas').toDataURL();
 });

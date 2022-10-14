@@ -14,7 +14,7 @@ let animation = t.animate([
   }
 ], {
   duration: 200,
-  delay: 10000,
+  delay: 1000,
   fill: 'backwards',
 });
 let input = document.querySelector('input');

@@ -177,14 +177,18 @@ let json = {
 };
 
 let o = karas.render(
-  <webgl width="360" height="360" style={{background:'#F00'}}>
-    <div>
-      <img src={'../../logo.png'}/>
-    </div>
+  <webgl width="360" height="360">
+    {
+      karas.parse(json)
+    }
   </webgl>,
   '#test'
 );
 o.on('refresh', function() {
-  let input = document.querySelector('#base64');
-  input.value = JSON.stringify(o.virtualDom);
+  o.ref.img.updateStyle({
+    translateY: 100
+  }, function() {
+    let input = document.querySelector('#base64');
+    input.value = document.querySelector('canvas').toDataURL();
+  });
 });

@@ -1496,7 +1496,7 @@ function calIntermediateStyle(frame, percent, target, notSameFrame) {
     return [];
   }
   frame.lastPercent = percent;
-  let currentStyle = target.__currentStyle, cacheStyle = target.__cacheStyle, res = frame.keys;
+  let currentStyle = target.__currentStyle, res = frame.keys;
   // 特殊性能优化，for拆开v8会提升不少
   if(allInFn) {
     for(let i = 0, len = transition.length; i < len; i++) {
@@ -1507,7 +1507,6 @@ function calIntermediateStyle(frame, percent, target, notSameFrame) {
         cs = item.cs = currentStyle[k] = item.st;
       }
       fn(k, v, percent, cs, cl, frame, currentStyle);
-      cacheStyle[k] = undefined;
     }
   }
   else {
@@ -2010,6 +2009,15 @@ class Animation extends Event {
       if(stayBegin && !this.__isDelay) {
         let currentFrame = this.__currentFrame = currentFrames[0];
         let keys = calLastStyle(currentFrame.style, target, this.__keys);
+        // 特殊处理，将ts上的cs指向当前currentStyle，一些继承样式如color被更新，否则delay后计算会报错
+        let transition = currentFrame.transition;
+        if(transition) {
+          let currentStyle = target.__currentStyle;
+          for(let i = 0, len = transition.length; i < len; i++) {
+            let item = transition[i];
+            item.cs = currentStyle[item.k] = item.st;
+          }
+        }
         this.__isChange = !!keys.length;
         genBeforeRefresh(keys, root, target, currentFrame, null);
       }
@@ -2212,13 +2220,14 @@ class Animation extends Event {
           style = currentFrame.style;
         }
         else {
-          frames[frames.length - 1] = framesR[framesR.length - 1];
+          currentFrame = framesR[framesR.length - 1];
           style = currentFrame.style;
         }
       }
       else {
         style = this.__originStyle;
       }
+      this.__currentFrame = currentFrame;
       let keys = calLastStyle(style, target, this.__keys);
       this.__isChange = !keys.length;
       genBeforeRefresh(keys, root, target, currentFrame, () => {
@@ -2250,6 +2259,7 @@ class Animation extends Event {
     this.__begin = this.__end = this.__isDelay = this.__finished
       = this.__inFps = this.__enterFrame = false;
     this.__playState = 'idle';
+    this.__currentFrame = null;
     let root = this.__root;
     if(root) {
       let target = this.__target;

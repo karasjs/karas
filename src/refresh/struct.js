@@ -727,7 +727,7 @@ function genFrameBufferWithTexture(gl, texture, width, height) {
  * 局部根节点复合图层生成，汇总所有子节点到一颗局部树上的位图缓存，包含超限特殊情况
  * 即便只有自己一个也要返回，因为webgl生成total的原因是有类似filter/mask等必须离屏处理的东西
  */
-function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total, __structs, W, H, isPerspective) {
+function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total, __structs, W, H) {
   if(__cacheTotal && __cacheTotal.available) {
     return __cacheTotal;
   }
@@ -2048,7 +2048,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       let needGen;
       // 可能没变化，比如被遮罩节点、filter变更等
       if(!__cacheTotal || !__cacheTotal.available) {
-        let res = genTotalWebgl(renderMode, __cacheTotal, gl, root, node, i, lv, total || 0, __structs, width, height, isPerspective);
+        let res = genTotalWebgl(renderMode, __cacheTotal, gl, root, node, i, lv, total || 0, __structs, width, height);
         if(!res) {
           return;
         }

@@ -29601,7 +29601,7 @@
     gl.enableVertexAttribArray(a_position);
     var texBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0]), gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1]), gl.STATIC_DRAW);
     var a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
     gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(a_texCoords);
@@ -30562,11 +30562,14 @@
       value: function clear() {
         if (_get(_getPrototypeOf(TextureCache.prototype), "clear", this).call(this)) {
           var page = this.__page,
-              gl = page.gl; // 尺寸必须对上才行
+              gl = page.gl,
+              size = page.__size; // 尺寸必须对上才行
 
           var data = new Uint8Array(this.__width * this.__height * 4);
-          gl.bindTexture(gl.TEXTURE_2D, page.texture);
-          gl.texSubImage2D(gl.TEXTURE_2D, 0, this.__x, this.__y, this.__width, this.__height, gl.RGBA, gl.UNSIGNED_BYTE, data);
+          gl.bindTexture(gl.TEXTURE_2D, page.texture); // 注意y镜像和原点左下
+
+          gl.texSubImage2D(gl.TEXTURE_2D, 0, this.__x, size - this.__y - this.__height, this.__width, this.__height, gl.RGBA, gl.UNSIGNED_BYTE, data);
+          gl.bindTexture(gl.TEXTURE_2D, null);
         }
       }
     }, {
@@ -31673,7 +31676,7 @@
    */
 
 
-  function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total, __structs, W, H, isPerspective) {
+  function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total, __structs, W, H) {
     if (__cacheTotal && __cacheTotal.available) {
       return __cacheTotal;
     }

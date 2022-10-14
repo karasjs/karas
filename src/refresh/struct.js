@@ -789,22 +789,17 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   }
 
   let page = __cacheTotal.__page, size = page.__size;
-  if(hasPpt || isOverflow) {
-    cx = w * 0.5;
-    cy = h * 0.5;
-    if(hasPpt) {
-      dx = -bboxTotal[0];
-      dy = -bboxTotal[1];
-    }
-    texture = webgl.createTexture(gl, null, 0, w, h);
-    frameBuffer = genFrameBufferWithTexture(gl, texture, w, h);
-    gl.viewport(0, 0, w, h);
+  // 先绘制到一张单独的纹理，防止children中和cacheTotal重复texture不能绘制
+  cx = w * 0.5;
+  cy = h * 0.5;
+  if(hasPpt) {
+    dx = -bboxTotal[0];
+    dy = -bboxTotal[1];
   }
-  else {
-    cx = cy = size * 0.5;
-    texture = page.texture;
-    frameBuffer = genFrameBufferWithTexture(gl, texture, size, size);
-  }
+  texture = webgl.createTexture(gl, null, 0, w, h);
+  frameBuffer = genFrameBufferWithTexture(gl, texture, w, h);
+  gl.viewport(0, 0, w, h);
+
   // fbo绘制对象纹理不用绑定单元，剩下的纹理绘制用0号
   let lastPage, list = [];
   // 先绘制自己的cache，起点所以matrix视作E为空，opacity固定1
@@ -946,14 +941,12 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   }
   // 绘制到fbo的纹理对象上并删除fbo恢复
   webgl.drawTextureCache(gl, list, cx, cy, dx, dy);
-  if(hasPpt || isOverflow) {
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.deleteFramebuffer(frameBuffer);
-    frameBuffer = genFrameBufferWithTexture(gl, page.texture, size, size);
-    webgl.drawTex2Cache(gl, gl.program, cacheTotal, texture, w, h);
-    gl.deleteTexture(texture);
-  }
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.deleteFramebuffer(frameBuffer);
+  frameBuffer = genFrameBufferWithTexture(gl, page.texture, size, size);
+  webgl.drawTex2Cache(gl, gl.program, cacheTotal, texture, w, h);
+  gl.deleteTexture(texture);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteFramebuffer(frameBuffer);
@@ -2458,8 +2451,8 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
         if(isValidMbm(mixBlendMode)) {
           ctx.globalCompositeOperation = mbmName(mixBlendMode);
         }
-        let { x, y, canvas, x1, y1, dbx, dby, width, height } = target;
-        ctx.drawImage(canvas, x, y, width, height, x1 - dbx, y1 - dby, width, height);
+        let { x, y, canvas, x1, y1, dbx, dby, width: w, height: h } = target;
+        ctx.drawImage(canvas, x, y, w, h, x1 - dbx, y1 - dby, w, h);
         // total应用后记得设置回来
         ctx.globalCompositeOperation = 'source-over';
         // 父超限但子有total的时候，i此时已经增加到了末尾，也需要检查

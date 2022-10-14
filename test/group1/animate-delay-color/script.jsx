@@ -14,17 +14,11 @@ let animation = t.animate([
   }
 ], {
   duration: 200,
-  delay: 10000,
-  fill: 'backwards',
+  delay: 100,
+  fill: 'forwards',
 });
 let input = document.querySelector('input');
 let n = 0;
-animation.on(karas.Event.FRAME, (isChange) => {
-  n++;
-  if(isChange) {
-    input.value += n;
-  }
-  if(n === 1) {
-    input.value += t.getComputedStyle().color;
-  }
+animation.on(karas.Event.FINISH, () => {
+  input.value = document.querySelector('canvas').toDataURL();
 });

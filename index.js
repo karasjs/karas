@@ -29205,7 +29205,7 @@
 
         if (MAX_TEXTURE_SIZE !== MAX) {
           // 超过8192会卡一下
-          Page.MAX = Math.min(MAX_TEXTURE_SIZE, 512);
+          Page.MAX = Math.min(MAX_TEXTURE_SIZE, 8192);
         }
       }
     }]);
@@ -30855,11 +30855,10 @@
 
     bboxTotal = bboxTotal.slice(0); // 局部根节点如有perspective，则计算pm，这里不会出现嵌套，因为每个出现都会生成局部根节点
 
-    var pm, hasPpt;
+    var pm;
 
     if (isWebgl && perspective) {
       pm = transform$1.calPerspectiveMatrix(perspective, perspectiveOrigin[0], perspectiveOrigin[1]);
-      hasPpt = true;
     }
 
     for (var i = index + 1, len = index + total + 1; i < len; i++) {
@@ -30914,11 +30913,6 @@
       var p = _node.__domParent;
       _node.__opacity = __computedStyle2[OPACITY$1] * p.__opacity;
       var m = _node.__matrix;
-
-      if (isWebgl && !hasPpt && isPerspectiveMatrix(m)) {
-        hasPpt = true;
-      }
-
       var matrix$1 = multiply(p.__matrixEvent, m); // 因为以局部根节点为原点，所以pm是最左边父矩阵乘
 
       if (pm) {
@@ -30953,14 +30947,9 @@
       return {};
     }
 
-    if (pm) {
-      hasPpt = true;
-    }
-
     return {
       bbox: bboxTotal,
-      pm: pm,
-      hasPpt: hasPpt
+      pm: pm
     };
   }
 
@@ -31698,7 +31687,6 @@
     var _genBboxTotal = genBboxTotal(node, __structs, index, total, true),
         bboxTotal = _genBboxTotal.bbox,
         pm = _genBboxTotal.pm;
-        _genBboxTotal.hasPpt;
 
     if (!bboxTotal) {
       return;
@@ -31870,17 +31858,14 @@
             if (res) {
               gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
               gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-              gl.deleteFramebuffer(res.frameBuffer);
-              cacheTotal.clear();
-              cacheTotal.__available = true;
+              gl.deleteFramebuffer(frameBuffer);
+              gl.deleteTexture(texture);
+              texture = res.texture;
+              frameBuffer = res.frameBuffer;
               gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
               gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
-              webgl.drawTex2Cache(gl, gl.program, cacheTotal, res.texture, size, size);
-              gl.deleteTexture(res.texture);
             }
 
-            gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
             lastPage = null;
           } else {
             var _p2 = target.__page;

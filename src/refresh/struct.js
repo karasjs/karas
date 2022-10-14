@@ -93,10 +93,9 @@ function genBboxTotal(node, __structs, index, total, isWebgl) {
   }
   bboxTotal = bboxTotal.slice(0);
   // 局部根节点如有perspective，则计算pm，这里不会出现嵌套，因为每个出现都会生成局部根节点
-  let pm, hasPpt;
+  let pm;
   if(isWebgl && perspective) {
     pm = tf.calPerspectiveMatrix(perspective, perspectiveOrigin[0], perspectiveOrigin[1]);
-    hasPpt = true;
   }
   for(let i = index + 1, len = index + total + 1; i < len; i++) {
     let {
@@ -145,9 +144,6 @@ function genBboxTotal(node, __structs, index, total, isWebgl) {
     let p = node.__domParent;
     node.__opacity = __computedStyle2[OPACITY] * p.__opacity;
     let m = node.__matrix;
-    if(isWebgl && !hasPpt && isPerspectiveMatrix(m)) {
-      hasPpt = true;
-    }
     let matrix = multiply(p.__matrixEvent, m);
     // 因为以局部根节点为原点，所以pm是最左边父矩阵乘
     if(pm) {
@@ -176,13 +172,9 @@ function genBboxTotal(node, __structs, index, total, isWebgl) {
   if((bboxTotal[2] - bboxTotal[0] <= 0) || (bboxTotal[3] - bboxTotal[1] <= 0)) {
     return {};
   }
-  if(pm) {
-    hasPpt = true;
-  }
   return {
     bbox: bboxTotal,
     pm,
-    hasPpt,
   };
 }
 
@@ -740,7 +732,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
     return __cacheTotal;
   }
   let { __x1: x1, __y1: y1, __cache, __offsetWidth, __offsetHeight } = node;
-  let { bbox: bboxTotal, pm, hasPpt } = genBboxTotal(node, __structs, index, total, true);
+  let { bbox: bboxTotal, pm } = genBboxTotal(node, __structs, index, total, true);
   if(!bboxTotal) {
     return;
   }
@@ -898,16 +890,13 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
           if(res) {
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-            gl.deleteFramebuffer(res.frameBuffer);
-            cacheTotal.clear();
-            cacheTotal.__available = true;
+            gl.deleteFramebuffer(frameBuffer);
+            gl.deleteTexture(texture);
+            texture = res.texture;
+            frameBuffer = res.frameBuffer;
             gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
-            webgl.drawTex2Cache(gl, gl.program, cacheTotal, res.texture, size, size);
-            gl.deleteTexture(res.texture);
           }
-          gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
-          gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
           lastPage = null;
         }
         else {

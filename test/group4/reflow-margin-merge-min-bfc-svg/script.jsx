@@ -20,6 +20,6 @@ let o = karas.render(
 o.ref.b.updateStyle({
   margin: -10,
 }, function() {
-  var input = document.querySelector('#base64');
+  let input = document.querySelector('#base64');
   input.value = JSON.stringify(o.virtualDom);
 });

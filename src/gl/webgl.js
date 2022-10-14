@@ -172,8 +172,9 @@ function drawTextureCache(gl, list, cx, cy, dx, dy) {
   }
   for(let i = 0; i < length; i++) {
     let { cache, opacity, matrix } = list[i];
-    let { x, y, width, height, page, bbox } = cache;
-    let size = page.__size;
+    let { __width: width, __height: height,
+      __tx1: tx1, __ty1: ty1, __tx2: tx2, __ty2: ty2,
+      __page: page, __bbox: bbox } = cache;
     if(!i) {
       // canvas需要生成texture，texture则强制不会进来
       if(page.__update) {
@@ -186,9 +187,23 @@ function drawTextureCache(gl, list, cx, cy, dx, dy) {
     let xa = bx + dx, ya = by + height + dy;
     let xb = bx + width + dx, yb = by + dy;
     let { x: x1, y: y1, w: w1 } = calPoint({ x: xa, y: ya, z: 0, w: 1 }, matrix);
-    let { x: x2, y: y2, w: w2 } = calPoint({ x: xb, y: ya, z: 0, w: 1 }, matrix);
     let { x: x3, y: y3, w: w3 } = calPoint({ x: xb, y: yb, z: 0, w: 1 }, matrix);
-    let { x: x4, y: y4, w: w4 } = calPoint({ x: xa, y: yb, z: 0, w: 1 }, matrix);
+    let x2, y2, w2, x4, y4, w4;
+    // 无旋转的时候可以少算2个点
+    if(w1 === 1 && w3 === 1
+      && (!matrix || !matrix.length || !matrix[1] && !matrix[4])) {
+      x2 = x3;
+      y2 = y1;
+      x4 = x1;
+      y4 = y3;
+      w2 = w4 = 1;
+    }
+    else {
+      let t = calPoint({ x: xb, y: ya, z: 0, w: 1 }, matrix);
+      x2 = t.x; y2 = t.y; w2 = t.w;
+      t = calPoint({ x: xa, y: yb, z: 0, w: 1 }, matrix);
+      x4 = t.x; y4 = t.y; w4 = t.w;
+    }
     let t = convertCoords2Gl(x1, y1, 0, w1, cx, cy);
     x1 = t.x; y1 = t.y;
     t = convertCoords2Gl(x2, y2, 0, w2, cx, cy);
@@ -217,8 +232,6 @@ function drawTextureCache(gl, list, cx, cy, dx, dy) {
     vtPoint[j + 20] = x3;
     vtPoint[j + 21] = y3;
     vtPoint[j + 23] = w3;
-    let tx1 = x / size, ty1 = (size - y - height) / size;
-    let tx2 = (x + width) / size, ty2 = (size - y) / size;
     // vtTex.push(tx1, ty1, tx1, ty2, tx2, ty1, tx1, ty2, tx2, ty1, tx2, ty2);
     j = i * 12;
     vtTex[j] = tx1;
@@ -241,7 +254,6 @@ function drawTextureCache(gl, list, cx, cy, dx, dy) {
     vtOpacity[j + 3] = opacity;
     vtOpacity[j + 4] = opacity;
     vtOpacity[j + 5] = opacity;
-    // record.num++;
   }
   // 顶点buffer
   let pointBuffer = gl.createBuffer();
@@ -274,7 +286,6 @@ function drawTextureCache(gl, list, cx, cy, dx, dy) {
   gl.disableVertexAttribArray(a_position);
   gl.disableVertexAttribArray(a_texCoords);
   gl.disableVertexAttribArray(a_opacity);
-  gl.bindTexture(gl.TEXTURE_2D, null);
 }
 
 /**

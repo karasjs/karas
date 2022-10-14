@@ -894,6 +894,11 @@ console.log(root);
 * **说明**  
 新建上下文参数。此举在getContext('2d')或getContext('webgl')时会传递给第2个参数。默认alpha/antialias/premultipliedAlpha/preserveDrawingBuffer为true。
 
+#### webgl2
+* **类型** `boolean`
+* **说明**  
+当使用webgl节点时，可手动指定是否是webgl2上下文。不指定或不支持则自动判断降级为webgl。
+
 ### 类方法method
 
 #### getTargetAtPoint
@@ -2341,7 +2346,7 @@ let id = karas.inject.requestAnimationFrame(function() {
 karas.inject.cancelAnimationFrame(id);
 ```
 
-### getCacheCanvas
+### getOffscreenCanvas
 * **类型** `Function`
 * **参数**
   * width `Number`
@@ -2350,21 +2355,7 @@ karas.inject.cancelAnimationFrame(id);
 * **说明**  
 从缓存池中获取指定高宽的离屏canvas缓存，如果指定key，则为唯一实例，否则自动从缓存列表中存取。
 
-### delCacheCanvas
-* **类型** `Function`
-* **参数**
-  * key `String`
-* **说明**  
-删除离屏canvas缓存实例。
-
-### releaseCacheCanvas
-* **类型** `Function`
-* **参数**
-  * target `CANVAS`
-* **说明**  
-回收离屏canvas到缓存池中。
-
-### hasCacheWebgl
+### hasOffscreenCanvas
 * **类型** `Function`
 * **参数**
   * key `String`
@@ -2514,9 +2505,9 @@ Geom矢量几何图形的样式键值对列表。
   * url `String/ArrayBuffer`
     注册的字体路径或数据。
   * data `Object`
-    字体信息，需包含`emSquare`、`ascent`、`descent`、`lineGap`（默认0）。
+    可选字体信息，需包含`emSquare`、`ascent`、`descent`、`lineGap`（默认0）。
 * **说明**  
-  注册使用的新字体。此举可能会引发之前使用注册字体的自动刷新。
+注册使用的新字体。此举可能会引发之前使用注册字体的自动刷新。
 * **示例**
 ```jsx
 karas.render(
@@ -2524,6 +2515,9 @@ karas.render(
     <div style={{fontFamily:'newFont'}}>这里先使用默认字体显示，等下方注册加载成功后自动刷新。</div>
   </canvas>
 );
+// 自动解析字体信息
+karas.style.font.register('newFont', 'https://xxx');
+// 也可以手动指定字体信息
 karas.style.font.register('newFont', 'https://xxx', {
   emSquare: 2048,
   ascent: 1854,

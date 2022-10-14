@@ -231,11 +231,7 @@ function genBeforeRefresh(keys, root, node, aniParams, cb) {
   if(aniParams && !aniParams.allInFn) {
     aniParams = null;
   }
-  root.__addUpdate(node, {
-    keys,
-    aniParams,
-    cb,
-  });
+  root.__addUpdate(node, keys, null, null, null, aniParams, cb);
 }
 
 /**
@@ -1102,7 +1098,7 @@ function calDiffGradient(p, n, target) {
  * 同时不变化的key也得存入fixed
  */
 function calFrame(prev, next, keys, target) {
-  let hasTp, allInFn = true;
+  let currentStyle = target.__currentStyle, hasTp, allInFn = true;
   for(let i = 0, len = keys.length; i < len; i++) {
     let k = keys[i];
     if(k === TRANSLATE_PATH) {
@@ -1111,6 +1107,7 @@ function calFrame(prev, next, keys, target) {
     let ts = calDiff(prev, next, k, target);
     // 可以形成过渡的才会产生结果返回
     if(ts) {
+      ts.cs = currentStyle[k];
       let fn = CAL_HASH[k];
       if(fn) {
         ts.fn = fn;
@@ -1277,7 +1274,6 @@ function calTransform(k, v, percent, st, cl, frame, currentStyle) {
   for(let i = 0; i < 16; i++) {
     st[0].v[i] = cl[0].v[i] + v[i] * percent;
   }
-  currentStyle[k] = st;
 }
 
 function calRotate3d(k, v, percent, st, cl, frame, currentStyle) {
@@ -1285,7 +1281,6 @@ function calRotate3d(k, v, percent, st, cl, frame, currentStyle) {
   st[1] = cl[1] + v[1] * percent;
   st[2] = cl[2] + v[2] * percent;
   st[3].v = cl[3].v + v[3] * percent;
-  currentStyle[k] = st;
 }
 
 function calFilter(k, v, percent, st, cl, frame, currentStyle) {
@@ -1311,7 +1306,6 @@ function calFilter(k, v, percent, st, cl, frame, currentStyle) {
       }
     }
   }
-  currentStyle[k] = st;
 }
 
 function calOrigin(k, v, percent, st, cl, frame, currentStyle) {
@@ -1321,7 +1315,6 @@ function calOrigin(k, v, percent, st, cl, frame, currentStyle) {
   if(v[1] !== 0) {
     st[1].v = cl[1].v + v[1] * percent;
   }
-  currentStyle[k] = st;
 }
 
 function calPosition(k, v, percent, st, cl, frame, currentStyle) {
@@ -1330,7 +1323,6 @@ function calPosition(k, v, percent, st, cl, frame, currentStyle) {
       item.v = cl[i].v + v[i] * percent;
     }
   });
-  currentStyle[k] = st;
 }
 
 function calBoxShadow(k, v, percent, st, cl, frame, currentStyle) {
@@ -1347,7 +1339,6 @@ function calBoxShadow(k, v, percent, st, cl, frame, currentStyle) {
       st[i][4][j] = cl[i][4][j] + v[i][4][j] * percent;
     }
   }
-  currentStyle[k] = st;
 }
 
 function calBgSize(k, v, percent, st, cl, frame, currentStyle) {
@@ -1358,7 +1349,6 @@ function calBgSize(k, v, percent, st, cl, frame, currentStyle) {
       item[1].v = cl[i][1].v + o[1] * percent;
     }
   });
-  currentStyle[k] = st;
 }
 
 function calNumber(k, v, percent, st, cl, frame, currentStyle) {
@@ -1372,7 +1362,6 @@ function calNumber(k, v, percent, st, cl, frame, currentStyle) {
       st = 1;
     }
   }
-  currentStyle[k] = st;
 }
 
 // 特殊的曲线运动计算，转换为translateXY，出现在最后一定会覆盖原本的translate防重
@@ -1412,7 +1401,6 @@ function calPath(k, v, percent, st, cl, frame, currentStyle) {
 
 function calLength(k, v, percent, st, cl, frame, currentStyle) {
   st.v = cl + v * percent;
-  currentStyle[k] = st;
 }
 
 function calGradient(k, v, percent, st, cl, frame, currentStyle) {
@@ -1475,7 +1463,6 @@ function calGradient(k, v, percent, st, cl, frame, currentStyle) {
       st2[3] = cli[3] + v2[3] * percent;
     }
   });
-  currentStyle[k] = st;
 }
 
 // color可能超限[0,255]，但浏览器已经做了限制，无需关心
@@ -1485,7 +1472,6 @@ function calColor(k, v, percent, st, cl, frame, currentStyle) {
   t[1] = cl[1] + v[1] * percent;
   t[2] = cl[2] + v[2] * percent;
   t[3] = cl[3] + v[3] * percent;
-  currentStyle[k] = st;
 }
 
 /**
@@ -1494,9 +1480,10 @@ function calColor(k, v, percent, st, cl, frame, currentStyle) {
  * @param frame 当前帧
  * @param percent 到下一帧时间的百分比
  * @param target vd
+ * @param notSameFrame 是否发生了帧切换
  * @return {[]} 发生变更的样式key
  */
-function calIntermediateStyle(frame, percent, target) {
+function calIntermediateStyle(frame, percent, target, notSameFrame) {
   let style = frame.style;
   let transition = frame.transition;
   let timingFunction = frame.timingFunction;
@@ -1514,17 +1501,25 @@ function calIntermediateStyle(frame, percent, target) {
   if(allInFn) {
     for(let i = 0, len = transition.length; i < len; i++) {
       let item = transition[i];
-      let k = item.k, v = item.v, st = item.st, cl = item.cl, fn = item.fn;
-      fn(k, v, percent, st, cl, frame, currentStyle);
+      let k = item.k, v = item.v, cs = item.cs, cl = item.cl, fn = item.fn;
+      // 同一帧内计算可避免赋值currentStyle
+      if(notSameFrame) {
+        cs = item.cs = currentStyle[k] = item.st;
+      }
+      fn(k, v, percent, cs, cl, frame, currentStyle);
     }
   }
   else {
     let currentProps = target.__currentProps, modify;
     for(let i = 0, len = transition.length; i < len; i++) {
       let item = transition[i];
-      let k = item.k, v = item.v, st = item.st, cl = item.cl, fn = item.fn;
+      let k = item.k, v = item.v, cs = item.cs, st = item.st, cl = item.cl, fn = item.fn;
       if(fn) {
-        fn(k, v, percent, st, cl, frame, currentStyle);
+        // 同一帧内计算可避免赋值currentStyle
+        if(notSameFrame) {
+          cs = item.cs = currentStyle[k] = item.st;
+        }
+        fn(k, v, percent, cs, cl, frame, currentStyle);
       }
       else if(GEOM.hasOwnProperty(k)) {
         let tagName = target.tagName;
@@ -1609,7 +1604,7 @@ function calIntermediateStyle(frame, percent, target) {
         }
         currentProps[k] = st;
       }
-      // string的直接量，在不同帧之间可能存在变化，同帧变化后不再改变
+      // string等的直接量，在不同帧之间可能存在变化，同帧变化后不再改变
       else {
         if(currentStyle[k] !== st) {
           currentStyle[k] = st;
@@ -2014,6 +2009,15 @@ class Animation extends Event {
       if(stayBegin && !this.__isDelay) {
         let currentFrame = this.__currentFrame = currentFrames[0];
         let keys = calLastStyle(currentFrame.style, target, this.__keys);
+        // 特殊处理，将ts上的cs指向当前currentStyle，一些继承样式如color被更新，否则delay后计算会报错
+        let transition = currentFrame.transition;
+        if(transition) {
+          let currentStyle = target.__currentStyle;
+          for(let i = 0, len = transition.length; i < len; i++) {
+            let item = transition[i];
+            item.cs = currentStyle[item.k] = item.st;
+          }
+        }
         this.__isChange = !!keys.length;
         genBeforeRefresh(keys, root, target, currentFrame, null);
       }
@@ -2077,8 +2081,9 @@ class Animation extends Event {
       percent = (currentTime - frameTime) / total;
     }
     let inEndDelay, currentFrame = currentFrames[i];
+    let notSameFrame = lastFrame !== currentFrame;
     // 对比前后两帧是否为同一关键帧，不是则清除之前关键帧上的percent标识为-1，这样可以识别跳帧和本轮第一次进入此帧
-    if(lastFrame !== currentFrame) {
+    if(notSameFrame) {
       lastFrame && (lastFrame.lastPercent = -1);
       this.__currentFrame = currentFrame;
     }
@@ -2116,7 +2121,7 @@ class Animation extends Event {
       }
     }
     else {
-      keys = calIntermediateStyle(currentFrame, percent, target);
+      keys = calIntermediateStyle(currentFrame, percent, target, notSameFrame);
     }
     this.__isChange = !keys.length;
     genBeforeRefresh(keys, root, target, currentFrame, null);
@@ -2215,13 +2220,14 @@ class Animation extends Event {
           style = currentFrame.style;
         }
         else {
-          frames[frames.length - 1] = framesR[framesR.length - 1];
+          currentFrame = framesR[framesR.length - 1];
           style = currentFrame.style;
         }
       }
       else {
         style = this.__originStyle;
       }
+      this.__currentFrame = currentFrame;
       let keys = calLastStyle(style, target, this.__keys);
       this.__isChange = !keys.length;
       genBeforeRefresh(keys, root, target, currentFrame, () => {
@@ -2253,6 +2259,7 @@ class Animation extends Event {
     this.__begin = this.__end = this.__isDelay = this.__finished
       = this.__inFps = this.__enterFrame = false;
     this.__playState = 'idle';
+    this.__currentFrame = null;
     let root = this.__root;
     if(root) {
       let target = this.__target;

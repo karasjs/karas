@@ -244,7 +244,7 @@ class Xom extends Node {
     this.__frameAnimateList = [];
     this.__contentBoxList = []; // inline存储内容用
     this.__cacheAsBitmap = !!this.props.cacheAsBitmap;
-    this.__cache = this.__cacheTotal = this.__cacheFilter = this.__cacheMask = this.__cacheOverflow = null;
+    this.__cache = this.__cacheTotal = this.__cacheFilter = this.__cacheMask;
     this.__layoutData = null; // 缓存上次布局x/y/w/h数据
     this.__hasComputeReflow = false; // 每次布局计算缓存标，使得每次开始只computeReflow一次
     this.__parentLineBox = null; // inline时指向
@@ -512,9 +512,7 @@ class Xom extends Node {
       if(item === fontFamily) {
         // 加载成功回调可能没注册信息，需要多判断一下
         if(font.hasRegister(item)) {
-          root.__addUpdate(node, {
-            focus: REFLOW,
-          });
+          root.__addUpdate(node, null, REFLOW, null, null, null, null);
         }
         // 后面低优先级的无需再看
         return;
@@ -1479,15 +1477,8 @@ class Xom extends Node {
                 loadBgi.width = data.width;
                 loadBgi.height = data.height;
                 __cacheStyle[BACKGROUND_IMAGE] = undefined;
-                root.__addUpdate(node, {
-                  focus: REPAINT,
-                });
+                root.__addUpdate(node, null, REPAINT, null, null, null, null);
               }
-            }, {
-              ctx,
-              root,
-              width: bx2 - bx1,
-              height: by2 - by1,
             });
           }
           return true;
@@ -1952,25 +1943,6 @@ class Xom extends Node {
     if(display === 'none') {
       return { break: true };
     }
-    if(renderMode === WEBGL) {
-      return {};
-    }
-    // 使用x和y渲染位置，考虑了relative和translate影响
-    let {
-      __offsetWidth,
-      __offsetHeight,
-    } = this;
-    let {
-      [PADDING_TOP]: paddingTop,
-      [PADDING_RIGHT]: paddingRight,
-      [PADDING_BOTTOM]: paddingBottom,
-      [PADDING_LEFT]: paddingLeft,
-      [BORDER_LEFT_WIDTH]: borderLeftWidth,
-      [BORDER_RIGHT_WIDTH]: borderRightWidth,
-      [BORDER_TOP_WIDTH]: borderTopWidth,
-      [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
-    } = computedStyle;
-    let isRealInline = this.__isInline;
     // 考虑mpb的6个坐标，inline比较特殊单独计算
     let x1 = this.__x1;
     let x2 = this.__x2;
@@ -1993,6 +1965,25 @@ class Xom extends Node {
       x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6,
       bx1, bx2, by1, by2,
     };
+    if(renderMode === WEBGL) {
+      return res;
+    }
+    // 使用x和y渲染位置，考虑了relative和translate影响
+    let {
+      __offsetWidth,
+      __offsetHeight,
+    } = this;
+    let {
+      [PADDING_TOP]: paddingTop,
+      [PADDING_RIGHT]: paddingRight,
+      [PADDING_BOTTOM]: paddingBottom,
+      [PADDING_LEFT]: paddingLeft,
+      [BORDER_LEFT_WIDTH]: borderLeftWidth,
+      [BORDER_RIGHT_WIDTH]: borderRightWidth,
+      [BORDER_TOP_WIDTH]: borderTopWidth,
+      [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
+    } = computedStyle;
+    let isRealInline = this.__isInline;
     // cache的canvas模式已经提前计算好了，其它需要现在计算
     let matrix = this.__matrix;
     let {
@@ -2485,10 +2476,7 @@ class Xom extends Node {
       lv = REPAINT;
     }
     if(root && !this.__isDestroyed) {
-      root.__addUpdate(this, {
-        focus: lv,
-        cb,
-      });
+      root.__addUpdate(this, null, lv, null, null, null, cb);
     }
     else if(isFunction(cb)) {
       cb(-1);
@@ -2716,7 +2704,6 @@ class Xom extends Node {
     let __cacheTotal = this.__cacheTotal;
     let __cacheFilter = this.__cacheFilter;
     let __cacheMask = this.__cacheMask;
-    let __cacheOverflow = this.__cacheOverflow;
     let __cache = this.__cache;
     if(__cache) {
       __cache.release();
@@ -2730,9 +2717,6 @@ class Xom extends Node {
     if(__cacheMask) {
       __cacheMask.release();
     }
-    if(__cacheOverflow) {
-      __cacheOverflow.release();
-    }
     this.__refreshLevel |= CACHE;
     if(lookUp) {
       let p = this.__domParent;
@@ -2740,7 +2724,6 @@ class Xom extends Node {
         let __cacheTotal = p.__cacheTotal;
         let __cacheFilter = p.__cacheFilter;
         let __cacheMask = p.__cacheMask;
-        let __cacheOverflow = p.__cacheOverflow;
         p.__refreshLevel |= CACHE;
         if(__cacheTotal) {
           __cacheTotal.release();
@@ -2750,9 +2733,6 @@ class Xom extends Node {
         }
         if(__cacheMask) {
           __cacheMask.release();
-        }
-        if(__cacheOverflow) {
-          __cacheOverflow.release();
         }
         p = p.__domParent;
       }
@@ -2790,10 +2770,7 @@ class Xom extends Node {
       return;
     }
     if(root) {
-      root.__addUpdate(this, {
-        keys,
-        cb,
-      });
+      root.__addUpdate(this, keys, null, null, null, null, cb);
     }
   }
 
@@ -2865,10 +2842,6 @@ class Xom extends Node {
     });
   }
 
-  __deepScan(cb, options) {
-    return cb(this, options);
-  }
-
   // isLayout为false时，为relative，true则是absolute/justify/marginAuto等直接改layoutData数据的
   // lv是reflow偏移时传入，需要清除cacheStyle，并且对位图cache进行偏移设置
   // 注意所有的offset/resize都要避免display:none的，比如合并margin导致block的孩子inline因clamp为none时没有layoutData
@@ -2936,9 +2909,6 @@ class Xom extends Node {
       }
       if(this.__cacheTotal) {
         this.__cacheTotal.__offsetY(diff);
-      }
-      if(this.__cacheOverflow) {
-        this.__cacheOverflow.__offsetY(diff);
       }
       if(this.__cacheFilter) {
         this.__cacheFilter.__offsetY(diff);
@@ -3099,12 +3069,7 @@ class Xom extends Node {
       return;
     }
     // 可见在reflow逻辑做结构关系等
-    let res = {
-      focus: REFLOW,
-      removeDom: true,
-      cb,
-    };
-    root.__addUpdate(this, res);
+    root.__addUpdate(this, null, REFLOW, null, true, null, cb);
   }
 
   get tagName() {
@@ -3234,9 +3199,7 @@ class Xom extends Node {
       this.__mask = v;
       let root = this.__root;
       if(root && !this.__isDestroyed) {
-        root.__addUpdate(this, {
-          focus: MASK,
-        });
+        root.__addUpdate(this, null, MASK, null, null, null, null);
       }
     }
   }
@@ -3251,9 +3214,7 @@ class Xom extends Node {
       this.__clip = v;
       let root = this.__root;
       if(root && !this.__isDestroyed) {
-        root.__addUpdate(this, {
-          focus: MASK,
-        });
+        root.__addUpdate(this, null, MASK, null, null, null, null);
       }
     }
   }
@@ -3268,9 +3229,7 @@ class Xom extends Node {
       this.__cacheAsBitmap = v;
       let root = this.__root;
       if(root && !this.__isDestroyed) {
-        root.__addUpdate(this, {
-          focus: REPAINT,
-        });
+        root.__addUpdate(this, null, REPAINT, null, null, null, null);
       }
     }
   }

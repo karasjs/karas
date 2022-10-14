@@ -217,40 +217,35 @@ function multiplyPerspective(m, v) {
 function calPoint(point, m) {
   if(m && !isE(m)) {
     let { x, y, z, w } = point;
-    if(m.length === 16) {
-      z = z || 0;
-      if(w === undefined || w === null) {
-        w = 1;
-      }
-      let a1 = m[0], b1 = m[1], c1 = m[2], d1 = m[3];
-      let a2 = m[4], b2 = m[5], c2 = m[6], d2 = m[7];
-      let a3 = m[8], b3 = m[9], c3 = m[10], d3 = m[11];
-      let a4 = m[12], b4 = m[13], c4 = m[14], d4 = m[15];
-      if(d1 || d2 || d3) {
-        w = x * d1 + y * d2 + z * d3 + d4 * w;
-      }
-      else if(d4 !== 1) {
-        w *= d4;
-      }
-      let o = {
-        x: x * a1 + y * a2 + a4,
-        y: x * b1 + y * b2 + b4,
-        z: 0,
-        w,
-      };
-      if(z) {
-        o.x += z * a3;
-        o.y += z * b3;
-        o.z = x * c1 + y * c2 + c4 + z * c3;
-      }
-      else if(c1 || c2 || c4) {
-        o.z = x * c1 + y * c2 + c4;
-      }
-      return o;
+    z = z || 0;
+    if(w === undefined || w === null) {
+      w = 1;
     }
-    // 6位类型
-    let a = m[0], b = m[1], c = m[2], d = m[3], e = m[4], f = m[5];
-    return { x: a * x + c * y + e, y: b * x + d * y + f };
+    let a1 = m[0], b1 = m[1], c1 = m[2], d1 = m[3];
+    let a2 = m[4], b2 = m[5], c2 = m[6], d2 = m[7];
+    let a3 = m[8], b3 = m[9], c3 = m[10], d3 = m[11];
+    let a4 = m[12], b4 = m[13], c4 = m[14], d4 = m[15];
+    if(d1 || d2 || d3) {
+      w = x * d1 + y * d2 + z * d3 + d4 * w;
+    }
+    else if(d4 !== 1) {
+      w *= d4;
+    }
+    let o = {
+      x: ((a1 === 1) ? x : (x * a1)) + (a2 ? (y * a2) : 0) + a4,
+      y: ((b1 === 1) ? x : (x * b1)) + (b2 ? (y * b2) : 0) + b4,
+      z: 0,
+      w,
+    };
+    if(z) {
+      o.x += z * a3;
+      o.y += z * b3;
+      o.z = x * c1 + y * c2 + c4 + z * c3;
+    }
+    else if(c1 || c2 || c4) {
+      o.z = x * c1 + y * c2 + c4;
+    }
+    return o;
   }
   return point;
 }

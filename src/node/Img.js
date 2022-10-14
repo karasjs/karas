@@ -53,8 +53,8 @@ class Img extends Dom {
       }
       else if(ca && ca.state === inject.LOADED) {
         loadImg.source = ca.source;
-        loadImg.width = ca.width;
-        loadImg.height = ca.height;
+        loadImg.width = loadImg.__width = ca.width;
+        loadImg.height = loadImg.__height = ca.height;
       }
     }
   }
@@ -80,8 +80,8 @@ class Img extends Dom {
       }
       else if(cache && cache.state === inject.LOADED && cache.success) {
         loadImg.source = cache.source;
-        loadImg.width = cache.width;
-        loadImg.height = cache.height;
+        loadImg.width = loadImg.__width = cache.width;
+        loadImg.height = loadImg.__height = cache.height;
       }
       loadImg.cache = false;
     }
@@ -121,33 +121,28 @@ class Img extends Dom {
 
   __addGeom(tagName, props) {
     props = util.hash2arr(props);
-    this.virtualDom.children.push({
+    this.__virtualDom.children.push({
       type: 'item',
       tagName,
       props,
     });
   }
 
-  __destroy() {
-    this.root.delRefreshTask(this.__task);
-    super.__destroy();
-    this.__task = null;
-  }
-
-  // img根据加载情况更新__hasContent
+  // img根据加载情况更新__hasContent，同时识别是否仅有图片内容本身，多个相同图片视为同一个资源
   calContent(__currentStyle, __computedStyle) {
     let res = super.calContent(__currentStyle, __computedStyle);
+    let {
+      __loadImg: loadImg,
+    } = this;
     if(!res) {
-      let {
-        __loadImg: loadImg,
-      } = this;
-      // if(loadImg.loading) {
-      //   this.__loadAndRefresh(loadImg, null);
-      // }
+      loadImg.onlyImg = true;
       if(__computedStyle[VISIBILITY] !== 'hidden' && (__computedStyle[WIDTH] || __computedStyle[HEIGHT])
         && loadImg.source) {
         res = true;
       }
+    }
+    else {
+      loadImg.onlyImg = false;
     }
     return res;
   }
@@ -463,16 +458,10 @@ class Img extends Dom {
         function reload() {
           let { __currentStyle: { [WIDTH]: width, [HEIGHT]: height } } = self;
           if(width.u !== AUTO && height.u !== AUTO) {
-            root.__addUpdate(self, {
-              focus: level.REPAINT, // 已知宽高无需重新布局
-              cb,
-            });
+            root.__addUpdate(self, null, level.REPAINT, null, null, null, cb);
           }
           else {
-            root.__addUpdate(self, {
-              focus: level.REFLOW,
-              cb,
-            });
+            root.__addUpdate(self, null, level.REFLOW, null, null, null, cb);
           }
         }
         if(data.success) {
@@ -507,11 +496,6 @@ class Img extends Dom {
           reload();
         }
       }
-    }, {
-      ctx,
-      root,
-      width,
-      height,
     });
   }
 

@@ -19,6 +19,8 @@ import TextureCache from '../gl/TextureCache';
 import blur from '../math/blur';
 import vertexBlur from '../gl/filter/blur.vert';
 import fragmentBlur from '../gl/filter/blur.frag';
+import ImgCanvasCache from './ImgCanvasCache';
+import ImgWebglCache from '../gl/ImgWebglCache';
 
 const {
   OFFSCREEN_OVERFLOW,
@@ -109,13 +111,12 @@ function genBboxTotal(node, __structs, index, total, isWebgl) {
         return;
       }
       let bbox = node.bbox, p = node.__domParent, matrix = p.__matrixEvent;
-      // if(pm) {
-      //   matrix = multiply(pm, matrix);
-      // }
-      if(!isE(matrix)) {
-        bbox = transformBbox(bbox, matrix, 0, 0);
+      if((bbox[2] - bbox[0]) && (bbox[3] - bbox[1])) {
+        if(!isE(matrix)) {
+          bbox = transformBbox(bbox, matrix, 0, 0);
+        }
+        mergeBbox(bboxTotal, bbox);
       }
-      mergeBbox(bboxTotal, bbox, 0, 0);
       continue;
     }
     if(node.__limitCache) {
@@ -140,7 +141,6 @@ function genBboxTotal(node, __structs, index, total, isWebgl) {
       __cacheTotal: __cacheTotal2,
       __cacheFilter: __cacheFilter2,
       __cacheMask: __cacheMask2,
-      __cacheOverflow: __cacheOverflow2,
     } = node;
     let p = node.__domParent;
     node.__opacity = __computedStyle2[OPACITY] * p.__opacity;
@@ -156,7 +156,7 @@ function genBboxTotal(node, __structs, index, total, isWebgl) {
     assignMatrix(node.__matrixEvent, matrix);
     let bbox;
     // 子元素有cacheTotal优先使用
-    let target = getCache([__cacheMask2, __cacheFilter2, __cacheOverflow2, __cacheTotal2, __cache2]);
+    let target = getCache([__cacheMask2, __cacheFilter2, __cacheTotal2, __cache2]);
     if(target) {
       i += (total || 0);
       if(hasMask) {
@@ -167,9 +167,11 @@ function genBboxTotal(node, __structs, index, total, isWebgl) {
     else {
       bbox = node.bbox; // 不能用filterBbox，子元素继承根节点的，如果有filter会是cacheFilter的bbox
     }
-    // 老的不变，新的会各自重新生成，根据matrixEvent合并bboxTotal
-    bbox = transformBbox(bbox, matrix, 0, 0);
-    mergeBbox(bboxTotal, bbox, 0, 0);
+    if((bbox[2] - bbox[0]) && (bbox[3] - bbox[1])) {
+      // 老的不变，新的会各自重新生成，根据matrixEvent合并bboxTotal
+      bbox = transformBbox(bbox, matrix, 0, 0);
+      mergeBbox(bboxTotal, bbox);
+    }
   }
   if((bboxTotal[2] - bboxTotal[0] <= 0) || (bboxTotal[3] - bboxTotal[1] <= 0)) {
     return {};
@@ -184,11 +186,11 @@ function genBboxTotal(node, __structs, index, total, isWebgl) {
   };
 }
 
-function mergeBbox(bbox, t, sx1, sy1) {
-  bbox[0] = Math.min(bbox[0], sx1 + t[0]);
-  bbox[1] = Math.min(bbox[1], sy1 + t[1]);
-  bbox[2] = Math.max(bbox[2], sx1 + t[2]);
-  bbox[3] = Math.max(bbox[3], sy1 + t[3]);
+function mergeBbox(bbox, t) {
+  bbox[0] = Math.min(bbox[0], t[0]);
+  bbox[1] = Math.min(bbox[1], t[1]);
+  bbox[2] = Math.max(bbox[2], t[2]);
+  bbox[3] = Math.max(bbox[3], t[3]);
 }
 
 /**
@@ -196,8 +198,7 @@ function mergeBbox(bbox, t, sx1, sy1) {
  * cache是每个节点自身的缓存，且共享离屏canvas
  * cacheTotal是基础
  * cacheFilter基于total
- * cacheOverflow基于filter
- * cacheMask基于overflow
+ * cacheMask基于filter
  * cacheBlend基于mask
  */
 function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, width, height) {
@@ -205,23 +206,58 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
   if(__cacheTotal && __cacheTotal.available) {
     return __cacheTotal;
   }
-  let { __x1: sx1, __y1: sy1 } = node;
+  let { __x1: x1, __y1: y1, __offsetWidth, __offsetHeight } = node;
   let bboxTotal = genBboxTotal(node, __structs, index, total, false).bbox;
   if(!bboxTotal) {
     return;
   }
 
-  // 生成cacheTotal，获取偏移dx/dy
-  __cacheTotal = node.__cacheTotal = CanvasCache.getInstance(renderMode, ctx, root.uuid, bboxTotal, sx1, sy1, null);
-  if(!__cacheTotal || !__cacheTotal.__enabled) {
-    if((bboxTotal[2] - bboxTotal[0]) || (bboxTotal[3] - bboxTotal[1])) {
-      inject.warn('CanvasCache of ' + node.tagName + '(' + index + ')' + ' is oversize: '
-        + (bboxTotal[2] - bboxTotal[0]) + ', ' + (bboxTotal[3] - bboxTotal[1]));
-    }
-    return;
+  // img节点特殊对待，如果只包含图片内容本身，多个相同引用可复用图片
+  if(node instanceof Img && node.__loadImg.onlyImg) {
+    __cacheTotal = node.__cacheTotal = ImgCanvasCache.getInstance(renderMode, ctx, root.__uuid, bboxTotal, node.__loadImg, x1, y1);
+    return __cacheTotal;
   }
-  __cacheTotal.__available = true;
-  let { dx, dy, dbx, dby, x: tx, y: ty } = __cacheTotal;
+
+  // 生成cacheTotal，获取偏移dx/dy，连带考虑overflow:hidden的情况，当hidden尺寸一致无效时可忽略
+  // 否则用一个单独临时的离屏获取包含hidden的结果，再绘入total
+  let w, h, dx, dy, dbx, dby, tx, ty;
+  let overflow = node.__computedStyle[OVERFLOW], isOverflow;
+  if((x1 !== bboxTotal[0]
+    || y1 !== bboxTotal[1]
+    || __offsetWidth !== (bboxTotal[2] - bboxTotal[0])
+    || __offsetHeight !== (bboxTotal[3] - bboxTotal[1])) && overflow === 'hidden') {
+    // geom可能超限，不能直接用bbox
+    bboxTotal = [x1, y1, x1 + __offsetWidth, y1 + __offsetHeight];
+    w = __offsetWidth;
+    h = __offsetHeight;
+    dx = -x1;
+    dy = -y1;
+    dbx = 0;
+    dby = 0;
+    tx = 0;
+    ty = 0;
+    isOverflow = true;
+    __cacheTotal = inject.getOffscreenCanvas(w, h, 'overflow', null);
+  }
+  else {
+    w = bboxTotal[2] - bboxTotal[0];
+    h = bboxTotal[3] - bboxTotal[1];
+    __cacheTotal = node.__cacheTotal = CanvasCache.getInstance(renderMode, ctx, root.__uuid, bboxTotal, x1, y1, null);
+    if(!__cacheTotal || !__cacheTotal.__enabled) {
+      if(w || h) {
+        inject.warn('CanvasCache of ' + node.tagName + '(' + index + ')' + ' is oversize: '
+          + w + ', ' + h);
+      }
+      return;
+    }
+    __cacheTotal.__available = true;
+    dx = __cacheTotal.dx;
+    dy = __cacheTotal.dy;
+    dbx = __cacheTotal.dbx;
+    dby = __cacheTotal.dby;
+    tx = __cacheTotal.x;
+    ty = __cacheTotal.y;
+  }
   let ctxTotal = __cacheTotal.ctx;
 
   /**
@@ -271,7 +307,6 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
         __cacheTotal: __cacheTotal2,
         __cacheFilter: __cacheFilter2,
         __cacheMask: __cacheMask2,
-        __cacheOverflow: __cacheOverflow2,
       } = node;
       let {
         [TRANSFORM]: transform,
@@ -319,14 +354,14 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
       // 特殊渲染的matrix，局部根节点为原点考虑，当需要计算时（不为E）再计算
       let m;
       if(i !== index && (!isE(parentMatrix) || !isE(transform))) {
-        m = tf.calMatrixByOrigin(transform, tfo[0] + dbx + node.__x1 - sx1 + tx, tfo[1] + dby + node.__y1 - sy1 + ty);
+        m = tf.calMatrixByOrigin(transform, tfo[0] + dbx + node.__x1 - x1 + tx, tfo[1] + dby + node.__y1 - y1 + ty);
         if(!isE(parentMatrix)) {
           m = multiply(parentMatrix, m);
         }
       }
       lastMatrix = m;
       // 子元素有cacheTotal优先使用
-      let target = i > index && getCache([__cacheMask2, __cacheFilter2, __cacheOverflow2, __cacheTotal2]);
+      let target = i > index && getCache([__cacheMask2, __cacheFilter2, __cacheTotal2]);
       if(target) {
         i += (total || 0);
         if(hasMask) {
@@ -416,6 +451,15 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
       }
     }
   }
+
+  // overflow写回整体离屏
+  if(isOverflow) {
+    let t = node.__cacheTotal = CanvasCache.getInstance(renderMode, ctx, root.__uuid, bboxTotal, x1, y1, null);
+    t.__available = true;
+    t.ctx.drawImage(__cacheTotal.canvas, t.x, t.y);
+    __cacheTotal.release();
+    __cacheTotal = t;
+  }
   return __cacheTotal;
 }
 
@@ -423,21 +467,13 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
 function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width, height) {
   let {
     __computedStyle,
-    __cacheOverflow,
     __cacheFilter,
     __cacheMask,
   } = node;
   let {
-    [OVERFLOW]: overflow,
     [FILTER]: filter,
   } = __computedStyle;
   let target = __cacheTotal, needGen;
-  if(overflow === 'hidden') {
-    if(!__cacheOverflow || !__cacheOverflow.available) {
-      target = node.__cacheOverflow = CanvasCache.genOverflow(target, node);
-      needGen = true;
-    }
-  }
   if(filter && filter.length) {
     if(!__cacheFilter|| !__cacheFilter.available  || needGen) {
       target = node.__cacheFilter = CanvasCache.genFilter(target, filter);
@@ -449,7 +485,7 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
       // 和外面没cache的类似，mask生成hash记录，这里mask节点一定是个普通无cache的独立节点
       let maskStartHash = {};
       let offscreenHash = {};
-      let { dx, dy, dbx, dby, x: tx, y: ty, ctx, sx1, sy1 } = cacheMask;
+      let { dx, dy, dbx, dby, x: tx, y: ty, ctx, x1, y1 } = cacheMask;
       let struct = item.__struct, root = item.__root, structs = root.__structs;
       let index = structs.indexOf(struct);
       let {
@@ -494,7 +530,6 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
             __cacheTotal,
             __cacheFilter,
             __cacheMask,
-            __cacheOverflow,
           } = node;
           if(maskStartHash.hasOwnProperty(i)) {
             let { idx, hasMask, offscreenMask } = maskStartHash[i];
@@ -550,7 +585,7 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
           // 特殊渲染的matrix，局部根节点为原点且考虑根节点自身的transform
           let m;
           if(!isE(transform)) {
-            m = tf.calMatrixByOrigin(transform, tfo[0] + dbx + node.__x1 - sx1 + tx, tfo[1] + dby + node.__y1 - sy1 + ty);
+            m = tf.calMatrixByOrigin(transform, tfo[0] + dbx + node.__x1 - x1 + tx, tfo[1] + dby + node.__y1 - y1 + ty);
             if(!isE(parentMatrix)) {
               m = multiply(parentMatrix, m);
             }
@@ -572,7 +607,7 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
           m = m || mx.identity();
           assignMatrix(node.__matrixEvent, m);
           // 特殊渲染的matrix，局部根节点为原点考虑，本节点需inverse反向
-          let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]);
+          let target = getCache([__cacheMask, __cacheFilter, __cacheTotal]);
           if(target) {
             i += (total || 0);
             if(hasMask) {
@@ -587,9 +622,9 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
             else {
               ctx.globalCompositeOperation = 'source-over';
             }
-            let { x, y, canvas, width, height, sx1: sx2, sy1: sy2, dbx: dbx2, dby: dby2 } = target;
-            let ox = tx + sx2 - sx1 + dbx - dbx2;
-            let oy = ty + sy2 - sy1 + dby - dby2;
+            let { x, y, canvas, width, height, x1: x2, y1: y2, dbx: dbx2, dby: dby2 } = target;
+            let ox = tx + x2 - x1 + dbx - dbx2;
+            let oy = ty + y2 - y1 + dby - dby2;
             ctx.drawImage(canvas, x, y, width, height, ox, oy, width, height);
             ctx.globalCompositeOperation = 'source-over';
             if(offscreenHash.hasOwnProperty(i)) {
@@ -704,17 +739,38 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   if(__cacheTotal && __cacheTotal.available) {
     return __cacheTotal;
   }
+  let { __x1: x1, __y1: y1, __cache, __offsetWidth, __offsetHeight } = node;
   let { bbox: bboxTotal, pm, hasPpt } = genBboxTotal(node, __structs, index, total, true);
   if(!bboxTotal) {
     return;
   }
-  let w = bboxTotal[2] - bboxTotal[0], h = bboxTotal[3] - bboxTotal[1];
-  let { __x1, __y1, __cache } = node;
-  if(__cacheTotal) {
-    __cacheTotal.reset(bboxTotal, __x1, __y1);
+
+  // overflow:hidden和canvas一样特殊考虑
+  let w, h, dx, dy, dbx, dby, cx, cy, texture, frameBuffer;
+  let overflow = node.__computedStyle[OVERFLOW], isOverflow;
+  if((x1 !== bboxTotal[0]
+    || y1 !== bboxTotal[1]
+    || __offsetWidth !== (bboxTotal[2] - bboxTotal[0])
+    || __offsetHeight !== (bboxTotal[3] - bboxTotal[1]))  && overflow === 'hidden') {
+    // geom可能超限，不能直接用bbox
+    bboxTotal = [x1, y1, x1 + __offsetWidth, y1 + __offsetHeight];
+    w = __offsetWidth;
+    h = __offsetHeight;
+    dx = -x1;
+    dy = -y1;
+    dbx = 0;
+    dby = 0;
+    isOverflow = true;
   }
   else {
-    __cacheTotal = TextureCache.getInstance(renderMode, gl, root.uuid, bboxTotal, __x1, __y1, null);
+    w = bboxTotal[2] - bboxTotal[0];
+    h = bboxTotal[3] - bboxTotal[1];
+  }
+  if(__cacheTotal) {
+    __cacheTotal.reset(bboxTotal, x1, y1);
+  }
+  else {
+    __cacheTotal = TextureCache.getInstance(renderMode, gl, root.__uuid, bboxTotal, x1, y1, null);
   }
   if(!__cacheTotal || !__cacheTotal.__enabled) {
     if(w || h) {
@@ -725,14 +781,21 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   }
   __cacheTotal.__available = true;
   node.__cacheTotal = __cacheTotal;
-  let { sx1, sy1, dx, dy, dbx, dby } = __cacheTotal;
-  let page = __cacheTotal.__page, size = page.__size, cx, cy, texture;
-  let frameBuffer;
-  if(hasPpt) {
+  if(!isOverflow) {
+    dx = __cacheTotal.dx;
+    dy = __cacheTotal.dy;
+    dbx = __cacheTotal.dbx;
+    dby = __cacheTotal.dby;
+  }
+
+  let page = __cacheTotal.__page, size = page.__size;
+  if(hasPpt || isOverflow) {
     cx = w * 0.5;
     cy = h * 0.5;
-    dx = -bboxTotal[0];
-    dy = -bboxTotal[1];
+    if(hasPpt) {
+      dx = -bboxTotal[0];
+      dy = -bboxTotal[1];
+    }
     texture = webgl.createTexture(gl, null, 0, w, h);
     frameBuffer = genFrameBufferWithTexture(gl, texture, w, h);
     gl.viewport(0, 0, w, h);
@@ -770,9 +833,6 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
       let __cache = node.__cache;
       if(__cache && __cache.available) {
         let m = lastMatrix;
-        // if(pm) {
-        //   m = multiply(pm, m);
-        // }
         let {
           __opacity,
         } = node.__domParent;
@@ -800,7 +860,6 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
         __cacheTotal,
         __cacheFilter,
         __cacheMask,
-        __cacheOverflow,
       } = node;
       let {
         [VISIBILITY]: visibility,
@@ -828,7 +887,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
       // 特殊渲染的matrix，局部根节点为原点考虑，当需要计算时（不为E）再计算
       let m;
       if(i !== index && !isE(transform)) {
-        m = tf.calMatrixByOrigin(transform, tfo[0] + dbx + node.__x1 - sx1, tfo[1] + dby + node.__y1 - sy1);
+        m = tf.calMatrixByOrigin(transform, tfo[0] + dbx + node.__x1 - x1, tfo[1] + dby + node.__y1 - y1);
         if(!isE(parentMatrix)) {
           m = multiply(parentMatrix, m);
         }
@@ -837,7 +896,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
         }
       }
       lastMatrix = m;
-      let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal, __cache]);
+      let target = getCache([__cacheMask, __cacheFilter, __cacheTotal, __cache]);
       if(target && (target !== __cache || visibility === 'visible')) {
         // 局部的mbm和主画布一样，先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
         if(isValidMbm(mixBlendMode)) {
@@ -887,7 +946,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   }
   // 绘制到fbo的纹理对象上并删除fbo恢复
   webgl.drawTextureCache(gl, list, cx, cy, dx, dy);
-  if(hasPpt) {
+  if(hasPpt || isOverflow) {
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.deleteFramebuffer(frameBuffer);
@@ -904,7 +963,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
 }
 
 function genFilterWebgl(renderMode, gl, node, cache, filter, W, H) {
-  let { sx1, sy1, width, height, bbox } = cache;
+  let { x1, y1, width, height, bbox } = cache;
   let target = cache;
   filter.forEach(item => {
     let { k, v } = item;
@@ -935,7 +994,7 @@ function genFilterWebgl(renderMode, gl, node, cache, filter, W, H) {
         0.213 - cosR * 0.213 + sinR * 0.143, 0.715 + cosR * 0.285 + sinR * 0.140, 0.072 - cosR * 0.072 - sinR * 0.283, 0, 0,
         0.213 - cosR * 0.213 - sinR * 0.787, 0.715 - cosR * 0.715 + sinR * 0.715, 0.072 + cosR * 0.928 + sinR * 0.072, 0, 0,
         0, 0, 0, 1, 0,
-      ], width, height, sx1, sy1, bbox);
+      ], width, height, x1, y1, bbox);
       if(res) {
         if(target !== cache) {
           target.release();
@@ -950,7 +1009,7 @@ function genFilterWebgl(renderMode, gl, node, cache, filter, W, H) {
         0.213 - 0.213 * amount,  0.715 + 0.285 * amount, 0.072 - 0.072 * amount, 0, 0,
         0.213 - 0.213 * amount,  0.715 - 0.715 * amount, 0.072 + 0.928 * amount, 0, 0,
         0, 0, 0, 1, 0,
-      ], width, height, sx1, sy1, bbox);
+      ], width, height, x1, y1, bbox);
       if(res) {
         if(target !== cache) {
           target.release();
@@ -965,7 +1024,7 @@ function genFilterWebgl(renderMode, gl, node, cache, filter, W, H) {
         0, b, 0, 0, 0,
         0, 0, b, 0, 0,
         0, 0, 0, 1, 0,
-      ], width, height, sx1, sy1, bbox);
+      ], width, height, x1, y1, bbox);
       if(res) {
         if(target !== cache) {
           target.release();
@@ -987,7 +1046,7 @@ function genFilterWebgl(renderMode, gl, node, cache, filter, W, H) {
         0.2126 - 0.2126 * oneMinusAmount, 0.7152 + 0.2848 * oneMinusAmount, 0.0722 - 0.0722 * oneMinusAmount, 0, 0,
         0.2126 - 0.2126 * oneMinusAmount, 0.7152 - 0.7152 * oneMinusAmount, 0.0722 + 0.9278 * oneMinusAmount, 0, 0,
         0, 0, 0, 1, 0,
-      ], width, height, sx1, sy1, bbox);
+      ], width, height, x1, y1, bbox);
       if(res) {
         if(target !== cache) {
           target.release();
@@ -1003,7 +1062,7 @@ function genFilterWebgl(renderMode, gl, node, cache, filter, W, H) {
         0, amount, 0, 0, o,
         0, 0, amount, 0, o,
         0, 0, 0, 1, 0,
-      ], width, height, sx1, sy1, bbox);
+      ], width, height, x1, y1, bbox);
       if(res) {
         if(target !== cache) {
           target.release();
@@ -1025,7 +1084,7 @@ function genFilterWebgl(renderMode, gl, node, cache, filter, W, H) {
         0.349 - 0.349 * oneMinusAmount, 0.686 + 0.314 * oneMinusAmount, 0.168 - 0.168 * oneMinusAmount, 0, 0,
         0.272 - 0.272 * oneMinusAmount, 0.534 - 0.534 * oneMinusAmount, 0.131 + 0.869 * oneMinusAmount, 0, 0,
         0, 0, 0, 1, 0,
-      ], width, height, sx1, sy1, bbox);
+      ], width, height, x1, y1, bbox);
       if(res) {
         if(target !== cache) {
           target.release();
@@ -1042,7 +1101,7 @@ function genFilterWebgl(renderMode, gl, node, cache, filter, W, H) {
         0, amount, 0, 0, o,
         0, 0, amount, 0, o,
         0, 0, 0, 1, 0,
-      ], width, height, sx1, sy1, bbox);
+      ], width, height, x1, y1, bbox);
       if(res) {
         if(target !== cache) {
           target.release();
@@ -1087,7 +1146,7 @@ function genBlurShader(gl, sigma, d) {
  * 然后将d尺寸和权重拼接成真正程序并编译成program，再开始绘制
  */
 function genBlurWebgl(renderMode, gl, cache, sigma) {
-  let { sx1, sy1, bbox, width, height } = cache;
+  let { x1, y1, bbox, width, height } = cache;
   let d = blur.kernelSize(sigma);
   let max = Math.max(15, gl.getParameter(gl.MAX_VARYING_VECTORS));
   while(d > max) {
@@ -1116,7 +1175,7 @@ function genBlurWebgl(renderMode, gl, cache, sigma) {
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteFramebuffer(frameBuffer);
   // 写回一个cache中
-  let target = TextureCache.getInstance(renderMode, gl, cache.__rootId, bboxNew, sx1, sy1, null);
+  let target = TextureCache.getInstance(renderMode, gl, cache.__rootId, bboxNew, x1, y1, null);
   target.__available = true;
   let page = target.__page, size = page.__size, texture = page.texture;
   frameBuffer = genFrameBufferWithTexture(gl, texture, size, size);
@@ -1132,8 +1191,8 @@ function genBlurWebgl(renderMode, gl, cache, sigma) {
 }
 
 function genColorMatrixWebgl(renderMode, gl, cache, m) {
-  let { sx1, sy1, bbox } = cache;
-  let target = TextureCache.getInstance(renderMode, gl, cache.__rootId, bbox.slice(0), sx1, sy1, cache.__page);
+  let { x1, y1, bbox } = cache;
+  let target = TextureCache.getInstance(renderMode, gl, cache.__rootId, bbox.slice(0), x1, y1, cache.__page);
   target.__available = true;
   let page = target.__page, size = page.__size;
   let frameBuffer = genFrameBufferWithTexture(gl, target.__page.texture, size, size);
@@ -1146,41 +1205,11 @@ function genColorMatrixWebgl(renderMode, gl, cache, m) {
   return target;
 }
 
-function genOverflowWebgl(renderMode, gl, root, node, cache, W, H) {
-  let bbox = cache.bbox;
-  let { __x1, __y1, __clientWidth, __clientHeight } = node;
-  let x = __x1 + __clientWidth;
-  let y = __y1 + __clientHeight;
-  // 没超过无需生成
-  if(bbox[0] >= __x1 && bbox[1] >= __y1 && bbox[2] <= x &&  bbox[3] <= y) {
-    return;
-  }
-  let bboxNew = [__x1, __y1, x, y];
-  let __cacheOverflow = TextureCache.getInstance(renderMode, gl, root.uuid, bboxNew, __x1, __y1, cache.__page);
-  if(!__cacheOverflow) {
-    return;
-  }
-  __cacheOverflow.__available = true;
-  node.__cacheOverflow = __cacheOverflow;
-  // let { dx, dy } = __cacheOverflow;
-  let page = __cacheOverflow.__page, size = page.__size, texture = page.texture;
-  let frameBuffer = genFrameBufferWithTexture(gl, texture, size, size);
-  // 绘制，根据坐标裁剪使用原本纹理的一部分
-  webgl.drawOverflow(gl, gl.programOverflow, __cacheOverflow, cache, size * 0.5, size);
-  // 切回
-  gl.useProgram(gl.program);
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  gl.deleteFramebuffer(frameBuffer);
-  gl.bindTexture(gl.TEXTURE_2D, null);
-  gl.viewport(0, 0, W, H);
-  return __cacheOverflow;
-}
-
 function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs) {
-  let { sx1, sy1, width, height, bbox, dbx, dby } = cache;
+  let { x1, y1, width, height, bbox, dbx, dby } = cache;
   let bboxNew = bbox.slice(0);
   // 结果不能和源同page纹理，一定符合尺寸要求，不会比源大
-  let __cacheMask = TextureCache.getInstance(renderMode, gl, root.uuid, bboxNew, sx1, sy1, cache.__page);
+  let __cacheMask = TextureCache.getInstance(renderMode, gl, root.__uuid, bboxNew, x1, y1, cache.__page);
   __cacheMask.__available = true;
   node.__cacheMask = __cacheMask;
   // 先求得被遮罩的matrix，用作inverse给mask计算，以被遮罩左上角为原点
@@ -1204,7 +1233,7 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
   let next = node.next;
   let isClip = next.__clip;
   let lastPage, list = [];
-  let dx = -sx1 + dbx, dy = -sy1 + dby;
+  let dx = -x1 + dbx, dy = -y1 + dby;
   while(next && next.__mask && next.__clip === isClip) {
     let total = __structs[i].total || 0;
     let matrixList = [];
@@ -1254,7 +1283,6 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
           __cacheTotal,
           __cacheFilter,
           __cacheMask,
-          __cacheOverflow,
         } = node;
         let {
           [OPACITY]: opacity,
@@ -1283,7 +1311,7 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
         }
         // 不变是同级兄弟，无需特殊处理 else {}
         lastLv = lv;
-        let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal, __cache]);
+        let target = getCache([__cacheMask, __cacheFilter, __cacheTotal, __cache]);
         if(target && (target !== __cache || visibility === 'visible')) {
           // 不考虑mbm
           let m;
@@ -1291,7 +1319,7 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
             m = mx.identity();
           }
           else {
-            m = tf.calMatrixByOrigin(transform, tfo[0] + target.sx1 - sx1, tfo[1] + target.sy1 - sy1);
+            m = tf.calMatrixByOrigin(transform, tfo[0] + target.x1 - x1, tfo[1] + target.y1 - y1);
           }
           if(!isE(parentMatrix)) {
             lastMatrix = multiply(parentMatrix, lastMatrix);
@@ -1349,7 +1377,7 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
  * 复用blur时生成的模糊是临时的，和主程序模糊不一样，需区分
  */
 function genDropShadowWebgl(renderMode, gl, cache, v) {
-  let { sx1, sy1, bbox, width, height } = cache;
+  let { x1, y1, bbox, width, height } = cache;
   // 先根据x/y/color生成单色阴影
   let [x, y, sigma, , color] = v;
   let d = blur.kernelSize(sigma);
@@ -1397,8 +1425,8 @@ function genDropShadowWebgl(renderMode, gl, cache, v) {
   bboxNew[2] += spread;
   bboxNew[3] += spread;
   let bboxMerge = bbox.slice(0);
-  mergeBbox(bboxMerge, bboxNew, 0, 0);
-  let target = TextureCache.getInstance(renderMode, gl, cache.__rootId, bboxMerge, sx1, sy1, null);
+  mergeBbox(bboxMerge, bboxNew);
+  let target = TextureCache.getInstance(renderMode, gl, cache.__rootId, bboxMerge, x1, y1, null);
   target.__available = true;
   let page = target.__page, size = page.__size;
   frameBuffer = genFrameBufferWithTexture(gl, page.texture, size, size);
@@ -1832,7 +1860,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
             __cache.reset(bbox, x, y);
           }
           else {
-            __cache = CanvasCache.getInstance(mode.CANVAS, gl, root.uuid, bbox, x, y, null);
+            __cache = CanvasCache.getInstance(mode.CANVAS, gl, root.__uuid, bbox, x, y, null);
           }
           if(__cache && __cache.enabled) {
             __cache.__bbox = bbox;
@@ -1906,7 +1934,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total
         if(__cacheTotal && __cacheTotal.available) {
           i += (total || 0);
-          if(__refreshLevel === NONE && hasMask) { // TODO: add mask level
+          if(__refreshLevel === NONE && hasMask) {
             i += countMaskNum(__structs, i + 1, hasMask);
           }
         }
@@ -1916,15 +1944,25 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
        * Geom没有子节点无需汇总局部根，Dom中Img也是，它们的局部根等于自身的cache，其它符合条件的Dom需要生成
        */
       else {
-        let hasContent = node.calContent(__currentStyle, __computedStyle);
+        let hasContent = node.calContent(__currentStyle, __computedStyle), onlyImg;
         // 有内容先以canvas模式绘制到离屏画布上，自定义渲染设置无内容不实现即可跳过
         if(hasContent) {
-          let bbox = node.bbox, __cache = node.__cache, sx1 = node.__x1, sy1 = node.__y1;
-          if(__cache) {
-            __cache.reset(bbox, sx1, sy1);
+          let bbox = node.bbox, __cache = node.__cache, x1 = node.__x1, y1 = node.__y1;
+          // 单图特殊对待缓存
+          if(node instanceof Img) {
+            let loadImg = node.__loadImg;
+            if(loadImg.onlyImg && !loadImg.error && loadImg.source) {
+              onlyImg = true;
+              __cache = node.__cache = ImgWebglCache.getInstance(mode.CANVAS, gl, root.__uuid, bbox, loadImg, x1, y1);
+            }
           }
-          else {
-            __cache = CanvasCache.getInstance(mode.CANVAS, gl, root.uuid, bbox, sx1, sy1, null);
+          if(!onlyImg) {
+            if(__cache) {
+              __cache.reset(bbox, x1, y1);
+            }
+            else {
+              __cache = CanvasCache.getInstance(mode.CANVAS, gl, root.__uuid, bbox, x1, y1, null);
+            }
           }
           if(__cache && __cache.enabled) {
             __cache.__bbox = bbox;
@@ -1935,6 +1973,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
           else {
             __cache && __cache.release();
             node.__limitCache = true;
+            return;
           }
         }
         else {
@@ -1956,7 +1995,6 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         if(node.__cacheAsBitmap
           || hasMask
           || isFilter
-          // || isMbm
           || isOverflow
           || isPpt) {
           mergeList.push({
@@ -2028,7 +2066,6 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         __cacheTotal,
         __cacheFilter,
         __cacheMask,
-        __cacheOverflow,
       } = node;
       if(__limitCache) {
         return;
@@ -2045,15 +2082,6 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       }
       // 即使超限，也有total结果
       let target = __cacheTotal;
-      if(overflow === 'hidden') {
-        if(!__cacheOverflow || !__cacheOverflow.available || needGen) {
-          let res = genOverflowWebgl(renderMode, gl, root, node, target, width, height);
-          if(res) {
-            target = res;
-            needGen = true;
-          }
-        }
-      }
       if(filter.length) {
         if(!__cacheFilter || !__cacheFilter.available || needGen) {
           let res = genFilterWebgl(renderMode, gl, node, target, filter, width, height);
@@ -2122,7 +2150,6 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         __cacheTotal,
         __cacheFilter,
         __cacheMask,
-        __cacheOverflow,
         __domParent,
         __matrix,
       } = node;
@@ -2132,14 +2159,20 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       } = __computedStyle;
       let m = __matrix;
       if(__domParent) {
-        opacity *= __domParent.__opacity;
-        m = multiply(__domParent.__perspectiveMatrix, m);
-        m = multiply(__domParent.__matrixEvent, m);
+        let op = __domParent.__opacity;
+        if(op !== 1) {
+          opacity *= __domParent.__opacity;
+        }
+        let pm = __domParent.__perspectiveMatrix, me = __domParent.__matrixEvent;
+        if(pm && pm.length || me && me.length) {
+          m = multiply(__domParent.__perspectiveMatrix, m);
+          m = multiply(__domParent.__matrixEvent, m);
+        }
       }
       node.__opacity = opacity;
       assignMatrix(node.__matrixEvent, m);
       // total和自身cache的尝试，visibility不可见时没有cache
-      let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal, __cache]);
+      let target = getCache([__cacheMask, __cacheFilter, __cacheTotal, __cache]);
       if(target) {
         // 有mbm则需要混合之前的纹理和新纹理到fbo上面，连续的mbm则依次交替绘制到画布或离屏fbo上
         if(isValidMbm(mixBlendMode)) {
@@ -2271,16 +2304,24 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
       } = node;
       node.__refreshLevel = NONE;
       // filter变化需重新生成，cacheTotal本身就存在要判断下；CACHE取消重新生成则无需判断
-      if(node.__cacheAsBitmap) {
-        if((__refreshLevel & (CACHE | FT)) || __refreshLevel >= REPAINT) {
-          mergeList.push({
-            i,
-            lv,
-            total,
-            node,
-            hasMask,
-          });
+      // img在只有自身的情况下自动生成并特殊对待，多个相同引用的img使用同一份资源
+      let need = node.__cacheAsBitmap &&
+        ((__refreshLevel & (CACHE | FT)) || __refreshLevel >= REPAINT);
+      if(!need && node instanceof Img) {
+        let hasContent = node.calContent(node.__currentStyle, node.__computedStyle);
+        let loadImg = node.__loadImg;
+        if(loadImg.onlyImg && hasContent) {
+          need = true;
         }
+      }
+      if(need) {
+        mergeList.push({
+          i,
+          lv,
+          total,
+          node,
+          hasMask,
+        });
       }
       // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total
       if(__cacheTotal && __cacheTotal.available) {
@@ -2359,7 +2400,6 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
         __cacheTotal,
         __cacheFilter,
         __cacheMask,
-        __cacheOverflow,
         __domParent,
         __matrix,
       } = node;
@@ -2391,13 +2431,19 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
       let opacity = __computedStyle[OPACITY];
       let m = __matrix;
       if(__domParent) {
-        opacity *= __domParent.__opacity;
-        m = multiply(__domParent.__matrixEvent, m);
+        let op = __domParent.__opacity;
+        if(op !== 1) {
+          opacity *= __domParent.__opacity;
+        }
+        let me = __domParent.__matrixEvent;
+        if(me && me.length) {
+          m = multiply(me, m);
+        }
       }
       node.__opacity = opacity;
       assignMatrix(node.__matrixEvent, m);
       // 有cache声明从而有total的可以直接绘制并跳过子节点索，total生成可能会因超限而失败
-      let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]);
+      let target = getCache([__cacheMask, __cacheFilter, __cacheTotal]);
       if(target) {
         i += (total || 0);
         if(hasMask) {
@@ -2412,8 +2458,8 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
         if(isValidMbm(mixBlendMode)) {
           ctx.globalCompositeOperation = mbmName(mixBlendMode);
         }
-        let { x, y, canvas, sx1, sy1, dbx, dby, width, height } = target;
-        ctx.drawImage(canvas, x, y, width, height, sx1 - dbx, sy1 - dby, width, height);
+        let { x, y, canvas, x1, y1, dbx, dby, width, height } = target;
+        ctx.drawImage(canvas, x, y, width, height, x1 - dbx, y1 - dby, width, height);
         // total应用后记得设置回来
         ctx.globalCompositeOperation = 'source-over';
         // 父超限但子有total的时候，i此时已经增加到了末尾，也需要检查

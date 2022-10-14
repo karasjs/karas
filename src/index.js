@@ -26,6 +26,7 @@ import animate from './animate/index';
 import math from './math/index';
 import refresh from './refresh/index';
 import { version } from '../package.json';
+import ca from './gl/ca';
 
 Geom.register('$line', Line);
 Geom.register('$polyline', Polyline);
@@ -79,32 +80,16 @@ let karas = {
       else {
         return new Dom(tagName, props, children);
       }
-      // return {
-      //   tagName,
-      //   props,
-      //   children,
-      //   $$type: $$type.TYPE_VD,
-      // };
     }
     throw new Error(`Can not use <${tagName}>`);
   },
   createGm(tagName, props) {
     let klass = Geom.getRegister(tagName);
     return new klass(tagName, props);
-    // return {
-    //   tagName,
-    //   props,
-    //   $$type: $$type.TYPE_GM,
-    // };
   },
   createCp(klass, props, children = []) {
     props.children = children;
     return new klass(props, children);
-    // return {
-    //   klass,
-    //   props,
-    //   $$type: $$type.TYPE_CP,
-    // };
   },
   parse(json, dom, options) {
     return parser.parse(this, json, dom, options);
@@ -130,6 +115,7 @@ let karas = {
   math,
   refresh,
   enums,
+  ca,
   set debug(v) {
     debug.flag = !!v;
   },

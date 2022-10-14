@@ -1,5 +1,6 @@
 import util from '../util/util';
 import inject from '../util/inject';
+import opentype from '../util/opentype';
 
 const { isString } = util;
 
@@ -54,12 +55,18 @@ let o = {
       url = null;
     }
     let info = this.info;
-    info[name] = info[name] || {};
-    if(url && !info[name].url) { // 不能覆盖
-      info[name].url = url;
-      inject.loadFont(name, url, function(res) {
-        info[name].success = res.success;
+    let fontInfo = info[name] = info[name] || {};
+    if(url && !fontInfo.url) { // 不能覆盖
+      fontInfo.url = url;
+      inject.loadFont(name, url, function(res, ab) {
+        fontInfo.success = res.success;
         if(res.success) {
+          // 手动指定更高优先级，不解析
+          if(!fontInfo.lhr && ab) {
+            let r = opentype.parse(ab);
+            setData(r);
+          }
+          // 回调
           let list = CALLBACK[name] || [];
           while(list.length) {
             let node = list.pop();
@@ -69,14 +76,20 @@ let o = {
       });
     }
     // 防止先没url只注册，再调用只传url的情况
-    if(!data || info[name].lhr) {
+    if(!data || fontInfo.lhr) {
       return;
     }
-    let { emSquare = 2048, ascent = 1854, descent = 434, lineGap = 0 } = data || {};
-    Object.assign(info[name], {
-      lhr: (ascent + descent + lineGap) / emSquare,
-      blr: ascent / emSquare,
-    });
+    setData(data);
+    function setData(data) {
+      let { emSquare = 2048, ascent, descent, lineGap = 0 } = data;
+      if(!ascent || !descent) {
+        return;
+      }
+      Object.assign(fontInfo, {
+        lhr: (ascent + descent + lineGap) / emSquare,
+        blr: ascent / emSquare,
+      });
+    }
   },
   hasRegister(fontFamily) {
     return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].hasOwnProperty('lhr');

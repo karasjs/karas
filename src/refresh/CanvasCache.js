@@ -52,7 +52,7 @@ class CanvasCache extends Cache {
    * @param filter
    */
   static genFilter(cache, filter) {
-    let { x, y, size, canvas, sx1, sy1, width, height, bbox } = cache;
+    let { x, y, size, canvas, x1, y1, width, height, bbox } = cache;
     let oldX1 = bbox[0];
     bbox = spreadFilter(bbox, filter);
     let d = oldX1 - bbox[0];
@@ -67,8 +67,8 @@ class CanvasCache extends Cache {
     offscreen.x = 0;
     offscreen.y = 0;
     offscreen.size = size;
-    offscreen.sx1 = sx1;
-    offscreen.sy1 = sy1;
+    offscreen.x1 = x1;
+    offscreen.y1 = y1;
     offscreen.dx = -bbox[0];
     offscreen.dy = -bbox[1];
     offscreen.dbx = cache.dbx + d;
@@ -105,44 +105,19 @@ class CanvasCache extends Cache {
     return cacheMask;
   }
 
-  /**
-   * 如果不超过bbox，直接用已有的total/filter/mask，否则生成一个新的
-   */
-  static genOverflow(target, node) {
-    let { bbox } = target;
-    let { __x1, __y1, __clientWidth, __clientHeight } = node;
-    let xe = __x1 + __clientWidth;
-    let ye = __y1 + __clientHeight;
-    if(bbox[0] < __x1 || bbox[1] < __y1 || bbox[2] > xe || bbox[3] > ye) {
-      let bboxNew = [__x1, __y1, xe, ye];
-      let cacheOverflow = genSingle(target, 'overflow', bboxNew);
-      let ctx = cacheOverflow.ctx;
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.globalAlpha = 1;
-      CanvasCache.drawCache(target, cacheOverflow);
-      ctx.globalCompositeOperation = 'destination-in';
-      ctx.fillStyle = '#FFF';
-      ctx.beginPath();
-      ctx.rect(0, 0, __clientWidth, __clientHeight);
-      ctx.fill();
-      ctx.closePath();
-      ctx.globalCompositeOperation = 'source-over';
-      return cacheOverflow;
-    }
-  }
 
   static drawCache(source, target) {
-    let { x: tx, y: ty, sx1, sy1, ctx, dbx, dby } = target;
-    let { x, y, canvas, sx1: sx2, sy1: sy2, dbx: dbx2, dby: dby2, width, height } = source;
-    let ox = tx + sx2 - sx1 + dbx - dbx2;
-    let oy = ty + sy2 - sy1 + dby - dby2;
+    let { x: tx, y: ty, x1, y1, ctx, dbx, dby } = target;
+    let { x, y, canvas, x1: x2, y1: y2, dbx: dbx2, dby: dby2, width, height } = source;
+    let ox = tx + x2 - x1 + dbx - dbx2;
+    let oy = ty + y2 - y1 + dby - dby2;
     ctx.drawImage(canvas, x, y, width, height, ox, oy, width, height);
   }
 }
 
 // 根据一个共享cache的信息，生成一个独立的离屏canvas，一般是filter,mask用，可能尺寸会发生变化
 function genSingle(cache, message, bboxNew) {
-  let { size, sx1, sy1, bbox } = cache;
+  let { size, x1, y1, bbox } = cache;
   bboxNew = bboxNew || bbox;
   let width = bboxNew[2] - bboxNew[0];
   let height = bboxNew[3] - bboxNew[1];
@@ -153,8 +128,8 @@ function genSingle(cache, message, bboxNew) {
   offscreen.y = 0;
   offscreen.bbox = bboxNew;
   offscreen.size = size;
-  offscreen.sx1 = sx1;
-  offscreen.sy1 = sy1;
+  offscreen.x1 = x1;
+  offscreen.y1 = y1;
   offscreen.dx = -bboxNew[0];
   offscreen.dy = -bboxNew[1];
   offscreen.dbx = cache.dbx - dx;

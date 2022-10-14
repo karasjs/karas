@@ -737,10 +737,6 @@ class Text extends Node {
     }
   }
 
-  __deepScan(cb) {
-    cb(this);
-  }
-
   __destroy() {
     if(this.__isDestroyed) {
       return;
@@ -765,10 +761,7 @@ class Text extends Node {
       return;
     }
     this.__content = s;
-    this.__root.__addUpdate(this.__domParent, {
-      focus: level.REFLOW,
-      cb,
-    });
+    this.__root.__addUpdate(this.__domParent, null, level.REFLOW, null, null, null, cb);
   }
 
   remove(cb) {
@@ -805,12 +798,7 @@ class Text extends Node {
       return;
     }
     // 可见在reflow逻辑做结构关系等，text视为父变更
-    let res = {
-      focus: level.REFLOW,
-      removeDom: true,
-      cb,
-    };
-    root.__addUpdate(this, res);
+    root.__addUpdate(this, null, level.REFLOW, null, true, null, cb);
   }
 
   get content() {
@@ -945,6 +933,10 @@ class Text extends Node {
     return this.__domParent.__currentStyle;
   }
 
+  get __currentStyle() {
+    return this.__domParent.__currentStyle;
+  }
+
   get style() {
     return this.__domParent.__style;
   }
@@ -953,7 +945,15 @@ class Text extends Node {
     return this.__domParent.__computedStyle;
   }
 
+  get __computedStyle() {
+    return this.__domParent.__computedStyle;
+  }
+
   get cacheStyle() {
+    return this.__domParent.__cacheStyle;
+  }
+
+  get __cacheStyle() {
     return this.__domParent.__cacheStyle;
   }
 

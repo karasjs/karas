@@ -92,6 +92,7 @@ const {
   MASK,
 } = level;
 const { isGeom } = change;
+const { renderCanvas, renderSvg, renderWebgl } = struct;
 
 const ROOT_DOM_NAME = {
   canvas: 'canvas',
@@ -138,7 +139,7 @@ function initEvent(dom, Root) {
           event.target = target;
           while(target) {
             target.__emitEvent(event, null, true);
-            target = target.domParent;
+            target = target.__domParent;
           }
         }
         else {
@@ -168,15 +169,13 @@ class Root extends Dom {
     this.__mh = 0;
     // this.__scx = 1; // 默认缩放，css改变canvas/svg缩放后影响事件坐标，有值手动指定，否则自动计算
     // this.__scy = 1;
-    this.__taskUp = [];
     this.__task = [];
     this.__ref = {};
-    this.__reflowList = [{ node: this }]; // 初始化填自己，第一次布局时复用逻辑完全重新布局
     this.__animateController = new Controller();
     Event.mix(this);
-    this.__updateHash = {};
     this.__uuid = uuid++;
     this.__rlv = REBUILD; // 每次刷新最大lv
+    this.__lastUpdateP = null; // 每帧addUpdate都会向上检查，很多时候同级无需继续，第一次检查暂存parent对象
     builder.buildRoot(this, this.__children);
   }
 
@@ -227,13 +226,13 @@ class Root extends Dom {
         x /= __scx;
       }
       else {
-        x *= this.width / width;
+        x *= this.__width / width;
       }
       if(!isNil(__scy)) {
         y /= __scy;
       }
       else {
-        y *= this.height / height;
+        y *= this.__height / height;
       }
     }
     return {
@@ -272,7 +271,6 @@ class Root extends Dom {
    */
   appendTo(dom) {
     dom = getDom(dom);
-    // this.__children = builder.initRoot(this.__cd, this);
     this.__isDestroyed = false;
     this.__initProps();
     let tagName = this.tagName;
@@ -287,11 +285,11 @@ class Root extends Dom {
     // 已有root节点
     else if(dom.nodeName.toLowerCase() === domName) {
       this.__dom = dom;
-      if(this.width) {
-        dom.setAttribute('width', this.width);
+      if(this.__width) {
+        dom.setAttribute('width', this.__width);
       }
-      if(this.height) {
-        dom.setAttribute('height', this.height);
+      if(this.__height) {
+        dom.setAttribute('height', this.__height);
       }
     }
     // 没有canvas/svg节点则生成一个新的
@@ -302,67 +300,83 @@ class Root extends Dom {
         this.__dom = dom.querySelector(domName);
       }
     }
-    this.__defs = this.dom.__defs || Defs.getInstance(this.__uuid);
     // 没有设置width/height则采用css计算形式
-    if(!this.width || !this.height) {
+    if(!this.__width || !this.__height) {
       let domCss = window.getComputedStyle(dom, null);
-      if(!this.width) {
+      if(!this.__width) {
         this.__width = parseFloat(domCss.getPropertyValue('width')) || 0;
         dom.setAttribute('width', this.width);
       }
-      if(!this.height) {
+      if(!this.__height) {
         this.__height = parseFloat(domCss.getPropertyValue('height')) || 0;
         dom.setAttribute('height', this.height);
       }
     }
     // 最终无宽高给出警告
-    if(!this.width || !this.height) {
+    if(!this.__width || !this.__height) {
       inject.warn('Karas render target with a width or height of 0.')
     }
     let params = Object.assign({}, ca, this.props.contextAttributes);
     // 只有canvas有ctx，svg用真实dom
-    if(this.tagName === 'canvas') {
+    if(tagName === 'canvas') {
       this.__ctx = this.__dom.getContext('2d', params);
       this.__renderMode = mode.CANVAS;
     }
-    else if(this.tagName === 'svg') {
+    else if(tagName === 'svg') {
+      this.__defs = this.dom.__defs || Defs.getInstance(this.__uuid);
       this.__renderMode = mode.SVG;
     }
-    else if(this.tagName === 'webgl') {
-      let gl = this.__ctx = this.__dom.getContext('webgl', params);
+    else if(tagName === 'webgl') {
+      // 优先手动指定，再自动判断，最后兜底
+      let gl, webgl2 = this.props.webgl2;
+      if(!isNil(webgl2)) {
+        if(webgl2) {
+          gl = this.__dom.getContext('webgl2', params);
+        }
+        if(!gl) {
+          gl = this.__dom.getContext('webgl', params);
+        }
+        this.__ctx = gl;
+      }
+      else {
+        gl = this.__ctx = this.__dom.getContext('webgl2', params)
+          || this.__dom.getContext('webgl', params);
+      }
+      this.__initShader(gl);
       this.__renderMode = mode.WEBGL;
-      gl.program = webgl.initShaders(gl, vertex, fragment);
-      gl.programMask = webgl.initShaders(gl, vertexMask, fragmentMask);
-      gl.programClip = webgl.initShaders(gl, vertexMask, fragmentClip);
-      gl.programOverflow = webgl.initShaders(gl, vertexOverflow, fragmentOverflow);
-      gl.programCm = webgl.initShaders(gl, vertexCm, fragmentCm);
-      gl.programDs = webgl.initShaders(gl, vertexDs, fragmentDs);
-      gl.programMbmMp = webgl.initShaders(gl, vertexMbm, fragmentMultiply);
-      gl.programMbmSr = webgl.initShaders(gl, vertexMbm, fragmentScreen);
-      gl.programMbmOl = webgl.initShaders(gl, vertexMbm, fragmentOverlay);
-      gl.programMbmDk = webgl.initShaders(gl, vertexMbm, fragmentDarken);
-      gl.programMbmLt = webgl.initShaders(gl, vertexMbm, fragmentLighten);
-      gl.programMbmCd = webgl.initShaders(gl, vertexMbm, fragmentColorDodge);
-      gl.programMbmCb = webgl.initShaders(gl, vertexMbm, fragmentColorBurn);
-      gl.programMbmHl = webgl.initShaders(gl, vertexMbm, fragmentHardLight);
-      gl.programMbmSl = webgl.initShaders(gl, vertexMbm, fragmentSoftLight);
-      gl.programMbmDf = webgl.initShaders(gl, vertexMbm, fragmentDifference);
-      gl.programMbmEx = webgl.initShaders(gl, vertexMbm, fragmentExclusion);
-      gl.programMbmHue = webgl.initShaders(gl, vertexMbm, fragmentHue);
-      gl.programMbmSt = webgl.initShaders(gl, vertexMbm, fragmentSaturation);
-      gl.programMbmCl = webgl.initShaders(gl, vertexMbm, fragmentColor);
-      gl.programMbmLm = webgl.initShaders(gl, vertexMbm, fragmentLuminosity);
-      gl.useProgram(gl.program);
-      // 第一次渲染生成纹理缓存管理对象，收集渲染过程中生成的纹理并在gl纹理单元满了时进行绘制和清空，减少texImage2d耗时问题
-      const MAX_TEXTURE_IMAGE_UNITS = Math.min(16, gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
     }
     this.draw(true);
     // 第一次节点没有__root，渲染一次就有了才能diff
-    if(this.dom.__root && this.dom.__root instanceof Root) {
-      this.dom.__root.destroy();
+    if(this.__dom.__root && this.__dom.__root instanceof Root) {
+      this.__dom.__root.destroy();
     }
-    this.__eventCbList = initEvent(this.dom, Root);
-    this.dom.__root = this;
+    this.__eventCbList = initEvent(this.__dom, Root);
+    this.__dom.__root = this;
+  }
+
+  __initShader(gl) {
+    gl.program = webgl.initShaders(gl, vertex, fragment);
+    gl.programMask = webgl.initShaders(gl, vertexMask, fragmentMask);
+    gl.programClip = webgl.initShaders(gl, vertexMask, fragmentClip);
+    gl.programOverflow = webgl.initShaders(gl, vertexOverflow, fragmentOverflow);
+    gl.programCm = webgl.initShaders(gl, vertexCm, fragmentCm);
+    gl.programDs = webgl.initShaders(gl, vertexDs, fragmentDs);
+    gl.programMbmMp = webgl.initShaders(gl, vertexMbm, fragmentMultiply);
+    gl.programMbmSr = webgl.initShaders(gl, vertexMbm, fragmentScreen);
+    gl.programMbmOl = webgl.initShaders(gl, vertexMbm, fragmentOverlay);
+    gl.programMbmDk = webgl.initShaders(gl, vertexMbm, fragmentDarken);
+    gl.programMbmLt = webgl.initShaders(gl, vertexMbm, fragmentLighten);
+    gl.programMbmCd = webgl.initShaders(gl, vertexMbm, fragmentColorDodge);
+    gl.programMbmCb = webgl.initShaders(gl, vertexMbm, fragmentColorBurn);
+    gl.programMbmHl = webgl.initShaders(gl, vertexMbm, fragmentHardLight);
+    gl.programMbmSl = webgl.initShaders(gl, vertexMbm, fragmentSoftLight);
+    gl.programMbmDf = webgl.initShaders(gl, vertexMbm, fragmentDifference);
+    gl.programMbmEx = webgl.initShaders(gl, vertexMbm, fragmentExclusion);
+    gl.programMbmHue = webgl.initShaders(gl, vertexMbm, fragmentHue);
+    gl.programMbmSt = webgl.initShaders(gl, vertexMbm, fragmentSaturation);
+    gl.programMbmCl = webgl.initShaders(gl, vertexMbm, fragmentColor);
+    gl.programMbmLm = webgl.initShaders(gl, vertexMbm, fragmentLuminosity);
+    gl.useProgram(gl.program);
   }
 
   __reLayout() {
@@ -398,7 +412,7 @@ class Root extends Dom {
     if(isDestroyed) {
       return;
     }
-    defs.clear();
+    this.__lastUpdateP = null;
     // 首次递归测量整树的继承，后续更改各自更新机制做，防止每次整树遍历；root检查首次直接做，后续在checkUpdate()中插入
     if(isFirst) {
       this.__reLayout();
@@ -408,28 +422,30 @@ class Root extends Dom {
     }
     let rlv = this.__rlv;
     if(renderMode === mode.CANVAS) {
-      this.__clear(ctx, renderMode);
-      struct.renderCanvas(renderMode, ctx, this, isFirst, rlv);
+      this.__clearCanvas(ctx);
+      renderCanvas(renderMode, ctx, this, isFirst, rlv);
     }
     // svg的特殊diff需要
     else if(renderMode === mode.SVG) {
-      struct.renderSvg(renderMode, defs, this, isFirst, rlv);
+      defs.clear();
+      renderSvg(renderMode, defs, this, isFirst, rlv);
       let nvd = this.virtualDom;
       nvd.defs = defs.value;
-      if(this.dom.__vd) {
+      let dom = this.__dom;
+      if(dom.__vd) {
         // console.log(this.dom.__vd);
         // console.log(nvd);
-        domDiff(this.dom, this.dom.__vd, nvd);
+        domDiff(dom, dom.__vd, nvd);
       }
       else {
-        this.dom.innerHTML = util.joinVirtualDom(nvd);
+        dom.innerHTML = util.joinVirtualDom(nvd);
       }
-      this.dom.__vd = nvd;
-      this.dom.__defs = defs;
+      dom.__vd = nvd;
+      dom.__defs = defs;
     }
     else if(renderMode === mode.WEBGL) {
-      this.__clear(ctx, renderMode);
-      struct.renderWebgl(renderMode, ctx, this, isFirst, rlv);
+      this.__clearWebgl(ctx);
+      renderWebgl(renderMode, ctx, this, isFirst, rlv);
     }
     this.emit(Event.REFRESH, rlv);
     this.__rlv = NONE;
@@ -584,21 +600,14 @@ class Root extends Dom {
   /**
    * 添加更新，分析repaint/reflow和上下影响，异步刷新
    */
-  __addUpdate(node, o) {
+  __addUpdate(node, keys, focus, addDom, removeDom, aniParams, cb) {
     if(node instanceof Component) {
       node = node.shadowRoot;
     }
     let {
-      keys,
-      focus,
-      addDom,
-      removeDom,
-      aniParams, // 动画特殊优化，大部分都是<REPAINT的情况，很多计算if可以跳过
-    } = o;
-    let {
-      computedStyle,
-      currentStyle,
-      cacheStyle,
+      __computedStyle: computedStyle,
+      __currentStyle: currentStyle,
+      __cacheStyle: cacheStyle,
       __cacheProps,
       __mask,
       __domParent,
@@ -664,8 +673,8 @@ class Root extends Dom {
     // 没有变化，add/remove强制focus
     // 本身节点为none，变更无效，此时没有display变化，add/remove在操作时已经判断不会进入
     if(lv === NONE || computedStyle[DISPLAY] === 'none' && !hasDisplay) {
-      if(isFunction(o.cb)) {
-        o.cb();
+      if(cb && isFunction(cb)) {
+        cb();
       }
       return;
     }
@@ -773,42 +782,39 @@ class Root extends Dom {
         if(node.__cacheMask) {
           hasRelease ||= node.__cacheMask.release();
         }
-        if(node.__cacheOverflow) {
-          hasRelease ||= node.__cacheOverflow.release();
-        }
       }
       // 特殊的filter清除cache
       if((need || (lv & FT)) && node.__cacheFilter) {
         hasRelease ||= node.__cacheFilter.release();
       }
       // 向上清除cache汇总缓存信息，过程中可能会出现重复，根据refreshLevel判断，reflow已经自己清过了
-      let p = __domParent;
-      while(p) {
-        if(p.__refreshLevel & (CACHE | REPAINT | REFLOW)) {
-          break;
+      if(__domParent !== this.__lastUpdateP) {
+        let p = __domParent;
+        this.__lastUpdateP = p; // 同层级避免重复进入查找，每次draw()重设
+        while(p) {
+          if(p.__refreshLevel & (CACHE | REPAINT | REFLOW)) {
+            break;
+          }
+          p.__refreshLevel |= CACHE;
+          if(p.__cacheTotal) {
+            hasRelease ||= p.__cacheTotal.release();
+          }
+          if(p.__cacheFilter) {
+            hasRelease ||= p.__cacheFilter.release();
+          }
+          if(p.__cacheMask) {
+            hasRelease ||= p.__cacheMask.release();
+          }
+          p = p.__domParent;
         }
-        p.__refreshLevel |= CACHE;
-        if(p.__cacheTotal) {
-          hasRelease ||= p.__cacheTotal.release();
-        }
-        if(p.__cacheFilter) {
-          hasRelease ||= p.__cacheFilter.release();
-        }
-        if(p.__cacheMask) {
-          hasRelease ||= p.__cacheMask.release();
-        }
-        if(p.__cacheOverflow) {
-          hasRelease ||= p.__cacheOverflow.release();
-        }
-        p = p.__domParent;
-      }
-      // 清除parent的zIndexChildren缓存，强制所有孩子重新渲染
-      if(hasZ && __domParent) {
-        __domParent.__zIndexChildren = null;
-        __domParent.__updateStruct();
-        if(this.renderMode === mode.SVG) {
-          hasRelease ||= node.__cacheTotal.release();
-          reflow.clearSvgCache(__domParent);
+        // 清除parent的zIndexChildren缓存，强制所有孩子重新渲染
+        if(hasZ && __domParent) {
+          __domParent.__zIndexChildren = null;
+          __domParent.__updateStruct();
+          if(this.__renderMode === mode.SVG) {
+            hasRelease ||= node.__cacheTotal.release();
+            reflow.clearSvgCache(__domParent);
+          }
         }
       }
     }
@@ -841,10 +847,10 @@ class Root extends Dom {
     else {
       this.__rlv |= lv;
     }
-    if(o.cb && !isFunction(o.cb)) {
-      o.cb = null;
+    if(cb && !isFunction(cb)) {
+      cb = null;
     }
-    this.__frameDraw(o.cb);
+    this.__frameDraw(cb);
   }
 
   // 异步进行root刷新操作，多次调用缓存结果，刷新成功后回调
@@ -855,28 +861,30 @@ class Root extends Dom {
       frame.__rootTask.push(() => {
         // 需要先获得累积的刷新回调再刷新，防止refresh触发事件中再次调用刷新
         let list = this.__task.splice(0);
-        this.draw();
+        this.draw(false);
         list.forEach(item => {
           item && item();
         });
       });
+      this.__task.push(cb);
     }
-    this.__task.push(cb);
+    else if(cb) {
+      this.__task.push(cb);
+    }
   }
 
-  __clear(ctx, renderMode) {
-    if(renderMode === mode.CANVAS) {
-      // 可能会调整宽高，所以每次清除用最大值
-      this.__mw = Math.max(this.__mw, this.width);
-      this.__mh = Math.max(this.__mh, this.height);
-      // 清除前得恢复默认matrix，防止每次布局改变了属性
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.clearRect(0, 0, this.__mw, this.__mh);
-    }
-    else if(renderMode === mode.WEBGL) {
-      ctx.clearColor(0, 0, 0, 0);
-      ctx.clear(ctx.COLOR_BUFFER_BIT);
-    }
+  __clearCanvas(ctx) {
+    // 可能会调整宽高，所以每次清除用最大值
+    this.__mw = Math.max(this.__mw, this.width);
+    this.__mh = Math.max(this.__mh, this.height);
+    // 清除前得恢复默认matrix，防止每次布局改变了属性
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, this.__mw, this.__mh);
+  }
+
+  __clearWebgl(ctx) {
+    ctx.clearColor(0, 0, 0, 0);
+    ctx.clear(ctx.COLOR_BUFFER_BIT);
   }
 
   get dom() {
@@ -897,10 +905,6 @@ class Root extends Dom {
 
   get defs() {
     return this.__defs;
-  }
-
-  get taskUp() {
-    return this.__taskUp;
   }
 
   get ref() {

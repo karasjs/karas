@@ -6,16 +6,16 @@ const SPF = 1000 / 60;
 const CANVAS = {};
 const SUPPORT_OFFSCREEN_CANVAS = typeof OffscreenCanvas === 'function' && OffscreenCanvas.prototype.getContext;
 
-function cache(key, width, height, hash, message) {
+function offscreenCanvas(key, width, height, message) {
   let o;
   if(!key) {
     o = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
   }
-  else if(!hash[key]) {
-    o = hash[key] = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
+  else if(!CANVAS[key]) {
+    o = CANVAS[key] = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
   }
   else {
-    o = hash[key];
+    o = CANVAS[key];
   }
   o.width = width;
   o.height = height;
@@ -37,13 +37,12 @@ function cache(key, width, height, hash, message) {
     enabled: true,
     available: true,
     release() {
+      ctx.globalAlpha = 1;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, width, height);
       this.available = false;
     },
   };
-}
-
-function offscreenCanvas(key, width, height, message) {
-  return cache(key, width, height, CANVAS, message);
 }
 
 const IMG = {};
@@ -303,6 +302,7 @@ let inject = {
     }
     return SUPPORT_FONT[ff] = false;
   },
+  FONT,
   loadFont(fontFamily, url, cb) {
     if(util.isFunction(url)) {
       cb = url;
@@ -350,24 +350,44 @@ let inject = {
     else {
       cache.state = LOADING;
       cb && cache.task.push(cb);
-      if(!(url instanceof ArrayBuffer) && !/url\(/.test(url)) {
-        url = `url(${url})`;
+      if(url instanceof ArrayBuffer) {
+        success(url);
       }
-      let f = new FontFace(fontFamily, url);
-      f.load().then(function() {
-        document.fonts.add(f);
-        cache.state = LOADED;
-        cache.success = true;
-        cache.url = url;
-        let list = cache.task.splice(0);
-        list.forEach(cb => cb(cache));
-      }).catch(function() {
+      else {
+        let request = new XMLHttpRequest();
+        request.open('get', url, true);
+        request.responseType = 'arraybuffer';
+        request.onload = function() {
+          if(request.response) {
+            success(request.response);
+          }
+          else {
+            error();
+          }
+        };
+        request.onerror = error;
+        request.send();
+      }
+      function success(ab) {
+        let f = new FontFace(fontFamily, ab);
+        f.load().then(function() {
+          if(typeof document !== 'undefined') {
+            document.fonts.add(f);
+          }
+          cache.state = LOADED;
+          cache.success = true;
+          cache.url = url;
+          let list = cache.task.splice(0);
+          list.forEach(cb => cb(cache, ab));
+        }).catch(error);
+      }
+      function error() {
         cache.state = LOADED;
         cache.success = false;
         cache.url = url;
         let list = cache.task.splice(0);
         list.forEach(cb => cb(cache));
-      });
+      }
     }
   },
   loadComponent(url, cb) {

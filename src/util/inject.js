@@ -197,7 +197,7 @@ let inject = {
     }
     let res;
     if(typeof requestAnimationFrame !== 'undefined') {
-      inject.requestAnimationFrame = requestAnimationFrame;
+      inject.requestAnimationFrame = requestAnimationFrame.bind(null);
       res = requestAnimationFrame(cb);
     }
     else {
@@ -211,7 +211,7 @@ let inject = {
   cancelAnimationFrame(id) {
     let res;
     if(typeof cancelAnimationFrame !== 'undefined') {
-      inject.cancelAnimationFrame = cancelAnimationFrame;
+      inject.cancelAnimationFrame = cancelAnimationFrame.bind(null);
       res = cancelAnimationFrame(id);
     }
     else {

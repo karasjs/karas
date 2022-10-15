@@ -1732,7 +1732,7 @@
       var res;
 
       if (typeof requestAnimationFrame !== 'undefined') {
-        inject.requestAnimationFrame = requestAnimationFrame;
+        inject.requestAnimationFrame = requestAnimationFrame.bind(null);
         res = requestAnimationFrame(cb);
       } else {
         res = setTimeout(cb, SPF);
@@ -1758,7 +1758,7 @@
       var res;
 
       if (typeof cancelAnimationFrame !== 'undefined') {
-        inject.cancelAnimationFrame = cancelAnimationFrame;
+        inject.cancelAnimationFrame = cancelAnimationFrame.bind(null);
         res = cancelAnimationFrame(id);
       } else {
         res = clearTimeout(id);

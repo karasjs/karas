@@ -1732,7 +1732,7 @@
       var res;
 
       if (typeof requestAnimationFrame !== 'undefined') {
-        inject.requestAnimationFrame = requestAnimationFrame.bind(window);
+        inject.requestAnimationFrame = requestAnimationFrame;
         res = requestAnimationFrame(cb);
       } else {
         res = setTimeout(cb, SPF);
@@ -1758,7 +1758,7 @@
       var res;
 
       if (typeof cancelAnimationFrame !== 'undefined') {
-        inject.cancelAnimationFrame = cancelAnimationFrame.bind(window);
+        inject.cancelAnimationFrame = cancelAnimationFrame;
         res = cancelAnimationFrame(id);
       } else {
         res = clearTimeout(id);
@@ -41843,7 +41843,7 @@
     CanvasCache: CanvasCache
   };
 
-  var version = "0.81.0";
+  var version = "0.81.1";
 
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);

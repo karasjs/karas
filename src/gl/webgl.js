@@ -18,6 +18,7 @@ function initShaders(gl, vshader, fshader) {
   // 要开启透明度，用以绘制透明的图形
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+  gl.enable(gl.DEPTH_TEST);
   return program;
 }
 
@@ -94,7 +95,7 @@ export function loadShader(gl, type, source) {
   return shader;
 }
 
-function convertCoords2Gl(x, y, z, w, cx, cy) {
+function convertCoords2Gl(x, y, z, w, cx, cy, tz) {
   if(w && w !== 1) {
     x /= w;
     y /= w;
@@ -111,6 +112,10 @@ function convertCoords2Gl(x, y, z, w, cx, cy) {
   }
   else {
     y = (cy - y) / cy;
+  }
+  z /= -tz;
+  if(w === 1) {
+    return { x, y, z, w };
   }
   return { x: x * w, y: y * w, z: z * w, w };
 }
@@ -186,9 +191,9 @@ function drawTextureCache(gl, list, cx, cy, dx, dy) {
     let bx = bbox[0], by = bbox[1];
     let xa = bx + dx, ya = by + height + dy;
     let xb = bx + width + dx, yb = by + dy;
-    let { x: x1, y: y1, w: w1 } = calPoint({ x: xa, y: ya, z: 0, w: 1 }, matrix);
-    let { x: x3, y: y3, w: w3 } = calPoint({ x: xb, y: yb, z: 0, w: 1 }, matrix);
-    let x2, y2, w2, x4, y4, w4;
+    let { x: x1, y: y1, z: z1, w: w1 } = calPoint({ x: xa, y: ya, z: 0, w: 1 }, matrix);
+    let { x: x3, y: y3, z: z3, w: w3 } = calPoint({ x: xb, y: yb, z: 0, w: 1 }, matrix);
+    let x2, y2, z2, w2, x4, y4, z4, w4;
     // 无旋转的时候可以少算2个点
     if(w1 === 1 && w3 === 1
       && (!matrix || !matrix.length || !matrix[1] && !matrix[4])) {
@@ -200,37 +205,49 @@ function drawTextureCache(gl, list, cx, cy, dx, dy) {
     }
     else {
       let t = calPoint({ x: xb, y: ya, z: 0, w: 1 }, matrix);
-      x2 = t.x; y2 = t.y; w2 = t.w;
+      x2 = t.x; y2 = t.y; z2 = t.z; w2 = t.w;
       t = calPoint({ x: xa, y: yb, z: 0, w: 1 }, matrix);
-      x4 = t.x; y4 = t.y; w4 = t.w;
+      x4 = t.x; y4 = t.y; z4 = t.z; w4 = t.w;
     }
-    let t = convertCoords2Gl(x1, y1, 0, w1, cx, cy);
-    x1 = t.x; y1 = t.y;
-    t = convertCoords2Gl(x2, y2, 0, w2, cx, cy);
-    x2 = t.x; y2 = t.y;
-    t = convertCoords2Gl(x3, y3, 0, w3, cx, cy);
-    x3 = t.x; y3 = t.y;
-    t = convertCoords2Gl(x4, y4, 0, w4, cx, cy);
-    x4 = t.x; y4 = t.y;
-    // vtPoint.push(x1, y1, 0, w1, x4, y4, 0, w4, x2, y2, 0, w2, x4, y4, 0, w4, x2, y2, 0, w2, x3, y3, 0, w3);
+    // console.warn(x1,y1,z1,w1,',',x2,y2,z2,w2,',',x3,y3,z3,w3,',',x4,y4,z4,w4);
+    // z范围取所有、对角线最大值
+    let z = Math.max(Math.abs(z1), Math.abs(z2));
+    z = Math.max(z, Math.abs(z3));
+    z = Math.max(z, Math.abs(z4));
+    z = Math.max(z, Math.sqrt(cx * cx + cy * cy));
+    let t = convertCoords2Gl(x1, y1, z1, w1, cx, cy, z);
+    x1 = t.x; y1 = t.y; z1 = t.z;
+    t = convertCoords2Gl(x2, y2, z2, w2, cx, cy, z);
+    x2 = t.x; y2 = t.y; z2 = t.z;
+    t = convertCoords2Gl(x3, y3, z3, w3, cx, cy, z);
+    x3 = t.x; y3 = t.y; z3 = t.z;
+    t = convertCoords2Gl(x4, y4, z4, w4, cx, cy, z);
+    x4 = t.x; y4 = t.y; z4 = t.z;
+    // console.log(x1,y1,z1,w1,',',x2,y2,z2,w2,',',x3,y3,z3,w3,',',x4,y4,z4,w4);
     let j = i * 24;
     vtPoint[j] = x1;
     vtPoint[j + 1] = y1;
+    vtPoint[j + 2] = z1;
     vtPoint[j + 3] = w1;
     vtPoint[j + 4] = x4;
     vtPoint[j + 5] = y4;
+    vtPoint[j + 6] = z4;
     vtPoint[j + 7] = w4;
     vtPoint[j + 8] = x2;
     vtPoint[j + 9] = y2;
+    vtPoint[j + 10] = z2;
     vtPoint[j + 11] = w2;
     vtPoint[j + 12] = x4;
     vtPoint[j + 13] = y4;
+    vtPoint[j + 14] = z4;
     vtPoint[j + 15] = w4;
     vtPoint[j + 16] = x2;
     vtPoint[j + 17] = y2;
+    vtPoint[j + 18] = z2;
     vtPoint[j + 19] = w2;
     vtPoint[j + 20] = x3;
     vtPoint[j + 21] = y3;
+    vtPoint[j + 22] = z3;
     vtPoint[j + 23] = w3;
     // vtTex.push(tx1, ty1, tx1, ty2, tx2, ty1, tx1, ty2, tx2, ty1, tx2, ty2);
     j = i * 12;

@@ -884,7 +884,7 @@ class Root extends Dom {
 
   __clearWebgl(ctx) {
     ctx.clearColor(0, 0, 0, 0);
-    ctx.clear(ctx.COLOR_BUFFER_BIT);
+    ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
   }
 
   get dom() {

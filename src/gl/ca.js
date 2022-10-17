@@ -3,6 +3,6 @@ export default {
   antialias: true,
   premultipliedAlpha: true,
   preserveDrawingBuffer: true,
-  // depth: true,
+  depth: true,
   // stencil: true,
 };

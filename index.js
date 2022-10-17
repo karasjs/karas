@@ -29242,8 +29242,8 @@
 
 
     gl.enable(gl.BLEND);
-    gl.enable(gl.DEPTH_TEST);
-    gl.enable(gl.POLYGON_OFFSET_FILL);
+    gl.enable(gl.DEPTH_TEST); // gl.enable(gl.POLYGON_OFFSET_FILL);
+
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     return program;
   }
@@ -29342,8 +29342,9 @@
       y = 0;
     } else {
       y = (cy - y) / cy;
-    } // z /= -tz;
+    }
 
+    z /= -tz;
 
     if (w === 1) {
       return {
@@ -29521,26 +29522,26 @@
       z = Math.max(z, Math.abs(z3));
       z = Math.max(z, Math.abs(z4)); // 0时都在平面关闭深度缓冲
 
-      if (z === 0) {
+      if (!z) {
         gl.disable(gl.DEPTH_TEST);
       } else {
         gl.enable(gl.DEPTH_TEST);
       }
 
       z = Math.max(z, Math.sqrt(cx * cx + cy * cy));
-      var t = convertCoords2Gl(x1, y1, z1, w1, cx, cy);
+      var t = convertCoords2Gl(x1, y1, z1, w1, cx, cy, z);
       x1 = t.x;
       y1 = t.y;
       z1 = t.z;
-      t = convertCoords2Gl(x2, y2, z2, w2, cx, cy);
+      t = convertCoords2Gl(x2, y2, z2, w2, cx, cy, z);
       x2 = t.x;
       y2 = t.y;
       z2 = t.z;
-      t = convertCoords2Gl(x3, y3, z3, w3, cx, cy);
+      t = convertCoords2Gl(x3, y3, z3, w3, cx, cy, z);
       x3 = t.x;
       y3 = t.y;
       z3 = t.z;
-      t = convertCoords2Gl(x4, y4, z4, w4, cx, cy);
+      t = convertCoords2Gl(x4, y4, z4, w4, cx, cy, z);
       x4 = t.x;
       y4 = t.y;
       z4 = t.z; // console.log(x1,y1,z1,w1,',',x2,y2,z2,w2,',',x3,y3,z3,w3,',',x4,y4,z4,w4);

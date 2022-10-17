@@ -18,7 +18,7 @@ function initShaders(gl, vshader, fshader) {
   // 要开启透明度，用以绘制透明的图形
   gl.enable(gl.BLEND);
   gl.enable(gl.DEPTH_TEST);
-  gl.enable(gl.POLYGON_OFFSET_FILL);
+  // gl.enable(gl.POLYGON_OFFSET_FILL);
   gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
   return program;
 }
@@ -114,7 +114,7 @@ function convertCoords2Gl(x, y, z, w, cx, cy, tz) {
   else {
     y = (cy - y) / cy;
   }
-  // z /= -tz;
+  z /= -tz;
   if(w === 1) {
     return { x, y, z, w };
   }
@@ -218,7 +218,7 @@ function drawTextureCache(gl, list, cx, cy, dx, dy) {
     z = Math.max(z, Math.abs(z3));
     z = Math.max(z, Math.abs(z4));
     // 0时都在平面关闭深度缓冲
-    if(z === 0) {
+    if(!z) {
       gl.disable(gl.DEPTH_TEST);
     }
     else {

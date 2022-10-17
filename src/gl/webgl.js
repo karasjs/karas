@@ -17,8 +17,9 @@ function initShaders(gl, vshader, fshader) {
 
   // 要开启透明度，用以绘制透明的图形
   gl.enable(gl.BLEND);
-  gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
   gl.enable(gl.DEPTH_TEST);
+  gl.enable(gl.POLYGON_OFFSET_FILL);
+  gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
   return program;
 }
 
@@ -113,7 +114,7 @@ function convertCoords2Gl(x, y, z, w, cx, cy, tz) {
   else {
     y = (cy - y) / cy;
   }
-  z /= -tz;
+  // z /= -tz;
   if(w === 1) {
     return { x, y, z, w };
   }
@@ -199,8 +200,10 @@ function drawTextureCache(gl, list, cx, cy, dx, dy) {
       && (!matrix || !matrix.length || !matrix[1] && !matrix[4])) {
       x2 = x3;
       y2 = y1;
+      z2 = z3;
       x4 = x1;
       y4 = y3;
+      z2 = z4 = z1;
       w2 = w4 = 1;
     }
     else {
@@ -214,6 +217,13 @@ function drawTextureCache(gl, list, cx, cy, dx, dy) {
     let z = Math.max(Math.abs(z1), Math.abs(z2));
     z = Math.max(z, Math.abs(z3));
     z = Math.max(z, Math.abs(z4));
+    // 0时都在平面关闭深度缓冲
+    if(z === 0) {
+      gl.disable(gl.DEPTH_TEST);
+    }
+    else {
+      gl.enable(gl.DEPTH_TEST);
+    }
     z = Math.max(z, Math.sqrt(cx * cx + cy * cy));
     let t = convertCoords2Gl(x1, y1, z1, w1, cx, cy, z);
     x1 = t.x; y1 = t.y; z1 = t.z;
@@ -249,7 +259,6 @@ function drawTextureCache(gl, list, cx, cy, dx, dy) {
     vtPoint[j + 21] = y3;
     vtPoint[j + 22] = z3;
     vtPoint[j + 23] = w3;
-    // vtTex.push(tx1, ty1, tx1, ty2, tx2, ty1, tx1, ty2, tx2, ty1, tx2, ty2);
     j = i * 12;
     vtTex[j] = tx1;
     vtTex[j + 1] = ty1;
@@ -263,7 +272,6 @@ function drawTextureCache(gl, list, cx, cy, dx, dy) {
     vtTex[j + 9] = ty1;
     vtTex[j + 10] = tx2;
     vtTex[j + 11] = ty2;
-    // vtOpacity.push(opacity, opacity, opacity, opacity, opacity, opacity);
     j = i * 6;
     vtOpacity[j] = opacity;
     vtOpacity[j + 1] = opacity;

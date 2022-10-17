@@ -29242,8 +29242,9 @@
 
 
     gl.enable(gl.BLEND);
-    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     gl.enable(gl.DEPTH_TEST);
+    gl.enable(gl.POLYGON_OFFSET_FILL);
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     return program;
   }
   /**
@@ -29341,9 +29342,8 @@
       y = 0;
     } else {
       y = (cy - y) / cy;
-    }
+    } // z /= -tz;
 
-    z /= -tz;
 
     if (w === 1) {
       return {
@@ -29486,8 +29486,10 @@
       if (w1 === 1 && w3 === 1 && (!matrix || !matrix.length || !matrix[1] && !matrix[4])) {
         x2 = x3;
         y2 = y1;
+        z2 = z3;
         x4 = x1;
         y4 = y3;
+        z2 = z4 = z1;
         w2 = w4 = 1;
       } else {
         var _t = calPoint({
@@ -29517,21 +29519,28 @@
 
       var z = Math.max(Math.abs(z1), Math.abs(z2));
       z = Math.max(z, Math.abs(z3));
-      z = Math.max(z, Math.abs(z4));
+      z = Math.max(z, Math.abs(z4)); // 0时都在平面关闭深度缓冲
+
+      if (z === 0) {
+        gl.disable(gl.DEPTH_TEST);
+      } else {
+        gl.enable(gl.DEPTH_TEST);
+      }
+
       z = Math.max(z, Math.sqrt(cx * cx + cy * cy));
-      var t = convertCoords2Gl(x1, y1, z1, w1, cx, cy, z);
+      var t = convertCoords2Gl(x1, y1, z1, w1, cx, cy);
       x1 = t.x;
       y1 = t.y;
       z1 = t.z;
-      t = convertCoords2Gl(x2, y2, z2, w2, cx, cy, z);
+      t = convertCoords2Gl(x2, y2, z2, w2, cx, cy);
       x2 = t.x;
       y2 = t.y;
       z2 = t.z;
-      t = convertCoords2Gl(x3, y3, z3, w3, cx, cy, z);
+      t = convertCoords2Gl(x3, y3, z3, w3, cx, cy);
       x3 = t.x;
       y3 = t.y;
       z3 = t.z;
-      t = convertCoords2Gl(x4, y4, z4, w4, cx, cy, z);
+      t = convertCoords2Gl(x4, y4, z4, w4, cx, cy);
       x4 = t.x;
       y4 = t.y;
       z4 = t.z; // console.log(x1,y1,z1,w1,',',x2,y2,z2,w2,',',x3,y3,z3,w3,',',x4,y4,z4,w4);
@@ -29560,8 +29569,7 @@
       vtPoint[j + 20] = x3;
       vtPoint[j + 21] = y3;
       vtPoint[j + 22] = z3;
-      vtPoint[j + 23] = w3; // vtTex.push(tx1, ty1, tx1, ty2, tx2, ty1, tx1, ty2, tx2, ty1, tx2, ty2);
-
+      vtPoint[j + 23] = w3;
       j = i * 12;
       vtTex[j] = tx1;
       vtTex[j + 1] = ty1;
@@ -29574,8 +29582,7 @@
       vtTex[j + 8] = tx2;
       vtTex[j + 9] = ty1;
       vtTex[j + 10] = tx2;
-      vtTex[j + 11] = ty2; // vtOpacity.push(opacity, opacity, opacity, opacity, opacity, opacity);
-
+      vtTex[j + 11] = ty2;
       j = i * 6;
       vtOpacity[j] = opacity;
       vtOpacity[j + 1] = opacity;

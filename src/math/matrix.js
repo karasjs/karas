@@ -376,6 +376,31 @@ function point2d(point) {
   return point;
 }
 
+function calRectPoint(xa, ya, xb, yb, matrix) {
+  let { x: x1, y: y1, z: z1, w: w1 } = calPoint({ x: xa, y: ya, z: 0, w: 1 }, matrix);
+  let { x: x3, y: y3, z: z3, w: w3 } = calPoint({ x: xb, y: yb, z: 0, w: 1 }, matrix);
+  let x2, y2, z2, w2, x4, y4, z4, w4;
+  // 无旋转的时候可以少算2个点
+  if(w1 === 1 && w3 === 1
+    && (!matrix || !matrix.length
+      || !matrix[1] && !matrix[2] && !matrix[4] && !matrix[6] && !matrix[7] && !matrix[8])) {
+    x2 = x3;
+    y2 = y1;
+    z2 = z3;
+    x4 = x1;
+    y4 = y3;
+    z2 = z4 = z1;
+    w2 = w4 = 1;
+  }
+  else {
+    let t = calPoint({ x: xb, y: ya, z: 0, w: 1 }, matrix);
+    x2 = t.x; y2 = t.y; z2 = t.z; w2 = t.w;
+    t = calPoint({ x: xa, y: yb, z: 0, w: 1 }, matrix);
+    x4 = t.x; y4 = t.y; z4 = t.z; w4 = t.w;
+  }
+  return { x1, y1, z1, w1, x2, y2, z2, w2, x3, y3, z3, w3, x4, y4, z4, w4 };
+}
+
 export default {
   identity,
   multiply,
@@ -394,6 +419,7 @@ export default {
   multiplyScaleZ,
   multiplyPerspective,
   calPoint,
+  calRectPoint,
   point2d,
   inverse,
   isE,

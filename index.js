@@ -707,7 +707,7 @@
     return m;
   }
 
-  function calPoint$2(point, m) {
+  function calPoint$1(point, m) {
     if (m && !isE$5(m)) {
       var x = point.x,
           y = point.y,
@@ -875,6 +875,82 @@
     return point;
   }
 
+  function calRectPoint$1(xa, ya, xb, yb, matrix) {
+    var _calPoint = calPoint$1({
+      x: xa,
+      y: ya,
+      z: 0,
+      w: 1
+    }, matrix),
+        x1 = _calPoint.x,
+        y1 = _calPoint.y,
+        z1 = _calPoint.z,
+        w1 = _calPoint.w;
+
+    var _calPoint2 = calPoint$1({
+      x: xb,
+      y: yb,
+      z: 0,
+      w: 1
+    }, matrix),
+        x3 = _calPoint2.x,
+        y3 = _calPoint2.y,
+        z3 = _calPoint2.z,
+        w3 = _calPoint2.w;
+
+    var x2, y2, z2, w2, x4, y4, z4, w4; // 无旋转的时候可以少算2个点
+
+    if (w1 === 1 && w3 === 1 && (!matrix || !matrix.length || !matrix[1] && !matrix[2] && !matrix[4] && !matrix[6] && !matrix[7] && !matrix[8])) {
+      x2 = x3;
+      y2 = y1;
+      z2 = z3;
+      x4 = x1;
+      y4 = y3;
+      z2 = z4 = z1;
+      w2 = w4 = 1;
+    } else {
+      var t = calPoint$1({
+        x: xb,
+        y: ya,
+        z: 0,
+        w: 1
+      }, matrix);
+      x2 = t.x;
+      y2 = t.y;
+      z2 = t.z;
+      w2 = t.w;
+      t = calPoint$1({
+        x: xa,
+        y: yb,
+        z: 0,
+        w: 1
+      }, matrix);
+      x4 = t.x;
+      y4 = t.y;
+      z4 = t.z;
+      w4 = t.w;
+    }
+
+    return {
+      x1: x1,
+      y1: y1,
+      z1: z1,
+      w1: w1,
+      x2: x2,
+      y2: y2,
+      z2: z2,
+      w2: w2,
+      x3: x3,
+      y3: y3,
+      z3: z3,
+      w3: w3,
+      x4: x4,
+      y4: y4,
+      z4: z4,
+      w4: w4
+    };
+  }
+
   var matrix = {
     identity: identity$1,
     multiply: multiply$4,
@@ -892,7 +968,8 @@
     multiplyScaleY: multiplyScaleY$2,
     multiplyScaleZ: multiplyScaleZ$2,
     multiplyPerspective: multiplyPerspective$1,
-    calPoint: calPoint$2,
+    calPoint: calPoint$1,
+    calRectPoint: calRectPoint$1,
     point2d: point2d$1,
     inverse: inverse$1,
     isE: isE$5,
@@ -3179,7 +3256,7 @@
 
   var H$1 = 4 * (Math.sqrt(2) - 1) / 3;
   var crossProduct = vector.crossProduct;
-  var calPoint$1 = matrix.calPoint,
+  var calPoint = matrix.calPoint,
       isE$4 = matrix.isE;
   var _enums$STYLE_KEY$k = enums.STYLE_KEY,
       WIDTH$a = _enums$STYLE_KEY$k.WIDTH,
@@ -3257,28 +3334,28 @@
   function pointInQuadrilateral(x, y, x1, y1, x2, y2, x4, y4, x3, y3, matrix) {
     if (matrix && !isE$4(matrix)) {
       var w1, w2, w3, w4;
-      var t = calPoint$1({
+      var t = calPoint({
         x: x1,
         y: y1
       }, matrix);
       x1 = t.x;
       y1 = t.y;
       w1 = t.w;
-      t = calPoint$1({
+      t = calPoint({
         x: x2,
         y: y2
       }, matrix);
       x2 = t.x;
       y2 = t.y;
       w2 = t.w;
-      t = calPoint$1({
+      t = calPoint({
         x: x3,
         y: y3
       }, matrix);
       x3 = t.x;
       y3 = t.y;
       w3 = t.w;
-      t = calPoint$1({
+      t = calPoint({
         x: x4,
         y: y4
       }, matrix);
@@ -3651,7 +3728,7 @@
         ox = _computedStyle$TRANSF2[0],
         oy = _computedStyle$TRANSF2[1];
 
-    var t = calPoint$1({
+    var t = calPoint({
       x: px * width - ox,
       y: py * height - oy
     }, matrix);
@@ -19660,7 +19737,8 @@
                       var deg2 = Math.atan(borderTopWidth / borderRightWidth);
                       var list = border.calPoints(borderTopWidth, computedStyle[BORDER_TOP_STYLE], deg1, deg2, bx1, bx1 + borderLeftWidth, bx2, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 0, isFirst ? btlr : [0, 0], [0, 0]);
                       border.renderBorder(_this8, renderMode, ctx, list, cacheStyle[BORDER_TOP_COLOR], dx, dy);
-                    }
+                    } // right在最后这里不渲染
+
 
                     if (borderBottomWidth > 0 && borderBottomColor[3] > 0) {
                       var _deg7 = Math.atan(borderBottomWidth / borderLeftWidth);
@@ -29224,7 +29302,7 @@
     return Page;
   }();
 
-  var calPoint = matrix.calPoint;
+  var calRectPoint = matrix.calRectPoint;
   /**
    * 初始化 shader
    * @param gl GL context
@@ -29241,8 +29319,8 @@
     } // 要开启透明度，用以绘制透明的图形
 
 
-    gl.enable(gl.BLEND);
-    gl.enable(gl.DEPTH_TEST); // gl.enable(gl.POLYGON_OFFSET_FILL);
+    gl.enable(gl.BLEND); // gl.enable(gl.DEPTH_TEST);
+    // gl.enable(gl.POLYGON_OFFSET_FILL);
 
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     return program;
@@ -29453,81 +29531,29 @@
       var xb = bx + width + dx,
           yb = by + dy;
 
-      var _calPoint = calPoint({
-        x: xa,
-        y: ya,
-        z: 0,
-        w: 1
-      }, matrix),
-          x1 = _calPoint.x,
-          y1 = _calPoint.y,
-          z1 = _calPoint.z,
-          w1 = _calPoint.w;
-
-      var _calPoint2 = calPoint({
-        x: xb,
-        y: yb,
-        z: 0,
-        w: 1
-      }, matrix),
-          x3 = _calPoint2.x,
-          y3 = _calPoint2.y,
-          z3 = _calPoint2.z,
-          w3 = _calPoint2.w;
-
-      var x2 = void 0,
-          y2 = void 0,
-          z2 = void 0,
-          w2 = void 0,
-          x4 = void 0,
-          y4 = void 0,
-          z4 = void 0,
-          w4 = void 0; // 无旋转的时候可以少算2个点
-
-      if (w1 === 1 && w3 === 1 && (!matrix || !matrix.length || !matrix[1] && !matrix[4])) {
-        x2 = x3;
-        y2 = y1;
-        z2 = z3;
-        x4 = x1;
-        y4 = y3;
-        z2 = z4 = z1;
-        w2 = w4 = 1;
-      } else {
-        var _t = calPoint({
-          x: xb,
-          y: ya,
-          z: 0,
-          w: 1
-        }, matrix);
-
-        x2 = _t.x;
-        y2 = _t.y;
-        z2 = _t.z;
-        w2 = _t.w;
-        _t = calPoint({
-          x: xa,
-          y: yb,
-          z: 0,
-          w: 1
-        }, matrix);
-        x4 = _t.x;
-        y4 = _t.y;
-        z4 = _t.z;
-        w4 = _t.w;
-      } // console.warn(x1,y1,z1,w1,',',x2,y2,z2,w2,',',x3,y3,z3,w3,',',x4,y4,z4,w4);
+      var _calRectPoint = calRectPoint(xa, ya, xb, yb, matrix),
+          x1 = _calRectPoint.x1,
+          y1 = _calRectPoint.y1,
+          z1 = _calRectPoint.z1,
+          w1 = _calRectPoint.w1,
+          x2 = _calRectPoint.x2,
+          y2 = _calRectPoint.y2,
+          z2 = _calRectPoint.z2,
+          w2 = _calRectPoint.w2,
+          x3 = _calRectPoint.x3,
+          y3 = _calRectPoint.y3,
+          z3 = _calRectPoint.z3,
+          w3 = _calRectPoint.w3,
+          x4 = _calRectPoint.x4,
+          y4 = _calRectPoint.y4,
+          z4 = _calRectPoint.z4,
+          w4 = _calRectPoint.w4; // console.warn(x1,y1,z1,w1,',',x2,y2,z2,w2,',',x3,y3,z3,w3,',',x4,y4,z4,w4);
       // z范围取所有、对角线最大值
 
 
       var z = Math.max(Math.abs(z1), Math.abs(z2));
       z = Math.max(z, Math.abs(z3));
-      z = Math.max(z, Math.abs(z4)); // 0时都在平面关闭深度缓冲
-
-      if (!z) {
-        gl.disable(gl.DEPTH_TEST);
-      } else {
-        gl.enable(gl.DEPTH_TEST);
-      }
-
+      z = Math.max(z, Math.abs(z4));
       z = Math.max(z, Math.sqrt(cx * cx + cy * cy));
       var t = convertCoords2Gl(x1, y1, z1, w1, cx, cy, z);
       x1 = t.x;
@@ -30877,6 +30903,9 @@
   var assignMatrix = util.assignMatrix,
       transformBbox = util.transformBbox;
   var isPerspectiveMatrix = transform$1.isPerspectiveMatrix;
+  var DOM_RENDER = Dom.prototype.render;
+  var IMG_RENDER = Img.prototype.render;
+  var GEOM_RENDER = Geom.prototype.render;
 
   function getCache(list) {
     for (var i = 0, len = list.length; i < len; i++) {
@@ -31945,10 +31974,14 @@
             if (hasMask) {
               i += countMaskNum(__structs, i + 1, hasMask);
             }
-          } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
+          }
+        } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
 
 
-          if (target === _cache2) {
+        if (!target || target === _cache2) {
+          var render = _node4.render;
+
+          if (render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
             _node4.render(renderMode, gl, dx, dy);
           }
         }
@@ -33255,7 +33288,7 @@
      * 最后先序遍历一次应用__cacheTotal即可，没有的用__cache，以及剩下的超尺寸的和Text
      * 由于mixBlendMode的存在，需先申请个fbo纹理，所有绘制默认向该纹理绘制，最后fbo纹理再进入主画布
      * 前面循环时有记录是否出现mbm，只有出现才申请，否则不浪费直接输出到主画布
-     * 超尺寸的要走无cache逻辑render，和canvas很像，除了离屏canvas超限，汇总total也会纹理超限
+     * 超尺寸的不绘制并给出警告，实现会扰乱逻辑且很少会出现这种情况
      */
 
 
@@ -33320,8 +33353,11 @@
             _domParent2 = _node7.__domParent,
             __matrix = _node7.__matrix;
         var opacity = _computedStyle2[OPACITY$1],
-            _mixBlendMode = _computedStyle2[MIX_BLEND_MODE$1];
-        var m = __matrix;
+            _mixBlendMode = _computedStyle2[MIX_BLEND_MODE$1],
+            perspective = _computedStyle2[PERSPECTIVE];
+        var m = __matrix; // 有perspective进入3d模式，开启深度缓冲区和多边形偏移
+
+        perspective || m[11];
 
         if (_domParent2) {
           var op = _domParent2.__opacity;
@@ -33385,10 +33421,14 @@
             if (_hasMask4) {
               _i5 += countMaskNum(__structs, _i5 + 1, _hasMask4);
             }
-          } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
+          }
+        } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
 
 
-          if (target === _cache6) {
+        if (!target || target === _cache6) {
+          var render = _node7.render;
+
+          if (render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
             _node7.render(renderMode, gl, 0, 0);
           }
         }
@@ -34835,7 +34875,7 @@
       key: "__clearWebgl",
       value: function __clearWebgl(ctx) {
         ctx.clearColor(0, 0, 0, 0);
-        ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
+        ctx.clear(ctx.COLOR_BUFFER_BIT);
       }
     }, {
       key: "dom",

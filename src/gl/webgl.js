@@ -1,6 +1,6 @@
 import mx from '../math/matrix';
 
-const calPoint = mx.calPoint;
+const calRectPoint = mx.calRectPoint;
 
 /**
  * 初始化 shader
@@ -17,7 +17,7 @@ function initShaders(gl, vshader, fshader) {
 
   // 要开启透明度，用以绘制透明的图形
   gl.enable(gl.BLEND);
-  gl.enable(gl.DEPTH_TEST);
+  // gl.enable(gl.DEPTH_TEST);
   // gl.enable(gl.POLYGON_OFFSET_FILL);
   gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
   return program;
@@ -192,38 +192,12 @@ function drawTextureCache(gl, list, cx, cy, dx, dy) {
     let bx = bbox[0], by = bbox[1];
     let xa = bx + dx, ya = by + height + dy;
     let xb = bx + width + dx, yb = by + dy;
-    let { x: x1, y: y1, z: z1, w: w1 } = calPoint({ x: xa, y: ya, z: 0, w: 1 }, matrix);
-    let { x: x3, y: y3, z: z3, w: w3 } = calPoint({ x: xb, y: yb, z: 0, w: 1 }, matrix);
-    let x2, y2, z2, w2, x4, y4, z4, w4;
-    // 无旋转的时候可以少算2个点
-    if(w1 === 1 && w3 === 1
-      && (!matrix || !matrix.length || !matrix[1] && !matrix[4])) {
-      x2 = x3;
-      y2 = y1;
-      z2 = z3;
-      x4 = x1;
-      y4 = y3;
-      z2 = z4 = z1;
-      w2 = w4 = 1;
-    }
-    else {
-      let t = calPoint({ x: xb, y: ya, z: 0, w: 1 }, matrix);
-      x2 = t.x; y2 = t.y; z2 = t.z; w2 = t.w;
-      t = calPoint({ x: xa, y: yb, z: 0, w: 1 }, matrix);
-      x4 = t.x; y4 = t.y; z4 = t.z; w4 = t.w;
-    }
+    let { x1, y1, z1, w1, x2, y2, z2, w2, x3, y3, z3, w3, x4, y4, z4, w4 } = calRectPoint(xa, ya, xb, yb, matrix);
     // console.warn(x1,y1,z1,w1,',',x2,y2,z2,w2,',',x3,y3,z3,w3,',',x4,y4,z4,w4);
     // z范围取所有、对角线最大值
     let z = Math.max(Math.abs(z1), Math.abs(z2));
     z = Math.max(z, Math.abs(z3));
     z = Math.max(z, Math.abs(z4));
-    // 0时都在平面关闭深度缓冲
-    if(!z) {
-      gl.disable(gl.DEPTH_TEST);
-    }
-    else {
-      gl.enable(gl.DEPTH_TEST);
-    }
     z = Math.max(z, Math.sqrt(cx * cx + cy * cy));
     let t = convertCoords2Gl(x1, y1, z1, w1, cx, cy, z);
     x1 = t.x; y1 = t.y; z1 = t.z;

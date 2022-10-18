@@ -5,6 +5,7 @@ import Page from './Page';
 import Text from '../node/Text';
 import Dom from '../node/Dom';
 import Img from '../node/Img';
+import Geom from '../node/geom/Geom';
 import mx from '../math/matrix';
 import geom from '../math/geom';
 import level from './level';
@@ -61,6 +62,9 @@ const { isE, inverse, multiply } = mx;
 const { mbmName, isValidMbm } = mbm;
 const { assignMatrix, transformBbox } = util;
 const { isPerspectiveMatrix } = tf;
+const DOM_RENDER = Dom.prototype.render;
+const IMG_RENDER = Img.prototype.render;
+const GEOM_RENDER = Geom.prototype.render;
 
 function getCache(list) {
   for(let i = 0, len = list.length; i < len; i++) {
@@ -914,8 +918,11 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
             i += countMaskNum(__structs, i + 1, hasMask);
           }
         }
-        // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
-        if(target === __cache) {
+      }
+      // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
+      if(!target || target === __cache) {
+        let render = node.render;
+        if(render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
           node.render(renderMode, gl, dx, dy);
         }
       }
@@ -2075,7 +2082,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
    * 最后先序遍历一次应用__cacheTotal即可，没有的用__cache，以及剩下的超尺寸的和Text
    * 由于mixBlendMode的存在，需先申请个fbo纹理，所有绘制默认向该纹理绘制，最后fbo纹理再进入主画布
    * 前面循环时有记录是否出现mbm，只有出现才申请，否则不浪费直接输出到主画布
-   * 超尺寸的要走无cache逻辑render，和canvas很像，除了离屏canvas超限，汇总total也会纹理超限
+   * 超尺寸的不绘制并给出警告，实现会扰乱逻辑且很少会出现这种情况
    */
   let frameBuffer, texture;
   if(hasMbm) {
@@ -2131,8 +2138,11 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       let {
         [OPACITY]: opacity,
         [MIX_BLEND_MODE]: mixBlendMode,
+        [PERSPECTIVE]: perspective,
       } = __computedStyle;
       let m = __matrix;
+      // 有perspective进入3d模式，开启深度缓冲区和多边形偏移
+      let isPpt = perspective || m[11];
       if(__domParent) {
         let op = __domParent.__opacity;
         if(op !== 1) {
@@ -2181,8 +2191,11 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
             i += countMaskNum(__structs, i + 1, hasMask);
           }
         }
-        // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
-        if(target === __cache) {
+      }
+      // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
+      if(!target || target === __cache) {
+        let render = node.render;
+        if(render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
           node.render(renderMode, gl, 0, 0);
         }
       }

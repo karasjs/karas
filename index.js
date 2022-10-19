@@ -1422,7 +1422,9 @@
       var w;
       var t = matrix.calPoint({
         x: x1,
-        y: y1
+        y: y1,
+        z: 0,
+        w: 1
       }, matrix$1);
       x1 = t.x;
       y1 = t.y;
@@ -1444,7 +1446,9 @@
 
         var _t = matrix.calPoint({
           x: x,
-          y: y
+          y: y,
+          z: 0,
+          w: 1
         }, matrix$1);
 
         x = _t.x;
@@ -2976,6 +2980,8 @@
     rotate3d: '0, 0, 0, 0',
     perspective: 0,
     perspectiveOrigin: 'center',
+    transformStyle: 'flat',
+    backfaceVisibility: 'visible',
     filter: null,
     boxShadow: null,
     pointerEvents: 'inherit',
@@ -3057,7 +3063,9 @@
     borderLeftStyle: ['solid', 'dashed', 'dotted'],
     backgroundClip: ['borderBox', 'paddingBox', 'contentBox'],
     textOverflow: ['clip', 'ellipsis'],
-    alignContent: ['stretch', 'flexStart', 'center', 'flexEnd', 'spaceBetween', 'spaceAround']
+    alignContent: ['stretch', 'flexStart', 'center', 'flexEnd', 'spaceBetween', 'spaceAround'],
+    transformStyle: ['flat', 'preserve3d'],
+    backfaceVisibility: ['visible', 'hidden']
   };
   var reset = {
     DOM: DOM,
@@ -3184,23 +3192,25 @@
     TEXT_STROKE_COLOR: 85,
     TEXT_STROKE_OVER: 86,
     WRITING_MODE: 87,
+    TRANSFORM_STYLE: 88,
+    BACKFACE_VISIBILITY: 89,
     // GEOM
-    FILL: 88,
-    STROKE: 89,
-    STROKE_WIDTH: 90,
-    STROKE_DASHARRAY: 91,
-    STROKE_DASHARRAY_STR: 92,
-    STROKE_LINECAP: 93,
-    STROKE_LINEJOIN: 94,
-    STROKE_MITERLIMIT: 95,
-    FILL_RULE: 96,
+    FILL: 90,
+    STROKE: 91,
+    STROKE_WIDTH: 92,
+    STROKE_DASHARRAY: 93,
+    STROKE_DASHARRAY_STR: 94,
+    STROKE_LINECAP: 95,
+    STROKE_LINEJOIN: 96,
+    STROKE_MITERLIMIT: 97,
+    FILL_RULE: 98,
     // 无此样式，仅cache或特殊情况需要
-    MATRIX: 97,
-    BORDER_TOP: 98,
-    BORDER_RIGHT: 99,
-    BORDER_BOTTOM: 100,
-    BORDER_LEFT: 101,
-    TRANSLATE_PATH: 102
+    MATRIX: 99,
+    BORDER_TOP: 100,
+    BORDER_RIGHT: 101,
+    BORDER_BOTTOM: 102,
+    BORDER_LEFT: 103,
+    TRANSLATE_PATH: 104
   };
   var STYLE2LOWER_MAP = {};
 
@@ -9467,7 +9477,7 @@
     } // 直接赋值的string类型
 
 
-    ['position', 'display', 'flexDirection', 'flexWrap', 'justifyContent', 'alignItems', 'alignSelf', 'alignContent', 'overflow', 'mixBlendMode', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundClip', 'textOverflow'].forEach(function (k) {
+    ['position', 'display', 'flexDirection', 'flexWrap', 'justifyContent', 'alignItems', 'alignSelf', 'alignContent', 'overflow', 'mixBlendMode', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundClip', 'textOverflow', 'transformStyle', 'backfaceVisibility'].forEach(function (k) {
       if (style.hasOwnProperty(k)) {
         res[STYLE_KEY$1[style2Upper$1(k)]] = convertStringValue(k, style[k]);
       }
@@ -10461,7 +10471,7 @@
       return;
     }
 
-    return !!(m[3] || m[7] || m[11]);
+    return !!m[11];
   }
 
   var transform$1 = {
@@ -17312,7 +17322,7 @@
     }
   }
 
-  function isValidMbm$2(v) {
+  function isValidMbm$1(v) {
     if (v === 'normal') {
       return false;
     }
@@ -17322,7 +17332,7 @@
 
   var mbm = {
     mbmName: mbmName$2,
-    isValidMbm: isValidMbm$2
+    isValidMbm: isValidMbm$1
   };
 
   var svgPolygon$2 = painter.svgPolygon;
@@ -17426,7 +17436,9 @@
       TEXT_ALIGN$1 = _enums$STYLE_KEY$8.TEXT_ALIGN,
       LETTER_SPACING = _enums$STYLE_KEY$8.LETTER_SPACING,
       WHITE_SPACE$1 = _enums$STYLE_KEY$8.WHITE_SPACE,
-      WRITING_MODE$2 = _enums$STYLE_KEY$8.WRITING_MODE;
+      WRITING_MODE$2 = _enums$STYLE_KEY$8.WRITING_MODE,
+      TRANSFORM_STYLE$1 = _enums$STYLE_KEY$8.TRANSFORM_STYLE,
+      BACKFACE_VISIBILITY = _enums$STYLE_KEY$8.BACKFACE_VISIBILITY;
   var AUTO$4 = o$4.AUTO,
       PX$5 = o$4.PX,
       PERCENT$4 = o$4.PERCENT,
@@ -17453,7 +17465,7 @@
       spreadFilter$1 = css.spreadFilter;
   var GEOM = o$2.GEOM;
   var mbmName$1 = mbm.mbmName,
-      isValidMbm$1 = mbm.isValidMbm;
+      isValidMbm = mbm.isValidMbm;
   var point2d = matrix.point2d,
       multiply$2 = matrix.multiply,
       multiplyRotateX = matrix.multiplyRotateX,
@@ -18776,7 +18788,7 @@
         } // 这些直接赋值的不需要再算缓存
 
 
-        [OPACITY$3, Z_INDEX$2, BORDER_TOP_STYLE, BORDER_RIGHT_STYLE, BORDER_BOTTOM_STYLE, BORDER_LEFT_STYLE, BACKGROUND_REPEAT, OVERFLOW$2, MIX_BLEND_MODE$3, TEXT_OVERFLOW, BACKGROUND_CLIP].forEach(function (k) {
+        [OPACITY$3, Z_INDEX$2, BORDER_TOP_STYLE, BORDER_RIGHT_STYLE, BORDER_BOTTOM_STYLE, BORDER_LEFT_STYLE, BACKGROUND_REPEAT, OVERFLOW$2, MIX_BLEND_MODE$3, TEXT_OVERFLOW, BACKGROUND_CLIP, TRANSFORM_STYLE$1, BACKFACE_VISIBILITY].forEach(function (k) {
           __computedStyle[k] = __currentStyle[k];
         });
 
@@ -19079,7 +19091,19 @@
           __computedStyle[POINTER_EVENTS$1] = __currentStyle[POINTER_EVENTS$1].v;
         }
 
-        __cacheStyle[POINTER_EVENTS$1] = __computedStyle[POINTER_EVENTS$1];
+        __cacheStyle[POINTER_EVENTS$1] = __computedStyle[POINTER_EVENTS$1]; // transformStyle需要特殊判断，在一些情况下强制flat，取消规范的opacity<1限制
+
+        if (__computedStyle[TRANSFORM_STYLE$1] === 'preserve3d') {
+          if (__computedStyle[OVERFLOW$2] === 'hidden' || __computedStyle[FILTER$2].length) {
+            __computedStyle[TRANSFORM_STYLE$1] = 'flat';
+          }
+        } // 影响父级flat的
+
+
+        if (__computedStyle[MIX_BLEND_MODE$3] !== 'normal' || this.__mask && parentComputedStyle) {
+          parentComputedStyle[TRANSFORM_STYLE$1] = 'flat';
+        }
+
         this.__bx1 = bx1;
         this.__bx2 = bx2;
         this.__by1 = by1;
@@ -19174,7 +19198,7 @@
             overflow = __computedStyle[OVERFLOW$2],
             display = __computedStyle[DISPLAY$6];
 
-        if (mixBlendMode !== 'normal' && isValidMbm$1(mixBlendMode)) {
+        if (mixBlendMode !== 'normal' && isValidMbm(mixBlendMode)) {
           mixBlendMode = mbmName$1(mixBlendMode);
           var c = inject.getOffscreenCanvas(width, height, null, 'blend');
           offscreenBlend = {
@@ -19478,7 +19502,7 @@
         }
 
         if (renderMode === SVG$1) {
-          if (mixBlendMode !== 'normal' && isValidMbm$1(mixBlendMode)) {
+          if (mixBlendMode !== 'normal' && isValidMbm(mixBlendMode)) {
             mixBlendMode = mbmName$1(mixBlendMode);
             virtualDom.mixBlendMode = mixBlendMode;
           } else {
@@ -20866,6 +20890,12 @@
           var root = this.__root;
 
           if (root && !this.__isDestroyed) {
+            var p = this.__domParent;
+
+            if (p) {
+              p.__computedStyle[TRANSFORM_STYLE$1] = 'flat';
+            }
+
             root.__addUpdate(this, null, MASK$2, null, null, null, null);
           }
         }
@@ -20883,6 +20913,12 @@
           var root = this.__root;
 
           if (root && !this.__isDestroyed) {
+            var p = this.__domParent;
+
+            if (p) {
+              p.__computedStyle[TRANSFORM_STYLE$1] = 'flat';
+            }
+
             root.__addUpdate(this, null, MASK$2, null, null, null, null);
           }
         }
@@ -30885,7 +30921,9 @@
       TRANSFORM$1 = _enums$STYLE_KEY$1.TRANSFORM,
       TRANSFORM_ORIGIN = _enums$STYLE_KEY$1.TRANSFORM_ORIGIN,
       PERSPECTIVE = _enums$STYLE_KEY$1.PERSPECTIVE,
-      PERSPECTIVE_ORIGIN = _enums$STYLE_KEY$1.PERSPECTIVE_ORIGIN;
+      PERSPECTIVE_ORIGIN = _enums$STYLE_KEY$1.PERSPECTIVE_ORIGIN,
+      TRANSFORM_STYLE = _enums$STYLE_KEY$1.TRANSFORM_STYLE;
+      _enums$STYLE_KEY$1.BACKFACE_VISIBILITY;
   var NONE$1 = o$1.NONE,
       TRANSFORM_ALL$1 = o$1.TRANSFORM_ALL,
       OP$1 = o$1.OPACITY,
@@ -30898,8 +30936,7 @@
   var isE = matrix.isE,
       inverse = matrix.inverse,
       multiply = matrix.multiply;
-  var mbmName = mbm.mbmName,
-      isValidMbm = mbm.isValidMbm;
+  var mbmName = mbm.mbmName;
   var assignMatrix = util.assignMatrix,
       transformBbox = util.transformBbox;
   var isPerspectiveMatrix = transform$1.isPerspectiveMatrix;
@@ -30926,9 +30963,7 @@
     var __cache = node.__cache;
     assignMatrix(node.__matrixEvent, matrix.identity());
     node.__opacity = 1;
-    var _node$__computedStyle = node.__computedStyle,
-        perspective = _node$__computedStyle[PERSPECTIVE],
-        perspectiveOrigin = _node$__computedStyle[PERSPECTIVE_ORIGIN]; // 先将局部根节点的bbox算好，可能没内容是空
+    var perspective = node.__computedStyle[PERSPECTIVE]; // 先将局部根节点的bbox算好，可能没内容是空
 
     var bboxTotal;
 
@@ -30943,8 +30978,10 @@
     var pm;
 
     if (isWebgl && perspective) {
-      pm = transform$1.calPerspectiveMatrix(perspective, perspectiveOrigin[0], perspectiveOrigin[1]);
+      pm = node.__perspectiveMatrix;
     }
+
+    var top = node;
 
     for (var i = index + 1, len = index + total + 1; i < len; i++) {
       var _structs$i = __structs[i],
@@ -30960,11 +30997,11 @@
 
         var _bbox = _node.bbox,
             _p = _node.__domParent,
-            _matrix = _p.__matrixEvent;
+            matrix$1 = _p.__matrixEvent;
 
         if (_bbox[2] - _bbox[0] && _bbox[3] - _bbox[1]) {
-          if (!isE(_matrix)) {
-            _bbox = transformBbox(_bbox, _matrix, 0, 0);
+          if (!isE(matrix$1)) {
+            _bbox = transformBbox(_bbox, matrix$1, 0, 0);
           }
 
           mergeBbox(bboxTotal, _bbox);
@@ -30998,13 +31035,14 @@
       var p = _node.__domParent;
       _node.__opacity = __computedStyle2[OPACITY$1] * p.__opacity;
       var m = _node.__matrix;
-      var matrix$1 = multiply(p.__matrixEvent, m); // 因为以局部根节点为原点，所以pm是最左边父矩阵乘
 
-      if (pm) {
-        matrix$1 = multiply(pm, matrix$1);
+      if (p === top) {
+        m = multiply(pm, m);
+      } else {
+        m = multiply(p.__matrixEvent, m);
       }
 
-      assignMatrix(_node.__matrixEvent, matrix$1);
+      assignMatrix(_node.__matrixEvent, m);
       var bbox = void 0; // 子元素有cacheTotal优先使用
 
       var target = getCache([__cacheMask2, __cacheFilter2, __cacheTotal2, __cache2]);
@@ -31023,7 +31061,7 @@
 
       if (bbox[2] - bbox[0] && bbox[3] - bbox[1]) {
         // 老的不变，新的会各自重新生成，根据matrixEvent合并bboxTotal
-        bbox = transformBbox(bbox, matrix$1, 0, 0);
+        bbox = transformBbox(bbox, m, 0, 0);
         mergeBbox(bboxTotal, bbox);
       }
     }
@@ -31266,7 +31304,7 @@
 
           var mixBlendMode = __computedStyle2[MIX_BLEND_MODE$1];
 
-          if (isValidMbm(mixBlendMode)) {
+          if (mixBlendMode !== 'normal') {
             ctxTotal.globalCompositeOperation = mbmName(mixBlendMode);
           }
 
@@ -31587,7 +31625,7 @@
               ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
               var mixBlendMode = _computedStyle[MIX_BLEND_MODE$1];
 
-              if (isValidMbm(mixBlendMode)) {
+              if (mixBlendMode !== 'normal') {
                 ctx.globalCompositeOperation = mbmName(mixBlendMode);
               } else {
                 ctx.globalCompositeOperation = 'source-over';
@@ -31755,10 +31793,13 @@
   /**
    * 局部根节点复合图层生成，汇总所有子节点到一颗局部树上的位图缓存，包含超限特殊情况
    * 即便只有自己一个也要返回，因为webgl生成total的原因是有类似filter/mask等必须离屏处理的东西
+   * isPpt标明此节点有perspective或者transform中有，需要生成局部根，子节点bbox需考虑ppt同时是否按z切面
+   * isTsChange是transformStyle发生变化，flat是平面，preserver3d要考虑切面
+   * ppt则是isTsChange情况下上级元素透传下来的ppt值
    */
 
 
-  function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total, __structs, W, H) {
+  function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total, __structs, isPpt, isTsChange, ppt, W, H) {
     if (__cacheTotal && __cacheTotal.available) {
       return __cacheTotal;
     }
@@ -31775,8 +31816,9 @@
 
     if (!bboxTotal) {
       return;
-    } // overflow:hidden和canvas一样特殊考虑
+    }
 
+    console.log('genTotalWebgl', index); // overflow:hidden和canvas一样特殊考虑
 
     var w, h, dx, dy, dbx, dby, cx, cy, texture, frameBuffer;
     var overflow = node.__computedStyle[OVERFLOW];
@@ -31816,7 +31858,15 @@
     dx = -bboxTotal[0];
     dy = -bboxTotal[1];
     dbx = __cacheTotal.dbx;
-    dby = __cacheTotal.dby;
+    dby = __cacheTotal.dby; // 需要重新计算，因为bbox里是原本位置，这里是新的位置
+
+    if (pm) {
+      var _node$__computedStyle = node.__computedStyle,
+          perspective = _node$__computedStyle[PERSPECTIVE],
+          perspectiveOrigin = _node$__computedStyle[PERSPECTIVE_ORIGIN];
+      pm = transform$1.calPerspectiveMatrix(perspective, x1 + dx + perspectiveOrigin[0], y1 + dy + perspectiveOrigin[1]);
+    }
+
     var page = __cacheTotal.__page,
         size = page.__size; // 先绘制到一张单独的纹理，防止children中和cacheTotal重复texture不能绘制
 
@@ -31918,7 +31968,8 @@
 
           if (!isE(parentMatrix)) {
             _m = multiply(parentMatrix, _m);
-          }
+          } // 可以忽视顺序直接预乘，因为pm是top节点的ppt，在最左边
+
 
           if (pm) {
             _m = multiply(pm, _m);
@@ -31930,7 +31981,7 @@
 
         if (target && (target !== _cache2 || visibility === 'visible')) {
           // 局部的mbm和主画布一样，先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
-          if (isValidMbm(mixBlendMode)) {
+          if (mixBlendMode !== 'normal') {
             if (list.length) {
               webgl.drawTextureCache(gl, list, cx, cy, dx, dy);
               list.splice(0);
@@ -32795,7 +32846,7 @@
         if (__refreshLevel & MBM$1) {
           var mixBlendMode = computedStyle[MIX_BLEND_MODE$1];
 
-          if (isValidMbm(mixBlendMode)) {
+          if (mixBlendMode !== 'normal') {
             virtualDom.mixBlendMode = mbmName(mixBlendMode);
           } else {
             delete virtualDom.mixBlendMode;
@@ -32808,13 +32859,13 @@
         if (!(node instanceof Text)) {
           node.__cacheDefs.splice(0);
 
-          var _matrix2 = node.__matrix;
+          var _matrix = node.__matrix;
 
           if (parentMatrix) {
-            _matrix2 = multiply(parentMatrix, _matrix2);
+            _matrix = multiply(parentMatrix, _matrix);
           }
 
-          assignMatrix(node.__matrixEvent, _matrix2);
+          assignMatrix(node.__matrixEvent, _matrix);
         }
 
         node.render(renderMode, ctx, 0, 0);
@@ -32897,11 +32948,11 @@
                   }
                 }
 
-                var _matrix3 = _node6.matrix;
+                var _matrix2 = _node6.matrix;
                 var ivs = inverse(dom.matrix);
-                _matrix3 = multiply(ivs, _matrix3); // path没有transform属性，在vd上，需要弥补
+                _matrix2 = multiply(ivs, _matrix2); // path没有transform属性，在vd上，需要弥补
 
-                props.push(['transform', "matrix(".concat(util.joinArr(matrix.m2m6(_matrix3), ','), ")")]); // path没有opacity属性，在vd上，需要弥补
+                props.push(['transform', "matrix(".concat(util.joinArr(matrix.m2m6(_matrix2), ','), ")")]); // path没有opacity属性，在vd上，需要弥补
 
                 if (!util.isNil(_opacity) && _opacity !== 1) {
                   props.push(['opacity', _opacity]);
@@ -32924,14 +32975,14 @@
                     props.push(['transform', "matrix(".concat(util.joinArr(matrix.m2m6(_ivs), ','), ")")]);
                   }
                 } else {
-                  var _matrix4 = props[hasTransform][1].match(/[\d.]+/g).map(function (i) {
+                  var _matrix3 = props[hasTransform][1].match(/[\d.]+/g).map(function (i) {
                     return parseFloat(i);
                   });
 
                   var _ivs2 = inverse(dom.matrix);
 
-                  _matrix4 = multiply(_ivs2, _matrix4);
-                  props[hasTransform][1] = "matrix(".concat(util.joinArr(matrix.m2m6(_matrix4), ','), ")");
+                  _matrix3 = multiply(_ivs2, _matrix3);
+                  props[hasTransform][1] = "matrix(".concat(util.joinArr(matrix.m2m6(_matrix3), ','), ")");
                 }
               }
             }
@@ -33005,6 +33056,12 @@
      */
 
     if (isFirst || rlv >= REPAINT$1 || rlv & (CACHE$1 | FT$1 | PPT$1 | MASK$1)) {
+      // 节点开始有ppt得记录，后续孩子中如果有flat的，得强制生成cacheTotal
+      var pptList = [];
+      var parentPpt = false;
+      var lastPpt = false;
+      var lastLv = 0;
+
       for (var i = 0, len = __structs.length; i < len; i++) {
         var _structs$i7 = __structs[i],
             node = _structs$i7.node,
@@ -33051,8 +33108,21 @@
           }
 
           continue;
-        } // 根据refreshLevel优化计算
+        } // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理
 
+
+        if (!i) ; else if (lv > lastLv) {
+          parentPpt = lastPpt;
+          pptList.push(parentPpt);
+        } // 变小出栈索引需注意，可能不止一层，多层计算diff层级
+        else if (lv < lastLv) {
+          var diff = lastLv - lv;
+          pptList.splice(-diff);
+          parentPpt = pptList[lv - 1];
+        } // 不变是同级兄弟，无需特殊处理 else {}
+
+
+        lastLv = lv; // 根据refreshLevel优化计算
 
         var __refreshLevel = node.__refreshLevel,
             __currentStyle = node.__currentStyle,
@@ -33068,8 +33138,8 @@
          */
 
         if (!__refreshLevel) ; else if (__refreshLevel < REPAINT$1) {
-          var _mbm = __computedStyle[MIX_BLEND_MODE$1];
-          var isMbm = __refreshLevel & MBM$1 && isValidMbm(_mbm);
+          var mixBlendMode = __computedStyle[MIX_BLEND_MODE$1];
+          var isMbm = __refreshLevel & MBM$1 && mixBlendMode !== 'normal';
           var need = node.__cacheAsBitmap || hasMask;
 
           if (!need && __refreshLevel & FT$1) {
@@ -33160,13 +33230,30 @@
 
           var overflow = __computedStyle[OVERFLOW],
               _filter = __computedStyle[FILTER],
-              mixBlendMode = __computedStyle[MIX_BLEND_MODE$1];
+              _mixBlendMode = __computedStyle[MIX_BLEND_MODE$1],
+              perspective = __computedStyle[PERSPECTIVE],
+              transformStyle = __computedStyle[TRANSFORM_STYLE];
 
-          var _isMbm = isValidMbm(mixBlendMode);
+          var _isMbm = _mixBlendMode !== 'normal';
 
-          var _domParent = node.__domParent;
+          var _domParent = node.__domParent; // 有perspective的父或者自身transform包含的都是局部根节点
 
-          var _isPpt = !isE(_domParent && _domParent.__perspectiveMatrix) || isPerspectiveMatrix(node.__matrix);
+          var isPptParent = _domParent && !isE(_domParent.__perspectiveMatrix);
+
+          var _isPpt = (isPptParent || isPerspectiveMatrix(node.__matrix)) && total; // ppt下的子节点，如果发生transformStyle父子不一致，则需生成局部根节点
+
+
+          var isTsChange = void 0;
+
+          if (lastPpt && _domParent) {
+            var pts = _domParent.__computedStyle[TRANSFORM_STYLE];
+            isTsChange = transformStyle !== pts && total > 0;
+          } // ppt的直接子节点如果是flat也要生成局部根
+
+
+          if (isPptParent && transformStyle === 'flat' && total) {
+            isTsChange = true;
+          }
 
           var isOverflow = overflow === 'hidden' && total;
           var isFilter = _filter && _filter.length;
@@ -33175,20 +33262,26 @@
             hasMbm = true;
           }
 
-          if (node.__cacheAsBitmap || hasMask || isFilter || isOverflow || _isPpt) {
+          if (node.__cacheAsBitmap || hasMask || isFilter || isOverflow || _isPpt || isTsChange) {
             mergeList.push({
               i: i,
               lv: lv,
               total: total,
               node: node,
-              hasMask: hasMask
+              hasMask: hasMask,
+              isPpt: _isPpt,
+              isTsChange: isTsChange,
+              ppt: lastPpt
             });
           }
+
+          lastPpt = perspective || lastPpt;
         }
       }
-    } // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
-    // 这样保证子节点在前，后节点在前，后节点是为了mask先应用自身如filter之后再进行遮罩
+    }
 
+    console.log('mergeList', mergeList); // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
+    // 这样保证子节点在前，后节点在前，后节点是为了mask先应用自身如filter之后再进行遮罩
 
     if (mergeList.length) {
       mergeList.sort(function (a, b) {
@@ -33206,7 +33299,10 @@
             lv = item.lv,
             total = item.total,
             node = item.node,
-            hasMask = item.hasMask;
+            hasMask = item.hasMask,
+            isPpt = item.isPpt,
+            isTsChange = item.isTsChange,
+            ppt = item.ppt;
         var __matrix = node.__matrix,
             __domParent = node.__domParent,
             __computedStyle = node.__computedStyle;
@@ -33233,13 +33329,11 @@
             if (parent && parent.__perspectiveMatrix) {
               pptHash[idx] = true;
             }
-          } // 最内层的ppt忽略
+          } // 最内层的ppt忽略，注意transformStyle变化的强制生成
 
 
-          if (!pptHash[i]) {
-            if (!hasMask && !filter.length && !(overflow === 'hidden' && total) && !node.__cacheAsBitmap) {
-              return;
-            }
+          if (!pptHash[i] && !isTsChange) {
+            if (!hasMask && !filter.length && !(overflow === 'hidden' && total) && !node.__cacheAsBitmap) ;
           }
         }
 
@@ -33255,7 +33349,7 @@
         var needGen; // 可能没变化，比如被遮罩节点、filter变更等
 
         if (!__cacheTotal || !__cacheTotal.available) {
-          var res = genTotalWebgl(renderMode, __cacheTotal, gl, root, node, i, lv, total || 0, __structs, width, height);
+          var res = genTotalWebgl(renderMode, __cacheTotal, gl, root, node, i, lv, total || 0, __structs, isPpt, isTsChange, ppt, width, height);
 
           if (!res) {
             return;
@@ -33353,11 +33447,10 @@
             _domParent2 = _node7.__domParent,
             __matrix = _node7.__matrix;
         var opacity = _computedStyle2[OPACITY$1],
-            _mixBlendMode = _computedStyle2[MIX_BLEND_MODE$1],
-            perspective = _computedStyle2[PERSPECTIVE];
+            _mixBlendMode2 = _computedStyle2[MIX_BLEND_MODE$1];
+            _computedStyle2[PERSPECTIVE];
         var m = __matrix; // 有perspective进入3d模式，开启深度缓冲区和多边形偏移
-
-        perspective || m[11];
+        // let isPpt = perspective || m[11];
 
         if (_domParent2) {
           var op = _domParent2.__opacity;
@@ -33369,8 +33462,23 @@
           var pm = _domParent2.__perspectiveMatrix,
               me = _domParent2.__matrixEvent;
 
-          if (pm && pm.length || me && me.length) {
+          if (pm && pm.length) {
             m = multiply(_domParent2.__perspectiveMatrix, m);
+          } // flat强制展示在父级平面内，父级不能是ppt，得隔代
+          // else if(m[2] || m[6] || m[8] || m[9] || m[14]) {
+          //   let transformStyle = __domParent.__computedStyle[TRANSFORM_STYLE];
+          //   if(transformStyle === 'flat') {console.log(i)
+          //     // m[2] = m[6] = m[8] = m[9] = m[14] = 0;
+          //     // m[3] = m[7] = m[11] = 0;
+          //     m[2] = m[3] = m[6] = m[7] =  m[14] = 0;
+          //     // m[10] = 1;
+          //     assignMatrix(__computedStyle[TRANSFORM], m);
+          //     assignMatrix(node.__cacheStyle[MATRIX], m);
+          //   }
+          // }
+
+
+          if (me && me.length) {
             m = multiply(_domParent2.__matrixEvent, m);
           }
         }
@@ -33382,7 +33490,7 @@
 
         if (target) {
           // 有mbm则需要混合之前的纹理和新纹理到fbo上面，连续的mbm则依次交替绘制到画布或离屏fbo上
-          if (isValidMbm(_mixBlendMode)) {
+          if (_mixBlendMode2 !== 'normal') {
             if (list.length) {
               webgl.drawTextureCache(gl, list, cx, cy, 0, 0);
               list.splice(0);
@@ -33392,7 +33500,7 @@
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             gl.deleteFramebuffer(frameBuffer);
-            var res = genMbmWebgl(gl, texture, target, _mixBlendMode, opacity, m, 0, 0, cx, cy, width, height);
+            var res = genMbmWebgl(gl, texture, target, _mixBlendMode2, opacity, m, 0, 0, cx, cy, width, height);
 
             if (res) {
               gl.deleteTexture(texture);
@@ -33716,7 +33824,7 @@
           ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
           var mixBlendMode = _computedStyle3[MIX_BLEND_MODE$1];
 
-          if (isValidMbm(mixBlendMode)) {
+          if (mixBlendMode !== 'normal') {
             ctx.globalCompositeOperation = mbmName(mixBlendMode);
           }
 

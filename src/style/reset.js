@@ -77,6 +77,8 @@ const DOM = {
   rotate3d: '0, 0, 0, 0',
   perspective: 0,
   perspectiveOrigin: 'center',
+  transformStyle: 'flat',
+  backfaceVisibility: 'visible',
   filter: null,
   boxShadow: null,
   pointerEvents: 'inherit',
@@ -166,6 +168,8 @@ const VALID_STRING_VALUE = {
   backgroundClip: ['borderBox', 'paddingBox', 'contentBox'],
   textOverflow: ['clip', 'ellipsis'],
   alignContent: ['stretch', 'flexStart', 'center', 'flexEnd', 'spaceBetween', 'spaceAround'],
+  transformStyle: ['flat', 'preserve3d'],
+  backfaceVisibility: ['visible', 'hidden'],
 }
 
 export default {

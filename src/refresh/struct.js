@@ -45,6 +45,8 @@ const {
     TRANSFORM_ORIGIN,
     PERSPECTIVE,
     PERSPECTIVE_ORIGIN,
+    TRANSFORM_STYLE,
+    BACKFACE_VISIBILITY,
   },
 } = enums;
 const {
@@ -59,7 +61,7 @@ const {
   MASK,
 } = level;
 const { isE, inverse, multiply } = mx;
-const { mbmName, isValidMbm } = mbm;
+const { mbmName } = mbm;
 const { assignMatrix, transformBbox } = util;
 const { isPerspectiveMatrix } = tf;
 const DOM_RENDER = Dom.prototype.render;
@@ -85,7 +87,6 @@ function genBboxTotal(node, __structs, index, total, isWebgl) {
   node.__opacity = 1;
   let {
     [PERSPECTIVE]: perspective,
-    [PERSPECTIVE_ORIGIN]: perspectiveOrigin,
   } = node.__computedStyle;
   // 先将局部根节点的bbox算好，可能没内容是空
   let bboxTotal;
@@ -99,8 +100,9 @@ function genBboxTotal(node, __structs, index, total, isWebgl) {
   // 局部根节点如有perspective，则计算pm，这里不会出现嵌套，因为每个出现都会生成局部根节点
   let pm;
   if(isWebgl && perspective) {
-    pm = tf.calPerspectiveMatrix(perspective, perspectiveOrigin[0], perspectiveOrigin[1]);
+    pm = node.__perspectiveMatrix;
   }
+  let top = node;
   for(let i = index + 1, len = index + total + 1; i < len; i++) {
     let {
       node,
@@ -148,12 +150,13 @@ function genBboxTotal(node, __structs, index, total, isWebgl) {
     let p = node.__domParent;
     node.__opacity = __computedStyle2[OPACITY] * p.__opacity;
     let m = node.__matrix;
-    let matrix = multiply(p.__matrixEvent, m);
-    // 因为以局部根节点为原点，所以pm是最左边父矩阵乘
-    if(pm) {
-      matrix = multiply(pm, matrix);
+    if(p === top) {
+      m = multiply(pm, m);
     }
-    assignMatrix(node.__matrixEvent, matrix);
+    else {
+      m = multiply(p.__matrixEvent, m);
+    }
+    assignMatrix(node.__matrixEvent, m);
     let bbox;
     // 子元素有cacheTotal优先使用
     let target = getCache([__cacheMask2, __cacheFilter2, __cacheTotal2, __cache2]);
@@ -169,7 +172,7 @@ function genBboxTotal(node, __structs, index, total, isWebgl) {
     }
     if((bbox[2] - bbox[0]) && (bbox[3] - bbox[1])) {
       // 老的不变，新的会各自重新生成，根据matrixEvent合并bboxTotal
-      bbox = transformBbox(bbox, matrix, 0, 0);
+      bbox = transformBbox(bbox, m, 0, 0);
       mergeBbox(bboxTotal, bbox);
     }
   }
@@ -371,7 +374,7 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
           ctxTotal.setTransform(1, 0, 0, 1, 0, 0);
         }
         let mixBlendMode = __computedStyle2[MIX_BLEND_MODE];
-        if(isValidMbm(mixBlendMode)) {
+        if(mixBlendMode !== 'normal') {
           ctxTotal.globalCompositeOperation = mbmName(mixBlendMode);
         }
         CanvasCache.drawCache(target, __cacheTotal);
@@ -612,7 +615,7 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
             ctx.globalAlpha = opacity;
             ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
             let mixBlendMode = __computedStyle[MIX_BLEND_MODE];
-            if(isValidMbm(mixBlendMode)) {
+            if(mixBlendMode !== 'normal') {
               ctx.globalCompositeOperation = mbmName(mixBlendMode);
             }
             else {
@@ -730,8 +733,12 @@ function genFrameBufferWithTexture(gl, texture, width, height) {
 /**
  * 局部根节点复合图层生成，汇总所有子节点到一颗局部树上的位图缓存，包含超限特殊情况
  * 即便只有自己一个也要返回，因为webgl生成total的原因是有类似filter/mask等必须离屏处理的东西
+ * isPpt标明此节点有perspective或者transform中有，需要生成局部根，子节点bbox需考虑ppt同时是否按z切面
+ * isTsChange是transformStyle发生变化，flat是平面，preserver3d要考虑切面
+ * ppt则是isTsChange情况下上级元素透传下来的ppt值
  */
-function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total, __structs, W, H) {
+function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total, __structs,
+                       isPpt, isTsChange, ppt, W, H) {
   if(__cacheTotal && __cacheTotal.available) {
     return __cacheTotal;
   }
@@ -739,7 +746,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   let { bbox: bboxTotal, pm } = genBboxTotal(node, __structs, index, total, true);
   if(!bboxTotal) {
     return;
-  }
+  }console.log('genTotalWebgl', index)
 
   // overflow:hidden和canvas一样特殊考虑
   let w, h, dx, dy, dbx, dby, cx, cy, texture, frameBuffer;
@@ -782,6 +789,14 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   dy = -bboxTotal[1];
   dbx = __cacheTotal.dbx;
   dby = __cacheTotal.dby;
+  // 需要重新计算，因为bbox里是原本位置，这里是新的位置
+  if(pm) {
+    let {
+      [PERSPECTIVE]: perspective,
+      [PERSPECTIVE_ORIGIN]: perspectiveOrigin,
+    } = node.__computedStyle;
+    pm = tf.calPerspectiveMatrix(perspective, x1 + dx + perspectiveOrigin[0], y1 + dy + perspectiveOrigin[1]);
+  }
 
   let page = __cacheTotal.__page, size = page.__size;
   // 先绘制到一张单独的纹理，防止children中和cacheTotal重复texture不能绘制
@@ -875,6 +890,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
         if(!isE(parentMatrix)) {
           m = multiply(parentMatrix, m);
         }
+        // 可以忽视顺序直接预乘，因为pm是top节点的ppt，在最左边
         if(pm) {
           m = multiply(pm, m);
         }
@@ -883,7 +899,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
       let target = getCache([__cacheMask, __cacheFilter, __cacheTotal, __cache]);
       if(target && (target !== __cache || visibility === 'visible')) {
         // 局部的mbm和主画布一样，先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
-        if(isValidMbm(mixBlendMode)) {
+        if(mixBlendMode !== 'normal') {
           if(list.length) {
             webgl.drawTextureCache(gl, list, cx, cy, dx, dy);
             list.splice(0);
@@ -1658,7 +1674,7 @@ function renderSvg(renderMode, ctx, root, isFirst, rlv) {
       }
       if(__refreshLevel & MBM) {
         let mixBlendMode = computedStyle[MIX_BLEND_MODE];
-        if(isValidMbm(mixBlendMode)) {
+        if(mixBlendMode !== 'normal') {
           virtualDom.mixBlendMode = mbmName(mixBlendMode);
         }
         else {
@@ -1825,6 +1841,11 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
    * 第一次强制进入，后续不包含cache变更且<REPAINT的时候不进入省略循环
    */
   if(isFirst || rlv >= REPAINT || (rlv & (CACHE | FT | PPT | MASK))) {
+    // 节点开始有ppt得记录，后续孩子中如果有flat的，得强制生成cacheTotal
+    let pptList = [];
+    let parentPpt = false;
+    let lastPpt = false;
+    let lastLv = 0;
     for(let i = 0, len = __structs.length; i < len; i++) {
       let {
         node,
@@ -1866,6 +1887,20 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         }
         continue;
       }
+      // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理
+      if(!i) {}
+      else if(lv > lastLv) {
+        parentPpt = lastPpt;
+        pptList.push(parentPpt);
+      }
+      // 变小出栈索引需注意，可能不止一层，多层计算diff层级
+      else if(lv < lastLv) {
+        let diff = lastLv - lv;
+        pptList.splice(-diff);
+        parentPpt = pptList[lv - 1];
+      }
+      // 不变是同级兄弟，无需特殊处理 else {}
+      lastLv = lv;
       // 根据refreshLevel优化计算
       let {
         __refreshLevel,
@@ -1884,8 +1919,8 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       if(!__refreshLevel) {
       }
       else if(__refreshLevel < REPAINT) {
-        let mbm = __computedStyle[MIX_BLEND_MODE];
-        let isMbm = (__refreshLevel & MBM) && isValidMbm(mbm);
+        let mixBlendMode = __computedStyle[MIX_BLEND_MODE];
+        let isMbm = (__refreshLevel & MBM) && mixBlendMode !== 'normal';
         let need = node.__cacheAsBitmap || hasMask;
         if(!need && (__refreshLevel & FT)) {
           let filter = __computedStyle[FILTER];
@@ -1965,10 +2000,24 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
           [OVERFLOW]: overflow,
           [FILTER]: filter,
           [MIX_BLEND_MODE]: mixBlendMode,
+          [PERSPECTIVE]: perspective,
+          [TRANSFORM_STYLE]: transformStyle,
         } = __computedStyle;
-        let isMbm = isValidMbm(mixBlendMode);
+        let isMbm = mixBlendMode !== 'normal';
         let __domParent = node.__domParent;
-        let isPpt = !isE(__domParent && __domParent.__perspectiveMatrix) || isPerspectiveMatrix(node.__matrix);
+        // 有perspective的父或者自身transform包含的都是局部根节点
+        let isPptParent = __domParent && !isE(__domParent.__perspectiveMatrix);
+        let isPpt = (isPptParent || isPerspectiveMatrix(node.__matrix)) && total;
+        // ppt下的子节点，如果发生transformStyle父子不一致，则需生成局部根节点
+        let isTsChange;
+        if(lastPpt && __domParent) {
+          let pts = __domParent.__computedStyle[TRANSFORM_STYLE];
+          isTsChange = transformStyle !== pts && total > 0;
+        }
+        // ppt的直接子节点如果是flat也要生成局部根
+        if(isPptParent && transformStyle === 'flat' && total) {
+          isTsChange = true;
+        }
         let isOverflow = overflow === 'hidden' && total;
         let isFilter = filter && filter.length;
         if(isMbm) {
@@ -1978,18 +2027,23 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
           || hasMask
           || isFilter
           || isOverflow
-          || isPpt) {
+          || isPpt
+          || isTsChange) {
           mergeList.push({
             i,
             lv,
             total,
             node,
             hasMask,
+            isPpt,
+            isTsChange,
+            ppt: lastPpt,
           });
         }
+        lastPpt = perspective || lastPpt;
       }
     }
-  }
+  }console.log('mergeList', mergeList)
   // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
   // 这样保证子节点在前，后节点在前，后节点是为了mask先应用自身如filter之后再进行遮罩
   if(mergeList.length) {
@@ -2009,6 +2063,9 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         total,
         node,
         hasMask,
+        isPpt,
+        isTsChange,
+        ppt,
       } = item;
       let {
         __matrix,
@@ -2036,10 +2093,10 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
             pptHash[idx] = true;
           }
         }
-        // 最内层的ppt忽略
-        if(!pptHash[i]) {
+        // 最内层的ppt忽略，注意transformStyle变化的强制生成
+        if(!pptHash[i] && !isTsChange) {
           if(!hasMask && !filter.length && !(overflow === 'hidden' && total) && !node.__cacheAsBitmap) {
-            return;
+            // return;
           }
         }
       }
@@ -2055,7 +2112,8 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       let needGen;
       // 可能没变化，比如被遮罩节点、filter变更等
       if(!__cacheTotal || !__cacheTotal.available) {
-        let res = genTotalWebgl(renderMode, __cacheTotal, gl, root, node, i, lv, total || 0, __structs, width, height);
+        let res = genTotalWebgl(renderMode, __cacheTotal, gl, root, node, i, lv, total || 0,
+          __structs, isPpt, isTsChange, ppt, width, height);
         if(!res) {
           return;
         }
@@ -2142,15 +2200,29 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       } = __computedStyle;
       let m = __matrix;
       // 有perspective进入3d模式，开启深度缓冲区和多边形偏移
-      let isPpt = perspective || m[11];
+      // let isPpt = perspective || m[11];
       if(__domParent) {
         let op = __domParent.__opacity;
         if(op !== 1) {
           opacity *= __domParent.__opacity;
         }
         let pm = __domParent.__perspectiveMatrix, me = __domParent.__matrixEvent;
-        if(pm && pm.length || me && me.length) {
+        if(pm && pm.length) {
           m = multiply(__domParent.__perspectiveMatrix, m);
+        }
+        // flat强制展示在父级平面内，父级不能是ppt，得隔代
+        // else if(m[2] || m[6] || m[8] || m[9] || m[14]) {
+        //   let transformStyle = __domParent.__computedStyle[TRANSFORM_STYLE];
+        //   if(transformStyle === 'flat') {console.log(i)
+        //     // m[2] = m[6] = m[8] = m[9] = m[14] = 0;
+        //     // m[3] = m[7] = m[11] = 0;
+        //     m[2] = m[3] = m[6] = m[7] =  m[14] = 0;
+        //     // m[10] = 1;
+        //     assignMatrix(__computedStyle[TRANSFORM], m);
+        //     assignMatrix(node.__cacheStyle[MATRIX], m);
+        //   }
+        // }
+        if(me && me.length) {
           m = multiply(__domParent.__matrixEvent, m);
         }
       }
@@ -2160,7 +2232,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       let target = getCache([__cacheMask, __cacheFilter, __cacheTotal, __cache]);
       if(target) {
         // 有mbm则需要混合之前的纹理和新纹理到fbo上面，连续的mbm则依次交替绘制到画布或离屏fbo上
-        if(isValidMbm(mixBlendMode)) {
+        if(mixBlendMode !== 'normal') {
           if(list.length) {
             webgl.drawTextureCache(gl, list, cx, cy, 0, 0);
             list.splice(0);
@@ -2443,7 +2515,7 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
         }
         ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
         let mixBlendMode = __computedStyle[MIX_BLEND_MODE];
-        if(isValidMbm(mixBlendMode)) {
+        if(mixBlendMode !== 'normal') {
           ctx.globalCompositeOperation = mbmName(mixBlendMode);
         }
         let { x, y, canvas, x1, y1, dbx, dby, width: w, height: h } = target;

@@ -126,6 +126,8 @@ const {
     LETTER_SPACING,
     WHITE_SPACE,
     WRITING_MODE,
+    TRANSFORM_STYLE,
+    BACKFACE_VISIBILITY,
   },
 } = enums;
 const { AUTO, PX, PERCENT, INHERIT, NUMBER, RGBA, STRING, REM, VW, VH, VMAX, VMIN, DEG, GRADIENT } = unit;
@@ -1390,6 +1392,8 @@ class Xom extends Node {
       MIX_BLEND_MODE,
       TEXT_OVERFLOW,
       BACKGROUND_CLIP,
+      TRANSFORM_STYLE,
+      BACKFACE_VISIBILITY,
     ].forEach(k => {
       __computedStyle[k] = __currentStyle[k];
     });
@@ -1701,6 +1705,17 @@ class Xom extends Node {
       __computedStyle[POINTER_EVENTS] = __currentStyle[POINTER_EVENTS].v;
     }
     __cacheStyle[POINTER_EVENTS] = __computedStyle[POINTER_EVENTS];
+    // transformStyle需要特殊判断，在一些情况下强制flat，取消规范的opacity<1限制
+    if(__computedStyle[TRANSFORM_STYLE] === 'preserve3d') {
+      if(__computedStyle[OVERFLOW] === 'hidden'
+        || __computedStyle[FILTER].length) {
+        __computedStyle[TRANSFORM_STYLE] = 'flat';
+      }
+    }
+    // 影响父级flat的
+    if((__computedStyle[MIX_BLEND_MODE] !== 'normal') || this.__mask && parentComputedStyle) {
+      parentComputedStyle[TRANSFORM_STYLE] = 'flat';
+    }
     this.__bx1 = bx1;
     this.__bx2 = bx2;
     this.__by1 = by1;
@@ -3200,6 +3215,10 @@ class Xom extends Node {
       this.__mask = v;
       let root = this.__root;
       if(root && !this.__isDestroyed) {
+        let p = this.__domParent;
+        if(p) {
+          p.__computedStyle[TRANSFORM_STYLE] = 'flat';
+        }
         root.__addUpdate(this, null, MASK, null, null, null, null);
       }
     }
@@ -3215,6 +3234,10 @@ class Xom extends Node {
       this.__clip = v;
       let root = this.__root;
       if(root && !this.__isDestroyed) {
+        let p = this.__domParent;
+        if(p) {
+          p.__computedStyle[TRANSFORM_STYLE] = 'flat';
+        }
         root.__addUpdate(this, null, MASK, null, null, null, null);
       }
     }

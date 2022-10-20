@@ -191,8 +191,27 @@ class Geom extends Xom {
   }
 
   calContent(currentStyle, computedStyle) {
-    // Geom强制有内容
-    return computedStyle[VISIBILITY] !== 'hidden';
+    let res = super.calContent(currentStyle, computedStyle);
+    if(!res) {
+      let {
+        [FILL]: fill,
+        [STROKE]: stroke,
+        [STROKE_WIDTH]: strokeWidth,
+      } = computedStyle;console.log(fill,stroke,strokeWidth)
+      for(let i = 0, len = fill.length; i < len; i++) {
+        let item = fill[i];
+        if(item.k || item[3] > 0) {
+          return true;
+        }
+      }
+      for(let i = 0, len = stroke.length; i < len; i++) {
+        let item = stroke[i];
+        if((item.k || item[3] > 0) && strokeWidth[i] > 0) {
+          return true;
+        }
+      }
+    }
+    return res;
   }
 
   __preSet(renderMode, res) {

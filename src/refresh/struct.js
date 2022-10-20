@@ -812,6 +812,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   let parentMatrix = null;
   let lastMatrix = null;
   let lastLv = lv;
+  let top = node;
   // 先序遍历汇总到total
   for(let i = index + 1, len = index + (total || 0) + 1; i < len; i++) {
     let {
@@ -1387,9 +1388,6 @@ function genDropShadowWebgl(renderMode, gl, cache, v) {
   if(sigma) {
     let program = genBlurShader(gl, sigma, d);
     tex1 = webgl.drawBlur(gl, program, tex1, w, h);
-    gl.deleteShader(program.vertexShader);
-    gl.deleteShader(program.fragmentShader);
-    gl.deleteProgram(program);
   }
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);

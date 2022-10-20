@@ -7762,7 +7762,7 @@ var POINTER_EVENTS$3 = STYLE_KEY$2.POINTER_EVENTS,
     BORDER_TOP_RIGHT_RADIUS$3 = STYLE_KEY$2.BORDER_TOP_RIGHT_RADIUS,
     BORDER_BOTTOM_RIGHT_RADIUS$3 = STYLE_KEY$2.BORDER_BOTTOM_RIGHT_RADIUS,
     BORDER_BOTTOM_LEFT_RADIUS$3 = STYLE_KEY$2.BORDER_BOTTOM_LEFT_RADIUS,
-    VISIBILITY$7 = STYLE_KEY$2.VISIBILITY,
+    VISIBILITY$6 = STYLE_KEY$2.VISIBILITY,
     BOX_SHADOW$3 = STYLE_KEY$2.BOX_SHADOW,
     OVERFLOW$4 = STYLE_KEY$2.OVERFLOW,
     BACKGROUND_CLIP$2 = STYLE_KEY$2.BACKGROUND_CLIP,
@@ -7796,7 +7796,7 @@ var o$2 = {
     return tagName && k && GEOM$3.hasOwnProperty(k) && GEOM$3[k].hasOwnProperty(tagName);
   },
   isRepaint: function isRepaint(k, tagName) {
-    return k === COLOR$7 || k === STROKE_WIDTH$9 || k === FILL$4 || k === STROKE_DASHARRAY$2 || k === STROKE_LINECAP$1 || k === STROKE_LINEJOIN$1 || k === STROKE_MITERLIMIT$2 || k === BACKGROUND_COLOR$3 || k === BACKGROUND_IMAGE$3 || k === BACKGROUND_POSITION_X$4 || k === BACKGROUND_POSITION_Y$4 || k === BACKGROUND_REPEAT$1 || k === BACKGROUND_SIZE$3 || k === STROKE$3 || k === BORDER_BOTTOM_COLOR$2 || k === BORDER_LEFT_COLOR$2 || k === BORDER_BOTTOM_COLOR$2 || k === BORDER_RIGHT_COLOR$2 || k === BORDER_TOP_COLOR$2 || k === BORDER_TOP_LEFT_RADIUS$3 || k === BORDER_TOP_RIGHT_RADIUS$3 || k === BORDER_BOTTOM_RIGHT_RADIUS$3 || k === BORDER_BOTTOM_LEFT_RADIUS$3 || k === VISIBILITY$7 || k === BOX_SHADOW$3 || k === OVERFLOW$4 || k === BACKGROUND_CLIP$2 || k === TEXT_STROKE_WIDTH$6 || k === TEXT_STROKE_COLOR$6 || k === TEXT_STROKE_OVER$5 || o$2.isGeom(tagName, k);
+    return k === COLOR$7 || k === STROKE_WIDTH$9 || k === FILL$4 || k === STROKE_DASHARRAY$2 || k === STROKE_LINECAP$1 || k === STROKE_LINEJOIN$1 || k === STROKE_MITERLIMIT$2 || k === BACKGROUND_COLOR$3 || k === BACKGROUND_IMAGE$3 || k === BACKGROUND_POSITION_X$4 || k === BACKGROUND_POSITION_Y$4 || k === BACKGROUND_REPEAT$1 || k === BACKGROUND_SIZE$3 || k === STROKE$3 || k === BORDER_BOTTOM_COLOR$2 || k === BORDER_LEFT_COLOR$2 || k === BORDER_BOTTOM_COLOR$2 || k === BORDER_RIGHT_COLOR$2 || k === BORDER_TOP_COLOR$2 || k === BORDER_TOP_LEFT_RADIUS$3 || k === BORDER_TOP_RIGHT_RADIUS$3 || k === BORDER_BOTTOM_RIGHT_RADIUS$3 || k === BORDER_BOTTOM_LEFT_RADIUS$3 || k === VISIBILITY$6 || k === BOX_SHADOW$3 || k === OVERFLOW$4 || k === BACKGROUND_CLIP$2 || k === TEXT_STROKE_WIDTH$6 || k === TEXT_STROKE_COLOR$6 || k === TEXT_STROKE_OVER$5 || o$2.isGeom(tagName, k);
   },
   isValid: function isValid(tagName, k) {
     if (!k) {
@@ -7948,7 +7948,7 @@ var STYLE_KEY$1 = enums.STYLE_KEY,
     LINE_HEIGHT$7 = _enums$STYLE_KEY$i.LINE_HEIGHT,
     TEXT_ALIGN$3 = _enums$STYLE_KEY$i.TEXT_ALIGN,
     FILTER$6 = _enums$STYLE_KEY$i.FILTER,
-    VISIBILITY$6 = _enums$STYLE_KEY$i.VISIBILITY,
+    VISIBILITY$5 = _enums$STYLE_KEY$i.VISIBILITY,
     BOX_SHADOW$2 = _enums$STYLE_KEY$i.BOX_SHADOW,
     POINTER_EVENTS$2 = _enums$STYLE_KEY$i.POINTER_EVENTS,
     FILL$3 = _enums$STYLE_KEY$i.FILL,
@@ -9289,7 +9289,7 @@ function normalize$1(style) {
 
   if (temp !== undefined) {
     if (temp === null || /inherit/i.test(temp)) {
-      res[VISIBILITY$6] = {
+      res[VISIBILITY$5] = {
         u: INHERIT$3
       };
     } else {
@@ -9299,7 +9299,7 @@ function normalize$1(style) {
         _v12 = 'hidden';
       }
 
-      res[VISIBILITY$6] = {
+      res[VISIBILITY$5] = {
         v: _v12,
         u: STRING$2
       };
@@ -11145,7 +11145,7 @@ var _enums$STYLE_KEY$d = enums.STYLE_KEY,
     FONT_FAMILY$3 = _enums$STYLE_KEY$d.FONT_FAMILY,
     FONT_WEIGHT$3 = _enums$STYLE_KEY$d.FONT_WEIGHT,
     COLOR$3 = _enums$STYLE_KEY$d.COLOR,
-    VISIBILITY$5 = _enums$STYLE_KEY$d.VISIBILITY,
+    VISIBILITY$4 = _enums$STYLE_KEY$d.VISIBILITY,
     LETTER_SPACING$2 = _enums$STYLE_KEY$d.LETTER_SPACING,
     OVERFLOW$3 = _enums$STYLE_KEY$d.OVERFLOW,
     WHITE_SPACE$2 = _enums$STYLE_KEY$d.WHITE_SPACE,
@@ -11980,7 +11980,7 @@ var Text = /*#__PURE__*/function (_Node) {
       this.__bbox = null;
       this.__filterBbox = null;
 
-      if (__isDestroyed || computedStyle[DISPLAY$7] === 'none' || computedStyle[VISIBILITY$5] === 'hidden' || !textBoxes.length) {
+      if (__isDestroyed || computedStyle[DISPLAY$7] === 'none' || computedStyle[VISIBILITY$4] === 'hidden' || !textBoxes.length) {
         this.__hasContent = false;
         return;
       }
@@ -17316,7 +17316,7 @@ var STYLE_KEY = enums.STYLE_KEY,
     BORDER_RIGHT_COLOR = _enums$STYLE_KEY$8.BORDER_RIGHT_COLOR,
     FONT_STYLE = _enums$STYLE_KEY$8.FONT_STYLE,
     COLOR$1 = _enums$STYLE_KEY$8.COLOR,
-    VISIBILITY$4 = _enums$STYLE_KEY$8.VISIBILITY,
+    VISIBILITY$3 = _enums$STYLE_KEY$8.VISIBILITY,
     POINTER_EVENTS$1 = _enums$STYLE_KEY$8.POINTER_EVENTS,
     BORDER_TOP = _enums$STYLE_KEY$8.BORDER_TOP,
     BORDER_RIGHT = _enums$STYLE_KEY$8.BORDER_RIGHT,
@@ -18982,13 +18982,13 @@ var Xom = /*#__PURE__*/function (_Node) {
         __cacheStyle[TEXT_STROKE_OVER$1] = __computedStyle[TEXT_STROKE_OVER$1] = __currentStyle[TEXT_STROKE_OVER$1].v;
       }
 
-      if (__currentStyle[VISIBILITY$4].u === INHERIT$1) {
-        __computedStyle[VISIBILITY$4] = parent ? parentComputedStyle[VISIBILITY$4] : 'visible';
-      } else if (isNil$9(__cacheStyle[VISIBILITY$4])) {
-        __computedStyle[VISIBILITY$4] = __currentStyle[VISIBILITY$4].v;
+      if (__currentStyle[VISIBILITY$3].u === INHERIT$1) {
+        __computedStyle[VISIBILITY$3] = parent ? parentComputedStyle[VISIBILITY$3] : 'visible';
+      } else if (isNil$9(__cacheStyle[VISIBILITY$3])) {
+        __computedStyle[VISIBILITY$3] = __currentStyle[VISIBILITY$3].v;
       }
 
-      __cacheStyle[VISIBILITY$4] = __computedStyle[VISIBILITY$4];
+      __cacheStyle[VISIBILITY$3] = __computedStyle[VISIBILITY$3];
 
       if (__currentStyle[POINTER_EVENTS$1].u === INHERIT$1) {
         __computedStyle[POINTER_EVENTS$1] = parent ? parentComputedStyle[POINTER_EVENTS$1] : 'auto';
@@ -19199,7 +19199,7 @@ var Xom = /*#__PURE__*/function (_Node) {
   }, {
     key: "calContent",
     value: function calContent(__currentStyle, __computedStyle) {
-      var visibility = __currentStyle[VISIBILITY$4];
+      var visibility = __currentStyle[VISIBILITY$3];
 
       if (visibility !== 'hidden') {
         var bgI = __currentStyle[BACKGROUND_IMAGE];
@@ -19362,7 +19362,7 @@ var Xom = /*#__PURE__*/function (_Node) {
           borderTopRightRadius = computedStyle[BORDER_TOP_RIGHT_RADIUS$1],
           borderBottomRightRadius = computedStyle[BORDER_BOTTOM_RIGHT_RADIUS$1],
           borderBottomLeftRadius = computedStyle[BORDER_BOTTOM_LEFT_RADIUS$1],
-          visibility = computedStyle[VISIBILITY$4],
+          visibility = computedStyle[VISIBILITY$3],
           backgroundRepeat = computedStyle[BACKGROUND_REPEAT],
           backgroundImage = computedStyle[BACKGROUND_IMAGE],
           opacity = computedStyle[OPACITY$3],
@@ -19654,7 +19654,8 @@ var Xom = /*#__PURE__*/function (_Node) {
                     var deg2 = Math.atan(borderTopWidth / borderRightWidth);
                     var list = border.calPoints(borderTopWidth, computedStyle[BORDER_TOP_STYLE], deg1, deg2, bx1, bx1 + borderLeftWidth, bx2, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 0, isFirst ? btlr : [0, 0], [0, 0]);
                     border.renderBorder(_this8, renderMode, ctx, list, cacheStyle[BORDER_TOP_COLOR], dx, dy);
-                  }
+                  } // right在最后这里不渲染
+
 
                   if (borderBottomWidth > 0 && borderBottomColor[3] > 0) {
                     var _deg7 = Math.atan(borderBottomWidth / borderLeftWidth);
@@ -20757,17 +20758,17 @@ var Xom = /*#__PURE__*/function (_Node) {
   }, {
     key: "baseline",
     get: function get() {
-      return this.offsetHeight;
+      return this.__offsetHeight;
     }
   }, {
     key: "firstBaseline",
     get: function get() {
-      return this.offsetHeight;
+      return this.__offsetHeight;
     }
   }, {
     key: "verticalBaseline",
     get: function get() {
-      return this.offsetWidth;
+      return this.__offsetWidth;
     }
   }, {
     key: "mask",
@@ -21643,9 +21644,9 @@ var _enums$STYLE_KEY$6 = enums.STYLE_KEY,
     STROKE_LINEJOIN = _enums$STYLE_KEY$6.STROKE_LINEJOIN,
     STROKE_DASHARRAY = _enums$STYLE_KEY$6.STROKE_DASHARRAY,
     STROKE_DASHARRAY_STR = _enums$STYLE_KEY$6.STROKE_DASHARRAY_STR,
-    FILL_RULE = _enums$STYLE_KEY$6.FILL_RULE,
-    VISIBILITY$3 = _enums$STYLE_KEY$6.VISIBILITY,
-    FLEX_BASIS$2 = _enums$STYLE_KEY$6.FLEX_BASIS;
+    FILL_RULE = _enums$STYLE_KEY$6.FILL_RULE;
+    _enums$STYLE_KEY$6.VISIBILITY;
+    var FLEX_BASIS$2 = _enums$STYLE_KEY$6.FLEX_BASIS;
 var AUTO$3 = o$4.AUTO,
     PX$4 = o$4.PX,
     PERCENT$3 = o$4.PERCENT,
@@ -21858,8 +21859,32 @@ var Geom = /*#__PURE__*/function (_Xom) {
   }, {
     key: "calContent",
     value: function calContent(currentStyle, computedStyle) {
-      // Geom强制有内容
-      return computedStyle[VISIBILITY$3] !== 'hidden';
+      var res = _get(_getPrototypeOf(Geom.prototype), "calContent", this).call(this, currentStyle, computedStyle);
+
+      if (!res) {
+        var fill = computedStyle[FILL$1],
+            stroke = computedStyle[STROKE],
+            strokeWidth = computedStyle[STROKE_WIDTH$6];
+        console.log(fill, stroke, strokeWidth);
+
+        for (var i = 0, len = fill.length; i < len; i++) {
+          var item = fill[i];
+
+          if (item.k || item[3] > 0) {
+            return true;
+          }
+        }
+
+        for (var _i = 0, _len = stroke.length; _i < _len; _i++) {
+          var _item = stroke[_i];
+
+          if ((_item.k || _item[3] > 0) && strokeWidth[_i] > 0) {
+            return true;
+          }
+        }
+      }
+
+      return res;
     }
   }, {
     key: "__preSet",
@@ -22039,18 +22064,18 @@ var Geom = /*#__PURE__*/function (_Xom) {
           }
         }
 
-        for (var _i = 0, _len = strokes.length; _i < _len; _i++) {
-          var stroke = strokes[_i];
+        for (var _i2 = 0, _len2 = strokes.length; _i2 < _len2; _i2++) {
+          var stroke = strokes[_i2];
 
           if (stroke) {
             var _o2 = {
               stroke: stroke,
-              strokeWidth: strokeWidths[_i],
-              strokeDasharray: strokeDasharrays[_i],
-              strokeDasharrayStr: strokeDasharrayStrs[_i],
-              strokeLinecap: strokeLinecaps[_i],
-              strokeLinejoin: strokeLinejoins[_i],
-              strokeMiterlimit: strokeMiterlimits[_i],
+              strokeWidth: strokeWidths[_i2],
+              strokeDasharray: strokeDasharrays[_i2],
+              strokeDasharrayStr: strokeDasharrayStrs[_i2],
+              strokeLinecap: strokeLinecaps[_i2],
+              strokeLinejoin: strokeLinejoins[_i2],
+              strokeMiterlimit: strokeMiterlimits[_i2],
               dx: dx,
               dy: dy,
               bbox: bbox
@@ -30869,6 +30894,8 @@ function genBboxTotal(node, __structs, index, total, isWebgl) {
     pm = transform$1.calPerspectiveMatrix(perspective, perspectiveOrigin[0], perspectiveOrigin[1]);
   }
 
+  var top = node;
+
   for (var i = index + 1, len = index + total + 1; i < len; i++) {
     var _structs$i = __structs[i],
         _node = _structs$i.node,
@@ -30883,11 +30910,11 @@ function genBboxTotal(node, __structs, index, total, isWebgl) {
 
       var _bbox = _node.bbox,
           _p = _node.__domParent,
-          _matrix = _p.__matrixEvent;
+          matrix$1 = _p.__matrixEvent;
 
       if (_bbox[2] - _bbox[0] && _bbox[3] - _bbox[1]) {
-        if (!isE(_matrix)) {
-          _bbox = transformBbox(_bbox, _matrix, 0, 0);
+        if (!isE(matrix$1)) {
+          _bbox = transformBbox(_bbox, matrix$1, 0, 0);
         }
 
         mergeBbox(bboxTotal, _bbox);
@@ -30921,22 +30948,27 @@ function genBboxTotal(node, __structs, index, total, isWebgl) {
     var p = _node.__domParent;
     _node.__opacity = __computedStyle2[OPACITY$1] * p.__opacity;
     var m = _node.__matrix;
-    var matrix$1 = multiply(p.__matrixEvent, m); // 因为以局部根节点为原点，所以pm是最左边父矩阵乘
 
-    if (pm) {
-      matrix$1 = multiply(pm, matrix$1);
+    if (p !== top) {
+      m = multiply(p.__matrixEvent, m);
     }
 
-    assignMatrix(_node.__matrixEvent, matrix$1);
+    if (isWebgl && p === top && pm) {
+      m = multiply(pm, m);
+    }
+
+    assignMatrix(_node.__matrixEvent, m);
     var bbox = void 0; // 子元素有cacheTotal优先使用
 
     var target = getCache([__cacheMask2, __cacheFilter2, __cacheTotal2, __cache2]);
 
     if (target) {
-      i += _total || 0;
+      if (target !== __cache2) {
+        i += _total || 0;
 
-      if (hasMask) {
-        i += countMaskNum(__structs, i + 1, hasMask);
+        if (hasMask) {
+          i += countMaskNum(__structs, i + 1, hasMask);
+        }
       }
 
       bbox = target.bbox;
@@ -30946,7 +30978,7 @@ function genBboxTotal(node, __structs, index, total, isWebgl) {
 
     if (bbox[2] - bbox[0] && bbox[3] - bbox[1]) {
       // 老的不变，新的会各自重新生成，根据matrixEvent合并bboxTotal
-      bbox = transformBbox(bbox, matrix$1, 0, 0);
+      bbox = transformBbox(bbox, m, 0, 0);
       mergeBbox(bboxTotal, bbox);
     }
   }
@@ -31739,7 +31771,15 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   dx = -bboxTotal[0];
   dy = -bboxTotal[1];
   dbx = __cacheTotal.dbx;
-  dby = __cacheTotal.dby;
+  dby = __cacheTotal.dby; // 需要重新计算，因为bbox里是原本位置，这里是新的位置
+
+  if (pm) {
+    var _node$__computedStyle2 = node.__computedStyle,
+        perspective = _node$__computedStyle2[PERSPECTIVE],
+        perspectiveOrigin = _node$__computedStyle2[PERSPECTIVE_ORIGIN];
+    pm = transform$1.calPerspectiveMatrix(perspective, x1 + dx + perspectiveOrigin[0], y1 + dy + perspectiveOrigin[1]);
+  }
+
   var page = __cacheTotal.__page,
       size = page.__size; // 先绘制到一张单独的纹理，防止children中和cacheTotal重复texture不能绘制
 
@@ -31764,7 +31804,8 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   var matrixList = [];
   var parentMatrix = null;
   var lastMatrix = null;
-  var lastLv = lv; // 先序遍历汇总到total
+  var lastLv = lv;
+  var top = node; // 先序遍历汇总到total
 
   for (var i = index + 1, len = index + (total || 0) + 1; i < len; i++) {
     var _structs$i4 = __structs[i],
@@ -31814,9 +31855,9 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
       var visibility = __computedStyle2[VISIBILITY$1],
           transform = __computedStyle2[TRANSFORM$1],
           tfo = __computedStyle2[TRANSFORM_ORIGIN],
-          mixBlendMode = __computedStyle2[MIX_BLEND_MODE$1]; // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理
+          mixBlendMode = __computedStyle2[MIX_BLEND_MODE$1]; // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树
 
-      if (i === index) ; else if (_lv3 > lastLv) {
+      if (_lv3 > lastLv) {
         parentMatrix = lastMatrix;
 
         if (isE(parentMatrix)) {
@@ -31836,14 +31877,14 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
 
       var _m = void 0;
 
-      if (i !== index && !isE(transform)) {
+      if (!isE(transform)) {
         _m = transform$1.calMatrixByOrigin(transform, tfo[0] + dbx + _node4.__x1 - x1, tfo[1] + dby + _node4.__y1 - y1);
 
         if (!isE(parentMatrix)) {
           _m = multiply(parentMatrix, _m);
         }
 
-        if (pm) {
+        if (pm && _node4.__domParent === top) {
           _m = multiply(pm, _m);
         }
       }
@@ -31900,7 +31941,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
         } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
 
 
-        if (target === _cache2) {
+        if (!target || target === _cache2) {
           _node4.render(renderMode, gl, dx, dy);
         }
       }
@@ -32069,7 +32110,15 @@ function genFilterWebgl(renderMode, gl, node, cache, filter, W, H) {
   return node.__cacheFilter = target;
 }
 
+var BLUR_SHADER_HASH = {};
+
 function genBlurShader(gl, sigma, d) {
+  var key = sigma + ',' + d;
+
+  if (BLUR_SHADER_HASH.hasOwnProperty(key)) {
+    return BLUR_SHADER_HASH[key];
+  }
+
   var weights = blur.gaussianWeight(sigma, d);
   var vert = '';
   var frag = '';
@@ -32093,7 +32142,7 @@ function genBlurShader(gl, sigma, d) {
 
   vert = vertexBlur.replace('[3]', '[' + d + ']').replace(/}$/, vert + '}');
   frag = fragmentBlur.replace('[3]', '[' + d + ']').replace(/}$/, frag + '}');
-  return webgl.initShaders(gl, vert, frag);
+  return BLUR_SHADER_HASH[key] = webgl.initShaders(gl, vert, frag);
 }
 /**
  * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement
@@ -32148,11 +32197,7 @@ function genBlurWebgl(renderMode, gl, cache, sigma) {
       size = page.__size,
       texture = page.texture;
   frameBuffer = genFrameBufferWithTexture(gl, texture, size, size);
-  webgl.drawTex2Cache(gl, gl.program, target, tex, w, h); // 销毁这个临时program
-
-  gl.deleteShader(program.vertexShader);
-  gl.deleteShader(program.fragmentShader);
-  gl.deleteProgram(program);
+  webgl.drawTex2Cache(gl, gl.program, target, tex, w, h);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteFramebuffer(frameBuffer);
@@ -32192,9 +32237,9 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
   __cacheMask.__available = true;
   node.__cacheMask = __cacheMask; // 先求得被遮罩的matrix，用作inverse给mask计算，以被遮罩左上角为原点
 
-  var _node$__computedStyle2 = node.__computedStyle,
-      transform = _node$__computedStyle2[TRANSFORM$1],
-      tfo = _node$__computedStyle2[TRANSFORM_ORIGIN];
+  var _node$__computedStyle3 = node.__computedStyle,
+      transform = _node$__computedStyle3[TRANSFORM$1],
+      tfo = _node$__computedStyle3[TRANSFORM_ORIGIN];
   var inverse;
 
   if (isE(transform)) {
@@ -32420,9 +32465,6 @@ function genDropShadowWebgl(renderMode, gl, cache, v) {
   if (sigma) {
     var program = genBlurShader(gl, sigma, d);
     tex1 = webgl.drawBlur(gl, program, tex1, w, h);
-    gl.deleteShader(program.vertexShader);
-    gl.deleteShader(program.fragmentShader);
-    gl.deleteProgram(program);
   }
 
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
@@ -32727,13 +32769,13 @@ function renderSvg$1(renderMode, ctx, root, isFirst, rlv) {
       if (!(node instanceof Text)) {
         node.__cacheDefs.splice(0);
 
-        var _matrix2 = node.__matrix;
+        var _matrix = node.__matrix;
 
         if (parentMatrix) {
-          _matrix2 = multiply(parentMatrix, _matrix2);
+          _matrix = multiply(parentMatrix, _matrix);
         }
 
-        assignMatrix(node.__matrixEvent, _matrix2);
+        assignMatrix(node.__matrixEvent, _matrix);
       }
 
       node.render(renderMode, ctx, 0, 0);
@@ -32816,11 +32858,11 @@ function renderSvg$1(renderMode, ctx, root, isFirst, rlv) {
                 }
               }
 
-              var _matrix3 = _node6.matrix;
+              var _matrix2 = _node6.matrix;
               var ivs = inverse(dom.matrix);
-              _matrix3 = multiply(ivs, _matrix3); // path没有transform属性，在vd上，需要弥补
+              _matrix2 = multiply(ivs, _matrix2); // path没有transform属性，在vd上，需要弥补
 
-              props.push(['transform', "matrix(".concat(util.joinArr(matrix.m2m6(_matrix3), ','), ")")]); // path没有opacity属性，在vd上，需要弥补
+              props.push(['transform', "matrix(".concat(util.joinArr(matrix.m2m6(_matrix2), ','), ")")]); // path没有opacity属性，在vd上，需要弥补
 
               if (!util.isNil(_opacity) && _opacity !== 1) {
                 props.push(['opacity', _opacity]);
@@ -32843,14 +32885,14 @@ function renderSvg$1(renderMode, ctx, root, isFirst, rlv) {
                   props.push(['transform', "matrix(".concat(util.joinArr(matrix.m2m6(_ivs), ','), ")")]);
                 }
               } else {
-                var _matrix4 = props[hasTransform][1].match(/[\d.]+/g).map(function (i) {
+                var _matrix3 = props[hasTransform][1].match(/[\d.]+/g).map(function (i) {
                   return parseFloat(i);
                 });
 
                 var _ivs2 = inverse(dom.matrix);
 
-                _matrix4 = multiply(_ivs2, _matrix4);
-                props[hasTransform][1] = "matrix(".concat(util.joinArr(matrix.m2m6(_matrix4), ','), ")");
+                _matrix3 = multiply(_ivs2, _matrix3);
+                props[hasTransform][1] = "matrix(".concat(util.joinArr(matrix.m2m6(_matrix3), ','), ")");
               }
             }
           }
@@ -33285,8 +33327,11 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
         var pm = _domParent2.__perspectiveMatrix,
             me = _domParent2.__matrixEvent;
 
-        if (pm && pm.length || me && me.length) {
+        if (pm && pm.length) {
           m = multiply(_domParent2.__perspectiveMatrix, m);
+        }
+
+        if (me && me.length) {
           m = multiply(_domParent2.__matrixEvent, m);
         }
       }
@@ -33340,7 +33385,7 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
         } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
 
 
-        if (target === _cache6) {
+        if (!target || target === _cache6) {
           _node7.render(renderMode, gl, 0, 0);
         }
       }
@@ -34563,7 +34608,7 @@ var Root = /*#__PURE__*/function (_Dom) {
           prev.__struct.hasMask = prev.__hasMask = __mask;
 
           if (prev.__cacheMask) {
-            hasRelease || (hasRelease = prev.__cacheMask.release());
+            hasRelease = prev.__cacheMask.release() || hasRelease;
           }
         }
       } // aniParams在动画引擎提前计算好了
@@ -34577,7 +34622,7 @@ var Root = /*#__PURE__*/function (_Dom) {
 
         if (need) {
           if (node.__cache) {
-            hasRelease || (hasRelease = node.__cache.release());
+            hasRelease = node.__cache.release() || hasRelease;
           }
 
           node.__calStyle(lv, currentStyle, computedStyle, cacheStyle);
@@ -34655,17 +34700,24 @@ var Root = /*#__PURE__*/function (_Dom) {
 
         if (need || lv & PPT) {
           if (node.__cacheTotal) {
-            hasRelease || (hasRelease = node.__cacheTotal.release());
+            hasRelease = node.__cacheTotal.release() || hasRelease;
           }
+        } // mask无论如何都要清除，除非是opacity
 
-          if (node.__cacheMask) {
-            hasRelease || (hasRelease = node.__cacheMask.release());
+
+        if (node.__hasMask) {
+          if (need || lv ^ OP) {
+            if (node.__cacheMask) {
+              hasRelease = node.__cacheMask.release() || hasRelease;
+            }
+
+            if (node.__cacheFilter) {
+              hasRelease = node.__cacheFilter.release() || hasRelease;
+            }
           }
         } // 特殊的filter清除cache
-
-
-        if ((need || lv & FT) && node.__cacheFilter) {
-          hasRelease || (hasRelease = node.__cacheFilter.release());
+        else if ((need || lv & FT) && node.__cacheFilter) {
+          hasRelease = node.__cacheFilter.release() || hasRelease;
         } // 向上清除cache汇总缓存信息，过程中可能会出现重复，根据refreshLevel判断，reflow已经自己清过了
 
 
@@ -34681,15 +34733,15 @@ var Root = /*#__PURE__*/function (_Dom) {
             p.__refreshLevel |= CACHE;
 
             if (p.__cacheTotal) {
-              hasRelease || (hasRelease = p.__cacheTotal.release());
+              hasRelease = p.__cacheTotal.release() || hasRelease;
             }
 
             if (p.__cacheFilter) {
-              hasRelease || (hasRelease = p.__cacheFilter.release());
+              hasRelease = p.__cacheFilter.release() || hasRelease;
             }
 
             if (p.__cacheMask) {
-              hasRelease || (hasRelease = p.__cacheMask.release());
+              hasRelease = p.__cacheMask.release() || hasRelease;
             }
 
             p = p.__domParent;
@@ -34702,7 +34754,7 @@ var Root = /*#__PURE__*/function (_Dom) {
             __domParent.__updateStruct();
 
             if (this.__renderMode === mode.SVG) {
-              hasRelease || (hasRelease = node.__cacheTotal.release());
+              hasRelease = node.__cacheTotal.release() || hasRelease;
               reflow.clearSvgCache(__domParent);
             }
           }
@@ -41837,7 +41889,7 @@ var refresh = {
   CanvasCache: CanvasCache
 };
 
-var version = "0.81.1";
+var version = "0.81.2";
 
 Geom.register('$line', Line);
 Geom.register('$polyline', Polyline);

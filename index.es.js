@@ -14326,7 +14326,8 @@ function calDiff(prev, next, k, target) {
   } else if (k === FILTER$3) {
     // filter很特殊，里面有多个滤镜，按顺序计算，为空视为默认值，如blur默认0，brightness默认1
     var len = Math.max(p ? p.length : 0, n ? n.length : 0);
-    var v = [];
+    var v = [],
+        has;
 
     for (var i = 0; i < len; i++) {
       var pv = p ? p[i] : null,
@@ -14335,6 +14336,7 @@ function calDiff(prev, next, k, target) {
       if (isNil$a(pv) || isNil$a(nv) || pv.k !== nv.k) {
         v.push(null);
       } else {
+        has = true;
         var _k = pv.k,
             pvv = pv.v,
             nvv = nv.v;
@@ -14367,6 +14369,10 @@ function calDiff(prev, next, k, target) {
           v.push(_v);
         }
       }
+    }
+
+    if (!has) {
+      return;
     }
 
     res.v = v;
@@ -14458,7 +14464,7 @@ function calDiff(prev, next, k, target) {
 
     var _length = Math.min(p.length, n.length);
 
-    var has;
+    var _has;
 
     for (var _i5 = 0; _i5 < _length; _i5++) {
       var _pi2 = p[_i5],
@@ -14498,11 +14504,11 @@ function calDiff(prev, next, k, target) {
         res.v.push(null);
       } else {
         res.v.push(temp);
-        has = true;
+        _has = true;
       }
     }
 
-    if (!has) {
+    if (!_has) {
       return;
     }
   } else if (k === OPACITY$4 || k === Z_INDEX$3) {
@@ -15204,22 +15210,24 @@ function calFilter(k, v, percent, st, cl, frame, currentStyle) {
 
     if (item) {
       var k2 = st[i].k,
-          v2 = st[i].v; // 只有dropShadow是多个数组，存放x/y/blur/spread/color
+          v2 = st[i].v,
+          clv = cl[i].v; // 只有dropShadow是多个数组，存放x/y/blur/spread/color
 
       if (k2 === 'dropShadow') {
-        v2[0].v += item[0] * percent;
-        v2[1].v += item[1] * percent;
-        v2[2].v += item[2] * percent;
-        v2[3].v += item[3] * percent;
+        v2[0].v = clv[0].v + item[0] * percent;
+        v2[1].v = clv[1].v + item[1] * percent;
+        v2[2].v = clv[2].v + item[2] * percent;
+        v2[3].v = clv[3].v + item[3] * percent;
         var c1 = v2[4],
+            cv = clv[4],
             c2 = item[4];
-        c1[0] += c2[0] * percent;
-        c1[1] += c2[1] * percent;
-        c1[2] += c2[2] * percent;
-        c1[3] += c2[3] * percent;
+        c1[0] = cv[0] + c2[0] * percent;
+        c1[1] = cv[1] + c2[1] * percent;
+        c1[2] = cv[2] + c2[2] * percent;
+        c1[3] = cv[3] + c2[3] * percent;
       } // 其它都是带单位单值
       else {
-        v2.v += item * percent;
+        v2.v = clv.v + item * percent;
       }
     }
   }
@@ -41888,7 +41896,7 @@ var refresh = {
   CanvasCache: CanvasCache
 };
 
-var version = "0.81.2";
+var version = "0.81.3";
 
 Geom.register('$line', Line);
 Geom.register('$polyline', Polyline);

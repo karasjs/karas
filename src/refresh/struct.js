@@ -150,20 +150,22 @@ function genBboxTotal(node, __structs, index, total, isWebgl) {
     let p = node.__domParent;
     node.__opacity = __computedStyle2[OPACITY] * p.__opacity;
     let m = node.__matrix;
-    if(p === top) {
-      m = multiply(pm, m);
-    }
-    else {
+    if(p !== top) {
       m = multiply(p.__matrixEvent, m);
+    }
+    else if(isWebgl && pm) {
+      m = multiply(pm, m);
     }
     assignMatrix(node.__matrixEvent, m);
     let bbox;
     // 子元素有cacheTotal优先使用
     let target = getCache([__cacheMask2, __cacheFilter2, __cacheTotal2, __cache2]);
     if(target) {
-      i += (total || 0);
-      if(hasMask) {
-        i += countMaskNum(__structs, i + 1, hasMask);
+      if(target !== __cache2) {
+        i += (total || 0);
+        if(hasMask) {
+          i += countMaskNum(__structs, i + 1, hasMask);
+        }
       }
       bbox = target.bbox;
     }
@@ -819,6 +821,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   let parentMatrix = null;
   let lastMatrix = null;
   let lastLv = lv;
+  let top = node;
   // 先序遍历汇总到total
   for(let i = index + 1, len = index + (total || 0) + 1; i < len; i++) {
     let {
@@ -866,9 +869,8 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
         [TRANSFORM_ORIGIN]: tfo,
         [MIX_BLEND_MODE]: mixBlendMode,
       } = __computedStyle2;
-      // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理
-      if(i === index) {}
-      else if(lv > lastLv) {
+      // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树
+      if(lv > lastLv) {
         parentMatrix = lastMatrix;
         if(isE(parentMatrix)) {
           parentMatrix = null;
@@ -885,13 +887,13 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
       lastLv = lv;
       // 特殊渲染的matrix，局部根节点为原点考虑，当需要计算时（不为E）再计算
       let m;
-      if(i !== index && !isE(transform)) {
+      if(!isE(transform)) {
         m = tf.calMatrixByOrigin(transform, tfo[0] + dbx + node.__x1 - x1, tfo[1] + dby + node.__y1 - y1);
         if(!isE(parentMatrix)) {
           m = multiply(parentMatrix, m);
         }
         // 可以忽视顺序直接预乘，因为pm是top节点的ppt，在最左边
-        if(pm) {
+        if(pm && node.__domParent === top) {
           m = multiply(pm, m);
         }
       }
@@ -1114,7 +1116,12 @@ function genFilterWebgl(renderMode, gl, node, cache, filter, W, H) {
   return node.__cacheFilter = target;
 }
 
+const BLUR_SHADER_HASH = {};
 function genBlurShader(gl, sigma, d) {
+  let key = sigma + ',' + d;
+  if(BLUR_SHADER_HASH.hasOwnProperty(key)) {
+    return BLUR_SHADER_HASH[key];
+  }
   let weights = blur.gaussianWeight(sigma, d);
   let vert = '';
   let frag = '';
@@ -1133,7 +1140,7 @@ function genBlurShader(gl, sigma, d) {
   }
   vert = vertexBlur.replace('[3]', '[' + d + ']').replace(/}$/, vert + '}');
   frag = fragmentBlur.replace('[3]', '[' + d + ']').replace(/}$/, frag + '}');
-  return webgl.initShaders(gl, vert, frag);
+  return BLUR_SHADER_HASH[key] = webgl.initShaders(gl, vert, frag);
 }
 
 /**
@@ -1178,10 +1185,6 @@ function genBlurWebgl(renderMode, gl, cache, sigma) {
   let page = target.__page, size = page.__size, texture = page.texture;
   frameBuffer = genFrameBufferWithTexture(gl, texture, size, size);
   webgl.drawTex2Cache(gl, gl.program, target, tex, w, h);
-  // 销毁这个临时program
-  gl.deleteShader(program.vertexShader);
-  gl.deleteShader(program.fragmentShader);
-  gl.deleteProgram(program);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteFramebuffer(frameBuffer);
@@ -1398,9 +1401,6 @@ function genDropShadowWebgl(renderMode, gl, cache, v) {
   if(sigma) {
     let program = genBlurShader(gl, sigma, d);
     tex1 = webgl.drawBlur(gl, program, tex1, w, h);
-    gl.deleteShader(program.vertexShader);
-    gl.deleteShader(program.fragmentShader);
-    gl.deleteProgram(program);
   }
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -2043,7 +2043,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         lastPpt = perspective || lastPpt;
       }
     }
-  }console.log('mergeList', mergeList)
+  }
   // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
   // 这样保证子节点在前，后节点在前，后节点是为了mask先应用自身如filter之后再进行遮罩
   if(mergeList.length) {
@@ -2196,11 +2196,8 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       let {
         [OPACITY]: opacity,
         [MIX_BLEND_MODE]: mixBlendMode,
-        [PERSPECTIVE]: perspective,
       } = __computedStyle;
       let m = __matrix;
-      // 有perspective进入3d模式，开启深度缓冲区和多边形偏移
-      // let isPpt = perspective || m[11];
       if(__domParent) {
         let op = __domParent.__opacity;
         if(op !== 1) {
@@ -2210,18 +2207,6 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         if(pm && pm.length) {
           m = multiply(__domParent.__perspectiveMatrix, m);
         }
-        // flat强制展示在父级平面内，父级不能是ppt，得隔代
-        // else if(m[2] || m[6] || m[8] || m[9] || m[14]) {
-        //   let transformStyle = __domParent.__computedStyle[TRANSFORM_STYLE];
-        //   if(transformStyle === 'flat') {console.log(i)
-        //     // m[2] = m[6] = m[8] = m[9] = m[14] = 0;
-        //     // m[3] = m[7] = m[11] = 0;
-        //     m[2] = m[3] = m[6] = m[7] =  m[14] = 0;
-        //     // m[10] = 1;
-        //     assignMatrix(__computedStyle[TRANSFORM], m);
-        //     assignMatrix(node.__cacheStyle[MATRIX], m);
-        //   }
-        // }
         if(me && me.length) {
           m = multiply(__domParent.__matrixEvent, m);
         }

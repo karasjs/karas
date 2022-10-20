@@ -3194,15 +3194,15 @@ class Xom extends Node {
   }
 
   get baseline() {
-    return this.offsetHeight;
+    return this.__offsetHeight;
   }
 
   get firstBaseline() {
-    return this.offsetHeight;
+    return this.__offsetHeight;
   }
 
   get verticalBaseline() {
-    return this.offsetWidth;
+    return this.__offsetWidth;
   }
 
   get mask() {

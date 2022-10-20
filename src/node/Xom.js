@@ -2275,6 +2275,7 @@ class Xom extends Node {
                 by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 0, isFirst ? btlr : [0, 0], [0, 0]);
               border.renderBorder(this, renderMode, ctx, list, cacheStyle[BORDER_TOP_COLOR], dx, dy);
             }
+            // right在最后这里不渲染
             if(borderBottomWidth > 0 && borderBottomColor[3] > 0) {
               let deg1 = Math.atan(borderBottomWidth / borderLeftWidth);
               let deg2 = Math.atan(borderBottomWidth / borderRightWidth);
@@ -3178,15 +3179,15 @@ class Xom extends Node {
   }
 
   get baseline() {
-    return this.offsetHeight;
+    return this.__offsetHeight;
   }
 
   get firstBaseline() {
-    return this.offsetHeight;
+    return this.__offsetHeight;
   }
 
   get verticalBaseline() {
-    return this.offsetWidth;
+    return this.__offsetWidth;
   }
 
   get mask() {

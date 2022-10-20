@@ -97,6 +97,7 @@ function genBboxTotal(node, __structs, index, total, isWebgl) {
   if(isWebgl && perspective) {
     pm = tf.calPerspectiveMatrix(perspective, perspectiveOrigin[0], perspectiveOrigin[1]);
   }
+  let top = node;
   for(let i = index + 1, len = index + total + 1; i < len; i++) {
     let {
       node,
@@ -144,19 +145,22 @@ function genBboxTotal(node, __structs, index, total, isWebgl) {
     let p = node.__domParent;
     node.__opacity = __computedStyle2[OPACITY] * p.__opacity;
     let m = node.__matrix;
-    let matrix = multiply(p.__matrixEvent, m);
-    // 因为以局部根节点为原点，所以pm是最左边父矩阵乘
-    if(pm) {
-      matrix = multiply(pm, matrix);
+    if(p !== top) {
+      m = multiply(p.__matrixEvent, m);
     }
-    assignMatrix(node.__matrixEvent, matrix);
+    if(isWebgl && p === top && pm) {
+      m = multiply(pm, m);
+    }
+    assignMatrix(node.__matrixEvent, m);
     let bbox;
     // 子元素有cacheTotal优先使用
     let target = getCache([__cacheMask2, __cacheFilter2, __cacheTotal2, __cache2]);
     if(target) {
-      i += (total || 0);
-      if(hasMask) {
-        i += countMaskNum(__structs, i + 1, hasMask);
+      if(target !== __cache2) {
+        i += (total || 0);
+        if(hasMask) {
+          i += countMaskNum(__structs, i + 1, hasMask);
+        }
       }
       bbox = target.bbox;
     }
@@ -165,7 +169,7 @@ function genBboxTotal(node, __structs, index, total, isWebgl) {
     }
     if((bbox[2] - bbox[0]) && (bbox[3] - bbox[1])) {
       // 老的不变，新的会各自重新生成，根据matrixEvent合并bboxTotal
-      bbox = transformBbox(bbox, matrix, 0, 0);
+      bbox = transformBbox(bbox, m, 0, 0);
       mergeBbox(bboxTotal, bbox);
     }
   }
@@ -778,6 +782,14 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   dy = -bboxTotal[1];
   dbx = __cacheTotal.dbx;
   dby = __cacheTotal.dby;
+  // 需要重新计算，因为bbox里是原本位置，这里是新的位置
+  if(pm) {
+    let {
+      [PERSPECTIVE]: perspective,
+      [PERSPECTIVE_ORIGIN]: perspectiveOrigin,
+    } = node.__computedStyle;
+    pm = tf.calPerspectiveMatrix(perspective, x1 + dx + perspectiveOrigin[0], y1 + dy + perspectiveOrigin[1]);
+  }
 
   let page = __cacheTotal.__page, size = page.__size;
   // 先绘制到一张单独的纹理，防止children中和cacheTotal重复texture不能绘制
@@ -847,9 +859,8 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
         [TRANSFORM_ORIGIN]: tfo,
         [MIX_BLEND_MODE]: mixBlendMode,
       } = __computedStyle2;
-      // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理
-      if(i === index) {}
-      else if(lv > lastLv) {
+      // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树
+      if(lv > lastLv) {
         parentMatrix = lastMatrix;
         if(isE(parentMatrix)) {
           parentMatrix = null;
@@ -866,12 +877,12 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
       lastLv = lv;
       // 特殊渲染的matrix，局部根节点为原点考虑，当需要计算时（不为E）再计算
       let m;
-      if(i !== index && !isE(transform)) {
+      if(!isE(transform)) {
         m = tf.calMatrixByOrigin(transform, tfo[0] + dbx + node.__x1 - x1, tfo[1] + dby + node.__y1 - y1);
         if(!isE(parentMatrix)) {
           m = multiply(parentMatrix, m);
         }
-        if(pm) {
+        if(pm && node.__domParent === top) {
           m = multiply(pm, m);
         }
       }
@@ -915,7 +926,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
           }
         }
         // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
-        if(target === __cache) {
+        if(!target || target === __cache) {
           node.render(renderMode, gl, dx, dy);
         }
       }
@@ -1091,7 +1102,12 @@ function genFilterWebgl(renderMode, gl, node, cache, filter, W, H) {
   return node.__cacheFilter = target;
 }
 
+const BLUR_SHADER_HASH = {};
 function genBlurShader(gl, sigma, d) {
+  let key = sigma + ',' + d;
+  if(BLUR_SHADER_HASH.hasOwnProperty(key)) {
+    return BLUR_SHADER_HASH[key];
+  }
   let weights = blur.gaussianWeight(sigma, d);
   let vert = '';
   let frag = '';
@@ -1110,7 +1126,7 @@ function genBlurShader(gl, sigma, d) {
   }
   vert = vertexBlur.replace('[3]', '[' + d + ']').replace(/}$/, vert + '}');
   frag = fragmentBlur.replace('[3]', '[' + d + ']').replace(/}$/, frag + '}');
-  return webgl.initShaders(gl, vert, frag);
+  return BLUR_SHADER_HASH[key] = webgl.initShaders(gl, vert, frag);
 }
 
 /**
@@ -1155,10 +1171,6 @@ function genBlurWebgl(renderMode, gl, cache, sigma) {
   let page = target.__page, size = page.__size, texture = page.texture;
   frameBuffer = genFrameBufferWithTexture(gl, texture, size, size);
   webgl.drawTex2Cache(gl, gl.program, target, tex, w, h);
-  // 销毁这个临时program
-  gl.deleteShader(program.vertexShader);
-  gl.deleteShader(program.fragmentShader);
-  gl.deleteProgram(program);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteFramebuffer(frameBuffer);
@@ -2139,8 +2151,10 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
           opacity *= __domParent.__opacity;
         }
         let pm = __domParent.__perspectiveMatrix, me = __domParent.__matrixEvent;
-        if(pm && pm.length || me && me.length) {
+        if(pm && pm.length) {
           m = multiply(__domParent.__perspectiveMatrix, m);
+        }
+        if(me && me.length) {
           m = multiply(__domParent.__matrixEvent, m);
         }
       }
@@ -2182,7 +2196,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
           }
         }
         // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
-        if(target === __cache) {
+        if(!target || target === __cache) {
           node.render(renderMode, gl, 0, 0);
         }
       }

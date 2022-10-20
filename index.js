@@ -19660,7 +19660,8 @@
                       var deg2 = Math.atan(borderTopWidth / borderRightWidth);
                       var list = border.calPoints(borderTopWidth, computedStyle[BORDER_TOP_STYLE], deg1, deg2, bx1, bx1 + borderLeftWidth, bx2, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 0, isFirst ? btlr : [0, 0], [0, 0]);
                       border.renderBorder(_this8, renderMode, ctx, list, cacheStyle[BORDER_TOP_COLOR], dx, dy);
-                    }
+                    } // right在最后这里不渲染
+
 
                     if (borderBottomWidth > 0 && borderBottomColor[3] > 0) {
                       var _deg7 = Math.atan(borderBottomWidth / borderLeftWidth);
@@ -20763,17 +20764,17 @@
     }, {
       key: "baseline",
       get: function get() {
-        return this.offsetHeight;
+        return this.__offsetHeight;
       }
     }, {
       key: "firstBaseline",
       get: function get() {
-        return this.offsetHeight;
+        return this.__offsetHeight;
       }
     }, {
       key: "verticalBaseline",
       get: function get() {
-        return this.offsetWidth;
+        return this.__offsetWidth;
       }
     }, {
       key: "mask",
@@ -30875,6 +30876,8 @@
       pm = transform$1.calPerspectiveMatrix(perspective, perspectiveOrigin[0], perspectiveOrigin[1]);
     }
 
+    var top = node;
+
     for (var i = index + 1, len = index + total + 1; i < len; i++) {
       var _structs$i = __structs[i],
           _node = _structs$i.node,
@@ -30889,11 +30892,11 @@
 
         var _bbox = _node.bbox,
             _p = _node.__domParent,
-            _matrix = _p.__matrixEvent;
+            matrix$1 = _p.__matrixEvent;
 
         if (_bbox[2] - _bbox[0] && _bbox[3] - _bbox[1]) {
-          if (!isE(_matrix)) {
-            _bbox = transformBbox(_bbox, _matrix, 0, 0);
+          if (!isE(matrix$1)) {
+            _bbox = transformBbox(_bbox, matrix$1, 0, 0);
           }
 
           mergeBbox(bboxTotal, _bbox);
@@ -30927,22 +30930,27 @@
       var p = _node.__domParent;
       _node.__opacity = __computedStyle2[OPACITY$1] * p.__opacity;
       var m = _node.__matrix;
-      var matrix$1 = multiply(p.__matrixEvent, m); // 因为以局部根节点为原点，所以pm是最左边父矩阵乘
 
-      if (pm) {
-        matrix$1 = multiply(pm, matrix$1);
+      if (p !== top) {
+        m = multiply(p.__matrixEvent, m);
       }
 
-      assignMatrix(_node.__matrixEvent, matrix$1);
+      if (isWebgl && p === top && pm) {
+        m = multiply(pm, m);
+      }
+
+      assignMatrix(_node.__matrixEvent, m);
       var bbox = void 0; // 子元素有cacheTotal优先使用
 
       var target = getCache([__cacheMask2, __cacheFilter2, __cacheTotal2, __cache2]);
 
       if (target) {
-        i += _total || 0;
+        if (target !== __cache2) {
+          i += _total || 0;
 
-        if (hasMask) {
-          i += countMaskNum(__structs, i + 1, hasMask);
+          if (hasMask) {
+            i += countMaskNum(__structs, i + 1, hasMask);
+          }
         }
 
         bbox = target.bbox;
@@ -30952,7 +30960,7 @@
 
       if (bbox[2] - bbox[0] && bbox[3] - bbox[1]) {
         // 老的不变，新的会各自重新生成，根据matrixEvent合并bboxTotal
-        bbox = transformBbox(bbox, matrix$1, 0, 0);
+        bbox = transformBbox(bbox, m, 0, 0);
         mergeBbox(bboxTotal, bbox);
       }
     }
@@ -31745,7 +31753,15 @@
     dx = -bboxTotal[0];
     dy = -bboxTotal[1];
     dbx = __cacheTotal.dbx;
-    dby = __cacheTotal.dby;
+    dby = __cacheTotal.dby; // 需要重新计算，因为bbox里是原本位置，这里是新的位置
+
+    if (pm) {
+      var _node$__computedStyle2 = node.__computedStyle,
+          perspective = _node$__computedStyle2[PERSPECTIVE],
+          perspectiveOrigin = _node$__computedStyle2[PERSPECTIVE_ORIGIN];
+      pm = transform$1.calPerspectiveMatrix(perspective, x1 + dx + perspectiveOrigin[0], y1 + dy + perspectiveOrigin[1]);
+    }
+
     var page = __cacheTotal.__page,
         size = page.__size; // 先绘制到一张单独的纹理，防止children中和cacheTotal重复texture不能绘制
 
@@ -31820,9 +31836,9 @@
         var visibility = __computedStyle2[VISIBILITY$1],
             transform = __computedStyle2[TRANSFORM$1],
             tfo = __computedStyle2[TRANSFORM_ORIGIN],
-            mixBlendMode = __computedStyle2[MIX_BLEND_MODE$1]; // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理
+            mixBlendMode = __computedStyle2[MIX_BLEND_MODE$1]; // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树
 
-        if (i === index) ; else if (_lv3 > lastLv) {
+        if (_lv3 > lastLv) {
           parentMatrix = lastMatrix;
 
           if (isE(parentMatrix)) {
@@ -31842,14 +31858,14 @@
 
         var _m = void 0;
 
-        if (i !== index && !isE(transform)) {
+        if (!isE(transform)) {
           _m = transform$1.calMatrixByOrigin(transform, tfo[0] + dbx + _node4.__x1 - x1, tfo[1] + dby + _node4.__y1 - y1);
 
           if (!isE(parentMatrix)) {
             _m = multiply(parentMatrix, _m);
           }
 
-          if (pm) {
+          if (pm && _node4.__domParent === top) {
             _m = multiply(pm, _m);
           }
         }
@@ -31906,7 +31922,7 @@
           } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
 
 
-          if (target === _cache2) {
+          if (!target || target === _cache2) {
             _node4.render(renderMode, gl, dx, dy);
           }
         }
@@ -32075,7 +32091,15 @@
     return node.__cacheFilter = target;
   }
 
+  var BLUR_SHADER_HASH = {};
+
   function genBlurShader(gl, sigma, d) {
+    var key = sigma + ',' + d;
+
+    if (BLUR_SHADER_HASH.hasOwnProperty(key)) {
+      return BLUR_SHADER_HASH[key];
+    }
+
     var weights = blur.gaussianWeight(sigma, d);
     var vert = '';
     var frag = '';
@@ -32099,7 +32123,7 @@
 
     vert = vertexBlur.replace('[3]', '[' + d + ']').replace(/}$/, vert + '}');
     frag = fragmentBlur.replace('[3]', '[' + d + ']').replace(/}$/, frag + '}');
-    return webgl.initShaders(gl, vert, frag);
+    return BLUR_SHADER_HASH[key] = webgl.initShaders(gl, vert, frag);
   }
   /**
    * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement
@@ -32154,11 +32178,7 @@
         size = page.__size,
         texture = page.texture;
     frameBuffer = genFrameBufferWithTexture(gl, texture, size, size);
-    webgl.drawTex2Cache(gl, gl.program, target, tex, w, h); // 销毁这个临时program
-
-    gl.deleteShader(program.vertexShader);
-    gl.deleteShader(program.fragmentShader);
-    gl.deleteProgram(program);
+    webgl.drawTex2Cache(gl, gl.program, target, tex, w, h);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.deleteFramebuffer(frameBuffer);
@@ -32198,9 +32218,9 @@
     __cacheMask.__available = true;
     node.__cacheMask = __cacheMask; // 先求得被遮罩的matrix，用作inverse给mask计算，以被遮罩左上角为原点
 
-    var _node$__computedStyle2 = node.__computedStyle,
-        transform = _node$__computedStyle2[TRANSFORM$1],
-        tfo = _node$__computedStyle2[TRANSFORM_ORIGIN];
+    var _node$__computedStyle3 = node.__computedStyle,
+        transform = _node$__computedStyle3[TRANSFORM$1],
+        tfo = _node$__computedStyle3[TRANSFORM_ORIGIN];
     var inverse;
 
     if (isE(transform)) {
@@ -32733,13 +32753,13 @@
         if (!(node instanceof Text)) {
           node.__cacheDefs.splice(0);
 
-          var _matrix2 = node.__matrix;
+          var _matrix = node.__matrix;
 
           if (parentMatrix) {
-            _matrix2 = multiply(parentMatrix, _matrix2);
+            _matrix = multiply(parentMatrix, _matrix);
           }
 
-          assignMatrix(node.__matrixEvent, _matrix2);
+          assignMatrix(node.__matrixEvent, _matrix);
         }
 
         node.render(renderMode, ctx, 0, 0);
@@ -32822,11 +32842,11 @@
                   }
                 }
 
-                var _matrix3 = _node6.matrix;
+                var _matrix2 = _node6.matrix;
                 var ivs = inverse(dom.matrix);
-                _matrix3 = multiply(ivs, _matrix3); // path没有transform属性，在vd上，需要弥补
+                _matrix2 = multiply(ivs, _matrix2); // path没有transform属性，在vd上，需要弥补
 
-                props.push(['transform', "matrix(".concat(util.joinArr(matrix.m2m6(_matrix3), ','), ")")]); // path没有opacity属性，在vd上，需要弥补
+                props.push(['transform', "matrix(".concat(util.joinArr(matrix.m2m6(_matrix2), ','), ")")]); // path没有opacity属性，在vd上，需要弥补
 
                 if (!util.isNil(_opacity) && _opacity !== 1) {
                   props.push(['opacity', _opacity]);
@@ -32849,14 +32869,14 @@
                     props.push(['transform', "matrix(".concat(util.joinArr(matrix.m2m6(_ivs), ','), ")")]);
                   }
                 } else {
-                  var _matrix4 = props[hasTransform][1].match(/[\d.]+/g).map(function (i) {
+                  var _matrix3 = props[hasTransform][1].match(/[\d.]+/g).map(function (i) {
                     return parseFloat(i);
                   });
 
                   var _ivs2 = inverse(dom.matrix);
 
-                  _matrix4 = multiply(_ivs2, _matrix4);
-                  props[hasTransform][1] = "matrix(".concat(util.joinArr(matrix.m2m6(_matrix4), ','), ")");
+                  _matrix3 = multiply(_ivs2, _matrix3);
+                  props[hasTransform][1] = "matrix(".concat(util.joinArr(matrix.m2m6(_matrix3), ','), ")");
                 }
               }
             }
@@ -33291,8 +33311,11 @@
           var pm = _domParent2.__perspectiveMatrix,
               me = _domParent2.__matrixEvent;
 
-          if (pm && pm.length || me && me.length) {
+          if (pm && pm.length) {
             m = multiply(_domParent2.__perspectiveMatrix, m);
+          }
+
+          if (me && me.length) {
             m = multiply(_domParent2.__matrixEvent, m);
           }
         }
@@ -33346,7 +33369,7 @@
           } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
 
 
-          if (target === _cache6) {
+          if (!target || target === _cache6) {
             _node7.render(renderMode, gl, 0, 0);
           }
         }
@@ -34569,7 +34592,7 @@
             prev.__struct.hasMask = prev.__hasMask = __mask;
 
             if (prev.__cacheMask) {
-              hasRelease || (hasRelease = prev.__cacheMask.release());
+              hasRelease = prev.__cacheMask.release() || hasRelease;
             }
           }
         } // aniParams在动画引擎提前计算好了
@@ -34583,7 +34606,7 @@
 
           if (need) {
             if (node.__cache) {
-              hasRelease || (hasRelease = node.__cache.release());
+              hasRelease = node.__cache.release() || hasRelease;
             }
 
             node.__calStyle(lv, currentStyle, computedStyle, cacheStyle);
@@ -34661,17 +34684,24 @@
 
           if (need || lv & PPT) {
             if (node.__cacheTotal) {
-              hasRelease || (hasRelease = node.__cacheTotal.release());
+              hasRelease = node.__cacheTotal.release() || hasRelease;
             }
+          } // mask无论如何都要清除，除非是opacity
 
-            if (node.__cacheMask) {
-              hasRelease || (hasRelease = node.__cacheMask.release());
+
+          if (node.__hasMask) {
+            if (need || lv ^ OP) {
+              if (node.__cacheMask) {
+                hasRelease = node.__cacheMask.release() || hasRelease;
+              }
+
+              if (node.__cacheFilter) {
+                hasRelease = node.__cacheFilter.release() || hasRelease;
+              }
             }
           } // 特殊的filter清除cache
-
-
-          if ((need || lv & FT) && node.__cacheFilter) {
-            hasRelease || (hasRelease = node.__cacheFilter.release());
+          else if ((need || lv & FT) && node.__cacheFilter) {
+            hasRelease = node.__cacheFilter.release() || hasRelease;
           } // 向上清除cache汇总缓存信息，过程中可能会出现重复，根据refreshLevel判断，reflow已经自己清过了
 
 
@@ -34687,15 +34717,15 @@
               p.__refreshLevel |= CACHE;
 
               if (p.__cacheTotal) {
-                hasRelease || (hasRelease = p.__cacheTotal.release());
+                hasRelease = p.__cacheTotal.release() || hasRelease;
               }
 
               if (p.__cacheFilter) {
-                hasRelease || (hasRelease = p.__cacheFilter.release());
+                hasRelease = p.__cacheFilter.release() || hasRelease;
               }
 
               if (p.__cacheMask) {
-                hasRelease || (hasRelease = p.__cacheMask.release());
+                hasRelease = p.__cacheMask.release() || hasRelease;
               }
 
               p = p.__domParent;
@@ -34708,7 +34738,7 @@
               __domParent.__updateStruct();
 
               if (this.__renderMode === mode.SVG) {
-                hasRelease || (hasRelease = node.__cacheTotal.release());
+                hasRelease = node.__cacheTotal.release() || hasRelease;
                 reflow.clearSvgCache(__domParent);
               }
             }

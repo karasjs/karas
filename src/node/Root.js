@@ -693,7 +693,7 @@ class Root extends Dom {
         prev.__refreshLevel |= CACHE | MASK;
         prev.__struct.hasMask = prev.__hasMask = __mask;
         if(prev.__cacheMask) {
-          hasRelease ||= prev.__cacheMask.release();
+          hasRelease = prev.__cacheMask.release() || hasRelease;
         }
       }
     }
@@ -704,7 +704,7 @@ class Root extends Dom {
       let need = lv >= REPAINT;
       if(need) {
         if(node.__cache) {
-          hasRelease ||= node.__cache.release();
+          hasRelease = node.__cache.release() || hasRelease;
         }
         node.__calStyle(lv, currentStyle, computedStyle, cacheStyle);
         node.__calPerspective(currentStyle, computedStyle, cacheStyle);
@@ -777,15 +777,23 @@ class Root extends Dom {
       // perspective也特殊只清空total的cache，和>=REPAINT清空total共用
       if(need || (lv & PPT)) {
         if(node.__cacheTotal) {
-          hasRelease ||= node.__cacheTotal.release();
+          hasRelease = node.__cacheTotal.release() || hasRelease;
         }
-        if(node.__cacheMask) {
-          hasRelease ||= node.__cacheMask.release();
+      }
+      // mask无论如何都要清除，除非是opacity
+      if(node.__hasMask) {
+        if(need || (lv ^ OP)) {
+          if(node.__cacheMask) {
+            hasRelease = node.__cacheMask.release() || hasRelease;
+          }
+          if(node.__cacheFilter) {
+            hasRelease = node.__cacheFilter.release() || hasRelease;
+          }
         }
       }
       // 特殊的filter清除cache
-      if((need || (lv & FT)) && node.__cacheFilter) {
-        hasRelease ||= node.__cacheFilter.release();
+      else if((need || (lv & FT)) && node.__cacheFilter) {
+        hasRelease = node.__cacheFilter.release() || hasRelease;
       }
       // 向上清除cache汇总缓存信息，过程中可能会出现重复，根据refreshLevel判断，reflow已经自己清过了
       if(__domParent !== this.__lastUpdateP) {
@@ -797,13 +805,13 @@ class Root extends Dom {
           }
           p.__refreshLevel |= CACHE;
           if(p.__cacheTotal) {
-            hasRelease ||= p.__cacheTotal.release();
+            hasRelease = p.__cacheTotal.release() || hasRelease;
           }
           if(p.__cacheFilter) {
-            hasRelease ||= p.__cacheFilter.release();
+            hasRelease = p.__cacheFilter.release() || hasRelease;
           }
           if(p.__cacheMask) {
-            hasRelease ||= p.__cacheMask.release();
+            hasRelease = p.__cacheMask.release() || hasRelease;
           }
           p = p.__domParent;
         }
@@ -812,7 +820,7 @@ class Root extends Dom {
           __domParent.__zIndexChildren = null;
           __domParent.__updateStruct();
           if(this.__renderMode === mode.SVG) {
-            hasRelease ||= node.__cacheTotal.release();
+            hasRelease = node.__cacheTotal.release() || hasRelease;
             reflow.clearSvgCache(__domParent);
           }
         }

@@ -485,7 +485,7 @@ function calDiff(prev, next, k, target) {
   else if(k === FILTER) {
     // filter很特殊，里面有多个滤镜，按顺序计算，为空视为默认值，如blur默认0，brightness默认1
     let len = Math.max(p ? p.length : 0, n ? n.length : 0);
-    let v = [];
+    let v = [], has;
     for(let i = 0; i < len; i++) {
       let pv = p ? p[i] : null, nv = n ? n[i] : null;
       // 空或key不等都无变化
@@ -493,6 +493,7 @@ function calDiff(prev, next, k, target) {
         v.push(null);
       }
       else {
+        has = true;
         let k = pv.k, pvv = pv.v, nvv = nv.v;
         if(k === 'blur') {
           if(pvv.u === nvv.u) {
@@ -527,6 +528,9 @@ function calDiff(prev, next, k, target) {
           v.push(v2);
         }
       }
+    }
+    if(!has) {
+      return;
     }
     res.v = v;
   }
@@ -1287,22 +1291,22 @@ function calFilter(k, v, percent, st, cl, frame, currentStyle) {
   for(let i = 0, len = v.length; i < len; i++) {
     let item = v[i];
     if(item) {
-      let k2 = st[i].k, v2 = st[i].v;
+      let k2 = st[i].k, v2 = st[i].v, clv = cl[i].v;
       // 只有dropShadow是多个数组，存放x/y/blur/spread/color
       if(k2 === 'dropShadow') {
-        v2[0].v += item[0] * percent;
-        v2[1].v += item[1] * percent;
-        v2[2].v += item[2] * percent;
-        v2[3].v += item[3] * percent;
-        let c1 = v2[4], c2 = item[4];
-        c1[0] += c2[0] * percent;
-        c1[1] += c2[1] * percent;
-        c1[2] += c2[2] * percent;
-        c1[3] += c2[3] * percent;
+        v2[0].v = clv[0].v + item[0] * percent;
+        v2[1].v = clv[1].v + item[1] * percent;
+        v2[2].v = clv[2].v + item[2] * percent;
+        v2[3].v = clv[3].v + item[3] * percent;
+        let c1 = v2[4], cv = clv[4], c2 = item[4];
+        c1[0] = cv[0] + c2[0] * percent;
+        c1[1] = cv[1] + c2[1] * percent;
+        c1[2] = cv[2] + c2[2] * percent;
+        c1[3] = cv[3] + c2[3] * percent;
       }
       // 其它都是带单位单值
       else {
-        v2.v += item * percent;
+        v2.v = clv.v + item * percent;
       }
     }
   }

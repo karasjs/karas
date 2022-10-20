@@ -21871,7 +21871,6 @@
           var fill = computedStyle[FILL$1],
               stroke = computedStyle[STROKE],
               strokeWidth = computedStyle[STROKE_WIDTH$6];
-          console.log(fill, stroke, strokeWidth);
 
           for (var i = 0, len = fill.length; i < len; i++) {
             var item = fill[i];

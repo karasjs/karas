@@ -197,7 +197,7 @@ class Geom extends Xom {
         [FILL]: fill,
         [STROKE]: stroke,
         [STROKE_WIDTH]: strokeWidth,
-      } = computedStyle;console.log(fill,stroke,strokeWidth)
+      } = computedStyle;
       for(let i = 0, len = fill.length; i < len; i++) {
         let item = fill[i];
         if(item.k || item[3] > 0) {

@@ -96,7 +96,7 @@ function multiplyRotateX(m, v) {
   }
   let sin = Math.sin(v);
   let cos = Math.cos(v);
-  let e = m[4], f = m[5], g = m[6], h = m[7], i = m[8], j = m[9], k = m[10], l = m[11];
+  let e = m[4], f = m[5], g = m[6], h = m[7], i = m[8], k = m[10], l = m[11];
   m[4] = e * cos + i * sin;
   m[5] = f * cos + g * sin;
   m[6] = g * cos + k * sin;

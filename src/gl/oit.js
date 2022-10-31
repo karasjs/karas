@@ -174,7 +174,7 @@ function splitQuadrilateralPlane(list, hash) {
    * 从侧面观看投影，即x轴，按照深度z顺序，每个平面可形成2或4条线（y/z坐标），用扫描线算法求交
    * 处在扫描线活动范围下的2个线段，如果属于2个不同平面，继续
    * 再检测面的x/y/z是否bbox重叠，3个都重叠是2个四边面空间重叠的必要条件，以此前提甄选
-   * 再用平面相交公式求得相交线，查看双方顶点是否都存在于此条线上，都有则真正相交，开始拆分
+   * 再用平面相交公式求得相交线，查看双方顶点是否都存在于此条线上且范围内，都有则真正相交，开始拆分
    */
   let eventHash = {};
   for(let i = 0, len = xList.length; i < len; i++) {
@@ -199,8 +199,8 @@ function splitQuadrilateralPlane(list, hash) {
     return a.z - b.z;
   });
   // console.log(eventList);
-  const HISTORY = {};
-  let ael = [];
+  const HISTORY = {}; // 求过的2个平面记录，只求1次防重
+  let ael = []; // 当前扫描线活动边
   for(let i = 0, len = eventList.length; i < len; i++) {
     let { list } = eventList[i];
     for(let i = 0, len = list.length; i < len; i++) {
@@ -265,7 +265,7 @@ function splitQuadrilateralPlane(list, hash) {
                   resB.push(r);
                 }
               }
-              // res只可能是2和0，2个res组合只有3种可能，其它则是精度误差忽略，先看互相切割的情况，求交点在边的索引
+              // res只可能是2和0，2个res组合只有3种可能，其它则是精度误差忽略，切割的交点在边的索引和下个索引之间的边上
               if(resA.length === 2 && resB.length === 2
                 || resA.length === 2 && !resB.length
                 || !resA.length || resB.length === 2) {
@@ -289,9 +289,9 @@ function splitQuadrilateralPlane(list, hash) {
 
 function splitPlaneByPoint(plane, res) {
   let points = plane.points, i1 = -1, i2 = -1;
-  let p0 = points[0], p1 = points[1], p2 = points[2],
-    x0 = p0.x, y0 = p0.y, w = p1.x - x0, h = p2.y - y0;
+  let p0 = points[0], p1 = points[1], p2 = points[2], p3 = points[3];
   // console.log(plane, res);
+  // 交点一定在边上，不在边上的不切割
   for(let i = 0, len = points.length; i < len; i++) {
     let p1 = points[i], p2 = points[(i + 1) % len];
     let r1 = pointOnLine3(res[0], p1, p2);
@@ -310,16 +310,14 @@ function splitPlaneByPoint(plane, res) {
     if(!onVertex1 && points[i1 + 1]) {
       onVertex1 = isZero3(points[i1 + 1], res[0]) ? (i1 + 1) : -1;
     }
-    let onVertex2 = isZero3(points[i2], res[0]) ? i2 : -1;
+    let onVertex2 = isZero3(points[i2], res[1]) ? i2 : -1;
     if(!onVertex2 && points[i2 + 1]) {
       onVertex2 = isZero3(points[i2 + 1], res[1]) ? (i2 + 1) : -1;
     }
-    // 相邻如果共顶点，或者有一个在顶点且顶点是是i2则忽略
+    // 如果是相邻顶点，或者只有1个顶点但恰好2点在同边则失效
     if(Math.abs(i1 - i2) <= 1) {
       if(onVertex1 > -1 && onVertex2 > -1) {
-        if(i1 === i2) {
-          return;
-        }
+        return;
       }
       else if(onVertex1 > -1) {
         if(onVertex1 === i2) {
@@ -332,95 +330,90 @@ function splitPlaneByPoint(plane, res) {
         }
       }
     }
-    // 不相邻则必定切割
-    else {
-      // 都在顶点，根据n边形（n一定>=4)情况切割
-      if(onVertex1 > -1 && onVertex2 > -1) {}
-      else if(onVertex1 > -1) {}
-      else if(onVertex2 > -1) {}
-      else {
-        plane.puzzle = [];
-        let a = {
-          index: plane.index,
-          node: plane.node,
-          target: plane.target,
-          isPuzzle: true,
-          points: [],
-        };
-        for(let i = 0; i <= i1; i++) {
-          let p = points[i];
-          a.points.push({
-            x: p.x,
-            y: p.y,
-            z: p.z,
-            px: (p.x - x0) / w,
-            py: (p.y - y0) / h,
-          });
-        }
-        let p = res[0];
-        a.points.push({
-          x: p.x,
-          y: p.y,
-          z: p.z,
-          px: (p.x - x0) / w,
-          py: (p.y - y0) / h,
-        });
-        p = res[1];
-        a.points.push({
-          x: p.x,
-          y: p.y,
-          z: p.z,
-          px: (p.x - x0) / w,
-          py: (p.y - y0) / h,
-        });
-        for(let i = i2 + 1, len = points.length; i < len; i++) {
-          let p = points[i];
-          a.points.push({
-            x: p.x,
-            y: p.y,
-            z: p.z,
-            px: (p.x - x0) / w,
-            py: (p.y - y0) / h,
-          });
-        }
-        plane.puzzle.push(a);
-        let b = {
-          index: plane.index,
-          node: plane.node,
-          target: plane.target,
-          isPuzzle: true,
-          points: [],
-        };
-        p = res[0];
-        b.points.push({
-          x: p.x,
-          y: p.y,
-          z: p.z,
-          px: (p.x - x0) / w,
-          py: (p.y - y0) / h,
-        });
-        for(let i = i1 + 1; i <= i2; i++) {
-          let p = points[i];
-          b.points.push({
-            x: p.x,
-            y: p.y,
-            z: p.z,
-            px: (p.x - x0) / w,
-            py: (p.y - y0) / h,
-          });
-        }
-        p = res[1];
-        b.points.push({
-          x: p.x,
-          y: p.y,
-          px: (p.x - x0) / w,
-          py: (p.y - y0) / h,
-          z: p.z,
-        });
-        plane.puzzle.push(b);
-      }
+    // 原本矩形经过任意matrix变换后一定还是个平行四边形（相对所在平面），4个顶点坐标已知
+    // 然后交点坐标已知，也一定在这个平面上，求得相对于左上角顶点即原点的百分比坐标，分母为宽或高
+    // 其实就是求拆分后的拼图，某个点对应于原本矩形纹理的百分比坐标
+    // 先求得平行四边形的2个邻边的向量，然后求交点和向量所在直线与边的交点即可得出
+    let va = plane.va, vb = plane.vb;
+    if(!va) {
+      va = plane.va = {
+        x: p0.x - p1.x,
+        y: p0.y - p1.y,
+        z: p0.z - p1.z,
+      };
+    }
+    if(!vb) {
+      vb = plane.vb = {
+        x: p1.x - p2.x,
+        y: p1.y - p2.y,
+        z: p1.z - p2.z,
+      };
+    }
+    // n边形（n一定>=3)，会被分为a、b两个多边形
+    let puzzle = plane.puzzle = plane.puzzle || [];
+    let a = {
+      index: plane.index,
+      node: plane.node,
+      target: plane.target,
+      isPuzzle: true,
+      points: [],
+    };
+    for(let i = 0; i <= i1; i++) {
+      a.points.push(getPercentXY(points[i], va, vb, p0, p1, p3));
+    }
+    // 第1个交点如果在顶点上忽略，前面循环考虑了
+    if(onVertex1 === -1) {
+      a.points.push(getPercentXY(res[0], va, vb, p0, p1, p3));
+    }
+    // 第2个即便在顶点上也包含，后面循环没考虑
+    a.points.push(getPercentXY(res[1], va, vb, p0, p1, p3));
+    for(let i = i2 + 1, len = points.length; i < len; i++) {
+      a.points.push(getPercentXY(points[i], va, vb, p0, p1, p3));
+    }
+    if(a.points.length > 2) {
+      puzzle.push(a);
+    }
+    // b部分同上
+    let b = {
+      index: plane.index,
+      node: plane.node,
+      target: plane.target,
+      isPuzzle: true,
+      points: [],
+    };
+    b.points.push(getPercentXY(res[0], va, vb, p0, p1, p3));
+    for(let i = i1 + 1; i <= i2; i++) {
+      b.points.push(getPercentXY(points[i], va, vb, p0, p1, p3));
+    }
+    if(onVertex2 === -1) {
+      b.points.push(getPercentXY(res[1], va, vb, p0, p1, p3));
+    }
+    if(b.points.length > 2) {
+      puzzle.push(b);
     }
   }
+}
+
+// 已知空间平行四边形顶点和其面上一点，求相对于左上角顶点即原点的百分比坐标，四边形宽高即分母
+function getPercentXY(p, va, vb, p0, p1, p3) {
+  let pa = {
+    x: p.x + va.x,
+    y: p.y + va.y,
+    z: p.z + va.z,
+  }, pb = {
+    x: p.x + vb.x,
+    y: p.y + vb.y,
+    z: p.z + vb.z,
+  };
+  let ipx = intersectLineLine3(p0, p1, p, pb, 3);
+  let ipy = intersectLineLine3(p0, p3, p, pa, 3);
+  return {
+    x: p.x,
+    y: p.y,
+    z: p.z,
+    px: (ipx.x - p0.x) / (p1.x - p0.x),
+    py: (ipy.y - p0.y) / (p3.y - p1.y),
+  };
 }
 
 export default {

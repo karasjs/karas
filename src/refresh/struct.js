@@ -16,6 +16,7 @@ import tf from '../style/transform';
 import mbm from '../style/mbm';
 import enums from '../util/enums';
 import webgl from '../gl/webgl';
+import oit from '../gl/oit';
 import TextureCache from '../gl/TextureCache';
 import blur from '../math/blur';
 import vertexBlur from '../gl/filter/blur.vert';
@@ -60,10 +61,20 @@ const {
   CACHE,
   MASK,
 } = level;
-const { isE, inverse, multiply } = mx;
+const { isE, inverse, multiply, calRectPoint } = mx;
 const { mbmName } = mbm;
 const { assignMatrix, transformBbox } = util;
 const { isPerspectiveMatrix } = tf;
+const {
+  convertCoords2Gl,
+  drawTextureCache,
+  createTexture,
+  bindTexture,
+  drawSameSize,
+  drawCache2Tex,
+  drawTex2Cache,
+} = webgl;
+
 const DOM_RENDER = Dom.prototype.render;
 const IMG_RENDER = Img.prototype.render;
 const GEOM_RENDER = Geom.prototype.render;
@@ -80,14 +91,12 @@ function getCache(list) {
 /**
  * 生成一个节点及其子节点所包含的矩形范围盒，canvas和webgl的最大尺寸限制不一样，由外部传入
  * 如果某个子节点超限，则视为整个超限，超限返回空
+ * isPpt为webgl下有perspective的节点，需考虑透视
  */
-function genBboxTotal(node, __structs, index, total, isWebgl) {
+function genBboxTotal(node, __structs, index, total, lv, isPpt) {
   let { __cache } = node;
   assignMatrix(node.__matrixEvent, mx.identity());
   node.__opacity = 1;
-  let {
-    [PERSPECTIVE]: perspective,
-  } = node.__computedStyle;
   // 先将局部根节点的bbox算好，可能没内容是空
   let bboxTotal;
   if(__cache && __cache.available) {
@@ -98,9 +107,13 @@ function genBboxTotal(node, __structs, index, total, isWebgl) {
   }
   bboxTotal = bboxTotal.slice(0);
   // 局部根节点如有perspective，则计算pm，这里不会出现嵌套，因为每个出现都会生成局部根节点
+  // 分2种情况，普通父ppt和自身有ppt情况，自身不能视为E，被绘入主画布时注意特殊处理
   let pm;
-  if(isWebgl && perspective) {
+  if(isPpt) {
     pm = node.__perspectiveMatrix;
+    if(!pm) {
+      pm = node.__matrix;
+    }
   }
   let top = node;
   for(let i = index + 1, len = index + total + 1; i < len; i++) {
@@ -153,7 +166,8 @@ function genBboxTotal(node, __structs, index, total, isWebgl) {
     if(p !== top) {
       m = multiply(p.__matrixEvent, m);
     }
-    else if(isWebgl && pm) {
+    // 只有webgl且ppt情况才有pm，直接子节点才考虑预乘
+    if(pm && p === top) {
       m = multiply(pm, m);
     }
     assignMatrix(node.__matrixEvent, m);
@@ -179,12 +193,9 @@ function genBboxTotal(node, __structs, index, total, isWebgl) {
     }
   }
   if((bboxTotal[2] - bboxTotal[0] <= 0) || (bboxTotal[3] - bboxTotal[1] <= 0)) {
-    return {};
+    return;
   }
-  return {
-    bbox: bboxTotal,
-    pm,
-  };
+  return bboxTotal;
 }
 
 function mergeBbox(bbox, t) {
@@ -208,7 +219,7 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
     return __cacheTotal;
   }
   let { __x1: x1, __y1: y1, __offsetWidth, __offsetHeight } = node;
-  let bboxTotal = genBboxTotal(node, __structs, index, total, false).bbox;
+  let bboxTotal = genBboxTotal(node, __structs, index, total, lv, false);
   if(!bboxTotal) {
     return;
   }
@@ -735,36 +746,35 @@ function genFrameBufferWithTexture(gl, texture, width, height) {
 /**
  * 局部根节点复合图层生成，汇总所有子节点到一颗局部树上的位图缓存，包含超限特殊情况
  * 即便只有自己一个也要返回，因为webgl生成total的原因是有类似filter/mask等必须离屏处理的东西
- * isPpt标明此节点有perspective或者transform中有，需要生成局部根，子节点bbox需考虑ppt同时是否按z切面
- * isTsChange是transformStyle发生变化，flat是平面，preserver3d要考虑切面
- * ppt则是isTsChange情况下上级元素透传下来的ppt值
+ * 传入isPpt的时候，说明是有perspective的节点在前置分割处理完毕之后，进行的渲染，需预乘pm透视矩阵
+ * 传入pptNode/oitHash的时候，说明是透视节点下某个preserve3d的子节点，其渲染需要考虑其子节点平面拆分，预处理
  */
-function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total, __structs,
-                       isPpt, isTsChange, ppt, W, H) {
+function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
+                       __structs, W, H, isPpt, pptNode, oitHash) {
   if(__cacheTotal && __cacheTotal.available) {
     return __cacheTotal;
   }
+  // console.log('genTotalWebgl', index, oitHash);
+  let top = node;
+
   let { __x1: x1, __y1: y1, __cache, __offsetWidth, __offsetHeight } = node;
-  let { bbox: bboxTotal, pm } = genBboxTotal(node, __structs, index, total, true);
+  let bboxTotal = genBboxTotal(node, __structs, index, total, lv, isPpt);
   if(!bboxTotal) {
     return;
-  }console.log('genTotalWebgl', index)
+  }
+  // console.warn(bboxTotal)
 
   // overflow:hidden和canvas一样特殊考虑
-  let w, h, dx, dy, dbx, dby, cx, cy, texture, frameBuffer;
+  let w, h, dx, dy, cx, cy, texture, frameBuffer;
   let overflow = node.__computedStyle[OVERFLOW];
-  if((x1 !== bboxTotal[0]
+  if(overflow === 'hidden' && (x1 !== bboxTotal[0]
     || y1 !== bboxTotal[1]
     || __offsetWidth !== (bboxTotal[2] - bboxTotal[0])
-    || __offsetHeight !== (bboxTotal[3] - bboxTotal[1]))  && overflow === 'hidden') {
+    || __offsetHeight !== (bboxTotal[3] - bboxTotal[1]))) {
     // geom可能超限，不能直接用bbox
     bboxTotal = [x1, y1, x1 + __offsetWidth, y1 + __offsetHeight];
     w = __offsetWidth;
     h = __offsetHeight;
-    dx = -x1;
-    dy = -y1;
-    dbx = 0;
-    dby = 0;
   }
   else {
     w = bboxTotal[2] - bboxTotal[0];
@@ -789,20 +799,36 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   cy = h * 0.5;
   dx = -bboxTotal[0];
   dy = -bboxTotal[1];
-  dbx = __cacheTotal.dbx;
-  dby = __cacheTotal.dby;
+
   // 需要重新计算，因为bbox里是原本位置，这里是新的位置
-  if(pm) {
-    let {
-      [PERSPECTIVE]: perspective,
-      [PERSPECTIVE_ORIGIN]: perspectiveOrigin,
-    } = node.__computedStyle;
-    pm = tf.calPerspectiveMatrix(perspective, x1 + dx + perspectiveOrigin[0], y1 + dy + perspectiveOrigin[1]);
+  let pm;
+  if(isPpt) {
+    if(top.__perspectiveMatrix) {
+      let {
+        [PERSPECTIVE]: perspective,
+        [PERSPECTIVE_ORIGIN]: perspectiveOrigin,
+      } = top.__computedStyle;
+      pm = tf.calPerspectiveMatrix(perspective, x1 + dx + perspectiveOrigin[0], y1 + dy + perspectiveOrigin[1]);
+    }
+    else {
+    }
+  }
+  let ppt;
+  if(oitHash) {
+    if(pptNode.__perspectiveMatrix) {
+      let {
+        [PERSPECTIVE]: perspective,
+      } = pptNode.__computedStyle;
+      ppt = perspective;
+    }
+    else {
+      ppt = -1 / pptNode.__matrix[11];
+    }
   }
 
   let page = __cacheTotal.__page, size = page.__size;
   // 先绘制到一张单独的纹理，防止children中和cacheTotal重复texture不能绘制
-  texture = webgl.createTexture(gl, null, 0, w, h);
+  texture = createTexture(gl, null, 0, w, h);
   frameBuffer = genFrameBufferWithTexture(gl, texture, w, h);
   gl.viewport(0, 0, w, h);
 
@@ -811,22 +837,18 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   // 先绘制自己的cache，起点所以matrix视作E为空，opacity固定1
   if(__cache && __cache.available) {
     list.push({ cache: __cache, opacity: 1 });
-    webgl.drawTextureCache(gl, list, cx, cy, dx, dy);
-    list.splice(0);
+    drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
   }
-  node.render(renderMode, gl, dx, dy);
+  let render = node.render;
+  if(render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
+    drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+    node.render(renderMode, gl, dx, dy);
+  }
 
   let cacheTotal = __cacheTotal;
-  let matrixList = [];
-  let parentMatrix = null;
-  let lastMatrix = null;
-  let lastLv = lv;
-  let top = node;
-  // 先序遍历汇总到total
   for(let i = index + 1, len = index + (total || 0) + 1; i < len; i++) {
     let {
       node,
-      lv,
       total,
       hasMask,
     } = __structs[i];
@@ -834,23 +856,22 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
     if(node instanceof Text) {
       let __cache = node.__cache;
       if(__cache && __cache.available) {
-        let m = lastMatrix;
         let {
           __opacity,
+          __matrixEvent,
         } = node.__domParent;
         let p = __cache.__page;
         if(lastPage && lastPage !== p) {
-          webgl.drawTextureCache(gl, list, cx, cy, dx, dy);
-          list.splice(0);
+          drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
         }
         lastPage = p;
-        list.push({ cache: __cache, opacity: __opacity, matrix: m });
+        list.push({ cache: __cache, opacity: __opacity, matrix: __matrixEvent });
       }
     }
     // 再看total缓存/cache，都没有的是无内容的Xom节点
     else {
-      let __computedStyle2 = node.__computedStyle;
-      if(__computedStyle2[DISPLAY] === 'none' || node.__mask) {
+      let __computedStyle = node.__computedStyle;
+      if(__computedStyle[DISPLAY] === 'none' || node.__mask) {
         i += (total || 0);
         if(hasMask) {
           i += countMaskNum(__structs, i + 1, hasMask);
@@ -858,101 +879,154 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
         continue;
       }
       let {
-        __cache,
-        __cacheTotal,
-        __cacheFilter,
-        __cacheMask,
-      } = node;
-      let {
         [VISIBILITY]: visibility,
         [TRANSFORM]: transform,
         [TRANSFORM_ORIGIN]: tfo,
         [MIX_BLEND_MODE]: mixBlendMode,
-      } = __computedStyle2;
-      // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树
-      if(lv > lastLv) {
-        parentMatrix = lastMatrix;
-        if(isE(parentMatrix)) {
-          parentMatrix = null;
+      } = __computedStyle;
+      if(visibility === 'hidden' && !total) {
+        if(hasMask) {
+          i += countMaskNum(__structs, i + 1, hasMask);
         }
-        matrixList.push(parentMatrix);
+        continue;
       }
-      // 变小出栈索引需注意，可能不止一层，多层计算diff层级
-      else if(lv < lastLv) {
-        let diff = lastLv - lv;
-        matrixList.splice(-diff);
-        parentMatrix = matrixList[lv - 1];
-      }
-      // 不变是同级兄弟，无需特殊处理 else {}
-      lastLv = lv;
-      // 特殊渲染的matrix，局部根节点为原点考虑，当需要计算时（不为E）再计算
+      let p = node.__domParent;
+      // 特殊渲染的matrix，局部根节点为原点考虑，和bbox以节点自身主画布参考系不同
       let m;
       if(!isE(transform)) {
-        m = tf.calMatrixByOrigin(transform, tfo[0] + dbx + node.__x1 - x1, tfo[1] + dby + node.__y1 - y1);
-        if(!isE(parentMatrix)) {
-          m = multiply(parentMatrix, m);
-        }
-        // 可以忽视顺序直接预乘，因为pm是top节点的ppt，在最左边
-        if(pm && node.__domParent === top) {
-          m = multiply(pm, m);
-        }
+        m = tf.calMatrixByOrigin(transform, tfo[0] + node.__x1 + dx, tfo[1] + node.__y1 + dy);
       }
-      lastMatrix = m;
-      let target = getCache([__cacheMask, __cacheFilter, __cacheTotal, __cache]);
-      if(target && (target !== __cache || visibility === 'visible')) {
-        // 局部的mbm和主画布一样，先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
-        if(mixBlendMode !== 'normal') {
-          if(list.length) {
-            webgl.drawTextureCache(gl, list, cx, cy, dx, dy);
-            list.splice(0);
-          }
-          gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
-          gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-          let res = genMbmWebgl(gl, texture, target, mixBlendMode, node.__opacity, m, dx, dy, cx, cy, size, size);
-          if(res) {
+      if(p !== top) {
+        m = multiply(p.__matrixEvent, m);
+      }
+      // 有透视还得预乘透视
+      else if(pm) {
+        m = multiply(pm, m);
+      }
+      assignMatrix(node.__matrixEvent, m);
+      // 有oit平面拆分的优先考虑，其一定没有mbm；否则走普通渲染逻辑
+      let oit = oitHash && oitHash[i];
+      if(oit) {
+        // 只求子节点的matrix即可
+        for(let j = i + 1, len = i + (total || 0) + 1; j < len; j++) {
+          let {
+            node,
+            total,
+            hasMask,
+          } = __structs[j];
+          if(!(node instanceof Text)) {
+            let __computedStyle = node.__computedStyle;
+            if(__computedStyle[DISPLAY] === 'none' || node.__mask) {
+              j += (total || 0);
+              if(hasMask) {
+                j += countMaskNum(__structs, j + 1, hasMask);
+              }
+              continue;
+            }
+            let {
+              [VISIBILITY]: visibility,
+              [TRANSFORM]: transform,
+              [TRANSFORM_ORIGIN]: tfo,
+            } = __computedStyle;
+            if(visibility === 'hidden' && !total) {
+              if(hasMask) {
+                j += countMaskNum(__structs, j + 1, hasMask);
+              }
+              continue;
+            }
+            let p = node.__domParent;
+            let m;
+            if(!isE(transform)) {
+              m = tf.calMatrixByOrigin(transform, tfo[0] + node.__x1  + dx, tfo[1] + node.__y1 + dy);
+            }
+            if(p !== top) {
+              m = multiply(p.__matrixEvent, m);
+            }
+            assignMatrix(node.__matrixEvent, m);
+            let {
+              __cacheTotal,
+              __cacheFilter,
+              __cacheMask,
+            } = node;
+            let target = getCache([__cacheMask, __cacheFilter, __cacheTotal]);
+            if(target) {
+              j += (total || 0);
+              if(hasMask) {
+                j += countMaskNum(__structs, j + 1, hasMask);
+              }
+            }
+          }1
+        }
+        i += (total || 0);
+        if(hasMask) {
+          i += countMaskNum(__structs, i + 1, hasMask);
+        }
+        webgl.drawOitPlane(gl, __structs, oit, ppt, cx, cy, dx, dy);
+      }
+      else {
+        let {
+          __cache,
+          __cacheTotal,
+          __cacheFilter,
+          __cacheMask,
+        } = node;
+        let target = getCache([__cacheMask, __cacheFilter, __cacheTotal, __cache]);
+        if(target) {
+          // 局部的mbm和主画布一样，先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
+          if(mixBlendMode !== 'normal') {
+            if(list.length) {
+              drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+            }
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-            gl.deleteFramebuffer(frameBuffer);
-            gl.deleteTexture(texture);
-            texture = res.texture;
-            frameBuffer = res.frameBuffer;
-            gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+            let res = genMbmWebgl(gl, texture, target, mixBlendMode, node.__opacity, m, dx, dy, cx, cy, size, size);
+            if(res) {
+              gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
+              gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+              gl.deleteFramebuffer(frameBuffer);
+              gl.deleteTexture(texture);
+              texture = res.texture;
+              frameBuffer = res.frameBuffer;
+              gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+              gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+            }
+            lastPage = null;
           }
-          lastPage = null;
-        }
-        else {
-          let p = target.__page;
-          if(lastPage && lastPage !== p) {
-            webgl.drawTextureCache(gl, list, cx, cy, dx, dy);
-            list.splice(0);
+          else {
+            let p = target.__page;
+            if(lastPage && lastPage !== p) {
+              drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+            }
+            lastPage = p;
+            list.push({cache: target, opacity: node.__opacity, matrix: m});
           }
-          lastPage = p;
-          list.push({ cache: target, opacity: node.__opacity, matrix: m });
-        }
-        if(target !== __cache) {
-          i += (total || 0);
-          if(hasMask) {
-            i += countMaskNum(__structs, i + 1, hasMask);
+          if(target !== __cache) {
+            i += (total || 0);
+            if(hasMask) {
+              i += countMaskNum(__structs, i + 1, hasMask);
+            }
           }
         }
-      }
-      // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
-      if(!target || target === __cache) {
-        let render = node.render;
-        if(render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
-          node.render(renderMode, gl, dx, dy);
+        // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
+        if(!target || target === __cache) {
+          let render = node.render;
+          if(render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
+            drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+            node.render(renderMode, gl, dx, dy);
+          }
         }
       }
     }
   }
-  // 绘制到fbo的纹理对象上并删除fbo恢复
-  webgl.drawTextureCache(gl, list, cx, cy, dx, dy);
+
+  // 删除fbo恢复
+  drawTextureCache(gl, list, cx, cy, dx, dy);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteFramebuffer(frameBuffer);
+  // 汇入集合
   frameBuffer = genFrameBufferWithTexture(gl, page.texture, size, size);
-  webgl.drawTex2Cache(gl, gl.program, cacheTotal, texture, w, h);
+  drawTex2Cache(gl, gl.program, cacheTotal, texture, w, h);
   gl.deleteTexture(texture);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -960,6 +1034,271 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   gl.bindTexture(gl.TEXTURE_2D, null);
   gl.viewport(0, 0, W, H);
   return __cacheTotal;
+}
+
+function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total, __structs, W, H) {
+  if(__cacheTotal && __cacheTotal.available) {
+    return __cacheTotal;
+  }
+  // console.log('genPptWebgl', index);
+
+  let top = node;
+  let mergeHash = [], mergeList = [];
+  let isFlat = top.__computedStyle[TRANSFORM_STYLE] === 'flat', isTopFlat = isFlat;
+  // 将产生transformStyle变化的节点记下来，直接子节点如果是flat也记下来，这样除了根节点下一直preserve3d的其它都被记录
+  for(let i = index + 1, len = index + (total || 0) + 1; i < len; i++) {
+    let {
+      lv,
+      node,
+      total,
+      hasMask,
+    } = __structs[i];
+    if(node instanceof Text) {
+      let mh = mergeHash[i];
+      if(mh) {
+        isFlat = mh.isFlat;
+      }
+    }
+    else {
+      let __computedStyle = node.__computedStyle;
+      if(__computedStyle[DISPLAY] === 'none' || node.__mask) {
+        i += (total || 0);
+        if(hasMask) {
+          i += countMaskNum(__structs, i + 1, hasMask);
+        }
+        let mh = mergeHash[i];
+        if(mh) {
+          isFlat = mh.isFlat;
+        }
+        continue;
+      }
+      let {
+        [VISIBILITY]: visibility,
+        [TRANSFORM_STYLE]: transformStyle,
+      } = __computedStyle;
+      if(visibility === 'hidden' && !total) {
+        if(hasMask) {
+          i += countMaskNum(__structs, i + 1, hasMask);
+        }
+        let mh = mergeHash[i];
+        if(mh) {
+          isFlat = mh.isFlat;
+        }
+        continue;
+      }
+      let {
+        __cacheTotal,
+        __cacheFilter,
+        __cacheMask,
+        __domParent: p,
+      } = node;
+      let target = getCache([__cacheMask, __cacheFilter, __cacheTotal]);
+      // 变成flat的局部子节点，或者flat的直接子节点，生成局部根，已生成过的不用再生成
+      if(total && !target && (transformStyle !== p.__computedStyle[TRANSFORM_STYLE]
+        || p === top)) {
+        let j = i + (total || 0);
+        if(hasMask) {
+          j += countMaskNum(__structs, j + 1, hasMask);
+        }
+        mergeHash[j] = {
+          isFlat,
+        };
+        isFlat = transformStyle === 'flat';
+        // 变化的则生成新的局部子节点汇总，记录flat情况
+        mergeList.push({
+          i,
+          lv,
+          total,
+          node,
+          isFlat,
+        });
+      }
+      // 子cache可以跳过，因为flat肯定先前执行
+      if(target) {
+        i += (total || 0);
+        if(hasMask) {
+          i += countMaskNum(__structs, i + 1, hasMask);
+        }
+      }
+      let mh = mergeHash[i];
+      if(mh) {
+        isFlat = mh.isFlat;
+      }
+    }
+  }
+  // 排序依旧是子节点先，但同层级不用倒序（没有mask影响）
+  mergeList.sort(function(a, b) {
+    if(a.lv === b.lv) {
+      return a.i - b.i;
+    }
+    return b.lv - a.lv;
+  });
+  // 根节点特殊处理，如果是flat就是flat但直接子节点后续渲染仍需要透视，如果是3d就要切分
+  if(!isTopFlat) {
+    mergeList.push({
+      i: index,
+      lv,
+      total,
+      node,
+      isFlat: isTopFlat,
+    });
+  }
+  // 变为preserve3d的子节点需要对其子节点进行平面拆分，记录这个子节点索引和拆分信息
+  let oitHash = [];
+  for(let i = 0, len = mergeList.length; i < len; i++) {
+    let { i: index, lv, total, node, isFlat } = mergeList[i];
+    // flat汇集临时cacheTotal
+    if(isFlat) {
+      genTotalWebgl(renderMode, node.__cacheTotal, gl, root, node, index, lv, total || 0,
+        __structs, W, H, null, top, oitHash);
+    }
+    // preserve3d需要以此节点为局部根E，所有子节点四边形面在3d空间下求交拆分，暂时不绘制，等上层flat调用绘制投影
+    else {
+      let top = node, x0 = node.__x1, y0 = node.__y1, planeList = [], planeHash = [];
+      if(node.__hasContent) {
+      let {
+        __cache,
+        __cacheTotal,
+        __cacheFilter,
+        __cacheMask,
+      } = node;
+      let target = getCache([__cacheMask, __cacheFilter, __cacheTotal, __cache]);
+       let o = {
+         index,
+         node,
+         target,
+         points: [
+           { x: 0, y: 0, z: 0 },
+           { x: node.__offsetWidth, y: 0, z: 0 },
+           { x: node.__offsetWidth, y: node.__offsetHeight, z: 0 },
+           { x: 0, y: node.__offsetHeight, z: 0 },
+         ],
+        };
+       planeList.push(o);
+       planeHash[index] = o;
+      }
+      for(let i = index + 1, len = index + (total || 0) + 1; i < len; i++) {
+        let {
+          node,
+          total,
+          hasMask,
+        } = __structs[i];
+        if(node instanceof Text) {
+          // TODO
+        }
+        else {
+          let __computedStyle = node.__computedStyle;
+          if(__computedStyle[DISPLAY] === 'none' || node.__mask) {
+            i += (total || 0);
+            if(hasMask) {
+              i += countMaskNum(__structs, i + 1, hasMask);
+            }
+            continue;
+          }
+          let {
+            [VISIBILITY]: visibility,
+            [TRANSFORM]: transform,
+            [TRANSFORM_ORIGIN]: tfo,
+          } = __computedStyle;
+          if(visibility === 'hidden' && !total) {
+            if(hasMask) {
+              i += countMaskNum(__structs, i + 1, hasMask);
+            }
+            continue;
+          }
+          let {
+            __cache,
+            __cacheTotal,
+            __cacheFilter,
+            __cacheMask,
+            __domParent: p,
+          } = node;
+          // 当前局部根为原点坐标系下的matrix，只求交用
+          let m;
+          if(!isE(transform)) {
+            m = tf.calMatrixByOrigin(transform, tfo[0] + node.__x1 - x0, tfo[1] + node.__y1 - y0);
+          }
+          if(p !== top) {
+            m = multiply(p.__matrixEvent, m);
+          }
+          assignMatrix(node.__matrixEvent, m);
+          let target = getCache([__cacheMask, __cacheFilter, __cacheTotal, __cache]);
+          if(target) {
+            let { x1: x, y1: y, __width: width, __height: height } = target;
+            // 坐标计算还是以局部根为原点
+            let xa = x - x0, ya = y - y0;
+            let xb = x + width - x0, yb = y + height - y0;
+            let { x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4 } = calRectPoint(xa, ya, xb, yb, m);
+            let o = {
+              index: i,
+              node,
+              target,
+              points: [
+                { x: x1, y: y1, z: z1 },
+                { x: x2, y: y2, z: z2 },
+                { x: x3, y: y3, z: z3 },
+                { x: x4, y: y4, z: z4 },
+              ],
+            };
+            planeList.push(o);
+            planeHash[i] = o;
+            if(target !== __cache) {
+              i += (total || 0);
+              if(hasMask) {
+                i += countMaskNum(__structs, i + 1, hasMask);
+              }
+            }
+          }
+        }
+      }
+      // console.log('split', index, planeList);
+      // console.log(planeList, planeHash);
+      // 有2个以上面才会求相交
+      if(planeList.length > 1) {
+        oit.splitQuadrilateralPlane(planeList, planeHash);
+      }
+      // 按z排序，远的先绘制，拆分的则计算纹理坐标，由于不相交，所以可以用平面的z中点
+      let list = [];
+      for(let i = 0, len = planeList.length; i < len; i++) {
+        let plane = planeList[i];
+        let puzzle = plane.puzzle;
+        if(puzzle) {
+          for(let i = 0, len = puzzle.length; i < len; i++) {
+            let p = puzzle[i];
+            p.cz = getCenterZ(p);
+            list.push(p);
+          }
+        }
+        else {
+          plane.cz = getCenterZ(plane);
+          list.push(plane);
+        }
+      }
+      list.sort(function(a, b) {
+        if(a.cz !== b.cz) {
+          return a.cz - b.cz;
+        }
+        return a.index - b.index;
+      });
+      // console.log(list);
+      oitHash[index] = list;
+    }
+  }
+  // 最后一次循环绘制到局部根节点上，类似genTotalWebgl()逻辑，但要考虑ppt透视
+  return genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
+    __structs, W, H, true, null, null);
+}
+
+function getCenterZ(o) {
+  let points = o.points;
+  let z = points[0].z;
+  let min = z, max = z;
+  for(let i = 1, len = points.length; i < len; i++) {
+    let z = points[i].z;
+    min = Math.min(min, z);
+    max = Math.max(max, z);
+  }
+  return (min + max) * 0.5;
 }
 
 function genFilterWebgl(renderMode, gl, node, cache, filter, W, H) {
@@ -1116,11 +1455,10 @@ function genFilterWebgl(renderMode, gl, node, cache, filter, W, H) {
   return node.__cacheFilter = target;
 }
 
-const BLUR_SHADER_HASH = {};
 function genBlurShader(gl, sigma, d) {
-  let key = sigma + ',' + d;
-  if(BLUR_SHADER_HASH.hasOwnProperty(key)) {
-    return BLUR_SHADER_HASH[key];
+  let key = 'programBlur,' + sigma + ',' + d;
+  if(gl.hasOwnProperty(key)) {
+    return gl[key];
   }
   let weights = blur.gaussianWeight(sigma, d);
   let vert = '';
@@ -1140,7 +1478,7 @@ function genBlurShader(gl, sigma, d) {
   }
   vert = vertexBlur.replace('[3]', '[' + d + ']').replace(/}$/, vert + '}');
   frag = fragmentBlur.replace('[3]', '[' + d + ']').replace(/}$/, frag + '}');
-  return BLUR_SHADER_HASH[key] = webgl.initShaders(gl, vert, frag);
+  return gl[key] = webgl.initShaders(gl, vert, frag);
 }
 
 /**
@@ -1170,9 +1508,9 @@ function genBlurWebgl(renderMode, gl, cache, sigma) {
   bboxNew[3] += spread;
   // 写到一个tex中方便后续处理
   let w = width + spread * 2, h = height + spread * 2;
-  let tex = webgl.createTexture(gl, null, 0, w, h);
+  let tex = createTexture(gl, null, 0, w, h);
   let frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
-  webgl.drawCache2Tex(gl, gl.program, cache, w, h, spread);
+  drawCache2Tex(gl, gl.program, cache, w, h, spread);
   // 生成blur，同尺寸复用fbo
   let program = genBlurShader(gl, sigma, d);
   tex = webgl.drawBlur(gl, program, tex, w, h);
@@ -1184,7 +1522,7 @@ function genBlurWebgl(renderMode, gl, cache, sigma) {
   target.__available = true;
   let page = target.__page, size = page.__size, texture = page.texture;
   frameBuffer = genFrameBufferWithTexture(gl, texture, size, size);
-  webgl.drawTex2Cache(gl, gl.program, target, tex, w, h);
+  drawTex2Cache(gl, gl.program, target, tex, w, h);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteFramebuffer(frameBuffer);
@@ -1228,7 +1566,7 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
   inverse = mx.inverse(inverse);
   // 将所有mask绘入一个单独纹理中，尺寸和原点与被遮罩相同
   gl.viewport(0, 0, width, height);
-  let texture = webgl.createTexture(gl, null, 0, width, height);
+  let texture = createTexture(gl, null, 0, width, height);
   let cx = width * 0.5, cy = height * 0.5;
   let frameBuffer = genFrameBufferWithTexture(gl, texture, width, height);
   let next = node.next;
@@ -1261,8 +1599,7 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
           } = node.__domParent;
           let p = __cache.__page;
           if(lastPage && lastPage !== p) {
-            webgl.drawTextureCache(gl, list, cx, cy, dx, dy);
-            list.splice(0);
+            drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
           }
           lastPage = p;
           list.push({ cache: __cache, opacity: __opacity, matrix: __matrixEvent });
@@ -1280,17 +1617,23 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
           continue;
         }
         let {
-          __cache,
-          __cacheTotal,
-          __cacheFilter,
-          __cacheMask,
-        } = node;
-        let {
           [OPACITY]: opacity,
           [VISIBILITY]: visibility,
           [TRANSFORM]: transform,
           [TRANSFORM_ORIGIN]: tfo,
         } = computedStyle;
+        if(visibility === 'hidden' && !total) {
+          if(hasMask) {
+            i += countMaskNum(__structs, i + 1, hasMask);
+          }
+          continue;
+        }
+        let {
+          __cache,
+          __cacheTotal,
+          __cacheFilter,
+          __cacheMask,
+        } = node;
         // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理
         if(i === index) {}
         else if(lv > lastLv) {
@@ -1330,8 +1673,7 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
           lastOpacity = parentOpacity * opacity;
           let p = target.__page;
           if(lastPage && lastPage !== p) {
-            webgl.drawTextureCache(gl, list, cx, cy, dx, dy);
-            list.splice(0);
+            drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
           }
           lastPage = p;
           list.push({ cache: target, opacity: lastOpacity, matrix: m });
@@ -1341,15 +1683,21 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
               i += countMaskNum(__structs, i + 1, hasMask);
             }
           }
-          // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
-          node.render(renderMode, gl, dx, dy);
+        }
+        // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
+        if(!target || target === __cache) {
+          let render = node.render;
+          if(render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
+            drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+            node.render(renderMode, gl, dx, dy);
+          }
         }
       }
     }
     next = next.__next;
   }
   // 绘制到fbo的纹理对象上并删除fbo恢复
-  webgl.drawTextureCache(gl, list, cx, cy, dx, dy);
+  drawTextureCache(gl, list, cx, cy, dx, dy);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteFramebuffer(frameBuffer);
@@ -1393,7 +1741,7 @@ function genDropShadowWebgl(renderMode, gl, cache, v) {
     return;
   }
   let w = width + spread * 2, h = height + spread * 2;
-  let tex1 = webgl.createTexture(gl, null, 0, w, h);
+  let tex1 = createTexture(gl, null, 0, w, h);
   let frameBuffer = genFrameBufferWithTexture(gl, tex1, w, h);
   gl.useProgram(gl.programDs);
   webgl.drawDropShadow(gl, gl.programDs, frameBuffer, cache, color, width, w, height, h);
@@ -1406,9 +1754,9 @@ function genDropShadowWebgl(renderMode, gl, cache, v) {
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteFramebuffer(frameBuffer);
   // cache绘制到一个单独的tex上
-  let tex2 = webgl.createTexture(gl, null, 0, width, height);
+  let tex2 = createTexture(gl, null, 0, width, height);
   frameBuffer = genFrameBufferWithTexture(gl, tex2, width, height);
-  webgl.drawCache2Tex(gl, gl.program, cache, width, height, 0);
+  drawCache2Tex(gl, gl.program, cache, width, height, 0);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteFramebuffer(frameBuffer);
@@ -1434,7 +1782,7 @@ function genDropShadowWebgl(renderMode, gl, cache, v) {
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteFramebuffer(frameBuffer);
-  webgl.bindTexture(gl, null, 0);
+  bindTexture(gl, null, 0);
   gl.deleteTexture(tex1);
   gl.deleteTexture(tex2);
   return target;
@@ -1447,9 +1795,9 @@ function genDropShadowWebgl(renderMode, gl, cache, v) {
  */
 function genMbmWebgl(gl, texture, cache, mbm, opacity, matrix, dx, dy, cx, cy, width, height) {
   // 后续绘制到同尺寸纹理上
-  let tex = webgl.createTexture(gl, null, 0, width, height);
+  let tex = createTexture(gl, null, 0, width, height);
   let frameBuffer = genFrameBufferWithTexture(gl, tex, width, height);
-  webgl.drawTextureCache(gl, [{ cache, opacity, matrix }], cx, cy, dx, dy);
+  drawTextureCache(gl, [{ cache, opacity, matrix }], cx, cy, dx, dy);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteFramebuffer(frameBuffer);
@@ -1503,7 +1851,7 @@ function genMbmWebgl(gl, texture, cache, mbm, opacity, matrix, dx, dy, cx, cy, w
   }
   gl.useProgram(program);
   // 生成新的fbo，将混合结果绘入
-  let resTex = webgl.createTexture(gl, null, 0, width, height);
+  let resTex = createTexture(gl, null, 0, width, height);
   let resFrameBuffer = genFrameBufferWithTexture(gl, resTex, width, height);
   webgl.drawMbm(gl, program, texture, tex);
   gl.useProgram(gl.program);
@@ -1841,11 +2189,15 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
    * 第一次强制进入，后续不包含cache变更且<REPAINT的时候不进入省略循环
    */
   if(isFirst || rlv >= REPAINT || (rlv & (CACHE | FT | PPT | MASK))) {
-    // 节点开始有ppt得记录，后续孩子中如果有flat的，得强制生成cacheTotal
-    let pptList = [];
-    let parentPpt = false;
-    let lastPpt = false;
+    // 记录transformStyle，出现ppt时有用，同时ts为flat后同一ppt上下文影响继承显示
+    let flatList = [], flatExtendList = [];
+    let parentFlat = false, parentExtendFlat = false;
+    let lastFlat = false, lastExtendFlat = false;
+    let pptNodeList = [];
+    let parentPptNode = null;
+    let lastPptNode = null;
     let lastLv = 0;
+    // 节点开始有ppt得记录，后续孩子中如果有flat的，得强制生成cacheTotal
     for(let i = 0, len = __structs.length; i < len; i++) {
       let {
         node,
@@ -1887,17 +2239,36 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         }
         continue;
       }
-      // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理
-      if(!i) {}
+      let perspective = __computedStyle[PERSPECTIVE];
+      let isFlat = __computedStyle[TRANSFORM_STYLE] === 'flat';
+      // 特殊，新的ppt上下文节点启用新值，否则还是老的
+      let isExtendFlat = parentExtendFlat || isFlat;
+      let pptNode = perspective ? node : null;
+      // root第一个特殊处理
+      if(lv === 0) {
+        parentFlat = parentExtendFlat = isFlat;
+        if(perspective) {
+          parentPptNode = node;
+        }
+      }
+      // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树
       else if(lv > lastLv) {
-        parentPpt = lastPpt;
-        pptList.push(parentPpt);
+        parentFlat = lastFlat;
+        flatList.push(isFlat);
+        parentExtendFlat = lastExtendFlat;
+        flatExtendList.push(isFlat);
+        parentPptNode = lastPptNode || parentPptNode;
+        pptNodeList.push(pptNode || parentPptNode);
       }
       // 变小出栈索引需注意，可能不止一层，多层计算diff层级
       else if(lv < lastLv) {
         let diff = lastLv - lv;
-        pptList.splice(-diff);
-        parentPpt = pptList[lv - 1];
+        flatList.splice(-diff);
+        parentFlat = flatList[lv - 1];
+        flatExtendList.splice(-diff);
+        parentExtendFlat = flatExtendList[lv - 1];
+        pptNodeList.splice(-diff);
+        parentPptNode = pptNodeList[lv - 1];
       }
       // 不变是同级兄弟，无需特殊处理 else {}
       lastLv = lv;
@@ -1907,7 +2278,6 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         __currentStyle,
         __cacheTotal,
       } = node;
-      lastRefreshLevel = __refreshLevel;
       node.__refreshLevel = NONE;
       /**
        * lv<REPAINT，一般会有__cache，跳过渲染过程，快速运算，没有cache则是自身超限或无内容，目前不感知
@@ -2001,23 +2371,42 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
           [FILTER]: filter,
           [MIX_BLEND_MODE]: mixBlendMode,
           [PERSPECTIVE]: perspective,
-          [TRANSFORM_STYLE]: transformStyle,
         } = __computedStyle;
         let isMbm = mixBlendMode !== 'normal';
-        let __domParent = node.__domParent;
+        // let __domParent = node.__domParent;
+        let isPpt = total && (perspective || isPerspectiveMatrix(node.__matrix));
         // 有perspective的父或者自身transform包含的都是局部根节点
-        let isPptParent = __domParent && !isE(__domParent.__perspectiveMatrix);
-        let isPpt = (isPptParent || isPerspectiveMatrix(node.__matrix)) && total;
-        // ppt下的子节点，如果发生transformStyle父子不一致，则需生成局部根节点
-        let isTsChange;
-        if(lastPpt && __domParent) {
-          let pts = __domParent.__computedStyle[TRANSFORM_STYLE];
-          isTsChange = transformStyle !== pts && total > 0;
-        }
-        // ppt的直接子节点如果是flat也要生成局部根
-        if(isPptParent && transformStyle === 'flat' && total) {
-          isTsChange = true;
-        }
+        // let isPptParent = __domParent && !isE(__domParent.__perspectiveMatrix) && total;
+        // let isPptSelf = isPerspectiveMatrix(node.__matrix) && total;
+        // let isPpt = isPptParent || isPptSelf;
+        // ppt几种情况非常复杂，需分开考虑
+        // let pptEnv, isPpt;
+        // // ppt在自身身上特殊处理，自身即是局部根节点也是直接子节点，如果父还是ppt可以忽略，因为功能正好重合
+        // if(isPptSelf) {
+        //   isPpt = true;
+        //   pptEnv = {
+        //     flat: isFlat,
+        //     node,
+        //   };
+        // }
+        // // ppt节点需局部根节点位图缓存，防止重合，同时透视子孙要切割平面
+        // else if(perspective && total) {
+        //   isPpt = true;
+        // }
+        // // 父是ppt，直接子节点强制参与透视，当父是flat时，直接子节点子孙都是透视投影，需切割面后投影
+        // else if(isPptParent && parentFlat) {
+        //   pptEnv = {
+        //     flat: isFlat,
+        //     node: parentPptNode,
+        //   };
+        // }
+        // // transformStyle变化的非ppt直接子节点，根据父是否flat决定是否拆面，一定投影
+        // else if(parentPptNode && total && parentFlat !== isFlat) {
+        //   pptEnv = {
+        //     flat: isFlat,
+        //     node: parentPptNode,
+        //   };
+        // }
         let isOverflow = overflow === 'hidden' && total;
         let isFilter = filter && filter.length;
         if(isMbm) {
@@ -2027,8 +2416,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
           || hasMask
           || isFilter
           || isOverflow
-          || isPpt
-          || isTsChange) {
+          || isPpt) {
           mergeList.push({
             i,
             lv,
@@ -2036,12 +2424,13 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
             node,
             hasMask,
             isPpt,
-            isTsChange,
-            ppt: lastPpt,
           });
         }
-        lastPpt = perspective || lastPpt;
       }
+      lastRefreshLevel = __refreshLevel;
+      lastFlat = isFlat;
+      lastExtendFlat = isExtendFlat;
+      lastPptNode = pptNode;
     }
   }
   // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
@@ -2056,7 +2445,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
     // ppt只有嵌套才需要生成，最下面的孩子节点的ppt无需，因此记录一个hash存index，
     // 同时因为是后序遍历，孩子先存所有父亲的index即可保证父亲才能生成cacheTotal
     let pptHash = {};
-    mergeList.forEach(item => {
+    for(let ii = 0, len = mergeList.length; ii < len; ii++) {
       let {
         i,
         lv,
@@ -2064,9 +2453,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         node,
         hasMask,
         isPpt,
-        isTsChange,
-        ppt,
-      } = item;
+      } = mergeList[ii];
       let {
         __matrix,
         __domParent,
@@ -2094,7 +2481,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
           }
         }
         // 最内层的ppt忽略，注意transformStyle变化的强制生成
-        if(!pptHash[i] && !isTsChange) {
+        if(!pptHash[i]) {
           if(!hasMask && !filter.length && !(overflow === 'hidden' && total) && !node.__cacheAsBitmap) {
             // return;
           }
@@ -2112,8 +2499,15 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       let needGen;
       // 可能没变化，比如被遮罩节点、filter变更等
       if(!__cacheTotal || !__cacheTotal.available) {
-        let res = genTotalWebgl(renderMode, __cacheTotal, gl, root, node, i, lv, total || 0,
-          __structs, isPpt, isTsChange, ppt, width, height);
+        let res;
+        if(isPpt) {
+          res = genPptWebgl(renderMode, __cacheTotal, gl, root, node, i, lv, total || 0,
+            __structs, width, height);
+        }
+        else {
+          res = genTotalWebgl(renderMode, __cacheTotal, gl, root, node, i, lv, total || 0,
+            __structs, width, height, null, null, null);
+        }
         if(!res) {
           return;
         }
@@ -2134,7 +2528,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       if(hasMask && (!__cacheMask || !__cacheMask.available || needGen)) {
         genMaskWebgl(renderMode, gl, root, node, target, width, height, i + (total || 0) + 1, lv, __structs);
       }
-    });
+    }
   }
   /**
    * 最后先序遍历一次应用__cacheTotal即可，没有的用__cache，以及剩下的超尺寸的和Text
@@ -2144,8 +2538,8 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
    */
   let frameBuffer, texture;
   if(hasMbm) {
-    texture = webgl.createTexture(gl, null, 0, width, height);
-    webgl.bindTexture(gl, null, 0);
+    texture = createTexture(gl, null, 0, width, height);
+    bindTexture(gl, null, 0);
     frameBuffer = genFrameBufferWithTexture(gl, texture, width, height);
     gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
@@ -2168,8 +2562,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         } = node.__domParent;
         let p = __cache.__page;
         if(lastPage && lastPage !== p) {
-          webgl.drawTextureCache(gl, list, cx, cy, 0, 0);
-          list.splice(0);
+          drawTextureCache(gl, list.splice(0), cx, cy, 0, 0);
         }
         lastPage = p;
         list.push({ cache: __cache, opacity: __opacity, matrix: __matrixEvent });
@@ -2186,6 +2579,17 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         continue;
       }
       let {
+        [OPACITY]: opacity,
+        [MIX_BLEND_MODE]: mixBlendMode,
+        [VISIBILITY]: visibility,
+      } = __computedStyle;
+      if(visibility === 'hidden' && !total) {
+        if(hasMask) {
+          i += countMaskNum(__structs, i + 1, hasMask);
+        }
+        continue;
+      }
+      let {
         __cache,
         __cacheTotal,
         __cacheFilter,
@@ -2193,10 +2597,6 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         __domParent,
         __matrix,
       } = node;
-      let {
-        [OPACITY]: opacity,
-        [MIX_BLEND_MODE]: mixBlendMode,
-      } = __computedStyle;
       let m = __matrix;
       if(__domParent) {
         let op = __domParent.__opacity;
@@ -2219,8 +2619,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         // 有mbm则需要混合之前的纹理和新纹理到fbo上面，连续的mbm则依次交替绘制到画布或离屏fbo上
         if(mixBlendMode !== 'normal') {
           if(list.length) {
-            webgl.drawTextureCache(gl, list, cx, cy, 0, 0);
-            list.splice(0);
+            drawTextureCache(gl, list.splice(0), cx, cy, 0, 0);
             lastPage = null;
           }
           gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
@@ -2236,8 +2635,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         else {
           let p = target.__page;
           if(lastPage && lastPage !== p) {
-            webgl.drawTextureCache(gl, list, cx, cy, 0, 0);
-            list.splice(0);
+            drawTextureCache(gl, list.splice(0), cx, cy, 0, 0);
           }
           lastPage = p;
           list.push({ cache: target, opacity, matrix: m });
@@ -2258,7 +2656,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       }
     }
   }
-  webgl.drawTextureCache(gl, list, cx, cy, 0, 0);
+  drawTextureCache(gl, list, cx, cy, 0, 0);
   // 有mbm时将汇总的fbo绘入主画布，否则本身就是到主画布无需多余操作
   if(hasMbm) {
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
@@ -2300,7 +2698,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
     gl.vertexAttribPointer(a_opacity, 1, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(a_opacity);
     // 纹理单元
-    webgl.bindTexture(gl, texture, 0);
+    bindTexture(gl, texture, 0);
     let u_texture = gl.getUniformLocation(gl.program, 'u_texture');
     gl.uniform1i(u_texture, 0);
     gl.drawArrays(gl.TRIANGLES, 0, 6);

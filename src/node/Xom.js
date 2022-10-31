@@ -1708,12 +1708,13 @@ class Xom extends Node {
     // transformStyle需要特殊判断，在一些情况下强制flat，取消规范的opacity<1限制
     if(__computedStyle[TRANSFORM_STYLE] === 'preserve3d') {
       if(__computedStyle[OVERFLOW] === 'hidden'
-        || __computedStyle[FILTER].length) {
+        || __computedStyle[FILTER].length
+        || this.__cacheAsBitmap) {
         __computedStyle[TRANSFORM_STYLE] = 'flat';
       }
     }
     // 影响父级flat的
-    if((__computedStyle[MIX_BLEND_MODE] !== 'normal') || this.__mask && parentComputedStyle) {
+    if((__computedStyle[MIX_BLEND_MODE] !== 'normal' || this.__mask) && parentComputedStyle) {
       parentComputedStyle[TRANSFORM_STYLE] = 'flat';
     }
     this.__bx1 = bx1;
@@ -3217,7 +3218,12 @@ class Xom extends Node {
       if(root && !this.__isDestroyed) {
         let p = this.__domParent;
         if(p) {
-          p.__computedStyle[TRANSFORM_STYLE] = 'flat';
+          if(v) {
+            p.__computedStyle[TRANSFORM_STYLE] = 'flat';
+          }
+          else {
+            p.__computedStyle[TRANSFORM_STYLE] = p.__currentStyle[TRANSFORM_STYLE];
+          }
         }
         root.__addUpdate(this, null, MASK, null, null, null, null);
       }
@@ -3236,7 +3242,12 @@ class Xom extends Node {
       if(root && !this.__isDestroyed) {
         let p = this.__domParent;
         if(p) {
-          p.__computedStyle[TRANSFORM_STYLE] = 'flat';
+          if(v) {
+            p.__computedStyle[TRANSFORM_STYLE] = 'flat';
+          }
+          else {
+            p.__computedStyle[TRANSFORM_STYLE] = p.__currentStyle[TRANSFORM_STYLE];
+          }
         }
         root.__addUpdate(this, null, MASK, null, null, null, null);
       }
@@ -3253,6 +3264,12 @@ class Xom extends Node {
       this.__cacheAsBitmap = v;
       let root = this.__root;
       if(root && !this.__isDestroyed) {
+        if(v) {
+          this.__computedStyle[TRANSFORM_STYLE] = 'flat';
+        }
+        else {
+          this.__computedStyle[TRANSFORM_STYLE] = this.__currentStyle[TRANSFORM_STYLE];
+        }
         root.__addUpdate(this, null, REPAINT, null, null, null, null);
       }
     }

@@ -1,6 +1,6 @@
 import mx from '../math/matrix';
 
-const calRectPoint = mx.calRectPoint;
+const { calRectPoint, calPoint } = mx;
 
 /**
  * 初始化 shader
@@ -816,8 +816,186 @@ function drawCache2Tex(gl, program, cache, width, height, spread) {
   gl.drawArrays(gl.TRIANGLES, 0, 6);
 }
 
+function drawSameSize(gl, tex, opacity) {
+  let program = gl.programSs;
+  gl.useProgram(program);
+  // 顶点buffer
+  let pointBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    -1, -1,
+    -1, 1,
+    1, -1,
+    -1, 1,
+    1, -1,
+    1, 1,
+  ]), gl.STATIC_DRAW);
+  let a_position = gl.getAttribLocation(program, 'a_position');
+  gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(a_position);
+  // 纹理buffer
+  let texBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    0, 0,
+    0, 1,
+    1, 0,
+    0, 1,
+    1, 0,
+    1, 1,
+  ]), gl.STATIC_DRAW);
+  let a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
+  gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(a_texCoords);
+  // 纹理单元
+  let u_texture = gl.getUniformLocation(program, 'u_texture');
+  gl.uniform1i(u_texture, 0);
+  bindTexture(gl, tex, 0);
+  let u_opacity = gl.getUniformLocation(program, 'u_opacity');
+  gl.uniform1f(u_opacity, opacity);
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+  gl.deleteBuffer(pointBuffer);
+  gl.deleteBuffer(texBuffer);
+  gl.disableVertexAttribArray(a_position);
+  gl.disableVertexAttribArray(a_texCoords);
+  gl.useProgram(gl.program);
+}
+
+function drawOitPlane(gl, structs, list, ppt, cx, cy, dx, dy) {
+  let pointBuffer = gl.createBuffer();
+  let a_position = gl.getAttribLocation(gl.program, 'a_position');
+  let texBuffer = gl.createBuffer();
+  let a_texCoords = gl.getAttribLocation(gl.program, 'a_texCoords');
+  let opacityBuffer = gl.createBuffer();
+  let a_opacity = gl.getAttribLocation(gl.program, 'a_opacity');
+  let u_texture = gl.getUniformLocation(gl.program, 'u_texture');
+  // 循环所有顺序拼图/平面
+  for(let i = 0, len = list.length; i < len; i++) {
+    let { isPuzzle, node, target, points } = list[i];
+    let { __width: width, __height: height,
+      __tx1: tx1, __ty1: ty1, __tx2: tx2, __ty2: ty2,
+      __page: page, __bbox: bbox } = target;
+    // 固定绑定纹理0号单元
+    if(page.__update) {
+      page.genTexture(gl);
+    }
+    bindTexture(gl, page.texture, 0);
+    let bx = bbox[0], by = bbox[1];
+    let opacity = node.__opacity;
+    let matrix = node.__matrixEvent;
+    let tw = tx2 - tx1, th = ty2 - ty1;
+    // 先按照没有拆分拼图的情况求出节点的四个顶点坐标列表，可能有重复利用hash缓存
+    let vtPoint = [], vtTex = [], vtOpacity = [];
+    let pHash = [], tHash = [];
+    if(isPuzzle) {
+      // 拼接三角形，以起点为初始点链接其它所有顶点组成n-2个三角形
+      let x0, y0, z0, w0;
+      let p = points[0];
+      let o = calPoint({
+        x: bx + dx + p.px * width,
+        y: by + dy + p.py * height,
+        z: 0,
+        w: 1,
+      }, matrix);
+      w0 = o.w;
+      let t = convertCoords2Gl(o.x, o.y, o.z, w0, cx, cy, ppt);
+      x0 = t.x; y0 = t.y; z0 = t.z;
+      let tx0 = tx1 + p.px * tw, ty0 = ty1 + p.py * th;
+      // 每次循环以第0个点为起点
+      for(let j = 1, len = points.length; j < len - 1; j++) {
+        vtPoint.push(x0);
+        vtPoint.push(y0);
+        vtPoint.push(z0);
+        vtPoint.push(w0);
+        vtTex.push(tx0);
+        vtTex.push(ty0);
+        vtOpacity.push(opacity);
+        // 依次的2个相邻点
+        for(let k = j; k < j + 2; k++) {
+          let p = points[k];
+          let x, y, z, w;
+          let hashP = pHash[k];
+          if(hashP) {
+            x = hashP.x;
+            y = hashP.y;
+            z = hashP.z;
+            w = hashP.w;
+          }
+          else {
+            let o = calPoint({
+              x: bx + dx + p.px * width,
+              y: by + dy + p.py * height,
+              z: 0,
+              w: 1,
+            }, matrix);
+            w = o.w;
+            let t = convertCoords2Gl(o.x, o.y, o.z, w, cx, cy, ppt);
+            x = t.x; y = t.y; z = t.z;
+            pHash[k] = {
+              x,
+              y,
+              z,
+              w,
+            };
+          }
+          vtPoint.push(x);
+          vtPoint.push(y);
+          vtPoint.push(z);
+          vtPoint.push(w);
+          let tx, ty;
+          let hashT = tHash[k];
+          if(hashT) {
+            tx = hashT.tx;
+            ty = hashT.ty;
+          }
+          else {
+            tx = tx1 + p.px * tw;
+            ty = ty1 + p.py * th;
+            tHash[k] = {
+              tx,
+              ty,
+            };
+          }
+          vtTex.push(tx);
+          vtTex.push(ty);
+          vtOpacity.push(opacity);
+        }
+      }
+      // console.log(vtPoint);
+      // console.log(vtTex);
+      // console.log(vtOpacity);
+    }
+    // 顶点buffer
+    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vtPoint), gl.STATIC_DRAW);
+    gl.vertexAttribPointer(a_position, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_position);
+    // 纹理buffer
+    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vtTex), gl.STATIC_DRAW);
+    gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_texCoords);
+    // opacity buffer
+    gl.bindBuffer(gl.ARRAY_BUFFER, opacityBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vtOpacity), gl.STATIC_DRAW);
+    gl.vertexAttribPointer(a_opacity, 1, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_opacity);
+    gl.uniform1i(u_texture, 0);
+    gl.drawArrays(gl.TRIANGLES, 0, vtOpacity.length);
+    // break;
+  }
+  gl.deleteBuffer(pointBuffer);
+  gl.deleteBuffer(texBuffer);
+  gl.deleteBuffer(opacityBuffer);
+  gl.disableVertexAttribArray(a_position);
+  gl.disableVertexAttribArray(a_texCoords);
+  gl.disableVertexAttribArray(a_opacity);
+}
+
 export default {
   initShaders,
+  convertCoords2Gl,
   createTexture,
   bindTexture,
   drawTextureCache,
@@ -830,4 +1008,6 @@ export default {
   drawDropShadowMerge,
   drawTex2Cache,
   drawCache2Tex,
+  drawSameSize,
+  drawOitPlane,
 };

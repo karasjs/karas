@@ -225,18 +225,18 @@ function calPoint(point, m) {
     let a2 = m[4], b2 = m[5], c2 = m[6], d2 = m[7];
     let a3 = m[8], b3 = m[9], c3 = m[10], d3 = m[11];
     let a4 = m[12], b4 = m[13], c4 = m[14], d4 = m[15];
-    if(d1 || d2 || d3) {
-      w = x * d1 + y * d2 + z * d3 + d4 * w;
-    }
-    else if(d4 !== 1) {
-      w *= d4;
-    }
     let o = {
       x: ((a1 === 1) ? x : (x * a1)) + (a2 ? (y * a2) : 0) + ((w === 1) ? a4 : a4 * w),
       y: ((b1 === 1) ? x : (x * b1)) + (b2 ? (y * b2) : 0) + ((w === 1) ? b4 : b4 * w),
       z: 0,
       w,
     };
+    if(d1 || d2 || d3) {
+      o.w = x * d1 + y * d2 + z * d3 + d4 * w;
+    }
+    else if(d4 !== 1) {
+      o.w *= d4;
+    }
     if(z) {
       o.x += z * a3;
       o.y += z * b3;

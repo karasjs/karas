@@ -66,11 +66,9 @@ const { mbmName } = mbm;
 const { assignMatrix, transformBbox } = util;
 const { isPerspectiveMatrix } = tf;
 const {
-  convertCoords2Gl,
   drawTextureCache,
   createTexture,
   bindTexture,
-  drawSameSize,
   drawCache2Tex,
   drawTex2Cache,
 } = webgl;

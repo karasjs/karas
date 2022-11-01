@@ -8,7 +8,7 @@ const { isZero3 } = vector;
 
 // 设置新拼图的x/y/z投影数据和bbox数据，原本平面矩形也算一个拼图
 function shadow(puzzle) {
-  let { index, points} = puzzle;
+  let points = puzzle.points;
   let xShadow = [
     {
       y: points[0].y,
@@ -468,13 +468,24 @@ function splitPlaneByPoint(puzzle, res) {
       isPuzzle: true,
       points: [],
     };
-    b.points.push(r0 || getPercentXY(res[0], va, vb, p0, p1, p3));
+    // 复用数据但不能相同引用
+    if(r0) {
+      b.points.push(Object.assign({}, r0));
+    }
+    else {
+      b.points.push(getPercentXY(res[0], va, vb, p0, p1, p3));
+    }
     for(let i = i1 + 1; i <= i2; i++) {
       let r = hash[i] = hash[i] || getPercentXY(points[i], va, vb, p0, p1, p3);
       b.points.push(r);
     }
     if(onVertex2 === -1) {
-      b.points.push(r1 || getPercentXY(res[1], va, vb, p0, p1, p3));
+      if(r1) {
+        b.points.push(Object.assign({}, r1));
+      }
+      else {
+        b.points.push(getPercentXY(res[1], va, vb, p0, p1, p3));
+      }
     }
     if(b.points.length > 2) {
       puzzle.push(b);
@@ -507,6 +518,121 @@ function getPercentXY(p, va, vb, p0, p1, p3) {
   };
 }
 
+// 将拼图按z顺序排好，渲染从z小的开始，拼图已经完全不相交（3d空间）
+function sortPuzzleZ(list) {
+  if(list.length < 2) {
+    return list;
+  }
+  // 用扫描线遍历一遍，可以找到2个拼图在x投影重合部分的顶点集合，计算集合的z平均值，
+  // 比较大小可以得出这2个拼图真正的z先后次序，如果相等则特殊处理，和不重合逻辑一样，
+  // 不重合的话，取最大最小值z的平均比较即可，平均值可避免起点终点相同无法比较
+  let eventHash = {};
+  for(let i = 0, len = list.length; i < len; i++) {
+    let puzzle = list[i], points = puzzle.points;
+    for(let i = 0, len = points.length; i < len; i++) {
+      let p = points[i];
+      p.puzzle = puzzle;
+      let o = eventHash[p.z] = eventHash[p.z] || [];
+      o.push(p);
+    }
+    let xBbox = puzzle.xBbox;
+    puzzle.cz = (xBbox[0] + xBbox[2]) * 0.5;
+  }
+  let eventList = [];
+  for(let i in eventHash) {
+    if(eventHash.hasOwnProperty(i)) {
+      let o = eventHash[i];
+      eventList.push({
+        z: i,
+        list: o,
+      });
+    }
+  }
+  eventList.sort(function(a, b) {
+    return a.z - b.z;
+  });
+  // 每个点作为事件，触发时所属拼图count--，首次拼图视为start，当count为0时拼图视为end
+  // 这样2个（或多个）拼图同时都在start状态下（count > 0)的点就是重合区域点集合
+  let ael = [], hash = {};
+  for(let i = 0, len = eventList.length; i < len; i++) {
+    let list = eventList[i].list;
+    // 先一遍循环，把刚进入的点所属平面初始化放入ael，这样同时初始化的就不会有遗漏
+    for(let i = 0, len = list.length; i < len; i++) {
+      let puzzle = list[i].puzzle;
+      // 首次进入初始化数据
+      if(!puzzle.isStart) {
+        puzzle.isStart = true;
+        puzzle.count = puzzle.points.length;
+        ael.push(puzzle);
+      }
+    }
+    let willEnd = [];
+    // 再一遍循环，检查同区域点集合
+    for(let i = 0, len = list.length; i < len; i++) {
+      let p = list[i], puzzle = p.puzzle;
+      // 遍历已存在的puzzle，和当前puzzle视为同区域集合，存数据
+      for(let i = 0, len = ael.length; i < len; i++) {
+        let item = ael[i];
+        if(puzzle.uuid === item.uuid || puzzle.plane === item.plane) {
+          continue;
+        }
+        let key = puzzle.uuid > item.uuid ? (item.uuid + ',' + puzzle.uuid) : (puzzle.uuid + ',' + item.uuid);
+        let o = hash[key] = hash[key] || [];
+        o.push(p);
+      }
+      // 归零时离开，延迟处理，依然是防止同时离开的点puzzle不会有遗漏
+      if(!--puzzle.count) {
+        willEnd.push(puzzle);
+      }
+    }
+    for(let j = 0, len = willEnd.length; j < len; j++) {
+      let i = ael.indexOf(willEnd[j]);
+      ael.splice(i, 1);
+    }
+  }
+  let zHash = {};
+  for(let i in hash) {
+    if(hash.hasOwnProperty(i)) {
+      let list = hash[i], count1 = 0, count2 = 0, uuid = list[0].puzzle.uuid;
+      for(let i = 0, len = list.length; i < len; i++) {
+        let p = list[i], puzzle = p.puzzle;
+        if(uuid === puzzle.uuid) {
+          count1 += p.z;
+        }
+        else {
+          count2 += p.z;
+        }
+      }
+      zHash[i] = {
+        uuid,
+        count1,
+        count2,
+      };
+    }
+  }
+  list.sort(function(a, b) {
+    let key = a.uuid > b.uuid ? (b.uuid + ',' + a.uuid) : (a.uuid + ',' + b.uuid);
+    // 有重合的区域，除非相等，否则可以直接得出结果
+    if(zHash.hasOwnProperty(key)) {
+      let item = zHash[key];
+      if(a.uuid === item.uuid) {
+        if(item.count1 !== item.count2) {
+          return item.count1 - item.count2;
+        }
+      }
+      else {
+        if(item.count1 !== item.count2) {
+          return item.count2 - item.count1;
+        }
+      }
+    }
+    // 无重合或者相等的，对比z中点
+    return a.cz - b.cz;
+  });
+  return list;
+}
+
 export default {
   splitQuadrilateralPlane,
+  sortPuzzleZ,
 };

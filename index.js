@@ -32121,8 +32121,7 @@
   var isZero3 = vector.isZero3; // 设置新拼图的x/y/z投影数据和bbox数据，原本平面矩形也算一个拼图
 
   function shadow(puzzle) {
-    puzzle.index;
-        var points = puzzle.points;
+    var points = puzzle.points;
     var xShadow = [{
       y: points[0].y,
       z: points[0].z
@@ -32650,8 +32649,13 @@
         target: plane.target,
         isPuzzle: true,
         points: []
-      };
-      b.points.push(r0 || getPercentXY(res[0], va, vb, p0, p1, p3));
+      }; // 复用数据但不能相同引用
+
+      if (r0) {
+        b.points.push(Object.assign({}, r0));
+      } else {
+        b.points.push(getPercentXY(res[0], va, vb, p0, p1, p3));
+      }
 
       for (var _i9 = i1 + 1; _i9 <= i2; _i9++) {
         var _r4 = hash[_i9] = hash[_i9] || getPercentXY(points[_i9], va, vb, p0, p1, p3);
@@ -32660,7 +32664,11 @@
       }
 
       if (onVertex2 === -1) {
-        b.points.push(_r2 || getPercentXY(res[1], va, vb, p0, p1, p3));
+        if (_r2) {
+          b.points.push(Object.assign({}, _r2));
+        } else {
+          b.points.push(getPercentXY(res[1], va, vb, p0, p1, p3));
+        }
       }
 
       if (b.points.length > 2) {
@@ -32694,10 +32702,154 @@
       px: (ipx.x - p0.x) / (p1.x - p0.x),
       py: (ipy.y - p0.y) / (p3.y - p1.y)
     };
+  } // 将拼图按z顺序排好，渲染从z小的开始，拼图已经完全不相交（3d空间）
+
+
+  function sortPuzzleZ(list) {
+    if (list.length < 2) {
+      return list;
+    } // 用扫描线遍历一遍，可以找到2个拼图在x投影重合部分的顶点集合，计算集合的z平均值，
+    // 比较大小可以得出这2个拼图真正的z先后次序，如果相等则特殊处理，和不重合逻辑一样，
+    // 不重合的话，取最大最小值z的平均比较即可，平均值可避免起点终点相同无法比较
+
+
+    var eventHash = {};
+
+    for (var i = 0, len = list.length; i < len; i++) {
+      var puzzle = list[i],
+          points = puzzle.points;
+
+      for (var _i10 = 0, _len10 = points.length; _i10 < _len10; _i10++) {
+        var p = points[_i10];
+        p.puzzle = puzzle;
+        var o = eventHash[p.z] = eventHash[p.z] || [];
+        o.push(p);
+      }
+
+      var xBbox = puzzle.xBbox;
+      puzzle.cz = (xBbox[0] + xBbox[2]) * 0.5;
+    }
+
+    var eventList = [];
+
+    for (var _i11 in eventHash) {
+      if (eventHash.hasOwnProperty(_i11)) {
+        var _o2 = eventHash[_i11];
+        eventList.push({
+          z: _i11,
+          list: _o2
+        });
+      }
+    }
+
+    eventList.sort(function (a, b) {
+      return a.z - b.z;
+    }); // 每个点作为事件，触发时所属拼图count--，首次拼图视为start，当count为0时拼图视为end
+    // 这样2个（或多个）拼图同时都在start状态下（count > 0)的点就是重合区域点集合
+
+    var ael = [],
+        hash = {};
+
+    for (var _i12 = 0, _len11 = eventList.length; _i12 < _len11; _i12++) {
+      var _list2 = eventList[_i12].list; // 先一遍循环，把刚进入的点所属平面初始化放入ael，这样同时初始化的就不会有遗漏
+
+      for (var _i13 = 0, _len12 = _list2.length; _i13 < _len12; _i13++) {
+        var _puzzle2 = _list2[_i13].puzzle; // 首次进入初始化数据
+
+        if (!_puzzle2.isStart) {
+          _puzzle2.isStart = true;
+          _puzzle2.count = _puzzle2.points.length;
+          ael.push(_puzzle2);
+        }
+      }
+
+      var willEnd = []; // 再一遍循环，检查同区域点集合
+
+      for (var _i14 = 0, _len13 = _list2.length; _i14 < _len13; _i14++) {
+        var _p3 = _list2[_i14],
+            _puzzle3 = _p3.puzzle; // 遍历已存在的puzzle，和当前puzzle视为同区域集合，存数据
+
+        for (var _i15 = 0, _len14 = ael.length; _i15 < _len14; _i15++) {
+          var item = ael[_i15];
+
+          if (_puzzle3.uuid === item.uuid || _puzzle3.plane === item.plane) {
+            continue;
+          }
+
+          var key = _puzzle3.uuid > item.uuid ? item.uuid + ',' + _puzzle3.uuid : _puzzle3.uuid + ',' + item.uuid;
+
+          var _o3 = hash[key] = hash[key] || [];
+
+          _o3.push(_p3);
+        } // 归零时离开，延迟处理，依然是防止同时离开的点puzzle不会有遗漏
+
+
+        if (! --_puzzle3.count) {
+          willEnd.push(_puzzle3);
+        }
+      }
+
+      for (var j = 0, _len15 = willEnd.length; j < _len15; j++) {
+        var _i16 = ael.indexOf(willEnd[j]);
+
+        ael.splice(_i16, 1);
+      }
+    }
+
+    var zHash = {};
+
+    for (var _i17 in hash) {
+      if (hash.hasOwnProperty(_i17)) {
+        var _list3 = hash[_i17],
+            count1 = 0,
+            count2 = 0,
+            uuid = _list3[0].puzzle.uuid;
+
+        for (var _i18 = 0, _len16 = _list3.length; _i18 < _len16; _i18++) {
+          var _p4 = _list3[_i18],
+              _puzzle4 = _p4.puzzle;
+
+          if (uuid === _puzzle4.uuid) {
+            count1 += _p4.z;
+          } else {
+            count2 += _p4.z;
+          }
+        }
+
+        zHash[_i17] = {
+          uuid: uuid,
+          count1: count1,
+          count2: count2
+        };
+      }
+    }
+
+    list.sort(function (a, b) {
+      var key = a.uuid > b.uuid ? b.uuid + ',' + a.uuid : a.uuid + ',' + b.uuid; // 有重合的区域，除非相等，否则可以直接得出结果
+
+      if (zHash.hasOwnProperty(key)) {
+        var _item4 = zHash[key];
+
+        if (a.uuid === _item4.uuid) {
+          if (_item4.count1 !== _item4.count2) {
+            return _item4.count1 - _item4.count2;
+          }
+        } else {
+          if (_item4.count1 !== _item4.count2) {
+            return _item4.count2 - _item4.count1;
+          }
+        }
+      } // 无重合或者相等的，对比z中点
+
+
+      return a.cz - b.cz;
+    });
+    return list;
   }
 
   var oit = {
-    splitQuadrilateralPlane: splitQuadrilateralPlane
+    splitQuadrilateralPlane: splitQuadrilateralPlane,
+    sortPuzzleZ: sortPuzzleZ
   };
 
   var TexturePage = /*#__PURE__*/function (_Page) {
@@ -33889,8 +34041,7 @@
   function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total, __structs, W, H, isPpt, pptNode, oitHash) {
     if (__cacheTotal && __cacheTotal.available) {
       return __cacheTotal;
-    } // console.log('genTotalWebgl', index, oitHash);
-
+    }
 
     var top = node;
     var x1 = node.__x1,
@@ -33902,8 +34053,7 @@
 
     if (!bboxTotal) {
       return;
-    } // console.warn(bboxTotal)
-    // overflow:hidden和canvas一样特殊考虑
+    } // overflow:hidden和canvas一样特殊考虑
 
 
     var w, h, dx, dy, cx, cy, texture, frameBuffer;
@@ -34218,8 +34368,7 @@
   function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total, __structs, W, H) {
     if (__cacheTotal && __cacheTotal.available) {
       return __cacheTotal;
-    } // console.log('genPptWebgl', index);
-
+    }
 
     var top = node;
     var mergeHash = [],
@@ -34504,14 +34653,12 @@
               }
             }
           }
-        } // console.log('split', index, planeList);
-        // console.log(planeList, planeHash);
-        // 有2个以上面才会求相交
+        } // 有2个以上面才会求相交
 
 
         if (planeList.length > 1) {
           oit.splitQuadrilateralPlane(planeList);
-        } // 按z排序，远的先绘制，拆分的则计算纹理坐标，由于不相交，所以可以用平面的z中点
+        } // 没拆分的直接存入，拆分的存有效拼图
 
 
         var list = [];
@@ -34523,44 +34670,23 @@
           if (puzzle) {
             for (var _i4 = 0, _len5 = puzzle.length; _i4 < _len5; _i4++) {
               var _p6 = puzzle[_i4];
-              _p6.cz = getCenterZ(_p6);
-              list.push(_p6);
+
+              if (!_p6.isDeleted) {
+                list.push(_p6);
+              }
             }
           } else {
-            plane.cz = getCenterZ(plane);
             list.push(plane);
           }
-        }
+        } // 按z排序，远的先绘制
 
-        list.sort(function (a, b) {
-          if (a.cz !== b.cz) {
-            return a.cz - b.cz;
-          }
 
-          return a.index - b.index;
-        }); // console.log(list);
-
-        oitHash[_index] = list;
+        oitHash[_index] = oit.sortPuzzleZ(list);
       }
     } // 最后一次循环绘制到局部根节点上，类似genTotalWebgl()逻辑，但要考虑ppt透视
 
 
     return genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total, __structs, W, H, true, null, null);
-  }
-
-  function getCenterZ(o) {
-    var points = o.points;
-    var z = points[0].z;
-    var min = z,
-        max = z;
-
-    for (var i = 1, len = points.length; i < len; i++) {
-      var _z = points[i].z;
-      min = Math.min(min, _z);
-      max = Math.max(max, _z);
-    }
-
-    return (min + max) * 0.5;
   }
 
   function genFilterWebgl(renderMode, gl, node, cache, filter, W, H) {

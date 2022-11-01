@@ -754,7 +754,6 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   if(__cacheTotal && __cacheTotal.available) {
     return __cacheTotal;
   }
-  // console.log('genTotalWebgl', index, oitHash);
   let top = node;
 
   let { __x1: x1, __y1: y1, __cache, __offsetWidth, __offsetHeight } = node;
@@ -762,7 +761,6 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   if(!bboxTotal) {
     return;
   }
-  // console.warn(bboxTotal)
 
   // overflow:hidden和canvas一样特殊考虑
   let w, h, dx, dy, cx, cy, texture, frameBuffer;
@@ -1040,7 +1038,6 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
   if(__cacheTotal && __cacheTotal.available) {
     return __cacheTotal;
   }
-  // console.log('genPptWebgl', index);
 
   let top = node;
   let mergeHash = [], mergeList = [];
@@ -1251,13 +1248,11 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
           }
         }
       }
-      // console.log('split', index, planeList);
-      // console.log(planeList, planeHash);
       // 有2个以上面才会求相交
       if(planeList.length > 1) {
         oit.splitQuadrilateralPlane(planeList);
       }
-      // 按z排序，远的先绘制，拆分的则计算纹理坐标，由于不相交，所以可以用平面的z中点
+      // 没拆分的直接存入，拆分的存有效拼图
       let list = [];
       for(let i = 0, len = planeList.length; i < len; i++) {
         let plane = planeList[i];
@@ -1265,40 +1260,22 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
         if(puzzle) {
           for(let i = 0, len = puzzle.length; i < len; i++) {
             let p = puzzle[i];
-            p.cz = getCenterZ(p);
-            list.push(p);
+            if(!p.isDeleted) {
+              list.push(p);
+            }
           }
         }
         else {
-          plane.cz = getCenterZ(plane);
           list.push(plane);
         }
       }
-      list.sort(function(a, b) {
-        if(a.cz !== b.cz) {
-          return a.cz - b.cz;
-        }
-        return a.index - b.index;
-      });
-      // console.log(list);
-      oitHash[index] = list;
+      // 按z排序，远的先绘制
+      oitHash[index] = oit.sortPuzzleZ(list);
     }
   }
   // 最后一次循环绘制到局部根节点上，类似genTotalWebgl()逻辑，但要考虑ppt透视
   return genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
     __structs, W, H, true, null, null);
-}
-
-function getCenterZ(o) {
-  let points = o.points;
-  let z = points[0].z;
-  let min = z, max = z;
-  for(let i = 1, len = points.length; i < len; i++) {
-    let z = points[i].z;
-    min = Math.min(min, z);
-    max = Math.max(max, z);
-  }
-  return (min + max) * 0.5;
 }
 
 function genFilterWebgl(renderMode, gl, node, cache, filter, W, H) {

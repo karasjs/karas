@@ -1255,7 +1255,7 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
       // console.log(planeList, planeHash);
       // 有2个以上面才会求相交
       if(planeList.length > 1) {
-        oit.splitQuadrilateralPlane(planeList, planeHash);
+        oit.splitQuadrilateralPlane(planeList);
       }
       // 按z排序，远的先绘制，拆分的则计算纹理坐标，由于不相交，所以可以用平面的z中点
       let list = [];

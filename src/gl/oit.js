@@ -150,17 +150,20 @@ function shadow(puzzle) {
 }
 
 // 多个平面相交切割，每个平面有[3,]个顶点，且有index索引额外信息
-function splitQuadrilateralPlane(list, hash) {
+function splitQuadrilateralPlane(list) {
+  let uuid = 0;
   let length = list.length;
   if(length < 2) {
-    return list;
+    return;
   }
   // 先每个四边形计算x/y/z轴上的投影，可能是四边形也可能重合三角形或直线
   let xList = [];
   for(let i = 0; i < length; i++) {
     let item = list[i];
     shadow(item);
-    let xShadow = item.xShadow, index = item.index;
+    item.uuid = uuid++;
+    item.plane = item;
+    let xShadow = item.xShadow;
     for(let i = 0, len = xShadow.length; i < len; i++) {
       // 只有2个点防重，x投影特殊需要，线段排序列表
       if(len === 2 && i === 1) {
@@ -172,7 +175,7 @@ function splitQuadrilateralPlane(list, hash) {
         [a, b] = [b, a];
       }
       xList.push({
-        index,
+        belong: item,
         y1: a.y,
         z1: a.z,
         y2: b.y,
@@ -222,22 +225,14 @@ function splitQuadrilateralPlane(list, hash) {
         }
       }
       else {
-        // console.error(seg);
         if(ael.length) {
           for(let j = 0, len = ael.length; j < len; j++) {
             let item = ael[j];
+            let pa = seg.belong, pb = item.belong;
             // 属于不同的平面才能相交
-            if(seg.index === item.index) {
+            if(pa.plane === pb.plane) {
               continue;
             }
-            // console.warn(item);
-            // 无论结果如何，这2个面都记录下防止重复检测
-            let key = seg.index > item.index ? (item.index + ',' + seg.index) : (seg.index + ',' + item.index);
-            if(HISTORY.hasOwnProperty(key)) {
-              continue;
-            }
-            HISTORY[key] = true;
-            let pa = hash[seg.index], pb = hash[item.index];
             // 如果面被拆分过，忽略掉
             if(pa.isDeleted) {
               break;
@@ -245,15 +240,25 @@ function splitQuadrilateralPlane(list, hash) {
             if(pb.isDeleted) {
               continue;
             }
-            // 所属的2个面进行x/y/z上的bbox重叠验证
+            // 无论结果如何，这2个拼图都记录下防止重复检测
+            let key = pa.uuid > pb.uuid ? (pb.uuid + ',' + pa.uuid) : (pa.uuid + ',' + pb.uuid);
+            if(HISTORY.hasOwnProperty(key)) {
+              continue;
+            }
+            HISTORY[key] = true;
+            // 所属的2个面进行x/y/z上的bbox重叠验证，是屏幕真相交的前提必要条件
             if(isRectsOverlap(pa.xBbox, pb.xBbox, false)
               && isRectsOverlap(pa.yBbox, pb.yBbox, false)
               && isRectsOverlap(pa.zBbox, pb.zBbox, false)) {
               let pointsA = pa.points, pointsB = pb.points;
+              // 真正求交
               let line = intersectPlanePlane(
                 pointsA[0], pointsA[1], pointsA[2],
                 pointsB[0], pointsB[1], pointsB[2]
               );
+              if(!line) {
+                continue;
+              }
               // 这条线一定和2个四边形有2/4个不同交点，分别用每条边和直线求交点，2个是四边形a内切割b，4个是a和b恰好互相切割
               // 被切割后的puzzle解法相同，只是变成了多边形，n>=3
               let resA = [], resB = [];
@@ -283,21 +288,28 @@ function splitQuadrilateralPlane(list, hash) {
                 // 2个都需要切割，各自判断
                 if(resA.length) {
                   pa.isDeleted = true;
-                  puzzle = splitPlaneByPoint(pa, resA);
+                  let t = splitPlaneByPoint(pa, resA);
+                  if(t) {
+                    puzzle = puzzle.concat(t);
+                  }
                 }
                 if(resB.length) {
                   pa.isDeleted = true;
-                  puzzle = puzzle.concat(splitPlaneByPoint(pb, resB));
+                  let t = splitPlaneByPoint(pb, resB);
+                  if(t) {
+                    puzzle = puzzle.concat(t);
+                  }
                 }
                 // 新的拼图需考虑加入到eventList的合适位置，可能是新增的扫描事件
                 for(let j = 0, len = puzzle.length; j < len; j++) {
                   let item = puzzle[j];
                   shadow(item);
+                  item.uuid = uuid++;
                   let xBbox = item.xBbox;
                   if(xBbox[2] <= z) {
                     continue;
                   }
-                  let xShadow = item.xShadow, index = item.index;
+                  let xShadow = item.xShadow;
                   for(let j = 0, len = xShadow.length; j < len; j++) {
                     // 只有2个点防重，x投影特殊需要，线段排序列表
                     if(len === 2 && j === 1) {
@@ -313,7 +325,7 @@ function splitQuadrilateralPlane(list, hash) {
                       continue;
                     }
                     let seg = {
-                      index,
+                      belong: item,
                       y1: a.y,
                       z1: a.z,
                       y2: b.y,
@@ -360,8 +372,8 @@ function splitQuadrilateralPlane(list, hash) {
   }
 }
 
-function splitPlaneByPoint(plane, res) {
-  let points = plane.points, i1 = -1, i2 = -1;
+function splitPlaneByPoint(puzzle, res) {
+  let plane = puzzle.plane, points = puzzle.points, i1 = -1, i2 = -1;
   let p0 = points[0], p1 = points[1], p2 = points[2], p3 = points[3];
   // 交点一定在边上，不在边上的不切割
   for(let i = 0, len = points.length; i < len; i++) {
@@ -425,7 +437,7 @@ function splitPlaneByPoint(plane, res) {
     plane.puzzle = plane.puzzle || [];
     let puzzle = [];
     let a = {
-      index: plane.index,
+      plane,
       node: plane.node,
       target: plane.target,
       isPuzzle: true,
@@ -450,7 +462,7 @@ function splitPlaneByPoint(plane, res) {
     }
     // b部分同上
     let b = {
-      index: plane.index,
+      plane,
       node: plane.node,
       target: plane.target,
       isPuzzle: true,

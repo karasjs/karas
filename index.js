@@ -32266,11 +32266,12 @@
   } // 多个平面相交切割，每个平面有[3,]个顶点，且有index索引额外信息
 
 
-  function splitQuadrilateralPlane(list, hash) {
+  function splitQuadrilateralPlane(list) {
+    var uuid = 0;
     var length = list.length;
 
     if (length < 2) {
-      return list;
+      return;
     } // 先每个四边形计算x/y/z轴上的投影，可能是四边形也可能重合三角形或直线
 
 
@@ -32279,8 +32280,9 @@
     for (var i = 0; i < length; i++) {
       var item = list[i];
       shadow(item);
-      var xShadow = item.xShadow,
-          index = item.index;
+      item.uuid = uuid++;
+      item.plane = item;
+      var xShadow = item.xShadow;
 
       for (var _i = 0, len = xShadow.length; _i < len; _i++) {
         // 只有2个点防重，x投影特殊需要，线段排序列表
@@ -32298,7 +32300,7 @@
         }
 
         xList.push({
-          index: index,
+          belong: item,
           y1: a.y,
           z1: a.z,
           y2: b.y,
@@ -32359,26 +32361,16 @@
             ael.splice(_j3, 1);
           }
         } else {
-          // console.error(seg);
           if (ael.length) {
             for (var _j4 = 0, _len4 = ael.length; _j4 < _len4; _j4++) {
-              var _item = ael[_j4]; // 属于不同的平面才能相交
+              var _item = ael[_j4];
+              var pa = _seg.belong,
+                  pb = _item.belong; // 属于不同的平面才能相交
 
-              if (_seg.index === _item.index) {
+              if (pa.plane === pb.plane) {
                 continue;
-              } // console.warn(item);
-              // 无论结果如何，这2个面都记录下防止重复检测
+              } // 如果面被拆分过，忽略掉
 
-
-              var key = _seg.index > _item.index ? _item.index + ',' + _seg.index : _seg.index + ',' + _item.index;
-
-              if (HISTORY.hasOwnProperty(key)) {
-                continue;
-              }
-
-              HISTORY[key] = true;
-              var pa = hash[_seg.index],
-                  pb = hash[_item.index]; // 如果面被拆分过，忽略掉
 
               if (pa.isDeleted) {
                 break;
@@ -32386,14 +32378,28 @@
 
               if (pb.isDeleted) {
                 continue;
-              } // 所属的2个面进行x/y/z上的bbox重叠验证
+              } // 无论结果如何，这2个拼图都记录下防止重复检测
 
+
+              var key = pa.uuid > pb.uuid ? pb.uuid + ',' + pa.uuid : pa.uuid + ',' + pb.uuid;
+
+              if (HISTORY.hasOwnProperty(key)) {
+                continue;
+              }
+
+              HISTORY[key] = true; // 所属的2个面进行x/y/z上的bbox重叠验证，是屏幕真相交的前提必要条件
 
               if (isRectsOverlap$1(pa.xBbox, pb.xBbox, false) && isRectsOverlap$1(pa.yBbox, pb.yBbox, false) && isRectsOverlap$1(pa.zBbox, pb.zBbox, false)) {
                 var pointsA = pa.points,
-                    pointsB = pb.points;
-                var line = intersectPlanePlane(pointsA[0], pointsA[1], pointsA[2], pointsB[0], pointsB[1], pointsB[2]); // 这条线一定和2个四边形有2/4个不同交点，分别用每条边和直线求交点，2个是四边形a内切割b，4个是a和b恰好互相切割
+                    pointsB = pb.points; // 真正求交
+
+                var line = intersectPlanePlane(pointsA[0], pointsA[1], pointsA[2], pointsB[0], pointsB[1], pointsB[2]);
+
+                if (!line) {
+                  continue;
+                } // 这条线一定和2个四边形有2/4个不同交点，分别用每条边和直线求交点，2个是四边形a内切割b，4个是a和b恰好互相切割
                 // 被切割后的puzzle解法相同，只是变成了多边形，n>=3
+
 
                 var resA = [],
                     resB = [];
@@ -32420,26 +32426,35 @@
 
                   if (resA.length) {
                     pa.isDeleted = true;
-                    puzzle = splitPlaneByPoint(pa, resA);
+                    var t = splitPlaneByPoint(pa, resA);
+
+                    if (t) {
+                      puzzle = puzzle.concat(t);
+                    }
                   }
 
                   if (resB.length) {
                     pa.isDeleted = true;
-                    puzzle = puzzle.concat(splitPlaneByPoint(pb, resB));
+
+                    var _t = splitPlaneByPoint(pb, resB);
+
+                    if (_t) {
+                      puzzle = puzzle.concat(_t);
+                    }
                   } // 新的拼图需考虑加入到eventList的合适位置，可能是新增的扫描事件
 
 
                   for (var _j5 = 0, _len7 = puzzle.length; _j5 < _len7; _j5++) {
                     var _item2 = puzzle[_j5];
                     shadow(_item2);
+                    _item2.uuid = uuid++;
                     var xBbox = _item2.xBbox;
 
                     if (xBbox[2] <= z) {
                       continue;
                     }
 
-                    var _xShadow = _item2.xShadow,
-                        _index = _item2.index;
+                    var _xShadow = _item2.xShadow;
 
                     for (var _j6 = 0, _len8 = _xShadow.length; _j6 < _len8; _j6++) {
                       // 只有2个点防重，x投影特殊需要，线段排序列表
@@ -32462,7 +32477,7 @@
                       }
 
                       var _seg2 = {
-                        index: _index,
+                        belong: _item2,
                         y1: _a3.y,
                         z1: _a3.z,
                         y2: _b.y,
@@ -32513,8 +32528,9 @@
     }
   }
 
-  function splitPlaneByPoint(plane, res) {
-    var points = plane.points,
+  function splitPlaneByPoint(puzzle, res) {
+    var plane = puzzle.plane,
+        points = puzzle.points,
         i1 = -1,
         i2 = -1;
     var p0 = points[0],
@@ -32595,9 +32611,9 @@
 
 
       plane.puzzle = plane.puzzle || [];
-      var puzzle = [];
+      var _puzzle = [];
       var a = {
-        index: plane.index,
+        plane: plane,
         node: plane.node,
         target: plane.target,
         isPuzzle: true,
@@ -32624,12 +32640,12 @@
       }
 
       if (a.points.length > 2) {
-        puzzle.push(a);
+        _puzzle.push(a);
       } // b部分同上
 
 
       var b = {
-        index: plane.index,
+        plane: plane,
         node: plane.node,
         target: plane.target,
         isPuzzle: true,
@@ -32648,12 +32664,12 @@
       }
 
       if (b.points.length > 2) {
-        puzzle.push(b);
+        _puzzle.push(b);
       } // 只返回新增的
 
 
-      plane.puzzle = plane.puzzle.concat(puzzle);
-      return puzzle;
+      plane.puzzle = plane.puzzle.concat(_puzzle);
+      return _puzzle;
     }
   } // 已知空间平行四边形顶点和其面上一点，求相对于左上角顶点即原点的百分比坐标，四边形宽高即分母
 
@@ -34494,7 +34510,7 @@
 
 
         if (planeList.length > 1) {
-          oit.splitQuadrilateralPlane(planeList, planeHash);
+          oit.splitQuadrilateralPlane(planeList);
         } // 按z排序，远的先绘制，拆分的则计算纹理坐标，由于不相交，所以可以用平面的z中点
 
 

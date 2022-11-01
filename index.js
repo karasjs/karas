@@ -27301,6 +27301,8 @@
           if (!isE$2(this.__matrix)) {
             pm = multiply$1(pm, this.__matrix);
             assignMatrix$1(this.__matrixEvent, pm);
+          } else if (this.__perspectiveMatrix) {
+            pm = this.__perspectiveMatrix;
           }
 
           var bbox = __cacheTotal.bbox;

@@ -32118,7 +32118,153 @@
       intersectLineLine3 = isec.intersectLineLine3,
       pointOnLine3 = isec.pointOnLine3;
   var isRectsOverlap$1 = geom.isRectsOverlap;
-  var isZero3 = vector.isZero3; // 多个平面相交切割，每个平面有x1/y1/z1~x4/y4/z4一共4个顶点，且有index索引额外信息
+  var isZero3 = vector.isZero3; // 设置新拼图的x/y/z投影数据和bbox数据，原本平面矩形也算一个拼图
+
+  function shadow(puzzle) {
+    puzzle.index;
+        var points = puzzle.points;
+    var xShadow = [{
+      y: points[0].y,
+      z: points[0].z
+    }];
+
+    if (points[1].y !== points[0].y || points[1].z !== points[0].z) {
+      xShadow.push({
+        y: points[1].y,
+        z: points[1].z
+      });
+    }
+
+    if ((points[2].y !== points[0].y || points[2].z !== points[0].z) && (points[2].y !== points[1].y || points[2].z !== points[1].z)) {
+      xShadow.push({
+        y: points[2].y,
+        z: points[2].z
+      });
+    }
+
+    if ((points[3].y !== points[0].y || points[3].z !== points[0].z) && (points[3].y !== points[1].y || points[3].z !== points[1].z) && (points[3].y !== points[2].y || points[3].z !== points[2].z)) {
+      xShadow.push({
+        y: points[3].y,
+        z: points[3].z
+      });
+    } // 顶点和bbox，每个轴投影都要，x特殊多线段列表
+
+
+    puzzle.xShadow = [];
+    puzzle.xBbox = [];
+
+    for (var j = 0, len = xShadow.length; j < len; j++) {
+      var a = xShadow[j];
+      puzzle.xShadow.push(a);
+
+      if (j === 0) {
+        puzzle.xBbox[0] = a.z;
+        puzzle.xBbox[1] = a.y;
+        puzzle.xBbox[2] = a.z;
+        puzzle.xBbox[3] = a.y;
+      } else {
+        puzzle.xBbox[0] = Math.min(puzzle.xBbox[0], a.z);
+        puzzle.xBbox[1] = Math.min(puzzle.xBbox[1], a.y);
+        puzzle.xBbox[2] = Math.max(puzzle.xBbox[2], a.z);
+        puzzle.xBbox[3] = Math.max(puzzle.xBbox[3], a.y);
+      }
+    } // y/z类似，但不用排序添加
+
+
+    var yShadow = [{
+      x: points[0].x,
+      z: points[0].z
+    }];
+
+    if (points[1].x !== points[0].x || points[1].z !== points[0].z) {
+      yShadow.push({
+        x: points[1].x,
+        z: points[1].z
+      });
+    }
+
+    if ((points[2].x !== points[0].x || points[2].z !== points[0].z) && (points[2].x !== points[1].x || points[2].z !== points[1].z)) {
+      yShadow.push({
+        x: points[2].x,
+        z: points[2].z
+      });
+    }
+
+    if ((points[3].x !== points[0].x || points[3].z !== points[0].z) && (points[3].x !== points[1].x || points[3].z !== points[1].z) && (points[3].x !== points[2].x || points[3].z !== points[2].z)) {
+      yShadow.push({
+        x: points[3].x,
+        z: points[3].z
+      });
+    } // y/z类似，但不用排序添加
+
+
+    puzzle.yShadow = [];
+    puzzle.yBbox = [];
+
+    for (var _j = 0, _len = yShadow.length; _j < _len; _j++) {
+      var _a = yShadow[_j];
+      puzzle.yShadow.push(_a);
+
+      if (_j === 0) {
+        puzzle.yBbox[0] = _a.x;
+        puzzle.yBbox[1] = _a.z;
+        puzzle.yBbox[2] = _a.x;
+        puzzle.yBbox[3] = _a.z;
+      } else {
+        puzzle.yBbox[0] = Math.min(puzzle.yBbox[0], _a.x);
+        puzzle.yBbox[1] = Math.min(puzzle.yBbox[1], _a.z);
+        puzzle.yBbox[2] = Math.max(puzzle.yBbox[2], _a.x);
+        puzzle.yBbox[3] = Math.max(puzzle.yBbox[3], _a.z);
+      }
+    }
+
+    var zShadow = [{
+      x: points[0].x,
+      y: points[0].y
+    }];
+
+    if (points[1].x !== points[0].x || points[1].y !== points[0].y) {
+      zShadow.push({
+        x: points[1].x,
+        y: points[1].y
+      });
+    }
+
+    if ((points[2].x !== points[0].x || points[2].y !== points[0].y) && (points[2].x !== points[1].x || points[2].y !== points[1].y)) {
+      zShadow.push({
+        x: points[2].x,
+        y: points[2].y
+      });
+    }
+
+    if ((points[3].x !== points[0].x || points[3].y !== points[0].y) && (points[3].x !== points[1].x || points[3].y !== points[1].y) && (points[3].x !== points[2].x || points[3].y !== points[2].y)) {
+      zShadow.push({
+        x: points[3].x,
+        y: points[3].y
+      });
+    }
+
+    puzzle.zShadow = [];
+    puzzle.zBbox = [];
+
+    for (var _j2 = 0, _len2 = zShadow.length; _j2 < _len2; _j2++) {
+      var _a2 = zShadow[_j2];
+      puzzle.zShadow.push(_a2);
+
+      if (_j2 === 0) {
+        puzzle.zBbox[0] = _a2.x;
+        puzzle.zBbox[1] = _a2.y;
+        puzzle.zBbox[2] = _a2.x;
+        puzzle.zBbox[3] = _a2.y;
+      } else {
+        puzzle.zBbox[0] = Math.min(puzzle.zBbox[0], _a2.x);
+        puzzle.zBbox[1] = Math.min(puzzle.zBbox[1], _a2.y);
+        puzzle.zBbox[2] = Math.max(puzzle.zBbox[2], _a2.x);
+        puzzle.zBbox[3] = Math.max(puzzle.zBbox[3], _a2.y);
+      }
+    }
+  } // 多个平面相交切割，每个平面有[3,]个顶点，且有index索引额外信息
+
 
   function splitQuadrilateralPlane(list, hash) {
     var length = list.length;
@@ -32132,60 +32278,18 @@
 
     for (var i = 0; i < length; i++) {
       var item = list[i];
-      var index = item.index,
-          points = item.points;
-      var xShadow = [{
-        y: points[0].y,
-        z: points[0].z
-      }];
+      shadow(item);
+      var xShadow = item.xShadow,
+          index = item.index;
 
-      if (points[1].y !== points[0].y || points[1].z !== points[0].z) {
-        xShadow.push({
-          y: points[1].y,
-          z: points[1].z
-        });
-      }
-
-      if ((points[2].y !== points[0].y || points[2].z !== points[0].z) && (points[2].y !== points[1].y || points[2].z !== points[1].z)) {
-        xShadow.push({
-          y: points[2].y,
-          z: points[2].z
-        });
-      }
-
-      if ((points[3].y !== points[0].y || points[3].z !== points[0].z) && (points[3].y !== points[1].y || points[3].z !== points[1].z) && (points[3].y !== points[2].y || points[3].z !== points[2].z)) {
-        xShadow.push({
-          y: points[3].y,
-          z: points[3].z
-        });
-      } // 顶点和bbox，每个轴投影都要，x特殊多线段列表
-
-
-      item.xShadow = [];
-      item.xBbox = [];
-
-      for (var j = 0, len = xShadow.length; j < len; j++) {
-        var a = xShadow[j];
-        item.xShadow.push(a);
-
-        if (j === 0) {
-          item.xBbox[0] = a.z;
-          item.xBbox[1] = a.y;
-          item.xBbox[2] = a.z;
-          item.xBbox[3] = a.y;
-        } else {
-          item.xBbox[0] = Math.min(item.xBbox[0], a.z);
-          item.xBbox[1] = Math.min(item.xBbox[1], a.y);
-          item.xBbox[2] = Math.max(item.xBbox[2], a.z);
-          item.xBbox[3] = Math.max(item.xBbox[3], a.y);
-        } // 只有2个点防重，x投影特殊需要，线段排序列表
-
-
-        if (len === 2 && j === 1) {
+      for (var _i = 0, len = xShadow.length; _i < len; _i++) {
+        // 只有2个点防重，x投影特殊需要，线段排序列表
+        if (len === 2 && _i === 1) {
           break;
         }
 
-        var b = xShadow[(j + 1) % len];
+        var a = xShadow[_i];
+        var b = xShadow[(_i + 1) % len];
 
         if (a.z > b.z) {
           var _ref = [b, a];
@@ -32201,99 +32305,6 @@
           z2: b.z
         });
       }
-
-      var yShadow = [{
-        x: points[0].x,
-        z: points[0].z
-      }];
-
-      if (points[1].x !== points[0].x || points[1].z !== points[0].z) {
-        yShadow.push({
-          x: points[1].x,
-          z: points[1].z
-        });
-      }
-
-      if ((points[2].x !== points[0].x || points[2].z !== points[0].z) && (points[2].x !== points[1].x || points[2].z !== points[1].z)) {
-        yShadow.push({
-          x: points[2].x,
-          z: points[2].z
-        });
-      }
-
-      if ((points[3].x !== points[0].x || points[3].z !== points[0].z) && (points[3].x !== points[1].x || points[3].z !== points[1].z) && (points[3].x !== points[2].x || points[3].z !== points[2].z)) {
-        yShadow.push({
-          x: points[3].x,
-          z: points[3].z
-        });
-      } // y/z类似，但不用排序添加
-
-
-      item.yShadow = [];
-      item.yBbox = [];
-
-      for (var _j = 0, _len = yShadow.length; _j < _len; _j++) {
-        var _a = yShadow[_j];
-        item.yShadow.push(_a);
-
-        if (_j === 0) {
-          item.yBbox[0] = _a.x;
-          item.yBbox[1] = _a.z;
-          item.yBbox[2] = _a.x;
-          item.yBbox[3] = _a.z;
-        } else {
-          item.yBbox[0] = Math.min(item.yBbox[0], _a.x);
-          item.yBbox[1] = Math.min(item.yBbox[1], _a.z);
-          item.yBbox[2] = Math.max(item.yBbox[2], _a.x);
-          item.yBbox[3] = Math.max(item.yBbox[3], _a.z);
-        }
-      }
-
-      var zShadow = [{
-        x: points[0].x,
-        y: points[0].y
-      }];
-
-      if (points[1].x !== points[0].x || points[1].y !== points[0].y) {
-        zShadow.push({
-          x: points[1].x,
-          y: points[1].y
-        });
-      }
-
-      if ((points[2].x !== points[0].x || points[2].y !== points[0].y) && (points[2].x !== points[1].x || points[2].y !== points[1].y)) {
-        zShadow.push({
-          x: points[2].x,
-          y: points[2].y
-        });
-      }
-
-      if ((points[3].x !== points[0].x || points[3].y !== points[0].y) && (points[3].x !== points[1].x || points[3].y !== points[1].y) && (points[3].x !== points[2].x || points[3].y !== points[2].y)) {
-        zShadow.push({
-          x: points[3].x,
-          y: points[3].y
-        });
-      }
-
-      item.zShadow = [];
-      item.zBbox = [];
-
-      for (var _j2 = 0, _len2 = zShadow.length; _j2 < _len2; _j2++) {
-        var _a2 = zShadow[_j2];
-        item.zShadow.push(_a2);
-
-        if (_j2 === 0) {
-          item.zBbox[0] = _a2.x;
-          item.zBbox[1] = _a2.y;
-          item.zBbox[2] = _a2.x;
-          item.zBbox[3] = _a2.y;
-        } else {
-          item.zBbox[0] = Math.min(item.zBbox[0], _a2.x);
-          item.zBbox[1] = Math.min(item.zBbox[1], _a2.y);
-          item.zBbox[2] = Math.max(item.zBbox[2], _a2.x);
-          item.zBbox[3] = Math.max(item.zBbox[3], _a2.y);
-        }
-      }
     }
     /**
      * 从侧面观看投影，即x轴，按照深度z顺序，每个平面可形成2或4条线（y/z坐标），用扫描线算法求交
@@ -32305,8 +32316,8 @@
 
     var eventHash = {};
 
-    for (var _i = 0, _len3 = xList.length; _i < _len3; _i++) {
-      var seg = xList[_i];
+    for (var _i2 = 0, _len3 = xList.length; _i2 < _len3; _i2++) {
+      var seg = xList[_i2];
       var o = eventHash[seg.z1] = eventHash[seg.z1] || [];
       o.push(seg);
       o = eventHash[seg.z2] = eventHash[seg.z2] || [];
@@ -32316,11 +32327,11 @@
 
     var eventList = [];
 
-    for (var _i2 in eventHash) {
-      if (eventHash.hasOwnProperty(_i2)) {
-        var _o = eventHash[_i2];
+    for (var _i3 in eventHash) {
+      if (eventHash.hasOwnProperty(_i3)) {
+        var _o = eventHash[_i3];
         eventList.push({
-          z: _i2,
+          z: _i3,
           list: _o
         });
       }
@@ -32328,17 +32339,18 @@
 
     eventList.sort(function (a, b) {
       return a.z - b.z;
-    }); // console.log(eventList);
-
+    });
     var HISTORY = {}; // 求过的2个平面记录，只求1次防重
 
     var ael = []; // 当前扫描线活动边
 
-    for (var _i3 = 0, _len4 = eventList.length; _i3 < _len4; _i3++) {
-      var _list = eventList[_i3].list;
+    for (var _i4 = 0, elLen = eventList.length; _i4 < elLen; _i4++) {
+      var _eventList$_i = eventList[_i4],
+          z = _eventList$_i.z,
+          _list = _eventList$_i.list;
 
-      for (var _i4 = 0, _len5 = _list.length; _i4 < _len5; _i4++) {
-        var _seg = _list[_i4]; // 第1次进是start，第2次是end
+      for (var j = 0, _length = _list.length; j < _length; j++) {
+        var _seg = _list[j]; // 第1次进是start，第2次是end
 
         if (_seg.isVisited) {
           var _j3 = ael.indexOf(_seg);
@@ -32349,7 +32361,7 @@
         } else {
           // console.error(seg);
           if (ael.length) {
-            for (var _j4 = 0, _len6 = ael.length; _j4 < _len6; _j4++) {
+            for (var _j4 = 0, _len4 = ael.length; _j4 < _len4; _j4++) {
               var _item = ael[_j4]; // 属于不同的平面才能相交
 
               if (_seg.index === _item.index) {
@@ -32368,11 +32380,11 @@
               var pa = hash[_seg.index],
                   pb = hash[_item.index]; // 如果面被拆分过，忽略掉
 
-              if (pa.puzzle) {
+              if (pa.isDeleted) {
                 break;
               }
 
-              if (pb.puzzle) {
+              if (pb.isDeleted) {
                 continue;
               } // 所属的2个面进行x/y/z上的bbox重叠验证
 
@@ -32381,20 +32393,21 @@
                 var pointsA = pa.points,
                     pointsB = pb.points;
                 var line = intersectPlanePlane(pointsA[0], pointsA[1], pointsA[2], pointsB[0], pointsB[1], pointsB[2]); // 这条线一定和2个四边形有2/4个不同交点，分别用每条边和直线求交点，2个是四边形a内切割b，4个是a和b恰好互相切割
+                // 被切割后的puzzle解法相同，只是变成了多边形，n>=3
 
                 var resA = [],
                     resB = [];
 
-                for (var _i5 = 0, _len7 = pointsA.length; _i5 < _len7; _i5++) {
-                  var r = intersectLineLine3(pointsA[_i5], pointsA[(_i5 + 1) % _len7], line[0], line[1], 1);
+                for (var _i5 = 0, _len5 = pointsA.length; _i5 < _len5; _i5++) {
+                  var r = intersectLineLine3(pointsA[_i5], pointsA[(_i5 + 1) % _len5], line[0], line[1], 1);
 
                   if (r) {
                     resA.push(r);
                   }
                 }
 
-                for (var _i6 = 0, _len8 = pointsB.length; _i6 < _len8; _i6++) {
-                  var _r = intersectLineLine3(pointsB[_i6], pointsB[(_i6 + 1) % _len8], line[0], line[1], 1);
+                for (var _i6 = 0, _len6 = pointsB.length; _i6 < _len6; _i6++) {
+                  var _r = intersectLineLine3(pointsB[_i6], pointsB[(_i6 + 1) % _len6], line[0], line[1], 1);
 
                   if (_r) {
                     resB.push(_r);
@@ -32403,13 +32416,90 @@
 
 
                 if (resA.length === 2 && resB.length === 2 || resA.length === 2 && !resB.length || !resA.length || resB.length === 2) {
-                  // 2个都需要切割，各自判断
+                  var puzzle = []; // 2个都需要切割，各自判断
+
                   if (resA.length) {
-                    splitPlaneByPoint(pa, resA);
+                    pa.isDeleted = true;
+                    puzzle = splitPlaneByPoint(pa, resA);
                   }
 
                   if (resB.length) {
-                    splitPlaneByPoint(pb, resB);
+                    pa.isDeleted = true;
+                    puzzle = puzzle.concat(splitPlaneByPoint(pb, resB));
+                  } // 新的拼图需考虑加入到eventList的合适位置，可能是新增的扫描事件
+
+
+                  for (var _j5 = 0, _len7 = puzzle.length; _j5 < _len7; _j5++) {
+                    var _item2 = puzzle[_j5];
+                    shadow(_item2);
+                    var xBbox = _item2.xBbox;
+
+                    if (xBbox[2] <= z) {
+                      continue;
+                    }
+
+                    var _xShadow = _item2.xShadow,
+                        _index = _item2.index;
+
+                    for (var _j6 = 0, _len8 = _xShadow.length; _j6 < _len8; _j6++) {
+                      // 只有2个点防重，x投影特殊需要，线段排序列表
+                      if (_len8 === 2 && _j6 === 1) {
+                        break;
+                      }
+
+                      var _a3 = _xShadow[_j6];
+                      var _b = _xShadow[(_j6 + 1) % _len8];
+
+                      if (_a3.z > _b.z) {
+                        var _ref2 = [_b, _a3];
+                        _a3 = _ref2[0];
+                        _b = _ref2[1];
+                      } // 和初始化不一样多判断下，最大值比当前还小的是无效的事件，已经扫过了
+
+
+                      if (_b.z <= z) {
+                        continue;
+                      }
+
+                      var _seg2 = {
+                        index: _index,
+                        y1: _a3.y,
+                        z1: _a3.z,
+                        y2: _b.y,
+                        z2: _b.z
+                      }; // 最小值比当前z小，被访问过isVisited
+
+                      if (_seg2.z1 <= z) {
+                        _seg2.isVisited = true; // 等于才加入当前事件列表
+
+                        if (_seg2.z1 === z) {
+                          _list.push(_seg2);
+
+                          _length++;
+                        }
+                      } // 最大值加入事件列表，=z忽略，注意判断可能z所属的扫描坐标不存在
+
+
+                      if (_seg2.z2 > z) {
+                        for (var _j7 = _i4 + 1; _j7 < elLen; _j7++) {
+                          var _item3 = eventList[_j7];
+                          var _z = _item3.z;
+
+                          if (_seg2.z2 === _z) {
+                            _item3.list.push(_seg2);
+
+                            break;
+                          } else if (_seg2.z2 > _z || _j7 === elLen - 1) {
+                            eventList.splice(_j7, 0, {
+                              z: _seg2.z2,
+                              list: [_seg2]
+                            });
+                            elLen++;
+                            break;
+                          }
+                        }
+                      }
+                    }
                   }
                 }
               }
@@ -32430,8 +32520,7 @@
     var p0 = points[0],
         p1 = points[1],
         p2 = points[2],
-        p3 = points[3]; // console.log(plane, res);
-    // 交点一定在边上，不在边上的不切割
+        p3 = points[3]; // 交点一定在边上，不在边上的不切割
 
     for (var i = 0, len = points.length; i < len; i++) {
       var _p = points[i],
@@ -32446,8 +32535,7 @@
       if (r2) {
         i2 = i;
       }
-    } // console.warn(i1, i2);
-    // 看是否相邻以及是否是原有顶点，不同情况不同拆分，切割也不能在同一条边上
+    } // 看是否相邻以及是否是原有顶点，不同情况不同拆分，切割也不能在同一条边上
 
 
     if (i1 > -1 && i2 > -1 && i1 !== i2) {
@@ -32499,10 +32587,15 @@
           y: p1.y - p2.y,
           z: p1.z - p2.z
         };
-      } // n边形（n一定>=3)，会被分为a、b两个多边形
+      }
+
+      var hash = [],
+          r0,
+          _r2; // n边形（n一定>=3)，会被分为a、b两个多边形
 
 
-      var puzzle = plane.puzzle = plane.puzzle || [];
+      plane.puzzle = plane.puzzle || [];
+      var puzzle = [];
       var a = {
         index: plane.index,
         node: plane.node,
@@ -32512,19 +32605,22 @@
       };
 
       for (var _i7 = 0; _i7 <= i1; _i7++) {
-        a.points.push(getPercentXY(points[_i7], va, vb, p0, p1, p3));
+        var r = hash[_i7] = getPercentXY(points[_i7], va, vb, p0, p1, p3);
+        a.points.push(r);
       } // 第1个交点如果在顶点上忽略，前面循环考虑了
 
 
       if (onVertex1 === -1) {
-        a.points.push(getPercentXY(res[0], va, vb, p0, p1, p3));
+        a.points.push(r0 = getPercentXY(res[0], va, vb, p0, p1, p3));
       } // 第2个即便在顶点上也包含，后面循环没考虑
 
 
-      a.points.push(getPercentXY(res[1], va, vb, p0, p1, p3));
+      a.points.push(_r2 = getPercentXY(res[1], va, vb, p0, p1, p3));
 
       for (var _i8 = i2 + 1, _len9 = points.length; _i8 < _len9; _i8++) {
-        a.points.push(getPercentXY(points[_i8], va, vb, p0, p1, p3));
+        var _r3 = hash[_i8] = getPercentXY(points[_i8], va, vb, p0, p1, p3);
+
+        a.points.push(_r3);
       }
 
       if (a.points.length > 2) {
@@ -32539,19 +32635,25 @@
         isPuzzle: true,
         points: []
       };
-      b.points.push(getPercentXY(res[0], va, vb, p0, p1, p3));
+      b.points.push(r0 || getPercentXY(res[0], va, vb, p0, p1, p3));
 
       for (var _i9 = i1 + 1; _i9 <= i2; _i9++) {
-        b.points.push(getPercentXY(points[_i9], va, vb, p0, p1, p3));
+        var _r4 = hash[_i9] = hash[_i9] || getPercentXY(points[_i9], va, vb, p0, p1, p3);
+
+        b.points.push(_r4);
       }
 
       if (onVertex2 === -1) {
-        b.points.push(getPercentXY(res[1], va, vb, p0, p1, p3));
+        b.points.push(_r2 || getPercentXY(res[1], va, vb, p0, p1, p3));
       }
 
       if (b.points.length > 2) {
         puzzle.push(b);
-      }
+      } // 只返回新增的
+
+
+      plane.puzzle = plane.puzzle.concat(puzzle);
+      return puzzle;
     }
   } // 已知空间平行四边形顶点和其面上一点，求相对于左上角顶点即原点的百分比坐标，四边形宽高即分母
 

@@ -6,7 +6,150 @@ const { intersectPlanePlane, intersectLineLine3, pointOnLine3 } = isec;
 const { isRectsOverlap } = geom;
 const { isZero3 } = vector;
 
-// 多个平面相交切割，每个平面有x1/y1/z1~x4/y4/z4一共4个顶点，且有index索引额外信息
+// 设置新拼图的x/y/z投影数据和bbox数据，原本平面矩形也算一个拼图
+function shadow(puzzle) {
+  let { index, points} = puzzle;
+  let xShadow = [
+    {
+      y: points[0].y,
+      z: points[0].z,
+    },
+  ];
+  if(points[1].y !== points[0].y || points[1].z !== points[0].z) {
+    xShadow.push({
+      y: points[1].y,
+      z: points[1].z,
+    });
+  }
+  if((points[2].y !== points[0].y || points[2].z !== points[0].z)
+    && (points[2].y !== points[1].y || points[2].z !== points[1].z)) {
+    xShadow.push({
+      y: points[2].y,
+      z: points[2].z,
+    });
+  }
+  if((points[3].y !== points[0].y || points[3].z !== points[0].z)
+    && (points[3].y !== points[1].y || points[3].z !== points[1].z)
+    && (points[3].y !== points[2].y || points[3].z !== points[2].z)) {
+    xShadow.push({
+      y: points[3].y,
+      z: points[3].z,
+    });
+  }
+  // 顶点和bbox，每个轴投影都要，x特殊多线段列表
+  puzzle.xShadow = [];
+  puzzle.xBbox = [];
+  for(let j = 0, len = xShadow.length; j < len; j++) {
+    let a = xShadow[j];
+    puzzle.xShadow.push(a);
+    if(j === 0) {
+      puzzle.xBbox[0] = a.z;
+      puzzle.xBbox[1] = a.y;
+      puzzle.xBbox[2] = a.z;
+      puzzle.xBbox[3] = a.y;
+    }
+    else {
+      puzzle.xBbox[0] = Math.min(puzzle.xBbox[0], a.z);
+      puzzle.xBbox[1] = Math.min(puzzle.xBbox[1], a.y);
+      puzzle.xBbox[2] = Math.max(puzzle.xBbox[2], a.z);
+      puzzle.xBbox[3] = Math.max(puzzle.xBbox[3], a.y);
+    }
+  }
+  // y/z类似，但不用排序添加
+  let yShadow = [
+    {
+      x: points[0].x,
+      z: points[0].z,
+    },
+  ];
+  if(points[1].x !== points[0].x || points[1].z !== points[0].z) {
+    yShadow.push({
+      x: points[1].x,
+      z: points[1].z,
+    });
+  }
+  if((points[2].x !== points[0].x || points[2].z !== points[0].z)
+    && (points[2].x !== points[1].x || points[2].z !== points[1].z)) {
+    yShadow.push({
+      x: points[2].x,
+      z: points[2].z,
+    });
+  }
+  if((points[3].x !== points[0].x || points[3].z !== points[0].z)
+    && (points[3].x !== points[1].x || points[3].z !== points[1].z)
+    && (points[3].x !== points[2].x || points[3].z !== points[2].z)) {
+    yShadow.push({
+      x: points[3].x,
+      z: points[3].z,
+    });
+  }
+  // y/z类似，但不用排序添加
+  puzzle.yShadow = [];
+  puzzle.yBbox = [];
+  for(let j = 0, len = yShadow.length; j < len; j++) {
+    let a = yShadow[j];
+    puzzle.yShadow.push(a);
+    if(j === 0) {
+      puzzle.yBbox[0] = a.x;
+      puzzle.yBbox[1] = a.z;
+      puzzle.yBbox[2] = a.x;
+      puzzle.yBbox[3] = a.z;
+    }
+    else {
+      puzzle.yBbox[0] = Math.min(puzzle.yBbox[0], a.x);
+      puzzle.yBbox[1] = Math.min(puzzle.yBbox[1], a.z);
+      puzzle.yBbox[2] = Math.max(puzzle.yBbox[2], a.x);
+      puzzle.yBbox[3] = Math.max(puzzle.yBbox[3], a.z);
+    }
+  }
+  let zShadow = [
+    {
+      x: points[0].x,
+      y: points[0].y,
+    },
+  ];
+  if(points[1].x !== points[0].x || points[1].y !== points[0].y) {
+    zShadow.push({
+      x: points[1].x,
+      y: points[1].y,
+    });
+  }
+  if((points[2].x !== points[0].x || points[2].y !== points[0].y)
+    && (points[2].x !== points[1].x || points[2].y !== points[1].y)) {
+    zShadow.push({
+      x: points[2].x,
+      y: points[2].y,
+    });
+  }
+  if((points[3].x !== points[0].x || points[3].y !== points[0].y)
+    && (points[3].x !== points[1].x || points[3].y !== points[1].y)
+    && (points[3].x !== points[2].x || points[3].y !== points[2].y)) {
+    zShadow.push({
+      x: points[3].x,
+      y: points[3].y,
+    });
+  }
+  puzzle.zShadow = [];
+  puzzle.zBbox = [];
+  for(let j = 0, len = zShadow.length; j < len; j++) {
+    let a = zShadow[j];
+    puzzle.zShadow.push(a);
+    if(j === 0) {
+      puzzle.zBbox[0] = a.x;
+      puzzle.zBbox[1] = a.y;
+      puzzle.zBbox[2] = a.x;
+      puzzle.zBbox[3] = a.y;
+    }
+    else {
+      puzzle.zBbox[0] = Math.min(puzzle.zBbox[0], a.x);
+      puzzle.zBbox[1] = Math.min(puzzle.zBbox[1], a.y);
+      puzzle.zBbox[2] = Math.max(puzzle.zBbox[2], a.x);
+      puzzle.zBbox[3] = Math.max(puzzle.zBbox[3], a.y);
+    }
+  }
+}
+
+// 多个平面相交切割，每个平面有[3,]个顶点，且有index索引额外信息
 function splitQuadrilateralPlane(list, hash) {
   let length = list.length;
   if(length < 2) {
@@ -16,57 +159,15 @@ function splitQuadrilateralPlane(list, hash) {
   let xList = [];
   for(let i = 0; i < length; i++) {
     let item = list[i];
-    let { index, points } = item;
-    let xShadow = [
-      {
-        y: points[0].y,
-        z: points[0].z,
-      },
-    ];
-    if(points[1].y !== points[0].y || points[1].z !== points[0].z) {
-      xShadow.push({
-        y: points[1].y,
-        z: points[1].z,
-      });
-    }
-    if((points[2].y !== points[0].y || points[2].z !== points[0].z)
-      && (points[2].y !== points[1].y || points[2].z !== points[1].z)) {
-      xShadow.push({
-        y: points[2].y,
-        z: points[2].z,
-      });
-    }
-    if((points[3].y !== points[0].y || points[3].z !== points[0].z)
-      && (points[3].y !== points[1].y || points[3].z !== points[1].z)
-      && (points[3].y !== points[2].y || points[3].z !== points[2].z)) {
-      xShadow.push({
-        y: points[3].y,
-        z: points[3].z,
-      });
-    }
-    // 顶点和bbox，每个轴投影都要，x特殊多线段列表
-    item.xShadow = [];
-    item.xBbox = [];
-    for(let j = 0, len = xShadow.length; j < len; j++) {
-      let a = xShadow[j];
-      item.xShadow.push(a);
-      if(j === 0) {
-        item.xBbox[0] = a.z;
-        item.xBbox[1] = a.y;
-        item.xBbox[2] = a.z;
-        item.xBbox[3] = a.y;
-      }
-      else {
-        item.xBbox[0] = Math.min(item.xBbox[0], a.z);
-        item.xBbox[1] = Math.min(item.xBbox[1], a.y);
-        item.xBbox[2] = Math.max(item.xBbox[2], a.z);
-        item.xBbox[3] = Math.max(item.xBbox[3], a.y);
-      }
+    shadow(item);
+    let xShadow = item.xShadow, index = item.index;
+    for(let i = 0, len = xShadow.length; i < len; i++) {
       // 只有2个点防重，x投影特殊需要，线段排序列表
-      if(len === 2 && j === 1) {
+      if(len === 2 && i === 1) {
         break;
       }
-      let b = xShadow[(j + 1) % len];
+      let a = xShadow[i];
+      let b = xShadow[(i + 1) % len];
       if(a.z > b.z) {
         [a, b] = [b, a];
       }
@@ -77,97 +178,6 @@ function splitQuadrilateralPlane(list, hash) {
         y2: b.y,
         z2: b.z,
       });
-    }
-    let yShadow = [
-      {
-        x: points[0].x,
-        z: points[0].z,
-      },
-    ];
-    if(points[1].x !== points[0].x || points[1].z !== points[0].z) {
-      yShadow.push({
-        x: points[1].x,
-        z: points[1].z,
-      });
-    }
-    if((points[2].x !== points[0].x || points[2].z !== points[0].z)
-      && (points[2].x !== points[1].x || points[2].z !== points[1].z)) {
-      yShadow.push({
-        x: points[2].x,
-        z: points[2].z,
-      });
-    }
-    if((points[3].x !== points[0].x || points[3].z !== points[0].z)
-      && (points[3].x !== points[1].x || points[3].z !== points[1].z)
-      && (points[3].x !== points[2].x || points[3].z !== points[2].z)) {
-      yShadow.push({
-        x: points[3].x,
-        z: points[3].z,
-      });
-    }
-    // y/z类似，但不用排序添加
-    item.yShadow = [];
-    item.yBbox = [];
-    for(let j = 0, len = yShadow.length; j < len; j++) {
-      let a = yShadow[j];
-      item.yShadow.push(a);
-      if(j === 0) {
-        item.yBbox[0] = a.x;
-        item.yBbox[1] = a.z;
-        item.yBbox[2] = a.x;
-        item.yBbox[3] = a.z;
-      }
-      else {
-        item.yBbox[0] = Math.min(item.yBbox[0], a.x);
-        item.yBbox[1] = Math.min(item.yBbox[1], a.z);
-        item.yBbox[2] = Math.max(item.yBbox[2], a.x);
-        item.yBbox[3] = Math.max(item.yBbox[3], a.z);
-      }
-    }
-    let zShadow = [
-      {
-        x: points[0].x,
-        y: points[0].y,
-      },
-    ];
-    if(points[1].x !== points[0].x || points[1].y !== points[0].y) {
-      zShadow.push({
-        x: points[1].x,
-        y: points[1].y,
-      });
-    }
-    if((points[2].x !== points[0].x || points[2].y !== points[0].y)
-      && (points[2].x !== points[1].x || points[2].y !== points[1].y)) {
-      zShadow.push({
-        x: points[2].x,
-        y: points[2].y,
-      });
-    }
-    if((points[3].x !== points[0].x || points[3].y !== points[0].y)
-      && (points[3].x !== points[1].x || points[3].y !== points[1].y)
-      && (points[3].x !== points[2].x || points[3].y !== points[2].y)) {
-      zShadow.push({
-        x: points[3].x,
-        y: points[3].y,
-      });
-    }
-    item.zShadow = [];
-    item.zBbox = [];
-    for(let j = 0, len = zShadow.length; j < len; j++) {
-      let a = zShadow[j];
-      item.zShadow.push(a);
-      if(j === 0) {
-        item.zBbox[0] = a.x;
-        item.zBbox[1] = a.y;
-        item.zBbox[2] = a.x;
-        item.zBbox[3] = a.y;
-      }
-      else {
-        item.zBbox[0] = Math.min(item.zBbox[0], a.x);
-        item.zBbox[1] = Math.min(item.zBbox[1], a.y);
-        item.zBbox[2] = Math.max(item.zBbox[2], a.x);
-        item.zBbox[3] = Math.max(item.zBbox[3], a.y);
-      }
     }
   }
   /**
@@ -198,13 +208,12 @@ function splitQuadrilateralPlane(list, hash) {
   eventList.sort(function(a, b) {
     return a.z - b.z;
   });
-  // console.log(eventList);
   const HISTORY = {}; // 求过的2个平面记录，只求1次防重
   let ael = []; // 当前扫描线活动边
-  for(let i = 0, len = eventList.length; i < len; i++) {
-    let { list } = eventList[i];
-    for(let i = 0, len = list.length; i < len; i++) {
-      let seg = list[i];
+  for(let i = 0, elLen = eventList.length; i < elLen; i++) {
+    let { z, list } = eventList[i];
+    for(let j = 0, length = list.length; j < length; j++) {
+      let seg = list[j];
       // 第1次进是start，第2次是end
       if(seg.isVisited) {
         let j = ael.indexOf(seg);
@@ -230,10 +239,10 @@ function splitQuadrilateralPlane(list, hash) {
             HISTORY[key] = true;
             let pa = hash[seg.index], pb = hash[item.index];
             // 如果面被拆分过，忽略掉
-            if(pa.puzzle) {
+            if(pa.isDeleted) {
               break;
             }
-            if(pb.puzzle) {
+            if(pb.isDeleted) {
               continue;
             }
             // 所属的2个面进行x/y/z上的bbox重叠验证
@@ -246,6 +255,7 @@ function splitQuadrilateralPlane(list, hash) {
                 pointsB[0], pointsB[1], pointsB[2]
               );
               // 这条线一定和2个四边形有2/4个不同交点，分别用每条边和直线求交点，2个是四边形a内切割b，4个是a和b恰好互相切割
+              // 被切割后的puzzle解法相同，只是变成了多边形，n>=3
               let resA = [], resB = [];
               for(let i = 0, len = pointsA.length; i < len; i++) {
                 let r = intersectLineLine3(
@@ -269,12 +279,75 @@ function splitQuadrilateralPlane(list, hash) {
               if(resA.length === 2 && resB.length === 2
                 || resA.length === 2 && !resB.length
                 || !resA.length || resB.length === 2) {
+                let puzzle = [];
                 // 2个都需要切割，各自判断
                 if(resA.length) {
-                  splitPlaneByPoint(pa, resA);
+                  pa.isDeleted = true;
+                  puzzle = splitPlaneByPoint(pa, resA);
                 }
                 if(resB.length) {
-                  splitPlaneByPoint(pb, resB);
+                  pa.isDeleted = true;
+                  puzzle = puzzle.concat(splitPlaneByPoint(pb, resB));
+                }
+                // 新的拼图需考虑加入到eventList的合适位置，可能是新增的扫描事件
+                for(let j = 0, len = puzzle.length; j < len; j++) {
+                  let item = puzzle[j];
+                  shadow(item);
+                  let xBbox = item.xBbox;
+                  if(xBbox[2] <= z) {
+                    continue;
+                  }
+                  let xShadow = item.xShadow, index = item.index;
+                  for(let j = 0, len = xShadow.length; j < len; j++) {
+                    // 只有2个点防重，x投影特殊需要，线段排序列表
+                    if(len === 2 && j === 1) {
+                      break;
+                    }
+                    let a = xShadow[j];
+                    let b = xShadow[(j + 1) % len];
+                    if(a.z > b.z) {
+                      [a, b] = [b, a];
+                    }
+                    // 和初始化不一样多判断下，最大值比当前还小的是无效的事件，已经扫过了
+                    if(b.z <= z) {
+                      continue;
+                    }
+                    let seg = {
+                      index,
+                      y1: a.y,
+                      z1: a.z,
+                      y2: b.y,
+                      z2: b.z,
+                    };
+                    // 最小值比当前z小，被访问过isVisited
+                    if(seg.z1 <= z) {
+                      seg.isVisited = true;
+                      // 等于才加入当前事件列表
+                      if(seg.z1 === z) {
+                        list.push(seg);
+                        length++;
+                      }
+                    }
+                    // 最大值加入事件列表，=z忽略，注意判断可能z所属的扫描坐标不存在
+                    if(seg.z2 > z) {
+                      for(let j = i + 1; j < elLen; j++) {
+                        let item = eventList[j];
+                        let z = item.z;
+                        if(seg.z2 === z) {
+                          item.list.push(seg);
+                          break;
+                        }
+                        else if(seg.z2 > z || j === elLen - 1) {
+                          eventList.splice(j, 0, {
+                            z: seg.z2,
+                            list: [seg],
+                          });
+                          elLen++;
+                          break;
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -290,7 +363,6 @@ function splitQuadrilateralPlane(list, hash) {
 function splitPlaneByPoint(plane, res) {
   let points = plane.points, i1 = -1, i2 = -1;
   let p0 = points[0], p1 = points[1], p2 = points[2], p3 = points[3];
-  // console.log(plane, res);
   // 交点一定在边上，不在边上的不切割
   for(let i = 0, len = points.length; i < len; i++) {
     let p1 = points[i], p2 = points[(i + 1) % len];
@@ -303,7 +375,6 @@ function splitPlaneByPoint(plane, res) {
       i2 = i;
     }
   }
-  // console.warn(i1, i2);
   // 看是否相邻以及是否是原有顶点，不同情况不同拆分，切割也不能在同一条边上
   if(i1 > -1 && i2 > -1 && i1 !== i2) {
     let onVertex1 = isZero3(points[i1], res[0]) ? i1 : -1;
@@ -349,8 +420,10 @@ function splitPlaneByPoint(plane, res) {
         z: p1.z - p2.z,
       };
     }
+    let hash = [], r0, r1;
     // n边形（n一定>=3)，会被分为a、b两个多边形
-    let puzzle = plane.puzzle = plane.puzzle || [];
+    plane.puzzle = plane.puzzle || [];
+    let puzzle = [];
     let a = {
       index: plane.index,
       node: plane.node,
@@ -359,16 +432,18 @@ function splitPlaneByPoint(plane, res) {
       points: [],
     };
     for(let i = 0; i <= i1; i++) {
-      a.points.push(getPercentXY(points[i], va, vb, p0, p1, p3));
+      let r = hash[i] = getPercentXY(points[i], va, vb, p0, p1, p3);
+      a.points.push(r);
     }
     // 第1个交点如果在顶点上忽略，前面循环考虑了
     if(onVertex1 === -1) {
-      a.points.push(getPercentXY(res[0], va, vb, p0, p1, p3));
+      a.points.push(r0 = getPercentXY(res[0], va, vb, p0, p1, p3));
     }
     // 第2个即便在顶点上也包含，后面循环没考虑
-    a.points.push(getPercentXY(res[1], va, vb, p0, p1, p3));
+    a.points.push(r1 = getPercentXY(res[1], va, vb, p0, p1, p3));
     for(let i = i2 + 1, len = points.length; i < len; i++) {
-      a.points.push(getPercentXY(points[i], va, vb, p0, p1, p3));
+      let r = hash[i] = getPercentXY(points[i], va, vb, p0, p1, p3);
+      a.points.push(r);
     }
     if(a.points.length > 2) {
       puzzle.push(a);
@@ -381,16 +456,20 @@ function splitPlaneByPoint(plane, res) {
       isPuzzle: true,
       points: [],
     };
-    b.points.push(getPercentXY(res[0], va, vb, p0, p1, p3));
+    b.points.push(r0 || getPercentXY(res[0], va, vb, p0, p1, p3));
     for(let i = i1 + 1; i <= i2; i++) {
-      b.points.push(getPercentXY(points[i], va, vb, p0, p1, p3));
+      let r = hash[i] = hash[i] || getPercentXY(points[i], va, vb, p0, p1, p3);
+      b.points.push(r);
     }
     if(onVertex2 === -1) {
-      b.points.push(getPercentXY(res[1], va, vb, p0, p1, p3));
+      b.points.push(r1 || getPercentXY(res[1], va, vb, p0, p1, p3));
     }
     if(b.points.length > 2) {
       puzzle.push(b);
     }
+    // 只返回新增的
+    plane.puzzle = plane.puzzle.concat(puzzle);
+    return puzzle;
   }
 }
 

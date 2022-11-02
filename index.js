@@ -34152,9 +34152,9 @@
 
     var top = node;
     var x1 = node.__x1,
-        y1 = node.__y1,
-        __cache = node.__cache,
-        __offsetWidth = node.__offsetWidth,
+        y1 = node.__y1;
+        node.__cache;
+        var __offsetWidth = node.__offsetWidth,
         __offsetHeight = node.__offsetHeight;
     var bboxTotal = genBboxTotal(node, __structs, index, total, lv, isPpt);
 
@@ -34225,23 +34225,7 @@
     gl.viewport(0, 0, w, h); // fbo绘制对象纹理不用绑定单元，剩下的纹理绘制用0号
 
     var lastPage,
-        list = []; // 先绘制自己的cache，起点所以matrix视作E为空，opacity固定1，注意被拆分时不绘制
-
-    if (!oitHash || !oitHash[index]) {
-      if (__cache && __cache.available) {
-        drawTextureCache(gl, [{
-          cache: __cache,
-          opacity: 1
-        }], cx, cy, dx, dy);
-      }
-
-      var render = node.render;
-
-      if (render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
-        node.render(renderMode, gl, dx, dy);
-      }
-    }
-
+        list = [];
     var cacheTotal = __cacheTotal;
 
     for (var i = index, len = index + (total || 0) + 1; i < len; i++) {
@@ -34387,16 +34371,16 @@
             }
           }
 
+          webgl.drawOitPlane(gl, __structs, _oit, ppt, cx, cy, dx, dy);
           i += _total6 || 0;
 
           if (hasMask) {
             i += countMaskNum(__structs, i + 1, hasMask);
           }
 
-          webgl.drawOitPlane(gl, __structs, _oit, ppt, cx, cy, dx, dy);
-          var _render = _node4.render;
+          var render = _node4.render;
 
-          if (_render !== DOM_RENDER && _render !== IMG_RENDER && _render !== GEOM_RENDER) {
+          if (render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
             _node4.render(renderMode, gl, dx, dy);
           }
         } else {
@@ -34456,9 +34440,9 @@
 
 
           if (!_target4 || _target4 === _cache2) {
-            var _render2 = _node4.render;
+            var _render = _node4.render;
 
-            if (_render2 !== DOM_RENDER && _render2 !== IMG_RENDER && _render2 !== GEOM_RENDER) {
+            if (_render !== DOM_RENDER && _render !== IMG_RENDER && _render !== GEOM_RENDER) {
               drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
 
               _node4.render(renderMode, gl, dx, dy);

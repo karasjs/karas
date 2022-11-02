@@ -752,8 +752,8 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   if(__cacheTotal && __cacheTotal.available) {
     return __cacheTotal;
   }
-  let top = node;
 
+  let top = node;
   let { __x1: x1, __y1: y1, __cache, __offsetWidth, __offsetHeight } = node;
   let bboxTotal = genBboxTotal(node, __structs, index, total, lv, isPpt);
   if(!bboxTotal) {
@@ -829,17 +829,6 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
 
   // fbo绘制对象纹理不用绑定单元，剩下的纹理绘制用0号
   let lastPage, list = [];
-  // 先绘制自己的cache，起点所以matrix视作E为空，opacity固定1，注意被拆分时不绘制
-  if(!oitHash || !oitHash[index]) {
-    if(__cache && __cache.available) {
-      drawTextureCache(gl, [{cache: __cache, opacity: 1}], cx, cy, dx, dy);
-    }
-    let render = node.render;
-    if(render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
-      node.render(renderMode, gl, dx, dy);
-    }
-  }
-
   let cacheTotal = __cacheTotal;
   for(let i = index, len = index + (total || 0) + 1; i < len; i++) {
     let {
@@ -962,11 +951,11 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
             }
           }
         }
+        webgl.drawOitPlane(gl, __structs, oit, ppt, cx, cy, dx, dy);
         i += (total || 0);
         if(hasMask) {
           i += countMaskNum(__structs, i + 1, hasMask);
         }
-        webgl.drawOitPlane(gl, __structs, oit, ppt, cx, cy, dx, dy);
         let render = node.render;
         if(render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
           node.render(renderMode, gl, dx, dy);

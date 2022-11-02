@@ -85,6 +85,10 @@ function loadShader(gl, type, source) {
 }
 
 class $custom extends karas.Geom {
+  calContent(cr, cp) {
+    let res = super.calContent(cr, cp);
+    return res || true;
+  }
   render(renderMode, ctx, dx, dy) {
     let res = super.render(renderMode, ctx, dx, dy);
     if(renderMode === karas.mode.WEBGL) {

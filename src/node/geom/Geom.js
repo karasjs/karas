@@ -192,24 +192,34 @@ class Geom extends Xom {
 
   calContent(currentStyle, computedStyle) {
     let res = super.calContent(currentStyle, computedStyle);
-    if(!res) {
-      let {
-        [FILL]: fill,
-        [STROKE]: stroke,
-        [STROKE_WIDTH]: strokeWidth,
-      } = computedStyle;
-      for(let i = 0, len = fill.length; i < len; i++) {
-        let item = fill[i];
-        if(item.k || item[3] > 0) {
-          return true;
-        }
+    this.__hasXomContent = res;
+    let {
+      [FILL]: fill,
+      [STROKE]: stroke,
+      [STROKE_WIDTH]: strokeWidth,
+    } = computedStyle;
+    let empty = true;
+    for(let i = 0, len = fill.length; i < len; i++) {
+      let item = fill[i];
+      if(item.k || item[3] > 0) {
+        empty = false;
+        break;
       }
-      for(let i = 0, len = stroke.length; i < len; i++) {
-        let item = stroke[i];
-        if((item.k || item[3] > 0) && strokeWidth[i] > 0) {
-          return true;
-        }
+    }
+    for(let i = 0, len = stroke.length; i < len; i++) {
+      let item = stroke[i];
+      if((item.k || item[3] > 0) && strokeWidth[i] > 0) {
+        empty = false;
+        break;
       }
+    }
+    // 矢量图形默认有内容
+    if(!empty) {
+      return true;
+    }
+    // 没有fill和stroke则认为矢量图形为空
+    if(!res && empty) {
+      return false;
     }
     return res;
   }

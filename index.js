@@ -22252,26 +22252,38 @@
       value: function calContent(currentStyle, computedStyle) {
         var res = _get(_getPrototypeOf(Geom.prototype), "calContent", this).call(this, currentStyle, computedStyle);
 
-        if (!res) {
-          var fill = computedStyle[FILL$1],
-              stroke = computedStyle[STROKE],
-              strokeWidth = computedStyle[STROKE_WIDTH$6];
+        this.__hasXomContent = res;
+        var fill = computedStyle[FILL$1],
+            stroke = computedStyle[STROKE],
+            strokeWidth = computedStyle[STROKE_WIDTH$6];
+        var empty = true;
 
-          for (var i = 0, len = fill.length; i < len; i++) {
-            var item = fill[i];
+        for (var i = 0, len = fill.length; i < len; i++) {
+          var item = fill[i];
 
-            if (item.k || item[3] > 0) {
-              return true;
-            }
+          if (item.k || item[3] > 0) {
+            empty = false;
+            break;
           }
+        }
 
-          for (var _i = 0, _len = stroke.length; _i < _len; _i++) {
-            var _item = stroke[_i];
+        for (var _i = 0, _len = stroke.length; _i < _len; _i++) {
+          var _item = stroke[_i];
 
-            if ((_item.k || _item[3] > 0) && strokeWidth[_i] > 0) {
-              return true;
-            }
+          if ((_item.k || _item[3] > 0) && strokeWidth[_i] > 0) {
+            empty = false;
+            break;
           }
+        } // 矢量图形默认有内容
+
+
+        if (!empty) {
+          return true;
+        } // 没有fill和stroke则认为矢量图形为空
+
+
+        if (!res && empty) {
+          return false;
         }
 
         return res;
@@ -36047,42 +36059,9 @@
               _mixBlendMode = __computedStyle[MIX_BLEND_MODE$1],
               _perspective2 = __computedStyle[PERSPECTIVE];
 
-          var _isMbm = _mixBlendMode !== 'normal'; // let __domParent = node.__domParent;
+          var _isMbm = _mixBlendMode !== 'normal';
 
-
-          var _isPpt = total && (_perspective2 || isPerspectiveMatrix(node.__matrix)); // 有perspective的父或者自身transform包含的都是局部根节点
-          // let isPptParent = __domParent && !isE(__domParent.__perspectiveMatrix) && total;
-          // let isPptSelf = isPerspectiveMatrix(node.__matrix) && total;
-          // let isPpt = isPptParent || isPptSelf;
-          // ppt几种情况非常复杂，需分开考虑
-          // let pptEnv, isPpt;
-          // // ppt在自身身上特殊处理，自身即是局部根节点也是直接子节点，如果父还是ppt可以忽略，因为功能正好重合
-          // if(isPptSelf) {
-          //   isPpt = true;
-          //   pptEnv = {
-          //     flat: isFlat,
-          //     node,
-          //   };
-          // }
-          // // ppt节点需局部根节点位图缓存，防止重合，同时透视子孙要切割平面
-          // else if(perspective && total) {
-          //   isPpt = true;
-          // }
-          // // 父是ppt，直接子节点强制参与透视，当父是flat时，直接子节点子孙都是透视投影，需切割面后投影
-          // else if(isPptParent && parentFlat) {
-          //   pptEnv = {
-          //     flat: isFlat,
-          //     node: parentPptNode,
-          //   };
-          // }
-          // // transformStyle变化的非ppt直接子节点，根据父是否flat决定是否拆面，一定投影
-          // else if(parentPptNode && total && parentFlat !== isFlat) {
-          //   pptEnv = {
-          //     flat: isFlat,
-          //     node: parentPptNode,
-          //   };
-          // }
-
+          var _isPpt = total && (_perspective2 || isPerspectiveMatrix(node.__matrix));
 
           var isOverflow = overflow === 'hidden' && total;
           var isFilter = _filter && _filter.length;
@@ -41636,6 +41615,31 @@
     }
 
     _createClass(Polyline, [{
+      key: "calContent",
+      value: function calContent(currentStyle, computedStyle) {
+        var res = _get(_getPrototypeOf(Polyline.prototype), "calContent", this).call(this, currentStyle, computedStyle); // 查看是否有顶点
+
+
+        if (res && !this.__hasXomContent) {
+          var points = this.__cacheProps.points,
+              isMulti = this.isMulti;
+
+          if (isMulti) {
+            for (var i = 0, len = points.length; i < len; i++) {
+              if (points.length) {
+                return true;
+              }
+            }
+
+            return false;
+          } else {
+            return !!points.length;
+          }
+        }
+
+        return res;
+      }
+    }, {
       key: "__getPoints",
       value: function __getPoints(originX, originY, width, height, points, isControl) {
         return points.map(function (item) {

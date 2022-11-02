@@ -2380,40 +2380,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
           [PERSPECTIVE]: perspective,
         } = __computedStyle;
         let isMbm = mixBlendMode !== 'normal';
-        // let __domParent = node.__domParent;
         let isPpt = total && (perspective || isPerspectiveMatrix(node.__matrix));
-        // 有perspective的父或者自身transform包含的都是局部根节点
-        // let isPptParent = __domParent && !isE(__domParent.__perspectiveMatrix) && total;
-        // let isPptSelf = isPerspectiveMatrix(node.__matrix) && total;
-        // let isPpt = isPptParent || isPptSelf;
-        // ppt几种情况非常复杂，需分开考虑
-        // let pptEnv, isPpt;
-        // // ppt在自身身上特殊处理，自身即是局部根节点也是直接子节点，如果父还是ppt可以忽略，因为功能正好重合
-        // if(isPptSelf) {
-        //   isPpt = true;
-        //   pptEnv = {
-        //     flat: isFlat,
-        //     node,
-        //   };
-        // }
-        // // ppt节点需局部根节点位图缓存，防止重合，同时透视子孙要切割平面
-        // else if(perspective && total) {
-        //   isPpt = true;
-        // }
-        // // 父是ppt，直接子节点强制参与透视，当父是flat时，直接子节点子孙都是透视投影，需切割面后投影
-        // else if(isPptParent && parentFlat) {
-        //   pptEnv = {
-        //     flat: isFlat,
-        //     node: parentPptNode,
-        //   };
-        // }
-        // // transformStyle变化的非ppt直接子节点，根据父是否flat决定是否拆面，一定投影
-        // else if(parentPptNode && total && parentFlat !== isFlat) {
-        //   pptEnv = {
-        //     flat: isFlat,
-        //     node: parentPptNode,
-        //   };
-        // }
         let isOverflow = overflow === 'hidden' && total;
         let isFilter = filter && filter.length;
         if(isMbm) {

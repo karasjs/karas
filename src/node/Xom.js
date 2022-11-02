@@ -2490,7 +2490,10 @@ class Xom extends Node {
   refresh(lv, cb) {
     let root = this.__root;
     if(isFunction(lv) || !lv) {
-      lv = REPAINT;
+      lv = CACHE;
+    }
+    if(lv) {
+      this.clearCache(lv < REPAINT);
     }
     if(root && !this.__isDestroyed) {
       root.__addUpdate(this, null, lv, null, null, null, cb);
@@ -2717,13 +2720,14 @@ class Xom extends Node {
   }
 
   // canvas清空自身cache，cacheTotal在Root的自底向上逻辑做，svg仅有cacheTotal
-  clearCache(lookUp) {
+  clearCache(onlyTotal) {
     let __cacheTotal = this.__cacheTotal;
     let __cacheFilter = this.__cacheFilter;
     let __cacheMask = this.__cacheMask;
     let __cache = this.__cache;
-    if(__cache) {
+    if(__cache && !onlyTotal) {
       __cache.release();
+      this.__refreshLevel |= REPAINT;
     }
     if(__cacheTotal) {
       __cacheTotal.release();
@@ -2735,24 +2739,26 @@ class Xom extends Node {
       __cacheMask.release();
     }
     this.__refreshLevel |= CACHE;
-    if(lookUp) {
-      let p = this.__domParent;
-      while(p) {
-        let __cacheTotal = p.__cacheTotal;
-        let __cacheFilter = p.__cacheFilter;
-        let __cacheMask = p.__cacheMask;
-        p.__refreshLevel |= CACHE;
-        if(__cacheTotal) {
-          __cacheTotal.release();
-        }
-        if(__cacheFilter) {
-          __cacheFilter.release();
-        }
-        if(__cacheMask) {
-          __cacheMask.release();
-        }
-        p = p.__domParent;
+    this.clearTopCache();
+  }
+
+  clearTopCache() {
+    let p = this.__domParent;
+    while(p) {
+      let __cacheTotal = p.__cacheTotal;
+      let __cacheFilter = p.__cacheFilter;
+      let __cacheMask = p.__cacheMask;
+      p.__refreshLevel |= CACHE;
+      if(__cacheTotal) {
+        __cacheTotal.release();
       }
+      if(__cacheFilter) {
+        __cacheFilter.release();
+      }
+      if(__cacheMask) {
+        __cacheMask.release();
+      }
+      p = p.__domParent;
     }
   }
 

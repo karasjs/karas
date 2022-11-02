@@ -20243,7 +20243,11 @@
         var root = this.__root;
 
         if (isFunction$5(lv) || !lv) {
-          lv = REPAINT$3;
+          lv = CACHE$3;
+        }
+
+        if (lv) {
+          this.clearCache(lv < REPAINT$3);
         }
 
         if (root && !this.__isDestroyed) {
@@ -20509,14 +20513,16 @@
 
     }, {
       key: "clearCache",
-      value: function clearCache(lookUp) {
+      value: function clearCache(onlyTotal) {
         var __cacheTotal = this.__cacheTotal;
         var __cacheFilter = this.__cacheFilter;
         var __cacheMask = this.__cacheMask;
         var __cache = this.__cache;
 
-        if (__cache) {
+        if (__cache && !onlyTotal) {
           __cache.release();
+
+          this.__refreshLevel |= REPAINT$3;
         }
 
         if (__cacheTotal) {
@@ -20532,30 +20538,32 @@
         }
 
         this.__refreshLevel |= CACHE$3;
+        this.clearTopCache();
+      }
+    }, {
+      key: "clearTopCache",
+      value: function clearTopCache() {
+        var p = this.__domParent;
 
-        if (lookUp) {
-          var p = this.__domParent;
+        while (p) {
+          var __cacheTotal = p.__cacheTotal;
+          var __cacheFilter = p.__cacheFilter;
+          var __cacheMask = p.__cacheMask;
+          p.__refreshLevel |= CACHE$3;
 
-          while (p) {
-            var _cacheTotal = p.__cacheTotal;
-            var _cacheFilter = p.__cacheFilter;
-            var _cacheMask = p.__cacheMask;
-            p.__refreshLevel |= CACHE$3;
-
-            if (_cacheTotal) {
-              _cacheTotal.release();
-            }
-
-            if (_cacheFilter) {
-              _cacheFilter.release();
-            }
-
-            if (_cacheMask) {
-              _cacheMask.release();
-            }
-
-            p = p.__domParent;
+          if (__cacheTotal) {
+            __cacheTotal.release();
           }
+
+          if (__cacheFilter) {
+            __cacheFilter.release();
+          }
+
+          if (__cacheMask) {
+            __cacheMask.release();
+          }
+
+          p = p.__domParent;
         }
       }
     }, {
@@ -41621,7 +41629,7 @@
 
 
         if (res && !this.__hasXomContent) {
-          var points = this.__cacheProps.points,
+          var points = this.currentProps.points,
               isMulti = this.isMulti;
 
           if (isMulti) {
@@ -41630,10 +41638,10 @@
                 return true;
               }
             }
-
-            return false;
           } else {
-            return !!points.length;
+            if (points.length) {
+              return true;
+            }
           }
         }
 

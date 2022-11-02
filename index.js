@@ -34254,14 +34254,16 @@
       else {
         var __computedStyle = _node4.__computedStyle;
 
-        if (__computedStyle[DISPLAY$1] === 'none' || _node4.__mask) {
-          i += _total6 || 0;
+        if (i > index) {
+          if (__computedStyle[DISPLAY$1] === 'none' || _node4.__mask) {
+            i += _total6 || 0;
 
-          if (hasMask) {
-            i += countMaskNum(__structs, i + 1, hasMask);
+            if (hasMask) {
+              i += countMaskNum(__structs, i + 1, hasMask);
+            }
+
+            continue;
           }
-
-          continue;
         }
 
         var visibility = __computedStyle[VISIBILITY$1],
@@ -34383,11 +34385,11 @@
               _cacheFilter2 = _node4.__cacheFilter,
               _cacheMask2 = _node4.__cacheMask;
 
-          var _target4 = getCache([_cacheMask2, _cacheFilter2, _cacheTotal3, _cache2]);
+          var _target4 = i > index ? getCache([_cacheMask2, _cacheFilter2, _cacheTotal3, _cache2]) : _cache2;
 
           if (_target4) {
             // 局部的mbm和主画布一样，先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
-            if (mixBlendMode !== 'normal') {
+            if (i > index && mixBlendMode !== 'normal') {
               if (list.length) {
                 drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
               }
@@ -34423,7 +34425,7 @@
               });
             }
 
-            if (_target4 !== _cache2 && i > index) {
+            if (_target4 !== _cache2) {
               i += _total6 || 0;
 
               if (hasMask) {

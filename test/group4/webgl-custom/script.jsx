@@ -114,6 +114,7 @@ void main() {
       gl.drawArrays(gl.TRIANGLES, 0, 6);
       gl.deleteBuffer(pointBuffer);
       gl.disableVertexAttribArray(a_position);
+      gl.useProgram(gl.program);
     }
     return res;
   }

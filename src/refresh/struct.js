@@ -866,12 +866,14 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
     // 再看total缓存/cache，都没有的是无内容的Xom节点
     else {
       let __computedStyle = node.__computedStyle;
-      if(__computedStyle[DISPLAY] === 'none' || node.__mask) {
-        i += (total || 0);
-        if(hasMask) {
-          i += countMaskNum(__structs, i + 1, hasMask);
+      if(i > index) {
+        if(__computedStyle[DISPLAY] === 'none' || node.__mask) {
+          i += (total || 0);
+          if(hasMask) {
+            i += countMaskNum(__structs, i + 1, hasMask);
+          }
+          continue;
         }
-        continue;
       }
       let {
         [VISIBILITY]: visibility,
@@ -977,10 +979,10 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
           __cacheFilter,
           __cacheMask,
         } = node;
-        let target = getCache([__cacheMask, __cacheFilter, __cacheTotal, __cache]);
+        let target = i > index ? getCache([__cacheMask, __cacheFilter, __cacheTotal, __cache]) : __cache;
         if(target) {
           // 局部的mbm和主画布一样，先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
-          if(mixBlendMode !== 'normal') {
+          if(i > index && mixBlendMode !== 'normal') {
             if(list.length) {
               drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
             }
@@ -1007,7 +1009,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
             lastPage = p;
             list.push({cache: target, opacity: node.__opacity, matrix: m});
           }
-          if(target !== __cache && i > index) {
+          if(target !== __cache) {
             i += (total || 0);
             if(hasMask) {
               i += countMaskNum(__structs, i + 1, hasMask);

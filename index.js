@@ -29762,7 +29762,9 @@
       y = (cy - y) / cy;
     }
 
-    z /= -tz;
+    if (tz) {
+      z /= -tz;
+    }
 
     if (w === 1) {
       return {
@@ -29888,13 +29890,17 @@
           y4 = _calRectPoint.y4,
           z4 = _calRectPoint.z4,
           w4 = _calRectPoint.w4; // console.warn(x1,y1,z1,w1,',',x2,y2,z2,w2,',',x3,y3,z3,w3,',',x4,y4,z4,w4);
-      // z范围取所有、对角线最大值
+      // z范围取所有、对角线最大值，只有当非0有值时才求
 
 
       var z = Math.max(Math.abs(z1), Math.abs(z2));
       z = Math.max(z, Math.abs(z3));
       z = Math.max(z, Math.abs(z4));
-      z = Math.max(z, Math.sqrt(cx * cx + cy * cy));
+
+      if (z) {
+        z = Math.max(z, Math.sqrt(cx * cx + cy * cy));
+      }
+
       var t = convertCoords2Gl(x1, y1, z1, w1, cx, cy, z);
       x1 = t.x;
       y1 = t.y;
@@ -30653,10 +30659,90 @@
             vtTex.push(ty);
             vtOpacity.push(opacity);
           }
-        } // console.log(vtPoint);
-        // console.log(vtTex);
-        // console.log(vtOpacity);
+        }
+      } else {
+        var xa = bx + dx,
+            ya = by + height + dy;
+        var xb = bx + width + dx,
+            yb = by + dy;
 
+        var _calRectPoint2 = calRectPoint$1(xa, ya, xb, yb, matrix),
+            x1 = _calRectPoint2.x1,
+            y1 = _calRectPoint2.y1,
+            z1 = _calRectPoint2.z1,
+            w1 = _calRectPoint2.w1,
+            x2 = _calRectPoint2.x2,
+            y2 = _calRectPoint2.y2,
+            z2 = _calRectPoint2.z2,
+            w2 = _calRectPoint2.w2,
+            x3 = _calRectPoint2.x3,
+            y3 = _calRectPoint2.y3,
+            z3 = _calRectPoint2.z3,
+            w3 = _calRectPoint2.w3,
+            x4 = _calRectPoint2.x4,
+            y4 = _calRectPoint2.y4,
+            z4 = _calRectPoint2.z4,
+            w4 = _calRectPoint2.w4;
+
+        var _t2 = convertCoords2Gl(x1, y1, z1, w1, cx, cy, ppt);
+
+        x1 = _t2.x;
+        y1 = _t2.y;
+        z1 = _t2.z;
+        _t2 = convertCoords2Gl(x2, y2, z2, w2, cx, cy, ppt);
+        x2 = _t2.x;
+        y2 = _t2.y;
+        z2 = _t2.z;
+        _t2 = convertCoords2Gl(x3, y3, z3, w3, cx, cy, ppt);
+        x3 = _t2.x;
+        y3 = _t2.y;
+        z3 = _t2.z;
+        _t2 = convertCoords2Gl(x4, y4, z4, w4, cx, cy, ppt);
+        x4 = _t2.x;
+        y4 = _t2.y;
+        z4 = _t2.z;
+        vtPoint[0] = x1;
+        vtPoint[1] = y1;
+        vtPoint[2] = z1;
+        vtPoint[3] = w1;
+        vtPoint[4] = x4;
+        vtPoint[5] = y4;
+        vtPoint[6] = z4;
+        vtPoint[7] = w4;
+        vtPoint[8] = x2;
+        vtPoint[9] = y2;
+        vtPoint[10] = z2;
+        vtPoint[11] = w2;
+        vtPoint[12] = x4;
+        vtPoint[13] = y4;
+        vtPoint[14] = z4;
+        vtPoint[15] = w4;
+        vtPoint[16] = x2;
+        vtPoint[17] = y2;
+        vtPoint[18] = z2;
+        vtPoint[19] = w2;
+        vtPoint[20] = x3;
+        vtPoint[21] = y3;
+        vtPoint[22] = z3;
+        vtPoint[23] = w3;
+        vtTex[0] = tx1;
+        vtTex[1] = ty1;
+        vtTex[2] = tx1;
+        vtTex[3] = ty2;
+        vtTex[4] = tx2;
+        vtTex[5] = ty1;
+        vtTex[6] = tx1;
+        vtTex[7] = ty2;
+        vtTex[8] = tx2;
+        vtTex[9] = ty1;
+        vtTex[10] = tx2;
+        vtTex[11] = ty2;
+        vtOpacity[0] = opacity;
+        vtOpacity[1] = opacity;
+        vtOpacity[2] = opacity;
+        vtOpacity[3] = opacity;
+        vtOpacity[4] = opacity;
+        vtOpacity[5] = opacity;
       } // 顶点buffer
 
 
@@ -30675,7 +30761,7 @@
       gl.vertexAttribPointer(a_opacity, 1, gl.FLOAT, false, 0, 0);
       gl.enableVertexAttribArray(a_opacity);
       gl.uniform1i(u_texture, 0);
-      gl.drawArrays(gl.TRIANGLES, 0, vtOpacity.length); // break;
+      gl.drawArrays(gl.TRIANGLES, 0, vtOpacity.length);
     }
 
     gl.deleteBuffer(pointBuffer);
@@ -34091,7 +34177,7 @@
     dx = -bboxTotal[0];
     dy = -bboxTotal[1]; // 需要重新计算，因为bbox里是原本位置，这里是新的位置
 
-    var pm;
+    var pm, ppt;
 
     if (isPpt) {
       if (top.__perspectiveMatrix) {
@@ -34101,8 +34187,6 @@
         pm = transform$1.calPerspectiveMatrix(perspective, x1 + dx + perspectiveOrigin[0], y1 + dy + perspectiveOrigin[1]);
       }
     }
-
-    var ppt;
 
     if (oitHash) {
       if (pptNode.__perspectiveMatrix) {
@@ -34121,26 +34205,26 @@
     gl.viewport(0, 0, w, h); // fbo绘制对象纹理不用绑定单元，剩下的纹理绘制用0号
 
     var lastPage,
-        list = []; // 先绘制自己的cache，起点所以matrix视作E为空，opacity固定1
+        list = []; // 先绘制自己的cache，起点所以matrix视作E为空，opacity固定1，注意被拆分时不绘制
 
-    if (__cache && __cache.available) {
-      list.push({
-        cache: __cache,
-        opacity: 1
-      });
-      drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
-    }
+    if (!oitHash || !oitHash[index]) {
+      if (__cache && __cache.available) {
+        drawTextureCache(gl, [{
+          cache: __cache,
+          opacity: 1
+        }], cx, cy, dx, dy);
+      }
 
-    var render = node.render;
+      var render = node.render;
 
-    if (render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
-      drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
-      node.render(renderMode, gl, dx, dy);
+      if (render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
+        node.render(renderMode, gl, dx, dy);
+      }
     }
 
     var cacheTotal = __cacheTotal;
 
-    for (var i = index + 1, len = index + (total || 0) + 1; i < len; i++) {
+    for (var i = index, len = index + (total || 0) + 1; i < len; i++) {
       var _structs$i4 = __structs[i],
           _node4 = _structs$i4.node,
           _total6 = _structs$i4.total,
@@ -34197,23 +34281,28 @@
 
         var m = void 0;
 
-        if (!isE(transform)) {
-          m = transform$1.calMatrixByOrigin(transform, tfo[0] + _node4.__x1 + dx, tfo[1] + _node4.__y1 + dy);
-        }
+        if (i > index) {
+          if (!isE(transform)) {
+            m = transform$1.calMatrixByOrigin(transform, tfo[0] + _node4.__x1 + dx, tfo[1] + _node4.__y1 + dy);
+          }
 
-        if (_p2 !== top) {
-          m = multiply(_p2.__matrixEvent, m);
-        } // 有透视还得预乘透视
-        else if (pm) {
-          m = multiply(pm, m);
-        }
+          if (_p2 !== top) {
+            m = multiply(_p2.__matrixEvent, m);
+          } // 有透视还得预乘透视
+          else if (pm) {
+            m = multiply(pm, m);
+          }
 
-        assignMatrix(_node4.__matrixEvent, m); // 有oit平面拆分的优先考虑，其一定没有mbm；否则走普通渲染逻辑
+          assignMatrix(_node4.__matrixEvent, m);
+        } // 有oit平面拆分的优先考虑，其一定没有mbm；否则走普通渲染逻辑
+
 
         var _oit = oitHash && oitHash[i];
 
         if (_oit) {
-          // 只求子节点的matrix即可
+          drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+          lastPage = null; // 只求子节点的matrix即可
+
           for (var j = i + 1, _len = i + (_total6 || 0) + 1; j < _len; j++) {
             var _structs$j = __structs[j],
                 _node5 = _structs$j.node,
@@ -34255,6 +34344,9 @@
 
               if (_p3 !== top) {
                 _m = multiply(_p3.__matrixEvent, _m);
+              } // 有透视还得预乘透视
+              else if (pm) {
+                _m = multiply(pm, _m);
               }
 
               assignMatrix(_node5.__matrixEvent, _m);
@@ -34280,6 +34372,11 @@
           }
 
           webgl.drawOitPlane(gl, __structs, _oit, ppt, cx, cy, dx, dy);
+          var _render = _node4.render;
+
+          if (_render !== DOM_RENDER && _render !== IMG_RENDER && _render !== GEOM_RENDER) {
+            _node4.render(renderMode, gl, dx, dy);
+          }
         } else {
           var _cache2 = _node4.__cache,
               _cacheTotal3 = _node4.__cacheTotal,
@@ -34326,7 +34423,7 @@
               });
             }
 
-            if (_target4 !== _cache2) {
+            if (_target4 !== _cache2 && i > index) {
               i += _total6 || 0;
 
               if (hasMask) {
@@ -34337,9 +34434,9 @@
 
 
           if (!_target4 || _target4 === _cache2) {
-            var _render = _node4.render;
+            var _render2 = _node4.render;
 
-            if (_render !== DOM_RENDER && _render !== IMG_RENDER && _render !== GEOM_RENDER) {
+            if (_render2 !== DOM_RENDER && _render2 !== IMG_RENDER && _render2 !== GEOM_RENDER) {
               drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
 
               _node4.render(renderMode, gl, dx, dy);
@@ -34430,9 +34527,9 @@
             __cacheFilter = _node6.__cacheFilter,
             __cacheMask = _node6.__cacheMask,
             p = _node6.__domParent;
-        var target = getCache([__cacheMask, __cacheFilter, _cacheTotal4]); // 变成flat的局部子节点，或者flat的直接子节点，生成局部根，已生成过的不用再生成
+        var target = getCache([__cacheMask, __cacheFilter, _cacheTotal4]); // flat变化的局部子节点，或者flat根的直接子节点，生成局部根，已生成过的不用再生成
 
-        if (_total8 && !target && (transformStyle !== p.__computedStyle[TRANSFORM_STYLE] || p === top)) {
+        if (_total8 && !target && (transformStyle !== p.__computedStyle[TRANSFORM_STYLE] || p === top && transformStyle === 'flat')) {
           var j = i + (_total8 || 0);
 
           if (hasMask) {
@@ -34507,8 +34604,7 @@
         var _top = _node7,
             x0 = _node7.__x1,
             y0 = _node7.__y1,
-            planeList = [],
-            planeHash = [];
+            planeList = [];
 
         if (_node7.__hasContent) {
           var __cache = _node7.__cache,
@@ -34541,7 +34637,6 @@
             }]
           };
           planeList.push(o);
-          planeHash[_index] = o;
         }
 
         for (var _i2 = _index + 1, _len3 = _index + (_total9 || 0) + 1; _i2 < _len3; _i2++) {
@@ -34550,7 +34645,59 @@
               _total10 = _structs$_i.total,
               _hasMask5 = _structs$_i.hasMask;
 
-          if (_node8 instanceof Text) ; else {
+          if (_node8 instanceof Text) {
+            var _cache3 = _node8.__cache;
+
+            if (_cache3 && _cache3.available) {
+              var __matrixEvent = _node8.__domParent.__matrixEvent;
+              var x = _cache3.x1,
+                  y = _cache3.y1,
+                  width = _cache3.__width,
+                  height = _cache3.__height;
+              var xa = x - x0,
+                  ya = y - y0;
+              var xb = x + width - x0,
+                  yb = y + height - y0;
+
+              var _calRectPoint = calRectPoint(xa, ya, xb, yb, __matrixEvent),
+                  x1 = _calRectPoint.x1,
+                  y1 = _calRectPoint.y1,
+                  z1 = _calRectPoint.z1,
+                  x2 = _calRectPoint.x2,
+                  y2 = _calRectPoint.y2,
+                  z2 = _calRectPoint.z2,
+                  x3 = _calRectPoint.x3,
+                  y3 = _calRectPoint.y3,
+                  z3 = _calRectPoint.z3,
+                  x4 = _calRectPoint.x4,
+                  y4 = _calRectPoint.y4,
+                  z4 = _calRectPoint.z4;
+
+              var _o = {
+                index: _i2,
+                node: _node8,
+                target: _cache3,
+                points: [{
+                  x: x1,
+                  y: y1,
+                  z: z1
+                }, {
+                  x: x2,
+                  y: y2,
+                  z: z2
+                }, {
+                  x: x3,
+                  y: y3,
+                  z: z3
+                }, {
+                  x: x4,
+                  y: y4,
+                  z: z4
+                }]
+              };
+              planeList.push(_o);
+            }
+          } else {
             var _computedStyle3 = _node8.__computedStyle;
 
             if (_computedStyle3[DISPLAY$1] === 'none' || _node8.__mask) {
@@ -34575,7 +34722,7 @@
               continue;
             }
 
-            var _cache3 = _node8.__cache,
+            var _cache4 = _node8.__cache,
                 _cacheTotal6 = _node8.__cacheTotal,
                 _cacheFilter4 = _node8.__cacheFilter,
                 _cacheMask4 = _node8.__cacheMask,
@@ -34593,59 +34740,59 @@
 
             assignMatrix(_node8.__matrixEvent, m);
 
-            var _target6 = getCache([_cacheMask4, _cacheFilter4, _cacheTotal6, _cache3]);
+            var _target6 = getCache([_cacheMask4, _cacheFilter4, _cacheTotal6, _cache4]);
 
             if (_target6) {
-              var x = _target6.x1,
-                  y = _target6.y1,
-                  width = _target6.__width,
-                  height = _target6.__height; // 坐标计算还是以局部根为原点
+              var _x = _target6.x1,
+                  _y = _target6.y1,
+                  _width2 = _target6.__width,
+                  _height2 = _target6.__height; // 坐标计算还是以局部根为原点
 
-              var xa = x - x0,
-                  ya = y - y0;
-              var xb = x + width - x0,
-                  yb = y + height - y0;
+              var _xa = _x - x0,
+                  _ya = _y - y0;
 
-              var _calRectPoint = calRectPoint(xa, ya, xb, yb, m),
-                  x1 = _calRectPoint.x1,
-                  y1 = _calRectPoint.y1,
-                  z1 = _calRectPoint.z1,
-                  x2 = _calRectPoint.x2,
-                  y2 = _calRectPoint.y2,
-                  z2 = _calRectPoint.z2,
-                  x3 = _calRectPoint.x3,
-                  y3 = _calRectPoint.y3,
-                  z3 = _calRectPoint.z3,
-                  x4 = _calRectPoint.x4,
-                  y4 = _calRectPoint.y4,
-                  z4 = _calRectPoint.z4;
+              var _xb = _x + _width2 - x0,
+                  _yb = _y + _height2 - y0;
 
-              var _o = {
+              var _calRectPoint2 = calRectPoint(_xa, _ya, _xb, _yb, m),
+                  _x2 = _calRectPoint2.x1,
+                  _y2 = _calRectPoint2.y1,
+                  _z = _calRectPoint2.z1,
+                  _x3 = _calRectPoint2.x2,
+                  _y3 = _calRectPoint2.y2,
+                  _z2 = _calRectPoint2.z2,
+                  _x4 = _calRectPoint2.x3,
+                  _y4 = _calRectPoint2.y3,
+                  _z3 = _calRectPoint2.z3,
+                  _x5 = _calRectPoint2.x4,
+                  _y5 = _calRectPoint2.y4,
+                  _z4 = _calRectPoint2.z4;
+
+              var _o2 = {
                 index: _i2,
                 node: _node8,
                 target: _target6,
                 points: [{
-                  x: x1,
-                  y: y1,
-                  z: z1
+                  x: _x2,
+                  y: _y2,
+                  z: _z
                 }, {
-                  x: x2,
-                  y: y2,
-                  z: z2
+                  x: _x3,
+                  y: _y3,
+                  z: _z2
                 }, {
-                  x: x3,
-                  y: y3,
-                  z: z3
+                  x: _x4,
+                  y: _y4,
+                  z: _z3
                 }, {
-                  x: x4,
-                  y: y4,
-                  z: z4
+                  x: _x5,
+                  y: _y5,
+                  z: _z4
                 }]
               };
-              planeList.push(_o);
-              planeHash[_i2] = _o;
+              planeList.push(_o2);
 
-              if (_target6 !== _cache3) {
+              if (_target6 !== _cache4) {
                 _i2 += _total10 || 0;
 
                 if (_hasMask5) {
@@ -34687,7 +34834,7 @@
     } // 最后一次循环绘制到局部根节点上，类似genTotalWebgl()逻辑，但要考虑ppt透视
 
 
-    return genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total, __structs, W, H, true, null, null);
+    return genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total, __structs, W, H, true, node, oitHash);
   }
 
   function genFilterWebgl(renderMode, gl, node, cache, filter, W, H) {
@@ -34815,11 +34962,11 @@
       } else if (k === 'invert' && v > 0) {
         v = Math.min(v, 100);
 
-        var _o2 = v * 0.01;
+        var _o3 = v * 0.01;
 
-        var _amount2 = 1 - 2 * _o2;
+        var _amount2 = 1 - 2 * _o3;
 
-        var _res8 = genColorMatrixWebgl(renderMode, gl, target, [_amount2, 0, 0, 0, _o2, 0, _amount2, 0, 0, _o2, 0, 0, _amount2, 0, _o2, 0, 0, 0, 1, 0]);
+        var _res8 = genColorMatrixWebgl(renderMode, gl, target, [_amount2, 0, 0, 0, _o3, 0, _amount2, 0, 0, _o3, 0, 0, _amount2, 0, _o3, 0, 0, 0, 1, 0]);
 
         if (_res8) {
           if (target !== cache) {
@@ -35051,7 +35198,7 @@
             continue;
           }
 
-          var _cache4 = _node9.__cache,
+          var _cache5 = _node9.__cache,
               __cacheTotal = _node9.__cacheTotal,
               __cacheFilter = _node9.__cacheFilter,
               _cacheMask5 = _node9.__cacheMask; // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理
@@ -35077,9 +35224,9 @@
 
 
           lastLv = _lv5;
-          var target = getCache([_cacheMask5, __cacheFilter, __cacheTotal, _cache4]);
+          var target = getCache([_cacheMask5, __cacheFilter, __cacheTotal, _cache5]);
 
-          if (target && (target !== _cache4 || visibility === 'visible')) {
+          if (target && (target !== _cache5 || visibility === 'visible')) {
             // 不考虑mbm
             var m = void 0;
 
@@ -35109,7 +35256,7 @@
               matrix: m
             });
 
-            if (target !== _cache4) {
+            if (target !== _cache5) {
               i += _total11 || 0;
 
               if (hasMask) {
@@ -35119,7 +35266,7 @@
           } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
 
 
-          if (!target || target === _cache4) {
+          if (!target || target === _cache5) {
             var render = _node9.render;
 
             if (render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
@@ -35858,7 +36005,7 @@
 
           if (hasContent) {
             var _bbox2 = node.bbox,
-                _cache5 = node.__cache,
+                _cache6 = node.__cache,
                 x1 = node.__x1,
                 y1 = node.__y1; // 单图特殊对待缓存
 
@@ -35867,25 +36014,25 @@
 
               if (loadImg.onlyImg && !loadImg.error && loadImg.source) {
                 onlyImg = true;
-                _cache5 = node.__cache = ImgWebglCache.getInstance(mode.CANVAS, gl, root.__uuid, _bbox2, loadImg, x1, y1);
+                _cache6 = node.__cache = ImgWebglCache.getInstance(mode.CANVAS, gl, root.__uuid, _bbox2, loadImg, x1, y1);
               }
             }
 
             if (!onlyImg) {
-              if (_cache5) {
-                _cache5.reset(_bbox2, x1, y1);
+              if (_cache6) {
+                _cache6.reset(_bbox2, x1, y1);
               } else {
-                _cache5 = CanvasCache.getInstance(mode.CANVAS, gl, root.__uuid, _bbox2, x1, y1, null);
+                _cache6 = CanvasCache.getInstance(mode.CANVAS, gl, root.__uuid, _bbox2, x1, y1, null);
               }
             }
 
-            if (_cache5 && _cache5.enabled) {
-              _cache5.__bbox = _bbox2;
-              _cache5.__available = true;
-              node.__cache = _cache5;
-              node.render(mode.CANVAS, _cache5.ctx, _cache5.dx, _cache5.dy);
+            if (_cache6 && _cache6.enabled) {
+              _cache6.__bbox = _bbox2;
+              _cache6.__available = true;
+              node.__cache = _cache6;
+              node.render(mode.CANVAS, _cache6.ctx, _cache6.dx, _cache6.dy);
             } else {
-              _cache5 && _cache5.release();
+              _cache6 && _cache6.release();
               node.__limitCache = true;
               return;
             }
@@ -36091,13 +36238,13 @@
 
       if (_node12 instanceof Text) {
         // text特殊之处，__config部分是复用parent的
-        var _cache6 = _node12.__cache;
+        var _cache7 = _node12.__cache;
 
-        if (_cache6 && _cache6.available) {
+        if (_cache7 && _cache7.available) {
           var _node12$__domParent = _node12.__domParent,
               __matrixEvent = _node12$__domParent.__matrixEvent,
               __opacity = _node12$__domParent.__opacity;
-          var p = _cache6.__page;
+          var p = _cache7.__page;
 
           if (lastPage && lastPage !== p) {
             drawTextureCache(gl, list.splice(0), cx, cy, 0, 0);
@@ -36105,7 +36252,7 @@
 
           lastPage = p;
           list.push({
-            cache: _cache6,
+            cache: _cache7,
             opacity: __opacity,
             matrix: __matrixEvent
           });
@@ -36135,7 +36282,7 @@
           continue;
         }
 
-        var _cache7 = _node12.__cache,
+        var _cache8 = _node12.__cache,
             _cacheTotal8 = _node12.__cacheTotal,
             _cacheFilter5 = _node12.__cacheFilter,
             _cacheMask6 = _node12.__cacheMask,
@@ -36165,7 +36312,7 @@
         _node12.__opacity = opacity;
         assignMatrix(_node12.__matrixEvent, m); // total和自身cache的尝试，visibility不可见时没有cache
 
-        var _target7 = getCache([_cacheMask6, _cacheFilter5, _cacheTotal8, _cache7]);
+        var _target7 = getCache([_cacheMask6, _cacheFilter5, _cacheTotal8, _cache8]);
 
         if (_target7) {
           // 有mbm则需要混合之前的纹理和新纹理到fbo上面，连续的mbm则依次交替绘制到画布或离屏fbo上
@@ -36201,7 +36348,7 @@
             });
           }
 
-          if (_target7 !== _cache7) {
+          if (_target7 !== _cache8) {
             _i10 += _total13 || 0;
 
             if (_hasMask7) {
@@ -36211,7 +36358,7 @@
         } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
 
 
-        if (!_target7 || _target7 === _cache7) {
+        if (!_target7 || _target7 === _cache8) {
           var render = _node12.render;
 
           if (render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {

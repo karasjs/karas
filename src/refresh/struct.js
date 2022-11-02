@@ -797,7 +797,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   dy = -bboxTotal[1];
 
   // 需要重新计算，因为bbox里是原本位置，这里是新的位置
-  let pm;
+  let pm, ppt;
   if(isPpt) {
     if(top.__perspectiveMatrix) {
       let {
@@ -809,7 +809,6 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
     else {
     }
   }
-  let ppt;
   if(oitHash) {
     if(pptNode.__perspectiveMatrix) {
       let {
@@ -830,19 +829,19 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
 
   // fbo绘制对象纹理不用绑定单元，剩下的纹理绘制用0号
   let lastPage, list = [];
-  // 先绘制自己的cache，起点所以matrix视作E为空，opacity固定1
-  if(__cache && __cache.available) {
-    list.push({ cache: __cache, opacity: 1 });
-    drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
-  }
-  let render = node.render;
-  if(render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
-    drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
-    node.render(renderMode, gl, dx, dy);
+  // 先绘制自己的cache，起点所以matrix视作E为空，opacity固定1，注意被拆分时不绘制
+  if(!oitHash || !oitHash[index]) {
+    if(__cache && __cache.available) {
+      drawTextureCache(gl, [{cache: __cache, opacity: 1}], cx, cy, dx, dy);
+    }
+    let render = node.render;
+    if(render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
+      node.render(renderMode, gl, dx, dy);
+    }
   }
 
   let cacheTotal = __cacheTotal;
-  for(let i = index + 1, len = index + (total || 0) + 1; i < len; i++) {
+  for(let i = index, len = index + (total || 0) + 1; i < len; i++) {
     let {
       node,
       total,
@@ -889,20 +888,24 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
       let p = node.__domParent;
       // 特殊渲染的matrix，局部根节点为原点考虑，和bbox以节点自身主画布参考系不同
       let m;
-      if(!isE(transform)) {
-        m = tf.calMatrixByOrigin(transform, tfo[0] + node.__x1 + dx, tfo[1] + node.__y1 + dy);
+      if(i > index) {
+        if(!isE(transform)) {
+          m = tf.calMatrixByOrigin(transform, tfo[0] + node.__x1 + dx, tfo[1] + node.__y1 + dy);
+        }
+        if(p !== top) {
+          m = multiply(p.__matrixEvent, m);
+        }
+        // 有透视还得预乘透视
+        else if(pm) {
+          m = multiply(pm, m);
+        }
+        assignMatrix(node.__matrixEvent, m);
       }
-      if(p !== top) {
-        m = multiply(p.__matrixEvent, m);
-      }
-      // 有透视还得预乘透视
-      else if(pm) {
-        m = multiply(pm, m);
-      }
-      assignMatrix(node.__matrixEvent, m);
       // 有oit平面拆分的优先考虑，其一定没有mbm；否则走普通渲染逻辑
       let oit = oitHash && oitHash[i];
       if(oit) {
+        drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+        lastPage = null;
         // 只求子节点的matrix即可
         for(let j = i + 1, len = i + (total || 0) + 1; j < len; j++) {
           let {
@@ -938,6 +941,10 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
             if(p !== top) {
               m = multiply(p.__matrixEvent, m);
             }
+            // 有透视还得预乘透视
+            else if(pm) {
+              m = multiply(pm, m);
+            }
             assignMatrix(node.__matrixEvent, m);
             let {
               __cacheTotal,
@@ -951,13 +958,17 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
                 j += countMaskNum(__structs, j + 1, hasMask);
               }
             }
-          }1
+          }
         }
         i += (total || 0);
         if(hasMask) {
           i += countMaskNum(__structs, i + 1, hasMask);
         }
         webgl.drawOitPlane(gl, __structs, oit, ppt, cx, cy, dx, dy);
+        let render = node.render;
+        if(render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
+          node.render(renderMode, gl, dx, dy);
+        }
       }
       else {
         let {
@@ -996,7 +1007,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
             lastPage = p;
             list.push({cache: target, opacity: node.__opacity, matrix: m});
           }
-          if(target !== __cache) {
+          if(target !== __cache && i > index) {
             i += (total || 0);
             if(hasMask) {
               i += countMaskNum(__structs, i + 1, hasMask);
@@ -1088,9 +1099,9 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
         __domParent: p,
       } = node;
       let target = getCache([__cacheMask, __cacheFilter, __cacheTotal]);
-      // 变成flat的局部子节点，或者flat的直接子节点，生成局部根，已生成过的不用再生成
+      // flat变化的局部子节点，或者flat根的直接子节点，生成局部根，已生成过的不用再生成
       if(total && !target && (transformStyle !== p.__computedStyle[TRANSFORM_STYLE]
-        || p === top)) {
+        || p === top && transformStyle === 'flat')) {
         let j = i + (total || 0);
         if(hasMask) {
           j += countMaskNum(__structs, j + 1, hasMask);
@@ -1149,28 +1160,27 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
     }
     // preserve3d需要以此节点为局部根E，所有子节点四边形面在3d空间下求交拆分，暂时不绘制，等上层flat调用绘制投影
     else {
-      let top = node, x0 = node.__x1, y0 = node.__y1, planeList = [], planeHash = [];
+      let top = node, x0 = node.__x1, y0 = node.__y1, planeList = [];
       if(node.__hasContent) {
-      let {
-        __cache,
-        __cacheTotal,
-        __cacheFilter,
-        __cacheMask,
-      } = node;
-      let target = getCache([__cacheMask, __cacheFilter, __cacheTotal, __cache]);
-       let o = {
-         index,
-         node,
-         target,
-         points: [
-           { x: 0, y: 0, z: 0 },
-           { x: node.__offsetWidth, y: 0, z: 0 },
-           { x: node.__offsetWidth, y: node.__offsetHeight, z: 0 },
-           { x: 0, y: node.__offsetHeight, z: 0 },
-         ],
+        let {
+          __cache,
+          __cacheTotal,
+          __cacheFilter,
+          __cacheMask,
+        } = node;
+        let target = getCache([__cacheMask, __cacheFilter, __cacheTotal, __cache]);
+        let o = {
+          index,
+          node,
+          target,
+          points: [
+            { x: 0, y: 0, z: 0 },
+            { x: node.__offsetWidth, y: 0, z: 0 },
+            { x: node.__offsetWidth, y: node.__offsetHeight, z: 0 },
+            { x: 0, y: node.__offsetHeight, z: 0 },
+          ],
         };
-       planeList.push(o);
-       planeHash[index] = o;
+        planeList.push(o);
       }
       for(let i = index + 1, len = index + (total || 0) + 1; i < len; i++) {
         let {
@@ -1179,7 +1189,28 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
           hasMask,
         } = __structs[i];
         if(node instanceof Text) {
-          // TODO
+          let __cache = node.__cache;
+          if(__cache && __cache.available) {
+            let {
+              __matrixEvent,
+            } = node.__domParent;
+            let { x1: x, y1: y, __width: width, __height: height } = __cache;
+            let xa = x - x0, ya = y - y0;
+            let xb = x + width - x0, yb = y + height - y0;
+            let { x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4 } = calRectPoint(xa, ya, xb, yb, __matrixEvent);
+            let o = {
+              index: i,
+              node,
+              target: __cache,
+              points: [
+                { x: x1, y: y1, z: z1 },
+                { x: x2, y: y2, z: z2 },
+                { x: x3, y: y3, z: z3 },
+                { x: x4, y: y4, z: z4 },
+              ],
+            };
+            planeList.push(o);
+          }
         }
         else {
           let __computedStyle = node.__computedStyle;
@@ -1236,7 +1267,6 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
               ],
             };
             planeList.push(o);
-            planeHash[i] = o;
             if(target !== __cache) {
               i += (total || 0);
               if(hasMask) {
@@ -1273,7 +1303,7 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
   }
   // 最后一次循环绘制到局部根节点上，类似genTotalWebgl()逻辑，但要考虑ppt透视
   return genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
-    __structs, W, H, true, null, null);
+    __structs, W, H, true, node, oitHash);
 }
 
 function genFilterWebgl(renderMode, gl, node, cache, filter, W, H) {

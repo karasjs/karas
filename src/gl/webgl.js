@@ -114,7 +114,9 @@ function convertCoords2Gl(x, y, z, w, cx, cy, tz) {
   else {
     y = (cy - y) / cy;
   }
-  z /= -tz;
+  if(tz) {
+    z /= -tz;
+  }
   if(w === 1) {
     return { x, y, z, w };
   }
@@ -194,11 +196,13 @@ function drawTextureCache(gl, list, cx, cy, dx, dy) {
     let xb = bx + width + dx, yb = by + dy;
     let { x1, y1, z1, w1, x2, y2, z2, w2, x3, y3, z3, w3, x4, y4, z4, w4 } = calRectPoint(xa, ya, xb, yb, matrix);
     // console.warn(x1,y1,z1,w1,',',x2,y2,z2,w2,',',x3,y3,z3,w3,',',x4,y4,z4,w4);
-    // z范围取所有、对角线最大值
+    // z范围取所有、对角线最大值，只有当非0有值时才求
     let z = Math.max(Math.abs(z1), Math.abs(z2));
     z = Math.max(z, Math.abs(z3));
     z = Math.max(z, Math.abs(z4));
-    z = Math.max(z, Math.sqrt(cx * cx + cy * cy));
+    if(z) {
+      z = Math.max(z, Math.sqrt(cx * cx + cy * cy));
+    }
     let t = convertCoords2Gl(x1, y1, z1, w1, cx, cy, z);
     x1 = t.x; y1 = t.y; z1 = t.z;
     t = convertCoords2Gl(x2, y2, z2, w2, cx, cy, z);
@@ -962,9 +966,61 @@ function drawOitPlane(gl, structs, list, ppt, cx, cy, dx, dy) {
           vtOpacity.push(opacity);
         }
       }
-      // console.log(vtPoint);
-      // console.log(vtTex);
-      // console.log(vtOpacity);
+    }
+    else {
+      let xa = bx + dx, ya = by + height + dy;
+      let xb = bx + width + dx, yb = by + dy;
+      let { x1, y1, z1, w1, x2, y2, z2, w2, x3, y3, z3, w3, x4, y4, z4, w4 } = calRectPoint(xa, ya, xb, yb, matrix);
+      let t = convertCoords2Gl(x1, y1, z1, w1, cx, cy, ppt);
+      x1 = t.x; y1 = t.y; z1 = t.z;
+      t = convertCoords2Gl(x2, y2, z2, w2, cx, cy, ppt);
+      x2 = t.x; y2 = t.y; z2 = t.z;
+      t = convertCoords2Gl(x3, y3, z3, w3, cx, cy, ppt);
+      x3 = t.x; y3 = t.y; z3 = t.z;
+      t = convertCoords2Gl(x4, y4, z4, w4, cx, cy, ppt);
+      x4 = t.x; y4 = t.y; z4 = t.z;
+      vtPoint[0] = x1;
+      vtPoint[1] = y1;
+      vtPoint[2] = z1;
+      vtPoint[3] = w1;
+      vtPoint[4] = x4;
+      vtPoint[5] = y4;
+      vtPoint[6] = z4;
+      vtPoint[7] = w4;
+      vtPoint[8] = x2;
+      vtPoint[9] = y2;
+      vtPoint[10] = z2;
+      vtPoint[11] = w2;
+      vtPoint[12] = x4;
+      vtPoint[13] = y4;
+      vtPoint[14] = z4;
+      vtPoint[15] = w4;
+      vtPoint[16] = x2;
+      vtPoint[17] = y2;
+      vtPoint[18] = z2;
+      vtPoint[19] = w2;
+      vtPoint[20] = x3;
+      vtPoint[21] = y3;
+      vtPoint[22] = z3;
+      vtPoint[23] = w3;
+      vtTex[0] = tx1;
+      vtTex[1] = ty1;
+      vtTex[2] = tx1;
+      vtTex[3] = ty2;
+      vtTex[4] = tx2;
+      vtTex[5] = ty1;
+      vtTex[6] = tx1;
+      vtTex[7] = ty2;
+      vtTex[8] = tx2;
+      vtTex[9] = ty1;
+      vtTex[10] = tx2;
+      vtTex[11] = ty2;
+      vtOpacity[0] = opacity;
+      vtOpacity[1] = opacity;
+      vtOpacity[2] = opacity;
+      vtOpacity[3] = opacity;
+      vtOpacity[4] = opacity;
+      vtOpacity[5] = opacity;
     }
     // 顶点buffer
     gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
@@ -983,7 +1039,6 @@ function drawOitPlane(gl, structs, list, ppt, cx, cy, dx, dy) {
     gl.enableVertexAttribArray(a_opacity);
     gl.uniform1i(u_texture, 0);
     gl.drawArrays(gl.TRIANGLES, 0, vtOpacity.length);
-    // break;
   }
   gl.deleteBuffer(pointBuffer);
   gl.deleteBuffer(texBuffer);

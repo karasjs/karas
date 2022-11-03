@@ -110,6 +110,10 @@ function genBboxTotal(node, __structs, index, total, lv, isPpt) {
   if(isPpt) {
     pm = node.__perspectiveMatrix || node.__selfPerspectiveMatrix;
   }
+  if(node.__selfPerspective) {
+    let bbox = transformBbox(bboxTotal, multiply(pm, node.__matrix), 0, 0);
+    mergeBbox(bboxTotal, bbox);
+  }
   let top = node;
   for(let i = index + 1, len = index + total + 1; i < len; i++) {
     let {
@@ -877,12 +881,19 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
         }
         continue;
       }
-      let p = node.__domParent;
+      let {
+        __domParent: p,
+        __selfPerspective: ppt2,
+      } = node;
       // 特殊渲染的matrix，局部根节点为原点考虑，和bbox以节点自身主画布参考系不同
       let m;
       if(i > index) {
         if(!isE(transform)) {
           m = tf.calMatrixByOrigin(transform, tfo[0] + node.__x1 + dx, tfo[1] + node.__y1 + dy);
+        }
+        if(ppt2) {
+          let t = tf.calPerspectiveMatrix(ppt2, tfo[0] + node.__x1 + dx, tfo[1] + node.__y1 + dy);
+          m = multiply(t, m);
         }
         if(p !== top) {
           m = multiply(p.__matrixEvent, m);
@@ -1230,11 +1241,16 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
             __cacheFilter,
             __cacheMask,
             __domParent: p,
+            __selfPerspective: ppt,
           } = node;
           // 当前局部根为原点坐标系下的matrix，只求交用
           let m;
           if(!isE(transform)) {
             m = tf.calMatrixByOrigin(transform, tfo[0] + node.__x1 - x0, tfo[1] + node.__y1 - y0);
+          }
+          if(ppt) {
+            let t = tf.calPerspectiveMatrix(ppt, tfo[0] + node.__x1 - x0, tfo[1] + node.__y1 - y0);
+            m = multiply(t, m);
           }
           if(p !== top) {
             m = multiply(p.__matrixEvent, m);
@@ -2370,7 +2386,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
           [PERSPECTIVE]: perspective,
         } = __computedStyle;
         let isMbm = mixBlendMode !== 'normal';
-        let isPpt = total && (perspective || node.__selfPerspectiveMatrix);
+        let isPpt = total && perspective || node.__selfPerspectiveMatrix;
         let isOverflow = overflow === 'hidden' && total;
         let isFilter = filter && filter.length;
         if(isMbm) {
@@ -2408,7 +2424,6 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
     });
     // ppt只有嵌套才需要生成，最下面的孩子节点的ppt无需，因此记录一个hash存index，
     // 同时因为是后序遍历，孩子先存所有父亲的index即可保证父亲才能生成cacheTotal
-    let pptHash = {};
     for(let ii = 0, len = mergeList.length; ii < len; ii++) {
       let {
         i,
@@ -2419,8 +2434,6 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         isPpt,
       } = mergeList[ii];
       let {
-        __matrix,
-        __domParent,
         __computedStyle,
       } = node;
       let {
@@ -2536,8 +2549,12 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         __cacheMask,
         __domParent,
         __matrix,
+        __selfPerspectiveMatrix,
       } = node;
       let m = __matrix;
+      if(__selfPerspectiveMatrix) {
+        m = multiply(__selfPerspectiveMatrix, m);
+      }
       if(__domParent) {
         let op = __domParent.__opacity;
         if(op !== 1) {

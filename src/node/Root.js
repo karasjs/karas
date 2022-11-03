@@ -803,7 +803,7 @@ class Root extends Dom {
         }
       }
       // 特殊的filter清除cache
-      else if((need || (lv & FT & PPT)) && node.__cacheFilter) {
+      else if((need || (lv & (FT | PPT))) && node.__cacheFilter) {
         hasRelease = node.__cacheFilter.release() || hasRelease;
       }
       // 向上清除cache汇总缓存信息，过程中可能会出现重复，根据refreshLevel判断，reflow已经自己清过了

@@ -1172,6 +1172,7 @@ class Xom extends Node {
           = __cacheStyle[SKEW_Y]
           = true;
         matrixCache = null;
+        this.__selfPerspective = 0;
         this.__selfPerspectiveMatrix = null;
         let matrix, ct = __currentStyle[TRANSFORM];
         // transform相对于自身

@@ -18802,6 +18802,7 @@
           if (__cacheStyle[TRANSFORM$3] === undefined || __cacheStyle[TRANSLATE_X] === undefined || __cacheStyle[TRANSLATE_Y] === undefined || __cacheStyle[TRANSLATE_Z] === undefined || __cacheStyle[ROTATE_X] === undefined || __cacheStyle[ROTATE_Y] === undefined || __cacheStyle[ROTATE_Z] === undefined || __cacheStyle[ROTATE_3D] === undefined || __cacheStyle[SCALE_X] === undefined || __cacheStyle[SCALE_Y] === undefined || __cacheStyle[SCALE_Z] === undefined || __cacheStyle[SKEW_X] === undefined || __cacheStyle[SKEW_Y] === undefined) {
             __cacheStyle[TRANSFORM$3] = __cacheStyle[TRANSLATE_X] = __cacheStyle[TRANSLATE_Y] = __cacheStyle[TRANSLATE_Z] = __cacheStyle[ROTATE_X] = __cacheStyle[ROTATE_Y] = __cacheStyle[ROTATE_Z] = __cacheStyle[SCALE_X] = __cacheStyle[SCALE_Y] = __cacheStyle[SCALE_Z] = __cacheStyle[SKEW_X] = __cacheStyle[SKEW_Y] = true;
             matrixCache = null;
+            this.__selfPerspective = 0;
             this.__selfPerspectiveMatrix = null;
             var matrix$1,
                 ct = __currentStyle[TRANSFORM$3]; // transform相对于自身
@@ -33398,6 +33399,11 @@
       pm = node.__perspectiveMatrix || node.__selfPerspectiveMatrix;
     }
 
+    if (node.__selfPerspective) {
+      var bbox = transformBbox(bboxTotal, multiply(pm, node.__matrix), 0, 0);
+      mergeBbox(bboxTotal, bbox);
+    }
+
     var top = node;
 
     for (var i = index + 1, len = index + total + 1; i < len; i++) {
@@ -33412,16 +33418,16 @@
           return;
         }
 
-        var _bbox = _node.bbox,
+        var _bbox2 = _node.bbox,
             _p = _node.__domParent,
             matrix$1 = _p.__matrixEvent;
 
-        if (_bbox[2] - _bbox[0] && _bbox[3] - _bbox[1]) {
+        if (_bbox2[2] - _bbox2[0] && _bbox2[3] - _bbox2[1]) {
           if (!isE(matrix$1)) {
-            _bbox = transformBbox(_bbox, matrix$1, 0, 0);
+            _bbox2 = transformBbox(_bbox2, matrix$1, 0, 0);
           }
 
-          mergeBbox(bboxTotal, _bbox);
+          mergeBbox(bboxTotal, _bbox2);
         }
 
         continue;
@@ -33463,7 +33469,9 @@
       }
 
       assignMatrix(_node.__matrixEvent, m);
-      var bbox = void 0; // 子元素有cacheTotal优先使用
+
+      var _bbox = void 0; // 子元素有cacheTotal优先使用
+
 
       var target = getCache([__cacheMask2, __cacheFilter2, __cacheTotal2, __cache2]);
 
@@ -33476,15 +33484,15 @@
           }
         }
 
-        bbox = target.bbox;
+        _bbox = target.bbox;
       } else {
-        bbox = _node.bbox; // 不能用filterBbox，子元素继承根节点的，如果有filter会是cacheFilter的bbox
+        _bbox = _node.bbox; // 不能用filterBbox，子元素继承根节点的，如果有filter会是cacheFilter的bbox
       }
 
-      if (bbox[2] - bbox[0] && bbox[3] - bbox[1]) {
+      if (_bbox[2] - _bbox[0] && _bbox[3] - _bbox[1]) {
         // 老的不变，新的会各自重新生成，根据matrixEvent合并bboxTotal
-        bbox = transformBbox(bbox, m, 0, 0);
-        mergeBbox(bboxTotal, bbox);
+        _bbox = transformBbox(_bbox, m, 0, 0);
+        mergeBbox(bboxTotal, _bbox);
       }
     }
 
@@ -34357,13 +34365,19 @@
           continue;
         }
 
-        var _p2 = _node4.__domParent; // 特殊渲染的matrix，局部根节点为原点考虑，和bbox以节点自身主画布参考系不同
+        var _p2 = _node4.__domParent,
+            ppt2 = _node4.__selfPerspective; // 特殊渲染的matrix，局部根节点为原点考虑，和bbox以节点自身主画布参考系不同
 
         var m = void 0;
 
         if (i > index) {
           if (!isE(transform)) {
             m = transform$1.calMatrixByOrigin(transform, tfo[0] + _node4.__x1 + dx, tfo[1] + _node4.__y1 + dy);
+          }
+
+          if (ppt2) {
+            var t = transform$1.calPerspectiveMatrix(ppt2, tfo[0] + _node4.__x1 + dx, tfo[1] + _node4.__y1 + dy);
+            m = multiply(t, m);
           }
 
           if (_p2 !== top) {
@@ -34806,12 +34820,18 @@
                 _cacheTotal6 = _node8.__cacheTotal,
                 _cacheFilter4 = _node8.__cacheFilter,
                 _cacheMask4 = _node8.__cacheMask,
-                _p5 = _node8.__domParent; // 当前局部根为原点坐标系下的matrix，只求交用
+                _p5 = _node8.__domParent,
+                ppt = _node8.__selfPerspective; // 当前局部根为原点坐标系下的matrix，只求交用
 
             var m = void 0;
 
             if (!isE(transform)) {
               m = transform$1.calMatrixByOrigin(transform, tfo[0] + _node8.__x1 - x0, tfo[1] + _node8.__y1 - y0);
+            }
+
+            if (ppt) {
+              var t = transform$1.calPerspectiveMatrix(ppt, tfo[0] + _node8.__x1 - x0, tfo[1] + _node8.__y1 - y0);
+              m = multiply(t, m);
             }
 
             if (_p5 !== _top) {
@@ -36084,7 +36104,7 @@
               onlyImg = void 0; // 有内容先以canvas模式绘制到离屏画布上，自定义渲染设置无内容不实现即可跳过
 
           if (hasContent) {
-            var _bbox2 = node.bbox,
+            var _bbox3 = node.bbox,
                 _cache5 = node.__cache,
                 x1 = node.__x1,
                 y1 = node.__y1; // 单图特殊对待缓存
@@ -36094,20 +36114,20 @@
 
               if (loadImg.onlyImg && !loadImg.error && loadImg.source) {
                 onlyImg = true;
-                _cache5 = node.__cache = ImgWebglCache.getInstance(mode.CANVAS, gl, root.__uuid, _bbox2, loadImg, x1, y1);
+                _cache5 = node.__cache = ImgWebglCache.getInstance(mode.CANVAS, gl, root.__uuid, _bbox3, loadImg, x1, y1);
               }
             }
 
             if (!onlyImg) {
               if (_cache5) {
-                _cache5.reset(_bbox2, x1, y1);
+                _cache5.reset(_bbox3, x1, y1);
               } else {
-                _cache5 = CanvasCache.getInstance(mode.CANVAS, gl, root.__uuid, _bbox2, x1, y1, null);
+                _cache5 = CanvasCache.getInstance(mode.CANVAS, gl, root.__uuid, _bbox3, x1, y1, null);
               }
             }
 
             if (_cache5 && _cache5.enabled) {
-              _cache5.__bbox = _bbox2;
+              _cache5.__bbox = _bbox3;
               _cache5.__available = true;
               node.__cache = _cache5;
               node.render(mode.CANVAS, _cache5.ctx, _cache5.dx, _cache5.dy);
@@ -36127,7 +36147,7 @@
 
           var _isMbm = _mixBlendMode !== 'normal';
 
-          var _isPpt = total && (_perspective2 || node.__selfPerspectiveMatrix);
+          var _isPpt = total && _perspective2 || node.__selfPerspectiveMatrix;
 
           var isOverflow = overflow === 'hidden' && total;
           var isFilter = _filter && _filter.length;
@@ -36163,6 +36183,7 @@
 
         return b.lv - a.lv;
       }); // ppt只有嵌套才需要生成，最下面的孩子节点的ppt无需，因此记录一个hash存index，
+      // 同时因为是后序遍历，孩子先存所有父亲的index即可保证父亲才能生成cacheTotal
 
       for (var ii = 0, _len10 = mergeList.length; ii < _len10; ii++) {
         var _mergeList$ii = mergeList[ii],
@@ -36172,9 +36193,7 @@
             _node11 = _mergeList$ii.node,
             _hasMask6 = _mergeList$ii.hasMask,
             _isPpt2 = _mergeList$ii.isPpt;
-        _node11.__matrix;
-            _node11.__domParent;
-            var _computedStyle4 = _node11.__computedStyle;
+        var _computedStyle4 = _node11.__computedStyle;
         var _filter2 = _computedStyle4[FILTER]; // 有ppt的，向上查找所有父亲index记录，可能出现重复记得提前跳出
 
         var __limitCache = _node11.__limitCache,
@@ -36301,26 +36320,31 @@
             _cacheTotal8 = _node12.__cacheTotal,
             _cacheFilter5 = _node12.__cacheFilter,
             _cacheMask6 = _node12.__cacheMask,
-            _domParent2 = _node12.__domParent,
-            _matrix4 = _node12.__matrix;
-        var m = _matrix4;
+            _domParent = _node12.__domParent,
+            __matrix = _node12.__matrix,
+            __selfPerspectiveMatrix = _node12.__selfPerspectiveMatrix;
+        var m = __matrix;
 
-        if (_domParent2) {
-          var op = _domParent2.__opacity;
+        if (__selfPerspectiveMatrix) {
+          m = multiply(__selfPerspectiveMatrix, m);
+        }
+
+        if (_domParent) {
+          var op = _domParent.__opacity;
 
           if (op !== 1) {
-            opacity *= _domParent2.__opacity;
+            opacity *= _domParent.__opacity;
           }
 
-          var pm = _domParent2.__perspectiveMatrix,
-              me = _domParent2.__matrixEvent;
+          var pm = _domParent.__perspectiveMatrix,
+              me = _domParent.__matrixEvent;
 
           if (pm && pm.length) {
-            m = multiply(_domParent2.__perspectiveMatrix, m);
+            m = multiply(_domParent.__perspectiveMatrix, m);
           }
 
           if (me && me.length) {
-            m = multiply(_domParent2.__matrixEvent, m);
+            m = multiply(_domParent.__matrixEvent, m);
           }
         }
 
@@ -37721,7 +37745,7 @@
               }
             }
           } // 特殊的filter清除cache
-          else if ((need || lv & FT & PPT) && node.__cacheFilter) {
+          else if ((need || lv & (FT | PPT)) && node.__cacheFilter) {
             hasRelease = node.__cacheFilter.release() || hasRelease;
           } // 向上清除cache汇总缓存信息，过程中可能会出现重复，根据refreshLevel判断，reflow已经自己清过了
 

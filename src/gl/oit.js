@@ -640,8 +640,8 @@ function sortPuzzleZ(list) {
       let cx = (listX[0] + listX[1]) * 0.5, cy = (listY[0] + listY[1]) * 0.5;
       let { a: a1, b: b1, c: c1, d: d1 } = getPlainNormalEquation(pa.points);
       let { a: a2, b: b2, c: c2, d: d2 } = getPlainNormalEquation(pb.points);
-      let z1 = (-d1 - a1 * cx - b1 * cy) / c1;
-      let z2 = (-d2 - a2 * cx - b2 * cy) / c2;
+      let z1 = c1 ? ((-d1 - a1 * cx - b1 * cy) / c1) : 0;
+      let z2 = c2 ? ((-d2 - a2 * cx - b2 * cy) / c2) : 0;
       if(Math.abs(z1 - z2) > 1e-9) {
         zHash[i] = z1 - z2;
       }

@@ -32996,8 +32996,8 @@
             c2 = _getPlainNormalEquati2.c,
             d2 = _getPlainNormalEquati2.d;
 
-        var z1 = (-d1 - a1 * cx - b1 * cy) / c1;
-        var z2 = (-d2 - a2 * cx - b2 * cy) / c2;
+        var z1 = c1 ? (-d1 - a1 * cx - b1 * cy) / c1 : 0;
+        var z2 = c2 ? (-d2 - a2 * cx - b2 * cy) / c2 : 0;
 
         if (Math.abs(z1 - z2) > 1e-9) {
           zHash[_i18] = z1 - z2;

@@ -64,7 +64,6 @@ const {
 const { isE, inverse, multiply, calRectPoint } = mx;
 const { mbmName } = mbm;
 const { assignMatrix, transformBbox } = util;
-const { isPerspectiveMatrix } = tf;
 const {
   drawTextureCache,
   createTexture,
@@ -106,12 +105,10 @@ function genBboxTotal(node, __structs, index, total, lv, isPpt) {
   bboxTotal = bboxTotal.slice(0);
   // 局部根节点如有perspective，则计算pm，这里不会出现嵌套，因为每个出现都会生成局部根节点
   // 分2种情况，普通父ppt和自身有ppt情况，自身不能视为E，被绘入主画布时注意特殊处理
+  // 自身ppt需将ppt提炼出来，然后node重新忽略ppt
   let pm;
   if(isPpt) {
-    pm = node.__perspectiveMatrix;
-    if(!pm) {
-      pm = node.__matrix;
-    }
+    pm = node.__perspectiveMatrix || node.__selfPerspectiveMatrix;
   }
   let top = node;
   for(let i = index + 1, len = index + total + 1; i < len; i++) {
@@ -754,7 +751,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   }
 
   let top = node;
-  let { __x1: x1, __y1: y1, __cache, __offsetWidth, __offsetHeight } = node;
+  let { __x1: x1, __y1: y1, __offsetWidth, __offsetHeight } = node;
   let bboxTotal = genBboxTotal(node, __structs, index, total, lv, isPpt);
   if(!bboxTotal) {
     return;
@@ -799,14 +796,18 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   // 需要重新计算，因为bbox里是原本位置，这里是新的位置
   let pm, ppt;
   if(isPpt) {
-    if(top.__perspectiveMatrix) {
+    if(pptNode.__perspectiveMatrix) {
       let {
         [PERSPECTIVE]: perspective,
         [PERSPECTIVE_ORIGIN]: perspectiveOrigin,
-      } = top.__computedStyle;
+      } = pptNode.__computedStyle;
       pm = tf.calPerspectiveMatrix(perspective, x1 + dx + perspectiveOrigin[0], y1 + dy + perspectiveOrigin[1]);
     }
     else {
+      let {
+        [TRANSFORM_ORIGIN]: perspectiveOrigin,
+      } = pptNode.__computedStyle;
+      pm = tf.calPerspectiveMatrix(pptNode.__selfPerspective, x1 + dx + perspectiveOrigin[0], y1 + dy + perspectiveOrigin[1]);
     }
   }
   if(oitHash) {
@@ -817,7 +818,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
       ppt = perspective;
     }
     else {
-      ppt = -1 / pptNode.__matrix[11];
+      ppt = pptNode.__selfPerspective;
     }
   }
 
@@ -2296,7 +2297,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         }
         if(!need && (__refreshLevel & PPT)) {
           let __domParent = node.__domParent;
-          let isPpt = !isE(__domParent && __domParent.__perspectiveMatrix) || isPerspectiveMatrix(node.__matrix);
+          let isPpt = !isE(__domParent && __domParent.__perspectiveMatrix) || node.__selfPerspectiveMatrix;
           if(isPpt) {
             need = true;
           }
@@ -2369,7 +2370,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
           [PERSPECTIVE]: perspective,
         } = __computedStyle;
         let isMbm = mixBlendMode !== 'normal';
-        let isPpt = total && (perspective || isPerspectiveMatrix(node.__matrix));
+        let isPpt = total && (perspective || node.__selfPerspectiveMatrix);
         let isOverflow = overflow === 'hidden' && total;
         let isFilter = filter && filter.length;
         if(isMbm) {
@@ -2423,33 +2424,9 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         __computedStyle,
       } = node;
       let {
-        [OVERFLOW]: overflow,
         [FILTER]: filter,
       } = __computedStyle;
-      let isPerspective = !isE(__domParent && __domParent.__perspectiveMatrix) || isPerspectiveMatrix(__matrix);
       // 有ppt的，向上查找所有父亲index记录，可能出现重复记得提前跳出
-      if(isPerspective) {
-        let parent = node.__domParent;
-        while(parent) {
-          let idx = parent.__index;
-          if(pptHash[idx]) {
-            break;
-          }
-          if(isPerspectiveMatrix(parent.__matrix)) {
-            pptHash[idx] = true;
-          }
-          parent = parent.__domParent;
-          if(parent && parent.__perspectiveMatrix) {
-            pptHash[idx] = true;
-          }
-        }
-        // 最内层的ppt忽略，注意transformStyle变化的强制生成
-        if(!pptHash[i]) {
-          if(!hasMask && !filter.length && !(overflow === 'hidden' && total) && !node.__cacheAsBitmap) {
-            // return;
-          }
-        }
-      }
       let {
         __limitCache,
         __cacheTotal,

@@ -1172,10 +1172,21 @@ class Xom extends Node {
           = __cacheStyle[SKEW_Y]
           = true;
         matrixCache = null;
-        let matrix;
+        this.__selfPerspectiveMatrix = null;
+        let matrix, ct = __currentStyle[TRANSFORM];
         // transform相对于自身
-        if(__currentStyle[TRANSFORM] && __currentStyle[TRANSFORM].length) {
-          matrix = tf.calMatrix(__currentStyle[TRANSFORM], __offsetWidth, __offsetHeight, this.__root);
+        if(ct && ct.length) {
+          let first = ct[0];
+          // 特殊处理，抽取出来transform的ppt，视为tfo原点的透视
+          if(first.k === PERSPECTIVE) {
+            let ppt = this.__selfPerspective = this.__calSize(first.v, this.__clientWidth, true);
+            let tfo = __computedStyle[TRANSFORM_ORIGIN];
+            this.__selfPerspectiveMatrix = tf.calPerspectiveMatrix(ppt, tfo[0] + __x1, tfo[1] + __y1);
+            matrix = tf.calMatrix(ct.slice(1), __offsetWidth, __offsetHeight, this.__root);
+          }
+          else {
+            matrix = tf.calMatrix(ct, __offsetWidth, __offsetHeight, this.__root);
+          }
         }
         // 没有transform则看是否有扩展的css独立变换属性
         else {
@@ -1732,7 +1743,7 @@ class Xom extends Node {
       __cacheStyle[PERSPECTIVE] = true;
       rebuild = true;
       let v = __currentStyle[PERSPECTIVE];
-      __computedStyle[PERSPECTIVE] = this.__calSize(v, this.clientWidth, true);
+      __computedStyle[PERSPECTIVE] = this.__calSize(v, this.__clientWidth, true);
     }
     if(isNil(__cacheStyle[PERSPECTIVE_ORIGIN])) {
       __cacheStyle[PERSPECTIVE_ORIGIN] = true;

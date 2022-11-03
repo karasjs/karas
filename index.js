@@ -10716,7 +10716,7 @@
   } // 是否有透视矩阵应用
 
 
-  function isPerspectiveMatrix$1(m) {
+  function isPerspectiveMatrix(m) {
     if (!m) {
       return;
     }
@@ -10734,7 +10734,7 @@
     calPerspectiveMatrix: calPerspectiveMatrix,
     calMatrixByOrigin: calMatrixByOrigin,
     calMatrixWithOrigin: calMatrixWithOrigin,
-    isPerspectiveMatrix: isPerspectiveMatrix$1
+    isPerspectiveMatrix: isPerspectiveMatrix
   };
 
   var _enums$STYLE_KEY$g = enums.STYLE_KEY,
@@ -18802,10 +18802,22 @@
           if (__cacheStyle[TRANSFORM$3] === undefined || __cacheStyle[TRANSLATE_X] === undefined || __cacheStyle[TRANSLATE_Y] === undefined || __cacheStyle[TRANSLATE_Z] === undefined || __cacheStyle[ROTATE_X] === undefined || __cacheStyle[ROTATE_Y] === undefined || __cacheStyle[ROTATE_Z] === undefined || __cacheStyle[ROTATE_3D] === undefined || __cacheStyle[SCALE_X] === undefined || __cacheStyle[SCALE_Y] === undefined || __cacheStyle[SCALE_Z] === undefined || __cacheStyle[SKEW_X] === undefined || __cacheStyle[SKEW_Y] === undefined) {
             __cacheStyle[TRANSFORM$3] = __cacheStyle[TRANSLATE_X] = __cacheStyle[TRANSLATE_Y] = __cacheStyle[TRANSLATE_Z] = __cacheStyle[ROTATE_X] = __cacheStyle[ROTATE_Y] = __cacheStyle[ROTATE_Z] = __cacheStyle[SCALE_X] = __cacheStyle[SCALE_Y] = __cacheStyle[SCALE_Z] = __cacheStyle[SKEW_X] = __cacheStyle[SKEW_Y] = true;
             matrixCache = null;
-            var matrix$1; // transform相对于自身
+            this.__selfPerspectiveMatrix = null;
+            var matrix$1,
+                ct = __currentStyle[TRANSFORM$3]; // transform相对于自身
 
-            if (__currentStyle[TRANSFORM$3] && __currentStyle[TRANSFORM$3].length) {
-              matrix$1 = transform$1.calMatrix(__currentStyle[TRANSFORM$3], __offsetWidth, __offsetHeight, this.__root);
+            if (ct && ct.length) {
+              var first = ct[0]; // 特殊处理，抽取出来transform的ppt，视为tfo原点的透视
+
+              if (first.k === PERSPECTIVE$1) {
+                var ppt = this.__selfPerspective = this.__calSize(first.v, this.__clientWidth, true);
+
+                var tfo = __computedStyle[TRANSFORM_ORIGIN$2];
+                this.__selfPerspectiveMatrix = transform$1.calPerspectiveMatrix(ppt, tfo[0] + __x1, tfo[1] + __y1);
+                matrix$1 = transform$1.calMatrix(ct.slice(1), __offsetWidth, __offsetHeight, this.__root);
+              } else {
+                matrix$1 = transform$1.calMatrix(ct, __offsetWidth, __offsetHeight, this.__root);
+              }
             } // 没有transform则看是否有扩展的css独立变换属性
             else {
               __computedStyle[TRANSLATE_X] = 0;
@@ -18992,8 +19004,8 @@
 
           if (!matrixCache) {
             var m = __computedStyle[TRANSFORM$3];
-            var tfo = __computedStyle[TRANSFORM_ORIGIN$2];
-            matrixCache = __cacheStyle[MATRIX$1] = transform$1.calMatrixByOrigin(m, tfo[0] + __x1, tfo[1] + __y1);
+            var _tfo = __computedStyle[TRANSFORM_ORIGIN$2];
+            matrixCache = __cacheStyle[MATRIX$1] = transform$1.calMatrixByOrigin(m, _tfo[0] + __x1, _tfo[1] + __y1);
           }
         }
 
@@ -19382,7 +19394,7 @@
           __cacheStyle[PERSPECTIVE$1] = true;
           rebuild = true;
           var v = __currentStyle[PERSPECTIVE$1];
-          __computedStyle[PERSPECTIVE$1] = this.__calSize(v, this.clientWidth, true);
+          __computedStyle[PERSPECTIVE$1] = this.__calSize(v, this.__clientWidth, true);
         }
 
         if (isNil$9(__cacheStyle[PERSPECTIVE_ORIGIN$1])) {
@@ -33338,7 +33350,6 @@
   var mbmName = mbm.mbmName;
   var assignMatrix = util.assignMatrix,
       transformBbox = util.transformBbox;
-  var isPerspectiveMatrix = transform$1.isPerspectiveMatrix;
   var drawTextureCache = webgl.drawTextureCache,
       createTexture = webgl.createTexture,
       bindTexture = webgl.bindTexture,
@@ -33379,15 +33390,12 @@
 
     bboxTotal = bboxTotal.slice(0); // 局部根节点如有perspective，则计算pm，这里不会出现嵌套，因为每个出现都会生成局部根节点
     // 分2种情况，普通父ppt和自身有ppt情况，自身不能视为E，被绘入主画布时注意特殊处理
+    // 自身ppt需将ppt提炼出来，然后node重新忽略ppt
 
     var pm;
 
     if (isPpt) {
-      pm = node.__perspectiveMatrix;
-
-      if (!pm) {
-        pm = node.__matrix;
-      }
+      pm = node.__perspectiveMatrix || node.__selfPerspectiveMatrix;
     }
 
     var top = node;
@@ -34216,9 +34224,8 @@
 
     var top = node;
     var x1 = node.__x1,
-        y1 = node.__y1;
-        node.__cache;
-        var __offsetWidth = node.__offsetWidth,
+        y1 = node.__y1,
+        __offsetWidth = node.__offsetWidth,
         __offsetHeight = node.__offsetHeight;
     var bboxTotal = genBboxTotal(node, __structs, index, total, lv, isPpt);
 
@@ -34264,11 +34271,14 @@
     var pm, ppt;
 
     if (isPpt) {
-      if (top.__perspectiveMatrix) {
-        var _top$__computedStyle = top.__computedStyle,
-            perspective = _top$__computedStyle[PERSPECTIVE],
-            perspectiveOrigin = _top$__computedStyle[PERSPECTIVE_ORIGIN];
+      if (pptNode.__perspectiveMatrix) {
+        var _pptNode$__computedSt = pptNode.__computedStyle,
+            perspective = _pptNode$__computedSt[PERSPECTIVE],
+            perspectiveOrigin = _pptNode$__computedSt[PERSPECTIVE_ORIGIN];
         pm = transform$1.calPerspectiveMatrix(perspective, x1 + dx + perspectiveOrigin[0], y1 + dy + perspectiveOrigin[1]);
+      } else {
+        var _perspectiveOrigin = pptNode.__computedStyle[TRANSFORM_ORIGIN];
+        pm = transform$1.calPerspectiveMatrix(pptNode.__selfPerspective, x1 + dx + _perspectiveOrigin[0], y1 + dy + _perspectiveOrigin[1]);
       }
     }
 
@@ -34277,7 +34287,7 @@
         var _perspective = pptNode.__computedStyle[PERSPECTIVE];
         ppt = _perspective;
       } else {
-        ppt = -1 / pptNode.__matrix[11];
+        ppt = pptNode.__selfPerspective;
       }
     }
 
@@ -34299,13 +34309,13 @@
           hasMask = _structs$i4.hasMask; // 先看text，visibility会在内部判断，display会被parent判断
 
       if (_node4 instanceof Text) {
-        var _cache = _node4.__cache;
+        var __cache = _node4.__cache;
 
-        if (_cache && _cache.available) {
+        if (__cache && __cache.available) {
           var _node4$__domParent = _node4.__domParent,
               __opacity = _node4$__domParent.__opacity,
               __matrixEvent = _node4$__domParent.__matrixEvent;
-          var p = _cache.__page;
+          var p = __cache.__page;
 
           if (lastPage && lastPage !== p) {
             drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
@@ -34313,7 +34323,7 @@
 
           lastPage = p;
           list.push({
-            cache: _cache,
+            cache: __cache,
             opacity: __opacity,
             matrix: __matrixEvent
           });
@@ -34448,12 +34458,12 @@
             _node4.render(renderMode, gl, dx, dy);
           }
         } else {
-          var _cache2 = _node4.__cache,
+          var _cache = _node4.__cache,
               _cacheTotal3 = _node4.__cacheTotal,
               _cacheFilter2 = _node4.__cacheFilter,
               _cacheMask2 = _node4.__cacheMask;
 
-          var _target4 = i > index ? getCache([_cacheMask2, _cacheFilter2, _cacheTotal3, _cache2]) : _cache2;
+          var _target4 = i > index ? getCache([_cacheMask2, _cacheFilter2, _cacheTotal3, _cache]) : _cache;
 
           if (_target4) {
             // 局部的mbm和主画布一样，先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
@@ -34493,7 +34503,7 @@
               });
             }
 
-            if (_target4 !== _cache2) {
+            if (_target4 !== _cache) {
               i += _total6 || 0;
 
               if (hasMask) {
@@ -34503,7 +34513,7 @@
           } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
 
 
-          if (!_target4 || _target4 === _cache2) {
+          if (!_target4 || _target4 === _cache) {
             var _render = _node4.render;
 
             if (_render !== DOM_RENDER && _render !== IMG_RENDER && _render !== GEOM_RENDER) {
@@ -34716,14 +34726,14 @@
               _hasMask5 = _structs$_i.hasMask;
 
           if (_node8 instanceof Text) {
-            var _cache3 = _node8.__cache;
+            var _cache2 = _node8.__cache;
 
-            if (_cache3 && _cache3.available) {
+            if (_cache2 && _cache2.available) {
               var __matrixEvent = _node8.__domParent.__matrixEvent;
-              var x = _cache3.x1,
-                  y = _cache3.y1,
-                  width = _cache3.__width,
-                  height = _cache3.__height;
+              var x = _cache2.x1,
+                  y = _cache2.y1,
+                  width = _cache2.__width,
+                  height = _cache2.__height;
               var xa = x - x0,
                   ya = y - y0;
               var xb = x + width - x0,
@@ -34746,7 +34756,7 @@
               var _o = {
                 index: _i2,
                 node: _node8,
-                target: _cache3,
+                target: _cache2,
                 points: [{
                   x: x1,
                   y: y1,
@@ -34792,7 +34802,7 @@
               continue;
             }
 
-            var _cache4 = _node8.__cache,
+            var _cache3 = _node8.__cache,
                 _cacheTotal6 = _node8.__cacheTotal,
                 _cacheFilter4 = _node8.__cacheFilter,
                 _cacheMask4 = _node8.__cacheMask,
@@ -34810,7 +34820,7 @@
 
             assignMatrix(_node8.__matrixEvent, m);
 
-            var _target6 = getCache([_cacheMask4, _cacheFilter4, _cacheTotal6, _cache4]);
+            var _target6 = getCache([_cacheMask4, _cacheFilter4, _cacheTotal6, _cache3]);
 
             if (_target6) {
               var _x = _target6.x1,
@@ -34862,7 +34872,7 @@
               };
               planeList.push(_o2);
 
-              if (_target6 !== _cache4) {
+              if (_target6 !== _cache3) {
                 _i2 += _total10 || 0;
 
                 if (_hasMask5) {
@@ -35268,7 +35278,7 @@
             continue;
           }
 
-          var _cache5 = _node9.__cache,
+          var _cache4 = _node9.__cache,
               __cacheTotal = _node9.__cacheTotal,
               __cacheFilter = _node9.__cacheFilter,
               _cacheMask5 = _node9.__cacheMask; // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理
@@ -35294,9 +35304,9 @@
 
 
           lastLv = _lv5;
-          var target = getCache([_cacheMask5, __cacheFilter, __cacheTotal, _cache5]);
+          var target = getCache([_cacheMask5, __cacheFilter, __cacheTotal, _cache4]);
 
-          if (target && (target !== _cache5 || visibility === 'visible')) {
+          if (target && (target !== _cache4 || visibility === 'visible')) {
             // 不考虑mbm
             var m = void 0;
 
@@ -35326,7 +35336,7 @@
               matrix: m
             });
 
-            if (target !== _cache5) {
+            if (target !== _cache4) {
               i += _total11 || 0;
 
               if (hasMask) {
@@ -35336,7 +35346,7 @@
           } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
 
 
-          if (!target || target === _cache5) {
+          if (!target || target === _cache4) {
             var render = _node9.render;
 
             if (render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
@@ -36034,7 +36044,7 @@
 
           if (!need && __refreshLevel & PPT$1) {
             var __domParent = node.__domParent;
-            var isPpt = !isE(__domParent && __domParent.__perspectiveMatrix) || isPerspectiveMatrix(node.__matrix);
+            var isPpt = !isE(__domParent && __domParent.__perspectiveMatrix) || node.__selfPerspectiveMatrix;
 
             if (isPpt) {
               need = true;
@@ -36075,7 +36085,7 @@
 
           if (hasContent) {
             var _bbox2 = node.bbox,
-                _cache6 = node.__cache,
+                _cache5 = node.__cache,
                 x1 = node.__x1,
                 y1 = node.__y1; // 单图特殊对待缓存
 
@@ -36084,25 +36094,25 @@
 
               if (loadImg.onlyImg && !loadImg.error && loadImg.source) {
                 onlyImg = true;
-                _cache6 = node.__cache = ImgWebglCache.getInstance(mode.CANVAS, gl, root.__uuid, _bbox2, loadImg, x1, y1);
+                _cache5 = node.__cache = ImgWebglCache.getInstance(mode.CANVAS, gl, root.__uuid, _bbox2, loadImg, x1, y1);
               }
             }
 
             if (!onlyImg) {
-              if (_cache6) {
-                _cache6.reset(_bbox2, x1, y1);
+              if (_cache5) {
+                _cache5.reset(_bbox2, x1, y1);
               } else {
-                _cache6 = CanvasCache.getInstance(mode.CANVAS, gl, root.__uuid, _bbox2, x1, y1, null);
+                _cache5 = CanvasCache.getInstance(mode.CANVAS, gl, root.__uuid, _bbox2, x1, y1, null);
               }
             }
 
-            if (_cache6 && _cache6.enabled) {
-              _cache6.__bbox = _bbox2;
-              _cache6.__available = true;
-              node.__cache = _cache6;
-              node.render(mode.CANVAS, _cache6.ctx, _cache6.dx, _cache6.dy);
+            if (_cache5 && _cache5.enabled) {
+              _cache5.__bbox = _bbox2;
+              _cache5.__available = true;
+              node.__cache = _cache5;
+              node.render(mode.CANVAS, _cache5.ctx, _cache5.dx, _cache5.dy);
             } else {
-              _cache6 && _cache6.release();
+              _cache5 && _cache5.release();
               node.__limitCache = true;
               return;
             }
@@ -36117,7 +36127,7 @@
 
           var _isMbm = _mixBlendMode !== 'normal';
 
-          var _isPpt = total && (_perspective2 || isPerspectiveMatrix(node.__matrix));
+          var _isPpt = total && (_perspective2 || node.__selfPerspectiveMatrix);
 
           var isOverflow = overflow === 'hidden' && total;
           var isFilter = _filter && _filter.length;
@@ -36153,9 +36163,6 @@
 
         return b.lv - a.lv;
       }); // ppt只有嵌套才需要生成，最下面的孩子节点的ppt无需，因此记录一个hash存index，
-      // 同时因为是后序遍历，孩子先存所有父亲的index即可保证父亲才能生成cacheTotal
-
-      var pptHash = {};
 
       for (var ii = 0, _len10 = mergeList.length; ii < _len10; ii++) {
         var _mergeList$ii = mergeList[ii],
@@ -36165,39 +36172,10 @@
             _node11 = _mergeList$ii.node,
             _hasMask6 = _mergeList$ii.hasMask,
             _isPpt2 = _mergeList$ii.isPpt;
-        var __matrix = _node11.__matrix,
-            _domParent = _node11.__domParent,
-            _computedStyle4 = _node11.__computedStyle;
-        var _overflow = _computedStyle4[OVERFLOW],
-            _filter2 = _computedStyle4[FILTER];
-        var isPerspective = !isE(_domParent && _domParent.__perspectiveMatrix) || isPerspectiveMatrix(__matrix); // 有ppt的，向上查找所有父亲index记录，可能出现重复记得提前跳出
-
-        if (isPerspective) {
-          var parent = _node11.__domParent;
-
-          while (parent) {
-            var idx = parent.__index;
-
-            if (pptHash[idx]) {
-              break;
-            }
-
-            if (isPerspectiveMatrix(parent.__matrix)) {
-              pptHash[idx] = true;
-            }
-
-            parent = parent.__domParent;
-
-            if (parent && parent.__perspectiveMatrix) {
-              pptHash[idx] = true;
-            }
-          } // 最内层的ppt忽略，注意transformStyle变化的强制生成
-
-
-          if (!pptHash[_i9]) {
-            if (!_hasMask6 && !_filter2.length && !(_overflow === 'hidden' && _total12) && !_node11.__cacheAsBitmap) ;
-          }
-        }
+        _node11.__matrix;
+            _node11.__domParent;
+            var _computedStyle4 = _node11.__computedStyle;
+        var _filter2 = _computedStyle4[FILTER]; // 有ppt的，向上查找所有父亲index记录，可能出现重复记得提前跳出
 
         var __limitCache = _node11.__limitCache,
             _cacheTotal7 = _node11.__cacheTotal,
@@ -36275,13 +36253,13 @@
 
       if (_node12 instanceof Text) {
         // text特殊之处，__config部分是复用parent的
-        var _cache7 = _node12.__cache;
+        var _cache6 = _node12.__cache;
 
-        if (_cache7 && _cache7.available) {
+        if (_cache6 && _cache6.available) {
           var _node12$__domParent = _node12.__domParent,
               __matrixEvent = _node12$__domParent.__matrixEvent,
               __opacity = _node12$__domParent.__opacity;
-          var p = _cache7.__page;
+          var p = _cache6.__page;
 
           if (lastPage && lastPage !== p) {
             drawTextureCache(gl, list.splice(0), cx, cy, 0, 0);
@@ -36289,7 +36267,7 @@
 
           lastPage = p;
           list.push({
-            cache: _cache7,
+            cache: _cache6,
             opacity: __opacity,
             matrix: __matrixEvent
           });
@@ -36319,7 +36297,7 @@
           continue;
         }
 
-        var _cache8 = _node12.__cache,
+        var _cache7 = _node12.__cache,
             _cacheTotal8 = _node12.__cacheTotal,
             _cacheFilter5 = _node12.__cacheFilter,
             _cacheMask6 = _node12.__cacheMask,
@@ -36349,7 +36327,7 @@
         _node12.__opacity = opacity;
         assignMatrix(_node12.__matrixEvent, m); // total和自身cache的尝试，visibility不可见时没有cache
 
-        var _target7 = getCache([_cacheMask6, _cacheFilter5, _cacheTotal8, _cache8]);
+        var _target7 = getCache([_cacheMask6, _cacheFilter5, _cacheTotal8, _cache7]);
 
         if (_target7) {
           // 有mbm则需要混合之前的纹理和新纹理到fbo上面，连续的mbm则依次交替绘制到画布或离屏fbo上
@@ -36385,7 +36363,7 @@
             });
           }
 
-          if (_target7 !== _cache8) {
+          if (_target7 !== _cache7) {
             _i10 += _total13 || 0;
 
             if (_hasMask7) {
@@ -36395,7 +36373,7 @@
         } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
 
 
-        if (!_target7 || _target7 === _cache8) {
+        if (!_target7 || _target7 === _cache7) {
           var render = _node12.render;
 
           if (render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {

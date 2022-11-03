@@ -3,7 +3,7 @@ import geom from '../math/geom';
 import vector from '../math/vector';
 
 const { intersectPlanePlane, intersectLineLine3, pointOnLine3 } = isec;
-const { isRectsOverlap } = geom;
+const { isRectsOverlap, getPlainNormalEquation } = geom;
 const { isZero3 } = vector;
 
 // 设置新拼图的x/y/z投影数据和bbox数据，原本平面矩形也算一个拼图
@@ -15,28 +15,21 @@ function shadow(puzzle) {
       z: points[0].z,
     },
   ];
-  if(points[1].y !== points[0].y || points[1].z !== points[0].z) {
+  outer:
+  for(let i = 1, len = points.length; i < len; i++) {
+    let p = points[i];
+    for(let j = 0; j < i; j++) {
+      let o = points[j];
+      if(p.y === o.y && p.z === o.z) {
+        continue outer;
+      }
+    }
     xShadow.push({
-      y: points[1].y,
-      z: points[1].z,
+      y: p.y,
+      z: p.z,
     });
   }
-  if((points[2].y !== points[0].y || points[2].z !== points[0].z)
-    && (points[2].y !== points[1].y || points[2].z !== points[1].z)) {
-    xShadow.push({
-      y: points[2].y,
-      z: points[2].z,
-    });
-  }
-  if((points[3].y !== points[0].y || points[3].z !== points[0].z)
-    && (points[3].y !== points[1].y || points[3].z !== points[1].z)
-    && (points[3].y !== points[2].y || points[3].z !== points[2].z)) {
-    xShadow.push({
-      y: points[3].y,
-      z: points[3].z,
-    });
-  }
-  // 顶点和bbox，每个轴投影都要，x特殊多线段列表
+  // 顶点和bbox，每个轴投影都要
   puzzle.xShadow = [];
   puzzle.xBbox = [];
   for(let j = 0, len = xShadow.length; j < len; j++) {
@@ -55,35 +48,27 @@ function shadow(puzzle) {
       puzzle.xBbox[3] = Math.max(puzzle.xBbox[3], a.y);
     }
   }
-  // y/z类似，但不用排序添加
+  // y/z类似
   let yShadow = [
     {
       x: points[0].x,
       z: points[0].z,
     },
   ];
-  if(points[1].x !== points[0].x || points[1].z !== points[0].z) {
+  outer:
+  for(let i = 1, len = points.length; i < len; i++) {
+    let p = points[i];
+    for(let j = 0; j < i; j++) {
+      let o = points[j];
+      if(p.x === o.x && p.z === o.z) {
+        continue outer;
+      }
+    }
     yShadow.push({
-      x: points[1].x,
-      z: points[1].z,
+      x: p.x,
+      z: p.z,
     });
   }
-  if((points[2].x !== points[0].x || points[2].z !== points[0].z)
-    && (points[2].x !== points[1].x || points[2].z !== points[1].z)) {
-    yShadow.push({
-      x: points[2].x,
-      z: points[2].z,
-    });
-  }
-  if((points[3].x !== points[0].x || points[3].z !== points[0].z)
-    && (points[3].x !== points[1].x || points[3].z !== points[1].z)
-    && (points[3].x !== points[2].x || points[3].z !== points[2].z)) {
-    yShadow.push({
-      x: points[3].x,
-      z: points[3].z,
-    });
-  }
-  // y/z类似，但不用排序添加
   puzzle.yShadow = [];
   puzzle.yBbox = [];
   for(let j = 0, len = yShadow.length; j < len; j++) {
@@ -108,25 +93,18 @@ function shadow(puzzle) {
       y: points[0].y,
     },
   ];
-  if(points[1].x !== points[0].x || points[1].y !== points[0].y) {
+  outer:
+  for(let i = 1, len = points.length; i < len; i++) {
+    let p = points[i];
+    for(let j = 0; j < i; j++) {
+      let o = points[j];
+      if(p.x === o.x && p.y === o.y) {
+        continue outer;
+      }
+    }
     zShadow.push({
-      x: points[1].x,
-      y: points[1].y,
-    });
-  }
-  if((points[2].x !== points[0].x || points[2].y !== points[0].y)
-    && (points[2].x !== points[1].x || points[2].y !== points[1].y)) {
-    zShadow.push({
-      x: points[2].x,
-      y: points[2].y,
-    });
-  }
-  if((points[3].x !== points[0].x || points[3].y !== points[0].y)
-    && (points[3].x !== points[1].x || points[3].y !== points[1].y)
-    && (points[3].x !== points[2].x || points[3].y !== points[2].y)) {
-    zShadow.push({
-      x: points[3].x,
-      y: points[3].y,
+      x: p.x,
+      y: p.y,
     });
   }
   puzzle.zShadow = [];
@@ -283,22 +261,30 @@ function splitQuadrilateralPlane(list) {
               // res只可能是2和0，2个res组合只有3种可能，其它则是精度误差忽略，切割的交点在边的索引和下个索引之间的边上
               if(resA.length === 2 && resB.length === 2
                 || resA.length === 2 && !resB.length
-                || !resA.length || resB.length === 2) {
-                let puzzle = [];
+                || !resA.length && resB.length === 2) {
+                let puzzle = [], t1, t2;
                 // 2个都需要切割，各自判断
                 if(resA.length) {
-                  pa.isDeleted = true;
-                  let t = splitPlaneByPoint(pa, resA);
-                  if(t) {
-                    puzzle = puzzle.concat(t);
-                  }
+                  t1 = splitPlaneByLine(pa, resA);
                 }
                 if(resB.length) {
+                  t2 = splitPlaneByLine(pb, resB);
+                }
+                // 误差导致切割数量不对，要么一个不被切割另外一个被切为2，要么都被切2，不会出现被切但数量不对
+                if(t1 && t2 && t1.length !== t2.length) {
+                  continue;
+                }
+                if(t1 && t1.length > 1) {
+                  pa.puzzle = pa.puzzle || [];
+                  pa.puzzle = pa.puzzle.concat(t1);
                   pa.isDeleted = true;
-                  let t = splitPlaneByPoint(pb, resB);
-                  if(t) {
-                    puzzle = puzzle.concat(t);
-                  }
+                  puzzle = puzzle.concat(t1);
+                }
+                if(t2 && t2.length > 1) {
+                  pb.puzzle = pb.puzzle || [];
+                  pb.puzzle = pb.puzzle.concat(t2);
+                  pb.isDeleted = true;
+                  puzzle = puzzle.concat(t2);
                 }
                 // 新的拼图需考虑加入到eventList的合适位置，可能是新增的扫描事件
                 for(let j = 0, len = puzzle.length; j < len; j++) {
@@ -372,7 +358,62 @@ function splitQuadrilateralPlane(list) {
   }
 }
 
-function splitPlaneByPoint(puzzle, res) {
+function scan(eventList) {
+  let ael = [], hash = {};
+  for(let i = 0, len = eventList.length; i < len; i++) {
+    let { k, list } = eventList[i];
+    // 先一遍循环，把刚进入的puzzle初始化放入ael，这样同时初始化的就不会有遗漏
+    for(let i = 0, len = list.length; i < len; i++) {
+      let puzzle = list[i].puzzle;
+      // 首次进入初始化数据
+      if(!puzzle.isStart) {
+        puzzle.isStart = true;
+        puzzle.count = 2;
+        ael.push(puzzle);
+      }
+    }
+    let willEnd = [];
+    // 再一遍循环，检查同区域点集合
+    for(let i = 0, len = list.length; i < len; i++) {
+      let p = list[i], puzzle = p.puzzle;
+      // 遍历已存在的puzzle，和当前puzzle视为同区域集合，存数据
+      for(let i = 0, len = ael.length; i < len; i++) {
+        let item = ael[i];
+        if(puzzle === item || puzzle.plane === item.plane) {
+          continue;
+        }
+        let key = puzzle.uuid > item.uuid ? (item.uuid + ',' + puzzle.uuid) : (puzzle.uuid + ',' + item.uuid);
+        // 一定是第1次视为start
+        let o = hash[key] = hash[key] || [];
+        o.push(k);
+      }
+      // 归零时离开，延迟处理，依然是防止同时离开的puzzle不会有遗漏
+      if(!--puzzle.count) {
+        willEnd.push(puzzle);
+      }
+    }
+    for(let j = 0, len = willEnd.length; j < len; j++) {
+      let p = willEnd[j], uuid = p.uuid;
+      p.isStart = false;
+      let i = ael.indexOf(p);
+      ael.splice(i, 1);
+      // 离开检查hash，如有则视为end
+      for(let k in hash) {
+        if(hash.hasOwnProperty(k)) {
+          if(k.indexOf(uuid + ',') === 0 || k.indexOf(',' + uuid) > -1) {
+            let o = hash[k];
+            if(o.length < 2) {
+              o.push(k);
+            }
+          }
+        }
+      }
+    }
+  }
+  return hash;
+}
+
+function splitPlaneByLine(puzzle, res) {
   let plane = puzzle.plane, points = puzzle.points, i1 = -1, i2 = -1;
   let p0 = points[0], p1 = points[1], p2 = points[2], p3 = points[3];
   // 交点一定在边上，不在边上的不切割
@@ -445,17 +486,27 @@ function splitPlaneByPoint(puzzle, res) {
     };
     for(let i = 0; i <= i1; i++) {
       let r = hash[i] = getPercentXY(points[i], va, vb, p0, p1, p3);
-      a.points.push(r);
+      if(r) {
+        a.points.push(r);
+      }
     }
     // 第1个交点如果在顶点上忽略，前面循环考虑了
     if(onVertex1 === -1) {
-      a.points.push(r0 = getPercentXY(res[0], va, vb, p0, p1, p3));
+      r0 = getPercentXY(res[0], va, vb, p0, p1, p3);
+      if(r0) {
+        a.points.push(r0);
+      }
     }
     // 第2个即便在顶点上也包含，后面循环没考虑
-    a.points.push(r1 = getPercentXY(res[1], va, vb, p0, p1, p3));
+    r1 = getPercentXY(res[1], va, vb, p0, p1, p3);
+    if(r1) {
+      a.points.push(r1);
+    }
     for(let i = i2 + 1, len = points.length; i < len; i++) {
       let r = hash[i] = getPercentXY(points[i], va, vb, p0, p1, p3);
-      a.points.push(r);
+      if(r) {
+        a.points.push(r);
+      }
     }
     if(a.points.length > 2) {
       puzzle.push(a);
@@ -473,25 +524,32 @@ function splitPlaneByPoint(puzzle, res) {
       b.points.push(Object.assign({}, r0));
     }
     else {
-      b.points.push(getPercentXY(res[0], va, vb, p0, p1, p3));
+      r0 = getPercentXY(res[0], va, vb, p0, p1, p3);
+      if(r0) {
+        b.points.push(r0);
+      }
     }
     for(let i = i1 + 1; i <= i2; i++) {
       let r = hash[i] = hash[i] || getPercentXY(points[i], va, vb, p0, p1, p3);
-      b.points.push(r);
+      if(r) {
+        b.points.push(r);
+      }
     }
     if(onVertex2 === -1) {
       if(r1) {
         b.points.push(Object.assign({}, r1));
       }
       else {
-        b.points.push(getPercentXY(res[1], va, vb, p0, p1, p3));
+        r1 = getPercentXY(res[1], va, vb, p0, p1, p3);
+        if(r1) {
+          b.points.push(r1);
+        }
       }
     }
     if(b.points.length > 2) {
       puzzle.push(b);
     }
     // 只返回新增的
-    plane.puzzle = plane.puzzle.concat(puzzle);
     return puzzle;
   }
 }
@@ -509,13 +567,15 @@ function getPercentXY(p, va, vb, p0, p1, p3) {
   };
   let ipx = intersectLineLine3(p0, p1, p, pb, 3);
   let ipy = intersectLineLine3(p0, p3, p, pa, 3);
-  return {
-    x: p.x,
-    y: p.y,
-    z: p.z,
-    px: (ipx.x - p0.x) / (p1.x - p0.x),
-    py: (ipy.y - p0.y) / (p3.y - p1.y),
-  };
+  if(ipx && ipy) {
+    return {
+      x: p.x,
+      y: p.y,
+      z: p.z,
+      px: (ipx.x - p0.x) / (p1.x - p0.x),
+      py: (ipy.y - p0.y) / (p3.y - p1.y),
+    };
+  }
 }
 
 // 将拼图按z顺序排好，渲染从z小的开始，拼图已经完全不相交（3d空间）
@@ -523,108 +583,75 @@ function sortPuzzleZ(list) {
   if(list.length < 2) {
     return list;
   }
-  // 用扫描线遍历一遍，可以找到2个拼图在x投影重合部分的顶点集合，计算集合的z平均值，
-  // 比较大小可以得出这2个拼图真正的z先后次序，如果相等则特殊处理，和不重合逻辑一样，
+  // 用扫描线遍历一遍正视图，可以找到2个拼图在投影重合部分，有开始和结束，取x/y中间值，
+  // 比较此点在2个平面上的z大小可以得出这2个拼图真正的z先后次序，如果相等则特殊处理，和不重合逻辑一样，
   // 不重合的话，取最大最小值z的平均比较即可，平均值可避免起点终点相同无法比较
-  let eventHash = {};
+  let eventHashX = {}, eventHashY = {}, puzzleHash = {};
   for(let i = 0, len = list.length; i < len; i++) {
-    let puzzle = list[i], points = puzzle.points;
-    for(let i = 0, len = points.length; i < len; i++) {
-      let p = points[i];
-      p.puzzle = puzzle;
-      let o = eventHash[p.z] = eventHash[p.z] || [];
-      o.push(p);
-    }
-    let xBbox = puzzle.xBbox;
+    let puzzle = list[i], xBbox = puzzle.xBbox, yBbox = puzzle.yBbox;
+    puzzleHash[puzzle.uuid] = puzzle;
+    let start = xBbox[0], end = xBbox[2];
+    let o = eventHashX[start] = eventHashX[start] || [];
+    o.push(puzzle);
+    o = eventHashX[end] = eventHashX[end] || [];
+    o.push(puzzle);
+    start = yBbox[0];
+    end = yBbox[2];
+    o = eventHashY[start] = eventHashY[start] || [];
+    o.push(puzzle);
+    o = eventHashY[end] = eventHashY[end] || [];
+    o.push(puzzle);
     puzzle.cz = (xBbox[0] + xBbox[2]) * 0.5;
   }
-  let eventList = [];
-  for(let i in eventHash) {
-    if(eventHash.hasOwnProperty(i)) {
-      let o = eventHash[i];
-      eventList.push({
-        z: i,
+  let eventListX = [], eventListY = [];
+  for(let i in eventHashX) {
+    if(eventHashX.hasOwnProperty(i)) {
+      let o = eventHashX[i];
+      eventListX.push({
+        k: i,
         list: o,
       });
     }
   }
-  eventList.sort(function(a, b) {
-    return a.z - b.z;
+  for(let i in eventHashY) {
+    if(eventHashY.hasOwnProperty(i)) {
+      let o = eventHashY[i];
+      eventListY.push({
+        k: i,
+        list: o,
+      });
+    }
+  }
+  eventListX.sort(function(a, b) {
+    return a.k - b.k;
+  });
+  eventListY.sort(function(a, b) {
+    return a.k - b.k;
   });
   // 每个点作为事件，触发时所属拼图count--，首次拼图视为start，当count为0时拼图视为end
   // 这样2个（或多个）拼图同时都在start状态下（count > 0)的点就是重合区域点集合
-  let ael = [], hash = {};
-  for(let i = 0, len = eventList.length; i < len; i++) {
-    let list = eventList[i].list;
-    // 先一遍循环，把刚进入的点所属平面初始化放入ael，这样同时初始化的就不会有遗漏
-    for(let i = 0, len = list.length; i < len; i++) {
-      let puzzle = list[i].puzzle;
-      // 首次进入初始化数据
-      if(!puzzle.isStart) {
-        puzzle.isStart = true;
-        puzzle.count = puzzle.points.length;
-        ael.push(puzzle);
-      }
-    }
-    let willEnd = [];
-    // 再一遍循环，检查同区域点集合
-    for(let i = 0, len = list.length; i < len; i++) {
-      let p = list[i], puzzle = p.puzzle;
-      // 遍历已存在的puzzle，和当前puzzle视为同区域集合，存数据
-      for(let i = 0, len = ael.length; i < len; i++) {
-        let item = ael[i];
-        if(puzzle.uuid === item.uuid || puzzle.plane === item.plane) {
-          continue;
-        }
-        let key = puzzle.uuid > item.uuid ? (item.uuid + ',' + puzzle.uuid) : (puzzle.uuid + ',' + item.uuid);
-        let o = hash[key] = hash[key] || [];
-        o.push(p);
-      }
-      // 归零时离开，延迟处理，依然是防止同时离开的点puzzle不会有遗漏
-      if(!--puzzle.count) {
-        willEnd.push(puzzle);
-      }
-    }
-    for(let j = 0, len = willEnd.length; j < len; j++) {
-      let i = ael.indexOf(willEnd[j]);
-      ael.splice(i, 1);
-    }
-  }
+  let hashX = scan(eventHashX), hashY = scan(eventHashY);
+  // 取中值x/y，比较2个puzzle所在平面的值为x/y的点的z坐标大小
   let zHash = {};
-  for(let i in hash) {
-    if(hash.hasOwnProperty(i)) {
-      let list = hash[i], count1 = 0, count2 = 0, uuid = list[0].puzzle.uuid;
-      for(let i = 0, len = list.length; i < len; i++) {
-        let p = list[i], puzzle = p.puzzle;
-        if(uuid === puzzle.uuid) {
-          count1 += p.z;
-        }
-        else {
-          count2 += p.z;
-        }
+  for(let i in hashX) {
+    if(hashX.hasOwnProperty(i)) {
+      let listX = hashX[i], listY = hashY[i], k = i.splice(',');
+      let pa = puzzleHash[k[0]], pb = puzzleHash[k[1]];
+      let cx = (listX[0] + listX[1]) * 0.5, cy = (listY[0] + listY[1]) * 0.5;
+      let { a: a1, b: b1, c: c1, d: d1 } = getPlainNormalEquation(pa.points);
+      let { a: a2, b: b2, c: c2, d: d2 } = getPlainNormalEquation(pb.points);
+      let z1 = (-d1 - a1 * cx - b1 * cy) / c1;
+      let z2 = (-d2 - a2 * cx - b2 * cy) / c2;
+      if(Math.abs(z1 - z2) > 1e-9) {
+        zHash[i] = z1 - z2;
       }
-      zHash[i] = {
-        uuid,
-        count1,
-        count2,
-      };
     }
   }
   list.sort(function(a, b) {
     let key = a.uuid > b.uuid ? (b.uuid + ',' + a.uuid) : (a.uuid + ',' + b.uuid);
     // 有重合的区域，除非相等，否则可以直接得出结果
     if(zHash.hasOwnProperty(key)) {
-      let item = zHash[key];
-      if(a.uuid === item.uuid) {
-        if(item.count1 !== item.count2) {
-          return item.count1 - item.count2;
-        }
-      }
-      else {
-        if(item.count1 !== item.count2) {
-          return item.count2 - item.count1;
-        }
-      }
+      return zHash[key];
     }
     // 无重合或者相等的，对比z中点
     return a.cz - b.cz;

@@ -333,6 +333,12 @@
   * vh
   * vmax
   * vmin
+* transformStyle
+  * flat 默认
+  * preserve3d
+* backfaceVisibility
+  * visible 默认
+  * hidden
 * fill
   * transparent 默认，可以是数组形式设置多个
   * \#rgb/rgb/rgba

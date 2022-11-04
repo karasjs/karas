@@ -1340,7 +1340,7 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
       for(let i = 0, len = planeList.length; i < len; i++) {
         let plane = planeList[i];
         let puzzle = plane.puzzle;
-        if(puzzle) {
+        if(puzzle && puzzle.length) {
           for(let i = 0, len = puzzle.length; i < len; i++) {
             let p = puzzle[i];
             if(!p.isDeleted) {

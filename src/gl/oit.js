@@ -234,7 +234,7 @@ function splitQuadrilateralPlane(list) {
                 pointsA[0], pointsA[1], pointsA[2],
                 pointsB[0], pointsB[1], pointsB[2]
               );
-              if(!line) {
+              if(!line || line.length !== 2) {
                 continue;
               }
               // 这条线一定和2个四边形有2/4个不同交点，分别用每条边和直线求交点，2个是四边形a内切割b，4个是a和b恰好互相切割
@@ -246,6 +246,7 @@ function splitQuadrilateralPlane(list) {
                   line[0], line[1], 1
                 );
                 if(r) {
+                  r.i = i;
                   resA.push(r);
                 }
               }
@@ -255,6 +256,7 @@ function splitQuadrilateralPlane(list) {
                   line[0], line[1], 1
                 );
                 if(r) {
+                  r.i = i;
                   resB.push(r);
                 }
               }
@@ -414,8 +416,11 @@ function scan(eventList) {
 }
 
 function splitPlaneByLine(puzzle, res) {
+  if(checkIsec(puzzle.points.length, res)) {
+    return;
+  }
   let plane = puzzle.plane, points = puzzle.points, i1 = -1, i2 = -1;
-  let p0 = points[0], p1 = points[1], p2 = points[2], p3 = points[3];
+  let p0 = plane.points[0], p1 = plane.points[1], p2 = plane.points[2], p3 = plane.points[3];
   // 交点一定在边上，不在边上的不切割
   for(let i = 0, len = points.length; i < len; i++) {
     let p1 = points[i], p2 = points[(i + 1) % len];
@@ -576,6 +581,45 @@ function getPercentXY(p, va, vb, p0, p1, p3) {
       py: (ipy.y - p0.y) / (p3.y - p1.y),
     };
   }
+}
+
+// 检测相交线是否有效，不能和puzzle的边重合
+function checkIsec(len, res) {
+  let a = res[0], b = res[1];
+  // 共边索引
+  if(a.i === b.i) {
+    return true;
+  }
+  if(a.i > b.i) {
+    let t = a;
+    a = b;
+    b = t;
+  }
+  // 临边如果小的索引为1或大的索引为0
+  if(b.i - a.i === 1) {
+    if(Math.abs(a.pa - 1) < 1e-9 || b.pa < 1e-9) {
+      return true;
+    }
+  }
+  // 刚好隔边则必须同时索引为1和0
+  if(b.i - a.i === 2) {
+    if(Math.abs(a.pa - 1) < 1e-9 && b.pa < 1e-9) {
+      return true;
+    }
+  }
+  // 首尾临边
+  if(b.i === len - 1 && a.i === 0) {
+    if(Math.abs(b.pa - 1) < 1e-9 || a.pa < 1e-9) {
+      return true;
+    }
+  }
+  // 首尾隔边
+  if(b.i === len - 1 && a.i === 1 || b.i === len - 2 && a.i === 0) {
+    if(Math.abs(b.pa - 1) < 1e-9 && a.pa < 1e-9) {
+      return true;
+    }
+  }
+  return false;
 }
 
 // 将拼图按z顺序排好，渲染从z小的开始，拼图已经完全不相交（3d空间）

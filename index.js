@@ -32094,16 +32094,18 @@
 
     var paramA = closestParam(intersectPt, p1, p2);
     var paramB = closestParam(intersectPt, p3, p4);
+    intersectPt.pa = paramA;
+    intersectPt.pb = paramB;
 
-    if (limitToFiniteSegment === 1 && paramA >= 1e-9 && paramA <= 1 - 1e-9) {
+    if (limitToFiniteSegment === 1 && paramA >= 0 && paramA <= 1) {
       return intersectPt;
     }
 
-    if (limitToFiniteSegment === 2 && paramB >= 1e-9 && paramB <= 1 - 1e-9) {
+    if (limitToFiniteSegment === 2 && paramB >= 0 && paramB <= 1) {
       return intersectPt;
     }
 
-    if (limitToFiniteSegment === 3 && paramA >= 1e-9 && paramA <= 1 - 1e-9 && paramB >= 1e-9 && paramB <= 1 - 1e-9) {
+    if (limitToFiniteSegment === 3 && paramA >= 0 && paramA <= 1 && paramB >= 0 && paramB <= 1) {
       return intersectPt;
     }
   }
@@ -32502,7 +32504,7 @@
 
                 var line = intersectPlanePlane(pointsA[0], pointsA[1], pointsA[2], pointsB[0], pointsB[1], pointsB[2]);
 
-                if (!line) {
+                if (!line || line.length !== 2) {
                   continue;
                 } // 这条线一定和2个四边形有2/4个不同交点，分别用每条边和直线求交点，2个是四边形a内切割b，4个是a和b恰好互相切割
                 // 被切割后的puzzle解法相同，只是变成了多边形，n>=3
@@ -32515,6 +32517,7 @@
                   var r = intersectLineLine3(pointsA[_i7], pointsA[(_i7 + 1) % _len8], line[0], line[1], 1);
 
                   if (r) {
+                    r.i = _i7;
                     resA.push(r);
                   }
                 }
@@ -32523,6 +32526,7 @@
                   var _r = intersectLineLine3(pointsB[_i8], pointsB[(_i8 + 1) % _len9], line[0], line[1], 1);
 
                   if (_r) {
+                    _r.i = _i8;
                     resB.push(_r);
                   }
                 } // res只可能是2和0，2个res组合只有3种可能，其它则是精度误差忽略，切割的交点在边的索引和下个索引之间的边上
@@ -32716,14 +32720,18 @@
   }
 
   function splitPlaneByLine(puzzle, res) {
+    if (checkIsec(puzzle.points.length, res)) {
+      return;
+    }
+
     var plane = puzzle.plane,
         points = puzzle.points,
         i1 = -1,
         i2 = -1;
-    var p0 = points[0],
-        p1 = points[1],
-        p2 = points[2],
-        p3 = points[3]; // 交点一定在边上，不在边上的不切割
+    var p0 = plane.points[0],
+        p1 = plane.points[1],
+        p2 = plane.points[2],
+        p3 = plane.points[3]; // 交点一定在边上，不在边上的不切割
 
     for (var i = 0, len = points.length; i < len; i++) {
       var _p4 = points[i],
@@ -32915,6 +32923,52 @@
         py: (ipy.y - p0.y) / (p3.y - p1.y)
       };
     }
+  } // 检测相交线是否有效，不能和puzzle的边重合
+
+
+  function checkIsec(len, res) {
+    var a = res[0],
+        b = res[1]; // 共边索引
+
+    if (a.i === b.i) {
+      return true;
+    }
+
+    if (a.i > b.i) {
+      var t = a;
+      a = b;
+      b = t;
+    } // 临边如果小的索引为1或大的索引为0
+
+
+    if (b.i - a.i === 1) {
+      if (Math.abs(a.pa - 1) < 1e-9 || b.pa < 1e-9) {
+        return true;
+      }
+    } // 刚好隔边则必须同时索引为1和0
+
+
+    if (b.i - a.i === 2) {
+      if (Math.abs(a.pa - 1) < 1e-9 && b.pa < 1e-9) {
+        return true;
+      }
+    } // 首尾临边
+
+
+    if (b.i === len - 1 && a.i === 0) {
+      if (Math.abs(b.pa - 1) < 1e-9 || a.pa < 1e-9) {
+        return true;
+      }
+    } // 首尾隔边
+
+
+    if (b.i === len - 1 && a.i === 1 || b.i === len - 2 && a.i === 0) {
+      if (Math.abs(b.pa - 1) < 1e-9 && a.pa < 1e-9) {
+        return true;
+      }
+    }
+
+    return false;
   } // 将拼图按z顺序排好，渲染从z小的开始，拼图已经完全不相交（3d空间）
 
 
@@ -34982,7 +35036,7 @@
           var plane = planeList[_i3];
           var puzzle = plane.puzzle;
 
-          if (puzzle) {
+          if (puzzle && puzzle.length) {
             for (var _i4 = 0, _len5 = puzzle.length; _i4 < _len5; _i4++) {
               var _p6 = puzzle[_i4];
 
@@ -44248,7 +44302,7 @@
     CanvasCache: CanvasCache
   };
 
-  var version = "0.81.3";
+  var version = "0.82.0";
 
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);

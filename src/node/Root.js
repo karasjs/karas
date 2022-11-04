@@ -727,10 +727,12 @@ class Root extends Dom {
         }
         if(lv & TRANSFORM_ALL) {
           // 特殊的ppt需清空cacheTotal
-          if(node.__selfPerspectiveMatrix) {
+          let o = node.__selfPerspectiveMatrix;
+          node.__calMatrix(lv, currentStyle, computedStyle, cacheStyle, aniParams && aniParams.optimize);
+          let n = node.__selfPerspectiveMatrix;
+          if(!util.equalArr(o, n)) {
             need = true;
           }
-          node.__calMatrix(lv, currentStyle, computedStyle, cacheStyle, aniParams && aniParams.optimize);
         }
         if(lv & OP) {
           computedStyle[OPACITY] = currentStyle[OPACITY];

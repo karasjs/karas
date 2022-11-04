@@ -37665,11 +37665,15 @@
 
             if (lv & TRANSFORM_ALL) {
               // 特殊的ppt需清空cacheTotal
-              if (node.__selfPerspectiveMatrix) {
-                need = true;
-              }
+              var o = node.__selfPerspectiveMatrix;
 
               node.__calMatrix(lv, currentStyle, computedStyle, cacheStyle, aniParams && aniParams.optimize);
+
+              var n = node.__selfPerspectiveMatrix;
+
+              if (!util.equalArr(o, n)) {
+                need = true;
+              }
             }
 
             if (lv & OP) {

@@ -206,13 +206,13 @@ window._data = [
   function start(e) {
     let polyline = e.target;
     // 使用sx代替x，x表示布局坐标，sx包含了relative偏移量
-    let { sx, width, height } = polyline;
+    let { x, width, height } = polyline;
     let per = width / length;
-    let i = Math.floor((e.x - sx) / per);
+    let i = Math.floor((e.x - x) / per);
     let point = points[i];
     // origin设置为左下角BOTTOM_LEFT，所以y坐标要被1减
     let top = (1 - point[1]) * height;
-    let left = e.x - sx;
+    let left = e.x - x;
     render(true, left, top);
   }
   function end() {

@@ -7,210 +7,56 @@
   <link href="style.css" media="all" rel="stylesheet"/>
 </head>
 <body>
-<div class="pre">结合自定义图形和线性渐变，以及结合线性渐变和transform，比如3d柱状图。
-下面展示了2种不同的方式，红色css要简单一些，但蓝色自定义图形使用性和复用性都更好。</div>
+<div class="pre">webgl模式下结合perspective/transformStyle能制作出3d透视效果，比如3d柱状图。</div>
 <div id="example"></div>
-<div id="example2"></div>
 <pre><code class="brush:csx"></code></pre>
 <script type="text/jsx">
-  class Cuboid extends karas.Geom {
-    constructor(tagName, props) {
-      super(tagName, props);
-    }
-
-    render(renderMode, ctx, dx, dy) {
-      super.render(renderMode, ctx, dx, dy);
-      let { sx: x, sy: y, width, height } = this;
-      let percent = parseFloat(this.props.percent) || 1;
-      let h = height - 20;
-      let x1 = x + width * 0.5 - 20;
-      let y1 = y + height - 10;
-      let l = percent * h;
-      let front = [
-        [x1, y1],
-        [x1, y1 - l],
-        [x1 + 20, y1 - l + 10],
-        [x1 + 20, y1 + 10]
-      ];
-      let side = [
-        [x1 + 20, y1 - l + 10],
-        [x1 + 40, y1 - l],
-        [x1 + 40, y1],
-        [x1 + 20, y1 + 10]
-      ];
-      let top = [
-        [x1, y1 - l],
-        [x1 + 20, y1 - l + 10],
-        [x1 + 40, y1 - l],
-        [x1 + 20, y1 - l - 10],
-      ];
-      if(renderMode === karas.mode.CANVAS) {
-        let lg = ctx.createLinearGradient(x + width, y + height, x, y);
-        lg.addColorStop(0, '#39F');
-        lg.addColorStop(1, '#9CF');
-        ctx.fillStyle = lg;
-        ctx.beginPath();
-        front.forEach((item, i) => {
-          if(i) {
-            ctx.lineTo(item[0], item[1]);
-          }
-          else {
-            ctx.moveTo(item[0], item[1]);
-          }
-        });
-        ctx.fill();
-        ctx.closePath();
-        ctx.beginPath();
-        lg = ctx.createLinearGradient(x + width, y + height, x, y);
-        lg.addColorStop(0, '#06F');
-        lg.addColorStop(1, '#39F');
-        ctx.fillStyle = lg;
-        side.forEach((item, i) => {
-          if(i) {
-            ctx.lineTo(item[0], item[1]);
-          }
-          else {
-            ctx.moveTo(item[0], item[1]);
-          }
-        });
-        ctx.fill();
-        ctx.closePath();
-        ctx.beginPath();
-        lg = ctx.createLinearGradient(x + width, y, x, y);
-        lg.addColorStop(0, '#6AF');
-        lg.addColorStop(1, '#9CF');
-        ctx.fillStyle = lg;
-        top.forEach((item, i) => {
-          if(i) {
-            ctx.lineTo(item[0], item[1]);
-          }
-          else {
-            ctx.moveTo(item[0], item[1]);
-          }
-        });
-        ctx.fill();
-        ctx.closePath();
-      }
-      else if(renderMode === karas.mode.SVG) {
-        let lg = ctx.add({
-          tagName: 'linearGradient',
-          props: [
-            ['x1', x + width],
-            ['y1', y + height],
-            ['x2', x],
-            ['y2', y]
-          ],
-          children: [
-            {
-              tagName: 'stop',
-              props: [
-                ['stop-color', '#39F'],
-                ['offset', 0]
-              ],
-            },
-            {
-              tagName: 'stop',
-              props: [
-                ['stop-color', '#9CF'],
-                ['offset', 1]
-              ],
-            }
-          ],
-        });
-        this.addGeom('polygon', {
-          points: front,
-          fill: `url(#${lg})`,
-        });
-        lg = ctx.add({
-          tagName: 'linearGradient',
-          props: [
-            ['x1', x + width],
-            ['y1', y + height],
-            ['x2', x],
-            ['y2', y]
-          ],
-          children: [
-            {
-              tagName: 'stop',
-              props: [
-                ['stop-color', '#06F'],
-                ['offset', 0]
-              ],
-            },
-            {
-              tagName: 'stop',
-              props: [
-                ['stop-color', '#39F'],
-                ['offset', 1]
-              ],
-            }
-          ],
-        });
-        this.addGeom('polygon', {
-          points: side,
-          fill: `url(#${lg})`,
-        });
-        lg = ctx.add({
-          tagName: 'linearGradient',
-          props: [
-            ['x1', x + width],
-            ['y1', y],
-            ['x2', x],
-            ['y2', y]
-          ],
-          children: [
-            {
-              tagName: 'stop',
-              props: [
-                ['stop-color', '#6AF'],
-                ['offset', 0]
-              ],
-            },
-            {
-              tagName: 'stop',
-              props: [
-                ['stop-color', '#9CF'],
-                ['offset', 1]
-              ],
-            }
-          ],
-        });
-        this.addGeom('polygon', {
-          points: top,
-          fill: `url(#${lg})`,
-        });
-      }
-    }
-  }
-  karas.Geom.register('$cuboid', Cuboid);
-
   karas.render(
-    <canvas width="360" height="360">
-      <div style={{display:'flex',height:'100%'}}>
-        <div style={{flex:1,position:'relative'}}>
-          <$rect style={{position:'absolute',left:'50%',bottom:0,width:20,height:200,strokeWidth:0,background:'linear-gradient(#F63,#F30)',transform:'skewY(-25deg)'}}/>
-          <$rect style={{position:'absolute',left:'50%',bottom:0,width:20,height:200,strokeWidth:0,background:'linear-gradient(130deg,#FA9,#F63)',transform:'translateX(-100%)skewY(25deg)'}}/>
-          <$rect style={{position:'absolute',left:'50%',bottom:200,width:17,height:22,strokeWidth:0,background:'linear-gradient(120deg,#FCB,#F86)',transform:'translate(-49%,27%)rotate(-65deg)skewY(40deg)'}}/>
+    <webgl width="360" height="360">
+      <div style={{
+        position: 'absolute',
+        left: 100,
+        top: 40,
+        width: 300,
+        height: 300,
+        perspective: 2000,
+        perspectiveOrigin: 'center -600',
+        transformStyle: 'preserve3d',
+      }}>
+        <div style={{
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          width: 50,
+          height: 300,
+          background: 'linear-gradient(40deg,#F30,#F93)',
+          rotateY: -30,
+          transformStyle: 'preserve3d',
+        }}>
+          <div style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            width: 50,
+            height: 300,
+            background: 'linear-gradient(40deg,#39F,#9CF)',
+            rotateY: -90,
+            transformOrigin: 'right center',
+          }}/>
+          <div style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            width: 50,
+            height: 50,
+            background: 'linear-gradient(90deg,#3F9,#9FC)',
+            rotateX: -90,
+            transformOrigin: 'center top',
+          }}/>
         </div>
-        <$cuboid style={{flex:1}}/>
-        <$cuboid style={{flex:1}} percent={0.5}/>
       </div>
-    </canvas>,
+    </webgl>,
     '#example'
-  );
-  karas.render(
-    <svg width="360" height="360">
-      <div style={{display:'flex',height:'100%'}}>
-        <div style={{flex:1,position:'relative'}}>
-          <$rect style={{position:'absolute',left:'50%',bottom:0,width:20,height:200,strokeWidth:0,background:'linear-gradient(#F63,#F30)',transform:'skewY(-25deg)'}}/>
-          <$rect style={{position:'absolute',left:'50%',bottom:0,width:20,height:200,strokeWidth:0,background:'linear-gradient(130deg,#FA9,#F63)',transform:'translateX(-100%)skewY(25deg)'}}/>
-          <$rect style={{position:'absolute',left:'50%',bottom:200,width:17,height:22,strokeWidth:0,background:'linear-gradient(120deg,#FCB,#F86)',transform:'translate(-49%,27%)rotate(-65deg)skewY(40deg)'}}/>
-        </div>
-        <$cuboid style={{flex:1}}/>
-        <$cuboid style={{flex:1}} percent={0.5}/>
-      </div>
-    </svg>,
-    '#example2'
   );
 </script>
 <script src="sea.js"></script>

@@ -121,8 +121,8 @@ function multiplyRotateY(m, v) {
   m[3] = d * cos + l * -sin;
   m[8] = a * sin + i * cos;
   m[9] = b * sin + j * cos;
-  m[10] = c * sin + k * sin;
-  m[11] = d * sin + l * sin;
+  m[10] = c * sin + k * cos;
+  m[11] = d * sin + l * cos;
   return m;
 }
 

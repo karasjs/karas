@@ -599,8 +599,8 @@
     m[3] = d * cos + l * -sin;
     m[8] = a * sin + i * cos;
     m[9] = b * sin + j * cos;
-    m[10] = c * sin + k * sin;
-    m[11] = d * sin + l * sin;
+    m[10] = c * sin + k * cos;
+    m[11] = d * sin + l * cos;
     return m;
   }
 
@@ -17696,7 +17696,7 @@
       WHITE_SPACE$1 = _enums$STYLE_KEY$8.WHITE_SPACE,
       WRITING_MODE$2 = _enums$STYLE_KEY$8.WRITING_MODE,
       TRANSFORM_STYLE$1 = _enums$STYLE_KEY$8.TRANSFORM_STYLE,
-      BACKFACE_VISIBILITY = _enums$STYLE_KEY$8.BACKFACE_VISIBILITY;
+      BACKFACE_VISIBILITY$1 = _enums$STYLE_KEY$8.BACKFACE_VISIBILITY;
   var AUTO$4 = o$4.AUTO,
       PX$5 = o$4.PX,
       PERCENT$4 = o$4.PERCENT,
@@ -19059,7 +19059,7 @@
         } // 这些直接赋值的不需要再算缓存
 
 
-        [OPACITY$3, Z_INDEX$2, BORDER_TOP_STYLE, BORDER_RIGHT_STYLE, BORDER_BOTTOM_STYLE, BORDER_LEFT_STYLE, BACKGROUND_REPEAT, OVERFLOW$2, MIX_BLEND_MODE$3, TEXT_OVERFLOW, BACKGROUND_CLIP, TRANSFORM_STYLE$1, BACKFACE_VISIBILITY].forEach(function (k) {
+        [OPACITY$3, Z_INDEX$2, BORDER_TOP_STYLE, BORDER_RIGHT_STYLE, BORDER_BOTTOM_STYLE, BORDER_LEFT_STYLE, BACKGROUND_REPEAT, OVERFLOW$2, MIX_BLEND_MODE$3, TEXT_OVERFLOW, BACKGROUND_CLIP, TRANSFORM_STYLE$1, BACKFACE_VISIBILITY$1].forEach(function (k) {
           __computedStyle[k] = __currentStyle[k];
         });
 
@@ -33333,8 +33333,8 @@
       TRANSFORM_ORIGIN = _enums$STYLE_KEY$1.TRANSFORM_ORIGIN,
       PERSPECTIVE = _enums$STYLE_KEY$1.PERSPECTIVE,
       PERSPECTIVE_ORIGIN = _enums$STYLE_KEY$1.PERSPECTIVE_ORIGIN,
-      TRANSFORM_STYLE = _enums$STYLE_KEY$1.TRANSFORM_STYLE;
-      _enums$STYLE_KEY$1.BACKFACE_VISIBILITY;
+      TRANSFORM_STYLE = _enums$STYLE_KEY$1.TRANSFORM_STYLE,
+      BACKFACE_VISIBILITY = _enums$STYLE_KEY$1.BACKFACE_VISIBILITY;
   var NONE$1 = o$1.NONE,
       TRANSFORM_ALL$1 = o$1.TRANSFORM_ALL,
       OP$1 = o$1.OPACITY,
@@ -33468,7 +33468,22 @@
         m = multiply(pm, m);
       }
 
-      assignMatrix(_node.__matrixEvent, m);
+      assignMatrix(_node.__matrixEvent, m); // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
+
+      if (__computedStyle2[BACKFACE_VISIBILITY] === 'hidden') {
+        var x = m[5] < 0 && m[10] < 0,
+            y = m[0] < 0 && m[10] < 0;
+
+        if (x || y) {
+          i += _total || 0;
+
+          if (hasMask) {
+            i += countMaskNum(__structs, i + 1, hasMask);
+          }
+
+          continue;
+        }
+      }
 
       var _bbox = void 0; // 子元素有cacheTotal优先使用
 
@@ -34355,7 +34370,8 @@
         var visibility = __computedStyle[VISIBILITY$1],
             transform = __computedStyle[TRANSFORM$1],
             tfo = __computedStyle[TRANSFORM_ORIGIN],
-            mixBlendMode = __computedStyle[MIX_BLEND_MODE$1];
+            mixBlendMode = __computedStyle[MIX_BLEND_MODE$1],
+            backfaceVisibility = __computedStyle[BACKFACE_VISIBILITY];
 
         if (visibility === 'hidden' && !_total6) {
           if (hasMask) {
@@ -34387,7 +34403,23 @@
             m = multiply(pm, m);
           }
 
-          assignMatrix(_node4.__matrixEvent, m);
+          assignMatrix(_node4.__matrixEvent, m); // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
+
+          if (backfaceVisibility === 'hidden') {
+            var _m = _node4.__matrix,
+                x = _m[5] < 0 && _m[10] < 0,
+                y = _m[0] < 0 && _m[10] < 0;
+
+            if (x || y) {
+              i += _total6 || 0;
+
+              if (hasMask) {
+                i += countMaskNum(__structs, i + 1, hasMask);
+              }
+
+              continue;
+            }
+          }
         } // 有oit平面拆分的优先考虑，其一定没有mbm；否则走普通渲染逻辑
 
 
@@ -34418,7 +34450,8 @@
 
               var _visibility = _computedStyle2[VISIBILITY$1],
                   _transform = _computedStyle2[TRANSFORM$1],
-                  _tfo = _computedStyle2[TRANSFORM_ORIGIN];
+                  _tfo = _computedStyle2[TRANSFORM_ORIGIN],
+                  _backfaceVisibility = _computedStyle2[BACKFACE_VISIBILITY];
 
               if (_visibility === 'hidden' && !_total7) {
                 if (_hasMask4) {
@@ -34430,20 +34463,37 @@
 
               var _p3 = _node5.__domParent;
 
-              var _m = void 0;
+              var _m2 = void 0;
 
               if (!isE(_transform)) {
-                _m = transform$1.calMatrixByOrigin(_transform, _tfo[0] + _node5.__x1 + dx, _tfo[1] + _node5.__y1 + dy);
+                _m2 = transform$1.calMatrixByOrigin(_transform, _tfo[0] + _node5.__x1 + dx, _tfo[1] + _node5.__y1 + dy);
               }
 
               if (_p3 !== top) {
-                _m = multiply(_p3.__matrixEvent, _m);
+                _m2 = multiply(_p3.__matrixEvent, _m2);
               } // 有透视还得预乘透视
               else if (pm) {
-                _m = multiply(pm, _m);
+                _m2 = multiply(pm, _m2);
               }
 
-              assignMatrix(_node5.__matrixEvent, _m);
+              assignMatrix(_node5.__matrixEvent, _m2); // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
+
+              if (_backfaceVisibility === 'hidden') {
+                var _m3 = _node5.__matrix,
+                    _x = _m3[5] < 0 && _m3[10] < 0,
+                    _y = _m3[0] < 0 && _m3[10] < 0;
+
+                if (_x || _y) {
+                  i += _total7 || 0;
+
+                  if (_hasMask4) {
+                    i += countMaskNum(__structs, i + 1, _hasMask4);
+                  }
+
+                  continue;
+                }
+              }
+
               var _cacheTotal2 = _node5.__cacheTotal,
                   __cacheFilter = _node5.__cacheFilter,
                   __cacheMask = _node5.__cacheMask;
@@ -34806,7 +34856,8 @@
 
             var _visibility2 = _computedStyle3[VISIBILITY$1],
                 transform = _computedStyle3[TRANSFORM$1],
-                tfo = _computedStyle3[TRANSFORM_ORIGIN];
+                tfo = _computedStyle3[TRANSFORM_ORIGIN],
+                backfaceVisibility = _computedStyle3[BACKFACE_VISIBILITY];
 
             if (_visibility2 === 'hidden' && !_total10) {
               if (_hasMask5) {
@@ -34838,34 +34889,50 @@
               m = multiply(_p5.__matrixEvent, m);
             }
 
-            assignMatrix(_node8.__matrixEvent, m);
+            assignMatrix(_node8.__matrixEvent, m); // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
+
+            if (backfaceVisibility === 'hidden') {
+              var _m4 = _node8.__matrix,
+                  _x2 = _m4[5] < 0 && _m4[10] < 0,
+                  _y2 = _m4[0] < 0 && _m4[10] < 0;
+
+              if (_x2 || _y2) {
+                _i2 += _total10 || 0;
+
+                if (_hasMask5) {
+                  _i2 += countMaskNum(__structs, _i2 + 1, _hasMask5);
+                }
+
+                continue;
+              }
+            }
 
             var _target6 = getCache([_cacheMask4, _cacheFilter4, _cacheTotal6, _cache3]);
 
             if (_target6) {
-              var _x = _target6.x1,
-                  _y = _target6.y1,
+              var _x3 = _target6.x1,
+                  _y3 = _target6.y1,
                   _width2 = _target6.__width,
                   _height2 = _target6.__height; // 坐标计算还是以局部根为原点
 
-              var _xa = _x - x0,
-                  _ya = _y - y0;
+              var _xa = _x3 - x0,
+                  _ya = _y3 - y0;
 
-              var _xb = _x + _width2 - x0,
-                  _yb = _y + _height2 - y0;
+              var _xb = _x3 + _width2 - x0,
+                  _yb = _y3 + _height2 - y0;
 
               var _calRectPoint2 = calRectPoint(_xa, _ya, _xb, _yb, m),
-                  _x2 = _calRectPoint2.x1,
-                  _y2 = _calRectPoint2.y1,
+                  _x4 = _calRectPoint2.x1,
+                  _y4 = _calRectPoint2.y1,
                   _z = _calRectPoint2.z1,
-                  _x3 = _calRectPoint2.x2,
-                  _y3 = _calRectPoint2.y2,
+                  _x5 = _calRectPoint2.x2,
+                  _y5 = _calRectPoint2.y2,
                   _z2 = _calRectPoint2.z2,
-                  _x4 = _calRectPoint2.x3,
-                  _y4 = _calRectPoint2.y3,
+                  _x6 = _calRectPoint2.x3,
+                  _y6 = _calRectPoint2.y3,
                   _z3 = _calRectPoint2.z3,
-                  _x5 = _calRectPoint2.x4,
-                  _y5 = _calRectPoint2.y4,
+                  _x7 = _calRectPoint2.x4,
+                  _y7 = _calRectPoint2.y4,
                   _z4 = _calRectPoint2.z4;
 
               var _o2 = {
@@ -34873,20 +34940,20 @@
                 node: _node8,
                 target: _target6,
                 points: [{
-                  x: _x2,
-                  y: _y2,
-                  z: _z
-                }, {
-                  x: _x3,
-                  y: _y3,
-                  z: _z2
-                }, {
                   x: _x4,
                   y: _y4,
-                  z: _z3
+                  z: _z
                 }, {
                   x: _x5,
                   y: _y5,
+                  z: _z2
+                }, {
+                  x: _x6,
+                  y: _y6,
+                  z: _z3
+                }, {
+                  x: _x7,
+                  y: _y7,
                   z: _z4
                 }]
               };
@@ -35288,7 +35355,8 @@
           var opacity = computedStyle[OPACITY$1],
               visibility = computedStyle[VISIBILITY$1],
               _transform2 = computedStyle[TRANSFORM$1],
-              _tfo2 = computedStyle[TRANSFORM_ORIGIN];
+              _tfo2 = computedStyle[TRANSFORM_ORIGIN],
+              backfaceVisibility = computedStyle[BACKFACE_VISIBILITY];
 
           if (visibility === 'hidden' && !_total11) {
             if (hasMask) {
@@ -35342,7 +35410,24 @@
 
             m = matrix.multiply(inverse, m);
             lastMatrix = m;
-            lastOpacity = parentOpacity * opacity;
+            lastOpacity = parentOpacity * opacity; // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
+
+            if (backfaceVisibility === 'hidden') {
+              var _m5 = _node9.__matrix,
+                  x = _m5[5] < 0 && _m5[10] < 0,
+                  y = _m5[0] < 0 && _m5[10] < 0;
+
+              if (x || y) {
+                i += _total11 || 0;
+
+                if (hasMask) {
+                  i += countMaskNum(__structs, i + 1, hasMask);
+                }
+
+                continue;
+              }
+            }
+
             var _p7 = target.__page;
 
             if (lastPage && lastPage !== _p7) {
@@ -36306,16 +36391,8 @@
 
         var opacity = _computedStyle5[OPACITY$1],
             _mixBlendMode2 = _computedStyle5[MIX_BLEND_MODE$1],
-            visibility = _computedStyle5[VISIBILITY$1];
-
-        if (visibility === 'hidden' && !_total13) {
-          if (_hasMask7) {
-            _i10 += countMaskNum(__structs, _i10 + 1, _hasMask7);
-          }
-
-          continue;
-        }
-
+            visibility = _computedStyle5[VISIBILITY$1],
+            backfaceVisibility = _computedStyle5[BACKFACE_VISIBILITY];
         var _cache7 = _node12.__cache,
             _cacheTotal8 = _node12.__cacheTotal,
             _cacheFilter5 = _node12.__cacheFilter,
@@ -36349,7 +36426,33 @@
         }
 
         _node12.__opacity = opacity;
-        assignMatrix(_node12.__matrixEvent, m); // total和自身cache的尝试，visibility不可见时没有cache
+        assignMatrix(_node12.__matrixEvent, m);
+
+        if (visibility === 'hidden' && !_total13) {
+          if (_hasMask7) {
+            _i10 += countMaskNum(__structs, _i10 + 1, _hasMask7);
+          }
+
+          continue;
+        } // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
+
+
+        if (backfaceVisibility === 'hidden') {
+          var _m6 = _node12.__matrix,
+              _x8 = _m6[5] < 0 && _m6[10] < 0,
+              _y8 = _m6[0] < 0 && _m6[10] < 0;
+
+          if (_x8 || _y8) {
+            _i10 += _total13 || 0;
+
+            if (_hasMask7) {
+              _i10 += countMaskNum(__structs, _i10 + 1, _hasMask7);
+            }
+
+            continue;
+          }
+        } // total和自身cache的尝试，visibility不可见时没有cache
+
 
         var _target7 = getCache([_cacheMask6, _cacheFilter5, _cacheTotal8, _cache7]);
 

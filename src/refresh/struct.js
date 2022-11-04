@@ -170,6 +170,17 @@ function genBboxTotal(node, __structs, index, total, lv, isPpt) {
       m = multiply(pm, m);
     }
     assignMatrix(node.__matrixEvent, m);
+    // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
+    if(__computedStyle2[BACKFACE_VISIBILITY] === 'hidden') {
+      let x = m[5] < 0 && m[10] < 0, y = m[0] < 0 && m[10] < 0;
+      if(x || y) {
+        i += total || 0;
+        if(hasMask) {
+          i += countMaskNum(__structs, i + 1, hasMask);
+        }
+        continue;
+      }
+    }
     let bbox;
     // 子元素有cacheTotal优先使用
     let target = getCache([__cacheMask2, __cacheFilter2, __cacheTotal2, __cache2]);
@@ -874,6 +885,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
         [TRANSFORM]: transform,
         [TRANSFORM_ORIGIN]: tfo,
         [MIX_BLEND_MODE]: mixBlendMode,
+        [BACKFACE_VISIBILITY]: backfaceVisibility,
       } = __computedStyle;
       if(visibility === 'hidden' && !total) {
         if(hasMask) {
@@ -903,6 +915,17 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
           m = multiply(pm, m);
         }
         assignMatrix(node.__matrixEvent, m);
+        // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
+        if(backfaceVisibility === 'hidden') {
+          let m = node.__matrix, x = m[5] < 0 && m[10] < 0, y = m[0] < 0 && m[10] < 0;
+          if(x || y) {
+            i += total || 0;
+            if(hasMask) {
+              i += countMaskNum(__structs, i + 1, hasMask);
+            }
+            continue;
+          }
+        }
       }
       // 有oit平面拆分的优先考虑，其一定没有mbm；否则走普通渲染逻辑
       let oit = oitHash && oitHash[i];
@@ -929,6 +952,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
               [VISIBILITY]: visibility,
               [TRANSFORM]: transform,
               [TRANSFORM_ORIGIN]: tfo,
+              [BACKFACE_VISIBILITY]: backfaceVisibility,
             } = __computedStyle;
             if(visibility === 'hidden' && !total) {
               if(hasMask) {
@@ -949,6 +973,17 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
               m = multiply(pm, m);
             }
             assignMatrix(node.__matrixEvent, m);
+            // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
+            if(backfaceVisibility === 'hidden') {
+              let m = node.__matrix, x = m[5] < 0 && m[10] < 0, y = m[0] < 0 && m[10] < 0;
+              if(x || y) {
+                i += total || 0;
+                if(hasMask) {
+                  i += countMaskNum(__structs, i + 1, hasMask);
+                }
+                continue;
+              }
+            }
             let {
               __cacheTotal,
               __cacheFilter,
@@ -1228,6 +1263,7 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
             [VISIBILITY]: visibility,
             [TRANSFORM]: transform,
             [TRANSFORM_ORIGIN]: tfo,
+            [BACKFACE_VISIBILITY]: backfaceVisibility,
           } = __computedStyle;
           if(visibility === 'hidden' && !total) {
             if(hasMask) {
@@ -1256,6 +1292,17 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
             m = multiply(p.__matrixEvent, m);
           }
           assignMatrix(node.__matrixEvent, m);
+          // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
+          if(backfaceVisibility === 'hidden') {
+            let m = node.__matrix, x = m[5] < 0 && m[10] < 0, y = m[0] < 0 && m[10] < 0;
+            if(x || y) {
+              i += total || 0;
+              if(hasMask) {
+                i += countMaskNum(__structs, i + 1, hasMask);
+              }
+              continue;
+            }
+          }
           let target = getCache([__cacheMask, __cacheFilter, __cacheTotal, __cache]);
           if(target) {
             let { x1: x, y1: y, __width: width, __height: height } = target;
@@ -1634,6 +1681,7 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
           [VISIBILITY]: visibility,
           [TRANSFORM]: transform,
           [TRANSFORM_ORIGIN]: tfo,
+          [BACKFACE_VISIBILITY]: backfaceVisibility,
         } = computedStyle;
         if(visibility === 'hidden' && !total) {
           if(hasMask) {
@@ -1684,6 +1732,17 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
           m = mx.multiply(inverse, m);
           lastMatrix = m;
           lastOpacity = parentOpacity * opacity;
+          // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
+          if(backfaceVisibility === 'hidden') {
+            let m = node.__matrix, x = m[5] < 0 && m[10] < 0, y = m[0] < 0 && m[10] < 0;
+            if(x || y) {
+              i += total || 0;
+              if(hasMask) {
+                i += countMaskNum(__structs, i + 1, hasMask);
+              }
+              continue;
+            }
+          }
           let p = target.__page;
           if(lastPage && lastPage !== p) {
             drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
@@ -2535,13 +2594,8 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         [OPACITY]: opacity,
         [MIX_BLEND_MODE]: mixBlendMode,
         [VISIBILITY]: visibility,
+        [BACKFACE_VISIBILITY]: backfaceVisibility,
       } = __computedStyle;
-      if(visibility === 'hidden' && !total) {
-        if(hasMask) {
-          i += countMaskNum(__structs, i + 1, hasMask);
-        }
-        continue;
-      }
       let {
         __cache,
         __cacheTotal,
@@ -2570,6 +2624,23 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       }
       node.__opacity = opacity;
       assignMatrix(node.__matrixEvent, m);
+      if(visibility === 'hidden' && !total) {
+        if(hasMask) {
+          i += countMaskNum(__structs, i + 1, hasMask);
+        }
+        continue;
+      }
+      // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
+      if(backfaceVisibility === 'hidden') {
+        let m = node.__matrix, x = m[5] < 0 && m[10] < 0, y = m[0] < 0 && m[10] < 0;
+        if(x || y) {
+          i += total || 0;
+          if(hasMask) {
+            i += countMaskNum(__structs, i + 1, hasMask);
+          }
+          continue;
+        }
+      }
       // total和自身cache的尝试，visibility不可见时没有cache
       let target = getCache([__cacheMask, __cacheFilter, __cacheTotal, __cache]);
       if(target) {

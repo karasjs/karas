@@ -126,6 +126,8 @@ const {
     LETTER_SPACING,
     WHITE_SPACE,
     WRITING_MODE,
+    TRANSFORM_STYLE,
+    BACKFACE_VISIBILITY,
   },
 } = enums;
 const { AUTO, PX, PERCENT, INHERIT, NUMBER, RGBA, STRING, REM, VW, VH, VMAX, VMIN, DEG, GRADIENT } = unit;
@@ -1170,10 +1172,22 @@ class Xom extends Node {
           = __cacheStyle[SKEW_Y]
           = true;
         matrixCache = null;
-        let matrix;
+        this.__selfPerspective = 0;
+        this.__selfPerspectiveMatrix = null;
+        let matrix, ct = __currentStyle[TRANSFORM];
         // transform相对于自身
-        if(__currentStyle[TRANSFORM] && __currentStyle[TRANSFORM].length) {
-          matrix = tf.calMatrix(__currentStyle[TRANSFORM], __offsetWidth, __offsetHeight, this.__root);
+        if(ct && ct.length) {
+          let first = ct[0];
+          // 特殊处理，抽取出来transform的ppt，视为tfo原点的透视
+          if(first.k === PERSPECTIVE) {
+            let ppt = this.__selfPerspective = this.__calSize(first.v, this.__clientWidth, true);
+            let tfo = __computedStyle[TRANSFORM_ORIGIN];
+            this.__selfPerspectiveMatrix = tf.calPerspectiveMatrix(ppt, tfo[0] + __x1, tfo[1] + __y1);
+            matrix = tf.calMatrix(ct.slice(1), __offsetWidth, __offsetHeight, this.__root);
+          }
+          else {
+            matrix = tf.calMatrix(ct, __offsetWidth, __offsetHeight, this.__root);
+          }
         }
         // 没有transform则看是否有扩展的css独立变换属性
         else {
@@ -1390,6 +1404,8 @@ class Xom extends Node {
       MIX_BLEND_MODE,
       TEXT_OVERFLOW,
       BACKGROUND_CLIP,
+      TRANSFORM_STYLE,
+      BACKFACE_VISIBILITY,
     ].forEach(k => {
       __computedStyle[k] = __currentStyle[k];
     });
@@ -1701,6 +1717,18 @@ class Xom extends Node {
       __computedStyle[POINTER_EVENTS] = __currentStyle[POINTER_EVENTS].v;
     }
     __cacheStyle[POINTER_EVENTS] = __computedStyle[POINTER_EVENTS];
+    // transformStyle需要特殊判断，在一些情况下强制flat，取消规范的opacity<1限制
+    if(__computedStyle[TRANSFORM_STYLE] === 'preserve3d') {
+      if(__computedStyle[OVERFLOW] === 'hidden'
+        || __computedStyle[FILTER].length
+        || this.__cacheAsBitmap) {
+        __computedStyle[TRANSFORM_STYLE] = 'flat';
+      }
+    }
+    // 影响父级flat的
+    if((__computedStyle[MIX_BLEND_MODE] !== 'normal' || this.__mask) && parentComputedStyle) {
+      parentComputedStyle[TRANSFORM_STYLE] = 'flat';
+    }
     this.__bx1 = bx1;
     this.__bx2 = bx2;
     this.__by1 = by1;
@@ -1716,7 +1744,7 @@ class Xom extends Node {
       __cacheStyle[PERSPECTIVE] = true;
       rebuild = true;
       let v = __currentStyle[PERSPECTIVE];
-      __computedStyle[PERSPECTIVE] = this.__calSize(v, this.clientWidth, true);
+      __computedStyle[PERSPECTIVE] = this.__calSize(v, this.__clientWidth, true);
     }
     if(isNil(__cacheStyle[PERSPECTIVE_ORIGIN])) {
       __cacheStyle[PERSPECTIVE_ORIGIN] = true;
@@ -2474,7 +2502,10 @@ class Xom extends Node {
   refresh(lv, cb) {
     let root = this.__root;
     if(isFunction(lv) || !lv) {
-      lv = REPAINT;
+      lv = CACHE;
+    }
+    if(lv) {
+      this.clearCache(lv < REPAINT);
     }
     if(root && !this.__isDestroyed) {
       root.__addUpdate(this, null, lv, null, null, null, cb);
@@ -2701,13 +2732,14 @@ class Xom extends Node {
   }
 
   // canvas清空自身cache，cacheTotal在Root的自底向上逻辑做，svg仅有cacheTotal
-  clearCache(lookUp) {
+  clearCache(onlyTotal) {
     let __cacheTotal = this.__cacheTotal;
     let __cacheFilter = this.__cacheFilter;
     let __cacheMask = this.__cacheMask;
     let __cache = this.__cache;
-    if(__cache) {
+    if(__cache && !onlyTotal) {
       __cache.release();
+      this.__refreshLevel |= REPAINT;
     }
     if(__cacheTotal) {
       __cacheTotal.release();
@@ -2719,24 +2751,26 @@ class Xom extends Node {
       __cacheMask.release();
     }
     this.__refreshLevel |= CACHE;
-    if(lookUp) {
-      let p = this.__domParent;
-      while(p) {
-        let __cacheTotal = p.__cacheTotal;
-        let __cacheFilter = p.__cacheFilter;
-        let __cacheMask = p.__cacheMask;
-        p.__refreshLevel |= CACHE;
-        if(__cacheTotal) {
-          __cacheTotal.release();
-        }
-        if(__cacheFilter) {
-          __cacheFilter.release();
-        }
-        if(__cacheMask) {
-          __cacheMask.release();
-        }
-        p = p.__domParent;
+    this.clearTopCache();
+  }
+
+  clearTopCache() {
+    let p = this.__domParent;
+    while(p) {
+      let __cacheTotal = p.__cacheTotal;
+      let __cacheFilter = p.__cacheFilter;
+      let __cacheMask = p.__cacheMask;
+      p.__refreshLevel |= CACHE;
+      if(__cacheTotal) {
+        __cacheTotal.release();
       }
+      if(__cacheFilter) {
+        __cacheFilter.release();
+      }
+      if(__cacheMask) {
+        __cacheMask.release();
+      }
+      p = p.__domParent;
     }
   }
 
@@ -3200,6 +3234,15 @@ class Xom extends Node {
       this.__mask = v;
       let root = this.__root;
       if(root && !this.__isDestroyed) {
+        let p = this.__domParent;
+        if(p) {
+          if(v) {
+            p.__computedStyle[TRANSFORM_STYLE] = 'flat';
+          }
+          else {
+            p.__computedStyle[TRANSFORM_STYLE] = p.__currentStyle[TRANSFORM_STYLE];
+          }
+        }
         root.__addUpdate(this, null, MASK, null, null, null, null);
       }
     }
@@ -3215,6 +3258,15 @@ class Xom extends Node {
       this.__clip = v;
       let root = this.__root;
       if(root && !this.__isDestroyed) {
+        let p = this.__domParent;
+        if(p) {
+          if(v) {
+            p.__computedStyle[TRANSFORM_STYLE] = 'flat';
+          }
+          else {
+            p.__computedStyle[TRANSFORM_STYLE] = p.__currentStyle[TRANSFORM_STYLE];
+          }
+        }
         root.__addUpdate(this, null, MASK, null, null, null, null);
       }
     }
@@ -3230,6 +3282,12 @@ class Xom extends Node {
       this.__cacheAsBitmap = v;
       let root = this.__root;
       if(root && !this.__isDestroyed) {
+        if(v) {
+          this.__computedStyle[TRANSFORM_STYLE] = 'flat';
+        }
+        else {
+          this.__computedStyle[TRANSFORM_STYLE] = this.__currentStyle[TRANSFORM_STYLE];
+        }
         root.__addUpdate(this, null, REPAINT, null, null, null, null);
       }
     }

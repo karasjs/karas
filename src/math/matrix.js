@@ -96,7 +96,7 @@ function multiplyRotateX(m, v) {
   }
   let sin = Math.sin(v);
   let cos = Math.cos(v);
-  let e = m[4], f = m[5], g = m[6], h = m[7], i = m[8], j = m[9], k = m[10], l = m[11];
+  let e = m[4], f = m[5], g = m[6], h = m[7], i = m[8], k = m[10], l = m[11];
   m[4] = e * cos + i * sin;
   m[5] = f * cos + g * sin;
   m[6] = g * cos + k * sin;
@@ -121,8 +121,8 @@ function multiplyRotateY(m, v) {
   m[3] = d * cos + l * -sin;
   m[8] = a * sin + i * cos;
   m[9] = b * sin + j * cos;
-  m[10] = c * sin + k * sin;
-  m[11] = d * sin + l * sin;
+  m[10] = c * sin + k * cos;
+  m[11] = d * sin + l * cos;
   return m;
 }
 
@@ -225,18 +225,18 @@ function calPoint(point, m) {
     let a2 = m[4], b2 = m[5], c2 = m[6], d2 = m[7];
     let a3 = m[8], b3 = m[9], c3 = m[10], d3 = m[11];
     let a4 = m[12], b4 = m[13], c4 = m[14], d4 = m[15];
-    if(d1 || d2 || d3) {
-      w = x * d1 + y * d2 + z * d3 + d4 * w;
-    }
-    else if(d4 !== 1) {
-      w *= d4;
-    }
     let o = {
-      x: ((a1 === 1) ? x : (x * a1)) + (a2 ? (y * a2) : 0) + a4,
-      y: ((b1 === 1) ? x : (x * b1)) + (b2 ? (y * b2) : 0) + b4,
+      x: ((a1 === 1) ? x : (x * a1)) + (a2 ? (y * a2) : 0) + ((w === 1) ? a4 : a4 * w),
+      y: ((b1 === 1) ? x : (x * b1)) + (b2 ? (y * b2) : 0) + ((w === 1) ? b4 : b4 * w),
       z: 0,
       w,
     };
+    if(d1 || d2 || d3) {
+      o.w = x * d1 + y * d2 + z * d3 + d4 * w;
+    }
+    else if(d4 !== 1) {
+      o.w *= d4;
+    }
     if(z) {
       o.x += z * a3;
       o.y += z * b3;
@@ -376,6 +376,31 @@ function point2d(point) {
   return point;
 }
 
+function calRectPoint(xa, ya, xb, yb, matrix) {
+  let { x: x1, y: y1, z: z1, w: w1 } = calPoint({ x: xa, y: ya, z: 0, w: 1 }, matrix);
+  let { x: x3, y: y3, z: z3, w: w3 } = calPoint({ x: xb, y: yb, z: 0, w: 1 }, matrix);
+  let x2, y2, z2, w2, x4, y4, z4, w4;
+  // 无旋转的时候可以少算2个点
+  if(w1 === 1 && w3 === 1
+    && (!matrix || !matrix.length
+      || !matrix[1] && !matrix[2] && !matrix[4] && !matrix[6] && !matrix[7] && !matrix[8])) {
+    x2 = x3;
+    y2 = y1;
+    z2 = z3;
+    x4 = x1;
+    y4 = y3;
+    z2 = z4 = z1;
+    w2 = w4 = 1;
+  }
+  else {
+    let t = calPoint({ x: xb, y: ya, z: 0, w: 1 }, matrix);
+    x2 = t.x; y2 = t.y; z2 = t.z; w2 = t.w;
+    t = calPoint({ x: xa, y: yb, z: 0, w: 1 }, matrix);
+    x4 = t.x; y4 = t.y; z4 = t.z; w4 = t.w;
+  }
+  return { x1, y1, z1, w1, x2, y2, z2, w2, x3, y3, z3, w3, x4, y4, z4, w4 };
+}
+
 export default {
   identity,
   multiply,
@@ -394,6 +419,7 @@ export default {
   multiplyScaleZ,
   multiplyPerspective,
   calPoint,
+  calRectPoint,
   point2d,
   inverse,
   isE,

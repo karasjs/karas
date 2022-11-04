@@ -1,6 +1,8 @@
 import equation from './equation';
+import vector from './vector';
 
 const getRoots = equation.getRoots;
+const { unitize3, crossProduct3, dotProduct3, isParallel3, length3 } = vector;
 
 // 两个三次方程组的数值解.9阶的多项式方程,可以最多有9个实根(两个S形曲线的情况)
 // 两个三次方程组无法解析表示，只能数值计算
@@ -766,96 +768,162 @@ function intersectBezier3Line(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, 
   return result;
 }
 
-// bezier 2d 和椭圆
-function intersectBezier2Ellipse(ax1, ay1, ax2, ay2, ax3, ay3, cx, cy, rx, ry) {
-  let c2, c1, c0;
-  let result = [];
-  c2 = {
-    x: ax1 - 2 * ax2 + ax3,
-    y: ay1 - 2 * ay2 + ay3,
-  };
-  c1 = {
-    x: -2 * ax1 + 2 * ax2,
-    y: -2 * ay1 + 2 * ay2,
-  };
-  c0 = {x: ax1, y: ay1};
-  let rxrx = rx * rx;
-  let ryry = ry * ry;
-
-  let coefs = [ryry * c2.x * c2.x + rxrx * c2.y * c2.y,
-    2 * (ryry * c2.x * c1.x + rxrx * c2.y * c1.y),
-    ryry * (2 * c2.x * c0.x + c1.x * c1.x) + rxrx * (2 * c2.y * c0.y + c1.y * c1.y) -
-    2 * (ryry * cx * c2.x + rxrx * cy * c2.y),
-    2 * (ryry * c1.x * (c0.x - cx) + rxrx * c1.y * (c0.y - cy)),
-    ryry * (c0.x * c0.x + cx * cx) + rxrx * (c0.y * c0.y + cy * cy) -
-    2 * (ryry * cx * c0.x + rxrx * cy * c0.y) - rxrx * ryry].reverse();
-
-  let roots = getRoots(coefs);
-
-  for(let i = 0; i < roots.length; i++) {
-    let t = roots[i];
-
-    if(0 <= t && t <= 1) {
-      let x = c2.x * t * t + c1.x * t + c0.x;
-      let y = c2.y * t * t + c1.y * t + c0.y;
-      result.push({x, y});
-    }
+/**
+ * 3d直线交点，允许误差，传入4个顶点坐标
+ * limitToFiniteSegment可传0、1、2、3，默认0是不考虑点是否在传入的顶点组成的线段上
+ * 1为限制在p1/p2线段，2为限制在p3/p4线段，3为都限制
+ */
+function intersectLineLine3(p1, p2, p3, p4, limitToFiniteSegment = 0, tolerance = 1e-9) {
+  let p13 = subtractPoint(p1, p3);
+  let p43 = subtractPoint(p4, p3);
+  let p21 = subtractPoint(p2, p1);
+  let d1343 = p13.x * p43.x + p13.y * p43.y + p13.z * p43.z;
+  let d4321 = p43.x * p21.x + p43.y * p21.y + p43.z * p21.z;
+  let d1321 = p13.x * p21.x + p13.y * p21.y + p13.z * p21.z;
+  let d4343 = p43.x * p43.x + p43.y * p43.y + p43.z * p43.z;
+  let d2121 = p21.x * p21.x + p21.y * p21.y + p21.z * p21.z;
+  let denom = d2121 * d4343 - d4321 * d4321;
+  if(Math.abs(denom) < tolerance) {
+    return;
   }
-  return result;
-}
-
-// bezier 2d 和圆
-function intersectBezier2Circle(ax1, ay1, ax2, ay2, ax3, ay3, cx, cy, r) {
-  return intersectBezier2Ellipse(ax1, ay1, ax2, ay2, ax3, ay3, cx, cy, r, r);
-}
-
-function intersectBezier3Ellipse(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, cx, cy, rx, ry) {
-  let c3, c2, c1, c0;
-  let result = [];
-  c3 = {
-    x: -ax1 + 3 * ax2 - 3 * ax3 + ax4,
-    y: -ay1 + 3 * ay2 - 3 * ay3 + ay4,
+  let numer = d1343 * d4321 - d1321 * d4343;
+  let mua = numer / denom;
+  let mub = (d1343 + d4321 * mua) / d4343;
+  let pa = {
+    x: p1.x + mua * p21.x,
+    y: p1.y + mua * p21.y,
+    z: p1.z + mua * p21.z,
   };
-  c2 = {
-    x: 3 * ax1 - 6 * ax2 + 3 * ax3,
-    y: 3 * ay1 - 6 * ay2 + 3 * ay3,
+  let pb = {
+    x: p3.x + mub * p43.x,
+    y: p3.y + mub * p43.y,
+    z: p3.z + mub * p43.z,
   };
-  c1 = {
-    x: -3 * ax1 + 3 * ax2,
-    y: -3 * ay1 + 3 * ay2,
-  };
-  c0 = {x: ax1, y: ay1};
-  let rxrx = rx * rx;
-  let ryry = ry * ry;
-
-  let coefs = [c3.x * c3.x * ryry + c3.y * c3.y * rxrx,
-    2 * (c3.x * c2.x * ryry + c3.y * c2.y * rxrx),
-    2 * (c3.x * c1.x * ryry + c3.y * c1.y * rxrx) + c2.x * c2.x * ryry + c2.y * c2.y * rxrx,
-    2 * c3.x * ryry * (c0.x - cx) + 2 * c3.y * rxrx * (c0.y - cy) +
-    2 * (c2.x * c1.x * ryry + c2.y * c1.y * rxrx),
-    2 * c2.x * ryry * (c0.x - cx) + 2 * c2.y * rxrx * (c0.y - cy) +
-    c1.x * c1.x * ryry + c1.y * c1.y * rxrx,
-    2 * c1.x * ryry * (c0.x - cx) + 2 * c1.y * rxrx * (c0.y - cy),
-    c0.x * c0.x * ryry - 2 * c0.y * cy * rxrx - 2 * c0.x * cx * ryry +
-    c0.y * c0.y * rxrx + cx * cx * ryry + cy * cy * rxrx - rxrx * ryry
-  ].reverse();
-
-  let roots = getRootsInInterval(0, 1, coefs);
-
-  for(let i = 0; i < roots.length; i++) {
-    let t = roots[i];
-
-    if(0 <= t && t <= 1) {
-      let x = c3.x * t * t * t + c2.x * t * t + c1.x * t + c0.x;
-      let y = c3.y * t * t * t + c2.y * t * t + c1.y * t + c0.y;
-      result.push({x, y});
-    }
+  let distance = distanceTo(pa, pb);
+  if(distance > tolerance) {
+    return;
   }
-  return result;
+  let intersectPt = divide(addPoint(pa, pb), 2);
+  if(!limitToFiniteSegment) {
+    return intersectPt;
+  }
+  let paramA = closestParam(intersectPt, p1, p2);
+  let paramB = closestParam(intersectPt, p3, p4);
+  intersectPt.pa = paramA;
+  intersectPt.pb = paramB;
+  if(limitToFiniteSegment === 1 && paramA >= 0 && paramA <= 1) {
+    return intersectPt;
+  }
+  if(limitToFiniteSegment === 2 && paramB >= 0 && paramB <= 1) {
+    return intersectPt;
+  }
+  if(limitToFiniteSegment === 3 && paramA >= 0 && paramA <= 1 && paramB >= 0 && paramB <= 1) {
+    return intersectPt;
+  }
 }
 
-function intersectBezier3Circle(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, cx, cy, r) {
-  return intersectBezier3Ellipse(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, cx, cy, r, r);
+function subtractPoint(p1, p2) {
+  return {
+    x: p1.x - p2.x,
+    y: p1.y - p2.y,
+    z: p1.z - p2.z,
+  };
+}
+
+function distanceTo(a, b) {
+  return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2) + Math.pow(a.z - b.z, 2));
+}
+
+function addPoint(a, b) {
+  return {
+    x: a.x + b.x,
+    y: a.y + b.y,
+    z: a.z + b.z,
+  };
+}
+
+function divide(p, t) {
+  let n = 1 / t;
+  return {
+    x: p.x * n,
+    y: p.y * n,
+    z: p.z * n,
+  };
+}
+
+function closestParam(p, from, to) {
+  let startToP = subtractPoint(p, from);
+  let startToEnd = subtractPoint(to, from);
+  let startEnd2 = dotProduct3(startToEnd, startToEnd);
+  let startEnd_startP = dotProduct3(startToEnd, startToP);
+  return startEnd_startP / startEnd2;
+}
+
+/**
+ * 平面相交线，传入2个平面的各3个顶点，返回2点式
+ */
+function intersectPlanePlane(p1, p2, p3, p4, p5, p6) {
+  let v1 = unitize3(
+    p2.x - p1.x,
+    p2.y - p1.y,
+    p2.z - p1.z,
+  ), v2 = unitize3(
+    p3.x - p1.x,
+    p3.y - p1.y,
+    p3.z - p1.z,
+  ), v4 = unitize3(
+    p5.x - p4.x,
+    p5.y - p4.y,
+    p5.z - p4.z,
+  ), v5 = unitize3(
+    p6.x - p4.x,
+    p6.y - p4.y,
+    p6.z - p4.z,
+  );
+  let v3 = unitize3(crossProduct3(v1.x, v1.y, v1.z, v2.x, v2.y, v2.z));
+  let v6 = unitize3(crossProduct3(v4.x, v4.y, v4.z, v5.x, v5.y, v5.z));
+  if(isParallel3(v3, v6)) {
+    return null;
+  }
+  let normal = crossProduct3(v6.x, v6.y, v6.z, v3.x, v3.y, v3.z);
+  let p7 = addPoint(v1, v4);
+  // planeC
+  let v9 = unitize3(normal.x, normal.y, normal.z);
+  // 3平面相交
+  let a1 = v3.x, b1 = v3.y, c1 = v3.z, d1 = -a1 * p1.x - b1 * p1.y - c1 * p1.z;
+  let a2 = v6.x, b2 = v6.y, c2 = v6.z, d2 = -a2 * p4.x - b2 * p4.y - c2 * p4.z;
+  let a3 = v9.x, b3 = v9.y, c3 = v9.z, d3 = -a3 * p7.x - b3 * p7.y - c3 * p7.z;
+  let mb = [-d1, -d2, -d3];
+  let det = a1 * (b2 * c3 - c2 * b3) - b1 * (a2 * c3 - c2 * a3) + c1 * (a2 * b3 - b2 * a3);
+  if(Math.abs(det) < 1e-9) {
+    return null;
+  }
+  let invDet = 1 / det;
+  let v11 = invDet * (b2 * c3 - c2 * b3);
+  let v12 = invDet * (c1 * b3 - b1 * c3);
+  let v13 = invDet * (b1 * c2 - c1 * b2);
+  let v21 = invDet * (c2 * a3 - a2 * c3);
+  let v22 = invDet * (a1 * c3 - c1 * a3);
+  let v23 = invDet * (c1 * a2 - a1 * c2);
+  let v31 = invDet * (a2 * b3 - b2 * a3);
+  let v32 = invDet * (b1 * a3 - a1 * b3);
+  let v33 = invDet * (a1 * b2 - b1 * a2);
+  let x = v11 * mb[0] + v12 * mb[1] + v13 * mb[2];
+  let y = v21 * mb[0] + v22 * mb[1] + v23 * mb[2];
+  let z = v31 * mb[0] + v32 * mb[1] + v33 * mb[2];
+  let point = { x, y, z };
+  return [
+    point,
+    addPoint(point, v9),
+  ];
+}
+
+// 点是否在线段上，注意误差
+function pointOnLine3(p, p1, p2) {
+  let v1x = p1.x - p.x, v1y = p1.y - p.y, v1z = p1.z - p.z;
+  let v2x = p2.x - p.x, v2y = p2.y - p.y, v2z = p2.z - p.z;
+  let c = crossProduct3(v1x, v1y, v1z, v2x, v2y, v2z);
+  return length3(c.x, c.y, c.z) < 1e-9;
 }
 
 export default {
@@ -864,10 +932,7 @@ export default {
   intersectBezier2Bezier2, // 二阶贝塞尔曲线 与 二阶贝塞尔曲线
   intersectBezier3Bezier3, // 三阶贝塞尔曲线 与 三阶贝塞尔曲线
   intersectBezier2Bezier3, // 二阶贝塞尔曲线 与 三阶贝塞尔曲线
-
-  // below functions are not used for now
-  // intersectBezier2Ellipse, // 二阶贝塞尔曲线 与 椭圆
-  // intersectBezier3Ellipse, // 三阶贝塞尔曲线 与 椭圆
-  // intersectBezier2Circle, // 二阶贝塞尔曲线 与 圆
-  // intersectBezier3Circle, // 三阶贝塞尔曲线 与 圆
+  intersectLineLine3,
+  intersectPlanePlane,
+  pointOnLine3,
 }

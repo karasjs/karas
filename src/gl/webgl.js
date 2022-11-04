@@ -1,6 +1,6 @@
 import mx from '../math/matrix';
 
-const calPoint = mx.calPoint;
+const { calRectPoint, calPoint } = mx;
 
 /**
  * 初始化 shader
@@ -17,6 +17,8 @@ function initShaders(gl, vshader, fshader) {
 
   // 要开启透明度，用以绘制透明的图形
   gl.enable(gl.BLEND);
+  // gl.enable(gl.DEPTH_TEST);
+  // gl.enable(gl.POLYGON_OFFSET_FILL);
   gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
   return program;
 }
@@ -94,7 +96,7 @@ export function loadShader(gl, type, source) {
   return shader;
 }
 
-function convertCoords2Gl(x, y, z, w, cx, cy) {
+function convertCoords2Gl(x, y, z, w, cx, cy, tz) {
   if(w && w !== 1) {
     x /= w;
     y /= w;
@@ -111,6 +113,12 @@ function convertCoords2Gl(x, y, z, w, cx, cy) {
   }
   else {
     y = (cy - y) / cy;
+  }
+  if(tz) {
+    z /= -tz;
+  }
+  if(w === 1) {
+    return { x, y, z, w };
   }
   return { x: x * w, y: y * w, z: z * w, w };
 }
@@ -186,53 +194,49 @@ function drawTextureCache(gl, list, cx, cy, dx, dy) {
     let bx = bbox[0], by = bbox[1];
     let xa = bx + dx, ya = by + height + dy;
     let xb = bx + width + dx, yb = by + dy;
-    let { x: x1, y: y1, w: w1 } = calPoint({ x: xa, y: ya, z: 0, w: 1 }, matrix);
-    let { x: x3, y: y3, w: w3 } = calPoint({ x: xb, y: yb, z: 0, w: 1 }, matrix);
-    let x2, y2, w2, x4, y4, w4;
-    // 无旋转的时候可以少算2个点
-    if(w1 === 1 && w3 === 1
-      && (!matrix || !matrix.length || !matrix[1] && !matrix[4])) {
-      x2 = x3;
-      y2 = y1;
-      x4 = x1;
-      y4 = y3;
-      w2 = w4 = 1;
+    let { x1, y1, z1, w1, x2, y2, z2, w2, x3, y3, z3, w3, x4, y4, z4, w4 } = calRectPoint(xa, ya, xb, yb, matrix);
+    // console.warn(x1,y1,z1,w1,',',x2,y2,z2,w2,',',x3,y3,z3,w3,',',x4,y4,z4,w4);
+    // z范围取所有、对角线最大值，只有当非0有值时才求
+    let z = Math.max(Math.abs(z1), Math.abs(z2));
+    z = Math.max(z, Math.abs(z3));
+    z = Math.max(z, Math.abs(z4));
+    if(z) {
+      z = Math.max(z, Math.sqrt(cx * cx + cy * cy));
     }
-    else {
-      let t = calPoint({ x: xb, y: ya, z: 0, w: 1 }, matrix);
-      x2 = t.x; y2 = t.y; w2 = t.w;
-      t = calPoint({ x: xa, y: yb, z: 0, w: 1 }, matrix);
-      x4 = t.x; y4 = t.y; w4 = t.w;
-    }
-    let t = convertCoords2Gl(x1, y1, 0, w1, cx, cy);
-    x1 = t.x; y1 = t.y;
-    t = convertCoords2Gl(x2, y2, 0, w2, cx, cy);
-    x2 = t.x; y2 = t.y;
-    t = convertCoords2Gl(x3, y3, 0, w3, cx, cy);
-    x3 = t.x; y3 = t.y;
-    t = convertCoords2Gl(x4, y4, 0, w4, cx, cy);
-    x4 = t.x; y4 = t.y;
-    // vtPoint.push(x1, y1, 0, w1, x4, y4, 0, w4, x2, y2, 0, w2, x4, y4, 0, w4, x2, y2, 0, w2, x3, y3, 0, w3);
+    let t = convertCoords2Gl(x1, y1, z1, w1, cx, cy, z);
+    x1 = t.x; y1 = t.y; z1 = t.z;
+    t = convertCoords2Gl(x2, y2, z2, w2, cx, cy, z);
+    x2 = t.x; y2 = t.y; z2 = t.z;
+    t = convertCoords2Gl(x3, y3, z3, w3, cx, cy, z);
+    x3 = t.x; y3 = t.y; z3 = t.z;
+    t = convertCoords2Gl(x4, y4, z4, w4, cx, cy, z);
+    x4 = t.x; y4 = t.y; z4 = t.z;
+    // console.log(x1,y1,z1,w1,',',x2,y2,z2,w2,',',x3,y3,z3,w3,',',x4,y4,z4,w4);
     let j = i * 24;
     vtPoint[j] = x1;
     vtPoint[j + 1] = y1;
+    vtPoint[j + 2] = z1;
     vtPoint[j + 3] = w1;
     vtPoint[j + 4] = x4;
     vtPoint[j + 5] = y4;
+    vtPoint[j + 6] = z4;
     vtPoint[j + 7] = w4;
     vtPoint[j + 8] = x2;
     vtPoint[j + 9] = y2;
+    vtPoint[j + 10] = z2;
     vtPoint[j + 11] = w2;
     vtPoint[j + 12] = x4;
     vtPoint[j + 13] = y4;
+    vtPoint[j + 14] = z4;
     vtPoint[j + 15] = w4;
     vtPoint[j + 16] = x2;
     vtPoint[j + 17] = y2;
+    vtPoint[j + 18] = z2;
     vtPoint[j + 19] = w2;
     vtPoint[j + 20] = x3;
     vtPoint[j + 21] = y3;
+    vtPoint[j + 22] = z3;
     vtPoint[j + 23] = w3;
-    // vtTex.push(tx1, ty1, tx1, ty2, tx2, ty1, tx1, ty2, tx2, ty1, tx2, ty2);
     j = i * 12;
     vtTex[j] = tx1;
     vtTex[j + 1] = ty1;
@@ -246,7 +250,6 @@ function drawTextureCache(gl, list, cx, cy, dx, dy) {
     vtTex[j + 9] = ty1;
     vtTex[j + 10] = tx2;
     vtTex[j + 11] = ty2;
-    // vtOpacity.push(opacity, opacity, opacity, opacity, opacity, opacity);
     j = i * 6;
     vtOpacity[j] = opacity;
     vtOpacity[j + 1] = opacity;
@@ -817,8 +820,237 @@ function drawCache2Tex(gl, program, cache, width, height, spread) {
   gl.drawArrays(gl.TRIANGLES, 0, 6);
 }
 
+function drawSameSize(gl, tex, opacity) {
+  let program = gl.programSs;
+  gl.useProgram(program);
+  // 顶点buffer
+  let pointBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    -1, -1,
+    -1, 1,
+    1, -1,
+    -1, 1,
+    1, -1,
+    1, 1,
+  ]), gl.STATIC_DRAW);
+  let a_position = gl.getAttribLocation(program, 'a_position');
+  gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(a_position);
+  // 纹理buffer
+  let texBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    0, 0,
+    0, 1,
+    1, 0,
+    0, 1,
+    1, 0,
+    1, 1,
+  ]), gl.STATIC_DRAW);
+  let a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
+  gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(a_texCoords);
+  // 纹理单元
+  let u_texture = gl.getUniformLocation(program, 'u_texture');
+  gl.uniform1i(u_texture, 0);
+  bindTexture(gl, tex, 0);
+  let u_opacity = gl.getUniformLocation(program, 'u_opacity');
+  gl.uniform1f(u_opacity, opacity);
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+  gl.deleteBuffer(pointBuffer);
+  gl.deleteBuffer(texBuffer);
+  gl.disableVertexAttribArray(a_position);
+  gl.disableVertexAttribArray(a_texCoords);
+  gl.useProgram(gl.program);
+}
+
+function drawOitPlane(gl, structs, list, ppt, cx, cy, dx, dy) {
+  let pointBuffer = gl.createBuffer();
+  let a_position = gl.getAttribLocation(gl.program, 'a_position');
+  let texBuffer = gl.createBuffer();
+  let a_texCoords = gl.getAttribLocation(gl.program, 'a_texCoords');
+  let opacityBuffer = gl.createBuffer();
+  let a_opacity = gl.getAttribLocation(gl.program, 'a_opacity');
+  let u_texture = gl.getUniformLocation(gl.program, 'u_texture');
+  // 循环所有顺序拼图/平面
+  for(let i = 0, len = list.length; i < len; i++) {
+    let { isPuzzle, node, target, points } = list[i];
+    let { __width: width, __height: height,
+      __tx1: tx1, __ty1: ty1, __tx2: tx2, __ty2: ty2,
+      __page: page, __bbox: bbox } = target;
+    // 固定绑定纹理0号单元
+    if(page.__update) {
+      page.genTexture(gl);
+    }
+    bindTexture(gl, page.texture, 0);
+    let bx = bbox[0], by = bbox[1];
+    let opacity = node.__opacity;
+    let matrix = node.__matrixEvent;
+    let tw = tx2 - tx1, th = ty2 - ty1;
+    // 先按照没有拆分拼图的情况求出节点的四个顶点坐标列表，可能有重复利用hash缓存
+    let vtPoint = [], vtTex = [], vtOpacity = [];
+    let pHash = [], tHash = [];
+    if(isPuzzle) {
+      // 拼接三角形，以起点为初始点链接其它所有顶点组成n-2个三角形
+      let x0, y0, z0, w0;
+      let p = points[0];
+      let o = calPoint({
+        x: bx + dx + p.px * width,
+        y: by + dy + p.py * height,
+        z: 0,
+        w: 1,
+      }, matrix);
+      w0 = o.w;
+      let t = convertCoords2Gl(o.x, o.y, o.z, w0, cx, cy, ppt);
+      x0 = t.x; y0 = t.y; z0 = t.z;
+      let tx0 = tx1 + p.px * tw, ty0 = ty1 + p.py * th;
+      // 每次循环以第0个点为起点
+      for(let j = 1, len = points.length; j < len - 1; j++) {
+        vtPoint.push(x0);
+        vtPoint.push(y0);
+        vtPoint.push(z0);
+        vtPoint.push(w0);
+        vtTex.push(tx0);
+        vtTex.push(ty0);
+        vtOpacity.push(opacity);
+        // 依次的2个相邻点
+        for(let k = j; k < j + 2; k++) {
+          let p = points[k];
+          let x, y, z, w;
+          let hashP = pHash[k];
+          if(hashP) {
+            x = hashP.x;
+            y = hashP.y;
+            z = hashP.z;
+            w = hashP.w;
+          }
+          else {
+            let o = calPoint({
+              x: bx + dx + p.px * width,
+              y: by + dy + p.py * height,
+              z: 0,
+              w: 1,
+            }, matrix);
+            w = o.w;
+            let t = convertCoords2Gl(o.x, o.y, o.z, w, cx, cy, ppt);
+            x = t.x; y = t.y; z = t.z;
+            pHash[k] = {
+              x,
+              y,
+              z,
+              w,
+            };
+          }
+          vtPoint.push(x);
+          vtPoint.push(y);
+          vtPoint.push(z);
+          vtPoint.push(w);
+          let tx, ty;
+          let hashT = tHash[k];
+          if(hashT) {
+            tx = hashT.tx;
+            ty = hashT.ty;
+          }
+          else {
+            tx = tx1 + p.px * tw;
+            ty = ty1 + p.py * th;
+            tHash[k] = {
+              tx,
+              ty,
+            };
+          }
+          vtTex.push(tx);
+          vtTex.push(ty);
+          vtOpacity.push(opacity);
+        }
+      }
+    }
+    else {
+      let xa = bx + dx, ya = by + height + dy;
+      let xb = bx + width + dx, yb = by + dy;
+      let { x1, y1, z1, w1, x2, y2, z2, w2, x3, y3, z3, w3, x4, y4, z4, w4 } = calRectPoint(xa, ya, xb, yb, matrix);
+      let t = convertCoords2Gl(x1, y1, z1, w1, cx, cy, ppt);
+      x1 = t.x; y1 = t.y; z1 = t.z;
+      t = convertCoords2Gl(x2, y2, z2, w2, cx, cy, ppt);
+      x2 = t.x; y2 = t.y; z2 = t.z;
+      t = convertCoords2Gl(x3, y3, z3, w3, cx, cy, ppt);
+      x3 = t.x; y3 = t.y; z3 = t.z;
+      t = convertCoords2Gl(x4, y4, z4, w4, cx, cy, ppt);
+      x4 = t.x; y4 = t.y; z4 = t.z;
+      vtPoint[0] = x1;
+      vtPoint[1] = y1;
+      vtPoint[2] = z1;
+      vtPoint[3] = w1;
+      vtPoint[4] = x4;
+      vtPoint[5] = y4;
+      vtPoint[6] = z4;
+      vtPoint[7] = w4;
+      vtPoint[8] = x2;
+      vtPoint[9] = y2;
+      vtPoint[10] = z2;
+      vtPoint[11] = w2;
+      vtPoint[12] = x4;
+      vtPoint[13] = y4;
+      vtPoint[14] = z4;
+      vtPoint[15] = w4;
+      vtPoint[16] = x2;
+      vtPoint[17] = y2;
+      vtPoint[18] = z2;
+      vtPoint[19] = w2;
+      vtPoint[20] = x3;
+      vtPoint[21] = y3;
+      vtPoint[22] = z3;
+      vtPoint[23] = w3;
+      vtTex[0] = tx1;
+      vtTex[1] = ty1;
+      vtTex[2] = tx1;
+      vtTex[3] = ty2;
+      vtTex[4] = tx2;
+      vtTex[5] = ty1;
+      vtTex[6] = tx1;
+      vtTex[7] = ty2;
+      vtTex[8] = tx2;
+      vtTex[9] = ty1;
+      vtTex[10] = tx2;
+      vtTex[11] = ty2;
+      vtOpacity[0] = opacity;
+      vtOpacity[1] = opacity;
+      vtOpacity[2] = opacity;
+      vtOpacity[3] = opacity;
+      vtOpacity[4] = opacity;
+      vtOpacity[5] = opacity;
+    }
+    // 顶点buffer
+    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vtPoint), gl.STATIC_DRAW);
+    gl.vertexAttribPointer(a_position, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_position);
+    // 纹理buffer
+    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vtTex), gl.STATIC_DRAW);
+    gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_texCoords);
+    // opacity buffer
+    gl.bindBuffer(gl.ARRAY_BUFFER, opacityBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vtOpacity), gl.STATIC_DRAW);
+    gl.vertexAttribPointer(a_opacity, 1, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_opacity);
+    gl.uniform1i(u_texture, 0);
+    gl.drawArrays(gl.TRIANGLES, 0, vtOpacity.length);
+  }
+  gl.deleteBuffer(pointBuffer);
+  gl.deleteBuffer(texBuffer);
+  gl.deleteBuffer(opacityBuffer);
+  gl.disableVertexAttribArray(a_position);
+  gl.disableVertexAttribArray(a_texCoords);
+  gl.disableVertexAttribArray(a_opacity);
+}
+
 export default {
   initShaders,
+  convertCoords2Gl,
   createTexture,
   bindTexture,
   drawTextureCache,
@@ -831,4 +1063,6 @@ export default {
   drawDropShadowMerge,
   drawTex2Cache,
   drawCache2Tex,
+  drawSameSize,
+  drawOitPlane,
 };

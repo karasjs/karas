@@ -532,6 +532,18 @@ function pointOnCircle(x, y, r, deg) {
   }
 }
 
+// 3个点确定平面标准方程
+function getPlainNormalEquation(points) {
+  let { x: x1, y: y1, z: z1 } = points[0];
+  let { x: x2, y: y2, z: z2 } = points[1];
+  let { x: x3, y: y3, z: z3 } = points[2];
+  let a = (y2 - y1) * (z3 - z1) - (z2 - z1) * (y3 - y1);
+  let b = (x3 - x1) * (z2 - z1) - (x2 - x1) * (z3 - z1);
+  let c = (x2 - x1) * (y3 - y1) - (x3 - x1) * (y2 - y1);
+  let d = -(a * x1 + b * y1 + c * z1);
+  return { a, b, c, d };
+}
+
 export default {
   pointInConvexPolygon,
   pointInQuadrilateral,
@@ -553,4 +565,5 @@ export default {
   calCoordsInNode,
   calPercentInNode,
   pointOnCircle,
+  getPlainNormalEquation,
 };

@@ -19,6 +19,8 @@ import change from '../refresh/change';
 import level from '../refresh/level';
 import struct from '../refresh/struct';
 import reflow from '../refresh/reflow';
+import webgl from '../gl/webgl';
+import ca from '../gl/ca';
 import vertex from '../gl/main.vert';
 import fragment from '../gl/main.frag';
 import vertexMask from '../gl/mask.vert';
@@ -30,8 +32,6 @@ import vertexCm from '../gl/filter/cm.vert';
 import fragmentCm from '../gl/filter/cm.frag';
 import vertexDs from '../gl/filter/drops.vert'
 import fragmentDs from '../gl/filter/drops.frag';
-import webgl from '../gl/webgl';
-import ca from '../gl/ca';
 import vertexMbm from '../gl/mbm/mbm.vert';
 import fragmentMultiply from '../gl/mbm/multiply.frag';
 import fragmentScreen from '../gl/mbm/screen.frag';
@@ -48,6 +48,8 @@ import fragmentHue from '../gl/mbm/hue.frag';
 import fragmentSaturation from '../gl/mbm/saturation.frag';
 import fragmentColor from '../gl/mbm/color.frag';
 import fragmentLuminosity from '../gl/mbm/luminosity.frag';
+import vertexSs from '../gl/ss.vert';
+import fragmentSs from '../gl/ss.frag';
 
 const {
   STYLE_KEY: {
@@ -376,6 +378,7 @@ class Root extends Dom {
     gl.programMbmSt = webgl.initShaders(gl, vertexMbm, fragmentSaturation);
     gl.programMbmCl = webgl.initShaders(gl, vertexMbm, fragmentColor);
     gl.programMbmLm = webgl.initShaders(gl, vertexMbm, fragmentLuminosity);
+    gl.programSs = webgl.initShaders(gl, vertexSs, fragmentSs);
     gl.useProgram(gl.program);
   }
 
@@ -489,6 +492,14 @@ class Root extends Dom {
         gl.deleteShader(p.fragmentShader);
         gl.deleteProgram(p);
       });
+      for(let i in gl) {
+        if(i.indexOf('programBlur,') === 0) {
+          let p = gl[i];
+          gl.deleteShader(p.vertexShader);
+          gl.deleteShader(p.fragmentShader);
+          gl.deleteProgram(p);
+        }
+      }
     }
   }
 
@@ -715,7 +726,13 @@ class Root extends Dom {
           node.__calPerspective(currentStyle, computedStyle, cacheStyle);
         }
         if(lv & TRANSFORM_ALL) {
+          // 特殊的ppt需清空cacheTotal
+          let o = node.__selfPerspectiveMatrix;
           node.__calMatrix(lv, currentStyle, computedStyle, cacheStyle, aniParams && aniParams.optimize);
+          let n = node.__selfPerspectiveMatrix;
+          if(!util.equalArr(o, n)) {
+            need = true;
+          }
         }
         if(lv & OP) {
           computedStyle[OPACITY] = currentStyle[OPACITY];
@@ -782,7 +799,7 @@ class Root extends Dom {
       }
       // mask无论如何都要清除，除非是opacity
       if(node.__hasMask) {
-        if(need || (lv ^ OP)) {
+        if(need || (lv ^ OP) || (lv & PPT)) {
           if(node.__cacheMask) {
             hasRelease = node.__cacheMask.release() || hasRelease;
           }
@@ -792,7 +809,7 @@ class Root extends Dom {
         }
       }
       // 特殊的filter清除cache
-      else if((need || (lv & FT)) && node.__cacheFilter) {
+      else if((need || (lv & (FT | PPT))) && node.__cacheFilter) {
         hasRelease = node.__cacheFilter.release() || hasRelease;
       }
       // 向上清除cache汇总缓存信息，过程中可能会出现重复，根据refreshLevel判断，reflow已经自己清过了

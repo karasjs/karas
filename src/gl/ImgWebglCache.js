@@ -47,13 +47,16 @@ class ImgWebglCache extends CanvasCache {
       return res;
     }
     let cache = Cache.getInstance(renderMode, ctx, rootId, bbox, x1, y1, this, CanvasPage, null);
-    cache.key = key;
+    // 超限为空
     if(cache) {
-      HASH[key] = {
-        cache,
-        count: 1,
-      };
-      return cache;
+      cache.key = key;
+      if(cache) {
+        HASH[key] = {
+          cache,
+          count: 1,
+        };
+        return cache;
+      }
     }
   }
 }

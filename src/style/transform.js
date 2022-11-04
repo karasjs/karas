@@ -252,7 +252,7 @@ function isPerspectiveMatrix(m) {
   if(!m) {
     return;
   }
-  return !!(m[3] || m[7] || m[11]);
+  return !!m[11];
 }
 
 export default {

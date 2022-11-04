@@ -1165,6 +1165,8 @@ function normalize(style, resetList = []) {
     'borderLeftStyle',
     'backgroundClip',
     'textOverflow',
+    'transformStyle',
+    'backfaceVisibility',
   ].forEach(k => {
     if(style.hasOwnProperty(k)) {
       res[STYLE_KEY[style2Upper(k)]] = convertStringValue(k, style[k]);

@@ -3230,6 +3230,9 @@ class Dom extends Xom {
         pm = multiply(pm, this.__matrix);
         assignMatrix(this.__matrixEvent, pm);
       }
+      else if(this.__perspectiveMatrix) {
+        pm = this.__perspectiveMatrix;
+      }
       let bbox = __cacheTotal.bbox;
       if(!geom.pointInQuadrilateral(
         e.x, e.y,

@@ -564,9 +564,8 @@
         f = m[5],
         g = m[6],
         h = m[7],
-        i = m[8];
-        m[9];
-        var k = m[10],
+        i = m[8],
+        k = m[10],
         l = m[11];
     m[4] = e * cos + i * sin;
     m[5] = f * cos + g * sin;
@@ -600,8 +599,8 @@
     m[3] = d * cos + l * -sin;
     m[8] = a * sin + i * cos;
     m[9] = b * sin + j * cos;
-    m[10] = c * sin + k * sin;
-    m[11] = d * sin + l * sin;
+    m[10] = c * sin + k * cos;
+    m[11] = d * sin + l * cos;
     return m;
   }
 
@@ -735,19 +734,18 @@
           b4 = m[13],
           c4 = m[14],
           d4 = m[15];
-
-      if (d1 || d2 || d3) {
-        w = x * d1 + y * d2 + z * d3 + d4 * w;
-      } else if (d4 !== 1) {
-        w *= d4;
-      }
-
       var o = {
-        x: (a1 === 1 ? x : x * a1) + (a2 ? y * a2 : 0) + a4,
-        y: (b1 === 1 ? x : x * b1) + (b2 ? y * b2 : 0) + b4,
+        x: (a1 === 1 ? x : x * a1) + (a2 ? y * a2 : 0) + (w === 1 ? a4 : a4 * w),
+        y: (b1 === 1 ? x : x * b1) + (b2 ? y * b2 : 0) + (w === 1 ? b4 : b4 * w),
         z: 0,
         w: w
       };
+
+      if (d1 || d2 || d3) {
+        o.w = x * d1 + y * d2 + z * d3 + d4 * w;
+      } else if (d4 !== 1) {
+        o.w *= d4;
+      }
 
       if (z) {
         o.x += z * a3;
@@ -875,6 +873,82 @@
     return point;
   }
 
+  function calRectPoint$2(xa, ya, xb, yb, matrix) {
+    var _calPoint = calPoint$2({
+      x: xa,
+      y: ya,
+      z: 0,
+      w: 1
+    }, matrix),
+        x1 = _calPoint.x,
+        y1 = _calPoint.y,
+        z1 = _calPoint.z,
+        w1 = _calPoint.w;
+
+    var _calPoint2 = calPoint$2({
+      x: xb,
+      y: yb,
+      z: 0,
+      w: 1
+    }, matrix),
+        x3 = _calPoint2.x,
+        y3 = _calPoint2.y,
+        z3 = _calPoint2.z,
+        w3 = _calPoint2.w;
+
+    var x2, y2, z2, w2, x4, y4, z4, w4; // 无旋转的时候可以少算2个点
+
+    if (w1 === 1 && w3 === 1 && (!matrix || !matrix.length || !matrix[1] && !matrix[2] && !matrix[4] && !matrix[6] && !matrix[7] && !matrix[8])) {
+      x2 = x3;
+      y2 = y1;
+      z2 = z3;
+      x4 = x1;
+      y4 = y3;
+      z2 = z4 = z1;
+      w2 = w4 = 1;
+    } else {
+      var t = calPoint$2({
+        x: xb,
+        y: ya,
+        z: 0,
+        w: 1
+      }, matrix);
+      x2 = t.x;
+      y2 = t.y;
+      z2 = t.z;
+      w2 = t.w;
+      t = calPoint$2({
+        x: xa,
+        y: yb,
+        z: 0,
+        w: 1
+      }, matrix);
+      x4 = t.x;
+      y4 = t.y;
+      z4 = t.z;
+      w4 = t.w;
+    }
+
+    return {
+      x1: x1,
+      y1: y1,
+      z1: z1,
+      w1: w1,
+      x2: x2,
+      y2: y2,
+      z2: z2,
+      w2: w2,
+      x3: x3,
+      y3: y3,
+      z3: z3,
+      w3: w3,
+      x4: x4,
+      y4: y4,
+      z4: z4,
+      w4: w4
+    };
+  }
+
   var matrix = {
     identity: identity$1,
     multiply: multiply$4,
@@ -893,6 +967,7 @@
     multiplyScaleZ: multiplyScaleZ$2,
     multiplyPerspective: multiplyPerspective$1,
     calPoint: calPoint$2,
+    calRectPoint: calRectPoint$2,
     point2d: point2d$1,
     inverse: inverse$1,
     isE: isE$5,
@@ -1345,7 +1420,9 @@
       var w;
       var t = matrix.calPoint({
         x: x1,
-        y: y1
+        y: y1,
+        z: 0,
+        w: 1
       }, matrix$1);
       x1 = t.x;
       y1 = t.y;
@@ -1367,7 +1444,9 @@
 
         var _t = matrix.calPoint({
           x: x,
-          y: y
+          y: y,
+          z: 0,
+          w: 1
         }, matrix$1);
 
         x = _t.x;
@@ -2899,6 +2978,8 @@
     rotate3d: '0, 0, 0, 0',
     perspective: 0,
     perspectiveOrigin: 'center',
+    transformStyle: 'flat',
+    backfaceVisibility: 'visible',
     filter: null,
     boxShadow: null,
     pointerEvents: 'inherit',
@@ -2980,7 +3061,9 @@
     borderLeftStyle: ['solid', 'dashed', 'dotted'],
     backgroundClip: ['borderBox', 'paddingBox', 'contentBox'],
     textOverflow: ['clip', 'ellipsis'],
-    alignContent: ['stretch', 'flexStart', 'center', 'flexEnd', 'spaceBetween', 'spaceAround']
+    alignContent: ['stretch', 'flexStart', 'center', 'flexEnd', 'spaceBetween', 'spaceAround'],
+    transformStyle: ['flat', 'preserve3d'],
+    backfaceVisibility: ['visible', 'hidden']
   };
   var reset = {
     DOM: DOM,
@@ -3006,6 +3089,19 @@
   // 向量点乘积
   function dotProduct(x1, y1, x2, y2) {
     return x1 * x2 + y1 * y2;
+  }
+
+  function dotProduct3$1(x1, y1, z1, x2, y2, z2) {
+    if (z1 === undefined && x2 === undefined && y2 === undefined && z2 === undefined) {
+      x2 = y1.x;
+      z2 = y1.z;
+      y2 = y1.y;
+      y1 = x1.y;
+      z1 = x1.z;
+      x1 = x1.x;
+    }
+
+    return x1 * x2 + y1 * y2 + z1 * z2;
   } // 向量叉乘积
 
 
@@ -3013,9 +3109,221 @@
     return x1 * y2 - x2 * y1;
   }
 
+  function crossProduct3$1(x1, y1, z1, x2, y2, z2) {
+    if (z1 === undefined && x2 === undefined && y2 === undefined && z2 === undefined) {
+      x2 = y1.x;
+      z2 = y1.z;
+      y2 = y1.y;
+      y1 = x1.y;
+      z1 = x1.z;
+      x1 = x1.x;
+    }
+
+    return {
+      x: y1 * z2 - y2 * z1,
+      y: z1 * x2 - z2 * x1,
+      z: x1 * y2 - x2 * y1
+    };
+  } // 归一化
+
+
+  function unitize(x, y) {
+    var n = length(x, y);
+    return {
+      x: x / n,
+      y: y / n
+    };
+  }
+
+  function unitize3$1(x, y, z) {
+    if (y === undefined && z === undefined) {
+      y = x.y;
+      z = x.z;
+      x = x.x;
+    }
+
+    var n = length3$1(x, y, z);
+    return {
+      x: x / n,
+      y: y / n,
+      z: z / n
+    };
+  } // 是否平行
+
+
+  function isParallel(x1, y1, x2, y2) {
+    if (isZero(x1, y1, x2, y2)) {
+      return true;
+    }
+
+    var ag = angle(x1, y1, x2, y2);
+
+    if (Math.abs(ag) < 1e-9) {
+      return true;
+    }
+
+    if (Math.PI - Math.abs(ag) < 1e-9) {
+      return true;
+    }
+
+    return false;
+  }
+
+  function isParallel3$1(x1, y1, z1, x2, y2, z2) {
+    if (z1 === undefined && x2 === undefined && y2 === undefined && z2 === undefined) {
+      x2 = y1.x;
+      z2 = y1.z;
+      y2 = y1.y;
+      y1 = x1.y;
+      z1 = x1.z;
+      x1 = x1.x;
+    }
+
+    if (isZero3$1(x1, y1, z1, x2, y2, z2)) {
+      return true;
+    }
+
+    var ag = angle3(x1, y1, z1, x2, y2, z2);
+
+    if (Math.abs(ag) < 1e-9) {
+      return true;
+    }
+
+    if (Math.PI - Math.abs(ag) < 1e-9) {
+      return true;
+    }
+
+    return false;
+  } // 是否是零，考虑误差
+
+
+  function isZero(x1, y1, x2, y2) {
+    return Math.abs(x1) < 1e-9 && Math.abs(y1) < 1e-9 && Math.abs(x2) < 1e-9 && Math.abs(y2) < 1e-9;
+  }
+
+  function isZero3$1(x1, y1, z1, x2, y2, z2) {
+    if (z1 === undefined && x2 === undefined && y2 === undefined && z2 === undefined) {
+      x2 = y1.x;
+      z2 = y1.z;
+      y2 = y1.y;
+      y1 = x1.y;
+      z1 = x1.z;
+      x1 = x1.x;
+    }
+
+    return Math.abs(x1) < 1e-9 && Math.abs(y1) < 1e-9 && Math.abs(z1) < 1e-9 && Math.abs(x2) < 1e-9 && Math.abs(y2) < 1e-9 && Math.abs(z2) < 1e-9;
+  } // 向量夹角
+
+
+  function angle(x1, y1, x2, y2) {
+    var cos = dotProduct(x1, y1, x2, y2) / (length(x1, y1) * length(x2, y2));
+
+    if (cos < -1) {
+      cos = -1;
+    } else if (cos > 1) {
+      cos = 1;
+    }
+
+    return Math.acos(cos);
+  }
+
+  function angle3(x1, y1, z1, x2, y2, z2) {
+    if (z1 === undefined && x2 === undefined && y2 === undefined && z2 === undefined) {
+      x2 = y1.x;
+      z2 = y1.z;
+      y2 = y1.y;
+      y1 = x1.y;
+      z1 = x1.z;
+      x1 = x1.x;
+    }
+
+    var cos = dotProduct3$1(x1, y1, z1, x2, y2, z2) / (length3$1(x1, y1, z1) * length3$1(x2, y2, z2));
+
+    if (cos < -1) {
+      cos = -1;
+    } else if (cos > 1) {
+      cos = 1;
+    }
+
+    return Math.acos(cos);
+  } // 向量长度
+
+
+  function length(x, y) {
+    return Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
+  }
+
+  function length3$1(x, y, z) {
+    return Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2) + Math.pow(z, 2));
+  } // 获取任意一个垂直于目标的向量
+
+
+  function getPerpendicularVector3(x, y, z) {
+    var i, j, k, a, b;
+
+    if (Math.abs(y) > Math.abs(x)) {
+      if (Math.abs(z) > Math.abs(y)) {
+        i = 2;
+        j = 1;
+        k = 0;
+        a = z;
+        b = -y;
+      } else if (Math.abs(z) > Math.abs(x)) {
+        i = 1;
+        j = 2;
+        k = 0;
+        a = y;
+        b = -z;
+      } else {
+        i = 1;
+        j = 0;
+        k = 2;
+        a = y;
+        b = -x;
+      }
+    } else if (Math.abs(z) > Math.abs(x)) {
+      i = 2;
+      j = 0;
+      k = 1;
+      a = z;
+      b = -x;
+    } else if (Math.abs(z) > Math.abs(y)) {
+      i = 0;
+      j = 2;
+      k = 1;
+      a = x;
+      b = -z;
+    } else {
+      i = 0;
+      j = 1;
+      k = 2;
+      a = x;
+      b = -y;
+    }
+
+    var arr = [0, 0, 0];
+    arr[i] = b;
+    arr[j] = a;
+    arr[k] = 0;
+    return unitize3$1(arr[0], arr[1], arr[2]);
+  }
+
   var vector = {
     dotProduct: dotProduct,
-    crossProduct: crossProduct$1
+    dotProduct3: dotProduct3$1,
+    crossProduct: crossProduct$1,
+    crossProduct3: crossProduct3$1,
+    unitize: unitize,
+    unitize3: unitize3$1,
+    isParallel: isParallel,
+    isParallel3: isParallel3$1,
+    isZero: isZero,
+    isZero3: isZero3$1,
+    angle: angle,
+    angle3: angle3,
+    length: length,
+    length3: length3$1,
+    getPerpendicularVector3: getPerpendicularVector3
   };
 
   var STYLE_KEY$4 = {
@@ -3107,23 +3415,25 @@
     TEXT_STROKE_COLOR: 85,
     TEXT_STROKE_OVER: 86,
     WRITING_MODE: 87,
+    TRANSFORM_STYLE: 88,
+    BACKFACE_VISIBILITY: 89,
     // GEOM
-    FILL: 88,
-    STROKE: 89,
-    STROKE_WIDTH: 90,
-    STROKE_DASHARRAY: 91,
-    STROKE_DASHARRAY_STR: 92,
-    STROKE_LINECAP: 93,
-    STROKE_LINEJOIN: 94,
-    STROKE_MITERLIMIT: 95,
-    FILL_RULE: 96,
+    FILL: 90,
+    STROKE: 91,
+    STROKE_WIDTH: 92,
+    STROKE_DASHARRAY: 93,
+    STROKE_DASHARRAY_STR: 94,
+    STROKE_LINECAP: 95,
+    STROKE_LINEJOIN: 96,
+    STROKE_MITERLIMIT: 97,
+    FILL_RULE: 98,
     // 无此样式，仅cache或特殊情况需要
-    MATRIX: 97,
-    BORDER_TOP: 98,
-    BORDER_RIGHT: 99,
-    BORDER_BOTTOM: 100,
-    BORDER_LEFT: 101,
-    TRANSLATE_PATH: 102
+    MATRIX: 99,
+    BORDER_TOP: 100,
+    BORDER_RIGHT: 101,
+    BORDER_BOTTOM: 102,
+    BORDER_LEFT: 103,
+    TRANSLATE_PATH: 104
   };
   var STYLE2LOWER_MAP = {};
 
@@ -3562,7 +3872,7 @@
 
 
   function getRectsIntersection(a, b) {
-    if (!isRectsOverlap$1(a, b)) {
+    if (!isRectsOverlap$2(a, b)) {
       return null;
     }
 
@@ -3585,7 +3895,7 @@
    */
 
 
-  function isRectsOverlap$1(a, b, includeIntersect) {
+  function isRectsOverlap$2(a, b, includeIntersect) {
     var _a2 = _slicedToArray(a, 4),
         ax1 = _a2[0],
         ay1 = _a2[1],
@@ -3813,6 +4123,32 @@
         y: y - Math.cos(deg) * r
       };
     }
+  } // 3个点确定平面标准方程
+
+
+  function getPlainNormalEquation$1(points) {
+    var _points$ = points[0],
+        x1 = _points$.x,
+        y1 = _points$.y,
+        z1 = _points$.z;
+    var _points$2 = points[1],
+        x2 = _points$2.x,
+        y2 = _points$2.y,
+        z2 = _points$2.z;
+    var _points$3 = points[2],
+        x3 = _points$3.x,
+        y3 = _points$3.y,
+        z3 = _points$3.z;
+    var a = (y2 - y1) * (z3 - z1) - (z2 - z1) * (y3 - y1);
+    var b = (x3 - x1) * (z2 - z1) - (x2 - x1) * (z3 - z1);
+    var c = (x2 - x1) * (y3 - y1) - (x3 - x1) * (y2 - y1);
+    var d = -(a * x1 + b * y1 + c * z1);
+    return {
+      a: a,
+      b: b,
+      c: c,
+      d: d
+    };
   }
 
   var geom = {
@@ -3831,11 +4167,12 @@
     ellipsePoints: ellipsePoints,
     sectorPoints: sectorPoints$1,
     getRectsIntersection: getRectsIntersection,
-    isRectsOverlap: isRectsOverlap$1,
+    isRectsOverlap: isRectsOverlap$2,
     isRectsInside: isRectsInside,
     calCoordsInNode: calCoordsInNode,
     calPercentInNode: calPercentInNode,
-    pointOnCircle: pointOnCircle
+    pointOnCircle: pointOnCircle,
+    getPlainNormalEquation: getPlainNormalEquation$1
   };
 
   /**
@@ -9390,7 +9727,7 @@
     } // 直接赋值的string类型
 
 
-    ['position', 'display', 'flexDirection', 'flexWrap', 'justifyContent', 'alignItems', 'alignSelf', 'alignContent', 'overflow', 'mixBlendMode', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundClip', 'textOverflow'].forEach(function (k) {
+    ['position', 'display', 'flexDirection', 'flexWrap', 'justifyContent', 'alignItems', 'alignSelf', 'alignContent', 'overflow', 'mixBlendMode', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundClip', 'textOverflow', 'transformStyle', 'backfaceVisibility'].forEach(function (k) {
       if (style.hasOwnProperty(k)) {
         res[STYLE_KEY$1[style2Upper$1(k)]] = convertStringValue(k, style[k]);
       }
@@ -10379,12 +10716,12 @@
   } // 是否有透视矩阵应用
 
 
-  function isPerspectiveMatrix$1(m) {
+  function isPerspectiveMatrix(m) {
     if (!m) {
       return;
     }
 
-    return !!(m[3] || m[7] || m[11]);
+    return !!m[11];
   }
 
   var transform$1 = {
@@ -10397,7 +10734,7 @@
     calPerspectiveMatrix: calPerspectiveMatrix,
     calMatrixByOrigin: calMatrixByOrigin,
     calMatrixWithOrigin: calMatrixWithOrigin,
-    isPerspectiveMatrix: isPerspectiveMatrix$1
+    isPerspectiveMatrix: isPerspectiveMatrix
   };
 
   var _enums$STYLE_KEY$g = enums.STYLE_KEY,
@@ -17243,7 +17580,7 @@
     }
   }
 
-  function isValidMbm$2(v) {
+  function isValidMbm$1(v) {
     if (v === 'normal') {
       return false;
     }
@@ -17253,7 +17590,7 @@
 
   var mbm = {
     mbmName: mbmName$2,
-    isValidMbm: isValidMbm$2
+    isValidMbm: isValidMbm$1
   };
 
   var svgPolygon$2 = painter.svgPolygon;
@@ -17357,7 +17694,9 @@
       TEXT_ALIGN$1 = _enums$STYLE_KEY$8.TEXT_ALIGN,
       LETTER_SPACING = _enums$STYLE_KEY$8.LETTER_SPACING,
       WHITE_SPACE$1 = _enums$STYLE_KEY$8.WHITE_SPACE,
-      WRITING_MODE$2 = _enums$STYLE_KEY$8.WRITING_MODE;
+      WRITING_MODE$2 = _enums$STYLE_KEY$8.WRITING_MODE,
+      TRANSFORM_STYLE$1 = _enums$STYLE_KEY$8.TRANSFORM_STYLE,
+      BACKFACE_VISIBILITY$1 = _enums$STYLE_KEY$8.BACKFACE_VISIBILITY;
   var AUTO$4 = o$4.AUTO,
       PX$5 = o$4.PX,
       PERCENT$4 = o$4.PERCENT,
@@ -17384,7 +17723,7 @@
       spreadFilter$1 = css.spreadFilter;
   var GEOM = o$2.GEOM;
   var mbmName$1 = mbm.mbmName,
-      isValidMbm$1 = mbm.isValidMbm;
+      isValidMbm = mbm.isValidMbm;
   var point2d = matrix.point2d,
       multiply$2 = matrix.multiply,
       multiplyRotateX = matrix.multiplyRotateX,
@@ -18463,10 +18802,23 @@
           if (__cacheStyle[TRANSFORM$3] === undefined || __cacheStyle[TRANSLATE_X] === undefined || __cacheStyle[TRANSLATE_Y] === undefined || __cacheStyle[TRANSLATE_Z] === undefined || __cacheStyle[ROTATE_X] === undefined || __cacheStyle[ROTATE_Y] === undefined || __cacheStyle[ROTATE_Z] === undefined || __cacheStyle[ROTATE_3D] === undefined || __cacheStyle[SCALE_X] === undefined || __cacheStyle[SCALE_Y] === undefined || __cacheStyle[SCALE_Z] === undefined || __cacheStyle[SKEW_X] === undefined || __cacheStyle[SKEW_Y] === undefined) {
             __cacheStyle[TRANSFORM$3] = __cacheStyle[TRANSLATE_X] = __cacheStyle[TRANSLATE_Y] = __cacheStyle[TRANSLATE_Z] = __cacheStyle[ROTATE_X] = __cacheStyle[ROTATE_Y] = __cacheStyle[ROTATE_Z] = __cacheStyle[SCALE_X] = __cacheStyle[SCALE_Y] = __cacheStyle[SCALE_Z] = __cacheStyle[SKEW_X] = __cacheStyle[SKEW_Y] = true;
             matrixCache = null;
-            var matrix$1; // transform相对于自身
+            this.__selfPerspective = 0;
+            this.__selfPerspectiveMatrix = null;
+            var matrix$1,
+                ct = __currentStyle[TRANSFORM$3]; // transform相对于自身
 
-            if (__currentStyle[TRANSFORM$3] && __currentStyle[TRANSFORM$3].length) {
-              matrix$1 = transform$1.calMatrix(__currentStyle[TRANSFORM$3], __offsetWidth, __offsetHeight, this.__root);
+            if (ct && ct.length) {
+              var first = ct[0]; // 特殊处理，抽取出来transform的ppt，视为tfo原点的透视
+
+              if (first.k === PERSPECTIVE$1) {
+                var ppt = this.__selfPerspective = this.__calSize(first.v, this.__clientWidth, true);
+
+                var tfo = __computedStyle[TRANSFORM_ORIGIN$2];
+                this.__selfPerspectiveMatrix = transform$1.calPerspectiveMatrix(ppt, tfo[0] + __x1, tfo[1] + __y1);
+                matrix$1 = transform$1.calMatrix(ct.slice(1), __offsetWidth, __offsetHeight, this.__root);
+              } else {
+                matrix$1 = transform$1.calMatrix(ct, __offsetWidth, __offsetHeight, this.__root);
+              }
             } // 没有transform则看是否有扩展的css独立变换属性
             else {
               __computedStyle[TRANSLATE_X] = 0;
@@ -18653,8 +19005,8 @@
 
           if (!matrixCache) {
             var m = __computedStyle[TRANSFORM$3];
-            var tfo = __computedStyle[TRANSFORM_ORIGIN$2];
-            matrixCache = __cacheStyle[MATRIX$1] = transform$1.calMatrixByOrigin(m, tfo[0] + __x1, tfo[1] + __y1);
+            var _tfo = __computedStyle[TRANSFORM_ORIGIN$2];
+            matrixCache = __cacheStyle[MATRIX$1] = transform$1.calMatrixByOrigin(m, _tfo[0] + __x1, _tfo[1] + __y1);
           }
         }
 
@@ -18707,7 +19059,7 @@
         } // 这些直接赋值的不需要再算缓存
 
 
-        [OPACITY$3, Z_INDEX$2, BORDER_TOP_STYLE, BORDER_RIGHT_STYLE, BORDER_BOTTOM_STYLE, BORDER_LEFT_STYLE, BACKGROUND_REPEAT, OVERFLOW$2, MIX_BLEND_MODE$3, TEXT_OVERFLOW, BACKGROUND_CLIP].forEach(function (k) {
+        [OPACITY$3, Z_INDEX$2, BORDER_TOP_STYLE, BORDER_RIGHT_STYLE, BORDER_BOTTOM_STYLE, BORDER_LEFT_STYLE, BACKGROUND_REPEAT, OVERFLOW$2, MIX_BLEND_MODE$3, TEXT_OVERFLOW, BACKGROUND_CLIP, TRANSFORM_STYLE$1, BACKFACE_VISIBILITY$1].forEach(function (k) {
           __computedStyle[k] = __currentStyle[k];
         });
 
@@ -19010,7 +19362,19 @@
           __computedStyle[POINTER_EVENTS$1] = __currentStyle[POINTER_EVENTS$1].v;
         }
 
-        __cacheStyle[POINTER_EVENTS$1] = __computedStyle[POINTER_EVENTS$1];
+        __cacheStyle[POINTER_EVENTS$1] = __computedStyle[POINTER_EVENTS$1]; // transformStyle需要特殊判断，在一些情况下强制flat，取消规范的opacity<1限制
+
+        if (__computedStyle[TRANSFORM_STYLE$1] === 'preserve3d') {
+          if (__computedStyle[OVERFLOW$2] === 'hidden' || __computedStyle[FILTER$2].length || this.__cacheAsBitmap) {
+            __computedStyle[TRANSFORM_STYLE$1] = 'flat';
+          }
+        } // 影响父级flat的
+
+
+        if ((__computedStyle[MIX_BLEND_MODE$3] !== 'normal' || this.__mask) && parentComputedStyle) {
+          parentComputedStyle[TRANSFORM_STYLE$1] = 'flat';
+        }
+
         this.__bx1 = bx1;
         this.__bx2 = bx2;
         this.__by1 = by1;
@@ -19031,7 +19395,7 @@
           __cacheStyle[PERSPECTIVE$1] = true;
           rebuild = true;
           var v = __currentStyle[PERSPECTIVE$1];
-          __computedStyle[PERSPECTIVE$1] = this.__calSize(v, this.clientWidth, true);
+          __computedStyle[PERSPECTIVE$1] = this.__calSize(v, this.__clientWidth, true);
         }
 
         if (isNil$9(__cacheStyle[PERSPECTIVE_ORIGIN$1])) {
@@ -19105,7 +19469,7 @@
             overflow = __computedStyle[OVERFLOW$2],
             display = __computedStyle[DISPLAY$6];
 
-        if (mixBlendMode !== 'normal' && isValidMbm$1(mixBlendMode)) {
+        if (mixBlendMode !== 'normal' && isValidMbm(mixBlendMode)) {
           mixBlendMode = mbmName$1(mixBlendMode);
           var c = inject.getOffscreenCanvas(width, height, null, 'blend');
           offscreenBlend = {
@@ -19409,7 +19773,7 @@
         }
 
         if (renderMode === SVG$1) {
-          if (mixBlendMode !== 'normal' && isValidMbm$1(mixBlendMode)) {
+          if (mixBlendMode !== 'normal' && isValidMbm(mixBlendMode)) {
             mixBlendMode = mbmName$1(mixBlendMode);
             virtualDom.mixBlendMode = mixBlendMode;
           } else {
@@ -19892,7 +20256,11 @@
         var root = this.__root;
 
         if (isFunction$5(lv) || !lv) {
-          lv = REPAINT$3;
+          lv = CACHE$3;
+        }
+
+        if (lv) {
+          this.clearCache(lv < REPAINT$3);
         }
 
         if (root && !this.__isDestroyed) {
@@ -20158,14 +20526,16 @@
 
     }, {
       key: "clearCache",
-      value: function clearCache(lookUp) {
+      value: function clearCache(onlyTotal) {
         var __cacheTotal = this.__cacheTotal;
         var __cacheFilter = this.__cacheFilter;
         var __cacheMask = this.__cacheMask;
         var __cache = this.__cache;
 
-        if (__cache) {
+        if (__cache && !onlyTotal) {
           __cache.release();
+
+          this.__refreshLevel |= REPAINT$3;
         }
 
         if (__cacheTotal) {
@@ -20181,30 +20551,32 @@
         }
 
         this.__refreshLevel |= CACHE$3;
+        this.clearTopCache();
+      }
+    }, {
+      key: "clearTopCache",
+      value: function clearTopCache() {
+        var p = this.__domParent;
 
-        if (lookUp) {
-          var p = this.__domParent;
+        while (p) {
+          var __cacheTotal = p.__cacheTotal;
+          var __cacheFilter = p.__cacheFilter;
+          var __cacheMask = p.__cacheMask;
+          p.__refreshLevel |= CACHE$3;
 
-          while (p) {
-            var _cacheTotal = p.__cacheTotal;
-            var _cacheFilter = p.__cacheFilter;
-            var _cacheMask = p.__cacheMask;
-            p.__refreshLevel |= CACHE$3;
-
-            if (_cacheTotal) {
-              _cacheTotal.release();
-            }
-
-            if (_cacheFilter) {
-              _cacheFilter.release();
-            }
-
-            if (_cacheMask) {
-              _cacheMask.release();
-            }
-
-            p = p.__domParent;
+          if (__cacheTotal) {
+            __cacheTotal.release();
           }
+
+          if (__cacheFilter) {
+            __cacheFilter.release();
+          }
+
+          if (__cacheMask) {
+            __cacheMask.release();
+          }
+
+          p = p.__domParent;
         }
       }
     }, {
@@ -20797,6 +21169,16 @@
           var root = this.__root;
 
           if (root && !this.__isDestroyed) {
+            var p = this.__domParent;
+
+            if (p) {
+              if (v) {
+                p.__computedStyle[TRANSFORM_STYLE$1] = 'flat';
+              } else {
+                p.__computedStyle[TRANSFORM_STYLE$1] = p.__currentStyle[TRANSFORM_STYLE$1];
+              }
+            }
+
             root.__addUpdate(this, null, MASK$2, null, null, null, null);
           }
         }
@@ -20814,6 +21196,16 @@
           var root = this.__root;
 
           if (root && !this.__isDestroyed) {
+            var p = this.__domParent;
+
+            if (p) {
+              if (v) {
+                p.__computedStyle[TRANSFORM_STYLE$1] = 'flat';
+              } else {
+                p.__computedStyle[TRANSFORM_STYLE$1] = p.__currentStyle[TRANSFORM_STYLE$1];
+              }
+            }
+
             root.__addUpdate(this, null, MASK$2, null, null, null, null);
           }
         }
@@ -20831,6 +21223,12 @@
           var root = this.__root;
 
           if (root && !this.__isDestroyed) {
+            if (v) {
+              this.__computedStyle[TRANSFORM_STYLE$1] = 'flat';
+            } else {
+              this.__computedStyle[TRANSFORM_STYLE$1] = this.__currentStyle[TRANSFORM_STYLE$1];
+            }
+
             root.__addUpdate(this, null, REPAINT$3, null, null, null, null);
           }
         }
@@ -21875,26 +22273,38 @@
       value: function calContent(currentStyle, computedStyle) {
         var res = _get(_getPrototypeOf(Geom.prototype), "calContent", this).call(this, currentStyle, computedStyle);
 
-        if (!res) {
-          var fill = computedStyle[FILL$1],
-              stroke = computedStyle[STROKE],
-              strokeWidth = computedStyle[STROKE_WIDTH$6];
+        this.__hasXomContent = res;
+        var fill = computedStyle[FILL$1],
+            stroke = computedStyle[STROKE],
+            strokeWidth = computedStyle[STROKE_WIDTH$6];
+        var empty = true;
 
-          for (var i = 0, len = fill.length; i < len; i++) {
-            var item = fill[i];
+        for (var i = 0, len = fill.length; i < len; i++) {
+          var item = fill[i];
 
-            if (item.k || item[3] > 0) {
-              return true;
-            }
+          if (item.k || item[3] > 0) {
+            empty = false;
+            break;
           }
+        }
 
-          for (var _i = 0, _len = stroke.length; _i < _len; _i++) {
-            var _item = stroke[_i];
+        for (var _i = 0, _len = stroke.length; _i < _len; _i++) {
+          var _item = stroke[_i];
 
-            if ((_item.k || _item[3] > 0) && strokeWidth[_i] > 0) {
-              return true;
-            }
+          if ((_item.k || _item[3] > 0) && strokeWidth[_i] > 0) {
+            empty = false;
+            break;
           }
+        } // 矢量图形默认有内容
+
+
+        if (!empty) {
+          return true;
+        } // 没有fill和stroke则认为矢量图形为空
+
+
+        if (!res && empty) {
+          return false;
         }
 
         return res;
@@ -26924,6 +27334,8 @@
           if (!isE$2(this.__matrix)) {
             pm = multiply$1(pm, this.__matrix);
             assignMatrix$1(this.__matrixEvent, pm);
+          } else if (this.__perspectiveMatrix) {
+            pm = this.__perspectiveMatrix;
           }
 
           var bbox = __cacheTotal.bbox;
@@ -29168,6 +29580,12 @@
           unitSize <<= 1;
         }
 
+        var n = MAX; // 只有超过一定尺寸时用8192最大尺寸，大部分情况4096足够，且8192会轻微卡顿一下
+
+        if (size <= 2048 && MAX === 8192) {
+          n = 4096;
+        }
+
         var key = rootId + ',' + renderMode; // 每个root复用自己的合图，webgl中为了隔离不同实例
 
         var list = HASH$2[key] = HASH$2[key] || [];
@@ -29176,7 +29594,7 @@
         for (var i = 0, len = list.length; i < len; i++) {
           var item = list[i];
 
-          if (excludePage && item === excludePage) {
+          if (excludePage && item === excludePage || item.__size !== n) {
             continue;
           }
 
@@ -29187,7 +29605,7 @@
         }
 
         if (!page) {
-          page = new klass(renderMode, ctx, MAX, NUMBER);
+          page = new klass(renderMode, ctx, n, NUMBER);
           pos = 0;
           list.push(page);
         }
@@ -29247,7 +29665,7 @@
         _init = true;
 
         if (MAX_TEXTURE_SIZE !== MAX) {
-          // 超过8192会卡一下
+          // 超过限制会明显卡一下
           Page.MAX = Math.min(MAX_TEXTURE_SIZE, 8192);
         }
       }
@@ -29256,7 +29674,8 @@
     return Page;
   }();
 
-  var calPoint = matrix.calPoint;
+  var calRectPoint$1 = matrix.calRectPoint,
+      calPoint = matrix.calPoint;
   /**
    * 初始化 shader
    * @param gl GL context
@@ -29273,7 +29692,9 @@
     } // 要开启透明度，用以绘制透明的图形
 
 
-    gl.enable(gl.BLEND);
+    gl.enable(gl.BLEND); // gl.enable(gl.DEPTH_TEST);
+    // gl.enable(gl.POLYGON_OFFSET_FILL);
+
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     return program;
   }
@@ -29355,7 +29776,7 @@
     return shader;
   }
 
-  function convertCoords2Gl(x, y, z, w, cx, cy) {
+  function convertCoords2Gl(x, y, z, w, cx, cy, tz) {
     if (w && w !== 1) {
       x /= w;
       y /= w;
@@ -29374,6 +29795,19 @@
       y = (cy - y) / cy;
     }
 
+    if (tz) {
+      z /= -tz;
+    }
+
+    if (w === 1) {
+      return {
+        x: x,
+        y: y,
+        z: z,
+        w: w
+      };
+    }
+
     return {
       x: x * w,
       y: y * w,
@@ -29382,9 +29816,9 @@
     };
   }
 
-  function createTexture(gl, tex, n, width, height) {
+  function createTexture$1(gl, tex, n, width, height) {
     var texture = gl.createTexture();
-    bindTexture(gl, texture, n);
+    bindTexture$1(gl, texture, n);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true); // 传入高宽时是绑定fbo，且tex一定为null
 
@@ -29402,7 +29836,7 @@
     return texture;
   }
 
-  function bindTexture(gl, texture, n) {
+  function bindTexture$1(gl, texture, n) {
     gl.activeTexture(gl['TEXTURE' + n]);
     gl.bindTexture(gl.TEXTURE_2D, texture);
   }
@@ -29414,7 +29848,7 @@
    * 然后相同纹理单元的形成一批，设置uniform的纹理单元号进行绘制，如此循环
    */
 
-  function drawTextureCache(gl, list, cx, cy, dx, dy) {
+  function drawTextureCache$1(gl, list, cx, cy, dx, dy) {
     var length = list.length;
 
     if (!length) {
@@ -29461,7 +29895,7 @@
           page.genTexture(gl);
         }
 
-        bindTexture(gl, page.texture, 0);
+        bindTexture$1(gl, page.texture, 0);
       } // 计算顶点坐标和纹理坐标，转换[0,1]对应关系
 
 
@@ -29472,94 +29906,76 @@
       var xb = bx + width + dx,
           yb = by + dy;
 
-      var _calPoint = calPoint({
-        x: xa,
-        y: ya,
-        z: 0,
-        w: 1
-      }, matrix),
-          x1 = _calPoint.x,
-          y1 = _calPoint.y,
-          w1 = _calPoint.w;
+      var _calRectPoint = calRectPoint$1(xa, ya, xb, yb, matrix),
+          x1 = _calRectPoint.x1,
+          y1 = _calRectPoint.y1,
+          z1 = _calRectPoint.z1,
+          w1 = _calRectPoint.w1,
+          x2 = _calRectPoint.x2,
+          y2 = _calRectPoint.y2,
+          z2 = _calRectPoint.z2,
+          w2 = _calRectPoint.w2,
+          x3 = _calRectPoint.x3,
+          y3 = _calRectPoint.y3,
+          z3 = _calRectPoint.z3,
+          w3 = _calRectPoint.w3,
+          x4 = _calRectPoint.x4,
+          y4 = _calRectPoint.y4,
+          z4 = _calRectPoint.z4,
+          w4 = _calRectPoint.w4; // console.warn(x1,y1,z1,w1,',',x2,y2,z2,w2,',',x3,y3,z3,w3,',',x4,y4,z4,w4);
+      // z范围取所有、对角线最大值，只有当非0有值时才求
 
-      var _calPoint2 = calPoint({
-        x: xb,
-        y: yb,
-        z: 0,
-        w: 1
-      }, matrix),
-          x3 = _calPoint2.x,
-          y3 = _calPoint2.y,
-          w3 = _calPoint2.w;
 
-      var x2 = void 0,
-          y2 = void 0,
-          w2 = void 0,
-          x4 = void 0,
-          y4 = void 0,
-          w4 = void 0; // 无旋转的时候可以少算2个点
+      var z = Math.max(Math.abs(z1), Math.abs(z2));
+      z = Math.max(z, Math.abs(z3));
+      z = Math.max(z, Math.abs(z4));
 
-      if (w1 === 1 && w3 === 1 && (!matrix || !matrix.length || !matrix[1] && !matrix[4])) {
-        x2 = x3;
-        y2 = y1;
-        x4 = x1;
-        y4 = y3;
-        w2 = w4 = 1;
-      } else {
-        var _t = calPoint({
-          x: xb,
-          y: ya,
-          z: 0,
-          w: 1
-        }, matrix);
-
-        x2 = _t.x;
-        y2 = _t.y;
-        w2 = _t.w;
-        _t = calPoint({
-          x: xa,
-          y: yb,
-          z: 0,
-          w: 1
-        }, matrix);
-        x4 = _t.x;
-        y4 = _t.y;
-        w4 = _t.w;
+      if (z) {
+        z = Math.max(z, Math.sqrt(cx * cx + cy * cy));
       }
 
-      var t = convertCoords2Gl(x1, y1, 0, w1, cx, cy);
+      var t = convertCoords2Gl(x1, y1, z1, w1, cx, cy, z);
       x1 = t.x;
       y1 = t.y;
-      t = convertCoords2Gl(x2, y2, 0, w2, cx, cy);
+      z1 = t.z;
+      t = convertCoords2Gl(x2, y2, z2, w2, cx, cy, z);
       x2 = t.x;
       y2 = t.y;
-      t = convertCoords2Gl(x3, y3, 0, w3, cx, cy);
+      z2 = t.z;
+      t = convertCoords2Gl(x3, y3, z3, w3, cx, cy, z);
       x3 = t.x;
       y3 = t.y;
-      t = convertCoords2Gl(x4, y4, 0, w4, cx, cy);
+      z3 = t.z;
+      t = convertCoords2Gl(x4, y4, z4, w4, cx, cy, z);
       x4 = t.x;
-      y4 = t.y; // vtPoint.push(x1, y1, 0, w1, x4, y4, 0, w4, x2, y2, 0, w2, x4, y4, 0, w4, x2, y2, 0, w2, x3, y3, 0, w3);
+      y4 = t.y;
+      z4 = t.z; // console.log(x1,y1,z1,w1,',',x2,y2,z2,w2,',',x3,y3,z3,w3,',',x4,y4,z4,w4);
 
       var j = i * 24;
       vtPoint[j] = x1;
       vtPoint[j + 1] = y1;
+      vtPoint[j + 2] = z1;
       vtPoint[j + 3] = w1;
       vtPoint[j + 4] = x4;
       vtPoint[j + 5] = y4;
+      vtPoint[j + 6] = z4;
       vtPoint[j + 7] = w4;
       vtPoint[j + 8] = x2;
       vtPoint[j + 9] = y2;
+      vtPoint[j + 10] = z2;
       vtPoint[j + 11] = w2;
       vtPoint[j + 12] = x4;
       vtPoint[j + 13] = y4;
+      vtPoint[j + 14] = z4;
       vtPoint[j + 15] = w4;
       vtPoint[j + 16] = x2;
       vtPoint[j + 17] = y2;
+      vtPoint[j + 18] = z2;
       vtPoint[j + 19] = w2;
       vtPoint[j + 20] = x3;
       vtPoint[j + 21] = y3;
-      vtPoint[j + 23] = w3; // vtTex.push(tx1, ty1, tx1, ty2, tx2, ty1, tx1, ty2, tx2, ty1, tx2, ty2);
-
+      vtPoint[j + 22] = z3;
+      vtPoint[j + 23] = w3;
       j = i * 12;
       vtTex[j] = tx1;
       vtTex[j + 1] = ty1;
@@ -29572,8 +29988,7 @@
       vtTex[j + 8] = tx2;
       vtTex[j + 9] = ty1;
       vtTex[j + 10] = tx2;
-      vtTex[j + 11] = ty2; // vtOpacity.push(opacity, opacity, opacity, opacity, opacity, opacity);
-
+      vtTex[j + 11] = ty2;
       j = i * 6;
       vtOpacity[j] = opacity;
       vtOpacity[j + 1] = opacity;
@@ -29657,9 +30072,9 @@
 
     for (var n = 0; n < 3; n++) {
       // tex1到tex2
-      var tex2 = createTexture(gl, null, 1, width, height);
+      var tex2 = createTexture$1(gl, null, 1, width, height);
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex2, 0);
-      bindTexture(gl, tex1, 0);
+      bindTexture$1(gl, tex1, 0);
 
       if (width >= height) {
         gl.uniform2f(u_direction, max, 0);
@@ -29670,9 +30085,9 @@
       gl.uniform1i(u_texture, 0);
       gl.drawArrays(gl.TRIANGLES, 0, 6); // tex2到tex1
 
-      var tex3 = createTexture(gl, null, 0, width, height);
+      var tex3 = createTexture$1(gl, null, 0, width, height);
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex3, 0);
-      bindTexture(gl, tex2, 1);
+      bindTexture$1(gl, tex2, 1);
 
       if (width >= height) {
         gl.uniform2f(u_direction, 0, max * ratio);
@@ -29688,8 +30103,8 @@
     } // 0/1单元都解绑
 
 
-    bindTexture(gl, null, 0);
-    bindTexture(gl, null, 1); // 回收
+    bindTexture$1(gl, null, 0);
+    bindTexture$1(gl, null, 1); // 回收
 
     gl.deleteBuffer(pointBuffer);
     gl.deleteBuffer(texBuffer);
@@ -29703,7 +30118,7 @@
 
   function drawCm(gl, program, target, source, m, center, size) {
     gl.useProgram(program);
-    bindTexture(gl, source.__page.texture, 0);
+    bindTexture$1(gl, source.__page.texture, 0);
     gl.viewport(0, 0, size, size);
     var tx1 = target.x,
         ty1 = target.y,
@@ -29752,7 +30167,7 @@
     gl.deleteBuffer(texBuffer);
     gl.disableVertexAttribArray(a_position);
     gl.disableVertexAttribArray(a_texCoords);
-    bindTexture(gl, null, 0);
+    bindTexture$1(gl, null, 0);
   }
   /**
    * 根据total/filter生成overflow
@@ -29801,7 +30216,7 @@
     gl.enableVertexAttribArray(a_texCoords); // 纹理单元
 
     var u_texture = gl.getUniformLocation(program, 'u_texture');
-    bindTexture(gl, source.__page.texture, 0);
+    bindTexture$1(gl, source.__page.texture, 0);
     gl.uniform1i(u_texture, 0);
     gl.drawArrays(gl.TRIANGLES, 0, 6); // 回收
 
@@ -29813,8 +30228,8 @@
 
   function drawMask(gl, program, target, source, temp, center, size) {
     gl.useProgram(program);
-    bindTexture(gl, source.__page.texture, 0);
-    bindTexture(gl, temp, 1);
+    bindTexture$1(gl, source.__page.texture, 0);
+    bindTexture$1(gl, temp, 1);
     gl.viewport(0, 0, size, size);
     var tx1 = target.x,
         ty1 = target.y,
@@ -29871,13 +30286,13 @@
     gl.disableVertexAttribArray(a_texCoords2);
     gl.deleteTexture(temp);
     gl.bindTexture(gl.TEXTURE_2D, null);
-    bindTexture(gl, null, 0);
-    bindTexture(gl, null, 1);
+    bindTexture$1(gl, null, 0);
+    bindTexture$1(gl, null, 1);
   }
 
   function drawMbm(gl, program, tex1, tex2) {
-    bindTexture(gl, tex1, 0);
-    bindTexture(gl, tex2, 1); // 顶点buffer
+    bindTexture$1(gl, tex1, 0);
+    bindTexture$1(gl, tex2, 1); // 顶点buffer
 
     var pointBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
@@ -29934,7 +30349,7 @@
     gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(a_texCoords); // 纹理单元
 
-    bindTexture(gl, texture, 0);
+    bindTexture$1(gl, texture, 0);
     var u_texture = gl.getUniformLocation(program, 'u_texture');
     gl.uniform1i(u_texture, 0); // color
 
@@ -29946,7 +30361,7 @@
     gl.deleteBuffer(texBuffer);
     gl.disableVertexAttribArray(a_position);
     gl.disableVertexAttribArray(a_texCoords);
-    bindTexture(gl, null, 0);
+    bindTexture$1(gl, null, 0);
   }
 
   function drawDropShadowMerge(gl, target, size, tex1, dx1, dy1, w, h, tex2, dx2, dy2, width, height) {
@@ -29984,7 +30399,7 @@
     gl.vertexAttribPointer(a_opacity, 1, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(a_opacity); // 纹理单元
 
-    bindTexture(gl, tex1, 0);
+    bindTexture$1(gl, tex1, 0);
     var u_texture = gl.getUniformLocation(gl.program, 'u_texture');
     gl.uniform1i(u_texture, 0);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -30001,13 +30416,13 @@
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([x3, y3, x3, y4, x4, y3, x3, y4, x4, y3, x4, y4]), gl.STATIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER, opacityBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([1, 1, 1, 1, 1, 1]), gl.STATIC_DRAW);
-    bindTexture(gl, tex2, 0);
+    bindTexture$1(gl, tex2, 0);
     gl.uniform1i(u_texture, 0);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
-    bindTexture(gl, null, 0);
+    bindTexture$1(gl, null, 0);
   }
 
-  function drawTex2Cache(gl, program, cache, tex, width, height) {
+  function drawTex2Cache$1(gl, program, cache, tex, width, height) {
     gl.useProgram(program);
     var page = cache.__page,
         size = page.__size;
@@ -30024,7 +30439,7 @@
         x2 = _convertCoords2Gl12.x,
         y1 = _convertCoords2Gl12.y;
 
-    bindTexture(gl, tex, 0); // 顶点buffer
+    bindTexture$1(gl, tex, 0); // 顶点buffer
 
     var pointBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
@@ -30048,7 +30463,7 @@
     gl.enableVertexAttribArray(a_opacity); // 纹理单元
 
     var u_texture = gl.getUniformLocation(program, 'u_texture');
-    bindTexture(gl, tex, 0);
+    bindTexture$1(gl, tex, 0);
     gl.uniform1i(u_texture, 0);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
     gl.deleteBuffer(pointBuffer);
@@ -30060,7 +30475,7 @@
     gl.bindTexture(gl.TEXTURE_2D, null);
   }
 
-  function drawCache2Tex(gl, program, cache, width, height, spread) {
+  function drawCache2Tex$1(gl, program, cache, width, height, spread) {
     var tx1 = cache.x,
         ty1 = cache.y,
         w1 = cache.width,
@@ -30109,16 +30524,293 @@
     gl.enableVertexAttribArray(a_opacity); // 纹理单元
 
     var u_texture = gl.getUniformLocation(program, 'u_texture');
-    bindTexture(gl, texture, 0);
+    bindTexture$1(gl, texture, 0);
     gl.uniform1i(u_texture, 0);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
   }
 
+  function drawSameSize(gl, tex, opacity) {
+    var program = gl.programSs;
+    gl.useProgram(program); // 顶点buffer
+
+    var pointBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, -1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+    var a_position = gl.getAttribLocation(program, 'a_position');
+    gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_position); // 纹理buffer
+
+    var texBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1]), gl.STATIC_DRAW);
+    var a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
+    gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_texCoords); // 纹理单元
+
+    var u_texture = gl.getUniformLocation(program, 'u_texture');
+    gl.uniform1i(u_texture, 0);
+    bindTexture$1(gl, tex, 0);
+    var u_opacity = gl.getUniformLocation(program, 'u_opacity');
+    gl.uniform1f(u_opacity, opacity);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    gl.deleteBuffer(pointBuffer);
+    gl.deleteBuffer(texBuffer);
+    gl.disableVertexAttribArray(a_position);
+    gl.disableVertexAttribArray(a_texCoords);
+    gl.useProgram(gl.program);
+  }
+
+  function drawOitPlane(gl, structs, list, ppt, cx, cy, dx, dy) {
+    var pointBuffer = gl.createBuffer();
+    var a_position = gl.getAttribLocation(gl.program, 'a_position');
+    var texBuffer = gl.createBuffer();
+    var a_texCoords = gl.getAttribLocation(gl.program, 'a_texCoords');
+    var opacityBuffer = gl.createBuffer();
+    var a_opacity = gl.getAttribLocation(gl.program, 'a_opacity');
+    var u_texture = gl.getUniformLocation(gl.program, 'u_texture'); // 循环所有顺序拼图/平面
+
+    for (var i = 0, len = list.length; i < len; i++) {
+      var _list$i2 = list[i],
+          isPuzzle = _list$i2.isPuzzle,
+          node = _list$i2.node,
+          target = _list$i2.target,
+          points = _list$i2.points;
+      var width = target.__width,
+          height = target.__height,
+          tx1 = target.__tx1,
+          ty1 = target.__ty1,
+          tx2 = target.__tx2,
+          ty2 = target.__ty2,
+          page = target.__page,
+          bbox = target.__bbox; // 固定绑定纹理0号单元
+
+      if (page.__update) {
+        page.genTexture(gl);
+      }
+
+      bindTexture$1(gl, page.texture, 0);
+      var bx = bbox[0],
+          by = bbox[1];
+      var opacity = node.__opacity;
+      var matrix = node.__matrixEvent;
+      var tw = tx2 - tx1,
+          th = ty2 - ty1; // 先按照没有拆分拼图的情况求出节点的四个顶点坐标列表，可能有重复利用hash缓存
+
+      var vtPoint = [],
+          vtTex = [],
+          vtOpacity = [];
+      var pHash = [],
+          tHash = [];
+
+      if (isPuzzle) {
+        // 拼接三角形，以起点为初始点链接其它所有顶点组成n-2个三角形
+        var x0 = void 0,
+            y0 = void 0,
+            z0 = void 0,
+            w0 = void 0;
+        var p = points[0];
+        var o = calPoint({
+          x: bx + dx + p.px * width,
+          y: by + dy + p.py * height,
+          z: 0,
+          w: 1
+        }, matrix);
+        w0 = o.w;
+        var t = convertCoords2Gl(o.x, o.y, o.z, w0, cx, cy, ppt);
+        x0 = t.x;
+        y0 = t.y;
+        z0 = t.z;
+        var tx0 = tx1 + p.px * tw,
+            ty0 = ty1 + p.py * th; // 每次循环以第0个点为起点
+
+        for (var j = 1, _len = points.length; j < _len - 1; j++) {
+          vtPoint.push(x0);
+          vtPoint.push(y0);
+          vtPoint.push(z0);
+          vtPoint.push(w0);
+          vtTex.push(tx0);
+          vtTex.push(ty0);
+          vtOpacity.push(opacity); // 依次的2个相邻点
+
+          for (var k = j; k < j + 2; k++) {
+            var _p = points[k];
+            var x = void 0,
+                y = void 0,
+                z = void 0,
+                w = void 0;
+            var hashP = pHash[k];
+
+            if (hashP) {
+              x = hashP.x;
+              y = hashP.y;
+              z = hashP.z;
+              w = hashP.w;
+            } else {
+              var _o = calPoint({
+                x: bx + dx + _p.px * width,
+                y: by + dy + _p.py * height,
+                z: 0,
+                w: 1
+              }, matrix);
+
+              w = _o.w;
+
+              var _t = convertCoords2Gl(_o.x, _o.y, _o.z, w, cx, cy, ppt);
+
+              x = _t.x;
+              y = _t.y;
+              z = _t.z;
+              pHash[k] = {
+                x: x,
+                y: y,
+                z: z,
+                w: w
+              };
+            }
+
+            vtPoint.push(x);
+            vtPoint.push(y);
+            vtPoint.push(z);
+            vtPoint.push(w);
+            var tx = void 0,
+                ty = void 0;
+            var hashT = tHash[k];
+
+            if (hashT) {
+              tx = hashT.tx;
+              ty = hashT.ty;
+            } else {
+              tx = tx1 + _p.px * tw;
+              ty = ty1 + _p.py * th;
+              tHash[k] = {
+                tx: tx,
+                ty: ty
+              };
+            }
+
+            vtTex.push(tx);
+            vtTex.push(ty);
+            vtOpacity.push(opacity);
+          }
+        }
+      } else {
+        var xa = bx + dx,
+            ya = by + height + dy;
+        var xb = bx + width + dx,
+            yb = by + dy;
+
+        var _calRectPoint2 = calRectPoint$1(xa, ya, xb, yb, matrix),
+            x1 = _calRectPoint2.x1,
+            y1 = _calRectPoint2.y1,
+            z1 = _calRectPoint2.z1,
+            w1 = _calRectPoint2.w1,
+            x2 = _calRectPoint2.x2,
+            y2 = _calRectPoint2.y2,
+            z2 = _calRectPoint2.z2,
+            w2 = _calRectPoint2.w2,
+            x3 = _calRectPoint2.x3,
+            y3 = _calRectPoint2.y3,
+            z3 = _calRectPoint2.z3,
+            w3 = _calRectPoint2.w3,
+            x4 = _calRectPoint2.x4,
+            y4 = _calRectPoint2.y4,
+            z4 = _calRectPoint2.z4,
+            w4 = _calRectPoint2.w4;
+
+        var _t2 = convertCoords2Gl(x1, y1, z1, w1, cx, cy, ppt);
+
+        x1 = _t2.x;
+        y1 = _t2.y;
+        z1 = _t2.z;
+        _t2 = convertCoords2Gl(x2, y2, z2, w2, cx, cy, ppt);
+        x2 = _t2.x;
+        y2 = _t2.y;
+        z2 = _t2.z;
+        _t2 = convertCoords2Gl(x3, y3, z3, w3, cx, cy, ppt);
+        x3 = _t2.x;
+        y3 = _t2.y;
+        z3 = _t2.z;
+        _t2 = convertCoords2Gl(x4, y4, z4, w4, cx, cy, ppt);
+        x4 = _t2.x;
+        y4 = _t2.y;
+        z4 = _t2.z;
+        vtPoint[0] = x1;
+        vtPoint[1] = y1;
+        vtPoint[2] = z1;
+        vtPoint[3] = w1;
+        vtPoint[4] = x4;
+        vtPoint[5] = y4;
+        vtPoint[6] = z4;
+        vtPoint[7] = w4;
+        vtPoint[8] = x2;
+        vtPoint[9] = y2;
+        vtPoint[10] = z2;
+        vtPoint[11] = w2;
+        vtPoint[12] = x4;
+        vtPoint[13] = y4;
+        vtPoint[14] = z4;
+        vtPoint[15] = w4;
+        vtPoint[16] = x2;
+        vtPoint[17] = y2;
+        vtPoint[18] = z2;
+        vtPoint[19] = w2;
+        vtPoint[20] = x3;
+        vtPoint[21] = y3;
+        vtPoint[22] = z3;
+        vtPoint[23] = w3;
+        vtTex[0] = tx1;
+        vtTex[1] = ty1;
+        vtTex[2] = tx1;
+        vtTex[3] = ty2;
+        vtTex[4] = tx2;
+        vtTex[5] = ty1;
+        vtTex[6] = tx1;
+        vtTex[7] = ty2;
+        vtTex[8] = tx2;
+        vtTex[9] = ty1;
+        vtTex[10] = tx2;
+        vtTex[11] = ty2;
+        vtOpacity[0] = opacity;
+        vtOpacity[1] = opacity;
+        vtOpacity[2] = opacity;
+        vtOpacity[3] = opacity;
+        vtOpacity[4] = opacity;
+        vtOpacity[5] = opacity;
+      } // 顶点buffer
+
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vtPoint), gl.STATIC_DRAW);
+      gl.vertexAttribPointer(a_position, 4, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(a_position); // 纹理buffer
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vtTex), gl.STATIC_DRAW);
+      gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(a_texCoords); // opacity buffer
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, opacityBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vtOpacity), gl.STATIC_DRAW);
+      gl.vertexAttribPointer(a_opacity, 1, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(a_opacity);
+      gl.uniform1i(u_texture, 0);
+      gl.drawArrays(gl.TRIANGLES, 0, vtOpacity.length);
+    }
+
+    gl.deleteBuffer(pointBuffer);
+    gl.deleteBuffer(texBuffer);
+    gl.deleteBuffer(opacityBuffer);
+    gl.disableVertexAttribArray(a_position);
+    gl.disableVertexAttribArray(a_texCoords);
+    gl.disableVertexAttribArray(a_opacity);
+  }
+
   var webgl = {
     initShaders: initShaders,
-    createTexture: createTexture,
-    bindTexture: bindTexture,
-    drawTextureCache: drawTextureCache,
+    convertCoords2Gl: convertCoords2Gl,
+    createTexture: createTexture$1,
+    bindTexture: bindTexture$1,
+    drawTextureCache: drawTextureCache$1,
     drawBlur: drawBlur,
     drawOverflow: drawOverflow,
     drawMask: drawMask,
@@ -30126,8 +30818,10 @@
     drawCm: drawCm,
     drawDropShadow: drawDropShadow,
     drawDropShadowMerge: drawDropShadowMerge,
-    drawTex2Cache: drawTex2Cache,
-    drawCache2Tex: drawCache2Tex
+    drawTex2Cache: drawTex2Cache$1,
+    drawCache2Tex: drawCache2Tex$1,
+    drawSameSize: drawSameSize,
+    drawOitPlane: drawOitPlane
   };
 
   var CanvasPage = /*#__PURE__*/function (_Page) {
@@ -30556,6 +31250,1846 @@
     applyOffscreen: applyOffscreen$1
   };
 
+  var TOLERANCE$1 = 1e-6;
+  /**
+   * 计算线性方程的根
+   * y = ax + b
+   * root = -b / a
+   * @param {Array<Number>} coefs 系数 [b, a] 本文件代码中的系数数组都是从阶次由低到高排列
+   */
+
+  function getLinearRoot(coefs) {
+    var result = [];
+    var a = coefs[1];
+
+    if (a !== 0) {
+      result.push(-coefs[0] / a);
+    }
+
+    return result;
+  }
+  /**
+   * 计算二次方程的根，一元二次方程求根公式
+   * y = ax^2 + bx + c
+   * root = (-b ± sqrt(b^2 - 4ac)) / 2a
+   * @param {Array<Number>} coefs 系数，系数 [c, b, a]
+   */
+
+
+  function getQuadraticRoots(coefs) {
+    var results = [];
+    var a = coefs[2];
+    var b = coefs[1] / a;
+    var c = coefs[0] / a;
+    var d = b * b - 4 * c;
+
+    if (d > 0) {
+      var e = Math.sqrt(d);
+      results.push(0.5 * (-b + e));
+      results.push(0.5 * (-b - e));
+    } else if (d === 0) {
+      // 两个相同的根，只要返回一个
+      results.push(0.5 * -b);
+    }
+
+    return results;
+  }
+  /**
+   * 计算一元三次方程的根
+   * y = ax^3 + bx^2 + cx + d
+   * 求根公式参见: https://baike.baidu.com/item/%E4%B8%80%E5%85%83%E4%B8%89%E6%AC%A1%E6%96%B9%E7%A8%8B%E6%B1%82%E6%A0%B9%E5%85%AC%E5%BC%8F/10721952?fr=aladdin
+   * @param {Array<Number>} coefs 系数
+   */
+
+
+  function getCubicRoots(coefs) {
+    var results = [];
+    var c3 = coefs[3];
+    var c2 = coefs[2] / c3;
+    var c1 = coefs[1] / c3;
+    var c0 = coefs[0] / c3;
+    var a = (3 * c1 - c2 * c2) / 3;
+    var b = (2 * c2 * c2 * c2 - 9 * c1 * c2 + 27 * c0) / 27;
+    var offset = c2 / 3;
+    var discrim = b * b / 4 + a * a * a / 27;
+    var halfB = b / 2;
+
+    if (Math.abs(discrim) <= TOLERANCE$1) {
+      discrim = 0;
+    }
+
+    if (discrim > 0) {
+      var e = Math.sqrt(discrim);
+      var tmp;
+      var root;
+      tmp = -halfB + e;
+      if (tmp >= 0) root = Math.pow(tmp, 1 / 3);else root = -Math.pow(-tmp, 1 / 3);
+      tmp = -halfB - e;
+      if (tmp >= 0) root += Math.pow(tmp, 1 / 3);else root -= Math.pow(-tmp, 1 / 3);
+      results.push(root - offset);
+    } else if (discrim < 0) {
+      var distance = Math.sqrt(-a / 3);
+      var angle = Math.atan2(Math.sqrt(-discrim), -halfB) / 3;
+      var cos = Math.cos(angle);
+      var sin = Math.sin(angle);
+      var sqrt3 = Math.sqrt(3);
+      results.push(2 * distance * cos - offset);
+      results.push(-distance * (cos + sqrt3 * sin) - offset);
+      results.push(-distance * (cos - sqrt3 * sin) - offset);
+    } else {
+      var _tmp;
+
+      if (halfB >= 0) _tmp = -Math.pow(halfB, 1 / 3);else _tmp = Math.pow(-halfB, 1 / 3);
+      results.push(2 * _tmp - offset); // really should return next root twice, but we return only one
+
+      results.push(-_tmp - offset);
+    }
+
+    return results;
+  }
+  /**
+   * 计算一元四次方程的根
+   * 求根公式: https://baike.baidu.com/item/%E4%B8%80%E5%85%83%E4%B8%89%E6%AC%A1%E6%96%B9%E7%A8%8B%E6%B1%82%E6%A0%B9%E5%85%AC%E5%BC%8F/10721952?fr=aladdin
+   * @param {Array<Number>} coefs 系数
+   */
+
+
+  function getQuarticRoots(coefs) {
+    var results = [];
+    var c4 = coefs[4];
+    var c3 = coefs[3] / c4;
+    var c2 = coefs[2] / c4;
+    var c1 = coefs[1] / c4;
+    var c0 = coefs[0] / c4;
+    var resolveRoots = getCubicRoots([1, -c2, c3 * c1 - 4 * c0, -c3 * c3 * c0 + 4 * c2 * c0 - c1 * c1].reverse());
+    var y = resolveRoots[0];
+    var discrim = c3 * c3 / 4 - c2 + y;
+    if (Math.abs(discrim) <= TOLERANCE$1) discrim = 0;
+
+    if (discrim > 0) {
+      var e = Math.sqrt(discrim);
+      var t1 = 3 * c3 * c3 / 4 - e * e - 2 * c2;
+      var t2 = (4 * c3 * c2 - 8 * c1 - c3 * c3 * c3) / (4 * e);
+      var plus = t1 + t2;
+      var minus = t1 - t2;
+      if (Math.abs(plus) <= TOLERANCE$1) plus = 0;
+      if (Math.abs(minus) <= TOLERANCE$1) minus = 0;
+
+      if (plus >= 0) {
+        var f = Math.sqrt(plus);
+        results.push(-c3 / 4 + (e + f) / 2);
+        results.push(-c3 / 4 + (e - f) / 2);
+      }
+
+      if (minus >= 0) {
+        var _f = Math.sqrt(minus);
+
+        results.push(-c3 / 4 + (_f - e) / 2);
+        results.push(-c3 / 4 - (_f + e) / 2);
+      }
+    } else if (discrim < 0) ; else {
+      var _t = y * y - 4 * c0;
+
+      if (_t >= -TOLERANCE$1) {
+        if (_t < 0) _t = 0;
+        _t = 2 * Math.sqrt(_t);
+
+        var _t2 = 3 * c3 * c3 / 4 - 2 * c2;
+
+        if (_t2 + _t >= TOLERANCE$1) {
+          var d = Math.sqrt(_t2 + _t);
+          results.push(-c3 / 4 + d / 2);
+          results.push(-c3 / 4 - d / 2);
+        }
+
+        if (_t2 - _t >= TOLERANCE$1) {
+          var _d = Math.sqrt(_t2 - _t);
+
+          results.push(-c3 / 4 + _d / 2);
+          results.push(-c3 / 4 - _d / 2);
+        }
+      }
+    }
+
+    return results;
+  }
+  /**
+   * 计算方程的根
+   * @param {Array<Number>} coefs 系数按幂次方倒序
+   */
+
+
+  function getRoots$1(coefs) {
+    var degree = coefs.length - 1;
+
+    for (var i = degree; i >= 0; i--) {
+      if (Math.abs(coefs[i]) < 1e-12) {
+        degree--;
+      } else {
+        break;
+      }
+    }
+
+    var result = [];
+
+    switch (degree) {
+      case 1:
+        result = getLinearRoot(coefs);
+        break;
+
+      case 2:
+        result = getQuadraticRoots(coefs);
+        break;
+
+      case 3:
+        result = getCubicRoots(coefs);
+        break;
+
+      case 4:
+        result = getQuarticRoots(coefs);
+    }
+
+    return result;
+  }
+
+  var equation = {
+    getRoots: getRoots$1
+  };
+
+  var getRoots = equation.getRoots;
+  var unitize3 = vector.unitize3,
+      crossProduct3 = vector.crossProduct3,
+      dotProduct3 = vector.dotProduct3,
+      isParallel3 = vector.isParallel3,
+      length3 = vector.length3; // 两个三次方程组的数值解.9阶的多项式方程,可以最多有9个实根(两个S形曲线的情况)
+  // 两个三次方程组无法解析表示，只能数值计算
+  // 参考：https://mat.polsl.pl/sjpam/zeszyty/z6/Silesian_J_Pure_Appl_Math_v6_i1_str_155-176.pdf
+
+  var TOLERANCE = 1e-6;
+  var ACCURACY = 6;
+  /**
+   * 获取求导之后的系数
+   * @param coefs
+   */
+
+  function getDerivativeCoefs(coefs) {
+    var derivative = [];
+
+    for (var i = 1; i < coefs.length; i++) {
+      derivative.push(i * coefs[i]);
+    }
+
+    return derivative;
+  }
+  /**
+   * 评估函数
+   * @param x
+   * @param coefs
+   * @return {number}
+   */
+
+
+  function evaluate(x, coefs) {
+    var result = 0;
+
+    for (var i = coefs.length - 1; i >= 0; i--) {
+      result = result * x + coefs[i];
+    }
+
+    return result;
+  }
+
+  function bisection(min, max, coefs) {
+    var minValue = evaluate(min, coefs);
+    var maxValue = evaluate(max, coefs);
+    var result;
+
+    if (Math.abs(minValue) <= TOLERANCE) {
+      result = min;
+    } else if (Math.abs(maxValue) <= TOLERANCE) {
+      result = max;
+    } else if (minValue * maxValue <= 0) {
+      var tmp1 = Math.log(max - min);
+      var tmp2 = Math.LN10 * ACCURACY;
+      var iters = Math.ceil((tmp1 + tmp2) / Math.LN2);
+
+      for (var i = 0; i < iters; i++) {
+        result = 0.5 * (min + max);
+        var value = evaluate(result, coefs);
+
+        if (Math.abs(value) <= TOLERANCE) {
+          break;
+        }
+
+        if (value * minValue < 0) {
+          max = result;
+          maxValue = value;
+        } else {
+          min = result;
+          minValue = value;
+        }
+      }
+    }
+
+    return result;
+  }
+
+  function getRootsInInterval(min, max, coefs) {
+    // console.log('getRootsInInterval', coefs);
+    var roots = [];
+    var root;
+    var degree = coefs.length - 1;
+
+    if (degree === 1) {
+      root = bisection(min, max, coefs);
+
+      if (root != null) {
+        roots.push(root);
+      }
+    } else {
+      var derivativeCoefs = getDerivativeCoefs(coefs);
+      var droots = getRootsInInterval(min, max, derivativeCoefs);
+
+      if (droots.length > 0) {
+        // find root on [min, droots[0]]
+        root = bisection(min, droots[0], coefs);
+
+        if (root != null) {
+          roots.push(root);
+        } // find root on [droots[i],droots[i+1]] for 0 <= i <= count-2
+
+
+        for (var i = 0; i <= droots.length - 2; i++) {
+          root = bisection(droots[i], droots[i + 1], coefs);
+
+          if (root != null) {
+            roots.push(root);
+          }
+        } // find root on [droots[count-1],xmax]
+
+
+        root = bisection(droots[droots.length - 1], max, coefs);
+
+        if (root != null) {
+          roots.push(root);
+        }
+      } else {
+        // polynomial is monotone on [min,max], has at most one root
+        root = bisection(min, max, coefs);
+
+        if (root != null) {
+          roots.push(root);
+        }
+      }
+    }
+
+    return roots;
+  }
+  /**
+   * 二阶贝塞尔曲线 与 二阶贝塞尔曲线 交点
+   * @return {[]}
+   */
+
+
+  function intersectBezier2Bezier2(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, bx3, by3) {
+    var c12, c11, c10;
+    var c22, c21, c20;
+    var result = [];
+    c12 = {
+      x: ax1 - 2 * ax2 + ax3,
+      y: ay1 - 2 * ay2 + ay3
+    };
+    c11 = {
+      x: 2 * ax2 - 2 * ax1,
+      y: 2 * ay2 - 2 * ay1
+    };
+    c10 = {
+      x: ax1,
+      y: ay1
+    };
+    c22 = {
+      x: bx1 - 2 * bx2 + bx3,
+      y: by1 - 2 * by2 + by3
+    };
+    c21 = {
+      x: 2 * bx2 - 2 * bx1,
+      y: 2 * by2 - 2 * by1
+    };
+    c20 = {
+      x: bx1,
+      y: by1
+    };
+    var coefs;
+
+    if (c12.y === 0) {
+      var v0 = c12.x * (c10.y - c20.y);
+      var v1 = v0 - c11.x * c11.y;
+      var v3 = c11.y * c11.y;
+      coefs = [c12.x * c22.y * c22.y, 2 * c12.x * c21.y * c22.y, c12.x * c21.y * c21.y - c22.x * v3 - c22.y * v0 - c22.y * v1, -c21.x * v3 - c21.y * v0 - c21.y * v1, (c10.x - c20.x) * v3 + (c10.y - c20.y) * v1].reverse();
+    } else {
+      var _v = c12.x * c22.y - c12.y * c22.x;
+
+      var _v2 = c12.x * c21.y - c21.x * c12.y;
+
+      var _v3 = c11.x * c12.y - c11.y * c12.x;
+
+      var _v4 = c10.y - c20.y;
+
+      var v4 = c12.y * (c10.x - c20.x) - c12.x * _v4;
+      var v5 = -c11.y * _v3 + c12.y * v4;
+      var v6 = _v3 * _v3;
+      coefs = [_v * _v, 2 * _v * _v2, (-c22.y * v6 + c12.y * _v2 * _v2 + c12.y * _v * v4 + _v * v5) / c12.y, (-c21.y * v6 + c12.y * _v2 * v4 + _v2 * v5) / c12.y, (_v4 * v6 + v4 * v5) / c12.y].reverse();
+    }
+
+    var roots = getRoots(coefs);
+
+    for (var i = 0; i < roots.length; i++) {
+      var s = roots[i];
+
+      if (0 <= s && s <= 1) {
+        var xRoots = getRoots([c12.x, c11.x, c10.x - c20.x - s * c21.x - s * s * c22.x].reverse());
+        var yRoots = getRoots([c12.y, c11.y, c10.y - c20.y - s * c21.y - s * s * c22.y].reverse());
+
+        if (xRoots.length > 0 && yRoots.length > 0) {
+          var _TOLERANCE = 1e-4;
+
+          checkRoots: for (var j = 0; j < xRoots.length; j++) {
+            var xRoot = xRoots[j];
+
+            if (0 <= xRoot && xRoot <= 1) {
+              for (var k = 0; k < yRoots.length; k++) {
+                if (Math.abs(xRoot - yRoots[k]) < _TOLERANCE) {
+                  var x = c22.x * s * s + c21.x * s + c20.x;
+                  var y = c22.y * s * s + c21.y * s + c20.y;
+                  result.push({
+                    x: x,
+                    y: y,
+                    t: xRoot
+                  }); // result.push(c22.multiply(s * s).add(c21.multiply(s).add(c20)));
+
+                  break checkRoots;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+
+  function intersectBezier3Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2, bx3, by3, bx4, by4) {
+    var c13, c12, c11, c10; // 三阶系数
+
+    var c23, c22, c21, c20;
+    var result = [];
+    c13 = {
+      x: -ax1 + 3 * ax2 - 3 * ax3 + ax4,
+      y: -ay1 + 3 * ay2 - 3 * ay3 + ay4
+    };
+    c12 = {
+      x: 3 * ax1 - 6 * ax2 + 3 * ax3,
+      y: 3 * ay1 - 6 * ay2 + 3 * ay3
+    };
+    c11 = {
+      x: -3 * ax1 + 3 * ax2,
+      y: -3 * ay1 + 3 * ay2
+    };
+    c10 = {
+      x: ax1,
+      y: ay1
+    };
+    c23 = {
+      x: -bx1 + 3 * bx2 - 3 * bx3 + bx4,
+      y: -by1 + 3 * by2 - 3 * by3 + by4
+    };
+    c22 = {
+      x: 3 * bx1 - 6 * bx2 + 3 * bx3,
+      y: 3 * by1 - 6 * by2 + 3 * by3
+    };
+    c21 = {
+      x: -3 * bx1 + 3 * bx2,
+      y: -3 * by1 + 3 * by2
+    };
+    c20 = {
+      x: bx1,
+      y: by1
+    };
+    var c10x2 = c10.x * c10.x;
+    var c10x3 = c10.x * c10.x * c10.x;
+    var c10y2 = c10.y * c10.y;
+    var c10y3 = c10.y * c10.y * c10.y;
+    var c11x2 = c11.x * c11.x;
+    var c11x3 = c11.x * c11.x * c11.x;
+    var c11y2 = c11.y * c11.y;
+    var c11y3 = c11.y * c11.y * c11.y;
+    var c12x2 = c12.x * c12.x;
+    var c12x3 = c12.x * c12.x * c12.x;
+    var c12y2 = c12.y * c12.y;
+    var c12y3 = c12.y * c12.y * c12.y;
+    var c13x2 = c13.x * c13.x;
+    var c13x3 = c13.x * c13.x * c13.x;
+    var c13y2 = c13.y * c13.y;
+    var c13y3 = c13.y * c13.y * c13.y;
+    var c20x2 = c20.x * c20.x;
+    var c20x3 = c20.x * c20.x * c20.x;
+    var c20y2 = c20.y * c20.y;
+    var c20y3 = c20.y * c20.y * c20.y;
+    var c21x2 = c21.x * c21.x;
+    var c21x3 = c21.x * c21.x * c21.x;
+    var c21y2 = c21.y * c21.y;
+    var c22x2 = c22.x * c22.x;
+    var c22x3 = c22.x * c22.x * c22.x;
+    var c22y2 = c22.y * c22.y;
+    var c23x2 = c23.x * c23.x;
+    var c23x3 = c23.x * c23.x * c23.x;
+    var c23y2 = c23.y * c23.y;
+    var c23y3 = c23.y * c23.y * c23.y;
+    var coefs = [-c13x3 * c23y3 + c13y3 * c23x3 - 3 * c13.x * c13y2 * c23x2 * c23.y + 3 * c13x2 * c13.y * c23.x * c23y2, -6 * c13.x * c22.x * c13y2 * c23.x * c23.y + 6 * c13x2 * c13.y * c22.y * c23.x * c23.y + 3 * c22.x * c13y3 * c23x2 - 3 * c13x3 * c22.y * c23y2 - 3 * c13.x * c13y2 * c22.y * c23x2 + 3 * c13x2 * c22.x * c13.y * c23y2, -6 * c21.x * c13.x * c13y2 * c23.x * c23.y - 6 * c13.x * c22.x * c13y2 * c22.y * c23.x + 6 * c13x2 * c22.x * c13.y * c22.y * c23.y + 3 * c21.x * c13y3 * c23x2 + 3 * c22x2 * c13y3 * c23.x + 3 * c21.x * c13x2 * c13.y * c23y2 - 3 * c13.x * c21.y * c13y2 * c23x2 - 3 * c13.x * c22x2 * c13y2 * c23.y + c13x2 * c13.y * c23.x * (6 * c21.y * c23.y + 3 * c22y2) + c13x3 * (-c21.y * c23y2 - 2 * c22y2 * c23.y - c23.y * (2 * c21.y * c23.y + c22y2)), c11.x * c12.y * c13.x * c13.y * c23.x * c23.y - c11.y * c12.x * c13.x * c13.y * c23.x * c23.y + 6 * c21.x * c22.x * c13y3 * c23.x + 3 * c11.x * c12.x * c13.x * c13.y * c23y2 + 6 * c10.x * c13.x * c13y2 * c23.x * c23.y - 3 * c11.x * c12.x * c13y2 * c23.x * c23.y - 3 * c11.y * c12.y * c13.x * c13.y * c23x2 - 6 * c10.y * c13x2 * c13.y * c23.x * c23.y - 6 * c20.x * c13.x * c13y2 * c23.x * c23.y + 3 * c11.y * c12.y * c13x2 * c23.x * c23.y - 2 * c12.x * c12y2 * c13.x * c23.x * c23.y - 6 * c21.x * c13.x * c22.x * c13y2 * c23.y - 6 * c21.x * c13.x * c13y2 * c22.y * c23.x - 6 * c13.x * c21.y * c22.x * c13y2 * c23.x + 6 * c21.x * c13x2 * c13.y * c22.y * c23.y + 2 * c12x2 * c12.y * c13.y * c23.x * c23.y + c22x3 * c13y3 - 3 * c10.x * c13y3 * c23x2 + 3 * c10.y * c13x3 * c23y2 + 3 * c20.x * c13y3 * c23x2 + c12y3 * c13.x * c23x2 - c12x3 * c13.y * c23y2 - 3 * c10.x * c13x2 * c13.y * c23y2 + 3 * c10.y * c13.x * c13y2 * c23x2 - 2 * c11.x * c12.y * c13x2 * c23y2 + c11.x * c12.y * c13y2 * c23x2 - c11.y * c12.x * c13x2 * c23y2 + 2 * c11.y * c12.x * c13y2 * c23x2 + 3 * c20.x * c13x2 * c13.y * c23y2 - c12.x * c12y2 * c13.y * c23x2 - 3 * c20.y * c13.x * c13y2 * c23x2 + c12x2 * c12.y * c13.x * c23y2 - 3 * c13.x * c22x2 * c13y2 * c22.y + c13x2 * c13.y * c23.x * (6 * c20.y * c23.y + 6 * c21.y * c22.y) + c13x2 * c22.x * c13.y * (6 * c21.y * c23.y + 3 * c22y2) + c13x3 * (-2 * c21.y * c22.y * c23.y - c20.y * c23y2 - c22.y * (2 * c21.y * c23.y + c22y2) - c23.y * (2 * c20.y * c23.y + 2 * c21.y * c22.y)), 6 * c11.x * c12.x * c13.x * c13.y * c22.y * c23.y + c11.x * c12.y * c13.x * c22.x * c13.y * c23.y + c11.x * c12.y * c13.x * c13.y * c22.y * c23.x - c11.y * c12.x * c13.x * c22.x * c13.y * c23.y - c11.y * c12.x * c13.x * c13.y * c22.y * c23.x - 6 * c11.y * c12.y * c13.x * c22.x * c13.y * c23.x - 6 * c10.x * c22.x * c13y3 * c23.x + 6 * c20.x * c22.x * c13y3 * c23.x + 6 * c10.y * c13x3 * c22.y * c23.y + 2 * c12y3 * c13.x * c22.x * c23.x - 2 * c12x3 * c13.y * c22.y * c23.y + 6 * c10.x * c13.x * c22.x * c13y2 * c23.y + 6 * c10.x * c13.x * c13y2 * c22.y * c23.x + 6 * c10.y * c13.x * c22.x * c13y2 * c23.x - 3 * c11.x * c12.x * c22.x * c13y2 * c23.y - 3 * c11.x * c12.x * c13y2 * c22.y * c23.x + 2 * c11.x * c12.y * c22.x * c13y2 * c23.x + 4 * c11.y * c12.x * c22.x * c13y2 * c23.x - 6 * c10.x * c13x2 * c13.y * c22.y * c23.y - 6 * c10.y * c13x2 * c22.x * c13.y * c23.y - 6 * c10.y * c13x2 * c13.y * c22.y * c23.x - 4 * c11.x * c12.y * c13x2 * c22.y * c23.y - 6 * c20.x * c13.x * c22.x * c13y2 * c23.y - 6 * c20.x * c13.x * c13y2 * c22.y * c23.x - 2 * c11.y * c12.x * c13x2 * c22.y * c23.y + 3 * c11.y * c12.y * c13x2 * c22.x * c23.y + 3 * c11.y * c12.y * c13x2 * c22.y * c23.x - 2 * c12.x * c12y2 * c13.x * c22.x * c23.y - 2 * c12.x * c12y2 * c13.x * c22.y * c23.x - 2 * c12.x * c12y2 * c22.x * c13.y * c23.x - 6 * c20.y * c13.x * c22.x * c13y2 * c23.x - 6 * c21.x * c13.x * c21.y * c13y2 * c23.x - 6 * c21.x * c13.x * c22.x * c13y2 * c22.y + 6 * c20.x * c13x2 * c13.y * c22.y * c23.y + 2 * c12x2 * c12.y * c13.x * c22.y * c23.y + 2 * c12x2 * c12.y * c22.x * c13.y * c23.y + 2 * c12x2 * c12.y * c13.y * c22.y * c23.x + 3 * c21.x * c22x2 * c13y3 + 3 * c21x2 * c13y3 * c23.x - 3 * c13.x * c21.y * c22x2 * c13y2 - 3 * c21x2 * c13.x * c13y2 * c23.y + c13x2 * c22.x * c13.y * (6 * c20.y * c23.y + 6 * c21.y * c22.y) + c13x2 * c13.y * c23.x * (6 * c20.y * c22.y + 3 * c21y2) + c21.x * c13x2 * c13.y * (6 * c21.y * c23.y + 3 * c22y2) + c13x3 * (-2 * c20.y * c22.y * c23.y - c23.y * (2 * c20.y * c22.y + c21y2) - c21.y * (2 * c21.y * c23.y + c22y2) - c22.y * (2 * c20.y * c23.y + 2 * c21.y * c22.y)), c11.x * c21.x * c12.y * c13.x * c13.y * c23.y + c11.x * c12.y * c13.x * c21.y * c13.y * c23.x + c11.x * c12.y * c13.x * c22.x * c13.y * c22.y - c11.y * c12.x * c21.x * c13.x * c13.y * c23.y - c11.y * c12.x * c13.x * c21.y * c13.y * c23.x - c11.y * c12.x * c13.x * c22.x * c13.y * c22.y - 6 * c11.y * c21.x * c12.y * c13.x * c13.y * c23.x - 6 * c10.x * c21.x * c13y3 * c23.x + 6 * c20.x * c21.x * c13y3 * c23.x + 2 * c21.x * c12y3 * c13.x * c23.x + 6 * c10.x * c21.x * c13.x * c13y2 * c23.y + 6 * c10.x * c13.x * c21.y * c13y2 * c23.x + 6 * c10.x * c13.x * c22.x * c13y2 * c22.y + 6 * c10.y * c21.x * c13.x * c13y2 * c23.x - 3 * c11.x * c12.x * c21.x * c13y2 * c23.y - 3 * c11.x * c12.x * c21.y * c13y2 * c23.x - 3 * c11.x * c12.x * c22.x * c13y2 * c22.y + 2 * c11.x * c21.x * c12.y * c13y2 * c23.x + 4 * c11.y * c12.x * c21.x * c13y2 * c23.x - 6 * c10.y * c21.x * c13x2 * c13.y * c23.y - 6 * c10.y * c13x2 * c21.y * c13.y * c23.x - 6 * c10.y * c13x2 * c22.x * c13.y * c22.y - 6 * c20.x * c21.x * c13.x * c13y2 * c23.y - 6 * c20.x * c13.x * c21.y * c13y2 * c23.x - 6 * c20.x * c13.x * c22.x * c13y2 * c22.y + 3 * c11.y * c21.x * c12.y * c13x2 * c23.y - 3 * c11.y * c12.y * c13.x * c22x2 * c13.y + 3 * c11.y * c12.y * c13x2 * c21.y * c23.x + 3 * c11.y * c12.y * c13x2 * c22.x * c22.y - 2 * c12.x * c21.x * c12y2 * c13.x * c23.y - 2 * c12.x * c21.x * c12y2 * c13.y * c23.x - 2 * c12.x * c12y2 * c13.x * c21.y * c23.x - 2 * c12.x * c12y2 * c13.x * c22.x * c22.y - 6 * c20.y * c21.x * c13.x * c13y2 * c23.x - 6 * c21.x * c13.x * c21.y * c22.x * c13y2 + 6 * c20.y * c13x2 * c21.y * c13.y * c23.x + 2 * c12x2 * c21.x * c12.y * c13.y * c23.y + 2 * c12x2 * c12.y * c21.y * c13.y * c23.x + 2 * c12x2 * c12.y * c22.x * c13.y * c22.y - 3 * c10.x * c22x2 * c13y3 + 3 * c20.x * c22x2 * c13y3 + 3 * c21x2 * c22.x * c13y3 + c12y3 * c13.x * c22x2 + 3 * c10.y * c13.x * c22x2 * c13y2 + c11.x * c12.y * c22x2 * c13y2 + 2 * c11.y * c12.x * c22x2 * c13y2 - c12.x * c12y2 * c22x2 * c13.y - 3 * c20.y * c13.x * c22x2 * c13y2 - 3 * c21x2 * c13.x * c13y2 * c22.y + c12x2 * c12.y * c13.x * (2 * c21.y * c23.y + c22y2) + c11.x * c12.x * c13.x * c13.y * (6 * c21.y * c23.y + 3 * c22y2) + c21.x * c13x2 * c13.y * (6 * c20.y * c23.y + 6 * c21.y * c22.y) + c12x3 * c13.y * (-2 * c21.y * c23.y - c22y2) + c10.y * c13x3 * (6 * c21.y * c23.y + 3 * c22y2) + c11.y * c12.x * c13x2 * (-2 * c21.y * c23.y - c22y2) + c11.x * c12.y * c13x2 * (-4 * c21.y * c23.y - 2 * c22y2) + c10.x * c13x2 * c13.y * (-6 * c21.y * c23.y - 3 * c22y2) + c13x2 * c22.x * c13.y * (6 * c20.y * c22.y + 3 * c21y2) + c20.x * c13x2 * c13.y * (6 * c21.y * c23.y + 3 * c22y2) + c13x3 * (-2 * c20.y * c21.y * c23.y - c22.y * (2 * c20.y * c22.y + c21y2) - c20.y * (2 * c21.y * c23.y + c22y2) - c21.y * (2 * c20.y * c23.y + 2 * c21.y * c22.y)), -c10.x * c11.x * c12.y * c13.x * c13.y * c23.y + c10.x * c11.y * c12.x * c13.x * c13.y * c23.y + 6 * c10.x * c11.y * c12.y * c13.x * c13.y * c23.x - 6 * c10.y * c11.x * c12.x * c13.x * c13.y * c23.y - c10.y * c11.x * c12.y * c13.x * c13.y * c23.x + c10.y * c11.y * c12.x * c13.x * c13.y * c23.x + c11.x * c11.y * c12.x * c12.y * c13.x * c23.y - c11.x * c11.y * c12.x * c12.y * c13.y * c23.x + c11.x * c20.x * c12.y * c13.x * c13.y * c23.y + c11.x * c20.y * c12.y * c13.x * c13.y * c23.x + c11.x * c21.x * c12.y * c13.x * c13.y * c22.y + c11.x * c12.y * c13.x * c21.y * c22.x * c13.y - c20.x * c11.y * c12.x * c13.x * c13.y * c23.y - 6 * c20.x * c11.y * c12.y * c13.x * c13.y * c23.x - c11.y * c12.x * c20.y * c13.x * c13.y * c23.x - c11.y * c12.x * c21.x * c13.x * c13.y * c22.y - c11.y * c12.x * c13.x * c21.y * c22.x * c13.y - 6 * c11.y * c21.x * c12.y * c13.x * c22.x * c13.y - 6 * c10.x * c20.x * c13y3 * c23.x - 6 * c10.x * c21.x * c22.x * c13y3 - 2 * c10.x * c12y3 * c13.x * c23.x + 6 * c20.x * c21.x * c22.x * c13y3 + 2 * c20.x * c12y3 * c13.x * c23.x + 2 * c21.x * c12y3 * c13.x * c22.x + 2 * c10.y * c12x3 * c13.y * c23.y - 6 * c10.x * c10.y * c13.x * c13y2 * c23.x + 3 * c10.x * c11.x * c12.x * c13y2 * c23.y - 2 * c10.x * c11.x * c12.y * c13y2 * c23.x - 4 * c10.x * c11.y * c12.x * c13y2 * c23.x + 3 * c10.y * c11.x * c12.x * c13y2 * c23.x + 6 * c10.x * c10.y * c13x2 * c13.y * c23.y + 6 * c10.x * c20.x * c13.x * c13y2 * c23.y - 3 * c10.x * c11.y * c12.y * c13x2 * c23.y + 2 * c10.x * c12.x * c12y2 * c13.x * c23.y + 2 * c10.x * c12.x * c12y2 * c13.y * c23.x + 6 * c10.x * c20.y * c13.x * c13y2 * c23.x + 6 * c10.x * c21.x * c13.x * c13y2 * c22.y + 6 * c10.x * c13.x * c21.y * c22.x * c13y2 + 4 * c10.y * c11.x * c12.y * c13x2 * c23.y + 6 * c10.y * c20.x * c13.x * c13y2 * c23.x + 2 * c10.y * c11.y * c12.x * c13x2 * c23.y - 3 * c10.y * c11.y * c12.y * c13x2 * c23.x + 2 * c10.y * c12.x * c12y2 * c13.x * c23.x + 6 * c10.y * c21.x * c13.x * c22.x * c13y2 - 3 * c11.x * c20.x * c12.x * c13y2 * c23.y + 2 * c11.x * c20.x * c12.y * c13y2 * c23.x + c11.x * c11.y * c12y2 * c13.x * c23.x - 3 * c11.x * c12.x * c20.y * c13y2 * c23.x - 3 * c11.x * c12.x * c21.x * c13y2 * c22.y - 3 * c11.x * c12.x * c21.y * c22.x * c13y2 + 2 * c11.x * c21.x * c12.y * c22.x * c13y2 + 4 * c20.x * c11.y * c12.x * c13y2 * c23.x + 4 * c11.y * c12.x * c21.x * c22.x * c13y2 - 2 * c10.x * c12x2 * c12.y * c13.y * c23.y - 6 * c10.y * c20.x * c13x2 * c13.y * c23.y - 6 * c10.y * c20.y * c13x2 * c13.y * c23.x - 6 * c10.y * c21.x * c13x2 * c13.y * c22.y - 2 * c10.y * c12x2 * c12.y * c13.x * c23.y - 2 * c10.y * c12x2 * c12.y * c13.y * c23.x - 6 * c10.y * c13x2 * c21.y * c22.x * c13.y - c11.x * c11.y * c12x2 * c13.y * c23.y - 2 * c11.x * c11y2 * c13.x * c13.y * c23.x + 3 * c20.x * c11.y * c12.y * c13x2 * c23.y - 2 * c20.x * c12.x * c12y2 * c13.x * c23.y - 2 * c20.x * c12.x * c12y2 * c13.y * c23.x - 6 * c20.x * c20.y * c13.x * c13y2 * c23.x - 6 * c20.x * c21.x * c13.x * c13y2 * c22.y - 6 * c20.x * c13.x * c21.y * c22.x * c13y2 + 3 * c11.y * c20.y * c12.y * c13x2 * c23.x + 3 * c11.y * c21.x * c12.y * c13x2 * c22.y + 3 * c11.y * c12.y * c13x2 * c21.y * c22.x - 2 * c12.x * c20.y * c12y2 * c13.x * c23.x - 2 * c12.x * c21.x * c12y2 * c13.x * c22.y - 2 * c12.x * c21.x * c12y2 * c22.x * c13.y - 2 * c12.x * c12y2 * c13.x * c21.y * c22.x - 6 * c20.y * c21.x * c13.x * c22.x * c13y2 - c11y2 * c12.x * c12.y * c13.x * c23.x + 2 * c20.x * c12x2 * c12.y * c13.y * c23.y + 6 * c20.y * c13x2 * c21.y * c22.x * c13.y + 2 * c11x2 * c11.y * c13.x * c13.y * c23.y + c11x2 * c12.x * c12.y * c13.y * c23.y + 2 * c12x2 * c20.y * c12.y * c13.y * c23.x + 2 * c12x2 * c21.x * c12.y * c13.y * c22.y + 2 * c12x2 * c12.y * c21.y * c22.x * c13.y + c21x3 * c13y3 + 3 * c10x2 * c13y3 * c23.x - 3 * c10y2 * c13x3 * c23.y + 3 * c20x2 * c13y3 * c23.x + c11y3 * c13x2 * c23.x - c11x3 * c13y2 * c23.y - c11.x * c11y2 * c13x2 * c23.y + c11x2 * c11.y * c13y2 * c23.x - 3 * c10x2 * c13.x * c13y2 * c23.y + 3 * c10y2 * c13x2 * c13.y * c23.x - c11x2 * c12y2 * c13.x * c23.y + c11y2 * c12x2 * c13.y * c23.x - 3 * c21x2 * c13.x * c21.y * c13y2 - 3 * c20x2 * c13.x * c13y2 * c23.y + 3 * c20y2 * c13x2 * c13.y * c23.x + c11.x * c12.x * c13.x * c13.y * (6 * c20.y * c23.y + 6 * c21.y * c22.y) + c12x3 * c13.y * (-2 * c20.y * c23.y - 2 * c21.y * c22.y) + c10.y * c13x3 * (6 * c20.y * c23.y + 6 * c21.y * c22.y) + c11.y * c12.x * c13x2 * (-2 * c20.y * c23.y - 2 * c21.y * c22.y) + c12x2 * c12.y * c13.x * (2 * c20.y * c23.y + 2 * c21.y * c22.y) + c11.x * c12.y * c13x2 * (-4 * c20.y * c23.y - 4 * c21.y * c22.y) + c10.x * c13x2 * c13.y * (-6 * c20.y * c23.y - 6 * c21.y * c22.y) + c20.x * c13x2 * c13.y * (6 * c20.y * c23.y + 6 * c21.y * c22.y) + c21.x * c13x2 * c13.y * (6 * c20.y * c22.y + 3 * c21y2) + c13x3 * (-2 * c20.y * c21.y * c22.y - c20y2 * c23.y - c21.y * (2 * c20.y * c22.y + c21y2) - c20.y * (2 * c20.y * c23.y + 2 * c21.y * c22.y)), -c10.x * c11.x * c12.y * c13.x * c13.y * c22.y + c10.x * c11.y * c12.x * c13.x * c13.y * c22.y + 6 * c10.x * c11.y * c12.y * c13.x * c22.x * c13.y - 6 * c10.y * c11.x * c12.x * c13.x * c13.y * c22.y - c10.y * c11.x * c12.y * c13.x * c22.x * c13.y + c10.y * c11.y * c12.x * c13.x * c22.x * c13.y + c11.x * c11.y * c12.x * c12.y * c13.x * c22.y - c11.x * c11.y * c12.x * c12.y * c22.x * c13.y + c11.x * c20.x * c12.y * c13.x * c13.y * c22.y + c11.x * c20.y * c12.y * c13.x * c22.x * c13.y + c11.x * c21.x * c12.y * c13.x * c21.y * c13.y - c20.x * c11.y * c12.x * c13.x * c13.y * c22.y - 6 * c20.x * c11.y * c12.y * c13.x * c22.x * c13.y - c11.y * c12.x * c20.y * c13.x * c22.x * c13.y - c11.y * c12.x * c21.x * c13.x * c21.y * c13.y - 6 * c10.x * c20.x * c22.x * c13y3 - 2 * c10.x * c12y3 * c13.x * c22.x + 2 * c20.x * c12y3 * c13.x * c22.x + 2 * c10.y * c12x3 * c13.y * c22.y - 6 * c10.x * c10.y * c13.x * c22.x * c13y2 + 3 * c10.x * c11.x * c12.x * c13y2 * c22.y - 2 * c10.x * c11.x * c12.y * c22.x * c13y2 - 4 * c10.x * c11.y * c12.x * c22.x * c13y2 + 3 * c10.y * c11.x * c12.x * c22.x * c13y2 + 6 * c10.x * c10.y * c13x2 * c13.y * c22.y + 6 * c10.x * c20.x * c13.x * c13y2 * c22.y - 3 * c10.x * c11.y * c12.y * c13x2 * c22.y + 2 * c10.x * c12.x * c12y2 * c13.x * c22.y + 2 * c10.x * c12.x * c12y2 * c22.x * c13.y + 6 * c10.x * c20.y * c13.x * c22.x * c13y2 + 6 * c10.x * c21.x * c13.x * c21.y * c13y2 + 4 * c10.y * c11.x * c12.y * c13x2 * c22.y + 6 * c10.y * c20.x * c13.x * c22.x * c13y2 + 2 * c10.y * c11.y * c12.x * c13x2 * c22.y - 3 * c10.y * c11.y * c12.y * c13x2 * c22.x + 2 * c10.y * c12.x * c12y2 * c13.x * c22.x - 3 * c11.x * c20.x * c12.x * c13y2 * c22.y + 2 * c11.x * c20.x * c12.y * c22.x * c13y2 + c11.x * c11.y * c12y2 * c13.x * c22.x - 3 * c11.x * c12.x * c20.y * c22.x * c13y2 - 3 * c11.x * c12.x * c21.x * c21.y * c13y2 + 4 * c20.x * c11.y * c12.x * c22.x * c13y2 - 2 * c10.x * c12x2 * c12.y * c13.y * c22.y - 6 * c10.y * c20.x * c13x2 * c13.y * c22.y - 6 * c10.y * c20.y * c13x2 * c22.x * c13.y - 6 * c10.y * c21.x * c13x2 * c21.y * c13.y - 2 * c10.y * c12x2 * c12.y * c13.x * c22.y - 2 * c10.y * c12x2 * c12.y * c22.x * c13.y - c11.x * c11.y * c12x2 * c13.y * c22.y - 2 * c11.x * c11y2 * c13.x * c22.x * c13.y + 3 * c20.x * c11.y * c12.y * c13x2 * c22.y - 2 * c20.x * c12.x * c12y2 * c13.x * c22.y - 2 * c20.x * c12.x * c12y2 * c22.x * c13.y - 6 * c20.x * c20.y * c13.x * c22.x * c13y2 - 6 * c20.x * c21.x * c13.x * c21.y * c13y2 + 3 * c11.y * c20.y * c12.y * c13x2 * c22.x + 3 * c11.y * c21.x * c12.y * c13x2 * c21.y - 2 * c12.x * c20.y * c12y2 * c13.x * c22.x - 2 * c12.x * c21.x * c12y2 * c13.x * c21.y - c11y2 * c12.x * c12.y * c13.x * c22.x + 2 * c20.x * c12x2 * c12.y * c13.y * c22.y - 3 * c11.y * c21x2 * c12.y * c13.x * c13.y + 6 * c20.y * c21.x * c13x2 * c21.y * c13.y + 2 * c11x2 * c11.y * c13.x * c13.y * c22.y + c11x2 * c12.x * c12.y * c13.y * c22.y + 2 * c12x2 * c20.y * c12.y * c22.x * c13.y + 2 * c12x2 * c21.x * c12.y * c21.y * c13.y - 3 * c10.x * c21x2 * c13y3 + 3 * c20.x * c21x2 * c13y3 + 3 * c10x2 * c22.x * c13y3 - 3 * c10y2 * c13x3 * c22.y + 3 * c20x2 * c22.x * c13y3 + c21x2 * c12y3 * c13.x + c11y3 * c13x2 * c22.x - c11x3 * c13y2 * c22.y + 3 * c10.y * c21x2 * c13.x * c13y2 - c11.x * c11y2 * c13x2 * c22.y + c11.x * c21x2 * c12.y * c13y2 + 2 * c11.y * c12.x * c21x2 * c13y2 + c11x2 * c11.y * c22.x * c13y2 - c12.x * c21x2 * c12y2 * c13.y - 3 * c20.y * c21x2 * c13.x * c13y2 - 3 * c10x2 * c13.x * c13y2 * c22.y + 3 * c10y2 * c13x2 * c22.x * c13.y - c11x2 * c12y2 * c13.x * c22.y + c11y2 * c12x2 * c22.x * c13.y - 3 * c20x2 * c13.x * c13y2 * c22.y + 3 * c20y2 * c13x2 * c22.x * c13.y + c12x2 * c12.y * c13.x * (2 * c20.y * c22.y + c21y2) + c11.x * c12.x * c13.x * c13.y * (6 * c20.y * c22.y + 3 * c21y2) + c12x3 * c13.y * (-2 * c20.y * c22.y - c21y2) + c10.y * c13x3 * (6 * c20.y * c22.y + 3 * c21y2) + c11.y * c12.x * c13x2 * (-2 * c20.y * c22.y - c21y2) + c11.x * c12.y * c13x2 * (-4 * c20.y * c22.y - 2 * c21y2) + c10.x * c13x2 * c13.y * (-6 * c20.y * c22.y - 3 * c21y2) + c20.x * c13x2 * c13.y * (6 * c20.y * c22.y + 3 * c21y2) + c13x3 * (-2 * c20.y * c21y2 - c20y2 * c22.y - c20.y * (2 * c20.y * c22.y + c21y2)), -c10.x * c11.x * c12.y * c13.x * c21.y * c13.y + c10.x * c11.y * c12.x * c13.x * c21.y * c13.y + 6 * c10.x * c11.y * c21.x * c12.y * c13.x * c13.y - 6 * c10.y * c11.x * c12.x * c13.x * c21.y * c13.y - c10.y * c11.x * c21.x * c12.y * c13.x * c13.y + c10.y * c11.y * c12.x * c21.x * c13.x * c13.y - c11.x * c11.y * c12.x * c21.x * c12.y * c13.y + c11.x * c11.y * c12.x * c12.y * c13.x * c21.y + c11.x * c20.x * c12.y * c13.x * c21.y * c13.y + 6 * c11.x * c12.x * c20.y * c13.x * c21.y * c13.y + c11.x * c20.y * c21.x * c12.y * c13.x * c13.y - c20.x * c11.y * c12.x * c13.x * c21.y * c13.y - 6 * c20.x * c11.y * c21.x * c12.y * c13.x * c13.y - c11.y * c12.x * c20.y * c21.x * c13.x * c13.y - 6 * c10.x * c20.x * c21.x * c13y3 - 2 * c10.x * c21.x * c12y3 * c13.x + 6 * c10.y * c20.y * c13x3 * c21.y + 2 * c20.x * c21.x * c12y3 * c13.x + 2 * c10.y * c12x3 * c21.y * c13.y - 2 * c12x3 * c20.y * c21.y * c13.y - 6 * c10.x * c10.y * c21.x * c13.x * c13y2 + 3 * c10.x * c11.x * c12.x * c21.y * c13y2 - 2 * c10.x * c11.x * c21.x * c12.y * c13y2 - 4 * c10.x * c11.y * c12.x * c21.x * c13y2 + 3 * c10.y * c11.x * c12.x * c21.x * c13y2 + 6 * c10.x * c10.y * c13x2 * c21.y * c13.y + 6 * c10.x * c20.x * c13.x * c21.y * c13y2 - 3 * c10.x * c11.y * c12.y * c13x2 * c21.y + 2 * c10.x * c12.x * c21.x * c12y2 * c13.y + 2 * c10.x * c12.x * c12y2 * c13.x * c21.y + 6 * c10.x * c20.y * c21.x * c13.x * c13y2 + 4 * c10.y * c11.x * c12.y * c13x2 * c21.y + 6 * c10.y * c20.x * c21.x * c13.x * c13y2 + 2 * c10.y * c11.y * c12.x * c13x2 * c21.y - 3 * c10.y * c11.y * c21.x * c12.y * c13x2 + 2 * c10.y * c12.x * c21.x * c12y2 * c13.x - 3 * c11.x * c20.x * c12.x * c21.y * c13y2 + 2 * c11.x * c20.x * c21.x * c12.y * c13y2 + c11.x * c11.y * c21.x * c12y2 * c13.x - 3 * c11.x * c12.x * c20.y * c21.x * c13y2 + 4 * c20.x * c11.y * c12.x * c21.x * c13y2 - 6 * c10.x * c20.y * c13x2 * c21.y * c13.y - 2 * c10.x * c12x2 * c12.y * c21.y * c13.y - 6 * c10.y * c20.x * c13x2 * c21.y * c13.y - 6 * c10.y * c20.y * c21.x * c13x2 * c13.y - 2 * c10.y * c12x2 * c21.x * c12.y * c13.y - 2 * c10.y * c12x2 * c12.y * c13.x * c21.y - c11.x * c11.y * c12x2 * c21.y * c13.y - 4 * c11.x * c20.y * c12.y * c13x2 * c21.y - 2 * c11.x * c11y2 * c21.x * c13.x * c13.y + 3 * c20.x * c11.y * c12.y * c13x2 * c21.y - 2 * c20.x * c12.x * c21.x * c12y2 * c13.y - 2 * c20.x * c12.x * c12y2 * c13.x * c21.y - 6 * c20.x * c20.y * c21.x * c13.x * c13y2 - 2 * c11.y * c12.x * c20.y * c13x2 * c21.y + 3 * c11.y * c20.y * c21.x * c12.y * c13x2 - 2 * c12.x * c20.y * c21.x * c12y2 * c13.x - c11y2 * c12.x * c21.x * c12.y * c13.x + 6 * c20.x * c20.y * c13x2 * c21.y * c13.y + 2 * c20.x * c12x2 * c12.y * c21.y * c13.y + 2 * c11x2 * c11.y * c13.x * c21.y * c13.y + c11x2 * c12.x * c12.y * c21.y * c13.y + 2 * c12x2 * c20.y * c21.x * c12.y * c13.y + 2 * c12x2 * c20.y * c12.y * c13.x * c21.y + 3 * c10x2 * c21.x * c13y3 - 3 * c10y2 * c13x3 * c21.y + 3 * c20x2 * c21.x * c13y3 + c11y3 * c21.x * c13x2 - c11x3 * c21.y * c13y2 - 3 * c20y2 * c13x3 * c21.y - c11.x * c11y2 * c13x2 * c21.y + c11x2 * c11.y * c21.x * c13y2 - 3 * c10x2 * c13.x * c21.y * c13y2 + 3 * c10y2 * c21.x * c13x2 * c13.y - c11x2 * c12y2 * c13.x * c21.y + c11y2 * c12x2 * c21.x * c13.y - 3 * c20x2 * c13.x * c21.y * c13y2 + 3 * c20y2 * c21.x * c13x2 * c13.y, c10.x * c10.y * c11.x * c12.y * c13.x * c13.y - c10.x * c10.y * c11.y * c12.x * c13.x * c13.y + c10.x * c11.x * c11.y * c12.x * c12.y * c13.y - c10.y * c11.x * c11.y * c12.x * c12.y * c13.x - c10.x * c11.x * c20.y * c12.y * c13.x * c13.y + 6 * c10.x * c20.x * c11.y * c12.y * c13.x * c13.y + c10.x * c11.y * c12.x * c20.y * c13.x * c13.y - c10.y * c11.x * c20.x * c12.y * c13.x * c13.y - 6 * c10.y * c11.x * c12.x * c20.y * c13.x * c13.y + c10.y * c20.x * c11.y * c12.x * c13.x * c13.y - c11.x * c20.x * c11.y * c12.x * c12.y * c13.y + c11.x * c11.y * c12.x * c20.y * c12.y * c13.x + c11.x * c20.x * c20.y * c12.y * c13.x * c13.y - c20.x * c11.y * c12.x * c20.y * c13.x * c13.y - 2 * c10.x * c20.x * c12y3 * c13.x + 2 * c10.y * c12x3 * c20.y * c13.y - 3 * c10.x * c10.y * c11.x * c12.x * c13y2 - 6 * c10.x * c10.y * c20.x * c13.x * c13y2 + 3 * c10.x * c10.y * c11.y * c12.y * c13x2 - 2 * c10.x * c10.y * c12.x * c12y2 * c13.x - 2 * c10.x * c11.x * c20.x * c12.y * c13y2 - c10.x * c11.x * c11.y * c12y2 * c13.x + 3 * c10.x * c11.x * c12.x * c20.y * c13y2 - 4 * c10.x * c20.x * c11.y * c12.x * c13y2 + 3 * c10.y * c11.x * c20.x * c12.x * c13y2 + 6 * c10.x * c10.y * c20.y * c13x2 * c13.y + 2 * c10.x * c10.y * c12x2 * c12.y * c13.y + 2 * c10.x * c11.x * c11y2 * c13.x * c13.y + 2 * c10.x * c20.x * c12.x * c12y2 * c13.y + 6 * c10.x * c20.x * c20.y * c13.x * c13y2 - 3 * c10.x * c11.y * c20.y * c12.y * c13x2 + 2 * c10.x * c12.x * c20.y * c12y2 * c13.x + c10.x * c11y2 * c12.x * c12.y * c13.x + c10.y * c11.x * c11.y * c12x2 * c13.y + 4 * c10.y * c11.x * c20.y * c12.y * c13x2 - 3 * c10.y * c20.x * c11.y * c12.y * c13x2 + 2 * c10.y * c20.x * c12.x * c12y2 * c13.x + 2 * c10.y * c11.y * c12.x * c20.y * c13x2 + c11.x * c20.x * c11.y * c12y2 * c13.x - 3 * c11.x * c20.x * c12.x * c20.y * c13y2 - 2 * c10.x * c12x2 * c20.y * c12.y * c13.y - 6 * c10.y * c20.x * c20.y * c13x2 * c13.y - 2 * c10.y * c20.x * c12x2 * c12.y * c13.y - 2 * c10.y * c11x2 * c11.y * c13.x * c13.y - c10.y * c11x2 * c12.x * c12.y * c13.y - 2 * c10.y * c12x2 * c20.y * c12.y * c13.x - 2 * c11.x * c20.x * c11y2 * c13.x * c13.y - c11.x * c11.y * c12x2 * c20.y * c13.y + 3 * c20.x * c11.y * c20.y * c12.y * c13x2 - 2 * c20.x * c12.x * c20.y * c12y2 * c13.x - c20.x * c11y2 * c12.x * c12.y * c13.x + 3 * c10y2 * c11.x * c12.x * c13.x * c13.y + 3 * c11.x * c12.x * c20y2 * c13.x * c13.y + 2 * c20.x * c12x2 * c20.y * c12.y * c13.y - 3 * c10x2 * c11.y * c12.y * c13.x * c13.y + 2 * c11x2 * c11.y * c20.y * c13.x * c13.y + c11x2 * c12.x * c20.y * c12.y * c13.y - 3 * c20x2 * c11.y * c12.y * c13.x * c13.y - c10x3 * c13y3 + c10y3 * c13x3 + c20x3 * c13y3 - c20y3 * c13x3 - 3 * c10.x * c20x2 * c13y3 - c10.x * c11y3 * c13x2 + 3 * c10x2 * c20.x * c13y3 + c10.y * c11x3 * c13y2 + 3 * c10.y * c20y2 * c13x3 + c20.x * c11y3 * c13x2 + c10x2 * c12y3 * c13.x - 3 * c10y2 * c20.y * c13x3 - c10y2 * c12x3 * c13.y + c20x2 * c12y3 * c13.x - c11x3 * c20.y * c13y2 - c12x3 * c20y2 * c13.y - c10.x * c11x2 * c11.y * c13y2 + c10.y * c11.x * c11y2 * c13x2 - 3 * c10.x * c10y2 * c13x2 * c13.y - c10.x * c11y2 * c12x2 * c13.y + c10.y * c11x2 * c12y2 * c13.x - c11.x * c11y2 * c20.y * c13x2 + 3 * c10x2 * c10.y * c13.x * c13y2 + c10x2 * c11.x * c12.y * c13y2 + 2 * c10x2 * c11.y * c12.x * c13y2 - 2 * c10y2 * c11.x * c12.y * c13x2 - c10y2 * c11.y * c12.x * c13x2 + c11x2 * c20.x * c11.y * c13y2 - 3 * c10.x * c20y2 * c13x2 * c13.y + 3 * c10.y * c20x2 * c13.x * c13y2 + c11.x * c20x2 * c12.y * c13y2 - 2 * c11.x * c20y2 * c12.y * c13x2 + c20.x * c11y2 * c12x2 * c13.y - c11.y * c12.x * c20y2 * c13x2 - c10x2 * c12.x * c12y2 * c13.y - 3 * c10x2 * c20.y * c13.x * c13y2 + 3 * c10y2 * c20.x * c13x2 * c13.y + c10y2 * c12x2 * c12.y * c13.x - c11x2 * c20.y * c12y2 * c13.x + 2 * c20x2 * c11.y * c12.x * c13y2 + 3 * c20.x * c20y2 * c13x2 * c13.y - c20x2 * c12.x * c12y2 * c13.y - 3 * c20x2 * c20.y * c13.x * c13y2 + c12x2 * c20y2 * c12.y * c13.x].reverse();
+    var roots = getRootsInInterval(0, 1, coefs);
+
+    for (var i = 0; i < roots.length; i++) {
+      var s = roots[i];
+      var xRoots = getRoots([c13.x, c12.x, c11.x, c10.x - c20.x - s * c21.x - s * s * c22.x - s * s * s * c23.x].reverse());
+      var yRoots = getRoots([c13.y, c12.y, c11.y, c10.y - c20.y - s * c21.y - s * s * c22.y - s * s * s * c23.y].reverse());
+
+      if (xRoots.length > 0 && yRoots.length > 0) {
+        var _TOLERANCE2 = 1e-4;
+
+        checkRoots: for (var j = 0; j < xRoots.length; j++) {
+          var xRoot = xRoots[j];
+
+          if (0 <= xRoot && xRoot <= 1) {
+            for (var k = 0; k < yRoots.length; k++) {
+              if (Math.abs(xRoot - yRoots[k]) < _TOLERANCE2) {
+                var x = c23.x * s * s * s + c22.x * s * s + c21.x * s + c20.x;
+                var y = c23.y * s * s * s + c22.y * s * s + c21.y * s + c20.y;
+                result.push({
+                  x: x,
+                  y: y,
+                  t: xRoot
+                });
+                break checkRoots;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+
+  function intersectBezier2Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, bx3, by3, bx4, by4) {
+    var c12, c11, c10;
+    var c23, c22, c21, c20;
+    var result = [];
+    c12 = {
+      x: ax1 - 2 * ax2 + ax3,
+      y: ay1 - 2 * ay2 + ay3
+    };
+    c11 = {
+      x: 2 * ax2 - 2 * ax1,
+      y: 2 * ay2 - 2 * ay1
+    };
+    c10 = {
+      x: ax1,
+      y: ay1
+    };
+    c23 = {
+      x: -bx1 + 3 * bx2 - 3 * bx3 + bx4,
+      y: -by1 + 3 * by2 - 3 * by3 + by4
+    };
+    c22 = {
+      x: 3 * bx1 - 6 * bx2 + 3 * bx3,
+      y: 3 * by1 - 6 * by2 + 3 * by3
+    };
+    c21 = {
+      x: -3 * bx1 + 3 * bx2,
+      y: -3 * by1 + 3 * by2
+    };
+    c20 = {
+      x: bx1,
+      y: by1
+    };
+    var c10x2 = c10.x * c10.x;
+    var c10y2 = c10.y * c10.y;
+    var c11x2 = c11.x * c11.x;
+    var c11y2 = c11.y * c11.y;
+    var c12x2 = c12.x * c12.x;
+    var c12y2 = c12.y * c12.y;
+    var c20x2 = c20.x * c20.x;
+    var c20y2 = c20.y * c20.y;
+    var c21x2 = c21.x * c21.x;
+    var c21y2 = c21.y * c21.y;
+    var c22x2 = c22.x * c22.x;
+    var c22y2 = c22.y * c22.y;
+    var c23x2 = c23.x * c23.x;
+    var c23y2 = c23.y * c23.y;
+    var coefs = [-2 * c12.x * c12.y * c23.x * c23.y + c12x2 * c23y2 + c12y2 * c23x2, -2 * c12.x * c12.y * c22.x * c23.y - 2 * c12.x * c12.y * c22.y * c23.x + 2 * c12y2 * c22.x * c23.x + 2 * c12x2 * c22.y * c23.y, -2 * c12.x * c21.x * c12.y * c23.y - 2 * c12.x * c12.y * c21.y * c23.x - 2 * c12.x * c12.y * c22.x * c22.y + 2 * c21.x * c12y2 * c23.x + c12y2 * c22x2 + c12x2 * (2 * c21.y * c23.y + c22y2), 2 * c10.x * c12.x * c12.y * c23.y + 2 * c10.y * c12.x * c12.y * c23.x + c11.x * c11.y * c12.x * c23.y + c11.x * c11.y * c12.y * c23.x - 2 * c20.x * c12.x * c12.y * c23.y - 2 * c12.x * c20.y * c12.y * c23.x - 2 * c12.x * c21.x * c12.y * c22.y - 2 * c12.x * c12.y * c21.y * c22.x - 2 * c10.x * c12y2 * c23.x - 2 * c10.y * c12x2 * c23.y + 2 * c20.x * c12y2 * c23.x + 2 * c21.x * c12y2 * c22.x - c11y2 * c12.x * c23.x - c11x2 * c12.y * c23.y + c12x2 * (2 * c20.y * c23.y + 2 * c21.y * c22.y), 2 * c10.x * c12.x * c12.y * c22.y + 2 * c10.y * c12.x * c12.y * c22.x + c11.x * c11.y * c12.x * c22.y + c11.x * c11.y * c12.y * c22.x - 2 * c20.x * c12.x * c12.y * c22.y - 2 * c12.x * c20.y * c12.y * c22.x - 2 * c12.x * c21.x * c12.y * c21.y - 2 * c10.x * c12y2 * c22.x - 2 * c10.y * c12x2 * c22.y + 2 * c20.x * c12y2 * c22.x - c11y2 * c12.x * c22.x - c11x2 * c12.y * c22.y + c21x2 * c12y2 + c12x2 * (2 * c20.y * c22.y + c21y2), 2 * c10.x * c12.x * c12.y * c21.y + 2 * c10.y * c12.x * c21.x * c12.y + c11.x * c11.y * c12.x * c21.y + c11.x * c11.y * c21.x * c12.y - 2 * c20.x * c12.x * c12.y * c21.y - 2 * c12.x * c20.y * c21.x * c12.y - 2 * c10.x * c21.x * c12y2 - 2 * c10.y * c12x2 * c21.y + 2 * c20.x * c21.x * c12y2 - c11y2 * c12.x * c21.x - c11x2 * c12.y * c21.y + 2 * c12x2 * c20.y * c21.y, -2 * c10.x * c10.y * c12.x * c12.y - c10.x * c11.x * c11.y * c12.y - c10.y * c11.x * c11.y * c12.x + 2 * c10.x * c12.x * c20.y * c12.y + 2 * c10.y * c20.x * c12.x * c12.y + c11.x * c20.x * c11.y * c12.y + c11.x * c11.y * c12.x * c20.y - 2 * c20.x * c12.x * c20.y * c12.y - 2 * c10.x * c20.x * c12y2 + c10.x * c11y2 * c12.x + c10.y * c11x2 * c12.y - 2 * c10.y * c12x2 * c20.y - c20.x * c11y2 * c12.x - c11x2 * c20.y * c12.y + c10x2 * c12y2 + c10y2 * c12x2 + c20x2 * c12y2 + c12x2 * c20y2].reverse();
+    var roots = getRootsInInterval(0, 1, coefs); // console.log(roots);
+
+    for (var i = 0; i < roots.length; i++) {
+      var s = roots[i];
+      var xRoots = getRoots([c12.x, c11.x, c10.x - c20.x - s * c21.x - s * s * c22.x - s * s * s * c23.x].reverse());
+      var yRoots = getRoots([c12.y, c11.y, c10.y - c20.y - s * c21.y - s * s * c22.y - s * s * s * c23.y].reverse()); //
+      // console.log('xRoots', xRoots);
+      //
+      // console.log('yRoots', yRoots);
+
+      if (xRoots.length > 0 && yRoots.length > 0) {
+        var _TOLERANCE3 = 1e-4;
+
+        checkRoots: for (var j = 0; j < xRoots.length; j++) {
+          var xRoot = xRoots[j];
+
+          if (0 <= xRoot && xRoot <= 1) {
+            for (var k = 0; k < yRoots.length; k++) {
+              if (Math.abs(xRoot - yRoots[k]) < _TOLERANCE3) {
+                var x = c23.x * s * s * s + c22.x * s * s + c21.x * s + c20.x;
+                var y = c23.y * s * s * s + c22.y * s * s + c21.y * s + c20.y;
+                result.push({
+                  x: x,
+                  y: y,
+                  t: xRoot
+                });
+                break checkRoots;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+
+  function intersectBezier2Line(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2) {
+    var c2, c1, c0;
+    var cl, n;
+    var result = [];
+    var minbx = Math.min(bx1, bx2);
+    var minby = Math.min(by1, by2);
+    var maxbx = Math.max(bx1, bx2);
+    var maxby = Math.max(by1, by2);
+
+    var dot = function dot(a, b) {
+      return a.x * b.x + a.y * b.y;
+    };
+
+    var lerp = function lerp(a, b, t) {
+      return {
+        x: a.x - (a.x - b.x) * t,
+        y: a.y - (a.y - b.y) * t,
+        t: t
+      };
+    };
+
+    c2 = {
+      x: ax1 - 2 * ax2 + ax3,
+      y: ay1 - 2 * ay2 + ay3
+    };
+    c1 = {
+      x: -2 * ax1 + 2 * ax2,
+      y: -2 * ay1 + 2 * ay2
+    };
+    c0 = {
+      x: ax1,
+      y: ay1
+    };
+    n = {
+      x: by1 - by2,
+      y: bx2 - bx1
+    };
+    cl = bx1 * by2 - bx2 * by1; // console.log('intersectBezier2Line', n, c0, c1, c2, cl);
+
+    var coefs = [dot(n, c2), dot(n, c1), dot(n, c0) + cl].reverse(); // console.log('intersectBezier2Line coefs', coefs);
+
+    var roots = getRoots(coefs); // console.log('intersectBezier2Line roots', roots);
+
+    for (var i = 0; i < roots.length; i++) {
+      var t = roots[i];
+
+      if (0 <= t && t <= 1) {
+        var p4 = lerp({
+          x: ax1,
+          y: ay1
+        }, {
+          x: ax2,
+          y: ay2
+        }, t);
+        var p5 = lerp({
+          x: ax2,
+          y: ay2
+        }, {
+          x: ax3,
+          y: ay3
+        }, t);
+        var p6 = lerp(p4, p5, t); // console.log('p4, p5, p6', p4, p5, p6);
+
+        if (bx1 === bx2) {
+          if (minby <= p6.y && p6.y <= maxby) {
+            result.push(p6);
+          }
+        } else if (by1 === by2) {
+          if (minbx <= p6.x && p6.x <= maxbx) {
+            result.push(p6);
+          }
+        } else if (p6.x >= minbx && p6.y >= minby && p6.x <= maxbx && p6.y <= maxby) {
+          result.push(p6);
+        }
+      }
+    }
+
+    return result;
+  }
+  /**
+   *
+   *    (-P1+3P2-3P3+P4)t^3 + (3P1-6P2+3P3)t^2 + (-3P1+3P2)t + P1
+   *        /\                     /\                /\        /\
+   *        ||                     ||                ||        ||
+   *        c3                     c2                c1        c0
+   */
+
+
+  function intersectBezier3Line(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2) {
+    var c3, c2, c1, c0;
+    var cl, n;
+    var result = [];
+    var minbx = Math.min(bx1, bx2);
+    var minby = Math.min(by1, by2);
+    var maxbx = Math.max(bx1, bx2);
+    var maxby = Math.max(by1, by2);
+
+    var dot = function dot(a, b) {
+      return a.x * b.x + a.y * b.y;
+    };
+
+    var lerp = function lerp(a, b, t) {
+      return {
+        x: a.x - (a.x - b.x) * t,
+        y: a.y - (a.y - b.y) * t,
+        t: t
+      };
+    };
+
+    c3 = {
+      x: -ax1 + 3 * ax2 - 3 * ax3 + ax4,
+      y: -ay1 + 3 * ay2 - 3 * ay3 + ay4
+    };
+    c2 = {
+      x: 3 * ax1 - 6 * ax2 + 3 * ax3,
+      y: 3 * ay1 - 6 * ay2 + 3 * ay3
+    };
+    c1 = {
+      x: -3 * ax1 + 3 * ax2,
+      y: -3 * ay1 + 3 * ay2
+    };
+    c0 = {
+      x: ax1,
+      y: ay1
+    };
+    n = {
+      x: by1 - by2,
+      y: bx2 - bx1
+    };
+    cl = bx1 * by2 - bx2 * by1;
+    var coefs = [cl + dot(n, c0), dot(n, c1), dot(n, c2), dot(n, c3)];
+    var roots = getRoots(coefs);
+
+    for (var i = 0; i < roots.length; i++) {
+      var t = roots[i];
+
+      if (0 <= t && t <= 1) {
+        var p5 = lerp({
+          x: ax1,
+          y: ay1
+        }, {
+          x: ax2,
+          y: ay2
+        }, t);
+        var p6 = lerp({
+          x: ax2,
+          y: ay2
+        }, {
+          x: ax3,
+          y: ay3
+        }, t);
+        var p7 = lerp({
+          x: ax3,
+          y: ay3
+        }, {
+          x: ax4,
+          y: ay4
+        }, t);
+        var p8 = lerp(p5, p6, t);
+        var p9 = lerp(p6, p7, t);
+        var p10 = lerp(p8, p9, t);
+
+        if (bx1 === bx2) {
+          if (minby <= p10.y && p10.y <= maxby) {
+            result.push(p10);
+          }
+        } else if (by1 === by2) {
+          if (minbx <= p10.x && p10.x <= maxbx) {
+            result.push(p10);
+          }
+        } else if (p10.x >= minbx && p10.y >= minby && p10.x <= maxbx && p10.y <= maxby) {
+          result.push(p10);
+        }
+      }
+    }
+
+    return result;
+  }
+  /**
+   * 3d直线交点，允许误差，传入4个顶点坐标
+   * limitToFiniteSegment可传0、1、2、3，默认0是不考虑点是否在传入的顶点组成的线段上
+   * 1为限制在p1/p2线段，2为限制在p3/p4线段，3为都限制
+   */
+
+
+  function intersectLineLine3$1(p1, p2, p3, p4) {
+    var limitToFiniteSegment = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
+    var tolerance = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 1e-9;
+    var p13 = subtractPoint(p1, p3);
+    var p43 = subtractPoint(p4, p3);
+    var p21 = subtractPoint(p2, p1);
+    var d1343 = p13.x * p43.x + p13.y * p43.y + p13.z * p43.z;
+    var d4321 = p43.x * p21.x + p43.y * p21.y + p43.z * p21.z;
+    var d1321 = p13.x * p21.x + p13.y * p21.y + p13.z * p21.z;
+    var d4343 = p43.x * p43.x + p43.y * p43.y + p43.z * p43.z;
+    var d2121 = p21.x * p21.x + p21.y * p21.y + p21.z * p21.z;
+    var denom = d2121 * d4343 - d4321 * d4321;
+
+    if (Math.abs(denom) < tolerance) {
+      return;
+    }
+
+    var numer = d1343 * d4321 - d1321 * d4343;
+    var mua = numer / denom;
+    var mub = (d1343 + d4321 * mua) / d4343;
+    var pa = {
+      x: p1.x + mua * p21.x,
+      y: p1.y + mua * p21.y,
+      z: p1.z + mua * p21.z
+    };
+    var pb = {
+      x: p3.x + mub * p43.x,
+      y: p3.y + mub * p43.y,
+      z: p3.z + mub * p43.z
+    };
+    var distance = distanceTo(pa, pb);
+
+    if (distance > tolerance) {
+      return;
+    }
+
+    var intersectPt = divide(addPoint(pa, pb), 2);
+
+    if (!limitToFiniteSegment) {
+      return intersectPt;
+    }
+
+    var paramA = closestParam(intersectPt, p1, p2);
+    var paramB = closestParam(intersectPt, p3, p4);
+    intersectPt.pa = paramA;
+    intersectPt.pb = paramB;
+
+    if (limitToFiniteSegment === 1 && paramA >= 0 && paramA <= 1) {
+      return intersectPt;
+    }
+
+    if (limitToFiniteSegment === 2 && paramB >= 0 && paramB <= 1) {
+      return intersectPt;
+    }
+
+    if (limitToFiniteSegment === 3 && paramA >= 0 && paramA <= 1 && paramB >= 0 && paramB <= 1) {
+      return intersectPt;
+    }
+  }
+
+  function subtractPoint(p1, p2) {
+    return {
+      x: p1.x - p2.x,
+      y: p1.y - p2.y,
+      z: p1.z - p2.z
+    };
+  }
+
+  function distanceTo(a, b) {
+    return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2) + Math.pow(a.z - b.z, 2));
+  }
+
+  function addPoint(a, b) {
+    return {
+      x: a.x + b.x,
+      y: a.y + b.y,
+      z: a.z + b.z
+    };
+  }
+
+  function divide(p, t) {
+    var n = 1 / t;
+    return {
+      x: p.x * n,
+      y: p.y * n,
+      z: p.z * n
+    };
+  }
+
+  function closestParam(p, from, to) {
+    var startToP = subtractPoint(p, from);
+    var startToEnd = subtractPoint(to, from);
+    var startEnd2 = dotProduct3(startToEnd, startToEnd);
+    var startEnd_startP = dotProduct3(startToEnd, startToP);
+    return startEnd_startP / startEnd2;
+  }
+  /**
+   * 平面相交线，传入2个平面的各3个顶点，返回2点式
+   */
+
+
+  function intersectPlanePlane$1(p1, p2, p3, p4, p5, p6) {
+    var v1 = unitize3(p2.x - p1.x, p2.y - p1.y, p2.z - p1.z),
+        v2 = unitize3(p3.x - p1.x, p3.y - p1.y, p3.z - p1.z),
+        v4 = unitize3(p5.x - p4.x, p5.y - p4.y, p5.z - p4.z),
+        v5 = unitize3(p6.x - p4.x, p6.y - p4.y, p6.z - p4.z);
+    var v3 = unitize3(crossProduct3(v1.x, v1.y, v1.z, v2.x, v2.y, v2.z));
+    var v6 = unitize3(crossProduct3(v4.x, v4.y, v4.z, v5.x, v5.y, v5.z));
+
+    if (isParallel3(v3, v6)) {
+      return null;
+    }
+
+    var normal = crossProduct3(v6.x, v6.y, v6.z, v3.x, v3.y, v3.z);
+    var p7 = addPoint(v1, v4); // planeC
+
+    var v9 = unitize3(normal.x, normal.y, normal.z); // 3平面相交
+
+    var a1 = v3.x,
+        b1 = v3.y,
+        c1 = v3.z,
+        d1 = -a1 * p1.x - b1 * p1.y - c1 * p1.z;
+    var a2 = v6.x,
+        b2 = v6.y,
+        c2 = v6.z,
+        d2 = -a2 * p4.x - b2 * p4.y - c2 * p4.z;
+    var a3 = v9.x,
+        b3 = v9.y,
+        c3 = v9.z,
+        d3 = -a3 * p7.x - b3 * p7.y - c3 * p7.z;
+    var mb = [-d1, -d2, -d3];
+    var det = a1 * (b2 * c3 - c2 * b3) - b1 * (a2 * c3 - c2 * a3) + c1 * (a2 * b3 - b2 * a3);
+
+    if (Math.abs(det) < 1e-9) {
+      return null;
+    }
+
+    var invDet = 1 / det;
+    var v11 = invDet * (b2 * c3 - c2 * b3);
+    var v12 = invDet * (c1 * b3 - b1 * c3);
+    var v13 = invDet * (b1 * c2 - c1 * b2);
+    var v21 = invDet * (c2 * a3 - a2 * c3);
+    var v22 = invDet * (a1 * c3 - c1 * a3);
+    var v23 = invDet * (c1 * a2 - a1 * c2);
+    var v31 = invDet * (a2 * b3 - b2 * a3);
+    var v32 = invDet * (b1 * a3 - a1 * b3);
+    var v33 = invDet * (a1 * b2 - b1 * a2);
+    var x = v11 * mb[0] + v12 * mb[1] + v13 * mb[2];
+    var y = v21 * mb[0] + v22 * mb[1] + v23 * mb[2];
+    var z = v31 * mb[0] + v32 * mb[1] + v33 * mb[2];
+    var point = {
+      x: x,
+      y: y,
+      z: z
+    };
+    return [point, addPoint(point, v9)];
+  } // 点是否在线段上，注意误差
+
+
+  function pointOnLine3$1(p, p1, p2) {
+    var v1x = p1.x - p.x,
+        v1y = p1.y - p.y,
+        v1z = p1.z - p.z;
+    var v2x = p2.x - p.x,
+        v2y = p2.y - p.y,
+        v2z = p2.z - p.z;
+    var c = crossProduct3(v1x, v1y, v1z, v2x, v2y, v2z);
+    return length3(c.x, c.y, c.z) < 1e-9;
+  }
+
+  var isec = {
+    intersectBezier2Line: intersectBezier2Line,
+    // 二阶贝塞尔曲线 与 直线
+    intersectBezier3Line: intersectBezier3Line,
+    // 三阶贝塞尔曲线 与 直线
+    intersectBezier2Bezier2: intersectBezier2Bezier2,
+    // 二阶贝塞尔曲线 与 二阶贝塞尔曲线
+    intersectBezier3Bezier3: intersectBezier3Bezier3,
+    // 三阶贝塞尔曲线 与 三阶贝塞尔曲线
+    intersectBezier2Bezier3: intersectBezier2Bezier3,
+    // 二阶贝塞尔曲线 与 三阶贝塞尔曲线
+    intersectLineLine3: intersectLineLine3$1,
+    intersectPlanePlane: intersectPlanePlane$1,
+    pointOnLine3: pointOnLine3$1
+  };
+
+  var intersectPlanePlane = isec.intersectPlanePlane,
+      intersectLineLine3 = isec.intersectLineLine3,
+      pointOnLine3 = isec.pointOnLine3;
+  var isRectsOverlap$1 = geom.isRectsOverlap,
+      getPlainNormalEquation = geom.getPlainNormalEquation;
+  var isZero3 = vector.isZero3; // 设置新拼图的x/y/z投影数据和bbox数据，原本平面矩形也算一个拼图
+
+  function shadow(puzzle) {
+    var points = puzzle.points;
+    var xShadow = [{
+      y: points[0].y,
+      z: points[0].z
+    }];
+
+    outer: for (var i = 1, len = points.length; i < len; i++) {
+      var p = points[i];
+
+      for (var j = 0; j < i; j++) {
+        var o = points[j];
+
+        if (p.y === o.y && p.z === o.z) {
+          continue outer;
+        }
+      }
+
+      xShadow.push({
+        y: p.y,
+        z: p.z
+      });
+    } // 顶点和bbox，每个轴投影都要
+
+
+    puzzle.xShadow = [];
+    puzzle.xBbox = [];
+
+    for (var _j = 0, _len = xShadow.length; _j < _len; _j++) {
+      var a = xShadow[_j];
+      puzzle.xShadow.push(a);
+
+      if (_j === 0) {
+        puzzle.xBbox[0] = a.z;
+        puzzle.xBbox[1] = a.y;
+        puzzle.xBbox[2] = a.z;
+        puzzle.xBbox[3] = a.y;
+      } else {
+        puzzle.xBbox[0] = Math.min(puzzle.xBbox[0], a.z);
+        puzzle.xBbox[1] = Math.min(puzzle.xBbox[1], a.y);
+        puzzle.xBbox[2] = Math.max(puzzle.xBbox[2], a.z);
+        puzzle.xBbox[3] = Math.max(puzzle.xBbox[3], a.y);
+      }
+    } // y/z类似
+
+
+    var yShadow = [{
+      x: points[0].x,
+      z: points[0].z
+    }];
+
+    outer: for (var _i = 1, _len2 = points.length; _i < _len2; _i++) {
+      var _p = points[_i];
+
+      for (var _j2 = 0; _j2 < _i; _j2++) {
+        var _o = points[_j2];
+
+        if (_p.x === _o.x && _p.z === _o.z) {
+          continue outer;
+        }
+      }
+
+      yShadow.push({
+        x: _p.x,
+        z: _p.z
+      });
+    }
+
+    puzzle.yShadow = [];
+    puzzle.yBbox = [];
+
+    for (var _j3 = 0, _len3 = yShadow.length; _j3 < _len3; _j3++) {
+      var _a = yShadow[_j3];
+      puzzle.yShadow.push(_a);
+
+      if (_j3 === 0) {
+        puzzle.yBbox[0] = _a.x;
+        puzzle.yBbox[1] = _a.z;
+        puzzle.yBbox[2] = _a.x;
+        puzzle.yBbox[3] = _a.z;
+      } else {
+        puzzle.yBbox[0] = Math.min(puzzle.yBbox[0], _a.x);
+        puzzle.yBbox[1] = Math.min(puzzle.yBbox[1], _a.z);
+        puzzle.yBbox[2] = Math.max(puzzle.yBbox[2], _a.x);
+        puzzle.yBbox[3] = Math.max(puzzle.yBbox[3], _a.z);
+      }
+    }
+
+    var zShadow = [{
+      x: points[0].x,
+      y: points[0].y
+    }];
+
+    outer: for (var _i2 = 1, _len4 = points.length; _i2 < _len4; _i2++) {
+      var _p2 = points[_i2];
+
+      for (var _j4 = 0; _j4 < _i2; _j4++) {
+        var _o2 = points[_j4];
+
+        if (_p2.x === _o2.x && _p2.y === _o2.y) {
+          continue outer;
+        }
+      }
+
+      zShadow.push({
+        x: _p2.x,
+        y: _p2.y
+      });
+    }
+
+    puzzle.zShadow = [];
+    puzzle.zBbox = [];
+
+    for (var _j5 = 0, _len5 = zShadow.length; _j5 < _len5; _j5++) {
+      var _a2 = zShadow[_j5];
+      puzzle.zShadow.push(_a2);
+
+      if (_j5 === 0) {
+        puzzle.zBbox[0] = _a2.x;
+        puzzle.zBbox[1] = _a2.y;
+        puzzle.zBbox[2] = _a2.x;
+        puzzle.zBbox[3] = _a2.y;
+      } else {
+        puzzle.zBbox[0] = Math.min(puzzle.zBbox[0], _a2.x);
+        puzzle.zBbox[1] = Math.min(puzzle.zBbox[1], _a2.y);
+        puzzle.zBbox[2] = Math.max(puzzle.zBbox[2], _a2.x);
+        puzzle.zBbox[3] = Math.max(puzzle.zBbox[3], _a2.y);
+      }
+    }
+  } // 多个平面相交切割，每个平面有[3,]个顶点，且有index索引额外信息
+
+
+  function splitQuadrilateralPlane(list) {
+    var uuid = 0;
+    var length = list.length;
+
+    if (length < 2) {
+      return;
+    } // 先每个四边形计算x/y/z轴上的投影，可能是四边形也可能重合三角形或直线
+
+
+    var xList = [];
+
+    for (var i = 0; i < length; i++) {
+      var item = list[i];
+      shadow(item);
+      item.uuid = uuid++;
+      item.plane = item;
+      var xShadow = item.xShadow;
+
+      for (var _i3 = 0, len = xShadow.length; _i3 < len; _i3++) {
+        // 只有2个点防重，x投影特殊需要，线段排序列表
+        if (len === 2 && _i3 === 1) {
+          break;
+        }
+
+        var a = xShadow[_i3];
+        var b = xShadow[(_i3 + 1) % len];
+
+        if (a.z > b.z) {
+          var _ref = [b, a];
+          a = _ref[0];
+          b = _ref[1];
+        }
+
+        xList.push({
+          belong: item,
+          y1: a.y,
+          z1: a.z,
+          y2: b.y,
+          z2: b.z
+        });
+      }
+    }
+    /**
+     * 从侧面观看投影，即x轴，按照深度z顺序，每个平面可形成2或4条线（y/z坐标），用扫描线算法求交
+     * 处在扫描线活动范围下的2个线段，如果属于2个不同平面，继续
+     * 再检测面的x/y/z是否bbox重叠，3个都重叠是2个四边面空间重叠的必要条件，以此前提甄选
+     * 再用平面相交公式求得相交线，查看双方顶点是否都存在于此条线上且范围内，都有则真正相交，开始拆分
+     */
+
+
+    var eventHash = {};
+
+    for (var _i4 = 0, _len6 = xList.length; _i4 < _len6; _i4++) {
+      var seg = xList[_i4];
+      var o = eventHash[seg.z1] = eventHash[seg.z1] || [];
+      o.push(seg);
+      o = eventHash[seg.z2] = eventHash[seg.z2] || [];
+      o.push(seg);
+    } // z排序，不用管y
+
+
+    var eventList = [];
+
+    for (var _i5 in eventHash) {
+      if (eventHash.hasOwnProperty(_i5)) {
+        var _o3 = eventHash[_i5];
+        eventList.push({
+          z: _i5,
+          list: _o3
+        });
+      }
+    }
+
+    eventList.sort(function (a, b) {
+      return a.z - b.z;
+    });
+    var HISTORY = {}; // 求过的2个平面记录，只求1次防重
+
+    var ael = []; // 当前扫描线活动边
+
+    for (var _i6 = 0, elLen = eventList.length; _i6 < elLen; _i6++) {
+      var _eventList$_i = eventList[_i6],
+          z = _eventList$_i.z,
+          _list = _eventList$_i.list;
+
+      for (var j = 0, _length = _list.length; j < _length; j++) {
+        var _seg = _list[j]; // 第1次进是start，第2次是end
+
+        if (_seg.isVisited) {
+          var _j6 = ael.indexOf(_seg);
+
+          if (_j6 > -1) {
+            ael.splice(_j6, 1);
+          }
+        } else {
+          if (ael.length) {
+            for (var _j7 = 0, _len7 = ael.length; _j7 < _len7; _j7++) {
+              var _item = ael[_j7];
+              var pa = _seg.belong,
+                  pb = _item.belong; // 属于不同的平面才能相交
+
+              if (pa.plane === pb.plane) {
+                continue;
+              } // 如果面被拆分过，忽略掉
+
+
+              if (pa.isDeleted) {
+                break;
+              }
+
+              if (pb.isDeleted) {
+                continue;
+              } // 无论结果如何，这2个拼图都记录下防止重复检测
+
+
+              var key = pa.uuid > pb.uuid ? pb.uuid + ',' + pa.uuid : pa.uuid + ',' + pb.uuid;
+
+              if (HISTORY.hasOwnProperty(key)) {
+                continue;
+              }
+
+              HISTORY[key] = true; // 所属的2个面进行x/y/z上的bbox重叠验证，是屏幕真相交的前提必要条件
+
+              if (isRectsOverlap$1(pa.xBbox, pb.xBbox, false) && isRectsOverlap$1(pa.yBbox, pb.yBbox, false) && isRectsOverlap$1(pa.zBbox, pb.zBbox, false)) {
+                var pointsA = pa.points,
+                    pointsB = pb.points; // 真正求交
+
+                var line = intersectPlanePlane(pointsA[0], pointsA[1], pointsA[2], pointsB[0], pointsB[1], pointsB[2]);
+
+                if (!line || line.length !== 2) {
+                  continue;
+                } // 这条线一定和2个四边形有2/4个不同交点，分别用每条边和直线求交点，2个是四边形a内切割b，4个是a和b恰好互相切割
+                // 被切割后的puzzle解法相同，只是变成了多边形，n>=3
+
+
+                var resA = [],
+                    resB = [];
+
+                for (var _i7 = 0, _len8 = pointsA.length; _i7 < _len8; _i7++) {
+                  var r = intersectLineLine3(pointsA[_i7], pointsA[(_i7 + 1) % _len8], line[0], line[1], 1);
+
+                  if (r) {
+                    r.i = _i7;
+                    resA.push(r);
+                  }
+                }
+
+                for (var _i8 = 0, _len9 = pointsB.length; _i8 < _len9; _i8++) {
+                  var _r = intersectLineLine3(pointsB[_i8], pointsB[(_i8 + 1) % _len9], line[0], line[1], 1);
+
+                  if (_r) {
+                    _r.i = _i8;
+                    resB.push(_r);
+                  }
+                } // res只可能是2和0，2个res组合只有3种可能，其它则是精度误差忽略，切割的交点在边的索引和下个索引之间的边上
+
+
+                if (resA.length === 2 && resB.length === 2 || resA.length === 2 && !resB.length || !resA.length && resB.length === 2) {
+                  var puzzle = [],
+                      t1 = void 0,
+                      t2 = void 0; // 2个都需要切割，各自判断
+
+                  if (resA.length) {
+                    t1 = splitPlaneByLine(pa, resA);
+                  }
+
+                  if (resB.length) {
+                    t2 = splitPlaneByLine(pb, resB);
+                  } // 误差导致切割数量不对，要么一个不被切割另外一个被切为2，要么都被切2，不会出现被切但数量不对
+
+
+                  if (t1 && t2 && t1.length !== t2.length) {
+                    continue;
+                  }
+
+                  if (t1 && t1.length > 1) {
+                    pa.puzzle = pa.puzzle || [];
+                    pa.puzzle = pa.puzzle.concat(t1);
+                    pa.isDeleted = true;
+                    puzzle = puzzle.concat(t1);
+                  }
+
+                  if (t2 && t2.length > 1) {
+                    pb.puzzle = pb.puzzle || [];
+                    pb.puzzle = pb.puzzle.concat(t2);
+                    pb.isDeleted = true;
+                    puzzle = puzzle.concat(t2);
+                  } // 新的拼图需考虑加入到eventList的合适位置，可能是新增的扫描事件
+
+
+                  for (var _j8 = 0, _len10 = puzzle.length; _j8 < _len10; _j8++) {
+                    var _item2 = puzzle[_j8];
+                    shadow(_item2);
+                    _item2.uuid = uuid++;
+                    var xBbox = _item2.xBbox;
+
+                    if (xBbox[2] <= z) {
+                      continue;
+                    }
+
+                    var _xShadow = _item2.xShadow;
+
+                    for (var _j9 = 0, _len11 = _xShadow.length; _j9 < _len11; _j9++) {
+                      // 只有2个点防重，x投影特殊需要，线段排序列表
+                      if (_len11 === 2 && _j9 === 1) {
+                        break;
+                      }
+
+                      var _a3 = _xShadow[_j9];
+                      var _b = _xShadow[(_j9 + 1) % _len11];
+
+                      if (_a3.z > _b.z) {
+                        var _ref2 = [_b, _a3];
+                        _a3 = _ref2[0];
+                        _b = _ref2[1];
+                      } // 和初始化不一样多判断下，最大值比当前还小的是无效的事件，已经扫过了
+
+
+                      if (_b.z <= z) {
+                        continue;
+                      }
+
+                      var _seg2 = {
+                        belong: _item2,
+                        y1: _a3.y,
+                        z1: _a3.z,
+                        y2: _b.y,
+                        z2: _b.z
+                      }; // 最小值比当前z小，被访问过isVisited
+
+                      if (_seg2.z1 <= z) {
+                        _seg2.isVisited = true; // 等于才加入当前事件列表
+
+                        if (_seg2.z1 === z) {
+                          _list.push(_seg2);
+
+                          _length++;
+                        }
+                      } // 最大值加入事件列表，=z忽略，注意判断可能z所属的扫描坐标不存在
+
+
+                      if (_seg2.z2 > z) {
+                        for (var _j10 = _i6 + 1; _j10 < elLen; _j10++) {
+                          var _item3 = eventList[_j10];
+                          var _z = _item3.z;
+
+                          if (_seg2.z2 === _z) {
+                            _item3.list.push(_seg2);
+
+                            break;
+                          } else if (_seg2.z2 > _z || _j10 === elLen - 1) {
+                            eventList.splice(_j10, 0, {
+                              z: _seg2.z2,
+                              list: [_seg2]
+                            });
+                            elLen++;
+                            break;
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+
+          _seg.isVisited = true;
+          ael.push(_seg);
+        }
+      }
+    }
+  }
+
+  function scan(eventList) {
+    var ael = [],
+        hash = {};
+
+    for (var i = 0, len = eventList.length; i < len; i++) {
+      var _eventList$i = eventList[i],
+          k = _eventList$i.k,
+          list = _eventList$i.list; // 先一遍循环，把刚进入的puzzle初始化放入ael，这样同时初始化的就不会有遗漏
+
+      for (var _i9 = 0, _len12 = list.length; _i9 < _len12; _i9++) {
+        var puzzle = list[_i9].puzzle; // 首次进入初始化数据
+
+        if (!puzzle.isStart) {
+          puzzle.isStart = true;
+          puzzle.count = 2;
+          ael.push(puzzle);
+        }
+      }
+
+      var willEnd = []; // 再一遍循环，检查同区域点集合
+
+      for (var _i10 = 0, _len13 = list.length; _i10 < _len13; _i10++) {
+        var p = list[_i10],
+            _puzzle = p.puzzle; // 遍历已存在的puzzle，和当前puzzle视为同区域集合，存数据
+
+        for (var _i11 = 0, _len14 = ael.length; _i11 < _len14; _i11++) {
+          var item = ael[_i11];
+
+          if (_puzzle === item || _puzzle.plane === item.plane) {
+            continue;
+          }
+
+          var key = _puzzle.uuid > item.uuid ? item.uuid + ',' + _puzzle.uuid : _puzzle.uuid + ',' + item.uuid; // 一定是第1次视为start
+
+          var o = hash[key] = hash[key] || [];
+          o.push(k);
+        } // 归零时离开，延迟处理，依然是防止同时离开的puzzle不会有遗漏
+
+
+        if (! --_puzzle.count) {
+          willEnd.push(_puzzle);
+        }
+      }
+
+      for (var j = 0, _len15 = willEnd.length; j < _len15; j++) {
+        var _p3 = willEnd[j],
+            uuid = _p3.uuid;
+        _p3.isStart = false;
+
+        var _i12 = ael.indexOf(_p3);
+
+        ael.splice(_i12, 1); // 离开检查hash，如有则视为end
+
+        for (var _k in hash) {
+          if (hash.hasOwnProperty(_k)) {
+            if (_k.indexOf(uuid + ',') === 0 || _k.indexOf(',' + uuid) > -1) {
+              var _o4 = hash[_k];
+
+              if (_o4.length < 2) {
+                _o4.push(_k);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return hash;
+  }
+
+  function splitPlaneByLine(puzzle, res) {
+    if (checkIsec(puzzle.points.length, res)) {
+      return;
+    }
+
+    var plane = puzzle.plane,
+        points = puzzle.points,
+        i1 = -1,
+        i2 = -1;
+    var p0 = plane.points[0],
+        p1 = plane.points[1],
+        p2 = plane.points[2],
+        p3 = plane.points[3]; // 交点一定在边上，不在边上的不切割
+
+    for (var i = 0, len = points.length; i < len; i++) {
+      var _p4 = points[i],
+          _p5 = points[(i + 1) % len];
+      var r1 = pointOnLine3(res[0], _p4, _p5);
+      var r2 = pointOnLine3(res[1], _p4, _p5);
+
+      if (r1) {
+        i1 = i;
+      }
+
+      if (r2) {
+        i2 = i;
+      }
+    } // 看是否相邻以及是否是原有顶点，不同情况不同拆分，切割也不能在同一条边上
+
+
+    if (i1 > -1 && i2 > -1 && i1 !== i2) {
+      var onVertex1 = isZero3(points[i1], res[0]) ? i1 : -1;
+
+      if (!onVertex1 && points[i1 + 1]) {
+        onVertex1 = isZero3(points[i1 + 1], res[0]) ? i1 + 1 : -1;
+      }
+
+      var onVertex2 = isZero3(points[i2], res[1]) ? i2 : -1;
+
+      if (!onVertex2 && points[i2 + 1]) {
+        onVertex2 = isZero3(points[i2 + 1], res[1]) ? i2 + 1 : -1;
+      } // 如果是相邻顶点，或者只有1个顶点但恰好2点在同边则失效
+
+
+      if (Math.abs(i1 - i2) <= 1) {
+        if (onVertex1 > -1 && onVertex2 > -1) {
+          return;
+        } else if (onVertex1 > -1) {
+          if (onVertex1 === i2) {
+            return;
+          }
+        } else if (onVertex2 > -1) {
+          if (onVertex2 === i2) {
+            return;
+          }
+        }
+      } // 原本矩形经过任意matrix变换后一定还是个平行四边形（相对所在平面），4个顶点坐标已知
+      // 然后交点坐标已知，也一定在这个平面上，求得相对于左上角顶点即原点的百分比坐标，分母为宽或高
+      // 其实就是求拆分后的拼图，某个点对应于原本矩形纹理的百分比坐标
+      // 先求得平行四边形的2个邻边的向量，然后求交点和向量所在直线与边的交点即可得出
+
+
+      var va = plane.va,
+          vb = plane.vb;
+
+      if (!va) {
+        va = plane.va = {
+          x: p0.x - p1.x,
+          y: p0.y - p1.y,
+          z: p0.z - p1.z
+        };
+      }
+
+      if (!vb) {
+        vb = plane.vb = {
+          x: p1.x - p2.x,
+          y: p1.y - p2.y,
+          z: p1.z - p2.z
+        };
+      }
+
+      var hash = [],
+          r0,
+          _r2; // n边形（n一定>=3)，会被分为a、b两个多边形
+
+
+      plane.puzzle = plane.puzzle || [];
+      var _puzzle2 = [];
+      var a = {
+        plane: plane,
+        node: plane.node,
+        target: plane.target,
+        isPuzzle: true,
+        points: []
+      };
+
+      for (var _i13 = 0; _i13 <= i1; _i13++) {
+        var r = hash[_i13] = getPercentXY(points[_i13], va, vb, p0, p1, p3);
+
+        if (r) {
+          a.points.push(r);
+        }
+      } // 第1个交点如果在顶点上忽略，前面循环考虑了
+
+
+      if (onVertex1 === -1) {
+        r0 = getPercentXY(res[0], va, vb, p0, p1, p3);
+
+        if (r0) {
+          a.points.push(r0);
+        }
+      } // 第2个即便在顶点上也包含，后面循环没考虑
+
+
+      _r2 = getPercentXY(res[1], va, vb, p0, p1, p3);
+
+      if (_r2) {
+        a.points.push(_r2);
+      }
+
+      for (var _i14 = i2 + 1, _len16 = points.length; _i14 < _len16; _i14++) {
+        var _r3 = hash[_i14] = getPercentXY(points[_i14], va, vb, p0, p1, p3);
+
+        if (_r3) {
+          a.points.push(_r3);
+        }
+      }
+
+      if (a.points.length > 2) {
+        _puzzle2.push(a);
+      } // b部分同上
+
+
+      var b = {
+        plane: plane,
+        node: plane.node,
+        target: plane.target,
+        isPuzzle: true,
+        points: []
+      }; // 复用数据但不能相同引用
+
+      if (r0) {
+        b.points.push(Object.assign({}, r0));
+      } else {
+        r0 = getPercentXY(res[0], va, vb, p0, p1, p3);
+
+        if (r0) {
+          b.points.push(r0);
+        }
+      }
+
+      for (var _i15 = i1 + 1; _i15 <= i2; _i15++) {
+        var _r4 = hash[_i15] = hash[_i15] || getPercentXY(points[_i15], va, vb, p0, p1, p3);
+
+        if (_r4) {
+          b.points.push(_r4);
+        }
+      }
+
+      if (onVertex2 === -1) {
+        if (_r2) {
+          b.points.push(Object.assign({}, _r2));
+        } else {
+          _r2 = getPercentXY(res[1], va, vb, p0, p1, p3);
+
+          if (_r2) {
+            b.points.push(_r2);
+          }
+        }
+      }
+
+      if (b.points.length > 2) {
+        _puzzle2.push(b);
+      } // 只返回新增的
+
+
+      return _puzzle2;
+    }
+  } // 已知空间平行四边形顶点和其面上一点，求相对于左上角顶点即原点的百分比坐标，四边形宽高即分母
+
+
+  function getPercentXY(p, va, vb, p0, p1, p3) {
+    var pa = {
+      x: p.x + va.x,
+      y: p.y + va.y,
+      z: p.z + va.z
+    },
+        pb = {
+      x: p.x + vb.x,
+      y: p.y + vb.y,
+      z: p.z + vb.z
+    };
+    var ipx = intersectLineLine3(p0, p1, p, pb, 3);
+    var ipy = intersectLineLine3(p0, p3, p, pa, 3);
+
+    if (ipx && ipy) {
+      return {
+        x: p.x,
+        y: p.y,
+        z: p.z,
+        px: (ipx.x - p0.x) / (p1.x - p0.x),
+        py: (ipy.y - p0.y) / (p3.y - p1.y)
+      };
+    }
+  } // 检测相交线是否有效，不能和puzzle的边重合
+
+
+  function checkIsec(len, res) {
+    var a = res[0],
+        b = res[1]; // 共边索引
+
+    if (a.i === b.i) {
+      return true;
+    }
+
+    if (a.i > b.i) {
+      var t = a;
+      a = b;
+      b = t;
+    } // 临边如果小的索引为1或大的索引为0
+
+
+    if (b.i - a.i === 1) {
+      if (Math.abs(a.pa - 1) < 1e-9 || b.pa < 1e-9) {
+        return true;
+      }
+    } // 刚好隔边则必须同时索引为1和0
+
+
+    if (b.i - a.i === 2) {
+      if (Math.abs(a.pa - 1) < 1e-9 && b.pa < 1e-9) {
+        return true;
+      }
+    } // 首尾临边
+
+
+    if (b.i === len - 1 && a.i === 0) {
+      if (Math.abs(b.pa - 1) < 1e-9 || a.pa < 1e-9) {
+        return true;
+      }
+    } // 首尾隔边
+
+
+    if (b.i === len - 1 && a.i === 1 || b.i === len - 2 && a.i === 0) {
+      if (Math.abs(b.pa - 1) < 1e-9 && a.pa < 1e-9) {
+        return true;
+      }
+    }
+
+    return false;
+  } // 将拼图按z顺序排好，渲染从z小的开始，拼图已经完全不相交（3d空间）
+
+
+  function sortPuzzleZ(list) {
+    if (list.length < 2) {
+      return list;
+    } // 用扫描线遍历一遍正视图，可以找到2个拼图在投影重合部分，有开始和结束，取x/y中间值，
+    // 比较此点在2个平面上的z大小可以得出这2个拼图真正的z先后次序，如果相等则特殊处理，和不重合逻辑一样，
+    // 不重合的话，取最大最小值z的平均比较即可，平均值可避免起点终点相同无法比较
+
+
+    var eventHashX = {},
+        eventHashY = {},
+        puzzleHash = {};
+
+    for (var i = 0, len = list.length; i < len; i++) {
+      var puzzle = list[i],
+          xBbox = puzzle.xBbox,
+          yBbox = puzzle.yBbox;
+      puzzleHash[puzzle.uuid] = puzzle;
+      var start = xBbox[0],
+          end = xBbox[2];
+      var o = eventHashX[start] = eventHashX[start] || [];
+      o.push(puzzle);
+      o = eventHashX[end] = eventHashX[end] || [];
+      o.push(puzzle);
+      start = yBbox[0];
+      end = yBbox[2];
+      o = eventHashY[start] = eventHashY[start] || [];
+      o.push(puzzle);
+      o = eventHashY[end] = eventHashY[end] || [];
+      o.push(puzzle);
+      puzzle.cz = (xBbox[0] + xBbox[2]) * 0.5;
+    }
+
+    var eventListX = [],
+        eventListY = [];
+
+    for (var _i16 in eventHashX) {
+      if (eventHashX.hasOwnProperty(_i16)) {
+        var _o5 = eventHashX[_i16];
+        eventListX.push({
+          k: _i16,
+          list: _o5
+        });
+      }
+    }
+
+    for (var _i17 in eventHashY) {
+      if (eventHashY.hasOwnProperty(_i17)) {
+        var _o6 = eventHashY[_i17];
+        eventListY.push({
+          k: _i17,
+          list: _o6
+        });
+      }
+    }
+
+    eventListX.sort(function (a, b) {
+      return a.k - b.k;
+    });
+    eventListY.sort(function (a, b) {
+      return a.k - b.k;
+    }); // 每个点作为事件，触发时所属拼图count--，首次拼图视为start，当count为0时拼图视为end
+    // 这样2个（或多个）拼图同时都在start状态下（count > 0)的点就是重合区域点集合
+
+    var hashX = scan(eventHashX),
+        hashY = scan(eventHashY); // 取中值x/y，比较2个puzzle所在平面的值为x/y的点的z坐标大小
+
+    var zHash = {};
+
+    for (var _i18 in hashX) {
+      if (hashX.hasOwnProperty(_i18)) {
+        var listX = hashX[_i18],
+            listY = hashY[_i18],
+            k = _i18.splice(',');
+
+        var pa = puzzleHash[k[0]],
+            pb = puzzleHash[k[1]];
+        var cx = (listX[0] + listX[1]) * 0.5,
+            cy = (listY[0] + listY[1]) * 0.5;
+
+        var _getPlainNormalEquati = getPlainNormalEquation(pa.points),
+            a1 = _getPlainNormalEquati.a,
+            b1 = _getPlainNormalEquati.b,
+            c1 = _getPlainNormalEquati.c,
+            d1 = _getPlainNormalEquati.d;
+
+        var _getPlainNormalEquati2 = getPlainNormalEquation(pb.points),
+            a2 = _getPlainNormalEquati2.a,
+            b2 = _getPlainNormalEquati2.b,
+            c2 = _getPlainNormalEquati2.c,
+            d2 = _getPlainNormalEquati2.d;
+
+        var z1 = c1 ? (-d1 - a1 * cx - b1 * cy) / c1 : 0;
+        var z2 = c2 ? (-d2 - a2 * cx - b2 * cy) / c2 : 0;
+
+        if (Math.abs(z1 - z2) > 1e-9) {
+          zHash[_i18] = z1 - z2;
+        }
+      }
+    }
+
+    list.sort(function (a, b) {
+      var key = a.uuid > b.uuid ? b.uuid + ',' + a.uuid : a.uuid + ',' + b.uuid; // 有重合的区域，除非相等，否则可以直接得出结果
+
+      if (zHash.hasOwnProperty(key)) {
+        return zHash[key];
+      } // 无重合或者相等的，对比z中点
+
+
+      return a.cz - b.cz;
+    });
+    return list;
+  }
+
+  var oit = {
+    splitQuadrilateralPlane: splitQuadrilateralPlane,
+    sortPuzzleZ: sortPuzzleZ
+  };
+
   var TexturePage = /*#__PURE__*/function (_Page) {
     _inherits(TexturePage, _Page);
 
@@ -30816,15 +33350,18 @@
           return res;
         }
 
-        var cache = Cache.getInstance(renderMode, ctx, rootId, bbox, x1, y1, this, CanvasPage, null);
-        cache.key = key;
+        var cache = Cache.getInstance(renderMode, ctx, rootId, bbox, x1, y1, this, CanvasPage, null); // 超限为空
 
         if (cache) {
-          HASH[key] = {
-            cache: cache,
-            count: 1
-          };
-          return cache;
+          cache.key = key;
+
+          if (cache) {
+            HASH[key] = {
+              cache: cache,
+              count: 1
+            };
+            return cache;
+          }
         }
       }
     }]);
@@ -30849,7 +33386,9 @@
       TRANSFORM$1 = _enums$STYLE_KEY$1.TRANSFORM,
       TRANSFORM_ORIGIN = _enums$STYLE_KEY$1.TRANSFORM_ORIGIN,
       PERSPECTIVE = _enums$STYLE_KEY$1.PERSPECTIVE,
-      PERSPECTIVE_ORIGIN = _enums$STYLE_KEY$1.PERSPECTIVE_ORIGIN;
+      PERSPECTIVE_ORIGIN = _enums$STYLE_KEY$1.PERSPECTIVE_ORIGIN,
+      TRANSFORM_STYLE = _enums$STYLE_KEY$1.TRANSFORM_STYLE,
+      BACKFACE_VISIBILITY = _enums$STYLE_KEY$1.BACKFACE_VISIBILITY;
   var NONE$1 = o$1.NONE,
       TRANSFORM_ALL$1 = o$1.TRANSFORM_ALL,
       OP$1 = o$1.OPACITY,
@@ -30861,12 +33400,19 @@
       MASK$1 = o$1.MASK;
   var isE = matrix.isE,
       inverse = matrix.inverse,
-      multiply = matrix.multiply;
-  var mbmName = mbm.mbmName,
-      isValidMbm = mbm.isValidMbm;
+      multiply = matrix.multiply,
+      calRectPoint = matrix.calRectPoint;
+  var mbmName = mbm.mbmName;
   var assignMatrix = util.assignMatrix,
       transformBbox = util.transformBbox;
-  var isPerspectiveMatrix = transform$1.isPerspectiveMatrix;
+  var drawTextureCache = webgl.drawTextureCache,
+      createTexture = webgl.createTexture,
+      bindTexture = webgl.bindTexture,
+      drawCache2Tex = webgl.drawCache2Tex,
+      drawTex2Cache = webgl.drawTex2Cache;
+  var DOM_RENDER = Dom.prototype.render;
+  var IMG_RENDER = Img.prototype.render;
+  var GEOM_RENDER = Geom.prototype.render;
 
   function getCache(list) {
     for (var i = 0, len = list.length; i < len; i++) {
@@ -30880,16 +33426,14 @@
   /**
    * 生成一个节点及其子节点所包含的矩形范围盒，canvas和webgl的最大尺寸限制不一样，由外部传入
    * 如果某个子节点超限，则视为整个超限，超限返回空
+   * isPpt为webgl下有perspective的节点，需考虑透视
    */
 
 
-  function genBboxTotal(node, __structs, index, total, isWebgl) {
+  function genBboxTotal(node, __structs, index, total, lv, isPpt) {
     var __cache = node.__cache;
     assignMatrix(node.__matrixEvent, matrix.identity());
-    node.__opacity = 1;
-    var _node$__computedStyle = node.__computedStyle,
-        perspective = _node$__computedStyle[PERSPECTIVE],
-        perspectiveOrigin = _node$__computedStyle[PERSPECTIVE_ORIGIN]; // 先将局部根节点的bbox算好，可能没内容是空
+    node.__opacity = 1; // 先将局部根节点的bbox算好，可能没内容是空
 
     var bboxTotal;
 
@@ -30900,11 +33444,18 @@
     }
 
     bboxTotal = bboxTotal.slice(0); // 局部根节点如有perspective，则计算pm，这里不会出现嵌套，因为每个出现都会生成局部根节点
+    // 分2种情况，普通父ppt和自身有ppt情况，自身不能视为E，被绘入主画布时注意特殊处理
+    // 自身ppt需将ppt提炼出来，然后node重新忽略ppt
 
     var pm;
 
-    if (isWebgl && perspective) {
-      pm = transform$1.calPerspectiveMatrix(perspective, perspectiveOrigin[0], perspectiveOrigin[1]);
+    if (isPpt) {
+      pm = node.__perspectiveMatrix || node.__selfPerspectiveMatrix;
+    }
+
+    if (node.__selfPerspective) {
+      var bbox = transformBbox(bboxTotal, multiply(pm, node.__matrix), 0, 0);
+      mergeBbox(bboxTotal, bbox);
     }
 
     var top = node;
@@ -30921,16 +33472,16 @@
           return;
         }
 
-        var _bbox = _node.bbox,
+        var _bbox2 = _node.bbox,
             _p = _node.__domParent,
             matrix$1 = _p.__matrixEvent;
 
-        if (_bbox[2] - _bbox[0] && _bbox[3] - _bbox[1]) {
+        if (_bbox2[2] - _bbox2[0] && _bbox2[3] - _bbox2[1]) {
           if (!isE(matrix$1)) {
-            _bbox = transformBbox(_bbox, matrix$1, 0, 0);
+            _bbox2 = transformBbox(_bbox2, matrix$1, 0, 0);
           }
 
-          mergeBbox(bboxTotal, _bbox);
+          mergeBbox(bboxTotal, _bbox2);
         }
 
         continue;
@@ -30964,14 +33515,32 @@
 
       if (p !== top) {
         m = multiply(p.__matrixEvent, m);
-      }
+      } // 只有webgl且ppt情况才有pm，直接子节点才考虑预乘
 
-      if (isWebgl && p === top && pm) {
+
+      if (pm && p === top) {
         m = multiply(pm, m);
       }
 
-      assignMatrix(_node.__matrixEvent, m);
-      var bbox = void 0; // 子元素有cacheTotal优先使用
+      assignMatrix(_node.__matrixEvent, m); // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
+
+      if (__computedStyle2[BACKFACE_VISIBILITY] === 'hidden') {
+        var x = m[5] < 0 && m[10] < 0,
+            y = m[0] < 0 && m[10] < 0;
+
+        if (x || y) {
+          i += _total || 0;
+
+          if (hasMask) {
+            i += countMaskNum(__structs, i + 1, hasMask);
+          }
+
+          continue;
+        }
+      }
+
+      var _bbox = void 0; // 子元素有cacheTotal优先使用
+
 
       var target = getCache([__cacheMask2, __cacheFilter2, __cacheTotal2, __cache2]);
 
@@ -30984,26 +33553,23 @@
           }
         }
 
-        bbox = target.bbox;
+        _bbox = target.bbox;
       } else {
-        bbox = _node.bbox; // 不能用filterBbox，子元素继承根节点的，如果有filter会是cacheFilter的bbox
+        _bbox = _node.bbox; // 不能用filterBbox，子元素继承根节点的，如果有filter会是cacheFilter的bbox
       }
 
-      if (bbox[2] - bbox[0] && bbox[3] - bbox[1]) {
+      if (_bbox[2] - _bbox[0] && _bbox[3] - _bbox[1]) {
         // 老的不变，新的会各自重新生成，根据matrixEvent合并bboxTotal
-        bbox = transformBbox(bbox, m, 0, 0);
-        mergeBbox(bboxTotal, bbox);
+        _bbox = transformBbox(_bbox, m, 0, 0);
+        mergeBbox(bboxTotal, _bbox);
       }
     }
 
     if (bboxTotal[2] - bboxTotal[0] <= 0 || bboxTotal[3] - bboxTotal[1] <= 0) {
-      return {};
+      return;
     }
 
-    return {
-      bbox: bboxTotal,
-      pm: pm
-    };
+    return bboxTotal;
   }
 
   function mergeBbox(bbox, t) {
@@ -31033,7 +33599,7 @@
         y1 = node.__y1,
         __offsetWidth = node.__offsetWidth,
         __offsetHeight = node.__offsetHeight;
-    var bboxTotal = genBboxTotal(node, __structs, index, total, false).bbox;
+    var bboxTotal = genBboxTotal(node, __structs, index, total, lv, false);
 
     if (!bboxTotal) {
       return;
@@ -31234,7 +33800,7 @@
 
           var mixBlendMode = __computedStyle2[MIX_BLEND_MODE$1];
 
-          if (isValidMbm(mixBlendMode)) {
+          if (mixBlendMode !== 'normal') {
             ctxTotal.globalCompositeOperation = mbmName(mixBlendMode);
           }
 
@@ -31555,7 +34121,7 @@
               ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
               var mixBlendMode = _computedStyle[MIX_BLEND_MODE$1];
 
-              if (isValidMbm(mixBlendMode)) {
+              if (mixBlendMode !== 'normal') {
                 ctx.globalCompositeOperation = mbmName(mixBlendMode);
               } else {
                 ctx.globalCompositeOperation = 'source-over';
@@ -31723,41 +34289,36 @@
   /**
    * 局部根节点复合图层生成，汇总所有子节点到一颗局部树上的位图缓存，包含超限特殊情况
    * 即便只有自己一个也要返回，因为webgl生成total的原因是有类似filter/mask等必须离屏处理的东西
+   * 传入isPpt的时候，说明是有perspective的节点在前置分割处理完毕之后，进行的渲染，需预乘pm透视矩阵
+   * 传入pptNode/oitHash的时候，说明是透视节点下某个preserve3d的子节点，其渲染需要考虑其子节点平面拆分，预处理
    */
 
 
-  function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total, __structs, W, H) {
+  function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total, __structs, W, H, isPpt, pptNode, oitHash) {
     if (__cacheTotal && __cacheTotal.available) {
       return __cacheTotal;
     }
 
+    var top = node;
     var x1 = node.__x1,
         y1 = node.__y1,
-        __cache = node.__cache,
         __offsetWidth = node.__offsetWidth,
         __offsetHeight = node.__offsetHeight;
-
-    var _genBboxTotal = genBboxTotal(node, __structs, index, total, true),
-        bboxTotal = _genBboxTotal.bbox,
-        pm = _genBboxTotal.pm;
+    var bboxTotal = genBboxTotal(node, __structs, index, total, lv, isPpt);
 
     if (!bboxTotal) {
       return;
     } // overflow:hidden和canvas一样特殊考虑
 
 
-    var w, h, dx, dy, dbx, dby, cx, cy, texture, frameBuffer;
+    var w, h, dx, dy, cx, cy, texture, frameBuffer;
     var overflow = node.__computedStyle[OVERFLOW];
 
-    if ((x1 !== bboxTotal[0] || y1 !== bboxTotal[1] || __offsetWidth !== bboxTotal[2] - bboxTotal[0] || __offsetHeight !== bboxTotal[3] - bboxTotal[1]) && overflow === 'hidden') {
+    if (overflow === 'hidden' && (x1 !== bboxTotal[0] || y1 !== bboxTotal[1] || __offsetWidth !== bboxTotal[2] - bboxTotal[0] || __offsetHeight !== bboxTotal[3] - bboxTotal[1])) {
       // geom可能超限，不能直接用bbox
       bboxTotal = [x1, y1, x1 + __offsetWidth, y1 + __offsetHeight];
       w = __offsetWidth;
       h = __offsetHeight;
-      dx = -x1;
-      dy = -y1;
-      dbx = 0;
-      dby = 0;
     } else {
       w = bboxTotal[2] - bboxTotal[0];
       h = bboxTotal[3] - bboxTotal[1];
@@ -31782,78 +34343,91 @@
     cx = w * 0.5;
     cy = h * 0.5;
     dx = -bboxTotal[0];
-    dy = -bboxTotal[1];
-    dbx = __cacheTotal.dbx;
-    dby = __cacheTotal.dby; // 需要重新计算，因为bbox里是原本位置，这里是新的位置
+    dy = -bboxTotal[1]; // 需要重新计算，因为bbox里是原本位置，这里是新的位置
 
-    if (pm) {
-      var _node$__computedStyle2 = node.__computedStyle,
-          perspective = _node$__computedStyle2[PERSPECTIVE],
-          perspectiveOrigin = _node$__computedStyle2[PERSPECTIVE_ORIGIN];
-      pm = transform$1.calPerspectiveMatrix(perspective, x1 + dx + perspectiveOrigin[0], y1 + dy + perspectiveOrigin[1]);
+    var pm, ppt;
+
+    if (isPpt) {
+      if (pptNode.__perspectiveMatrix) {
+        var _pptNode$__computedSt = pptNode.__computedStyle,
+            perspective = _pptNode$__computedSt[PERSPECTIVE],
+            perspectiveOrigin = _pptNode$__computedSt[PERSPECTIVE_ORIGIN];
+        pm = transform$1.calPerspectiveMatrix(perspective, x1 + dx + perspectiveOrigin[0], y1 + dy + perspectiveOrigin[1]);
+      } else {
+        var _perspectiveOrigin = pptNode.__computedStyle[TRANSFORM_ORIGIN];
+        pm = transform$1.calPerspectiveMatrix(pptNode.__selfPerspective, x1 + dx + _perspectiveOrigin[0], y1 + dy + _perspectiveOrigin[1]);
+      }
+    }
+
+    if (oitHash) {
+      if (pptNode.__perspectiveMatrix) {
+        var _perspective = pptNode.__computedStyle[PERSPECTIVE];
+        ppt = _perspective;
+      } else {
+        ppt = pptNode.__selfPerspective;
+      }
     }
 
     var page = __cacheTotal.__page,
         size = page.__size; // 先绘制到一张单独的纹理，防止children中和cacheTotal重复texture不能绘制
 
-    texture = webgl.createTexture(gl, null, 0, w, h);
+    texture = createTexture(gl, null, 0, w, h);
     frameBuffer = genFrameBufferWithTexture(gl, texture, w, h);
     gl.viewport(0, 0, w, h); // fbo绘制对象纹理不用绑定单元，剩下的纹理绘制用0号
 
     var lastPage,
-        list = []; // 先绘制自己的cache，起点所以matrix视作E为空，opacity固定1
-
-    if (__cache && __cache.available) {
-      list.push({
-        cache: __cache,
-        opacity: 1
-      });
-      webgl.drawTextureCache(gl, list, cx, cy, dx, dy);
-      list.splice(0);
-    }
-
-    node.render(renderMode, gl, dx, dy);
+        list = [];
     var cacheTotal = __cacheTotal;
-    var matrixList = [];
-    var parentMatrix = null;
-    var lastMatrix = null;
-    var lastLv = lv;
-    var top = node; // 先序遍历汇总到total
 
-    for (var i = index + 1, len = index + (total || 0) + 1; i < len; i++) {
+    for (var i = index, len = index + (total || 0) + 1; i < len; i++) {
       var _structs$i4 = __structs[i],
           _node4 = _structs$i4.node,
-          _lv3 = _structs$i4.lv,
           _total6 = _structs$i4.total,
           hasMask = _structs$i4.hasMask; // 先看text，visibility会在内部判断，display会被parent判断
 
       if (_node4 instanceof Text) {
-        var _cache = _node4.__cache;
+        var __cache = _node4.__cache;
 
-        if (_cache && _cache.available) {
-          var m = lastMatrix;
-          var __opacity = _node4.__domParent.__opacity;
-          var p = _cache.__page;
+        if (__cache && __cache.available) {
+          var _node4$__domParent = _node4.__domParent,
+              __opacity = _node4$__domParent.__opacity,
+              __matrixEvent = _node4$__domParent.__matrixEvent;
+          var p = __cache.__page;
 
           if (lastPage && lastPage !== p) {
-            webgl.drawTextureCache(gl, list, cx, cy, dx, dy);
-            list.splice(0);
+            drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
           }
 
           lastPage = p;
           list.push({
-            cache: _cache,
+            cache: __cache,
             opacity: __opacity,
-            matrix: m
+            matrix: __matrixEvent
           });
         }
       } // 再看total缓存/cache，都没有的是无内容的Xom节点
       else {
-        var __computedStyle2 = _node4.__computedStyle;
+        var __computedStyle = _node4.__computedStyle;
 
-        if (__computedStyle2[DISPLAY$1] === 'none' || _node4.__mask) {
-          i += _total6 || 0;
+        if (i > index) {
+          if (__computedStyle[DISPLAY$1] === 'none' || _node4.__mask) {
+            i += _total6 || 0;
 
+            if (hasMask) {
+              i += countMaskNum(__structs, i + 1, hasMask);
+            }
+
+            continue;
+          }
+        }
+
+        var visibility = __computedStyle[VISIBILITY$1],
+            transform = __computedStyle[TRANSFORM$1],
+            tfo = __computedStyle[TRANSFORM_ORIGIN],
+            mixBlendMode = __computedStyle[MIX_BLEND_MODE$1],
+            backfaceVisibility = __computedStyle[BACKFACE_VISIBILITY];
+
+        if (visibility === 'hidden' && !_total6) {
           if (hasMask) {
             i += countMaskNum(__structs, i + 1, hasMask);
           }
@@ -31861,113 +34435,223 @@
           continue;
         }
 
-        var _cache2 = _node4.__cache,
-            _cacheTotal2 = _node4.__cacheTotal,
-            __cacheFilter = _node4.__cacheFilter,
-            __cacheMask = _node4.__cacheMask;
-        var visibility = __computedStyle2[VISIBILITY$1],
-            transform = __computedStyle2[TRANSFORM$1],
-            tfo = __computedStyle2[TRANSFORM_ORIGIN],
-            mixBlendMode = __computedStyle2[MIX_BLEND_MODE$1]; // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树
+        var _p2 = _node4.__domParent,
+            ppt2 = _node4.__selfPerspective; // 特殊渲染的matrix，局部根节点为原点考虑，和bbox以节点自身主画布参考系不同
 
-        if (_lv3 > lastLv) {
-          parentMatrix = lastMatrix;
+        var m = void 0;
 
-          if (isE(parentMatrix)) {
-            parentMatrix = null;
+        if (i > index) {
+          if (!isE(transform)) {
+            m = transform$1.calMatrixByOrigin(transform, tfo[0] + _node4.__x1 + dx, tfo[1] + _node4.__y1 + dy);
           }
 
-          matrixList.push(parentMatrix);
-        } // 变小出栈索引需注意，可能不止一层，多层计算diff层级
-        else if (_lv3 < lastLv) {
-          var diff = lastLv - _lv3;
-          matrixList.splice(-diff);
-          parentMatrix = matrixList[_lv3 - 1];
-        } // 不变是同级兄弟，无需特殊处理 else {}
-
-
-        lastLv = _lv3; // 特殊渲染的matrix，局部根节点为原点考虑，当需要计算时（不为E）再计算
-
-        var _m = void 0;
-
-        if (!isE(transform)) {
-          _m = transform$1.calMatrixByOrigin(transform, tfo[0] + dbx + _node4.__x1 - x1, tfo[1] + dby + _node4.__y1 - y1);
-
-          if (!isE(parentMatrix)) {
-            _m = multiply(parentMatrix, _m);
+          if (ppt2) {
+            var t = transform$1.calPerspectiveMatrix(ppt2, tfo[0] + _node4.__x1 + dx, tfo[1] + _node4.__y1 + dy);
+            m = multiply(t, m);
           }
 
-          if (pm && _node4.__domParent === top) {
-            _m = multiply(pm, _m);
+          if (_p2 !== top) {
+            m = multiply(_p2.__matrixEvent, m);
+          } // 有透视还得预乘透视
+          else if (pm) {
+            m = multiply(pm, m);
           }
-        }
 
-        lastMatrix = _m;
-        var target = getCache([__cacheMask, __cacheFilter, _cacheTotal2, _cache2]);
+          assignMatrix(_node4.__matrixEvent, m); // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
 
-        if (target && (target !== _cache2 || visibility === 'visible')) {
-          // 局部的mbm和主画布一样，先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
-          if (isValidMbm(mixBlendMode)) {
-            if (list.length) {
-              webgl.drawTextureCache(gl, list, cx, cy, dx, dy);
-              list.splice(0);
+          if (backfaceVisibility === 'hidden') {
+            var _m = _node4.__matrix,
+                x = _m[5] < 0 && _m[10] < 0,
+                y = _m[0] < 0 && _m[10] < 0;
+
+            if (x || y) {
+              i += _total6 || 0;
+
+              if (hasMask) {
+                i += countMaskNum(__structs, i + 1, hasMask);
+              }
+
+              continue;
             }
+          }
+        } // 有oit平面拆分的优先考虑，其一定没有mbm；否则走普通渲染逻辑
 
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
-            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-            var res = genMbmWebgl(gl, texture, target, mixBlendMode, _node4.__opacity, _m, dx, dy, cx, cy, size, size);
 
-            if (res) {
+        var _oit = oitHash && oitHash[i];
+
+        if (_oit) {
+          drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+          lastPage = null; // 只求子节点的matrix即可
+
+          for (var j = i + 1, _len = i + (_total6 || 0) + 1; j < _len; j++) {
+            var _structs$j = __structs[j],
+                _node5 = _structs$j.node,
+                _total7 = _structs$j.total,
+                _hasMask4 = _structs$j.hasMask;
+
+            if (!(_node5 instanceof Text)) {
+              var _computedStyle2 = _node5.__computedStyle;
+
+              if (_computedStyle2[DISPLAY$1] === 'none' || _node5.__mask) {
+                j += _total7 || 0;
+
+                if (_hasMask4) {
+                  j += countMaskNum(__structs, j + 1, _hasMask4);
+                }
+
+                continue;
+              }
+
+              var _visibility = _computedStyle2[VISIBILITY$1],
+                  _transform = _computedStyle2[TRANSFORM$1],
+                  _tfo = _computedStyle2[TRANSFORM_ORIGIN],
+                  _backfaceVisibility = _computedStyle2[BACKFACE_VISIBILITY];
+
+              if (_visibility === 'hidden' && !_total7) {
+                if (_hasMask4) {
+                  j += countMaskNum(__structs, j + 1, _hasMask4);
+                }
+
+                continue;
+              }
+
+              var _p3 = _node5.__domParent;
+
+              var _m2 = void 0;
+
+              if (!isE(_transform)) {
+                _m2 = transform$1.calMatrixByOrigin(_transform, _tfo[0] + _node5.__x1 + dx, _tfo[1] + _node5.__y1 + dy);
+              }
+
+              if (_p3 !== top) {
+                _m2 = multiply(_p3.__matrixEvent, _m2);
+              } // 有透视还得预乘透视
+              else if (pm) {
+                _m2 = multiply(pm, _m2);
+              }
+
+              assignMatrix(_node5.__matrixEvent, _m2); // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
+
+              if (_backfaceVisibility === 'hidden') {
+                var _m3 = _node5.__matrix,
+                    _x = _m3[5] < 0 && _m3[10] < 0,
+                    _y = _m3[0] < 0 && _m3[10] < 0;
+
+                if (_x || _y) {
+                  i += _total7 || 0;
+
+                  if (_hasMask4) {
+                    i += countMaskNum(__structs, i + 1, _hasMask4);
+                  }
+
+                  continue;
+                }
+              }
+
+              var _cacheTotal2 = _node5.__cacheTotal,
+                  __cacheFilter = _node5.__cacheFilter,
+                  __cacheMask = _node5.__cacheMask;
+              var target = getCache([__cacheMask, __cacheFilter, _cacheTotal2]);
+
+              if (target) {
+                j += _total7 || 0;
+
+                if (_hasMask4) {
+                  j += countMaskNum(__structs, j + 1, _hasMask4);
+                }
+              }
+            }
+          }
+
+          webgl.drawOitPlane(gl, __structs, _oit, ppt, cx, cy, dx, dy);
+          i += _total6 || 0;
+
+          if (hasMask) {
+            i += countMaskNum(__structs, i + 1, hasMask);
+          }
+
+          var render = _node4.render;
+
+          if (render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
+            _node4.render(renderMode, gl, dx, dy);
+          }
+        } else {
+          var _cache = _node4.__cache,
+              _cacheTotal3 = _node4.__cacheTotal,
+              _cacheFilter2 = _node4.__cacheFilter,
+              _cacheMask2 = _node4.__cacheMask;
+
+          var _target4 = i > index ? getCache([_cacheMask2, _cacheFilter2, _cacheTotal3, _cache]) : _cache;
+
+          if (_target4) {
+            // 局部的mbm和主画布一样，先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
+            if (i > index && mixBlendMode !== 'normal') {
+              if (list.length) {
+                drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+              }
+
               gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
               gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-              gl.deleteFramebuffer(frameBuffer);
-              gl.deleteTexture(texture);
-              texture = res.texture;
-              frameBuffer = res.frameBuffer;
-              gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
-              gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+              var res = genMbmWebgl(gl, texture, _target4, mixBlendMode, _node4.__opacity, m, dx, dy, cx, cy, size, size);
+
+              if (res) {
+                gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
+                gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+                gl.deleteFramebuffer(frameBuffer);
+                gl.deleteTexture(texture);
+                texture = res.texture;
+                frameBuffer = res.frameBuffer;
+                gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+                gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+              }
+
+              lastPage = null;
+            } else {
+              var _p4 = _target4.__page;
+
+              if (lastPage && lastPage !== _p4) {
+                drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+              }
+
+              lastPage = _p4;
+              list.push({
+                cache: _target4,
+                opacity: _node4.__opacity,
+                matrix: m
+              });
             }
 
-            lastPage = null;
-          } else {
-            var _p2 = target.__page;
+            if (_target4 !== _cache) {
+              i += _total6 || 0;
 
-            if (lastPage && lastPage !== _p2) {
-              webgl.drawTextureCache(gl, list, cx, cy, dx, dy);
-              list.splice(0);
-            }
-
-            lastPage = _p2;
-            list.push({
-              cache: target,
-              opacity: _node4.__opacity,
-              matrix: _m
-            });
-          }
-
-          if (target !== _cache2) {
-            i += _total6 || 0;
-
-            if (hasMask) {
-              i += countMaskNum(__structs, i + 1, hasMask);
+              if (hasMask) {
+                i += countMaskNum(__structs, i + 1, hasMask);
+              }
             }
           } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
 
 
-          if (!target || target === _cache2) {
-            _node4.render(renderMode, gl, dx, dy);
+          if (!_target4 || _target4 === _cache) {
+            var _render = _node4.render;
+
+            if (_render !== DOM_RENDER && _render !== IMG_RENDER && _render !== GEOM_RENDER) {
+              drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+
+              _node4.render(renderMode, gl, dx, dy);
+            }
           }
         }
       }
-    } // 绘制到fbo的纹理对象上并删除fbo恢复
+    } // 删除fbo恢复
 
 
-    webgl.drawTextureCache(gl, list, cx, cy, dx, dy);
+    drawTextureCache(gl, list, cx, cy, dx, dy);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.deleteFramebuffer(frameBuffer);
+    gl.deleteFramebuffer(frameBuffer); // 汇入集合
+
     frameBuffer = genFrameBufferWithTexture(gl, page.texture, size, size);
-    webgl.drawTex2Cache(gl, gl.program, cacheTotal, texture, w, h);
+    drawTex2Cache(gl, gl.program, cacheTotal, texture, w, h);
     gl.deleteTexture(texture);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -31975,6 +34659,403 @@
     gl.bindTexture(gl.TEXTURE_2D, null);
     gl.viewport(0, 0, W, H);
     return __cacheTotal;
+  }
+
+  function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total, __structs, W, H) {
+    if (__cacheTotal && __cacheTotal.available) {
+      return __cacheTotal;
+    }
+
+    var top = node;
+    var mergeHash = [],
+        mergeList = [];
+    var isFlat = top.__computedStyle[TRANSFORM_STYLE] === 'flat',
+        isTopFlat = isFlat; // 将产生transformStyle变化的节点记下来，直接子节点如果是flat也记下来，这样除了根节点下一直preserve3d的其它都被记录
+
+    for (var i = index + 1, len = index + (total || 0) + 1; i < len; i++) {
+      var _structs$i5 = __structs[i],
+          _lv3 = _structs$i5.lv,
+          _node6 = _structs$i5.node,
+          _total8 = _structs$i5.total,
+          hasMask = _structs$i5.hasMask;
+
+      if (_node6 instanceof Text) {
+        var mh = mergeHash[i];
+
+        if (mh) {
+          isFlat = mh.isFlat;
+        }
+      } else {
+        var __computedStyle = _node6.__computedStyle;
+
+        if (__computedStyle[DISPLAY$1] === 'none' || _node6.__mask) {
+          i += _total8 || 0;
+
+          if (hasMask) {
+            i += countMaskNum(__structs, i + 1, hasMask);
+          }
+
+          var _mh2 = mergeHash[i];
+
+          if (_mh2) {
+            isFlat = _mh2.isFlat;
+          }
+
+          continue;
+        }
+
+        var visibility = __computedStyle[VISIBILITY$1],
+            transformStyle = __computedStyle[TRANSFORM_STYLE];
+
+        if (visibility === 'hidden' && !_total8) {
+          if (hasMask) {
+            i += countMaskNum(__structs, i + 1, hasMask);
+          }
+
+          var _mh3 = mergeHash[i];
+
+          if (_mh3) {
+            isFlat = _mh3.isFlat;
+          }
+
+          continue;
+        }
+
+        var _cacheTotal4 = _node6.__cacheTotal,
+            __cacheFilter = _node6.__cacheFilter,
+            __cacheMask = _node6.__cacheMask,
+            p = _node6.__domParent;
+        var target = getCache([__cacheMask, __cacheFilter, _cacheTotal4]); // flat变化的局部子节点，或者flat根的直接子节点，生成局部根，已生成过的不用再生成
+
+        if (_total8 && !target && (transformStyle !== p.__computedStyle[TRANSFORM_STYLE] || p === top && transformStyle === 'flat')) {
+          var j = i + (_total8 || 0);
+
+          if (hasMask) {
+            j += countMaskNum(__structs, j + 1, hasMask);
+          }
+
+          mergeHash[j] = {
+            isFlat: isFlat
+          };
+          isFlat = transformStyle === 'flat'; // 变化的则生成新的局部子节点汇总，记录flat情况
+
+          mergeList.push({
+            i: i,
+            lv: _lv3,
+            total: _total8,
+            node: _node6,
+            isFlat: isFlat
+          });
+        } // 子cache可以跳过，因为flat肯定先前执行
+
+
+        if (target) {
+          i += _total8 || 0;
+
+          if (hasMask) {
+            i += countMaskNum(__structs, i + 1, hasMask);
+          }
+        }
+
+        var _mh = mergeHash[i];
+
+        if (_mh) {
+          isFlat = _mh.isFlat;
+        }
+      }
+    } // 排序依旧是子节点先，但同层级不用倒序（没有mask影响）
+
+
+    mergeList.sort(function (a, b) {
+      if (a.lv === b.lv) {
+        return a.i - b.i;
+      }
+
+      return b.lv - a.lv;
+    }); // 根节点特殊处理，如果是flat就是flat但直接子节点后续渲染仍需要透视，如果是3d就要切分
+
+    if (!isTopFlat) {
+      mergeList.push({
+        i: index,
+        lv: lv,
+        total: total,
+        node: node,
+        isFlat: isTopFlat
+      });
+    } // 变为preserve3d的子节点需要对其子节点进行平面拆分，记录这个子节点索引和拆分信息
+
+
+    var oitHash = [];
+
+    for (var _i = 0, _len2 = mergeList.length; _i < _len2; _i++) {
+      var _mergeList$_i = mergeList[_i],
+          _index = _mergeList$_i.i,
+          _lv4 = _mergeList$_i.lv,
+          _total9 = _mergeList$_i.total,
+          _node7 = _mergeList$_i.node,
+          _isFlat = _mergeList$_i.isFlat; // flat汇集临时cacheTotal
+
+      if (_isFlat) {
+        genTotalWebgl(renderMode, _node7.__cacheTotal, gl, root, _node7, _index, _lv4, _total9 || 0, __structs, W, H, null, top, oitHash);
+      } // preserve3d需要以此节点为局部根E，所有子节点四边形面在3d空间下求交拆分，暂时不绘制，等上层flat调用绘制投影
+      else {
+        var _top = _node7,
+            x0 = _node7.__x1,
+            y0 = _node7.__y1,
+            planeList = [];
+
+        if (_node7.__hasContent) {
+          var __cache = _node7.__cache,
+              _cacheTotal5 = _node7.__cacheTotal,
+              _cacheFilter3 = _node7.__cacheFilter,
+              _cacheMask3 = _node7.__cacheMask;
+
+          var _target5 = getCache([_cacheMask3, _cacheFilter3, _cacheTotal5, __cache]);
+
+          var o = {
+            index: _index,
+            node: _node7,
+            target: _target5,
+            points: [{
+              x: 0,
+              y: 0,
+              z: 0
+            }, {
+              x: _node7.__offsetWidth,
+              y: 0,
+              z: 0
+            }, {
+              x: _node7.__offsetWidth,
+              y: _node7.__offsetHeight,
+              z: 0
+            }, {
+              x: 0,
+              y: _node7.__offsetHeight,
+              z: 0
+            }]
+          };
+          planeList.push(o);
+        }
+
+        for (var _i2 = _index + 1, _len3 = _index + (_total9 || 0) + 1; _i2 < _len3; _i2++) {
+          var _structs$_i = __structs[_i2],
+              _node8 = _structs$_i.node,
+              _total10 = _structs$_i.total,
+              _hasMask5 = _structs$_i.hasMask;
+
+          if (_node8 instanceof Text) {
+            var _cache2 = _node8.__cache;
+
+            if (_cache2 && _cache2.available) {
+              var __matrixEvent = _node8.__domParent.__matrixEvent;
+              var x = _cache2.x1,
+                  y = _cache2.y1,
+                  width = _cache2.__width,
+                  height = _cache2.__height;
+              var xa = x - x0,
+                  ya = y - y0;
+              var xb = x + width - x0,
+                  yb = y + height - y0;
+
+              var _calRectPoint = calRectPoint(xa, ya, xb, yb, __matrixEvent),
+                  x1 = _calRectPoint.x1,
+                  y1 = _calRectPoint.y1,
+                  z1 = _calRectPoint.z1,
+                  x2 = _calRectPoint.x2,
+                  y2 = _calRectPoint.y2,
+                  z2 = _calRectPoint.z2,
+                  x3 = _calRectPoint.x3,
+                  y3 = _calRectPoint.y3,
+                  z3 = _calRectPoint.z3,
+                  x4 = _calRectPoint.x4,
+                  y4 = _calRectPoint.y4,
+                  z4 = _calRectPoint.z4;
+
+              var _o = {
+                index: _i2,
+                node: _node8,
+                target: _cache2,
+                points: [{
+                  x: x1,
+                  y: y1,
+                  z: z1
+                }, {
+                  x: x2,
+                  y: y2,
+                  z: z2
+                }, {
+                  x: x3,
+                  y: y3,
+                  z: z3
+                }, {
+                  x: x4,
+                  y: y4,
+                  z: z4
+                }]
+              };
+              planeList.push(_o);
+            }
+          } else {
+            var _computedStyle3 = _node8.__computedStyle;
+
+            if (_computedStyle3[DISPLAY$1] === 'none' || _node8.__mask) {
+              _i2 += _total10 || 0;
+
+              if (_hasMask5) {
+                _i2 += countMaskNum(__structs, _i2 + 1, _hasMask5);
+              }
+
+              continue;
+            }
+
+            var _visibility2 = _computedStyle3[VISIBILITY$1],
+                transform = _computedStyle3[TRANSFORM$1],
+                tfo = _computedStyle3[TRANSFORM_ORIGIN],
+                backfaceVisibility = _computedStyle3[BACKFACE_VISIBILITY];
+
+            if (_visibility2 === 'hidden' && !_total10) {
+              if (_hasMask5) {
+                _i2 += countMaskNum(__structs, _i2 + 1, _hasMask5);
+              }
+
+              continue;
+            }
+
+            var _cache3 = _node8.__cache,
+                _cacheTotal6 = _node8.__cacheTotal,
+                _cacheFilter4 = _node8.__cacheFilter,
+                _cacheMask4 = _node8.__cacheMask,
+                _p5 = _node8.__domParent,
+                ppt = _node8.__selfPerspective; // 当前局部根为原点坐标系下的matrix，只求交用
+
+            var m = void 0;
+
+            if (!isE(transform)) {
+              m = transform$1.calMatrixByOrigin(transform, tfo[0] + _node8.__x1 - x0, tfo[1] + _node8.__y1 - y0);
+            }
+
+            if (ppt) {
+              var t = transform$1.calPerspectiveMatrix(ppt, tfo[0] + _node8.__x1 - x0, tfo[1] + _node8.__y1 - y0);
+              m = multiply(t, m);
+            }
+
+            if (_p5 !== _top) {
+              m = multiply(_p5.__matrixEvent, m);
+            }
+
+            assignMatrix(_node8.__matrixEvent, m); // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
+
+            if (backfaceVisibility === 'hidden') {
+              var _m4 = _node8.__matrix,
+                  _x2 = _m4[5] < 0 && _m4[10] < 0,
+                  _y2 = _m4[0] < 0 && _m4[10] < 0;
+
+              if (_x2 || _y2) {
+                _i2 += _total10 || 0;
+
+                if (_hasMask5) {
+                  _i2 += countMaskNum(__structs, _i2 + 1, _hasMask5);
+                }
+
+                continue;
+              }
+            }
+
+            var _target6 = getCache([_cacheMask4, _cacheFilter4, _cacheTotal6, _cache3]);
+
+            if (_target6) {
+              var _x3 = _target6.x1,
+                  _y3 = _target6.y1,
+                  _width2 = _target6.__width,
+                  _height2 = _target6.__height; // 坐标计算还是以局部根为原点
+
+              var _xa = _x3 - x0,
+                  _ya = _y3 - y0;
+
+              var _xb = _x3 + _width2 - x0,
+                  _yb = _y3 + _height2 - y0;
+
+              var _calRectPoint2 = calRectPoint(_xa, _ya, _xb, _yb, m),
+                  _x4 = _calRectPoint2.x1,
+                  _y4 = _calRectPoint2.y1,
+                  _z = _calRectPoint2.z1,
+                  _x5 = _calRectPoint2.x2,
+                  _y5 = _calRectPoint2.y2,
+                  _z2 = _calRectPoint2.z2,
+                  _x6 = _calRectPoint2.x3,
+                  _y6 = _calRectPoint2.y3,
+                  _z3 = _calRectPoint2.z3,
+                  _x7 = _calRectPoint2.x4,
+                  _y7 = _calRectPoint2.y4,
+                  _z4 = _calRectPoint2.z4;
+
+              var _o2 = {
+                index: _i2,
+                node: _node8,
+                target: _target6,
+                points: [{
+                  x: _x4,
+                  y: _y4,
+                  z: _z
+                }, {
+                  x: _x5,
+                  y: _y5,
+                  z: _z2
+                }, {
+                  x: _x6,
+                  y: _y6,
+                  z: _z3
+                }, {
+                  x: _x7,
+                  y: _y7,
+                  z: _z4
+                }]
+              };
+              planeList.push(_o2);
+
+              if (_target6 !== _cache3) {
+                _i2 += _total10 || 0;
+
+                if (_hasMask5) {
+                  _i2 += countMaskNum(__structs, _i2 + 1, _hasMask5);
+                }
+              }
+            }
+          }
+        } // 有2个以上面才会求相交
+
+
+        if (planeList.length > 1) {
+          oit.splitQuadrilateralPlane(planeList);
+        } // 没拆分的直接存入，拆分的存有效拼图
+
+
+        var list = [];
+
+        for (var _i3 = 0, _len4 = planeList.length; _i3 < _len4; _i3++) {
+          var plane = planeList[_i3];
+          var puzzle = plane.puzzle;
+
+          if (puzzle && puzzle.length) {
+            for (var _i4 = 0, _len5 = puzzle.length; _i4 < _len5; _i4++) {
+              var _p6 = puzzle[_i4];
+
+              if (!_p6.isDeleted) {
+                list.push(_p6);
+              }
+            }
+          } else {
+            list.push(plane);
+          }
+        } // 按z排序，远的先绘制
+
+
+        oitHash[_index] = oit.sortPuzzleZ(list);
+      }
+    } // 最后一次循环绘制到局部根节点上，类似genTotalWebgl()逻辑，但要考虑ppt透视
+
+
+    return genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total, __structs, W, H, true, node, oitHash);
   }
 
   function genFilterWebgl(renderMode, gl, node, cache, filter, W, H) {
@@ -32102,11 +35183,11 @@
       } else if (k === 'invert' && v > 0) {
         v = Math.min(v, 100);
 
-        var _o = v * 0.01;
+        var _o3 = v * 0.01;
 
-        var _amount2 = 1 - 2 * _o;
+        var _amount2 = 1 - 2 * _o3;
 
-        var _res8 = genColorMatrixWebgl(renderMode, gl, target, [_amount2, 0, 0, 0, _o, 0, _amount2, 0, 0, _o, 0, 0, _amount2, 0, _o, 0, 0, 0, 1, 0]);
+        var _res8 = genColorMatrixWebgl(renderMode, gl, target, [_amount2, 0, 0, 0, _o3, 0, _amount2, 0, 0, _o3, 0, 0, _amount2, 0, _o3, 0, 0, 0, 1, 0]);
 
         if (_res8) {
           if (target !== cache) {
@@ -32123,13 +35204,11 @@
     return node.__cacheFilter = target;
   }
 
-  var BLUR_SHADER_HASH = {};
-
   function genBlurShader(gl, sigma, d) {
-    var key = sigma + ',' + d;
+    var key = 'programBlur,' + sigma + ',' + d;
 
-    if (BLUR_SHADER_HASH.hasOwnProperty(key)) {
-      return BLUR_SHADER_HASH[key];
+    if (gl.hasOwnProperty(key)) {
+      return gl[key];
     }
 
     var weights = blur.gaussianWeight(sigma, d);
@@ -32146,16 +35225,16 @@
     vert += "v_texCoordsBlur[".concat(r, "] = a_texCoords;");
     frag += "gl_FragColor += texture2D(u_texture, v_texCoordsBlur[".concat(r, "]) * ").concat(weights[r], ";");
 
-    for (var _i = 0; _i < r; _i++) {
-      var _c = (_i + 1) * 0.01;
+    for (var _i5 = 0; _i5 < r; _i5++) {
+      var _c = (_i5 + 1) * 0.01;
 
-      vert += "v_texCoordsBlur[".concat(_i + r + 1, "] = a_texCoords + vec2(").concat(_c, ", ").concat(_c, ") * u_direction;");
-      frag += "gl_FragColor += texture2D(u_texture, v_texCoordsBlur[".concat(_i + r + 1, "]) * ").concat(weights[_i + r + 1], ";");
+      vert += "v_texCoordsBlur[".concat(_i5 + r + 1, "] = a_texCoords + vec2(").concat(_c, ", ").concat(_c, ") * u_direction;");
+      frag += "gl_FragColor += texture2D(u_texture, v_texCoordsBlur[".concat(_i5 + r + 1, "]) * ").concat(weights[_i5 + r + 1], ";");
     }
 
     vert = vertexBlur.replace('[3]', '[' + d + ']').replace(/}$/, vert + '}');
     frag = fragmentBlur.replace('[3]', '[' + d + ']').replace(/}$/, frag + '}');
-    return BLUR_SHADER_HASH[key] = webgl.initShaders(gl, vert, frag);
+    return gl[key] = webgl.initShaders(gl, vert, frag);
   }
   /**
    * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement
@@ -32194,9 +35273,9 @@
 
     var w = width + spread * 2,
         h = height + spread * 2;
-    var tex = webgl.createTexture(gl, null, 0, w, h);
+    var tex = createTexture(gl, null, 0, w, h);
     var frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
-    webgl.drawCache2Tex(gl, gl.program, cache, w, h, spread); // 生成blur，同尺寸复用fbo
+    drawCache2Tex(gl, gl.program, cache, w, h, spread); // 生成blur，同尺寸复用fbo
 
     var program = genBlurShader(gl, sigma, d);
     tex = webgl.drawBlur(gl, program, tex, w, h);
@@ -32210,7 +35289,7 @@
         size = page.__size,
         texture = page.texture;
     frameBuffer = genFrameBufferWithTexture(gl, texture, size, size);
-    webgl.drawTex2Cache(gl, gl.program, target, tex, w, h);
+    drawTex2Cache(gl, gl.program, target, tex, w, h);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.deleteFramebuffer(frameBuffer);
@@ -32250,9 +35329,9 @@
     __cacheMask.__available = true;
     node.__cacheMask = __cacheMask; // 先求得被遮罩的matrix，用作inverse给mask计算，以被遮罩左上角为原点
 
-    var _node$__computedStyle3 = node.__computedStyle,
-        transform = _node$__computedStyle3[TRANSFORM$1],
-        tfo = _node$__computedStyle3[TRANSFORM_ORIGIN];
+    var _node$__computedStyle = node.__computedStyle,
+        transform = _node$__computedStyle[TRANSFORM$1],
+        tfo = _node$__computedStyle[TRANSFORM_ORIGIN];
     var inverse;
 
     if (isE(transform)) {
@@ -32264,7 +35343,7 @@
     inverse = matrix.inverse(inverse); // 将所有mask绘入一个单独纹理中，尺寸和原点与被遮罩相同
 
     gl.viewport(0, 0, width, height);
-    var texture = webgl.createTexture(gl, null, 0, width, height);
+    var texture = createTexture(gl, null, 0, width, height);
     var cx = width * 0.5,
         cy = height * 0.5;
     var frameBuffer = genFrameBufferWithTexture(gl, texture, width, height);
@@ -32287,24 +35366,23 @@
       var index = i;
 
       for (var len = i + (total || 0) + 1; i < len; i++) {
-        var _structs$i5 = __structs[i],
-            _node5 = _structs$i5.node,
-            _lv4 = _structs$i5.lv,
-            _total7 = _structs$i5.total,
-            hasMask = _structs$i5.hasMask;
+        var _structs$i6 = __structs[i],
+            _node9 = _structs$i6.node,
+            _lv5 = _structs$i6.lv,
+            _total11 = _structs$i6.total,
+            hasMask = _structs$i6.hasMask;
 
-        if (_node5 instanceof Text) {
-          var __cache = _node5.__cache;
+        if (_node9 instanceof Text) {
+          var __cache = _node9.__cache;
 
           if (__cache && __cache.available) {
-            var _node5$__domParent = _node5.__domParent,
-                __matrixEvent = _node5$__domParent.__matrixEvent,
-                __opacity = _node5$__domParent.__opacity;
+            var _node9$__domParent = _node9.__domParent,
+                __matrixEvent = _node9$__domParent.__matrixEvent,
+                __opacity = _node9$__domParent.__opacity;
             var p = __cache.__page;
 
             if (lastPage && lastPage !== p) {
-              webgl.drawTextureCache(gl, list, cx, cy, dx, dy);
-              list.splice(0);
+              drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
             }
 
             lastPage = p;
@@ -32315,11 +35393,11 @@
             });
           }
         } else {
-          var __limitCache = _node5.__limitCache;
-          var computedStyle = _node5.__computedStyle; // 跳过display:none元素和它的所有子节点和mask
+          var __limitCache = _node9.__limitCache;
+          var computedStyle = _node9.__computedStyle; // 跳过display:none元素和它的所有子节点和mask
 
           if (computedStyle[DISPLAY$1] === 'none' || __limitCache) {
-            i += _total7 || 0;
+            i += _total11 || 0;
 
             if (hasMask) {
               i += countMaskNum(__structs, i + 1, hasMask);
@@ -32328,16 +35406,26 @@
             continue;
           }
 
-          var _cache3 = _node5.__cache,
-              __cacheTotal = _node5.__cacheTotal,
-              __cacheFilter = _node5.__cacheFilter,
-              _cacheMask2 = _node5.__cacheMask;
           var opacity = computedStyle[OPACITY$1],
               visibility = computedStyle[VISIBILITY$1],
-              _transform = computedStyle[TRANSFORM$1],
-              _tfo = computedStyle[TRANSFORM_ORIGIN]; // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理
+              _transform2 = computedStyle[TRANSFORM$1],
+              _tfo2 = computedStyle[TRANSFORM_ORIGIN],
+              backfaceVisibility = computedStyle[BACKFACE_VISIBILITY];
 
-          if (i === index) ; else if (_lv4 > lastLv) {
+          if (visibility === 'hidden' && !_total11) {
+            if (hasMask) {
+              i += countMaskNum(__structs, i + 1, hasMask);
+            }
+
+            continue;
+          }
+
+          var _cache4 = _node9.__cache,
+              __cacheTotal = _node9.__cacheTotal,
+              __cacheFilter = _node9.__cacheFilter,
+              _cacheMask5 = _node9.__cacheMask; // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理
+
+          if (i === index) ; else if (_lv5 > lastLv) {
             parentMatrix = lastMatrix;
 
             if (isE(parentMatrix)) {
@@ -32348,26 +35436,26 @@
             parentOpacity = lastOpacity;
             opacityList.push(parentOpacity);
           } // 变小出栈索引需注意，可能不止一层，多层计算diff层级
-          else if (_lv4 < lastLv) {
-            var diff = lastLv - _lv4;
+          else if (_lv5 < lastLv) {
+            var diff = lastLv - _lv5;
             matrixList.splice(-diff);
-            parentMatrix = matrixList[_lv4 - 1];
+            parentMatrix = matrixList[_lv5 - 1];
             opacityList.splice(-diff);
-            parentOpacity = opacityList[_lv4 - 1];
+            parentOpacity = opacityList[_lv5 - 1];
           } // 不变是同级兄弟，无需特殊处理 else {}
 
 
-          lastLv = _lv4;
-          var target = getCache([_cacheMask2, __cacheFilter, __cacheTotal, _cache3]);
+          lastLv = _lv5;
+          var target = getCache([_cacheMask5, __cacheFilter, __cacheTotal, _cache4]);
 
-          if (target && (target !== _cache3 || visibility === 'visible')) {
+          if (target && (target !== _cache4 || visibility === 'visible')) {
             // 不考虑mbm
             var m = void 0;
 
-            if (isE(_transform)) {
+            if (isE(_transform2)) {
               m = matrix.identity();
             } else {
-              m = transform$1.calMatrixByOrigin(_transform, _tfo[0] + target.x1 - x1, _tfo[1] + target.y1 - y1);
+              m = transform$1.calMatrixByOrigin(_transform2, _tfo2[0] + target.x1 - x1, _tfo2[1] + target.y1 - y1);
             }
 
             if (!isE(parentMatrix)) {
@@ -32376,31 +35464,55 @@
 
             m = matrix.multiply(inverse, m);
             lastMatrix = m;
-            lastOpacity = parentOpacity * opacity;
-            var _p3 = target.__page;
+            lastOpacity = parentOpacity * opacity; // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
 
-            if (lastPage && lastPage !== _p3) {
-              webgl.drawTextureCache(gl, list, cx, cy, dx, dy);
-              list.splice(0);
+            if (backfaceVisibility === 'hidden') {
+              var _m5 = _node9.__matrix,
+                  x = _m5[5] < 0 && _m5[10] < 0,
+                  y = _m5[0] < 0 && _m5[10] < 0;
+
+              if (x || y) {
+                i += _total11 || 0;
+
+                if (hasMask) {
+                  i += countMaskNum(__structs, i + 1, hasMask);
+                }
+
+                continue;
+              }
             }
 
-            lastPage = _p3;
+            var _p7 = target.__page;
+
+            if (lastPage && lastPage !== _p7) {
+              drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+            }
+
+            lastPage = _p7;
             list.push({
               cache: target,
               opacity: lastOpacity,
               matrix: m
             });
 
-            if (target !== _cache3) {
-              i += _total7 || 0;
+            if (target !== _cache4) {
+              i += _total11 || 0;
 
               if (hasMask) {
                 i += countMaskNum(__structs, i + 1, hasMask);
               }
-            } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
+            }
+          } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
 
 
-            _node5.render(renderMode, gl, dx, dy);
+          if (!target || target === _cache4) {
+            var render = _node9.render;
+
+            if (render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
+              drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+
+              _node9.render(renderMode, gl, dx, dy);
+            }
           }
         }
       }
@@ -32409,7 +35521,7 @@
     } // 绘制到fbo的纹理对象上并删除fbo恢复
 
 
-    webgl.drawTextureCache(gl, list, cx, cy, dx, dy);
+    drawTextureCache(gl, list, cx, cy, dx, dy);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.deleteFramebuffer(frameBuffer);
@@ -32470,7 +35582,7 @@
 
     var w = width + spread * 2,
         h = height + spread * 2;
-    var tex1 = webgl.createTexture(gl, null, 0, w, h);
+    var tex1 = createTexture(gl, null, 0, w, h);
     var frameBuffer = genFrameBufferWithTexture(gl, tex1, w, h);
     gl.useProgram(gl.programDs);
     webgl.drawDropShadow(gl, gl.programDs, frameBuffer, cache, color, width, w, height, h); // 生成模糊的阴影
@@ -32484,9 +35596,9 @@
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.deleteFramebuffer(frameBuffer); // cache绘制到一个单独的tex上
 
-    var tex2 = webgl.createTexture(gl, null, 0, width, height);
+    var tex2 = createTexture(gl, null, 0, width, height);
     frameBuffer = genFrameBufferWithTexture(gl, tex2, width, height);
-    webgl.drawCache2Tex(gl, gl.program, cache, width, height, 0);
+    drawCache2Tex(gl, gl.program, cache, width, height, 0);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.deleteFramebuffer(frameBuffer); // 原图tex2和模糊阴影tex1合成
@@ -32515,7 +35627,7 @@
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.deleteFramebuffer(frameBuffer);
-    webgl.bindTexture(gl, null, 0);
+    bindTexture(gl, null, 0);
     gl.deleteTexture(tex1);
     gl.deleteTexture(tex2);
     return target;
@@ -32529,9 +35641,9 @@
 
   function genMbmWebgl(gl, texture, cache, mbm, opacity, matrix, dx, dy, cx, cy, width, height) {
     // 后续绘制到同尺寸纹理上
-    var tex = webgl.createTexture(gl, null, 0, width, height);
+    var tex = createTexture(gl, null, 0, width, height);
     var frameBuffer = genFrameBufferWithTexture(gl, tex, width, height);
-    webgl.drawTextureCache(gl, [{
+    drawTextureCache(gl, [{
       cache: cache,
       opacity: opacity,
       matrix: matrix
@@ -32577,7 +35689,7 @@
 
     gl.useProgram(program); // 生成新的fbo，将混合结果绘入
 
-    var resTex = webgl.createTexture(gl, null, 0, width, height);
+    var resTex = createTexture(gl, null, 0, width, height);
     var resFrameBuffer = genFrameBufferWithTexture(gl, resTex, width, height);
     webgl.drawMbm(gl, program, texture, tex);
     gl.useProgram(gl.program);
@@ -32597,10 +35709,10 @@
     if (!isFirst) {
       // 先遍历一遍收集完全不变的defs，缓存起来id，随后再执行遍历渲染生成新的，避免掉重复的id
       for (var i = 0, len = __structs.length; i < len; i++) {
-        var _structs$i6 = __structs[i],
-            node = _structs$i6.node,
-            total = _structs$i6.total,
-            hasMask = _structs$i6.hasMask;
+        var _structs$i7 = __structs[i],
+            node = _structs$i7.node,
+            total = _structs$i7.total,
+            hasMask = _structs$i7.hasMask;
         var __cacheDefs = node.__cacheDefs;
         var __refreshLevel = node.__refreshLevel; // 只要涉及到matrix和opacity就影响mask
 
@@ -32644,12 +35756,12 @@
     var lastRefreshLv = 0;
     var lastNode;
 
-    var _loop = function _loop(_i3, _len) {
-      var _structs$_i = __structs[_i3],
-          node = _structs$_i.node,
-          lv = _structs$_i.lv,
-          total = _structs$_i.total,
-          hasMask = _structs$_i.hasMask;
+    var _loop = function _loop(_i7, _len6) {
+      var _structs$_i2 = __structs[_i7],
+          node = _structs$_i2.node,
+          lv = _structs$_i2.lv,
+          total = _structs$_i2.total,
+          hasMask = _structs$_i2.hasMask;
 
       var computedStyle = void 0,
           __refreshLevel = void 0,
@@ -32671,13 +35783,13 @@
       var display = computedStyle[DISPLAY$1]; // 将随后的若干个mask节点范围存下来
 
       if (hasMask && display !== 'none') {
-        var _start = _i3 + (total || 0) + 1;
+        var _start = _i7 + (total || 0) + 1;
 
         var _end = _start + hasMask; // svg限制了只能Geom单节点，不可能是Dom，所以end只有唯一
 
 
         maskHash[_end - 1] = {
-          index: _i3,
+          index: _i7,
           start: _start,
           end: _end,
           isClip: __structs[_start].node.__clip // 第一个节点是clip为准
@@ -32707,7 +35819,7 @@
         virtualDom = node.__virtualDom; // total可以跳过所有孩子节点省略循环
 
         if (__cacheTotal && __cacheTotal.available) {
-          _i3 += total || 0;
+          _i7 += total || 0;
           virtualDom.cache = true;
         } else {
           __cacheTotal && (__cacheTotal.available = true);
@@ -32719,10 +35831,10 @@
 
 
           if (display === 'none') {
-            _i3 += total || 0;
+            _i7 += total || 0;
 
             if (hasMask) {
-              _i3 += hasMask;
+              _i7 += hasMask;
             }
           } else {
             delete virtualDom.cache;
@@ -32769,7 +35881,7 @@
         if (__refreshLevel & MBM$1) {
           var mixBlendMode = computedStyle[MIX_BLEND_MODE$1];
 
-          if (isValidMbm(mixBlendMode)) {
+          if (mixBlendMode !== 'normal') {
             virtualDom.mixBlendMode = mbmName(mixBlendMode);
           } else {
             delete virtualDom.mixBlendMode;
@@ -32810,8 +35922,8 @@
         display = computedStyle[DISPLAY$1];
 
         if (display === 'none') {
-          _i3 += total || 0;
-          _i3 += hasMask || 0;
+          _i7 += total || 0;
+          _i7 += hasMask || 0;
         }
       }
       /**
@@ -32821,9 +35933,9 @@
        */
 
 
-      var mh = maskHash[_i3];
+      var mh = maskHash[_i7];
 
-      if (mh && (maskEffectHash[_i3] || __refreshLevel >= REPAINT$1 || __refreshLevel & (TRANSFORM_ALL$1 | OP$1))) {
+      if (mh && (maskEffectHash[_i7] || __refreshLevel >= REPAINT$1 || __refreshLevel & (TRANSFORM_ALL$1 | OP$1))) {
         var index = mh.index,
             _start2 = mh.start,
             _end2 = mh.end,
@@ -32841,28 +35953,28 @@
         }
 
         for (var j = _start2; j < _end2; j++) {
-          var _node6 = __structs[j].node;
-          var _node6$computedStyle = _node6.computedStyle,
-              _display = _node6$computedStyle[DISPLAY$1],
-              visibility = _node6$computedStyle[VISIBILITY$1],
-              fill = _node6$computedStyle[FILL],
-              _node6$virtualDom = _node6.virtualDom,
-              children = _node6$virtualDom.children,
-              _opacity = _node6$virtualDom.opacity;
+          var _node10 = __structs[j].node;
+          var _node10$computedStyle = _node10.computedStyle,
+              _display = _node10$computedStyle[DISPLAY$1],
+              visibility = _node10$computedStyle[VISIBILITY$1],
+              fill = _node10$computedStyle[FILL],
+              _node10$virtualDom = _node10.virtualDom,
+              children = _node10$virtualDom.children,
+              _opacity = _node10$virtualDom.opacity;
 
           if (_display !== 'none' && visibility !== 'hidden') {
             // 引用相同无法diff，需要clone
             children = util.clone(children);
             mChildren = mChildren.concat(children);
 
-            for (var k = 0, _len2 = children.length; k < _len2; k++) {
+            for (var k = 0, _len7 = children.length; k < _len7; k++) {
               var _children$k = children[k],
                   tagName = _children$k.tagName,
                   props = _children$k.props;
 
               if (tagName === 'path') {
                 if (isClip) {
-                  for (var _j9 = 0, _len3 = props.length; _j9 < _len3; _j9++) {
+                  for (var _j9 = 0, _len8 = props.length; _j9 < _len8; _j9++) {
                     var item = props[_j9];
 
                     if (item[0] === 'fill') {
@@ -32871,7 +35983,7 @@
                   }
                 }
 
-                var _matrix2 = _node6.matrix;
+                var _matrix2 = _node10.matrix;
                 var ivs = inverse(dom.matrix);
                 _matrix2 = multiply(ivs, _matrix2); // path没有transform属性，在vd上，需要弥补
 
@@ -32884,7 +35996,7 @@
               else if (tagName === 'image') {
                 var hasTransform = -1;
 
-                for (var m = 0, _len4 = props.length; m < _len4; m++) {
+                for (var m = 0, _len9 = props.length; m < _len9; m++) {
                   if (props[m][0] === 'transform') {
                     hasTransform = m;
                     break;
@@ -32913,11 +36025,11 @@
         } // 清掉上次的
 
 
-        for (var _i4 = __cacheDefs.length - 1; _i4 >= 0; _i4--) {
-          var _item = __cacheDefs[_i4];
+        for (var _i8 = __cacheDefs.length - 1; _i8 >= 0; _i8--) {
+          var _item = __cacheDefs[_i8];
 
           if (_item.tagName === 'mask') {
-            __cacheDefs.splice(_i4, 1);
+            __cacheDefs.splice(_i8, 1);
 
             ctx.removeCache(_item);
           }
@@ -32941,16 +36053,16 @@
         parentVd.children.push(virtualDom);
       }
 
-      if (_i3 === 0) {
+      if (_i7 === 0) {
         parentMatrix = node.__matrix;
         parentVd = virtualDom;
       }
 
-      _i2 = _i3;
+      _i6 = _i7;
     };
 
-    for (var _i2 = 0, _len = __structs.length; _i2 < _len; _i2++) {
-      _loop(_i2);
+    for (var _i6 = 0, _len6 = __structs.length; _i6 < _len6; _i6++) {
+      _loop(_i6);
     }
   }
 
@@ -32979,12 +36091,20 @@
      */
 
     if (isFirst || rlv >= REPAINT$1 || rlv & (CACHE$1 | FT$1 | PPT$1 | MASK$1)) {
+      // 记录transformStyle，出现ppt时有用，同时ts为flat后同一ppt上下文影响继承显示
+      var flatList = [],
+          flatExtendList = [];
+      var pptNodeList = [];
+      var parentPptNode = null;
+      var lastPptNode = null;
+      var lastLv = 0; // 节点开始有ppt得记录，后续孩子中如果有flat的，得强制生成cacheTotal
+
       for (var i = 0, len = __structs.length; i < len; i++) {
-        var _structs$i7 = __structs[i],
-            node = _structs$i7.node,
-            lv = _structs$i7.lv,
-            total = _structs$i7.total,
-            hasMask = _structs$i7.hasMask;
+        var _structs$i8 = __structs[i],
+            node = _structs$i8.node,
+            lv = _structs$i8.lv,
+            total = _structs$i8.total,
+            hasMask = _structs$i8.hasMask;
         node.__index = i; // 生成total需要
         // Text特殊处理，webgl中先渲染为bitmap，再作为贴图绘制，缓存交由text内部判断，直接调用渲染纹理方法
 
@@ -33025,13 +36145,40 @@
           }
 
           continue;
-        } // 根据refreshLevel优化计算
+        }
 
+        var perspective = __computedStyle[PERSPECTIVE];
+        var isFlat = __computedStyle[TRANSFORM_STYLE] === 'flat'; // 特殊，新的ppt上下文节点启用新值，否则还是老的
+        var pptNode = perspective ? node : null; // root第一个特殊处理
+
+        if (lv === 0) {
+
+          if (perspective) {
+            parentPptNode = node;
+          }
+        } // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树
+        else if (lv > lastLv) {
+          flatList.push(isFlat);
+          flatExtendList.push(isFlat);
+          parentPptNode = lastPptNode || parentPptNode;
+          pptNodeList.push(pptNode || parentPptNode);
+        } // 变小出栈索引需注意，可能不止一层，多层计算diff层级
+        else if (lv < lastLv) {
+          var diff = lastLv - lv;
+          flatList.splice(-diff);
+          flatList[lv - 1];
+          flatExtendList.splice(-diff);
+          flatExtendList[lv - 1];
+          pptNodeList.splice(-diff);
+          parentPptNode = pptNodeList[lv - 1];
+        } // 不变是同级兄弟，无需特殊处理 else {}
+
+
+        lastLv = lv; // 根据refreshLevel优化计算
 
         var __refreshLevel = node.__refreshLevel,
             __currentStyle = node.__currentStyle,
             __cacheTotal = node.__cacheTotal;
-        lastRefreshLevel = __refreshLevel;
         node.__refreshLevel = NONE$1;
         /**
          * lv<REPAINT，一般会有__cache，跳过渲染过程，快速运算，没有cache则是自身超限或无内容，目前不感知
@@ -33042,8 +36189,8 @@
          */
 
         if (!__refreshLevel) ; else if (__refreshLevel < REPAINT$1) {
-          var _mbm = __computedStyle[MIX_BLEND_MODE$1];
-          var isMbm = __refreshLevel & MBM$1 && isValidMbm(_mbm);
+          var mixBlendMode = __computedStyle[MIX_BLEND_MODE$1];
+          var isMbm = __refreshLevel & MBM$1 && mixBlendMode !== 'normal';
           var need = node.__cacheAsBitmap || hasMask;
 
           if (!need && __refreshLevel & FT$1) {
@@ -33056,7 +36203,7 @@
 
           if (!need && __refreshLevel & PPT$1) {
             var __domParent = node.__domParent;
-            var isPpt = !isE(__domParent && __domParent.__perspectiveMatrix) || isPerspectiveMatrix(node.__matrix);
+            var isPpt = !isE(__domParent && __domParent.__perspectiveMatrix) || node.__selfPerspectiveMatrix;
 
             if (isPpt) {
               need = true;
@@ -33096,8 +36243,8 @@
               onlyImg = void 0; // 有内容先以canvas模式绘制到离屏画布上，自定义渲染设置无内容不实现即可跳过
 
           if (hasContent) {
-            var _bbox2 = node.bbox,
-                _cache4 = node.__cache,
+            var _bbox3 = node.bbox,
+                _cache5 = node.__cache,
                 x1 = node.__x1,
                 y1 = node.__y1; // 单图特殊对待缓存
 
@@ -33106,25 +36253,25 @@
 
               if (loadImg.onlyImg && !loadImg.error && loadImg.source) {
                 onlyImg = true;
-                _cache4 = node.__cache = ImgWebglCache.getInstance(mode.CANVAS, gl, root.__uuid, _bbox2, loadImg, x1, y1);
+                _cache5 = node.__cache = ImgWebglCache.getInstance(mode.CANVAS, gl, root.__uuid, _bbox3, loadImg, x1, y1);
               }
             }
 
             if (!onlyImg) {
-              if (_cache4) {
-                _cache4.reset(_bbox2, x1, y1);
+              if (_cache5) {
+                _cache5.reset(_bbox3, x1, y1);
               } else {
-                _cache4 = CanvasCache.getInstance(mode.CANVAS, gl, root.__uuid, _bbox2, x1, y1, null);
+                _cache5 = CanvasCache.getInstance(mode.CANVAS, gl, root.__uuid, _bbox3, x1, y1, null);
               }
             }
 
-            if (_cache4 && _cache4.enabled) {
-              _cache4.__bbox = _bbox2;
-              _cache4.__available = true;
-              node.__cache = _cache4;
-              node.render(mode.CANVAS, _cache4.ctx, _cache4.dx, _cache4.dy);
+            if (_cache5 && _cache5.enabled) {
+              _cache5.__bbox = _bbox3;
+              _cache5.__available = true;
+              node.__cache = _cache5;
+              node.render(mode.CANVAS, _cache5.ctx, _cache5.dx, _cache5.dy);
             } else {
-              _cache4 && _cache4.release();
+              _cache5 && _cache5.release();
               node.__limitCache = true;
               return;
             }
@@ -33134,13 +36281,12 @@
 
           var overflow = __computedStyle[OVERFLOW],
               _filter = __computedStyle[FILTER],
-              mixBlendMode = __computedStyle[MIX_BLEND_MODE$1];
+              _mixBlendMode = __computedStyle[MIX_BLEND_MODE$1],
+              _perspective2 = __computedStyle[PERSPECTIVE];
 
-          var _isMbm = isValidMbm(mixBlendMode);
+          var _isMbm = _mixBlendMode !== 'normal';
 
-          var _domParent = node.__domParent;
-
-          var _isPpt = !isE(_domParent && _domParent.__perspectiveMatrix) || isPerspectiveMatrix(node.__matrix);
+          var _isPpt = total && _perspective2 || node.__selfPerspectiveMatrix;
 
           var isOverflow = overflow === 'hidden' && total;
           var isFilter = _filter && _filter.length;
@@ -33155,10 +36301,14 @@
               lv: lv,
               total: total,
               node: node,
-              hasMask: hasMask
+              hasMask: hasMask,
+              isPpt: _isPpt
             });
           }
         }
+
+        lastRefreshLevel = __refreshLevel;
+        lastPptNode = pptNode;
       }
     } // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
     // 这样保证子节点在前，后节点在前，后节点是为了mask先应用自身如filter之后再进行遮罩
@@ -33174,77 +36324,51 @@
       }); // ppt只有嵌套才需要生成，最下面的孩子节点的ppt无需，因此记录一个hash存index，
       // 同时因为是后序遍历，孩子先存所有父亲的index即可保证父亲才能生成cacheTotal
 
-      var pptHash = {};
-      mergeList.forEach(function (item) {
-        var i = item.i,
-            lv = item.lv,
-            total = item.total,
-            node = item.node,
-            hasMask = item.hasMask;
-        var __matrix = node.__matrix,
-            __domParent = node.__domParent,
-            __computedStyle = node.__computedStyle;
-        var overflow = __computedStyle[OVERFLOW],
-            filter = __computedStyle[FILTER];
-        var isPerspective = !isE(__domParent && __domParent.__perspectiveMatrix) || isPerspectiveMatrix(__matrix); // 有ppt的，向上查找所有父亲index记录，可能出现重复记得提前跳出
+      for (var ii = 0, _len10 = mergeList.length; ii < _len10; ii++) {
+        var _mergeList$ii = mergeList[ii],
+            _i9 = _mergeList$ii.i,
+            _lv6 = _mergeList$ii.lv,
+            _total12 = _mergeList$ii.total,
+            _node11 = _mergeList$ii.node,
+            _hasMask6 = _mergeList$ii.hasMask,
+            _isPpt2 = _mergeList$ii.isPpt;
+        var _computedStyle4 = _node11.__computedStyle;
+        var _filter2 = _computedStyle4[FILTER]; // 有ppt的，向上查找所有父亲index记录，可能出现重复记得提前跳出
 
-        if (isPerspective) {
-          var parent = node.__domParent;
-
-          while (parent) {
-            var idx = parent.__index;
-
-            if (pptHash[idx]) {
-              break;
-            }
-
-            if (isPerspectiveMatrix(parent.__matrix)) {
-              pptHash[idx] = true;
-            }
-
-            parent = parent.__domParent;
-
-            if (parent && parent.__perspectiveMatrix) {
-              pptHash[idx] = true;
-            }
-          } // 最内层的ppt忽略
-
-
-          if (!pptHash[i]) {
-            if (!hasMask && !filter.length && !(overflow === 'hidden' && total) && !node.__cacheAsBitmap) {
-              return;
-            }
-          }
-        }
-
-        var __limitCache = node.__limitCache,
-            __cacheTotal = node.__cacheTotal,
-            __cacheFilter = node.__cacheFilter,
-            __cacheMask = node.__cacheMask;
+        var __limitCache = _node11.__limitCache,
+            _cacheTotal7 = _node11.__cacheTotal,
+            __cacheFilter = _node11.__cacheFilter,
+            __cacheMask = _node11.__cacheMask;
 
         if (__limitCache) {
           return;
         }
 
-        var needGen; // 可能没变化，比如被遮罩节点、filter变更等
+        var needGen = void 0; // 可能没变化，比如被遮罩节点、filter变更等
 
-        if (!__cacheTotal || !__cacheTotal.available) {
-          var res = genTotalWebgl(renderMode, __cacheTotal, gl, root, node, i, lv, total || 0, __structs, width, height);
+        if (!_cacheTotal7 || !_cacheTotal7.available) {
+          var res = void 0;
+
+          if (_isPpt2) {
+            res = genPptWebgl(renderMode, _cacheTotal7, gl, root, _node11, _i9, _lv6, _total12 || 0, __structs, width, height);
+          } else {
+            res = genTotalWebgl(renderMode, _cacheTotal7, gl, root, _node11, _i9, _lv6, _total12 || 0, __structs, width, height, null, null, null);
+          }
 
           if (!res) {
             return;
           }
 
-          __cacheTotal = res;
+          _cacheTotal7 = res;
           needGen = true;
         } // 即使超限，也有total结果
 
 
-        var target = __cacheTotal;
+        var target = _cacheTotal7;
 
-        if (filter.length) {
+        if (_filter2.length) {
           if (!__cacheFilter || !__cacheFilter.available || needGen) {
-            var _res9 = genFilterWebgl(renderMode, gl, node, target, filter, width, height);
+            var _res9 = genFilterWebgl(renderMode, gl, _node11, target, _filter2, width, height);
 
             if (_res9) {
               target = _res9;
@@ -33253,24 +36377,24 @@
           }
         }
 
-        if (hasMask && (!__cacheMask || !__cacheMask.available || needGen)) {
-          genMaskWebgl(renderMode, gl, root, node, target, width, height, i + (total || 0) + 1, lv, __structs);
+        if (_hasMask6 && (!__cacheMask || !__cacheMask.available || needGen)) {
+          genMaskWebgl(renderMode, gl, root, _node11, target, width, height, _i9 + (_total12 || 0) + 1, _lv6, __structs);
         }
-      });
+      }
     }
     /**
      * 最后先序遍历一次应用__cacheTotal即可，没有的用__cache，以及剩下的超尺寸的和Text
      * 由于mixBlendMode的存在，需先申请个fbo纹理，所有绘制默认向该纹理绘制，最后fbo纹理再进入主画布
      * 前面循环时有记录是否出现mbm，只有出现才申请，否则不浪费直接输出到主画布
-     * 超尺寸的要走无cache逻辑render，和canvas很像，除了离屏canvas超限，汇总total也会纹理超限
+     * 超尺寸的不绘制并给出警告，实现会扰乱逻辑且很少会出现这种情况
      */
 
 
     var frameBuffer, texture;
 
     if (hasMbm) {
-      texture = webgl.createTexture(gl, null, 0, width, height);
-      webgl.bindTexture(gl, null, 0);
+      texture = createTexture(gl, null, 0, width, height);
+      bindTexture(gl, null, 0);
       frameBuffer = genFrameBufferWithTexture(gl, texture, width, height);
       gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
@@ -33279,133 +36403,168 @@
     var lastPage,
         list = [];
 
-    for (var _i5 = 0, _len5 = __structs.length; _i5 < _len5; _i5++) {
-      var _structs$_i2 = __structs[_i5],
-          _node7 = _structs$_i2.node,
-          _total8 = _structs$_i2.total,
-          _hasMask4 = _structs$_i2.hasMask; // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
+    for (var _i10 = 0, _len11 = __structs.length; _i10 < _len11; _i10++) {
+      var _structs$_i3 = __structs[_i10],
+          _node12 = _structs$_i3.node,
+          _total13 = _structs$_i3.total,
+          _hasMask7 = _structs$_i3.hasMask; // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
 
-      if (_node7 instanceof Text) {
+      if (_node12 instanceof Text) {
         // text特殊之处，__config部分是复用parent的
-        var _cache5 = _node7.__cache;
+        var _cache6 = _node12.__cache;
 
-        if (_cache5 && _cache5.available) {
-          var _node7$__domParent = _node7.__domParent,
-              __matrixEvent = _node7$__domParent.__matrixEvent,
-              __opacity = _node7$__domParent.__opacity;
-          var p = _cache5.__page;
+        if (_cache6 && _cache6.available) {
+          var _node12$__domParent = _node12.__domParent,
+              __matrixEvent = _node12$__domParent.__matrixEvent,
+              __opacity = _node12$__domParent.__opacity;
+          var p = _cache6.__page;
 
           if (lastPage && lastPage !== p) {
-            webgl.drawTextureCache(gl, list, cx, cy, 0, 0);
-            list.splice(0);
+            drawTextureCache(gl, list.splice(0), cx, cy, 0, 0);
           }
 
           lastPage = p;
           list.push({
-            cache: _cache5,
+            cache: _cache6,
             opacity: __opacity,
             matrix: __matrixEvent
           });
         }
       } else {
-        var _computedStyle2 = _node7.__computedStyle; // none跳过这棵子树，判断下最后一个节点的离屏应用即可
+        var _computedStyle5 = _node12.__computedStyle; // none跳过这棵子树，判断下最后一个节点的离屏应用即可
 
-        if (_computedStyle2[DISPLAY$1] === 'none') {
-          _i5 += _total8 || 0;
+        if (_computedStyle5[DISPLAY$1] === 'none') {
+          _i10 += _total13 || 0;
 
-          if (_hasMask4) {
-            _i5 += countMaskNum(__structs, _i5 + 1, _hasMask4);
+          if (_hasMask7) {
+            _i10 += countMaskNum(__structs, _i10 + 1, _hasMask7);
           }
 
           continue;
         }
 
-        var _cache6 = _node7.__cache,
-            _cacheTotal3 = _node7.__cacheTotal,
-            __cacheFilter = _node7.__cacheFilter,
-            __cacheMask = _node7.__cacheMask,
-            _domParent2 = _node7.__domParent,
-            __matrix = _node7.__matrix;
-        var opacity = _computedStyle2[OPACITY$1],
-            _mixBlendMode = _computedStyle2[MIX_BLEND_MODE$1];
+        var opacity = _computedStyle5[OPACITY$1],
+            _mixBlendMode2 = _computedStyle5[MIX_BLEND_MODE$1],
+            visibility = _computedStyle5[VISIBILITY$1],
+            backfaceVisibility = _computedStyle5[BACKFACE_VISIBILITY];
+        var _cache7 = _node12.__cache,
+            _cacheTotal8 = _node12.__cacheTotal,
+            _cacheFilter5 = _node12.__cacheFilter,
+            _cacheMask6 = _node12.__cacheMask,
+            _domParent = _node12.__domParent,
+            __matrix = _node12.__matrix,
+            __selfPerspectiveMatrix = _node12.__selfPerspectiveMatrix;
         var m = __matrix;
 
-        if (_domParent2) {
-          var op = _domParent2.__opacity;
+        if (__selfPerspectiveMatrix) {
+          m = multiply(__selfPerspectiveMatrix, m);
+        }
+
+        if (_domParent) {
+          var op = _domParent.__opacity;
 
           if (op !== 1) {
-            opacity *= _domParent2.__opacity;
+            opacity *= _domParent.__opacity;
           }
 
-          var pm = _domParent2.__perspectiveMatrix,
-              me = _domParent2.__matrixEvent;
+          var pm = _domParent.__perspectiveMatrix,
+              me = _domParent.__matrixEvent;
 
           if (pm && pm.length) {
-            m = multiply(_domParent2.__perspectiveMatrix, m);
+            m = multiply(_domParent.__perspectiveMatrix, m);
           }
 
           if (me && me.length) {
-            m = multiply(_domParent2.__matrixEvent, m);
+            m = multiply(_domParent.__matrixEvent, m);
           }
         }
 
-        _node7.__opacity = opacity;
-        assignMatrix(_node7.__matrixEvent, m); // total和自身cache的尝试，visibility不可见时没有cache
+        _node12.__opacity = opacity;
+        assignMatrix(_node12.__matrixEvent, m);
 
-        var target = getCache([__cacheMask, __cacheFilter, _cacheTotal3, _cache6]);
+        if (visibility === 'hidden' && !_total13) {
+          if (_hasMask7) {
+            _i10 += countMaskNum(__structs, _i10 + 1, _hasMask7);
+          }
 
-        if (target) {
+          continue;
+        } // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
+
+
+        if (backfaceVisibility === 'hidden') {
+          var _m6 = _node12.__matrix,
+              _x8 = _m6[5] < 0 && _m6[10] < 0,
+              _y8 = _m6[0] < 0 && _m6[10] < 0;
+
+          if (_x8 || _y8) {
+            _i10 += _total13 || 0;
+
+            if (_hasMask7) {
+              _i10 += countMaskNum(__structs, _i10 + 1, _hasMask7);
+            }
+
+            continue;
+          }
+        } // total和自身cache的尝试，visibility不可见时没有cache
+
+
+        var _target7 = getCache([_cacheMask6, _cacheFilter5, _cacheTotal8, _cache7]);
+
+        if (_target7) {
           // 有mbm则需要混合之前的纹理和新纹理到fbo上面，连续的mbm则依次交替绘制到画布或离屏fbo上
-          if (isValidMbm(_mixBlendMode)) {
+          if (_mixBlendMode2 !== 'normal') {
             if (list.length) {
-              webgl.drawTextureCache(gl, list, cx, cy, 0, 0);
-              list.splice(0);
+              drawTextureCache(gl, list.splice(0), cx, cy, 0, 0);
               lastPage = null;
             }
 
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             gl.deleteFramebuffer(frameBuffer);
-            var res = genMbmWebgl(gl, texture, target, _mixBlendMode, opacity, m, 0, 0, cx, cy, width, height);
 
-            if (res) {
+            var _res10 = genMbmWebgl(gl, texture, _target7, _mixBlendMode2, opacity, m, 0, 0, cx, cy, width, height);
+
+            if (_res10) {
               gl.deleteTexture(texture);
-              texture = res.texture;
-              frameBuffer = res.frameBuffer;
+              texture = _res10.texture;
+              frameBuffer = _res10.frameBuffer;
             }
           } else {
-            var _p4 = target.__page;
+            var _p8 = _target7.__page;
 
-            if (lastPage && lastPage !== _p4) {
-              webgl.drawTextureCache(gl, list, cx, cy, 0, 0);
-              list.splice(0);
+            if (lastPage && lastPage !== _p8) {
+              drawTextureCache(gl, list.splice(0), cx, cy, 0, 0);
             }
 
-            lastPage = _p4;
+            lastPage = _p8;
             list.push({
-              cache: target,
+              cache: _target7,
               opacity: opacity,
               matrix: m
             });
           }
 
-          if (target !== _cache6) {
-            _i5 += _total8 || 0;
+          if (_target7 !== _cache7) {
+            _i10 += _total13 || 0;
 
-            if (_hasMask4) {
-              _i5 += countMaskNum(__structs, _i5 + 1, _hasMask4);
+            if (_hasMask7) {
+              _i10 += countMaskNum(__structs, _i10 + 1, _hasMask7);
             }
-          } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
+          }
+        } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
 
 
-          if (!target || target === _cache6) {
-            _node7.render(renderMode, gl, 0, 0);
+        if (!_target7 || _target7 === _cache7) {
+          var render = _node12.render;
+
+          if (render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
+            _node12.render(renderMode, gl, 0, 0);
           }
         }
       }
     }
 
-    webgl.drawTextureCache(gl, list, cx, cy, 0, 0); // 有mbm时将汇总的fbo绘入主画布，否则本身就是到主画布无需多余操作
+    drawTextureCache(gl, list, cx, cy, 0, 0); // 有mbm时将汇总的fbo绘入主画布，否则本身就是到主画布无需多余操作
 
     if (hasMbm) {
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
@@ -33433,7 +36592,7 @@
       gl.vertexAttribPointer(a_opacity, 1, gl.FLOAT, false, 0, 0);
       gl.enableVertexAttribArray(a_opacity); // 纹理单元
 
-      webgl.bindTexture(gl, texture, 0);
+      bindTexture(gl, texture, 0);
       var u_texture = gl.getUniformLocation(gl.program, 'u_texture');
       gl.uniform1i(u_texture, 0);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -33459,11 +36618,11 @@
 
     if (isFirst || rlv >= REPAINT$1 || rlv & (CACHE$1 | FT$1 | MASK$1)) {
       for (var i = 0, len = __structs.length; i < len; i++) {
-        var _structs$i8 = __structs[i],
-            node = _structs$i8.node,
-            lv = _structs$i8.lv,
-            total = _structs$i8.total,
-            hasMask = _structs$i8.hasMask; // 排除Text，要么根节点直接绘制，要么被局部根节点汇总，自身并不缓存（fillText比位图更快）
+        var _structs$i9 = __structs[i],
+            node = _structs$i9.node,
+            lv = _structs$i9.lv,
+            total = _structs$i9.total,
+            hasMask = _structs$i9.hasMask; // 排除Text，要么根节点直接绘制，要么被局部根节点汇总，自身并不缓存（fillText比位图更快）
 
         if (node instanceof Text) {
           continue;
@@ -33563,33 +36722,33 @@
     var offscreenHash = [];
     var lastOpacity = -1;
 
-    for (var _i6 = 0, _len6 = __structs.length; _i6 < _len6; _i6++) {
-      var _structs$_i3 = __structs[_i6],
-          _node8 = _structs$_i3.node,
-          _lv5 = _structs$_i3.lv,
-          _total9 = _structs$_i3.total,
-          _hasMask5 = _structs$_i3.hasMask; // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
+    for (var _i11 = 0, _len12 = __structs.length; _i11 < _len12; _i11++) {
+      var _structs$_i4 = __structs[_i11],
+          _node13 = _structs$_i4.node,
+          _lv7 = _structs$_i4.lv,
+          _total14 = _structs$_i4.total,
+          _hasMask8 = _structs$_i4.hasMask; // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
 
-      if (_node8 instanceof Text) {
-        _node8.render(renderMode, ctx, 0, 0);
+      if (_node13 instanceof Text) {
+        _node13.render(renderMode, ctx, 0, 0);
 
-        var oh = offscreenHash[_i6];
+        var oh = offscreenHash[_i11];
 
         if (oh) {
           ctx = applyOffscreen(ctx, oh, width, height, false);
           lastOpacity = -1;
         }
       } else {
-        var _computedStyle3 = _node8.__computedStyle; // none跳过这棵子树，判断下最后一个节点的离屏应用即可
+        var _computedStyle6 = _node13.__computedStyle; // none跳过这棵子树，判断下最后一个节点的离屏应用即可
 
-        if (_computedStyle3[DISPLAY$1] === 'none') {
-          _i6 += _total9 || 0;
+        if (_computedStyle6[DISPLAY$1] === 'none') {
+          _i11 += _total14 || 0;
 
-          if (_hasMask5) {
-            _i6 += countMaskNum(__structs, _i6 + 1, _hasMask5);
+          if (_hasMask8) {
+            _i11 += countMaskNum(__structs, _i11 + 1, _hasMask8);
           }
 
-          var _oh4 = offscreenHash[_i6];
+          var _oh4 = offscreenHash[_i11];
 
           if (_oh4) {
             ctx = applyOffscreen(ctx, _oh4, width, height, true);
@@ -33599,57 +36758,57 @@
           continue;
         }
 
-        var _cacheTotal4 = _node8.__cacheTotal,
-            __cacheFilter = _node8.__cacheFilter,
-            __cacheMask = _node8.__cacheMask,
-            __domParent = _node8.__domParent,
-            __matrix = _node8.__matrix; // 遮罩对象申请了个离屏，其第一个mask申请另外一个离屏mask2，开始聚集所有mask元素的绘制，
+        var _cacheTotal9 = _node13.__cacheTotal,
+            __cacheFilter = _node13.__cacheFilter,
+            __cacheMask = _node13.__cacheMask,
+            __domParent = _node13.__domParent,
+            __matrix = _node13.__matrix; // 遮罩对象申请了个离屏，其第一个mask申请另外一个离屏mask2，开始聚集所有mask元素的绘制，
         // 这是一个十分特殊的逻辑，保存的index是最后一个节点的索引，OFFSCREEN_MASK2是最低优先级，
         // 这样当mask本身有filter时优先自身，然后才是OFFSCREEN_MASK2
 
-        var msh = maskStartHash[_i6];
+        var msh = maskStartHash[_i11];
 
         if (msh) {
           var idx = msh.idx,
-              _hasMask6 = msh.hasMask,
+              _hasMask9 = msh.hasMask,
               offscreenMask = msh.offscreenMask;
 
-          var _target4 = inject.getOffscreenCanvas(width, height, null, 'mask2');
+          var _target8 = inject.getOffscreenCanvas(width, height, null, 'mask2');
 
-          offscreenMask.mask = _target4; // 应用mask用到
+          offscreenMask.mask = _target8; // 应用mask用到
 
-          offscreenMask.isClip = _node8.__clip; // 定位到最后一个mask元素上的末尾
+          offscreenMask.isClip = _node13.__clip; // 定位到最后一个mask元素上的末尾
 
-          var j = _i6 + (_total9 || 0) + 1;
+          var j = _i11 + (_total14 || 0) + 1;
 
-          while (--_hasMask6) {
-            var _total10 = __structs[j].total;
-            j += (_total10 || 0) + 1;
+          while (--_hasMask9) {
+            var _total15 = __structs[j].total;
+            j += (_total15 || 0) + 1;
           }
 
           j--;
           var list = offscreenHash[j] = offscreenHash[j] || [];
           list.push({
             idx: idx,
-            lv: _lv5,
+            lv: _lv7,
             type: OFFSCREEN_MASK,
             offscreen: offscreenMask
           });
           list.push({
             idx: j,
-            lv: _lv5,
+            lv: _lv7,
             type: OFFSCREEN_MASK2,
             offscreen: {
               ctx: ctx,
               // 保存等待OFFSCREEN_MASK2时还原
-              target: _target4
+              target: _target8
             }
           });
-          ctx = _target4.ctx;
+          ctx = _target8.ctx;
         } // 设置opacity/matrix，根节点是没有父节点的不计算继承值
 
 
-        var opacity = _computedStyle3[OPACITY$1];
+        var opacity = _computedStyle6[OPACITY$1];
         var m = __matrix;
 
         if (__domParent) {
@@ -33666,16 +36825,16 @@
           }
         }
 
-        _node8.__opacity = opacity;
-        assignMatrix(_node8.__matrixEvent, m); // 有cache声明从而有total的可以直接绘制并跳过子节点索，total生成可能会因超限而失败
+        _node13.__opacity = opacity;
+        assignMatrix(_node13.__matrixEvent, m); // 有cache声明从而有total的可以直接绘制并跳过子节点索，total生成可能会因超限而失败
 
-        var target = getCache([__cacheMask, __cacheFilter, _cacheTotal4]);
+        var target = getCache([__cacheMask, __cacheFilter, _cacheTotal9]);
 
         if (target) {
-          _i6 += _total9 || 0;
+          _i11 += _total14 || 0;
 
-          if (_hasMask5) {
-            _i6 += countMaskNum(__structs, _i6 + 1, _hasMask5);
+          if (_hasMask8) {
+            _i11 += countMaskNum(__structs, _i11 + 1, _hasMask8);
           }
 
           if (lastOpacity !== opacity) {
@@ -33684,9 +36843,9 @@
           }
 
           ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
-          var mixBlendMode = _computedStyle3[MIX_BLEND_MODE$1];
+          var mixBlendMode = _computedStyle6[MIX_BLEND_MODE$1];
 
-          if (isValidMbm(mixBlendMode)) {
+          if (mixBlendMode !== 'normal') {
             ctx.globalCompositeOperation = mbmName(mixBlendMode);
           }
 
@@ -33703,7 +36862,7 @@
 
           ctx.globalCompositeOperation = 'source-over'; // 父超限但子有total的时候，i此时已经增加到了末尾，也需要检查
 
-          var _oh5 = offscreenHash[_i6];
+          var _oh5 = offscreenHash[_i11];
 
           if (_oh5) {
             ctx = applyOffscreen(ctx, _oh5, width, height, false);
@@ -33717,7 +36876,7 @@
               offscreenFilter = void 0,
               offscreenOverflow = void 0;
 
-          var _offscreen3 = _node8.__calOffscreen(ctx, _computedStyle3);
+          var _offscreen3 = _node13.__calOffscreen(ctx, _computedStyle6);
 
           if (_offscreen3) {
             ctx = _offscreen3.ctx;
@@ -33735,21 +36894,21 @@
 
           ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
 
-          _node8.render(renderMode, ctx, 0, 0); // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
+          _node13.render(renderMode, ctx, 0, 0); // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
 
 
           if (offscreenBlend) {
-            var _j10 = _i6 + (_total9 || 0);
+            var _j10 = _i11 + (_total14 || 0);
 
-            if (_hasMask5) {
-              _j10 += countMaskNum(__structs, _j10 + 1, _hasMask5);
+            if (_hasMask8) {
+              _j10 += countMaskNum(__structs, _j10 + 1, _hasMask8);
             }
 
             var _list7 = offscreenHash[_j10] = offscreenHash[_j10] || [];
 
             _list7.push({
-              idx: _i6,
-              lv: _lv5,
+              idx: _i11,
+              lv: _lv7,
               type: OFFSCREEN_BLEND,
               offscreen: offscreenBlend
             });
@@ -33758,28 +36917,28 @@
 
 
           if (_offscreenMask3) {
-            var _j11 = _i6 + (_total9 || 0);
+            var _j11 = _i11 + (_total14 || 0);
 
             maskStartHash[_j11 + 1] = {
-              idx: _i6,
-              hasMask: _hasMask5,
+              idx: _i11,
+              hasMask: _hasMask8,
               offscreenMask: _offscreenMask3
             };
           } // filter造成的离屏，需要将后续一段孩子节点区域的ctx替换，并在结束后应用结果，再替换回来
 
 
           if (offscreenFilter) {
-            var _j12 = _i6 + (_total9 || 0);
+            var _j12 = _i11 + (_total14 || 0);
 
-            if (_hasMask5) {
-              _j12 += countMaskNum(__structs, _j12 + 1, _hasMask5);
+            if (_hasMask8) {
+              _j12 += countMaskNum(__structs, _j12 + 1, _hasMask8);
             }
 
             var _list8 = offscreenHash[_j12] = offscreenHash[_j12] || [];
 
             _list8.push({
-              idx: _i6,
-              lv: _lv5,
+              idx: _i11,
+              lv: _lv7,
               type: OFFSCREEN_FILTER,
               offscreen: offscreenFilter
             });
@@ -33787,17 +36946,17 @@
 
 
           if (offscreenOverflow) {
-            var _j13 = _i6 + (_total9 || 0);
+            var _j13 = _i11 + (_total14 || 0);
 
-            if (_hasMask5) {
-              _j13 += countMaskNum(__structs, _j13 + 1, _hasMask5);
+            if (_hasMask8) {
+              _j13 += countMaskNum(__structs, _j13 + 1, _hasMask8);
             }
 
             var _list9 = offscreenHash[_j13] = offscreenHash[_j13] || [];
 
             _list9.push({
-              idx: _i6,
-              lv: _lv5,
+              idx: _i11,
+              lv: _lv7,
               type: OFFSCREEN_OVERFLOW,
               offscreen: offscreenOverflow
             });
@@ -33805,7 +36964,7 @@
           // 由于mask特殊索引影响，所有离屏都在最后一个mask索引判断，此时mask本身优先结算，以index序大到小判断
 
 
-          var _oh6 = offscreenHash[_i6];
+          var _oh6 = offscreenHash[_i11];
 
           if (_oh6) {
             ctx = applyOffscreen(ctx, _oh6, width, height, false);
@@ -33820,6 +36979,15 @@
     renderCanvas: renderCanvas$1,
     renderSvg: renderSvg$1,
     renderWebgl: renderWebgl$1
+  };
+
+  var ca = {
+    alpha: true,
+    antialias: true,
+    premultipliedAlpha: true,
+    preserveDrawingBuffer: true,
+    depth: true // stencil: true,
+
   };
 
   var vertex = "#version 100\n#define GLSLIFY 1\nattribute vec4 a_position;attribute vec2 a_texCoords;varying vec2 v_texCoords;attribute float a_opacity;varying float v_opacity;void main(){gl_Position=a_position;v_texCoords=a_texCoords;v_opacity=a_opacity;}"; // eslint-disable-line
@@ -33843,15 +37011,6 @@
   var vertexDs = "#version 100\n#define GLSLIFY 1\nattribute vec4 a_position;attribute vec2 a_texCoords;varying vec2 v_texCoords;void main(){gl_Position=a_position;v_texCoords=a_texCoords;}"; // eslint-disable-line
 
   var fragmentDs = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture;uniform float u_color[4];void main(){vec4 c=texture2D(u_texture,v_texCoords);gl_FragColor=vec4(u_color[0]*c.a,u_color[1]*c.a,u_color[2]*c.a,u_color[3]*c.a);}"; // eslint-disable-line
-
-  var ca = {
-    alpha: true,
-    antialias: true,
-    premultipliedAlpha: true,
-    preserveDrawingBuffer: true // depth: true,
-    // stencil: true,
-
-  };
 
   var vertexMbm = "#version 100\n#define GLSLIFY 1\nattribute vec4 a_position;attribute vec2 a_texCoords;varying vec2 v_texCoords;void main(){gl_Position=a_position;v_texCoords=a_texCoords;}"; // eslint-disable-line
 
@@ -33884,6 +37043,10 @@
   var fragmentColor = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture1;uniform sampler2D u_texture2;float getLuminosity(vec3 color){return 0.3*color[0]+0.59*color[1]+0.11*color[2];}float clipLowest(float channel,float lowestChannel,float luminosity){return luminosity+((channel-luminosity)*luminosity)/(luminosity-lowestChannel);}float clipHighest(float channel,float highestChannel,float luminosity){return luminosity+((channel-luminosity)*(1.0-luminosity))/(highestChannel-luminosity);}vec3 clipColor(vec3 rgb){float luminosity=getLuminosity(rgb);float lowestChannel=min(rgb[0],min(rgb[1],rgb[2]));float highestChannel=max(rgb[0],max(rgb[1],rgb[2]));float r=rgb[0],g=rgb[1],b=rgb[2];if(lowestChannel<0.0){r=clipLowest(r,lowestChannel,luminosity);g=clipLowest(g,lowestChannel,luminosity);b=clipLowest(b,lowestChannel,luminosity);}if(highestChannel>1.0){r=clipHighest(r,highestChannel,luminosity);g=clipHighest(g,highestChannel,luminosity);b=clipHighest(b,highestChannel,luminosity);}return vec3(r,g,b);}vec3 setLuminosity(vec3 rgb,float luminosity){float delta=luminosity-getLuminosity(rgb);float r=rgb[0],g=rgb[1],b=rgb[2];return clipColor(vec3(r+delta,g+delta,b+delta));}float getSaturation(vec3 rgb){return max(rgb[0],max(rgb[1],rgb[2]))-min(rgb[0],min(rgb[1],rgb[2]));}vec3 setSaturation(vec3 rgb,float saturation){float r=rgb[0],g=rgb[1],b=rgb[2];float maxC=0.0,minC=0.0,midC=0.0;int maxI=0,minI=0,midI=0;if(r>=g&&r>=b){maxI=0;maxC=r;if(g>=b){minI=2;midI=1;minC=b;midC=g;}else{minI=1;midI=2;minC=g;midC=b;}}else if(g>=r&&g>=b){maxI=1;maxC=g;if(r>=b){minI=2;midI=0;minC=b;midC=r;}else{minI=0;midI=2;minC=r;midC=b;}}else if(b>=r&&b>=g){maxI=2;maxC=b;if(r>=g){minI=1;midI=0;minC=g;midC=r;}else{minI=0;midI=1;minC=r;midC=g;}}vec3 result=vec3(r,g,b);if(maxC>minC){midC=(midC-minC)*saturation/(maxC-minC);maxC=saturation;}else{maxC=midC=0.0;}minC=0.0;if(maxI==0){result[0]=maxC;}else if(maxI==1){result[1]=maxC;}else if(maxI==2){result[2]=maxC;}if(minI==0){result[0]=minC;}else if(minI==1){result[1]=minC;}else if(minI==2){result[2]=minC;}if(midI==0){result[0]=midC;}else if(midI==1){result[1]=midC;}else if(midI==2){result[2]=midC;}return result;}vec3 op(vec3 a,vec3 b){float l=getLuminosity(a);return setLuminosity(b,l);}vec3 premultipliedAlpha(vec4 color){float a=color.a;if(a==0.0){return vec3(0.0,0.0,0.0);}return vec3(color.r/a,color.g/a,color.b/a);}float alphaCompose(float a1,float a2,float a3,float c1,float c2,float c3){return(1.0-a2/a3)*c1+a2/a3*((1.0-a1)*c2+a1*c3);}void main(){vec4 color1=texture2D(u_texture1,v_texCoords);vec4 color2=texture2D(u_texture2,v_texCoords);if(color1.a==0.0){gl_FragColor=color2;}else if(color2.a==0.0){gl_FragColor=color1;}else{vec3 bottom=premultipliedAlpha(color1);vec3 top=premultipliedAlpha(color2);vec3 res=op(bottom,top);float a=color1.a+color2.a-color1.a*color2.a;gl_FragColor=vec4(alphaCompose(color1.a,color2.a,a,bottom.r,top.r,res.r)*a,alphaCompose(color1.a,color2.a,a,bottom.g,top.g,res.g)*a,alphaCompose(color1.a,color2.a,a,bottom.b,top.b,res.b)*a,a);}}"; // eslint-disable-line
 
   var fragmentLuminosity = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture1;uniform sampler2D u_texture2;float getLuminosity(vec3 color){return 0.3*color[0]+0.59*color[1]+0.11*color[2];}float clipLowest(float channel,float lowestChannel,float luminosity){return luminosity+((channel-luminosity)*luminosity)/(luminosity-lowestChannel);}float clipHighest(float channel,float highestChannel,float luminosity){return luminosity+((channel-luminosity)*(1.0-luminosity))/(highestChannel-luminosity);}vec3 clipColor(vec3 rgb){float luminosity=getLuminosity(rgb);float lowestChannel=min(rgb[0],min(rgb[1],rgb[2]));float highestChannel=max(rgb[0],max(rgb[1],rgb[2]));float r=rgb[0],g=rgb[1],b=rgb[2];if(lowestChannel<0.0){r=clipLowest(r,lowestChannel,luminosity);g=clipLowest(g,lowestChannel,luminosity);b=clipLowest(b,lowestChannel,luminosity);}if(highestChannel>1.0){r=clipHighest(r,highestChannel,luminosity);g=clipHighest(g,highestChannel,luminosity);b=clipHighest(b,highestChannel,luminosity);}return vec3(r,g,b);}vec3 setLuminosity(vec3 rgb,float luminosity){float delta=luminosity-getLuminosity(rgb);float r=rgb[0],g=rgb[1],b=rgb[2];return clipColor(vec3(r+delta,g+delta,b+delta));}float getSaturation(vec3 rgb){return max(rgb[0],max(rgb[1],rgb[2]))-min(rgb[0],min(rgb[1],rgb[2]));}vec3 setSaturation(vec3 rgb,float saturation){float r=rgb[0],g=rgb[1],b=rgb[2];float maxC=0.0,minC=0.0,midC=0.0;int maxI=0,minI=0,midI=0;if(r>=g&&r>=b){maxI=0;maxC=r;if(g>=b){minI=2;midI=1;minC=b;midC=g;}else{minI=1;midI=2;minC=g;midC=b;}}else if(g>=r&&g>=b){maxI=1;maxC=g;if(r>=b){minI=2;midI=0;minC=b;midC=r;}else{minI=0;midI=2;minC=r;midC=b;}}else if(b>=r&&b>=g){maxI=2;maxC=b;if(r>=g){minI=1;midI=0;minC=g;midC=r;}else{minI=0;midI=1;minC=r;midC=g;}}vec3 result=vec3(r,g,b);if(maxC>minC){midC=(midC-minC)*saturation/(maxC-minC);maxC=saturation;}else{maxC=midC=0.0;}minC=0.0;if(maxI==0){result[0]=maxC;}else if(maxI==1){result[1]=maxC;}else if(maxI==2){result[2]=maxC;}if(minI==0){result[0]=minC;}else if(minI==1){result[1]=minC;}else if(minI==2){result[2]=minC;}if(midI==0){result[0]=midC;}else if(midI==1){result[1]=midC;}else if(midI==2){result[2]=midC;}return result;}vec3 op(vec3 a,vec3 b){float l=getLuminosity(b);return setLuminosity(a,l);}vec3 premultipliedAlpha(vec4 color){float a=color.a;if(a==0.0){return vec3(0.0,0.0,0.0);}return vec3(color.r/a,color.g/a,color.b/a);}float alphaCompose(float a1,float a2,float a3,float c1,float c2,float c3){return(1.0-a2/a3)*c1+a2/a3*((1.0-a1)*c2+a1*c3);}void main(){vec4 color1=texture2D(u_texture1,v_texCoords);vec4 color2=texture2D(u_texture2,v_texCoords);if(color1.a==0.0){gl_FragColor=color2;}else if(color2.a==0.0){gl_FragColor=color1;}else{vec3 bottom=premultipliedAlpha(color1);vec3 top=premultipliedAlpha(color2);vec3 res=op(bottom,top);float a=color1.a+color2.a-color1.a*color2.a;gl_FragColor=vec4(alphaCompose(color1.a,color2.a,a,bottom.r,top.r,res.r)*a,alphaCompose(color1.a,color2.a,a,bottom.g,top.g,res.g)*a,alphaCompose(color1.a,color2.a,a,bottom.b,top.b,res.b)*a,a);}}"; // eslint-disable-line
+
+  var vertexSs = "#version 100\n#define GLSLIFY 1\nattribute vec4 a_position;attribute vec2 a_texCoords;varying vec2 v_texCoords;void main(){gl_Position=a_position;v_texCoords=a_texCoords;}"; // eslint-disable-line
+
+  var fragmentSs = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture;uniform float u_opacity;void main(){gl_FragColor=texture2D(u_texture,v_texCoords)*u_opacity;}"; // eslint-disable-line
 
   var _enums$STYLE_KEY = enums.STYLE_KEY,
       TOP = _enums$STYLE_KEY.TOP,
@@ -34272,6 +37435,7 @@
         gl.programMbmSt = webgl.initShaders(gl, vertexMbm, fragmentSaturation);
         gl.programMbmCl = webgl.initShaders(gl, vertexMbm, fragmentColor);
         gl.programMbmLm = webgl.initShaders(gl, vertexMbm, fragmentLuminosity);
+        gl.programSs = webgl.initShaders(gl, vertexSs, fragmentSs);
         gl.useProgram(gl.program);
       }
     }, {
@@ -34383,6 +37547,15 @@
             gl.deleteShader(p.fragmentShader);
             gl.deleteProgram(p);
           });
+
+          for (var i in gl) {
+            if (i.indexOf('programBlur,') === 0) {
+              var p = gl[i];
+              gl.deleteShader(p.vertexShader);
+              gl.deleteShader(p.fragmentShader);
+              gl.deleteProgram(p);
+            }
+          }
         }
       }
     }, {
@@ -34648,7 +37821,16 @@
             }
 
             if (lv & TRANSFORM_ALL) {
+              // 特殊的ppt需清空cacheTotal
+              var o = node.__selfPerspectiveMatrix;
+
               node.__calMatrix(lv, currentStyle, computedStyle, cacheStyle, aniParams && aniParams.optimize);
+
+              var n = node.__selfPerspectiveMatrix;
+
+              if (!util.equalArr(o, n)) {
+                need = true;
+              }
             }
 
             if (lv & OP) {
@@ -34719,7 +37901,7 @@
 
 
           if (node.__hasMask) {
-            if (need || lv ^ OP) {
+            if (need || lv ^ OP || lv & PPT) {
               if (node.__cacheMask) {
                 hasRelease = node.__cacheMask.release() || hasRelease;
               }
@@ -34729,7 +37911,7 @@
               }
             }
           } // 特殊的filter清除cache
-          else if ((need || lv & FT) && node.__cacheFilter) {
+          else if ((need || lv & (FT | PPT)) && node.__cacheFilter) {
             hasRelease = node.__cacheFilter.release() || hasRelease;
           } // 向上清除cache汇总缓存信息，过程中可能会出现重复，根据refreshLevel判断，reflow已经自己清过了
 
@@ -34893,212 +38075,6 @@
 
     return Root;
   }(Dom);
-
-  var TOLERANCE$1 = 1e-6;
-  /**
-   * 计算线性方程的根
-   * y = ax + b
-   * root = -b / a
-   * @param {Array<Number>} coefs 系数 [b, a] 本文件代码中的系数数组都是从阶次由低到高排列
-   */
-
-  function getLinearRoot(coefs) {
-    var result = [];
-    var a = coefs[1];
-
-    if (a !== 0) {
-      result.push(-coefs[0] / a);
-    }
-
-    return result;
-  }
-  /**
-   * 计算二次方程的根，一元二次方程求根公式
-   * y = ax^2 + bx + c
-   * root = (-b ± sqrt(b^2 - 4ac)) / 2a
-   * @param {Array<Number>} coefs 系数，系数 [c, b, a]
-   */
-
-
-  function getQuadraticRoots(coefs) {
-    var results = [];
-    var a = coefs[2];
-    var b = coefs[1] / a;
-    var c = coefs[0] / a;
-    var d = b * b - 4 * c;
-
-    if (d > 0) {
-      var e = Math.sqrt(d);
-      results.push(0.5 * (-b + e));
-      results.push(0.5 * (-b - e));
-    } else if (d === 0) {
-      // 两个相同的根，只要返回一个
-      results.push(0.5 * -b);
-    }
-
-    return results;
-  }
-  /**
-   * 计算一元三次方程的根
-   * y = ax^3 + bx^2 + cx + d
-   * 求根公式参见: https://baike.baidu.com/item/%E4%B8%80%E5%85%83%E4%B8%89%E6%AC%A1%E6%96%B9%E7%A8%8B%E6%B1%82%E6%A0%B9%E5%85%AC%E5%BC%8F/10721952?fr=aladdin
-   * @param {Array<Number>} coefs 系数
-   */
-
-
-  function getCubicRoots(coefs) {
-    var results = [];
-    var c3 = coefs[3];
-    var c2 = coefs[2] / c3;
-    var c1 = coefs[1] / c3;
-    var c0 = coefs[0] / c3;
-    var a = (3 * c1 - c2 * c2) / 3;
-    var b = (2 * c2 * c2 * c2 - 9 * c1 * c2 + 27 * c0) / 27;
-    var offset = c2 / 3;
-    var discrim = b * b / 4 + a * a * a / 27;
-    var halfB = b / 2;
-
-    if (Math.abs(discrim) <= TOLERANCE$1) {
-      discrim = 0;
-    }
-
-    if (discrim > 0) {
-      var e = Math.sqrt(discrim);
-      var tmp;
-      var root;
-      tmp = -halfB + e;
-      if (tmp >= 0) root = Math.pow(tmp, 1 / 3);else root = -Math.pow(-tmp, 1 / 3);
-      tmp = -halfB - e;
-      if (tmp >= 0) root += Math.pow(tmp, 1 / 3);else root -= Math.pow(-tmp, 1 / 3);
-      results.push(root - offset);
-    } else if (discrim < 0) {
-      var distance = Math.sqrt(-a / 3);
-      var angle = Math.atan2(Math.sqrt(-discrim), -halfB) / 3;
-      var cos = Math.cos(angle);
-      var sin = Math.sin(angle);
-      var sqrt3 = Math.sqrt(3);
-      results.push(2 * distance * cos - offset);
-      results.push(-distance * (cos + sqrt3 * sin) - offset);
-      results.push(-distance * (cos - sqrt3 * sin) - offset);
-    } else {
-      var _tmp;
-
-      if (halfB >= 0) _tmp = -Math.pow(halfB, 1 / 3);else _tmp = Math.pow(-halfB, 1 / 3);
-      results.push(2 * _tmp - offset); // really should return next root twice, but we return only one
-
-      results.push(-_tmp - offset);
-    }
-
-    return results;
-  }
-  /**
-   * 计算一元四次方程的根
-   * 求根公式: https://baike.baidu.com/item/%E4%B8%80%E5%85%83%E4%B8%89%E6%AC%A1%E6%96%B9%E7%A8%8B%E6%B1%82%E6%A0%B9%E5%85%AC%E5%BC%8F/10721952?fr=aladdin
-   * @param {Array<Number>} coefs 系数
-   */
-
-
-  function getQuarticRoots(coefs) {
-    var results = [];
-    var c4 = coefs[4];
-    var c3 = coefs[3] / c4;
-    var c2 = coefs[2] / c4;
-    var c1 = coefs[1] / c4;
-    var c0 = coefs[0] / c4;
-    var resolveRoots = getCubicRoots([1, -c2, c3 * c1 - 4 * c0, -c3 * c3 * c0 + 4 * c2 * c0 - c1 * c1].reverse());
-    var y = resolveRoots[0];
-    var discrim = c3 * c3 / 4 - c2 + y;
-    if (Math.abs(discrim) <= TOLERANCE$1) discrim = 0;
-
-    if (discrim > 0) {
-      var e = Math.sqrt(discrim);
-      var t1 = 3 * c3 * c3 / 4 - e * e - 2 * c2;
-      var t2 = (4 * c3 * c2 - 8 * c1 - c3 * c3 * c3) / (4 * e);
-      var plus = t1 + t2;
-      var minus = t1 - t2;
-      if (Math.abs(plus) <= TOLERANCE$1) plus = 0;
-      if (Math.abs(minus) <= TOLERANCE$1) minus = 0;
-
-      if (plus >= 0) {
-        var f = Math.sqrt(plus);
-        results.push(-c3 / 4 + (e + f) / 2);
-        results.push(-c3 / 4 + (e - f) / 2);
-      }
-
-      if (minus >= 0) {
-        var _f = Math.sqrt(minus);
-
-        results.push(-c3 / 4 + (_f - e) / 2);
-        results.push(-c3 / 4 - (_f + e) / 2);
-      }
-    } else if (discrim < 0) ; else {
-      var _t = y * y - 4 * c0;
-
-      if (_t >= -TOLERANCE$1) {
-        if (_t < 0) _t = 0;
-        _t = 2 * Math.sqrt(_t);
-
-        var _t2 = 3 * c3 * c3 / 4 - 2 * c2;
-
-        if (_t2 + _t >= TOLERANCE$1) {
-          var d = Math.sqrt(_t2 + _t);
-          results.push(-c3 / 4 + d / 2);
-          results.push(-c3 / 4 - d / 2);
-        }
-
-        if (_t2 - _t >= TOLERANCE$1) {
-          var _d = Math.sqrt(_t2 - _t);
-
-          results.push(-c3 / 4 + _d / 2);
-          results.push(-c3 / 4 - _d / 2);
-        }
-      }
-    }
-
-    return results;
-  }
-  /**
-   * 计算方程的根
-   * @param {Array<Number>} coefs 系数按幂次方倒序
-   */
-
-
-  function getRoots$1(coefs) {
-    var degree = coefs.length - 1;
-
-    for (var i = degree; i >= 0; i--) {
-      if (Math.abs(coefs[i]) < 1e-12) {
-        degree--;
-      } else {
-        break;
-      }
-    }
-
-    var result = [];
-
-    switch (degree) {
-      case 1:
-        result = getLinearRoot(coefs);
-        break;
-
-      case 2:
-        result = getQuadraticRoots(coefs);
-        break;
-
-      case 3:
-        result = getCubicRoots(coefs);
-        break;
-
-      case 4:
-        result = getQuarticRoots(coefs);
-    }
-
-    return result;
-  }
-
-  var equation = {
-    getRoots: getRoots$1
-  };
 
   /**
    * 二阶贝塞尔曲线范围框
@@ -36528,607 +39504,6 @@
 
     return Segment;
   }();
-
-  var getRoots = equation.getRoots; // 两个三次方程组的数值解.9阶的多项式方程,可以最多有9个实根(两个S形曲线的情况)
-  // 两个三次方程组无法解析表示，只能数值计算
-  // 参考：https://mat.polsl.pl/sjpam/zeszyty/z6/Silesian_J_Pure_Appl_Math_v6_i1_str_155-176.pdf
-
-  var TOLERANCE = 1e-6;
-  var ACCURACY = 6;
-  /**
-   * 获取求导之后的系数
-   * @param coefs
-   */
-
-  function getDerivativeCoefs(coefs) {
-    var derivative = [];
-
-    for (var i = 1; i < coefs.length; i++) {
-      derivative.push(i * coefs[i]);
-    }
-
-    return derivative;
-  }
-  /**
-   * 评估函数
-   * @param x
-   * @param coefs
-   * @return {number}
-   */
-
-
-  function evaluate(x, coefs) {
-    var result = 0;
-
-    for (var i = coefs.length - 1; i >= 0; i--) {
-      result = result * x + coefs[i];
-    }
-
-    return result;
-  }
-
-  function bisection(min, max, coefs) {
-    var minValue = evaluate(min, coefs);
-    var maxValue = evaluate(max, coefs);
-    var result;
-
-    if (Math.abs(minValue) <= TOLERANCE) {
-      result = min;
-    } else if (Math.abs(maxValue) <= TOLERANCE) {
-      result = max;
-    } else if (minValue * maxValue <= 0) {
-      var tmp1 = Math.log(max - min);
-      var tmp2 = Math.LN10 * ACCURACY;
-      var iters = Math.ceil((tmp1 + tmp2) / Math.LN2);
-
-      for (var i = 0; i < iters; i++) {
-        result = 0.5 * (min + max);
-        var value = evaluate(result, coefs);
-
-        if (Math.abs(value) <= TOLERANCE) {
-          break;
-        }
-
-        if (value * minValue < 0) {
-          max = result;
-          maxValue = value;
-        } else {
-          min = result;
-          minValue = value;
-        }
-      }
-    }
-
-    return result;
-  }
-
-  function getRootsInInterval(min, max, coefs) {
-    // console.log('getRootsInInterval', coefs);
-    var roots = [];
-    var root;
-    var degree = coefs.length - 1;
-
-    if (degree === 1) {
-      root = bisection(min, max, coefs);
-
-      if (root != null) {
-        roots.push(root);
-      }
-    } else {
-      var derivativeCoefs = getDerivativeCoefs(coefs);
-      var droots = getRootsInInterval(min, max, derivativeCoefs);
-
-      if (droots.length > 0) {
-        // find root on [min, droots[0]]
-        root = bisection(min, droots[0], coefs);
-
-        if (root != null) {
-          roots.push(root);
-        } // find root on [droots[i],droots[i+1]] for 0 <= i <= count-2
-
-
-        for (var i = 0; i <= droots.length - 2; i++) {
-          root = bisection(droots[i], droots[i + 1], coefs);
-
-          if (root != null) {
-            roots.push(root);
-          }
-        } // find root on [droots[count-1],xmax]
-
-
-        root = bisection(droots[droots.length - 1], max, coefs);
-
-        if (root != null) {
-          roots.push(root);
-        }
-      } else {
-        // polynomial is monotone on [min,max], has at most one root
-        root = bisection(min, max, coefs);
-
-        if (root != null) {
-          roots.push(root);
-        }
-      }
-    }
-
-    return roots;
-  }
-  /**
-   * 二阶贝塞尔曲线 与 二阶贝塞尔曲线 交点
-   * @return {[]}
-   */
-
-
-  function intersectBezier2Bezier2(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, bx3, by3) {
-    var c12, c11, c10;
-    var c22, c21, c20;
-    var result = [];
-    c12 = {
-      x: ax1 - 2 * ax2 + ax3,
-      y: ay1 - 2 * ay2 + ay3
-    };
-    c11 = {
-      x: 2 * ax2 - 2 * ax1,
-      y: 2 * ay2 - 2 * ay1
-    };
-    c10 = {
-      x: ax1,
-      y: ay1
-    };
-    c22 = {
-      x: bx1 - 2 * bx2 + bx3,
-      y: by1 - 2 * by2 + by3
-    };
-    c21 = {
-      x: 2 * bx2 - 2 * bx1,
-      y: 2 * by2 - 2 * by1
-    };
-    c20 = {
-      x: bx1,
-      y: by1
-    };
-    var coefs;
-
-    if (c12.y === 0) {
-      var v0 = c12.x * (c10.y - c20.y);
-      var v1 = v0 - c11.x * c11.y;
-      var v3 = c11.y * c11.y;
-      coefs = [c12.x * c22.y * c22.y, 2 * c12.x * c21.y * c22.y, c12.x * c21.y * c21.y - c22.x * v3 - c22.y * v0 - c22.y * v1, -c21.x * v3 - c21.y * v0 - c21.y * v1, (c10.x - c20.x) * v3 + (c10.y - c20.y) * v1].reverse();
-    } else {
-      var _v = c12.x * c22.y - c12.y * c22.x;
-
-      var _v2 = c12.x * c21.y - c21.x * c12.y;
-
-      var _v3 = c11.x * c12.y - c11.y * c12.x;
-
-      var _v4 = c10.y - c20.y;
-
-      var v4 = c12.y * (c10.x - c20.x) - c12.x * _v4;
-      var v5 = -c11.y * _v3 + c12.y * v4;
-      var v6 = _v3 * _v3;
-      coefs = [_v * _v, 2 * _v * _v2, (-c22.y * v6 + c12.y * _v2 * _v2 + c12.y * _v * v4 + _v * v5) / c12.y, (-c21.y * v6 + c12.y * _v2 * v4 + _v2 * v5) / c12.y, (_v4 * v6 + v4 * v5) / c12.y].reverse();
-    }
-
-    var roots = getRoots(coefs);
-
-    for (var i = 0; i < roots.length; i++) {
-      var s = roots[i];
-
-      if (0 <= s && s <= 1) {
-        var xRoots = getRoots([c12.x, c11.x, c10.x - c20.x - s * c21.x - s * s * c22.x].reverse());
-        var yRoots = getRoots([c12.y, c11.y, c10.y - c20.y - s * c21.y - s * s * c22.y].reverse());
-
-        if (xRoots.length > 0 && yRoots.length > 0) {
-          var _TOLERANCE = 1e-4;
-
-          checkRoots: for (var j = 0; j < xRoots.length; j++) {
-            var xRoot = xRoots[j];
-
-            if (0 <= xRoot && xRoot <= 1) {
-              for (var k = 0; k < yRoots.length; k++) {
-                if (Math.abs(xRoot - yRoots[k]) < _TOLERANCE) {
-                  var x = c22.x * s * s + c21.x * s + c20.x;
-                  var y = c22.y * s * s + c21.y * s + c20.y;
-                  result.push({
-                    x: x,
-                    y: y,
-                    t: xRoot
-                  }); // result.push(c22.multiply(s * s).add(c21.multiply(s).add(c20)));
-
-                  break checkRoots;
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    return result;
-  }
-
-  function intersectBezier3Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2, bx3, by3, bx4, by4) {
-    var c13, c12, c11, c10; // 三阶系数
-
-    var c23, c22, c21, c20;
-    var result = [];
-    c13 = {
-      x: -ax1 + 3 * ax2 - 3 * ax3 + ax4,
-      y: -ay1 + 3 * ay2 - 3 * ay3 + ay4
-    };
-    c12 = {
-      x: 3 * ax1 - 6 * ax2 + 3 * ax3,
-      y: 3 * ay1 - 6 * ay2 + 3 * ay3
-    };
-    c11 = {
-      x: -3 * ax1 + 3 * ax2,
-      y: -3 * ay1 + 3 * ay2
-    };
-    c10 = {
-      x: ax1,
-      y: ay1
-    };
-    c23 = {
-      x: -bx1 + 3 * bx2 - 3 * bx3 + bx4,
-      y: -by1 + 3 * by2 - 3 * by3 + by4
-    };
-    c22 = {
-      x: 3 * bx1 - 6 * bx2 + 3 * bx3,
-      y: 3 * by1 - 6 * by2 + 3 * by3
-    };
-    c21 = {
-      x: -3 * bx1 + 3 * bx2,
-      y: -3 * by1 + 3 * by2
-    };
-    c20 = {
-      x: bx1,
-      y: by1
-    };
-    var c10x2 = c10.x * c10.x;
-    var c10x3 = c10.x * c10.x * c10.x;
-    var c10y2 = c10.y * c10.y;
-    var c10y3 = c10.y * c10.y * c10.y;
-    var c11x2 = c11.x * c11.x;
-    var c11x3 = c11.x * c11.x * c11.x;
-    var c11y2 = c11.y * c11.y;
-    var c11y3 = c11.y * c11.y * c11.y;
-    var c12x2 = c12.x * c12.x;
-    var c12x3 = c12.x * c12.x * c12.x;
-    var c12y2 = c12.y * c12.y;
-    var c12y3 = c12.y * c12.y * c12.y;
-    var c13x2 = c13.x * c13.x;
-    var c13x3 = c13.x * c13.x * c13.x;
-    var c13y2 = c13.y * c13.y;
-    var c13y3 = c13.y * c13.y * c13.y;
-    var c20x2 = c20.x * c20.x;
-    var c20x3 = c20.x * c20.x * c20.x;
-    var c20y2 = c20.y * c20.y;
-    var c20y3 = c20.y * c20.y * c20.y;
-    var c21x2 = c21.x * c21.x;
-    var c21x3 = c21.x * c21.x * c21.x;
-    var c21y2 = c21.y * c21.y;
-    var c22x2 = c22.x * c22.x;
-    var c22x3 = c22.x * c22.x * c22.x;
-    var c22y2 = c22.y * c22.y;
-    var c23x2 = c23.x * c23.x;
-    var c23x3 = c23.x * c23.x * c23.x;
-    var c23y2 = c23.y * c23.y;
-    var c23y3 = c23.y * c23.y * c23.y;
-    var coefs = [-c13x3 * c23y3 + c13y3 * c23x3 - 3 * c13.x * c13y2 * c23x2 * c23.y + 3 * c13x2 * c13.y * c23.x * c23y2, -6 * c13.x * c22.x * c13y2 * c23.x * c23.y + 6 * c13x2 * c13.y * c22.y * c23.x * c23.y + 3 * c22.x * c13y3 * c23x2 - 3 * c13x3 * c22.y * c23y2 - 3 * c13.x * c13y2 * c22.y * c23x2 + 3 * c13x2 * c22.x * c13.y * c23y2, -6 * c21.x * c13.x * c13y2 * c23.x * c23.y - 6 * c13.x * c22.x * c13y2 * c22.y * c23.x + 6 * c13x2 * c22.x * c13.y * c22.y * c23.y + 3 * c21.x * c13y3 * c23x2 + 3 * c22x2 * c13y3 * c23.x + 3 * c21.x * c13x2 * c13.y * c23y2 - 3 * c13.x * c21.y * c13y2 * c23x2 - 3 * c13.x * c22x2 * c13y2 * c23.y + c13x2 * c13.y * c23.x * (6 * c21.y * c23.y + 3 * c22y2) + c13x3 * (-c21.y * c23y2 - 2 * c22y2 * c23.y - c23.y * (2 * c21.y * c23.y + c22y2)), c11.x * c12.y * c13.x * c13.y * c23.x * c23.y - c11.y * c12.x * c13.x * c13.y * c23.x * c23.y + 6 * c21.x * c22.x * c13y3 * c23.x + 3 * c11.x * c12.x * c13.x * c13.y * c23y2 + 6 * c10.x * c13.x * c13y2 * c23.x * c23.y - 3 * c11.x * c12.x * c13y2 * c23.x * c23.y - 3 * c11.y * c12.y * c13.x * c13.y * c23x2 - 6 * c10.y * c13x2 * c13.y * c23.x * c23.y - 6 * c20.x * c13.x * c13y2 * c23.x * c23.y + 3 * c11.y * c12.y * c13x2 * c23.x * c23.y - 2 * c12.x * c12y2 * c13.x * c23.x * c23.y - 6 * c21.x * c13.x * c22.x * c13y2 * c23.y - 6 * c21.x * c13.x * c13y2 * c22.y * c23.x - 6 * c13.x * c21.y * c22.x * c13y2 * c23.x + 6 * c21.x * c13x2 * c13.y * c22.y * c23.y + 2 * c12x2 * c12.y * c13.y * c23.x * c23.y + c22x3 * c13y3 - 3 * c10.x * c13y3 * c23x2 + 3 * c10.y * c13x3 * c23y2 + 3 * c20.x * c13y3 * c23x2 + c12y3 * c13.x * c23x2 - c12x3 * c13.y * c23y2 - 3 * c10.x * c13x2 * c13.y * c23y2 + 3 * c10.y * c13.x * c13y2 * c23x2 - 2 * c11.x * c12.y * c13x2 * c23y2 + c11.x * c12.y * c13y2 * c23x2 - c11.y * c12.x * c13x2 * c23y2 + 2 * c11.y * c12.x * c13y2 * c23x2 + 3 * c20.x * c13x2 * c13.y * c23y2 - c12.x * c12y2 * c13.y * c23x2 - 3 * c20.y * c13.x * c13y2 * c23x2 + c12x2 * c12.y * c13.x * c23y2 - 3 * c13.x * c22x2 * c13y2 * c22.y + c13x2 * c13.y * c23.x * (6 * c20.y * c23.y + 6 * c21.y * c22.y) + c13x2 * c22.x * c13.y * (6 * c21.y * c23.y + 3 * c22y2) + c13x3 * (-2 * c21.y * c22.y * c23.y - c20.y * c23y2 - c22.y * (2 * c21.y * c23.y + c22y2) - c23.y * (2 * c20.y * c23.y + 2 * c21.y * c22.y)), 6 * c11.x * c12.x * c13.x * c13.y * c22.y * c23.y + c11.x * c12.y * c13.x * c22.x * c13.y * c23.y + c11.x * c12.y * c13.x * c13.y * c22.y * c23.x - c11.y * c12.x * c13.x * c22.x * c13.y * c23.y - c11.y * c12.x * c13.x * c13.y * c22.y * c23.x - 6 * c11.y * c12.y * c13.x * c22.x * c13.y * c23.x - 6 * c10.x * c22.x * c13y3 * c23.x + 6 * c20.x * c22.x * c13y3 * c23.x + 6 * c10.y * c13x3 * c22.y * c23.y + 2 * c12y3 * c13.x * c22.x * c23.x - 2 * c12x3 * c13.y * c22.y * c23.y + 6 * c10.x * c13.x * c22.x * c13y2 * c23.y + 6 * c10.x * c13.x * c13y2 * c22.y * c23.x + 6 * c10.y * c13.x * c22.x * c13y2 * c23.x - 3 * c11.x * c12.x * c22.x * c13y2 * c23.y - 3 * c11.x * c12.x * c13y2 * c22.y * c23.x + 2 * c11.x * c12.y * c22.x * c13y2 * c23.x + 4 * c11.y * c12.x * c22.x * c13y2 * c23.x - 6 * c10.x * c13x2 * c13.y * c22.y * c23.y - 6 * c10.y * c13x2 * c22.x * c13.y * c23.y - 6 * c10.y * c13x2 * c13.y * c22.y * c23.x - 4 * c11.x * c12.y * c13x2 * c22.y * c23.y - 6 * c20.x * c13.x * c22.x * c13y2 * c23.y - 6 * c20.x * c13.x * c13y2 * c22.y * c23.x - 2 * c11.y * c12.x * c13x2 * c22.y * c23.y + 3 * c11.y * c12.y * c13x2 * c22.x * c23.y + 3 * c11.y * c12.y * c13x2 * c22.y * c23.x - 2 * c12.x * c12y2 * c13.x * c22.x * c23.y - 2 * c12.x * c12y2 * c13.x * c22.y * c23.x - 2 * c12.x * c12y2 * c22.x * c13.y * c23.x - 6 * c20.y * c13.x * c22.x * c13y2 * c23.x - 6 * c21.x * c13.x * c21.y * c13y2 * c23.x - 6 * c21.x * c13.x * c22.x * c13y2 * c22.y + 6 * c20.x * c13x2 * c13.y * c22.y * c23.y + 2 * c12x2 * c12.y * c13.x * c22.y * c23.y + 2 * c12x2 * c12.y * c22.x * c13.y * c23.y + 2 * c12x2 * c12.y * c13.y * c22.y * c23.x + 3 * c21.x * c22x2 * c13y3 + 3 * c21x2 * c13y3 * c23.x - 3 * c13.x * c21.y * c22x2 * c13y2 - 3 * c21x2 * c13.x * c13y2 * c23.y + c13x2 * c22.x * c13.y * (6 * c20.y * c23.y + 6 * c21.y * c22.y) + c13x2 * c13.y * c23.x * (6 * c20.y * c22.y + 3 * c21y2) + c21.x * c13x2 * c13.y * (6 * c21.y * c23.y + 3 * c22y2) + c13x3 * (-2 * c20.y * c22.y * c23.y - c23.y * (2 * c20.y * c22.y + c21y2) - c21.y * (2 * c21.y * c23.y + c22y2) - c22.y * (2 * c20.y * c23.y + 2 * c21.y * c22.y)), c11.x * c21.x * c12.y * c13.x * c13.y * c23.y + c11.x * c12.y * c13.x * c21.y * c13.y * c23.x + c11.x * c12.y * c13.x * c22.x * c13.y * c22.y - c11.y * c12.x * c21.x * c13.x * c13.y * c23.y - c11.y * c12.x * c13.x * c21.y * c13.y * c23.x - c11.y * c12.x * c13.x * c22.x * c13.y * c22.y - 6 * c11.y * c21.x * c12.y * c13.x * c13.y * c23.x - 6 * c10.x * c21.x * c13y3 * c23.x + 6 * c20.x * c21.x * c13y3 * c23.x + 2 * c21.x * c12y3 * c13.x * c23.x + 6 * c10.x * c21.x * c13.x * c13y2 * c23.y + 6 * c10.x * c13.x * c21.y * c13y2 * c23.x + 6 * c10.x * c13.x * c22.x * c13y2 * c22.y + 6 * c10.y * c21.x * c13.x * c13y2 * c23.x - 3 * c11.x * c12.x * c21.x * c13y2 * c23.y - 3 * c11.x * c12.x * c21.y * c13y2 * c23.x - 3 * c11.x * c12.x * c22.x * c13y2 * c22.y + 2 * c11.x * c21.x * c12.y * c13y2 * c23.x + 4 * c11.y * c12.x * c21.x * c13y2 * c23.x - 6 * c10.y * c21.x * c13x2 * c13.y * c23.y - 6 * c10.y * c13x2 * c21.y * c13.y * c23.x - 6 * c10.y * c13x2 * c22.x * c13.y * c22.y - 6 * c20.x * c21.x * c13.x * c13y2 * c23.y - 6 * c20.x * c13.x * c21.y * c13y2 * c23.x - 6 * c20.x * c13.x * c22.x * c13y2 * c22.y + 3 * c11.y * c21.x * c12.y * c13x2 * c23.y - 3 * c11.y * c12.y * c13.x * c22x2 * c13.y + 3 * c11.y * c12.y * c13x2 * c21.y * c23.x + 3 * c11.y * c12.y * c13x2 * c22.x * c22.y - 2 * c12.x * c21.x * c12y2 * c13.x * c23.y - 2 * c12.x * c21.x * c12y2 * c13.y * c23.x - 2 * c12.x * c12y2 * c13.x * c21.y * c23.x - 2 * c12.x * c12y2 * c13.x * c22.x * c22.y - 6 * c20.y * c21.x * c13.x * c13y2 * c23.x - 6 * c21.x * c13.x * c21.y * c22.x * c13y2 + 6 * c20.y * c13x2 * c21.y * c13.y * c23.x + 2 * c12x2 * c21.x * c12.y * c13.y * c23.y + 2 * c12x2 * c12.y * c21.y * c13.y * c23.x + 2 * c12x2 * c12.y * c22.x * c13.y * c22.y - 3 * c10.x * c22x2 * c13y3 + 3 * c20.x * c22x2 * c13y3 + 3 * c21x2 * c22.x * c13y3 + c12y3 * c13.x * c22x2 + 3 * c10.y * c13.x * c22x2 * c13y2 + c11.x * c12.y * c22x2 * c13y2 + 2 * c11.y * c12.x * c22x2 * c13y2 - c12.x * c12y2 * c22x2 * c13.y - 3 * c20.y * c13.x * c22x2 * c13y2 - 3 * c21x2 * c13.x * c13y2 * c22.y + c12x2 * c12.y * c13.x * (2 * c21.y * c23.y + c22y2) + c11.x * c12.x * c13.x * c13.y * (6 * c21.y * c23.y + 3 * c22y2) + c21.x * c13x2 * c13.y * (6 * c20.y * c23.y + 6 * c21.y * c22.y) + c12x3 * c13.y * (-2 * c21.y * c23.y - c22y2) + c10.y * c13x3 * (6 * c21.y * c23.y + 3 * c22y2) + c11.y * c12.x * c13x2 * (-2 * c21.y * c23.y - c22y2) + c11.x * c12.y * c13x2 * (-4 * c21.y * c23.y - 2 * c22y2) + c10.x * c13x2 * c13.y * (-6 * c21.y * c23.y - 3 * c22y2) + c13x2 * c22.x * c13.y * (6 * c20.y * c22.y + 3 * c21y2) + c20.x * c13x2 * c13.y * (6 * c21.y * c23.y + 3 * c22y2) + c13x3 * (-2 * c20.y * c21.y * c23.y - c22.y * (2 * c20.y * c22.y + c21y2) - c20.y * (2 * c21.y * c23.y + c22y2) - c21.y * (2 * c20.y * c23.y + 2 * c21.y * c22.y)), -c10.x * c11.x * c12.y * c13.x * c13.y * c23.y + c10.x * c11.y * c12.x * c13.x * c13.y * c23.y + 6 * c10.x * c11.y * c12.y * c13.x * c13.y * c23.x - 6 * c10.y * c11.x * c12.x * c13.x * c13.y * c23.y - c10.y * c11.x * c12.y * c13.x * c13.y * c23.x + c10.y * c11.y * c12.x * c13.x * c13.y * c23.x + c11.x * c11.y * c12.x * c12.y * c13.x * c23.y - c11.x * c11.y * c12.x * c12.y * c13.y * c23.x + c11.x * c20.x * c12.y * c13.x * c13.y * c23.y + c11.x * c20.y * c12.y * c13.x * c13.y * c23.x + c11.x * c21.x * c12.y * c13.x * c13.y * c22.y + c11.x * c12.y * c13.x * c21.y * c22.x * c13.y - c20.x * c11.y * c12.x * c13.x * c13.y * c23.y - 6 * c20.x * c11.y * c12.y * c13.x * c13.y * c23.x - c11.y * c12.x * c20.y * c13.x * c13.y * c23.x - c11.y * c12.x * c21.x * c13.x * c13.y * c22.y - c11.y * c12.x * c13.x * c21.y * c22.x * c13.y - 6 * c11.y * c21.x * c12.y * c13.x * c22.x * c13.y - 6 * c10.x * c20.x * c13y3 * c23.x - 6 * c10.x * c21.x * c22.x * c13y3 - 2 * c10.x * c12y3 * c13.x * c23.x + 6 * c20.x * c21.x * c22.x * c13y3 + 2 * c20.x * c12y3 * c13.x * c23.x + 2 * c21.x * c12y3 * c13.x * c22.x + 2 * c10.y * c12x3 * c13.y * c23.y - 6 * c10.x * c10.y * c13.x * c13y2 * c23.x + 3 * c10.x * c11.x * c12.x * c13y2 * c23.y - 2 * c10.x * c11.x * c12.y * c13y2 * c23.x - 4 * c10.x * c11.y * c12.x * c13y2 * c23.x + 3 * c10.y * c11.x * c12.x * c13y2 * c23.x + 6 * c10.x * c10.y * c13x2 * c13.y * c23.y + 6 * c10.x * c20.x * c13.x * c13y2 * c23.y - 3 * c10.x * c11.y * c12.y * c13x2 * c23.y + 2 * c10.x * c12.x * c12y2 * c13.x * c23.y + 2 * c10.x * c12.x * c12y2 * c13.y * c23.x + 6 * c10.x * c20.y * c13.x * c13y2 * c23.x + 6 * c10.x * c21.x * c13.x * c13y2 * c22.y + 6 * c10.x * c13.x * c21.y * c22.x * c13y2 + 4 * c10.y * c11.x * c12.y * c13x2 * c23.y + 6 * c10.y * c20.x * c13.x * c13y2 * c23.x + 2 * c10.y * c11.y * c12.x * c13x2 * c23.y - 3 * c10.y * c11.y * c12.y * c13x2 * c23.x + 2 * c10.y * c12.x * c12y2 * c13.x * c23.x + 6 * c10.y * c21.x * c13.x * c22.x * c13y2 - 3 * c11.x * c20.x * c12.x * c13y2 * c23.y + 2 * c11.x * c20.x * c12.y * c13y2 * c23.x + c11.x * c11.y * c12y2 * c13.x * c23.x - 3 * c11.x * c12.x * c20.y * c13y2 * c23.x - 3 * c11.x * c12.x * c21.x * c13y2 * c22.y - 3 * c11.x * c12.x * c21.y * c22.x * c13y2 + 2 * c11.x * c21.x * c12.y * c22.x * c13y2 + 4 * c20.x * c11.y * c12.x * c13y2 * c23.x + 4 * c11.y * c12.x * c21.x * c22.x * c13y2 - 2 * c10.x * c12x2 * c12.y * c13.y * c23.y - 6 * c10.y * c20.x * c13x2 * c13.y * c23.y - 6 * c10.y * c20.y * c13x2 * c13.y * c23.x - 6 * c10.y * c21.x * c13x2 * c13.y * c22.y - 2 * c10.y * c12x2 * c12.y * c13.x * c23.y - 2 * c10.y * c12x2 * c12.y * c13.y * c23.x - 6 * c10.y * c13x2 * c21.y * c22.x * c13.y - c11.x * c11.y * c12x2 * c13.y * c23.y - 2 * c11.x * c11y2 * c13.x * c13.y * c23.x + 3 * c20.x * c11.y * c12.y * c13x2 * c23.y - 2 * c20.x * c12.x * c12y2 * c13.x * c23.y - 2 * c20.x * c12.x * c12y2 * c13.y * c23.x - 6 * c20.x * c20.y * c13.x * c13y2 * c23.x - 6 * c20.x * c21.x * c13.x * c13y2 * c22.y - 6 * c20.x * c13.x * c21.y * c22.x * c13y2 + 3 * c11.y * c20.y * c12.y * c13x2 * c23.x + 3 * c11.y * c21.x * c12.y * c13x2 * c22.y + 3 * c11.y * c12.y * c13x2 * c21.y * c22.x - 2 * c12.x * c20.y * c12y2 * c13.x * c23.x - 2 * c12.x * c21.x * c12y2 * c13.x * c22.y - 2 * c12.x * c21.x * c12y2 * c22.x * c13.y - 2 * c12.x * c12y2 * c13.x * c21.y * c22.x - 6 * c20.y * c21.x * c13.x * c22.x * c13y2 - c11y2 * c12.x * c12.y * c13.x * c23.x + 2 * c20.x * c12x2 * c12.y * c13.y * c23.y + 6 * c20.y * c13x2 * c21.y * c22.x * c13.y + 2 * c11x2 * c11.y * c13.x * c13.y * c23.y + c11x2 * c12.x * c12.y * c13.y * c23.y + 2 * c12x2 * c20.y * c12.y * c13.y * c23.x + 2 * c12x2 * c21.x * c12.y * c13.y * c22.y + 2 * c12x2 * c12.y * c21.y * c22.x * c13.y + c21x3 * c13y3 + 3 * c10x2 * c13y3 * c23.x - 3 * c10y2 * c13x3 * c23.y + 3 * c20x2 * c13y3 * c23.x + c11y3 * c13x2 * c23.x - c11x3 * c13y2 * c23.y - c11.x * c11y2 * c13x2 * c23.y + c11x2 * c11.y * c13y2 * c23.x - 3 * c10x2 * c13.x * c13y2 * c23.y + 3 * c10y2 * c13x2 * c13.y * c23.x - c11x2 * c12y2 * c13.x * c23.y + c11y2 * c12x2 * c13.y * c23.x - 3 * c21x2 * c13.x * c21.y * c13y2 - 3 * c20x2 * c13.x * c13y2 * c23.y + 3 * c20y2 * c13x2 * c13.y * c23.x + c11.x * c12.x * c13.x * c13.y * (6 * c20.y * c23.y + 6 * c21.y * c22.y) + c12x3 * c13.y * (-2 * c20.y * c23.y - 2 * c21.y * c22.y) + c10.y * c13x3 * (6 * c20.y * c23.y + 6 * c21.y * c22.y) + c11.y * c12.x * c13x2 * (-2 * c20.y * c23.y - 2 * c21.y * c22.y) + c12x2 * c12.y * c13.x * (2 * c20.y * c23.y + 2 * c21.y * c22.y) + c11.x * c12.y * c13x2 * (-4 * c20.y * c23.y - 4 * c21.y * c22.y) + c10.x * c13x2 * c13.y * (-6 * c20.y * c23.y - 6 * c21.y * c22.y) + c20.x * c13x2 * c13.y * (6 * c20.y * c23.y + 6 * c21.y * c22.y) + c21.x * c13x2 * c13.y * (6 * c20.y * c22.y + 3 * c21y2) + c13x3 * (-2 * c20.y * c21.y * c22.y - c20y2 * c23.y - c21.y * (2 * c20.y * c22.y + c21y2) - c20.y * (2 * c20.y * c23.y + 2 * c21.y * c22.y)), -c10.x * c11.x * c12.y * c13.x * c13.y * c22.y + c10.x * c11.y * c12.x * c13.x * c13.y * c22.y + 6 * c10.x * c11.y * c12.y * c13.x * c22.x * c13.y - 6 * c10.y * c11.x * c12.x * c13.x * c13.y * c22.y - c10.y * c11.x * c12.y * c13.x * c22.x * c13.y + c10.y * c11.y * c12.x * c13.x * c22.x * c13.y + c11.x * c11.y * c12.x * c12.y * c13.x * c22.y - c11.x * c11.y * c12.x * c12.y * c22.x * c13.y + c11.x * c20.x * c12.y * c13.x * c13.y * c22.y + c11.x * c20.y * c12.y * c13.x * c22.x * c13.y + c11.x * c21.x * c12.y * c13.x * c21.y * c13.y - c20.x * c11.y * c12.x * c13.x * c13.y * c22.y - 6 * c20.x * c11.y * c12.y * c13.x * c22.x * c13.y - c11.y * c12.x * c20.y * c13.x * c22.x * c13.y - c11.y * c12.x * c21.x * c13.x * c21.y * c13.y - 6 * c10.x * c20.x * c22.x * c13y3 - 2 * c10.x * c12y3 * c13.x * c22.x + 2 * c20.x * c12y3 * c13.x * c22.x + 2 * c10.y * c12x3 * c13.y * c22.y - 6 * c10.x * c10.y * c13.x * c22.x * c13y2 + 3 * c10.x * c11.x * c12.x * c13y2 * c22.y - 2 * c10.x * c11.x * c12.y * c22.x * c13y2 - 4 * c10.x * c11.y * c12.x * c22.x * c13y2 + 3 * c10.y * c11.x * c12.x * c22.x * c13y2 + 6 * c10.x * c10.y * c13x2 * c13.y * c22.y + 6 * c10.x * c20.x * c13.x * c13y2 * c22.y - 3 * c10.x * c11.y * c12.y * c13x2 * c22.y + 2 * c10.x * c12.x * c12y2 * c13.x * c22.y + 2 * c10.x * c12.x * c12y2 * c22.x * c13.y + 6 * c10.x * c20.y * c13.x * c22.x * c13y2 + 6 * c10.x * c21.x * c13.x * c21.y * c13y2 + 4 * c10.y * c11.x * c12.y * c13x2 * c22.y + 6 * c10.y * c20.x * c13.x * c22.x * c13y2 + 2 * c10.y * c11.y * c12.x * c13x2 * c22.y - 3 * c10.y * c11.y * c12.y * c13x2 * c22.x + 2 * c10.y * c12.x * c12y2 * c13.x * c22.x - 3 * c11.x * c20.x * c12.x * c13y2 * c22.y + 2 * c11.x * c20.x * c12.y * c22.x * c13y2 + c11.x * c11.y * c12y2 * c13.x * c22.x - 3 * c11.x * c12.x * c20.y * c22.x * c13y2 - 3 * c11.x * c12.x * c21.x * c21.y * c13y2 + 4 * c20.x * c11.y * c12.x * c22.x * c13y2 - 2 * c10.x * c12x2 * c12.y * c13.y * c22.y - 6 * c10.y * c20.x * c13x2 * c13.y * c22.y - 6 * c10.y * c20.y * c13x2 * c22.x * c13.y - 6 * c10.y * c21.x * c13x2 * c21.y * c13.y - 2 * c10.y * c12x2 * c12.y * c13.x * c22.y - 2 * c10.y * c12x2 * c12.y * c22.x * c13.y - c11.x * c11.y * c12x2 * c13.y * c22.y - 2 * c11.x * c11y2 * c13.x * c22.x * c13.y + 3 * c20.x * c11.y * c12.y * c13x2 * c22.y - 2 * c20.x * c12.x * c12y2 * c13.x * c22.y - 2 * c20.x * c12.x * c12y2 * c22.x * c13.y - 6 * c20.x * c20.y * c13.x * c22.x * c13y2 - 6 * c20.x * c21.x * c13.x * c21.y * c13y2 + 3 * c11.y * c20.y * c12.y * c13x2 * c22.x + 3 * c11.y * c21.x * c12.y * c13x2 * c21.y - 2 * c12.x * c20.y * c12y2 * c13.x * c22.x - 2 * c12.x * c21.x * c12y2 * c13.x * c21.y - c11y2 * c12.x * c12.y * c13.x * c22.x + 2 * c20.x * c12x2 * c12.y * c13.y * c22.y - 3 * c11.y * c21x2 * c12.y * c13.x * c13.y + 6 * c20.y * c21.x * c13x2 * c21.y * c13.y + 2 * c11x2 * c11.y * c13.x * c13.y * c22.y + c11x2 * c12.x * c12.y * c13.y * c22.y + 2 * c12x2 * c20.y * c12.y * c22.x * c13.y + 2 * c12x2 * c21.x * c12.y * c21.y * c13.y - 3 * c10.x * c21x2 * c13y3 + 3 * c20.x * c21x2 * c13y3 + 3 * c10x2 * c22.x * c13y3 - 3 * c10y2 * c13x3 * c22.y + 3 * c20x2 * c22.x * c13y3 + c21x2 * c12y3 * c13.x + c11y3 * c13x2 * c22.x - c11x3 * c13y2 * c22.y + 3 * c10.y * c21x2 * c13.x * c13y2 - c11.x * c11y2 * c13x2 * c22.y + c11.x * c21x2 * c12.y * c13y2 + 2 * c11.y * c12.x * c21x2 * c13y2 + c11x2 * c11.y * c22.x * c13y2 - c12.x * c21x2 * c12y2 * c13.y - 3 * c20.y * c21x2 * c13.x * c13y2 - 3 * c10x2 * c13.x * c13y2 * c22.y + 3 * c10y2 * c13x2 * c22.x * c13.y - c11x2 * c12y2 * c13.x * c22.y + c11y2 * c12x2 * c22.x * c13.y - 3 * c20x2 * c13.x * c13y2 * c22.y + 3 * c20y2 * c13x2 * c22.x * c13.y + c12x2 * c12.y * c13.x * (2 * c20.y * c22.y + c21y2) + c11.x * c12.x * c13.x * c13.y * (6 * c20.y * c22.y + 3 * c21y2) + c12x3 * c13.y * (-2 * c20.y * c22.y - c21y2) + c10.y * c13x3 * (6 * c20.y * c22.y + 3 * c21y2) + c11.y * c12.x * c13x2 * (-2 * c20.y * c22.y - c21y2) + c11.x * c12.y * c13x2 * (-4 * c20.y * c22.y - 2 * c21y2) + c10.x * c13x2 * c13.y * (-6 * c20.y * c22.y - 3 * c21y2) + c20.x * c13x2 * c13.y * (6 * c20.y * c22.y + 3 * c21y2) + c13x3 * (-2 * c20.y * c21y2 - c20y2 * c22.y - c20.y * (2 * c20.y * c22.y + c21y2)), -c10.x * c11.x * c12.y * c13.x * c21.y * c13.y + c10.x * c11.y * c12.x * c13.x * c21.y * c13.y + 6 * c10.x * c11.y * c21.x * c12.y * c13.x * c13.y - 6 * c10.y * c11.x * c12.x * c13.x * c21.y * c13.y - c10.y * c11.x * c21.x * c12.y * c13.x * c13.y + c10.y * c11.y * c12.x * c21.x * c13.x * c13.y - c11.x * c11.y * c12.x * c21.x * c12.y * c13.y + c11.x * c11.y * c12.x * c12.y * c13.x * c21.y + c11.x * c20.x * c12.y * c13.x * c21.y * c13.y + 6 * c11.x * c12.x * c20.y * c13.x * c21.y * c13.y + c11.x * c20.y * c21.x * c12.y * c13.x * c13.y - c20.x * c11.y * c12.x * c13.x * c21.y * c13.y - 6 * c20.x * c11.y * c21.x * c12.y * c13.x * c13.y - c11.y * c12.x * c20.y * c21.x * c13.x * c13.y - 6 * c10.x * c20.x * c21.x * c13y3 - 2 * c10.x * c21.x * c12y3 * c13.x + 6 * c10.y * c20.y * c13x3 * c21.y + 2 * c20.x * c21.x * c12y3 * c13.x + 2 * c10.y * c12x3 * c21.y * c13.y - 2 * c12x3 * c20.y * c21.y * c13.y - 6 * c10.x * c10.y * c21.x * c13.x * c13y2 + 3 * c10.x * c11.x * c12.x * c21.y * c13y2 - 2 * c10.x * c11.x * c21.x * c12.y * c13y2 - 4 * c10.x * c11.y * c12.x * c21.x * c13y2 + 3 * c10.y * c11.x * c12.x * c21.x * c13y2 + 6 * c10.x * c10.y * c13x2 * c21.y * c13.y + 6 * c10.x * c20.x * c13.x * c21.y * c13y2 - 3 * c10.x * c11.y * c12.y * c13x2 * c21.y + 2 * c10.x * c12.x * c21.x * c12y2 * c13.y + 2 * c10.x * c12.x * c12y2 * c13.x * c21.y + 6 * c10.x * c20.y * c21.x * c13.x * c13y2 + 4 * c10.y * c11.x * c12.y * c13x2 * c21.y + 6 * c10.y * c20.x * c21.x * c13.x * c13y2 + 2 * c10.y * c11.y * c12.x * c13x2 * c21.y - 3 * c10.y * c11.y * c21.x * c12.y * c13x2 + 2 * c10.y * c12.x * c21.x * c12y2 * c13.x - 3 * c11.x * c20.x * c12.x * c21.y * c13y2 + 2 * c11.x * c20.x * c21.x * c12.y * c13y2 + c11.x * c11.y * c21.x * c12y2 * c13.x - 3 * c11.x * c12.x * c20.y * c21.x * c13y2 + 4 * c20.x * c11.y * c12.x * c21.x * c13y2 - 6 * c10.x * c20.y * c13x2 * c21.y * c13.y - 2 * c10.x * c12x2 * c12.y * c21.y * c13.y - 6 * c10.y * c20.x * c13x2 * c21.y * c13.y - 6 * c10.y * c20.y * c21.x * c13x2 * c13.y - 2 * c10.y * c12x2 * c21.x * c12.y * c13.y - 2 * c10.y * c12x2 * c12.y * c13.x * c21.y - c11.x * c11.y * c12x2 * c21.y * c13.y - 4 * c11.x * c20.y * c12.y * c13x2 * c21.y - 2 * c11.x * c11y2 * c21.x * c13.x * c13.y + 3 * c20.x * c11.y * c12.y * c13x2 * c21.y - 2 * c20.x * c12.x * c21.x * c12y2 * c13.y - 2 * c20.x * c12.x * c12y2 * c13.x * c21.y - 6 * c20.x * c20.y * c21.x * c13.x * c13y2 - 2 * c11.y * c12.x * c20.y * c13x2 * c21.y + 3 * c11.y * c20.y * c21.x * c12.y * c13x2 - 2 * c12.x * c20.y * c21.x * c12y2 * c13.x - c11y2 * c12.x * c21.x * c12.y * c13.x + 6 * c20.x * c20.y * c13x2 * c21.y * c13.y + 2 * c20.x * c12x2 * c12.y * c21.y * c13.y + 2 * c11x2 * c11.y * c13.x * c21.y * c13.y + c11x2 * c12.x * c12.y * c21.y * c13.y + 2 * c12x2 * c20.y * c21.x * c12.y * c13.y + 2 * c12x2 * c20.y * c12.y * c13.x * c21.y + 3 * c10x2 * c21.x * c13y3 - 3 * c10y2 * c13x3 * c21.y + 3 * c20x2 * c21.x * c13y3 + c11y3 * c21.x * c13x2 - c11x3 * c21.y * c13y2 - 3 * c20y2 * c13x3 * c21.y - c11.x * c11y2 * c13x2 * c21.y + c11x2 * c11.y * c21.x * c13y2 - 3 * c10x2 * c13.x * c21.y * c13y2 + 3 * c10y2 * c21.x * c13x2 * c13.y - c11x2 * c12y2 * c13.x * c21.y + c11y2 * c12x2 * c21.x * c13.y - 3 * c20x2 * c13.x * c21.y * c13y2 + 3 * c20y2 * c21.x * c13x2 * c13.y, c10.x * c10.y * c11.x * c12.y * c13.x * c13.y - c10.x * c10.y * c11.y * c12.x * c13.x * c13.y + c10.x * c11.x * c11.y * c12.x * c12.y * c13.y - c10.y * c11.x * c11.y * c12.x * c12.y * c13.x - c10.x * c11.x * c20.y * c12.y * c13.x * c13.y + 6 * c10.x * c20.x * c11.y * c12.y * c13.x * c13.y + c10.x * c11.y * c12.x * c20.y * c13.x * c13.y - c10.y * c11.x * c20.x * c12.y * c13.x * c13.y - 6 * c10.y * c11.x * c12.x * c20.y * c13.x * c13.y + c10.y * c20.x * c11.y * c12.x * c13.x * c13.y - c11.x * c20.x * c11.y * c12.x * c12.y * c13.y + c11.x * c11.y * c12.x * c20.y * c12.y * c13.x + c11.x * c20.x * c20.y * c12.y * c13.x * c13.y - c20.x * c11.y * c12.x * c20.y * c13.x * c13.y - 2 * c10.x * c20.x * c12y3 * c13.x + 2 * c10.y * c12x3 * c20.y * c13.y - 3 * c10.x * c10.y * c11.x * c12.x * c13y2 - 6 * c10.x * c10.y * c20.x * c13.x * c13y2 + 3 * c10.x * c10.y * c11.y * c12.y * c13x2 - 2 * c10.x * c10.y * c12.x * c12y2 * c13.x - 2 * c10.x * c11.x * c20.x * c12.y * c13y2 - c10.x * c11.x * c11.y * c12y2 * c13.x + 3 * c10.x * c11.x * c12.x * c20.y * c13y2 - 4 * c10.x * c20.x * c11.y * c12.x * c13y2 + 3 * c10.y * c11.x * c20.x * c12.x * c13y2 + 6 * c10.x * c10.y * c20.y * c13x2 * c13.y + 2 * c10.x * c10.y * c12x2 * c12.y * c13.y + 2 * c10.x * c11.x * c11y2 * c13.x * c13.y + 2 * c10.x * c20.x * c12.x * c12y2 * c13.y + 6 * c10.x * c20.x * c20.y * c13.x * c13y2 - 3 * c10.x * c11.y * c20.y * c12.y * c13x2 + 2 * c10.x * c12.x * c20.y * c12y2 * c13.x + c10.x * c11y2 * c12.x * c12.y * c13.x + c10.y * c11.x * c11.y * c12x2 * c13.y + 4 * c10.y * c11.x * c20.y * c12.y * c13x2 - 3 * c10.y * c20.x * c11.y * c12.y * c13x2 + 2 * c10.y * c20.x * c12.x * c12y2 * c13.x + 2 * c10.y * c11.y * c12.x * c20.y * c13x2 + c11.x * c20.x * c11.y * c12y2 * c13.x - 3 * c11.x * c20.x * c12.x * c20.y * c13y2 - 2 * c10.x * c12x2 * c20.y * c12.y * c13.y - 6 * c10.y * c20.x * c20.y * c13x2 * c13.y - 2 * c10.y * c20.x * c12x2 * c12.y * c13.y - 2 * c10.y * c11x2 * c11.y * c13.x * c13.y - c10.y * c11x2 * c12.x * c12.y * c13.y - 2 * c10.y * c12x2 * c20.y * c12.y * c13.x - 2 * c11.x * c20.x * c11y2 * c13.x * c13.y - c11.x * c11.y * c12x2 * c20.y * c13.y + 3 * c20.x * c11.y * c20.y * c12.y * c13x2 - 2 * c20.x * c12.x * c20.y * c12y2 * c13.x - c20.x * c11y2 * c12.x * c12.y * c13.x + 3 * c10y2 * c11.x * c12.x * c13.x * c13.y + 3 * c11.x * c12.x * c20y2 * c13.x * c13.y + 2 * c20.x * c12x2 * c20.y * c12.y * c13.y - 3 * c10x2 * c11.y * c12.y * c13.x * c13.y + 2 * c11x2 * c11.y * c20.y * c13.x * c13.y + c11x2 * c12.x * c20.y * c12.y * c13.y - 3 * c20x2 * c11.y * c12.y * c13.x * c13.y - c10x3 * c13y3 + c10y3 * c13x3 + c20x3 * c13y3 - c20y3 * c13x3 - 3 * c10.x * c20x2 * c13y3 - c10.x * c11y3 * c13x2 + 3 * c10x2 * c20.x * c13y3 + c10.y * c11x3 * c13y2 + 3 * c10.y * c20y2 * c13x3 + c20.x * c11y3 * c13x2 + c10x2 * c12y3 * c13.x - 3 * c10y2 * c20.y * c13x3 - c10y2 * c12x3 * c13.y + c20x2 * c12y3 * c13.x - c11x3 * c20.y * c13y2 - c12x3 * c20y2 * c13.y - c10.x * c11x2 * c11.y * c13y2 + c10.y * c11.x * c11y2 * c13x2 - 3 * c10.x * c10y2 * c13x2 * c13.y - c10.x * c11y2 * c12x2 * c13.y + c10.y * c11x2 * c12y2 * c13.x - c11.x * c11y2 * c20.y * c13x2 + 3 * c10x2 * c10.y * c13.x * c13y2 + c10x2 * c11.x * c12.y * c13y2 + 2 * c10x2 * c11.y * c12.x * c13y2 - 2 * c10y2 * c11.x * c12.y * c13x2 - c10y2 * c11.y * c12.x * c13x2 + c11x2 * c20.x * c11.y * c13y2 - 3 * c10.x * c20y2 * c13x2 * c13.y + 3 * c10.y * c20x2 * c13.x * c13y2 + c11.x * c20x2 * c12.y * c13y2 - 2 * c11.x * c20y2 * c12.y * c13x2 + c20.x * c11y2 * c12x2 * c13.y - c11.y * c12.x * c20y2 * c13x2 - c10x2 * c12.x * c12y2 * c13.y - 3 * c10x2 * c20.y * c13.x * c13y2 + 3 * c10y2 * c20.x * c13x2 * c13.y + c10y2 * c12x2 * c12.y * c13.x - c11x2 * c20.y * c12y2 * c13.x + 2 * c20x2 * c11.y * c12.x * c13y2 + 3 * c20.x * c20y2 * c13x2 * c13.y - c20x2 * c12.x * c12y2 * c13.y - 3 * c20x2 * c20.y * c13.x * c13y2 + c12x2 * c20y2 * c12.y * c13.x].reverse();
-    var roots = getRootsInInterval(0, 1, coefs);
-
-    for (var i = 0; i < roots.length; i++) {
-      var s = roots[i];
-      var xRoots = getRoots([c13.x, c12.x, c11.x, c10.x - c20.x - s * c21.x - s * s * c22.x - s * s * s * c23.x].reverse());
-      var yRoots = getRoots([c13.y, c12.y, c11.y, c10.y - c20.y - s * c21.y - s * s * c22.y - s * s * s * c23.y].reverse());
-
-      if (xRoots.length > 0 && yRoots.length > 0) {
-        var _TOLERANCE2 = 1e-4;
-
-        checkRoots: for (var j = 0; j < xRoots.length; j++) {
-          var xRoot = xRoots[j];
-
-          if (0 <= xRoot && xRoot <= 1) {
-            for (var k = 0; k < yRoots.length; k++) {
-              if (Math.abs(xRoot - yRoots[k]) < _TOLERANCE2) {
-                var x = c23.x * s * s * s + c22.x * s * s + c21.x * s + c20.x;
-                var y = c23.y * s * s * s + c22.y * s * s + c21.y * s + c20.y;
-                result.push({
-                  x: x,
-                  y: y,
-                  t: xRoot
-                });
-                break checkRoots;
-              }
-            }
-          }
-        }
-      }
-    }
-
-    return result;
-  }
-
-  function intersectBezier2Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, bx3, by3, bx4, by4) {
-    var c12, c11, c10;
-    var c23, c22, c21, c20;
-    var result = [];
-    c12 = {
-      x: ax1 - 2 * ax2 + ax3,
-      y: ay1 - 2 * ay2 + ay3
-    };
-    c11 = {
-      x: 2 * ax2 - 2 * ax1,
-      y: 2 * ay2 - 2 * ay1
-    };
-    c10 = {
-      x: ax1,
-      y: ay1
-    };
-    c23 = {
-      x: -bx1 + 3 * bx2 - 3 * bx3 + bx4,
-      y: -by1 + 3 * by2 - 3 * by3 + by4
-    };
-    c22 = {
-      x: 3 * bx1 - 6 * bx2 + 3 * bx3,
-      y: 3 * by1 - 6 * by2 + 3 * by3
-    };
-    c21 = {
-      x: -3 * bx1 + 3 * bx2,
-      y: -3 * by1 + 3 * by2
-    };
-    c20 = {
-      x: bx1,
-      y: by1
-    };
-    var c10x2 = c10.x * c10.x;
-    var c10y2 = c10.y * c10.y;
-    var c11x2 = c11.x * c11.x;
-    var c11y2 = c11.y * c11.y;
-    var c12x2 = c12.x * c12.x;
-    var c12y2 = c12.y * c12.y;
-    var c20x2 = c20.x * c20.x;
-    var c20y2 = c20.y * c20.y;
-    var c21x2 = c21.x * c21.x;
-    var c21y2 = c21.y * c21.y;
-    var c22x2 = c22.x * c22.x;
-    var c22y2 = c22.y * c22.y;
-    var c23x2 = c23.x * c23.x;
-    var c23y2 = c23.y * c23.y;
-    var coefs = [-2 * c12.x * c12.y * c23.x * c23.y + c12x2 * c23y2 + c12y2 * c23x2, -2 * c12.x * c12.y * c22.x * c23.y - 2 * c12.x * c12.y * c22.y * c23.x + 2 * c12y2 * c22.x * c23.x + 2 * c12x2 * c22.y * c23.y, -2 * c12.x * c21.x * c12.y * c23.y - 2 * c12.x * c12.y * c21.y * c23.x - 2 * c12.x * c12.y * c22.x * c22.y + 2 * c21.x * c12y2 * c23.x + c12y2 * c22x2 + c12x2 * (2 * c21.y * c23.y + c22y2), 2 * c10.x * c12.x * c12.y * c23.y + 2 * c10.y * c12.x * c12.y * c23.x + c11.x * c11.y * c12.x * c23.y + c11.x * c11.y * c12.y * c23.x - 2 * c20.x * c12.x * c12.y * c23.y - 2 * c12.x * c20.y * c12.y * c23.x - 2 * c12.x * c21.x * c12.y * c22.y - 2 * c12.x * c12.y * c21.y * c22.x - 2 * c10.x * c12y2 * c23.x - 2 * c10.y * c12x2 * c23.y + 2 * c20.x * c12y2 * c23.x + 2 * c21.x * c12y2 * c22.x - c11y2 * c12.x * c23.x - c11x2 * c12.y * c23.y + c12x2 * (2 * c20.y * c23.y + 2 * c21.y * c22.y), 2 * c10.x * c12.x * c12.y * c22.y + 2 * c10.y * c12.x * c12.y * c22.x + c11.x * c11.y * c12.x * c22.y + c11.x * c11.y * c12.y * c22.x - 2 * c20.x * c12.x * c12.y * c22.y - 2 * c12.x * c20.y * c12.y * c22.x - 2 * c12.x * c21.x * c12.y * c21.y - 2 * c10.x * c12y2 * c22.x - 2 * c10.y * c12x2 * c22.y + 2 * c20.x * c12y2 * c22.x - c11y2 * c12.x * c22.x - c11x2 * c12.y * c22.y + c21x2 * c12y2 + c12x2 * (2 * c20.y * c22.y + c21y2), 2 * c10.x * c12.x * c12.y * c21.y + 2 * c10.y * c12.x * c21.x * c12.y + c11.x * c11.y * c12.x * c21.y + c11.x * c11.y * c21.x * c12.y - 2 * c20.x * c12.x * c12.y * c21.y - 2 * c12.x * c20.y * c21.x * c12.y - 2 * c10.x * c21.x * c12y2 - 2 * c10.y * c12x2 * c21.y + 2 * c20.x * c21.x * c12y2 - c11y2 * c12.x * c21.x - c11x2 * c12.y * c21.y + 2 * c12x2 * c20.y * c21.y, -2 * c10.x * c10.y * c12.x * c12.y - c10.x * c11.x * c11.y * c12.y - c10.y * c11.x * c11.y * c12.x + 2 * c10.x * c12.x * c20.y * c12.y + 2 * c10.y * c20.x * c12.x * c12.y + c11.x * c20.x * c11.y * c12.y + c11.x * c11.y * c12.x * c20.y - 2 * c20.x * c12.x * c20.y * c12.y - 2 * c10.x * c20.x * c12y2 + c10.x * c11y2 * c12.x + c10.y * c11x2 * c12.y - 2 * c10.y * c12x2 * c20.y - c20.x * c11y2 * c12.x - c11x2 * c20.y * c12.y + c10x2 * c12y2 + c10y2 * c12x2 + c20x2 * c12y2 + c12x2 * c20y2].reverse();
-    var roots = getRootsInInterval(0, 1, coefs); // console.log(roots);
-
-    for (var i = 0; i < roots.length; i++) {
-      var s = roots[i];
-      var xRoots = getRoots([c12.x, c11.x, c10.x - c20.x - s * c21.x - s * s * c22.x - s * s * s * c23.x].reverse());
-      var yRoots = getRoots([c12.y, c11.y, c10.y - c20.y - s * c21.y - s * s * c22.y - s * s * s * c23.y].reverse()); //
-      // console.log('xRoots', xRoots);
-      //
-      // console.log('yRoots', yRoots);
-
-      if (xRoots.length > 0 && yRoots.length > 0) {
-        var _TOLERANCE3 = 1e-4;
-
-        checkRoots: for (var j = 0; j < xRoots.length; j++) {
-          var xRoot = xRoots[j];
-
-          if (0 <= xRoot && xRoot <= 1) {
-            for (var k = 0; k < yRoots.length; k++) {
-              if (Math.abs(xRoot - yRoots[k]) < _TOLERANCE3) {
-                var x = c23.x * s * s * s + c22.x * s * s + c21.x * s + c20.x;
-                var y = c23.y * s * s * s + c22.y * s * s + c21.y * s + c20.y;
-                result.push({
-                  x: x,
-                  y: y,
-                  t: xRoot
-                });
-                break checkRoots;
-              }
-            }
-          }
-        }
-      }
-    }
-
-    return result;
-  }
-
-  function intersectBezier2Line(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2) {
-    var c2, c1, c0;
-    var cl, n;
-    var result = [];
-    var minbx = Math.min(bx1, bx2);
-    var minby = Math.min(by1, by2);
-    var maxbx = Math.max(bx1, bx2);
-    var maxby = Math.max(by1, by2);
-
-    var dot = function dot(a, b) {
-      return a.x * b.x + a.y * b.y;
-    };
-
-    var lerp = function lerp(a, b, t) {
-      return {
-        x: a.x - (a.x - b.x) * t,
-        y: a.y - (a.y - b.y) * t,
-        t: t
-      };
-    };
-
-    c2 = {
-      x: ax1 - 2 * ax2 + ax3,
-      y: ay1 - 2 * ay2 + ay3
-    };
-    c1 = {
-      x: -2 * ax1 + 2 * ax2,
-      y: -2 * ay1 + 2 * ay2
-    };
-    c0 = {
-      x: ax1,
-      y: ay1
-    };
-    n = {
-      x: by1 - by2,
-      y: bx2 - bx1
-    };
-    cl = bx1 * by2 - bx2 * by1; // console.log('intersectBezier2Line', n, c0, c1, c2, cl);
-
-    var coefs = [dot(n, c2), dot(n, c1), dot(n, c0) + cl].reverse(); // console.log('intersectBezier2Line coefs', coefs);
-
-    var roots = getRoots(coefs); // console.log('intersectBezier2Line roots', roots);
-
-    for (var i = 0; i < roots.length; i++) {
-      var t = roots[i];
-
-      if (0 <= t && t <= 1) {
-        var p4 = lerp({
-          x: ax1,
-          y: ay1
-        }, {
-          x: ax2,
-          y: ay2
-        }, t);
-        var p5 = lerp({
-          x: ax2,
-          y: ay2
-        }, {
-          x: ax3,
-          y: ay3
-        }, t);
-        var p6 = lerp(p4, p5, t); // console.log('p4, p5, p6', p4, p5, p6);
-
-        if (bx1 === bx2) {
-          if (minby <= p6.y && p6.y <= maxby) {
-            result.push(p6);
-          }
-        } else if (by1 === by2) {
-          if (minbx <= p6.x && p6.x <= maxbx) {
-            result.push(p6);
-          }
-        } else if (p6.x >= minbx && p6.y >= minby && p6.x <= maxbx && p6.y <= maxby) {
-          result.push(p6);
-        }
-      }
-    }
-
-    return result;
-  }
-  /**
-   *
-   *    (-P1+3P2-3P3+P4)t^3 + (3P1-6P2+3P3)t^2 + (-3P1+3P2)t + P1
-   *        /\                     /\                /\        /\
-   *        ||                     ||                ||        ||
-   *        c3                     c2                c1        c0
-   */
-
-
-  function intersectBezier3Line(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2) {
-    var c3, c2, c1, c0;
-    var cl, n;
-    var result = [];
-    var minbx = Math.min(bx1, bx2);
-    var minby = Math.min(by1, by2);
-    var maxbx = Math.max(bx1, bx2);
-    var maxby = Math.max(by1, by2);
-
-    var dot = function dot(a, b) {
-      return a.x * b.x + a.y * b.y;
-    };
-
-    var lerp = function lerp(a, b, t) {
-      return {
-        x: a.x - (a.x - b.x) * t,
-        y: a.y - (a.y - b.y) * t,
-        t: t
-      };
-    };
-
-    c3 = {
-      x: -ax1 + 3 * ax2 - 3 * ax3 + ax4,
-      y: -ay1 + 3 * ay2 - 3 * ay3 + ay4
-    };
-    c2 = {
-      x: 3 * ax1 - 6 * ax2 + 3 * ax3,
-      y: 3 * ay1 - 6 * ay2 + 3 * ay3
-    };
-    c1 = {
-      x: -3 * ax1 + 3 * ax2,
-      y: -3 * ay1 + 3 * ay2
-    };
-    c0 = {
-      x: ax1,
-      y: ay1
-    };
-    n = {
-      x: by1 - by2,
-      y: bx2 - bx1
-    };
-    cl = bx1 * by2 - bx2 * by1;
-    var coefs = [cl + dot(n, c0), dot(n, c1), dot(n, c2), dot(n, c3)];
-    var roots = getRoots(coefs);
-
-    for (var i = 0; i < roots.length; i++) {
-      var t = roots[i];
-
-      if (0 <= t && t <= 1) {
-        var p5 = lerp({
-          x: ax1,
-          y: ay1
-        }, {
-          x: ax2,
-          y: ay2
-        }, t);
-        var p6 = lerp({
-          x: ax2,
-          y: ay2
-        }, {
-          x: ax3,
-          y: ay3
-        }, t);
-        var p7 = lerp({
-          x: ax3,
-          y: ay3
-        }, {
-          x: ax4,
-          y: ay4
-        }, t);
-        var p8 = lerp(p5, p6, t);
-        var p9 = lerp(p6, p7, t);
-        var p10 = lerp(p8, p9, t);
-
-        if (bx1 === bx2) {
-          if (minby <= p10.y && p10.y <= maxby) {
-            result.push(p10);
-          }
-        } else if (by1 === by2) {
-          if (minbx <= p10.x && p10.x <= maxbx) {
-            result.push(p10);
-          }
-        } else if (p10.x >= minbx && p10.y >= minby && p10.x <= maxbx && p10.y <= maxby) {
-          result.push(p10);
-        }
-      }
-    }
-
-    return result;
-  } // bezier 2d 和椭圆
-
-  var isec = {
-    intersectBezier2Line: intersectBezier2Line,
-    // 二阶贝塞尔曲线 与 直线
-    intersectBezier3Line: intersectBezier3Line,
-    // 三阶贝塞尔曲线 与 直线
-    intersectBezier2Bezier2: intersectBezier2Bezier2,
-    // 二阶贝塞尔曲线 与 二阶贝塞尔曲线
-    intersectBezier3Bezier3: intersectBezier3Bezier3,
-    // 三阶贝塞尔曲线 与 三阶贝塞尔曲线
-    intersectBezier2Bezier3: intersectBezier2Bezier3 // 二阶贝塞尔曲线 与 三阶贝塞尔曲线
-    // below functions are not used for now
-    // intersectBezier2Ellipse, // 二阶贝塞尔曲线 与 椭圆
-    // intersectBezier3Ellipse, // 三阶贝塞尔曲线 与 椭圆
-    // intersectBezier2Circle, // 二阶贝塞尔曲线 与 圆
-    // intersectBezier3Circle, // 三阶贝塞尔曲线 与 圆
-
-  };
 
   var EPS = 1e-9;
   var EPS2 = 1 - 1e-9;
@@ -39464,6 +41839,31 @@
     }
 
     _createClass(Polyline, [{
+      key: "calContent",
+      value: function calContent(currentStyle, computedStyle) {
+        var res = _get(_getPrototypeOf(Polyline.prototype), "calContent", this).call(this, currentStyle, computedStyle); // 查看是否有顶点
+
+
+        if (res && !this.__hasXomContent) {
+          var points = this.currentProps.points,
+              isMulti = this.isMulti;
+
+          if (isMulti) {
+            for (var i = 0, len = points.length; i < len; i++) {
+              if (points.length) {
+                return true;
+              }
+            }
+          } else {
+            if (points.length) {
+              return true;
+            }
+          }
+        }
+
+        return res;
+      }
+    }, {
       key: "__getPoints",
       value: function __getPoints(originX, originY, width, height, points, isControl) {
         return points.map(function (item) {
@@ -41902,7 +44302,7 @@
     CanvasCache: CanvasCache
   };
 
-  var version = "0.81.3";
+  var version = "0.82.0";
 
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);

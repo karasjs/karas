@@ -289,6 +289,27 @@ class Polyline extends Geom {
     }
   }
 
+  calContent(currentStyle, computedStyle) {
+    let res = super.calContent(currentStyle, computedStyle);
+    // 查看是否有顶点
+    if(res && !this.__hasXomContent) {
+      let { currentProps: { points }, isMulti } = this;
+      if(isMulti) {
+        for(let i = 0, len = points.length; i < len; i++) {
+          if(points.length) {
+            return true;
+          }
+        }
+      }
+      else {
+        if(points.length) {
+          return true;
+        }
+      }
+    }
+    return res;
+  }
+
   __getPoints(originX, originY, width, height, points, isControl) {
     return points.map(item => {
       if(!Array.isArray(item)) {

@@ -32095,15 +32095,15 @@
     var paramA = closestParam(intersectPt, p1, p2);
     var paramB = closestParam(intersectPt, p3, p4);
 
-    if (limitToFiniteSegment === 1 && paramA >= 0 && paramA <= 1) {
+    if (limitToFiniteSegment === 1 && paramA >= 1e-9 && paramA <= 1 - 1e-9) {
       return intersectPt;
     }
 
-    if (limitToFiniteSegment === 2 && paramB >= 0 && paramB <= 1) {
+    if (limitToFiniteSegment === 2 && paramB >= 1e-9 && paramB <= 1 - 1e-9) {
       return intersectPt;
     }
 
-    if (limitToFiniteSegment === 3 && paramA >= 0 && paramA <= 1 && paramB >= 0 && paramB <= 1) {
+    if (limitToFiniteSegment === 3 && paramA >= 1e-9 && paramA <= 1 - 1e-9 && paramB >= 1e-9 && paramB <= 1 - 1e-9) {
       return intersectPt;
     }
   }

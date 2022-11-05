@@ -32088,6 +32088,19 @@ function intersectLineLine3$1(p1, p2, p3, p4) {
 
   var paramA = closestParam(intersectPt, p1, p2);
   var paramB = closestParam(intersectPt, p3, p4);
+
+  if (paramA < 0 && Math.abs(paramA) < 1e-9) {
+    paramA = 0;
+  } else if (paramA > 1 && paramA - 1 < 1e-9) {
+    paramA = 1;
+  }
+
+  if (paramB < 0 && Math.abs(paramB) < 1e-9) {
+    paramB = 0;
+  } else if (paramB > 1 && paramB - 1 < 1e-9) {
+    paramB = 1;
+  }
+
   intersectPt.pa = paramA;
   intersectPt.pb = paramB;
 
@@ -44296,7 +44309,7 @@ var refresh = {
   CanvasCache: CanvasCache
 };
 
-var version = "0.82.0";
+var version = "0.82.1";
 
 Geom.register('$line', Line);
 Geom.register('$polyline', Polyline);

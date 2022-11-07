@@ -44317,7 +44317,7 @@
     CanvasCache: CanvasCache
   };
 
-  var version = "0.82.1";
+  var version = "0.82.2";
 
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);

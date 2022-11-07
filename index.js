@@ -29580,12 +29580,6 @@
           unitSize <<= 1;
         }
 
-        var n = MAX; // 只有超过一定尺寸时用8192最大尺寸，大部分情况4096足够，且8192会轻微卡顿一下
-
-        if (size <= 2048 && MAX === 8192) {
-          n = 4096;
-        }
-
         var key = rootId + ',' + renderMode; // 每个root复用自己的合图，webgl中为了隔离不同实例
 
         var list = HASH$2[key] = HASH$2[key] || [];
@@ -29594,7 +29588,7 @@
         for (var i = 0, len = list.length; i < len; i++) {
           var item = list[i];
 
-          if (excludePage && item === excludePage || item.__size !== n) {
+          if (excludePage && item === excludePage || item.__size !== MAX) {
             continue;
           }
 
@@ -29605,7 +29599,7 @@
         }
 
         if (!page) {
-          page = new klass(renderMode, ctx, n, NUMBER);
+          page = new klass(renderMode, ctx, MAX, NUMBER);
           pos = 0;
           list.push(page);
         }

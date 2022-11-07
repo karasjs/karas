@@ -140,18 +140,13 @@ class Page {
     while((UNIT * unitSize) < size) {
       unitSize <<= 1;
     }
-    let n = MAX;
-    // 只有超过一定尺寸时用8192最大尺寸，大部分情况4096足够，且8192会轻微卡顿一下
-    if(size <= 2048 && MAX === 8192) {
-      n = 4096;
-    }
     let key = rootId + ',' + renderMode;
     // 每个root复用自己的合图，webgl中为了隔离不同实例
     let list = HASH[key] = HASH[key] || [];
     let page, pos;
     for(let i = 0, len = list.length; i < len; i++) {
       let item = list[i];
-      if(excludePage && item === excludePage || item.__size !== n) {
+      if(excludePage && item === excludePage || item.__size !== MAX) {
         continue;
       }
       if((pos = item.getFreePos(unitSize)) > -1) {
@@ -160,7 +155,7 @@ class Page {
       }
     }
     if(!page) {
-      page = new klass(renderMode, ctx, n, NUMBER);
+      page = new klass(renderMode, ctx, MAX, NUMBER);
       pos = 0;
       list.push(page);
     }

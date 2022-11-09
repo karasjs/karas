@@ -2364,13 +2364,13 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         let mixBlendMode = __computedStyle[MIX_BLEND_MODE];
         let isMbm = (__refreshLevel & MBM) && mixBlendMode !== 'normal';
         let need = node.__cacheAsBitmap || hasMask;
-        if(!need && (__refreshLevel & FT)) {
+        if(!need && (__refreshLevel & (FT | CACHE))) {
           let filter = __computedStyle[FILTER];
           if(filter && filter.length) {
             need = true;
           }
         }
-        if(!need && (__refreshLevel & PPT)) {
+        if(!need && (__refreshLevel & (PPT | CACHE))) {
           let __domParent = node.__domParent;
           let isPpt = !isE(__domParent && __domParent.__perspectiveMatrix) || node.__selfPerspectiveMatrix;
           if(isPpt) {

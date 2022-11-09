@@ -85,6 +85,12 @@ let karas = {
   },
   createGm(tagName, props) {
     let klass = Geom.getRegister(tagName);
+    if(!util.isString(tagName)) {
+      let s = /^function ([\w$]+)/.exec(tagName.toString());
+      if(s && s.length > 1) {
+        tagName = s[1];
+      }
+    }
     return new klass(tagName, props);
   },
   createCp(klass, props, children = []) {

@@ -1620,6 +1620,12 @@ function offscreenCanvas(key, width, height, message) {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, width, height);
       this.available = false;
+
+      if (debug.flag) {
+        document.body.removeChild(o);
+      }
+
+      o = null;
     }
   };
 }
@@ -31117,6 +31123,7 @@ function applyOffscreen$1(ctx, list, width, height) {
 
       target.ctx.setTransform(1, 0, 0, 1, 0, 0);
       target.ctx.clearRect(0, 0, width, height);
+      target.release();
     } else if (type === OFFSCREEN_FILTER$1) {
       var _target = offscreen.target,
           _origin = offscreen.ctx,
@@ -31143,6 +31150,7 @@ function applyOffscreen$1(ctx, list, width, height) {
 
         apply.ctx.setTransform(1, 0, 0, 1, 0, 0);
         apply.ctx.clearRect(0, 0, width, height);
+        apply.release();
       } // 绘制回主画布，如果不支持则等同无filter原样绘制
 
 
@@ -31159,9 +31167,12 @@ function applyOffscreen$1(ctx, list, width, height) {
       _target.ctx.globalAlpha = 1;
 
       _target.ctx.clearRect(0, 0, width, height);
+
+      _target.release();
     } else if (type === OFFSCREEN_MASK$1) {
       var mask = offscreen.mask,
-          isClip = offscreen.isClip;
+          isClip = offscreen.isClip,
+          _target2 = offscreen.target;
 
       if (isClip) {
         ctx = mask.ctx;
@@ -31170,12 +31181,17 @@ function applyOffscreen$1(ctx, list, width, height) {
         ctx.setTransform(1, 0, 0, 1, 0, 0);
 
         if (width && height) {
-          ctx.drawImage(offscreen.target.canvas, 0, 0, width, height, 0, 0, width, height);
+          ctx.drawImage(_target2.canvas, 0, 0, width, height, 0, 0, width, height);
         }
 
         ctx.globalCompositeOperation = 'source-over';
-        offscreen.target.ctx.setTransform(1, 0, 0, 1, 0, 0);
-        offscreen.target.ctx.clearRect(0, 0, width, height);
+
+        _target2.ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+        _target2.ctx.clearRect(0, 0, width, height);
+
+        _target2.release();
+
         ctx = offscreen.ctx;
         ctx.globalAlpha = 1;
         ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -31186,9 +31202,10 @@ function applyOffscreen$1(ctx, list, width, height) {
 
         mask.ctx.setTransform(1, 0, 0, 1, 0, 0);
         mask.ctx.clearRect(0, 0, width, height);
+        mask.release();
       } else {
-        var _target2 = offscreen.target;
-        ctx = _target2.ctx;
+        var _target3 = offscreen.target;
+        ctx = _target3.ctx;
         ctx.globalCompositeOperation = 'destination-in';
         ctx.globalAlpha = 1;
         ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -31200,35 +31217,40 @@ function applyOffscreen$1(ctx, list, width, height) {
         ctx.globalCompositeOperation = 'source-over';
         mask.ctx.setTransform(1, 0, 0, 1, 0, 0);
         mask.ctx.clearRect(0, 0, width, height);
+        mask.release();
         ctx = offscreen.ctx;
         ctx.globalAlpha = 1;
         ctx.setTransform(1, 0, 0, 1, 0, 0);
 
         if (width && height) {
-          ctx.drawImage(_target2.canvas, 0, 0, width, height, 0, 0, width, height);
+          ctx.drawImage(_target3.canvas, 0, 0, width, height, 0, 0, width, height);
         }
 
-        _target2.ctx.setTransform(1, 0, 0, 1, 0, 0);
+        _target3.ctx.setTransform(1, 0, 0, 1, 0, 0);
 
-        _target2.ctx.clearRect(0, 0, width, height);
+        _target3.ctx.clearRect(0, 0, width, height);
+
+        _target3.release();
       }
     } else if (type === OFFSCREEN_BLEND$1) {
-      var _target3 = offscreen.target;
+      var _target4 = offscreen.target;
       ctx = offscreen.ctx;
       ctx.globalCompositeOperation = offscreen.mixBlendMode;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.globalAlpha = 1;
 
       if (width && height) {
-        ctx.drawImage(_target3.canvas, 0, 0, width, height, 0, 0, width, height);
+        ctx.drawImage(_target4.canvas, 0, 0, width, height, 0, 0, width, height);
       }
 
       ctx.globalCompositeOperation = 'source-over';
-      _target3.ctx.globalAlpha = 1;
+      _target4.ctx.globalAlpha = 1;
 
-      _target3.ctx.setTransform(1, 0, 0, 1, 0, 0);
+      _target4.ctx.setTransform(1, 0, 0, 1, 0, 0);
 
-      _target3.ctx.clearRect(0, 0, width, height);
+      _target4.ctx.clearRect(0, 0, width, height);
+
+      _target4.release();
     } // 特殊的mask节点汇总结束，还原ctx
     else if (type === OFFSCREEN_MASK2$1) {
       ctx = offscreen.ctx;
@@ -36202,7 +36224,7 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
         var isMbm = __refreshLevel & MBM$1 && mixBlendMode !== 'normal';
         var need = node.__cacheAsBitmap || hasMask;
 
-        if (!need && __refreshLevel & FT$1) {
+        if (!need && __refreshLevel & (FT$1 | CACHE$1)) {
           var filter = __computedStyle[FILTER];
 
           if (filter && filter.length) {
@@ -36210,7 +36232,7 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
           }
         }
 
-        if (!need && __refreshLevel & PPT$1) {
+        if (!need && __refreshLevel & (PPT$1 | CACHE$1)) {
           var __domParent = node.__domParent;
           var isPpt = !isE(__domParent && __domParent.__perspectiveMatrix) || node.__selfPerspectiveMatrix;
 
@@ -44311,7 +44333,7 @@ var refresh = {
   CanvasCache: CanvasCache
 };
 
-var version = "0.82.3";
+var version = "0.82.4";
 
 Geom.register('$line', Line);
 Geom.register('$polyline', Polyline);
@@ -44375,6 +44397,15 @@ var karas$1 = {
   },
   createGm: function createGm(tagName, props) {
     var klass = Geom.getRegister(tagName);
+
+    if (!util.isString(tagName)) {
+      var s = /^function ([\w$]+)/.exec(tagName.toString());
+
+      if (s && s.length > 1) {
+        tagName = s[1];
+      }
+    }
+
     return new klass(tagName, props);
   },
   createCp: function createCp(klass, props) {

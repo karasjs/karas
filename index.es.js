@@ -44311,7 +44311,7 @@ var refresh = {
   CanvasCache: CanvasCache
 };
 
-var version = "0.82.2";
+var version = "0.82.3";
 
 Geom.register('$line', Line);
 Geom.register('$polyline', Polyline);
@@ -44349,7 +44349,7 @@ var karas$1 = {
       }
     } else if (tagName) {
       // 特殊的$匿名类
-      if (tagName instanceof Geom) {
+      if (tagName instanceof Geom || tagName.prototype && tagName.prototype instanceof Geom) {
         return this.createGm(tagName, props);
       }
 

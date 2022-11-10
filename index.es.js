@@ -34604,6 +34604,9 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
         var render = _node4.render;
 
         if (render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
+          drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+          lastPage = null;
+
           _node4.render(renderMode, gl, dx, dy);
         }
       } else {
@@ -34667,6 +34670,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
 
           if (_render !== DOM_RENDER && _render !== IMG_RENDER && _render !== GEOM_RENDER) {
             drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+            lastPage = null;
 
             _node4.render(renderMode, gl, dx, dy);
           }
@@ -35541,6 +35545,7 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
 
           if (render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
             drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+            lastPage = null;
 
             _node9.render(renderMode, gl, dx, dy);
           }
@@ -36589,6 +36594,9 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
         var render = _node12.render;
 
         if (render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
+          drawTextureCache(gl, list.splice(0), cx, cy, 0, 0);
+          lastPage = null;
+
           _node12.render(renderMode, gl, 0, 0);
         }
       }
@@ -44333,7 +44341,7 @@ var refresh = {
   CanvasCache: CanvasCache
 };
 
-var version = "0.82.4";
+var version = "0.82.5";
 
 Geom.register('$line', Line);
 Geom.register('$polyline', Polyline);

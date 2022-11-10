@@ -1005,6 +1005,8 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
         }
         let render = node.render;
         if(render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
+          drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+          lastPage = null;
           node.render(renderMode, gl, dx, dy);
         }
       }
@@ -1057,6 +1059,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
           let render = node.render;
           if(render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
             drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+            lastPage = null;
             node.render(renderMode, gl, dx, dy);
           }
         }
@@ -1761,6 +1764,7 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
           let render = node.render;
           if(render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
             drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+            lastPage = null;
             node.render(renderMode, gl, dx, dy);
           }
         }
@@ -2679,6 +2683,8 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       if(!target || target === __cache) {
         let render = node.render;
         if(render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
+          drawTextureCache(gl, list.splice(0), cx, cy, 0, 0);
+          lastPage = null;
           node.render(renderMode, gl, 0, 0);
         }
       }

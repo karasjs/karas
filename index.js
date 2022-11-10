@@ -34610,6 +34610,9 @@
           var render = _node4.render;
 
           if (render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
+            drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+            lastPage = null;
+
             _node4.render(renderMode, gl, dx, dy);
           }
         } else {
@@ -34673,6 +34676,7 @@
 
             if (_render !== DOM_RENDER && _render !== IMG_RENDER && _render !== GEOM_RENDER) {
               drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+              lastPage = null;
 
               _node4.render(renderMode, gl, dx, dy);
             }
@@ -35547,6 +35551,7 @@
 
             if (render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
               drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+              lastPage = null;
 
               _node9.render(renderMode, gl, dx, dy);
             }
@@ -36595,6 +36600,9 @@
           var render = _node12.render;
 
           if (render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
+            drawTextureCache(gl, list.splice(0), cx, cy, 0, 0);
+            lastPage = null;
+
             _node12.render(renderMode, gl, 0, 0);
           }
         }

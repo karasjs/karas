@@ -1008,6 +1008,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
           drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
           lastPage = null;
           node.render(renderMode, gl, dx, dy);
+          gl.useProgram(gl.program);
         }
       }
       else {
@@ -1061,6 +1062,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
             drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
             lastPage = null;
             node.render(renderMode, gl, dx, dy);
+            gl.useProgram(gl.program);
           }
         }
       }
@@ -1766,6 +1768,7 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
             drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
             lastPage = null;
             node.render(renderMode, gl, dx, dy);
+            gl.useProgram(gl.program);
           }
         }
       }
@@ -2686,6 +2689,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
           drawTextureCache(gl, list.splice(0), cx, cy, 0, 0);
           lastPage = null;
           node.render(renderMode, gl, 0, 0);
+          gl.useProgram(gl.program);
         }
       }
     }

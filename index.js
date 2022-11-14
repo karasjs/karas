@@ -34614,6 +34614,8 @@
             lastPage = null;
 
             _node4.render(renderMode, gl, dx, dy);
+
+            gl.useProgram(gl.program);
           }
         } else {
           var _cache = _node4.__cache,
@@ -34679,6 +34681,8 @@
               lastPage = null;
 
               _node4.render(renderMode, gl, dx, dy);
+
+              gl.useProgram(gl.program);
             }
           }
         }
@@ -35554,6 +35558,8 @@
               lastPage = null;
 
               _node9.render(renderMode, gl, dx, dy);
+
+              gl.useProgram(gl.program);
             }
           }
         }
@@ -36604,6 +36610,8 @@
             lastPage = null;
 
             _node12.render(renderMode, gl, 0, 0);
+
+            gl.useProgram(gl.program);
           }
         }
       }

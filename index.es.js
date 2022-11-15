@@ -20975,8 +20975,8 @@ var Xom = /*#__PURE__*/function (_Node) {
 
         parent.__zIndexChildren.splice(i, 1);
 
-        var __prev = this.__prev,
-            __next = this.__next;
+        var __prev = target.__prev,
+            __next = target.__next;
 
         if (__prev) {
           __prev.__next = __next;
@@ -34608,6 +34608,8 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
           lastPage = null;
 
           _node4.render(renderMode, gl, dx, dy);
+
+          gl.useProgram(gl.program);
         }
       } else {
         var _cache = _node4.__cache,
@@ -34673,6 +34675,8 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
             lastPage = null;
 
             _node4.render(renderMode, gl, dx, dy);
+
+            gl.useProgram(gl.program);
           }
         }
       }
@@ -35548,6 +35552,8 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
             lastPage = null;
 
             _node9.render(renderMode, gl, dx, dy);
+
+            gl.useProgram(gl.program);
           }
         }
       }
@@ -36598,6 +36604,8 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
           lastPage = null;
 
           _node12.render(renderMode, gl, 0, 0);
+
+          gl.useProgram(gl.program);
         }
       }
     }
@@ -44341,7 +44349,7 @@ var refresh = {
   CanvasCache: CanvasCache
 };
 
-var version = "0.82.5";
+var version = "0.82.6";
 
 Geom.register('$line', Line);
 Geom.register('$polyline', Polyline);

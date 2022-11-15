@@ -20981,8 +20981,8 @@
 
           parent.__zIndexChildren.splice(i, 1);
 
-          var __prev = this.__prev,
-              __next = this.__next;
+          var __prev = target.__prev,
+              __next = target.__next;
 
           if (__prev) {
             __prev.__next = __next;

@@ -3080,7 +3080,7 @@ class Xom extends Node {
       parent.__children.splice(i, 1);
       i = parent.__zIndexChildren.indexOf(target);
       parent.__zIndexChildren.splice(i, 1);
-      let { __prev, __next } = this;
+      let { __prev, __next } = target;
       if(__prev) {
         __prev.__next = __next;
       }

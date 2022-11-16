@@ -12902,14 +12902,8 @@
 
       var props = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
       _this = _Event.call(this) || this;
-      _this.__tagName = /(?:function|class)\s+([\w$]+)/.exec(_this.constructor.toString())[1]; // 构建工具中都是arr，手写可能出现hash情况
-
-      if (Array.isArray(props)) {
-        _this.props = util.arr2hash(props);
-      } else {
-        _this.props = props;
-      }
-
+      _this.__tagName = /(?:function|class)\s+([\w$]+)/.exec(_this.constructor.toString())[1];
+      _this.props = props.props || {};
       _this.__parent = null;
       _this.__host = null;
       _this.__ref = {};

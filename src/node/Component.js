@@ -14,13 +14,7 @@ class Component extends Event {
   constructor(props = {}) {
     super();
     this.__tagName = /(?:function|class)\s+([\w$]+)/.exec(this.constructor.toString())[1];
-    // 构建工具中都是arr，手写可能出现hash情况
-    if(Array.isArray(props)) {
-      this.props = util.arr2hash(props);
-    }
-    else {
-      this.props = props;
-    }
+    this.props = props.props || {};
     this.__parent = null;
     this.__host = null;
     this.__ref = {};

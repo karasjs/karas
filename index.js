@@ -3425,23 +3425,24 @@
     WRITING_MODE: 87,
     TRANSFORM_STYLE: 88,
     BACKFACE_VISIBILITY: 89,
+    BOX_SIZING: 90,
     // GEOM
-    FILL: 90,
-    STROKE: 91,
-    STROKE_WIDTH: 92,
-    STROKE_DASHARRAY: 93,
-    STROKE_DASHARRAY_STR: 94,
-    STROKE_LINECAP: 95,
-    STROKE_LINEJOIN: 96,
-    STROKE_MITERLIMIT: 97,
-    FILL_RULE: 98,
+    FILL: 91,
+    STROKE: 92,
+    STROKE_WIDTH: 93,
+    STROKE_DASHARRAY: 94,
+    STROKE_DASHARRAY_STR: 95,
+    STROKE_LINECAP: 96,
+    STROKE_LINEJOIN: 97,
+    STROKE_MITERLIMIT: 98,
+    FILL_RULE: 99,
     // 无此样式，仅cache或特殊情况需要
-    MATRIX: 99,
-    BORDER_TOP: 100,
-    BORDER_RIGHT: 101,
-    BORDER_BOTTOM: 102,
-    BORDER_LEFT: 103,
-    TRANSLATE_PATH: 104
+    MATRIX: 100,
+    BORDER_TOP: 101,
+    BORDER_RIGHT: 102,
+    BORDER_BOTTOM: 103,
+    BORDER_LEFT: 104,
+    TRANSLATE_PATH: 105
   };
   var STYLE2LOWER_MAP = {};
 
@@ -17696,7 +17697,8 @@
       WHITE_SPACE$1 = _enums$STYLE_KEY$8.WHITE_SPACE,
       WRITING_MODE$2 = _enums$STYLE_KEY$8.WRITING_MODE,
       TRANSFORM_STYLE$1 = _enums$STYLE_KEY$8.TRANSFORM_STYLE,
-      BACKFACE_VISIBILITY$1 = _enums$STYLE_KEY$8.BACKFACE_VISIBILITY;
+      BACKFACE_VISIBILITY$1 = _enums$STYLE_KEY$8.BACKFACE_VISIBILITY,
+      BOX_SIZING = _enums$STYLE_KEY$8.BOX_SIZING;
   var AUTO$4 = o$4.AUTO,
       PX$5 = o$4.PX,
       PERCENT$4 = o$4.PERCENT,
@@ -17981,7 +17983,7 @@
           var item = currentStyle[k];
           computedStyle[k] = _this3.__calSize(item, 0, false);
         });
-        [POSITION$3, DISPLAY$6, FLEX_DIRECTION$1, JUSTIFY_CONTENT$1, ALIGN_ITEMS$1, ALIGN_SELF$1, FLEX_GROW$1, FLEX_SHRINK$1, LINE_CLAMP$1, ORDER$1, FLEX_WRAP$1, ALIGN_CONTENT$1, OVERFLOW$2, TEXT_OVERFLOW].forEach(function (k) {
+        [POSITION$3, DISPLAY$6, BOX_SIZING, FLEX_DIRECTION$1, JUSTIFY_CONTENT$1, ALIGN_ITEMS$1, ALIGN_SELF$1, FLEX_GROW$1, FLEX_SHRINK$1, LINE_CLAMP$1, ORDER$1, FLEX_WRAP$1, ALIGN_CONTENT$1, OVERFLOW$2, TEXT_OVERFLOW].forEach(function (k) {
           computedStyle[k] = currentStyle[k];
         }); // writingMode特殊判断inline
 
@@ -18132,7 +18134,7 @@
     }, {
       key: "__ioSize",
       value: function __ioSize(w, h) {
-        var computedStyle = this.computedStyle; // 可能不传，在虚拟布局时用不到
+        var computedStyle = this.__computedStyle; // 可能不传，在虚拟布局时用不到
 
         if (!isNil$9(w)) {
           this.__width = computedStyle[WIDTH$5] = w;
@@ -18159,22 +18161,36 @@
             paddingLeft = currentStyle[PADDING_LEFT$5],
             paddingTop = currentStyle[PADDING_TOP$3],
             paddingRight = currentStyle[PADDING_RIGHT$4],
-            paddingBottom = currentStyle[PADDING_BOTTOM$2];
+            paddingBottom = currentStyle[PADDING_BOTTOM$2],
+            boxSizing = currentStyle[BOX_SIZING];
         var borderTopWidth = computedStyle[BORDER_TOP_WIDTH$3],
             borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$4],
             borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$2],
             borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$5];
-        var mbp = this.__calSize(marginLeft, w, isDirectItem) + this.__calSize(marginRight, w, isDirectItem) + this.__calSize(paddingLeft, w, isDirectItem) + this.__calSize(paddingRight, w, isDirectItem) + borderLeftWidth + borderRightWidth;
 
         if (isDirectionRow) {
-          res = res.map(function (item) {
-            return item + mbp;
-          });
-        } else {
-          var _mbp = this.__calSize(marginTop, w, isDirectItem) + this.__calSize(marginBottom, w, isDirectItem) + this.__calSize(paddingTop, w, isDirectItem) + this.__calSize(paddingBottom, w, isDirectItem) + borderTopWidth + borderBottomWidth;
+          var m = this.__calSize(marginLeft, w, isDirectItem) + this.__calSize(marginRight, w, isDirectItem);
+
+          var bp = 0;
+
+          if (isDirectItem || boxSizing === 'contentBox') {
+            bp = this.__calSize(paddingLeft, w, isDirectItem) + this.__calSize(paddingRight, w, isDirectItem) + borderLeftWidth + borderRightWidth;
+          }
 
           res = res.map(function (item) {
-            return item + _mbp;
+            return item + m + bp;
+          });
+        } else {
+          var _m = this.__calSize(marginTop, w, isDirectItem) + this.__calSize(marginBottom, w, isDirectItem);
+
+          var _bp = 0;
+
+          if (isDirectItem || boxSizing === 'contentBox') {
+            _bp = this.__calSize(paddingTop, w, isDirectItem) + this.__calSize(paddingBottom, w, isDirectItem) + borderTopWidth + borderBottomWidth;
+          }
+
+          res = res.map(function (item) {
+            return item + _m + _bp;
           });
         }
 
@@ -18474,8 +18490,8 @@
             container = data.container;
         this.__x = x;
         this.__y = y;
-        var currentStyle = this.currentStyle,
-            computedStyle = this.computedStyle;
+        var currentStyle = this.__currentStyle,
+            computedStyle = this.__computedStyle;
         var width = currentStyle[WIDTH$5],
             height = currentStyle[HEIGHT$5];
         var position = computedStyle[POSITION$3];
@@ -18491,7 +18507,8 @@
             paddingRight = computedStyle[PADDING_RIGHT$4],
             paddingBottom = computedStyle[PADDING_BOTTOM$2],
             paddingLeft = computedStyle[PADDING_LEFT$5],
-            writingMode = computedStyle[WRITING_MODE$2];
+            writingMode = computedStyle[WRITING_MODE$2],
+            boxSizing = computedStyle[BOX_SIZING];
         var isUpright = writingMode.indexOf('vertical') === 0; // 除了auto外都是固定宽高度
 
         var fixedWidth;
@@ -18511,6 +18528,10 @@
             w = this.__calSize(width, container.__clientWidth, true);
           } else {
             w = this.__calSize(width, w, true);
+
+            if (boxSizing === 'borderBox') {
+              w -= borderLeftWidth + borderRightWidth + paddingLeft + paddingRight;
+            }
           }
         }
 
@@ -18536,6 +18557,10 @@
             } else {
               fixedHeight = true;
               h = this.__calSize(height, h, true);
+            }
+
+            if (boxSizing === 'borderBox') {
+              h -= borderTopWidth + borderBottomWidth + paddingTop + paddingBottom;
             }
           }
         } // margin/border/padding影响x和y和尺寸，注意inline的y不受mpb影响（垂直模式则是x）
@@ -18565,9 +18590,7 @@
             selfEndSpace = paddingRight + borderRightWidth + marginRight;
           }
         } // 传入w3/h3时，flex的item已知目标主尺寸，需减去mbp，其一定是block，和inline互斥
-
-
-        if (!isInline) {
+        else {
           if (width.u === AUTO$4 || w3 !== undefined) {
             w -= borderLeftWidth + borderRightWidth + marginLeft + marginRight + paddingLeft + paddingRight;
           }
@@ -24387,8 +24410,8 @@
         var min = 0;
         var max = 0;
         var flowChildren = this.flowChildren,
-            currentStyle = this.currentStyle,
-            computedStyle = this.computedStyle;
+            currentStyle = this.__currentStyle,
+            computedStyle = this.__computedStyle;
         var x = data.x,
             y = data.y,
             w = data.w,

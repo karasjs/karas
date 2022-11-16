@@ -574,7 +574,7 @@ class Dom extends Xom {
     let b = 0;
     let min = 0;
     let max = 0;
-    let { flowChildren, currentStyle, computedStyle } = this;
+    let { flowChildren, __currentStyle: currentStyle, __computedStyle: computedStyle } = this;
     let { x, y, w, h } = data;
     // 计算需考虑style的属性
     let {

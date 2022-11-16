@@ -2999,7 +2999,7 @@
     textStrokeColor: 'inherit',
     textStrokeOver: 'inherit',
     writingMode: 'inherit',
-    shrinkFontSize: 0
+    fontSizeShrink: 0
   };
   var GEOM$4 = {
     fill: 'transparent',
@@ -3427,7 +3427,7 @@
     TRANSFORM_STYLE: 88,
     BACKFACE_VISIBILITY: 89,
     BOX_SIZING: 90,
-    SHRINK_FONT_SIZE: 91,
+    FONT_SIZE_SHRINK: 91,
     // GEOM
     FILL: 92,
     STROKE: 93,
@@ -8320,7 +8320,7 @@
       TEXT_STROKE_WIDTH$5 = _enums$STYLE_KEY$i.TEXT_STROKE_WIDTH,
       TEXT_STROKE_OVER$4 = _enums$STYLE_KEY$i.TEXT_STROKE_OVER,
       WRITING_MODE$3 = _enums$STYLE_KEY$i.WRITING_MODE,
-      SHRINK_FONT_SIZE$2 = _enums$STYLE_KEY$i.SHRINK_FONT_SIZE;
+      FONT_SIZE_SHRINK$2 = _enums$STYLE_KEY$i.FONT_SIZE_SHRINK;
   var AUTO$7 = o$4.AUTO,
       PX$8 = o$4.PX,
       PERCENT$7 = o$4.PERCENT,
@@ -9188,14 +9188,14 @@
       }
     }
 
-    temp = style.shrinkFontSize;
+    temp = style.fontSizeShrink;
 
     if (temp !== undefined) {
       var _v2 = calUnit$1(temp); // 不能为非正数，否则为0
 
 
       if (_v2 <= 0) {
-        res[SHRINK_FONT_SIZE$2] = {
+        res[FONT_SIZE_SHRINK$2] = {
           v: 0,
           u: PX$8
         };
@@ -9206,7 +9206,7 @@
           _v2.u = PX$8;
         }
 
-        res[SHRINK_FONT_SIZE$2] = _v2;
+        res[FONT_SIZE_SHRINK$2] = _v2;
       }
     }
 
@@ -11548,7 +11548,7 @@
       BORDER_LEFT_WIDTH$8 = _enums$STYLE_KEY$d.BORDER_LEFT_WIDTH,
       BORDER_RIGHT_WIDTH$7 = _enums$STYLE_KEY$d.BORDER_RIGHT_WIDTH,
       FILTER$4 = _enums$STYLE_KEY$d.FILTER,
-      SHRINK_FONT_SIZE$1 = _enums$STYLE_KEY$d.SHRINK_FONT_SIZE,
+      FONT_SIZE_SHRINK$1 = _enums$STYLE_KEY$d.FONT_SIZE_SHRINK,
       ELLIPSIS$1 = enums.ELLIPSIS;
   var AUTO$6 = o$4.AUTO;
   var CANVAS$2 = mode.CANVAS,
@@ -11559,7 +11559,7 @@
    * 测量的封装，主要是增加了shrinkFontSize声明时，不断尝试fontSize--，直到限制或者满足一行展示要求
    */
 
-  function measureLineWidth(ctx, renderMode, start, length, content, w, ew, perW, computedStyle, fontFamily, fontSize, fontWeight, shrinkFontSize, letterSpacing, isUpright) {
+  function measureLineWidth(ctx, renderMode, start, length, content, w, ew, perW, computedStyle, fontFamily, fontSize, fontWeight, fontSizeShrink, letterSpacing, isUpright) {
     if (start >= length) {
       // 特殊情况不应该走进这里
       return {
@@ -11571,8 +11571,8 @@
 
     var res = measure(ctx, renderMode, start, length, content, w - ew, perW, fontFamily, fontSize, fontWeight, letterSpacing, isUpright);
 
-    if (res.newLine && shrinkFontSize > 0 && shrinkFontSize < fontSize) {
-      while (res.newLine && fontSize > shrinkFontSize) {
+    if (res.newLine && fontSizeShrink > 0 && fontSizeShrink < fontSize) {
+      while (res.newLine && fontSize > fontSizeShrink) {
         // 文字和ellipsis同时设置测量
         ctx.font = css.setFontStyle(computedStyle, --fontSize);
 
@@ -11837,7 +11837,7 @@
           var _bp$computedStyle = bp.computedStyle,
               position = _bp$computedStyle[POSITION$5],
               overflow = _bp$computedStyle[OVERFLOW$3],
-              shrinkFontSize = _bp$computedStyle[SHRINK_FONT_SIZE$1];
+              fontSizeShrink = _bp$computedStyle[FONT_SIZE_SHRINK$1];
           var containerSize = bp.currentStyle[isUpright ? HEIGHT$7 : WIDTH$7]; // 只要是overflow隐藏，不管textOverflow如何（默认是clip等同于overflow:hidden的功能）都截取
 
           if (overflow === 'hidden') {
@@ -11851,7 +11851,7 @@
 
 
           if (isTextOverflow && textOverflow === 'ellipsis') {
-            var _this$__lineBack = this.__lineBack(ctx, renderMode, i, length, content, size - endSpace - beginSpace, perW, x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, shrinkFontSize, letterSpacing, isUpright);
+            var _this$__lineBack = this.__lineBack(ctx, renderMode, i, length, content, size - endSpace - beginSpace, perW, x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, fontSizeShrink, letterSpacing, isUpright);
 
             var _this$__lineBack2 = _slicedToArray(_this$__lineBack, 1);
 
@@ -11995,7 +11995,7 @@
 
     }, {
       key: "__lineBack",
-      value: function __lineBack(ctx, renderMode, i, length, content, limit, perW, x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, shrinkFontSize, letterSpacing, isUpright) {
+      value: function __lineBack(ctx, renderMode, i, length, content, limit, perW, x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, fontSizeShrink, letterSpacing, isUpright) {
         var ew,
             bp = this.__bp,
             computedStyle = bp.computedStyle; // 临时测量ELLIPSIS的尺寸
@@ -12022,7 +12022,7 @@
 
         this.__fitFontSize = 0;
 
-        var _measureLineWidth2 = measureLineWidth(ctx, renderMode, i, length, content, limit - endSpace, ew, perW, computedStyle, fontFamily, fontSize, fontWeight, shrinkFontSize, letterSpacing),
+        var _measureLineWidth2 = measureLineWidth(ctx, renderMode, i, length, content, limit - endSpace, ew, perW, computedStyle, fontFamily, fontSize, fontWeight, fontSizeShrink, letterSpacing),
             num = _measureLineWidth2.hypotheticalNum,
             rw = _measureLineWidth2.rw,
             newLine = _measureLineWidth2.newLine,
@@ -17773,7 +17773,7 @@
       TRANSFORM_STYLE$1 = _enums$STYLE_KEY$8.TRANSFORM_STYLE,
       BACKFACE_VISIBILITY$1 = _enums$STYLE_KEY$8.BACKFACE_VISIBILITY,
       BOX_SIZING = _enums$STYLE_KEY$8.BOX_SIZING,
-      SHRINK_FONT_SIZE = _enums$STYLE_KEY$8.SHRINK_FONT_SIZE;
+      FONT_SIZE_SHRINK = _enums$STYLE_KEY$8.FONT_SIZE_SHRINK;
   var AUTO$4 = o$4.AUTO,
       PX$5 = o$4.PX,
       PERCENT$4 = o$4.PERCENT,
@@ -18009,7 +18009,7 @@
         var isRoot = !parent;
         var parentComputedStyle = parent && parent.__computedStyle; // 继承的特殊处理，根节点用默认值
 
-        [FONT_SIZE$2, FONT_FAMILY$1, FONT_WEIGHT$1, WRITING_MODE$2, SHRINK_FONT_SIZE].forEach(function (k) {
+        [FONT_SIZE$2, FONT_FAMILY$1, FONT_WEIGHT$1, WRITING_MODE$2, FONT_SIZE_SHRINK].forEach(function (k) {
           var v = currentStyle[k]; // ff特殊处理
 
           if (k === FONT_FAMILY$1) {

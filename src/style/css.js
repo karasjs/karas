@@ -64,7 +64,7 @@ const { STYLE_KEY, style2Upper, STYLE_KEY: {
   TEXT_STROKE_WIDTH,
   TEXT_STROKE_OVER,
   WRITING_MODE,
-  SHRINK_FONT_SIZE,
+  FONT_SIZE_SHRINK,
 } } = enums;
 const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING, EM, REM, VW, VH, VMAX, VMIN, GRADIENT, calUnit } = unit;
 const { isNil, rgba2int, equalArr, equal, replaceRgba2Hex } = util;
@@ -760,19 +760,19 @@ function normalize(style, resetList = []) {
       }
     }
   }
-  temp = style.shrinkFontSize;
+  temp = style.fontSizeShrink;
   if(temp !== undefined) {
     let v = calUnit(temp);
     // 不能为非正数，否则为0
     if(v <= 0) {
-      res[SHRINK_FONT_SIZE] = { v: 0, u: PX };
+      res[FONT_SIZE_SHRINK] = { v: 0, u: PX };
     }
     else {
       if([NUMBER, DEG, EM].indexOf(v.u) > -1) {
         v.v = parseInt(v.v); // 防止小数
         v.u = PX;
       }
-      res[SHRINK_FONT_SIZE] = v;
+      res[FONT_SIZE_SHRINK] = v;
     }
   }
   temp = style.textStrokeWidth;

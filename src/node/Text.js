@@ -40,7 +40,7 @@ const {
     BORDER_LEFT_WIDTH,
     BORDER_RIGHT_WIDTH,
     FILTER,
-    SHRINK_FONT_SIZE,
+    FONT_SIZE_SHRINK,
   },
   ELLIPSIS,
 } = enums;
@@ -53,15 +53,15 @@ const { isFunction } = util;
  * 测量的封装，主要是增加了shrinkFontSize声明时，不断尝试fontSize--，直到限制或者满足一行展示要求
  */
 function measureLineWidth(ctx, renderMode, start, length, content, w, ew, perW, computedStyle,
-                          fontFamily, fontSize, fontWeight, shrinkFontSize, letterSpacing, isUpright) {
+                          fontFamily, fontSize, fontWeight, fontSizeShrink, letterSpacing, isUpright) {
   if(start >= length) {
     // 特殊情况不应该走进这里
     return { hypotheticalNum: 0, rw: 0, newLine: false };
   }
   let res = measure(ctx, renderMode, start, length, content, w - ew, perW,
     fontFamily, fontSize, fontWeight, letterSpacing, isUpright);
-  if(res.newLine && shrinkFontSize > 0 && shrinkFontSize < fontSize) {
-    while(res.newLine && fontSize > shrinkFontSize) {
+  if(res.newLine && fontSizeShrink > 0 && fontSizeShrink < fontSize) {
+    while(res.newLine && fontSize > fontSizeShrink) {
       // 文字和ellipsis同时设置测量
       ctx.font = css.setFontStyle(computedStyle, --fontSize);
       if(renderMode === CANVAS || renderMode === WEBGL) {
@@ -256,7 +256,7 @@ class Text extends Node {
       let {
         [POSITION]: position,
         [OVERFLOW]: overflow,
-        [SHRINK_FONT_SIZE]: shrinkFontSize,
+        [FONT_SIZE_SHRINK]: fontSizeShrink,
       } = bp.computedStyle;
       let containerSize = bp.currentStyle[isUpright ? HEIGHT: WIDTH];
       // 只要是overflow隐藏，不管textOverflow如何（默认是clip等同于overflow:hidden的功能）都截取
@@ -272,7 +272,7 @@ class Text extends Node {
       // ellipsis生效情况，本节点开始向前回退查找，尝试放下一部分字符
       if(isTextOverflow && textOverflow === 'ellipsis') {
         [mainCoords] = this.__lineBack(ctx, renderMode, i, length, content, size - endSpace - beginSpace, perW, x, y, maxW,
-          endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, shrinkFontSize, letterSpacing, isUpright);
+          endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, fontSizeShrink, letterSpacing, isUpright);
         lineCount++;
         if(isUpright) {
           x = mainCoords;
@@ -397,7 +397,7 @@ class Text extends Node {
 
   // 末尾行因ellipsis的缘故向前回退字符生成textBox，可能会因不满足宽度导致无法生成，此时向前继续回退TextBox
   __lineBack(ctx, renderMode, i, length, content, limit, perW, x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager,
-              fontFamily, fontSize, fontWeight, shrinkFontSize, letterSpacing, isUpright) {
+              fontFamily, fontSize, fontWeight, fontSizeShrink, letterSpacing, isUpright) {
     let ew, bp = this.__bp, computedStyle = bp.computedStyle;
     // 临时测量ELLIPSIS的尺寸
     if(renderMode === CANVAS || renderMode === WEBGL) {
@@ -418,7 +418,7 @@ class Text extends Node {
     }
     this.__fitFontSize = 0;
     let { hypotheticalNum: num, rw, newLine, fitFontSize, ew: ew2 } = measureLineWidth(ctx, renderMode, i, length, content, limit - endSpace, ew, perW,
-      computedStyle, fontFamily, fontSize, fontWeight, shrinkFontSize, letterSpacing);
+      computedStyle, fontFamily, fontSize, fontWeight, fontSizeShrink, letterSpacing);
     // 缩小的fontSize
     if(fitFontSize) {
       this.__fitFontSize = fitFontSize;

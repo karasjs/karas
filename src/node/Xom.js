@@ -129,7 +129,7 @@ const {
     TRANSFORM_STYLE,
     BACKFACE_VISIBILITY,
     BOX_SIZING,
-    SHRINK_FONT_SIZE,
+    FONT_SIZE_SHRINK,
   },
 } = enums;
 const { AUTO, PX, PERCENT, INHERIT, NUMBER, RGBA, STRING, REM, VW, VH, VMAX, VMIN, DEG, GRADIENT } = unit;
@@ -317,7 +317,7 @@ class Xom extends Node {
     let isRoot = !parent;
     let parentComputedStyle = parent && parent.__computedStyle;
     // 继承的特殊处理，根节点用默认值
-    [FONT_SIZE, FONT_FAMILY, FONT_WEIGHT, WRITING_MODE, SHRINK_FONT_SIZE].forEach(k => {
+    [FONT_SIZE, FONT_FAMILY, FONT_WEIGHT, WRITING_MODE, FONT_SIZE_SHRINK].forEach(k => {
       let v = currentStyle[k];
       // ff特殊处理
       if(k === FONT_FAMILY) {

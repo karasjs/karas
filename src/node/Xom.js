@@ -317,7 +317,7 @@ class Xom extends Node {
     let isRoot = !parent;
     let parentComputedStyle = parent && parent.__computedStyle;
     // 继承的特殊处理，根节点用默认值
-    [FONT_SIZE, FONT_FAMILY, FONT_WEIGHT, WRITING_MODE].forEach(k => {
+    [FONT_SIZE, FONT_FAMILY, FONT_WEIGHT, WRITING_MODE, SHRINK_FONT_SIZE].forEach(k => {
       let v = currentStyle[k];
       // ff特殊处理
       if(k === FONT_FAMILY) {
@@ -345,9 +345,9 @@ class Xom extends Node {
       else if(v.u === INHERIT) {
         computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : parentComputedStyle[k];
       }
-      // 只有fontSize会有%
+      // fontSize和shrinkFontSize会有%
       else if(v.u === PERCENT) {
-        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (parentComputedStyle[k] * v.v * 0.01);
+        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (this.root.computedStyle[FONT_SIZE] * v.v * 0.01);
       }
       else if(v.u === REM) {
         computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (this.root.computedStyle[FONT_SIZE] * v.v);
@@ -1745,9 +1745,6 @@ class Xom extends Node {
     // 影响父级flat的
     if((__computedStyle[MIX_BLEND_MODE] !== 'normal' || this.__mask) && parentComputedStyle) {
       parentComputedStyle[TRANSFORM_STYLE] = 'flat';
-    }
-    if(isNil(__cacheStyle[SHRINK_FONT_SIZE])) {
-      this.__calSize(__currentStyle[SHRINK_FONT_SIZE], __computedStyle[FONT_SIZE], true);
     }
     this.__bx1 = bx1;
     this.__bx2 = bx2;

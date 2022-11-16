@@ -23,12 +23,13 @@ const { CANVAS, SVG, WEBGL } = mode;
 const CHAR = '…';
 
 class Ellipsis extends Node {
-  constructor(x, y, width, parent, isUpright) {
+  constructor(x, y, width, parent, text, isUpright) {
     super();
     this.__x = this.__x1 = x;
     this.__y = this.__y1 = y;
     this.__width = width;
     this.__parent = this.__domParent = parent;
+    this.__text = text;
     parent.__ellipsis = this;
     this.__parentLineBox = null;
     this.__baseline = css.getBaseline(parent.computedStyle);
@@ -54,7 +55,7 @@ class Ellipsis extends Node {
     x += dx;
     y += dy;
     if(renderMode === CANVAS || renderMode === WEBGL) {
-      let font = css.setFontStyle(computedStyle);
+      let font = css.setFontStyle(computedStyle, this.__text.__fitFontSize);
       if(ctx.font !== font) {
         ctx.font = font;
       }

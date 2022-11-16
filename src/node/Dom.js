@@ -207,7 +207,7 @@ function backtrack(bp, lineBoxManager, lineBox, total, endSpace, isUpright) {
         text.__backtrack(bp, lineBoxManager, lineBox, item, total, endSpace, ew, computedStyle, ctx, renderMode, isUpright);
       }
       else {
-        let ep = new Ellipsis(item.x + item.outerWidth + endSpace, item.y, ew, bp);
+        let ep = new Ellipsis(item.x + item.outerWidth + endSpace, item.y, ew, bp, item, isUpright);
         lineBoxManager.addItem(ep, true);
       }
       break;

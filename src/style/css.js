@@ -747,12 +747,13 @@ function normalize(style, resetList = []) {
     }
     else {
       let v = calUnit(temp);
-      // fontSize不能为负数，否则为继承
-      if(v < 0) {
+      // fontSize不能为非正数，否则为继承
+      if(v <= 0) {
         res[FONT_SIZE] = { u: INHERIT };
       }
       else {
         if([NUMBER, DEG, EM].indexOf(v.u) > -1) {
+          v.v = parseInt(v.v); // 防止小数
           v.u = PX;
         }
         res[FONT_SIZE] = v;
@@ -762,12 +763,13 @@ function normalize(style, resetList = []) {
   temp = style.shrinkFontSize;
   if(temp !== undefined) {
     let v = calUnit(temp);
-    // fontSize不能为负数，否则为继承
-    if(v < 0) {
+    // 不能为非正数，否则为0
+    if(v <= 0) {
       res[SHRINK_FONT_SIZE] = { v: 0, u: PX };
     }
     else {
       if([NUMBER, DEG, EM].indexOf(v.u) > -1) {
+        v.v = parseInt(v.v); // 防止小数
         v.u = PX;
       }
       res[SHRINK_FONT_SIZE] = v;
@@ -1232,8 +1234,8 @@ function normalize(style, resetList = []) {
   return res;
 }
 
-function setFontStyle(style) {
-  let fontSize = style[FONT_SIZE] || 0;
+function setFontStyle(style, specialFontSize) {
+  let fontSize = specialFontSize || style[FONT_SIZE] || 0;
   let fontFamily = style[FONT_FAMILY] || inject.defaultFontFamily || 'arial';
   if(/\s/.test(fontFamily)) {
     fontFamily = '"' + fontFamily.replace(/"/g, '\\"') + '"';

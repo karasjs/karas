@@ -35,7 +35,6 @@ const {
   TEXT_STROKE_COLOR,
   TEXT_STROKE_OVER,
   TRANSLATE_PATH,
-  SHRINK_FONT_SIZE,
 } = STYLE_KEY;
 
 const GEOM = {};
@@ -73,7 +72,7 @@ let o = {
       || k === BORDER_TOP_LEFT_RADIUS || k === BORDER_TOP_RIGHT_RADIUS || k === BORDER_BOTTOM_RIGHT_RADIUS
       || k === BORDER_BOTTOM_LEFT_RADIUS || k === VISIBILITY || k === BOX_SHADOW || k === OVERFLOW
       || k === BACKGROUND_CLIP || k === TEXT_STROKE_WIDTH || k === TEXT_STROKE_COLOR || k === TEXT_STROKE_OVER
-      || k === SHRINK_FONT_SIZE || o.isGeom(tagName, k);
+      || o.isGeom(tagName, k);
   },
   isValid(tagName, k) {
     if(!k) {

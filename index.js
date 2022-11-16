@@ -8123,8 +8123,7 @@
       TEXT_STROKE_WIDTH$6 = STYLE_KEY$2.TEXT_STROKE_WIDTH,
       TEXT_STROKE_COLOR$6 = STYLE_KEY$2.TEXT_STROKE_COLOR,
       TEXT_STROKE_OVER$5 = STYLE_KEY$2.TEXT_STROKE_OVER,
-      TRANSLATE_PATH$2 = STYLE_KEY$2.TRANSLATE_PATH,
-      SHRINK_FONT_SIZE$3 = STYLE_KEY$2.SHRINK_FONT_SIZE;
+      TRANSLATE_PATH$2 = STYLE_KEY$2.TRANSLATE_PATH;
   var GEOM$3 = {};
   var GEOM_KEY_SET$1 = [];
   var o$2 = {
@@ -8151,7 +8150,7 @@
       return tagName && k && GEOM$3.hasOwnProperty(k) && GEOM$3[k].hasOwnProperty(tagName);
     },
     isRepaint: function isRepaint(k, tagName) {
-      return k === COLOR$7 || k === STROKE_WIDTH$9 || k === FILL$4 || k === STROKE_DASHARRAY$2 || k === STROKE_LINECAP$1 || k === STROKE_LINEJOIN$1 || k === STROKE_MITERLIMIT$2 || k === BACKGROUND_COLOR$3 || k === BACKGROUND_IMAGE$3 || k === BACKGROUND_POSITION_X$4 || k === BACKGROUND_POSITION_Y$4 || k === BACKGROUND_REPEAT$1 || k === BACKGROUND_SIZE$3 || k === STROKE$3 || k === BORDER_BOTTOM_COLOR$2 || k === BORDER_LEFT_COLOR$2 || k === BORDER_BOTTOM_COLOR$2 || k === BORDER_RIGHT_COLOR$2 || k === BORDER_TOP_COLOR$2 || k === BORDER_TOP_LEFT_RADIUS$3 || k === BORDER_TOP_RIGHT_RADIUS$3 || k === BORDER_BOTTOM_RIGHT_RADIUS$3 || k === BORDER_BOTTOM_LEFT_RADIUS$3 || k === VISIBILITY$6 || k === BOX_SHADOW$3 || k === OVERFLOW$4 || k === BACKGROUND_CLIP$2 || k === TEXT_STROKE_WIDTH$6 || k === TEXT_STROKE_COLOR$6 || k === TEXT_STROKE_OVER$5 || k === SHRINK_FONT_SIZE$3 || o$2.isGeom(tagName, k);
+      return k === COLOR$7 || k === STROKE_WIDTH$9 || k === FILL$4 || k === STROKE_DASHARRAY$2 || k === STROKE_LINECAP$1 || k === STROKE_LINEJOIN$1 || k === STROKE_MITERLIMIT$2 || k === BACKGROUND_COLOR$3 || k === BACKGROUND_IMAGE$3 || k === BACKGROUND_POSITION_X$4 || k === BACKGROUND_POSITION_Y$4 || k === BACKGROUND_REPEAT$1 || k === BACKGROUND_SIZE$3 || k === STROKE$3 || k === BORDER_BOTTOM_COLOR$2 || k === BORDER_LEFT_COLOR$2 || k === BORDER_BOTTOM_COLOR$2 || k === BORDER_RIGHT_COLOR$2 || k === BORDER_TOP_COLOR$2 || k === BORDER_TOP_LEFT_RADIUS$3 || k === BORDER_TOP_RIGHT_RADIUS$3 || k === BORDER_BOTTOM_RIGHT_RADIUS$3 || k === BORDER_BOTTOM_LEFT_RADIUS$3 || k === VISIBILITY$6 || k === BOX_SHADOW$3 || k === OVERFLOW$4 || k === BACKGROUND_CLIP$2 || k === TEXT_STROKE_WIDTH$6 || k === TEXT_STROKE_COLOR$6 || k === TEXT_STROKE_OVER$5 || o$2.isGeom(tagName, k);
     },
     isValid: function isValid(tagName, k) {
       if (!k) {
@@ -9170,15 +9169,17 @@
           u: INHERIT$3
         };
       } else {
-        var _v = calUnit$1(temp); // fontSize不能为负数，否则为继承
+        var _v = calUnit$1(temp); // fontSize不能为非正数，否则为继承
 
 
-        if (_v < 0) {
+        if (_v <= 0) {
           res[FONT_SIZE$8] = {
             u: INHERIT$3
           };
         } else {
           if ([NUMBER$4, DEG$3, EM].indexOf(_v.u) > -1) {
+            _v.v = parseInt(_v.v); // 防止小数
+
             _v.u = PX$8;
           }
 
@@ -9190,16 +9191,18 @@
     temp = style.shrinkFontSize;
 
     if (temp !== undefined) {
-      var _v2 = calUnit$1(temp); // fontSize不能为负数，否则为继承
+      var _v2 = calUnit$1(temp); // 不能为非正数，否则为0
 
 
-      if (_v2 < 0) {
+      if (_v2 <= 0) {
         res[SHRINK_FONT_SIZE$2] = {
           v: 0,
           u: PX$8
         };
       } else {
         if ([NUMBER$4, DEG$3, EM].indexOf(_v2.u) > -1) {
+          _v2.v = parseInt(_v2.v); // 防止小数
+
           _v2.u = PX$8;
         }
 
@@ -9806,8 +9809,8 @@
     return res;
   }
 
-  function setFontStyle(style) {
-    var fontSize = style[FONT_SIZE$8] || 0;
+  function setFontStyle(style, specialFontSize) {
+    var fontSize = specialFontSize || style[FONT_SIZE$8] || 0;
     var fontFamily = style[FONT_FAMILY$6] || inject.defaultFontFamily || 'arial';
 
     if (/\s/.test(fontFamily)) {
@@ -11228,7 +11231,7 @@
   var Ellipsis = /*#__PURE__*/function (_Node) {
     _inherits(Ellipsis, _Node);
 
-    function Ellipsis(x, y, width, parent, isUpright) {
+    function Ellipsis(x, y, width, parent, text, isUpright) {
       var _this;
 
       _this = _Node.call(this) || this;
@@ -11236,6 +11239,7 @@
       _this.__y = _this.__y1 = y;
       _this.__width = width;
       _this.__parent = _this.__domParent = parent;
+      _this.__text = text;
       parent.__ellipsis = _assertThisInitialized(_this);
       _this.__parentLineBox = null;
       _this.__baseline = css.getBaseline(parent.computedStyle);
@@ -11267,7 +11271,7 @@
         y += dy;
 
         if (renderMode === CANVAS$3 || renderMode === WEBGL$3) {
-          var font = css.setFontStyle(computedStyle);
+          var font = css.setFontStyle(computedStyle, this.__text.__fitFontSize);
 
           if (ctx.font !== font) {
             ctx.font = font;
@@ -11552,16 +11556,10 @@
       WEBGL$2 = mode.WEBGL;
   var isFunction$a = util.isFunction;
   /**
-   * 在给定宽度w的情况下，测量文字content多少个满足塞下，只支持水平书写，从start的索引开始，content长length
-   * 尽可能地少的次数调用canvas的measureText或svg的html节点的width，因为比较消耗性能
-   * 这就需要一种算法，不能逐字遍历看总长度是否超过，也不能单字宽度相加因为有文本整形某些字体多个字宽度不等于每个之和
-   * 简单的2分法实现简单，但是次数稍多，对于性能不是最佳，因为内容的slice裁剪和传递给canvas测量都随尺寸增加而加大
-   * 由于知道w和fontSize，因此能推测出平均值为fontSize/w，即字的个数，
-   * 进行测量后得出w2，和真实w对比，产生误差d，再看d和fontSize推测差距个数，如此反复
-   * 返回内容和end索引和长度，最少也要1个字符
+   * 测量的封装，主要是增加了shrinkFontSize声明时，不断尝试fontSize--，直到限制或者满足一行展示要求
    */
 
-  function measureLineWidth(ctx, renderMode, start, length, content, w, perW, fontFamily, fontSize, fontWeight, shrinkFontSize, letterSpacing, isUpright) {
+  function measureLineWidth(ctx, renderMode, start, length, content, w, ew, perW, computedStyle, fontFamily, fontSize, fontWeight, shrinkFontSize, letterSpacing, isUpright) {
     if (start >= length) {
       // 特殊情况不应该走进这里
       return {
@@ -11571,6 +11569,39 @@
       };
     }
 
+    var res = measure(ctx, renderMode, start, length, content, w - ew, perW, fontFamily, fontSize, fontWeight, letterSpacing, isUpright);
+
+    if (res.newLine && shrinkFontSize > 0 && shrinkFontSize < fontSize) {
+      while (res.newLine && fontSize > shrinkFontSize) {
+        // 文字和ellipsis同时设置测量
+        ctx.font = css.setFontStyle(computedStyle, --fontSize);
+
+        if (renderMode === CANVAS$2 || renderMode === WEBGL$2) {
+          ew = ctx.measureText(ELLIPSIS$1).width;
+        } else {
+          ew = inject.measureTextSync(ELLIPSIS$1, computedStyle[FONT_FAMILY$3], fontSize, computedStyle[FONT_WEIGHT$3]);
+        }
+
+        res = measure(ctx, renderMode, start, length, content, w - ew, perW, fontFamily, fontSize, fontWeight, letterSpacing, isUpright);
+        res.fitFontSize = fontSize;
+        res.ew = ew;
+      }
+    }
+
+    return res;
+  }
+  /**
+   * 在给定宽度w的情况下，测量文字content多少个满足塞下，只支持水平书写，从start的索引开始，content长length
+   * 尽可能地少的次数调用canvas的measureText或svg的html节点的width，因为比较消耗性能
+   * 这就需要一种算法，不能逐字遍历看总长度是否超过，也不能单字宽度相加因为有文本整形某些字体多个字宽度不等于每个之和
+   * 简单的2分法实现简单，但是次数稍多，对于性能不是最佳，因为内容的slice裁剪和传递给canvas测量都随尺寸增加而加大
+   * 由于知道w和fontSize，因此能推测出平均值为fontSize/w，即字的个数，
+   * 进行测量后得出w2，和真实w对比，产生误差d，再看d和fontSize推测差距个数，如此反复
+   * 返回内容和end索引和长度，最少也要1个字符
+   */
+
+
+  function measure(ctx, renderMode, start, length, content, w, perW, fontFamily, fontSize, fontWeight, letterSpacing, isUpright) {
     var i = start,
         j = length,
         rw = 0,
@@ -11709,6 +11740,8 @@
 
       _this.__limitCache = false;
       _this.__hasContent = false;
+      _this.__fitFontSize = 0; // 自动缩小时的字体大小
+
       return _this;
     }
     /**
@@ -11789,7 +11822,7 @@
 
         if (renderMode === CANVAS$2 || renderMode === WEBGL$2) {
           ctx = renderMode === WEBGL$2 ? inject.getFontCanvas().ctx : root.ctx;
-          ctx.font = css.setFontStyle(computedStyle);
+          ctx.font = css.setFontStyle(computedStyle, 0);
         } // fontSize在中文是正好1个字宽度，英文不一定，等宽为2个，不等宽可能1~2个，特殊字符甚至>2个，取预估均值然后倒数得每个均宽0.8
 
 
@@ -11859,7 +11892,7 @@
               limit -= endSpace;
             }
 
-            var _measureLineWidth = measureLineWidth(ctx, renderMode, i, length, content, limit, perW, fontFamily, fontSize, fontWeight, 0, letterSpacing),
+            var _measureLineWidth = measureLineWidth(ctx, renderMode, i, length, content, limit, 0, perW, computedStyle, fontFamily, fontSize, fontWeight, 0, letterSpacing),
                 num = _measureLineWidth.hypotheticalNum,
                 rw = _measureLineWidth.rw,
                 newLine = _measureLineWidth.newLine; // 多行文本截断，这里肯定需要回退，注意防止恰好是最后一个字符，此时无需截取
@@ -11885,7 +11918,7 @@
 
 
             if (i + num === length && endSpace && rw + endSpace > limit + 1e-10 && num > 1) {
-              var res = measureLineWidth(ctx, renderMode, i, length, content, limit - endSpace, perW, fontFamily, fontSize, fontWeight, 0, letterSpacing);
+              var res = measureLineWidth(ctx, renderMode, i, length, content, limit - endSpace, 0, perW, computedStyle, fontFamily, fontSize, fontWeight, 0, letterSpacing);
               num = res.hypotheticalNum;
               rw = res.rw;
               newLine = res.newLine; // 可能加上endSpace后超过了，还得再判断一次
@@ -11968,7 +12001,7 @@
             computedStyle = bp.computedStyle; // 临时测量ELLIPSIS的尺寸
 
         if (renderMode === CANVAS$2 || renderMode === WEBGL$2) {
-          var font = css.setFontStyle(computedStyle);
+          var font = css.setFontStyle(computedStyle, 0);
 
           if (ctx.font !== font) {
             ctx.font = font;
@@ -11980,19 +12013,34 @@
         }
 
         if (renderMode === CANVAS$2 || renderMode === WEBGL$2) {
-          var _font = css.setFontStyle(this.computedStyle);
+          var _font = css.setFontStyle(this.computedStyle, 0);
 
           if (ctx.font !== _font) {
             ctx.font = _font;
           }
         }
 
-        var _measureLineWidth2 = measureLineWidth(ctx, renderMode, i, length, content, limit - ew - endSpace, perW, fontFamily, fontSize, fontWeight, shrinkFontSize, letterSpacing),
+        this.__fitFontSize = 0;
+
+        var _measureLineWidth2 = measureLineWidth(ctx, renderMode, i, length, content, limit - endSpace, ew, perW, computedStyle, fontFamily, fontSize, fontWeight, shrinkFontSize, letterSpacing),
             num = _measureLineWidth2.hypotheticalNum,
-            rw = _measureLineWidth2.rw; // 还是不够，需要回溯查找前一个inline节点继续回退，同时防止空行首，要至少一个textBox且一个字符
+            rw = _measureLineWidth2.rw,
+            newLine = _measureLineWidth2.newLine,
+            fitFontSize = _measureLineWidth2.fitFontSize,
+            ew2 = _measureLineWidth2.ew; // 缩小的fontSize
 
 
-        if (rw + ew > limit + 1e-10 - endSpace) {
+        if (fitFontSize) {
+          this.__fitFontSize = fitFontSize;
+        }
+
+        if (ew2) {
+          ew = ew2;
+        } // 缩小后可能不再换行，下面的逻辑都要预先判断newLine
+        // 还是不够，需要回溯查找前一个inline节点继续回退，同时防止空行首，要至少一个textBox且一个字符
+
+
+        if (newLine && rw + ew > limit + 1e-10 - endSpace) {
           // 向前回溯已有的tb，需注意可能是新行开头这时还没生成新的lineBox，而旧行则至少1个内容
           // 新行的话进不来，会添加上面num的内容，旧行不添加只修改之前的tb内容也有可能删除一些
           var lineBox = lineBoxManager.lineBox;
@@ -12039,11 +12087,11 @@
                     _fontFamily = _parent$computedStyle[FONT_FAMILY$3];
 
                 if (renderMode === CANVAS$2 || renderMode === WEBGL$2) {
-                  ctx.font = css.setFontStyle(parent.computedStyle);
+                  ctx.font = css.setFontStyle(parent.computedStyle, 0);
                 } // 再进行查找，这里也会有至少一个字符不用担心
 
 
-                var _measureLineWidth3 = measureLineWidth(ctx, renderMode, 0, _length, _content, limit - ew + width - endSpace, perW, _fontFamily, _fontSize, _fontWeight, 0, _letterSpacing),
+                var _measureLineWidth3 = measureLineWidth(ctx, renderMode, 0, _length, _content, limit + width - endSpace, ew, perW, computedStyle, _fontFamily, _fontSize, _fontWeight, 0, _letterSpacing),
                     _num = _measureLineWidth3.hypotheticalNum,
                     _rw = _measureLineWidth3.rw; // 可能发生x回退，当tb的内容产生减少时
 
@@ -12063,9 +12111,8 @@
 
                 lineBox.__resetLb(computedStyle[LINE_HEIGHT$4], isUpright ? css.getVerticalBaseline(computedStyle) : css.getBaseline(computedStyle));
 
-                var _ep = isUpright ? new Ellipsis(x, y + _rw + endSpace, ew, bp, isUpright) : new Ellipsis(x + _rw + endSpace, y, ew, bp, isUpright);
-
-                lineBoxManager.addItem(_ep, true);
+                var ep = isUpright ? new Ellipsis(x, y + _rw + endSpace, ew, bp, this, isUpright) : new Ellipsis(x + _rw + endSpace, y, ew, bp, this, isUpright);
+                lineBoxManager.addItem(ep, true);
 
                 if (isUpright) {
                   x += Math.max(_lineHeight, lineBoxManager.verticalLineHeight);
@@ -12146,8 +12193,11 @@
         textBoxes.push(textBox);
         lineBoxManager.addItem(textBox, false); // ELLIPSIS也作为内容加入，但特殊的是指向最近block使用其样式渲染
 
-        var ep = isUpright ? new Ellipsis(x, y + rw + endSpace, ew, bp, isUpright) : new Ellipsis(x + rw + endSpace, y, ew, bp, isUpright);
-        lineBoxManager.addItem(ep, true);
+        if (newLine) {
+          var _ep = isUpright ? new Ellipsis(x, y + rw + endSpace, ew, bp, this, isUpright) : new Ellipsis(x + rw + endSpace, y, ew, bp, this, isUpright);
+
+          lineBoxManager.addItem(_ep, true);
+        }
 
         if (isUpright) {
           x += Math.max(lineHeight, lineBoxManager.verticalLineHeight);
@@ -12155,7 +12205,7 @@
           y += Math.max(lineHeight, lineBoxManager.lineHeight);
         }
 
-        maxW = Math.max(maxW, rw + ew);
+        maxW = Math.max(maxW, rw + newLine ? ew : 0);
         return [isUpright ? x : y, maxW];
       } // 外部dom换行发现超行，且一定是ellipsis时，会进这里让上一行text回退，lineBox一定有值且最后一个一定是本text的最后的textBox
 
@@ -12196,12 +12246,12 @@
                 fontFamily = _parent$computedStyle2[FONT_FAMILY$3];
 
             if (renderMode === CANVAS$2 || renderMode === WEBGL$2) {
-              ctx.font = css.setFontStyle(parent.computedStyle);
+              ctx.font = css.setFontStyle(parent.computedStyle, 0);
             }
 
             var perW = fontSize * 0.8 + letterSpacing; // 再进行查找，这里也会有至少一个字符不用担心
 
-            var _measureLineWidth4 = measureLineWidth(ctx, renderMode, 0, length, content, limit - ew - endSpace + width, perW, fontFamily, fontSize, fontWeight, 0, letterSpacing),
+            var _measureLineWidth4 = measureLineWidth(ctx, renderMode, 0, length, content, limit - endSpace + width, ew, perW, computedStyle, fontFamily, fontSize, fontWeight, 0, letterSpacing),
                 num = _measureLineWidth4.hypotheticalNum,
                 rw = _measureLineWidth4.rw; // 可能发生x回退，当tb的内容产生减少时
 
@@ -12219,7 +12269,7 @@
 
             lineBox.__resetLb(computedStyle[LINE_HEIGHT$4], isUpright ? css.getVerticalBaseline(computedStyle) : css.getBaseline(computedStyle));
 
-            var ep = isUpright ? new Ellipsis(tb.x, tb.y + rw + endSpace, ew, bp, isUpright) : new Ellipsis(tb.x + rw + endSpace, tb.y, ew, bp, isUpright);
+            var ep = isUpright ? new Ellipsis(tb.x, tb.y + rw + endSpace, ew, bp, this, isUpright) : new Ellipsis(tb.x + rw + endSpace, tb.y, ew, bp, this, isUpright);
             lineBoxManager.addItem(ep, true);
             return;
           } // 舍弃这个tb，x也要向前回退，w增加，这会发生在ELLIPSIS字体很大，里面内容字体很小时
@@ -12363,7 +12413,7 @@
         }
 
         if (renderMode === CANVAS$2) {
-          var font = css.setFontStyle(computedStyle);
+          var font = css.setFontStyle(computedStyle, this.__fitFontSize);
 
           if (ctx.font !== font) {
             ctx.font = font;
@@ -12541,7 +12591,7 @@
               ctx = inject.getFontCanvas().ctx;
             }
 
-            ctx.font = css.setFontStyle(computedStyle);
+            ctx.font = css.setFontStyle(computedStyle, 0);
 
             for (var i = 0, len = content.length; i < len; i++) {
               max = Math.max(max, ctx.measureText(content.charAt([i])).width);
@@ -12582,7 +12632,7 @@
               ctx = inject.getFontCanvas().ctx;
             }
 
-            ctx.font = css.setFontStyle(computedStyle);
+            ctx.font = css.setFontStyle(computedStyle, 0);
             o.firstCharWidth = ctx.measureText(content.charAt(0)).width + letterSpacing;
           } else if (renderMode === SVG$2) {
             o.firstCharWidth = inject.measureTextSync(content.charAt(0), fontFamily, fontSize, fontWeight) + letterSpacing;
@@ -12618,7 +12668,7 @@
               ctx = inject.getFontCanvas().ctx;
             }
 
-            ctx.font = css.setFontStyle(computedStyle);
+            ctx.font = css.setFontStyle(computedStyle, 0);
             o.textWidth = ctx.measureText(content).width + letterSpacing * content.length;
           } else if (renderMode === SVG$2) {
             o.textWidth = inject.measureTextSync(content, fontFamily, fontSize, fontWeight) + letterSpacing * content.length;
@@ -12743,6 +12793,11 @@
       key: "perspectiveMatrix",
       get: function get() {
         return this.__domParent.__perspectiveMatrix;
+      }
+    }, {
+      key: "fitFontSize",
+      get: function get() {
+        return this.__fitFontSize;
       }
     }]);
 
@@ -17954,7 +18009,7 @@
         var isRoot = !parent;
         var parentComputedStyle = parent && parent.__computedStyle; // 继承的特殊处理，根节点用默认值
 
-        [FONT_SIZE$2, FONT_FAMILY$1, FONT_WEIGHT$1, WRITING_MODE$2].forEach(function (k) {
+        [FONT_SIZE$2, FONT_FAMILY$1, FONT_WEIGHT$1, WRITING_MODE$2, SHRINK_FONT_SIZE].forEach(function (k) {
           var v = currentStyle[k]; // ff特殊处理
 
           if (k === FONT_FAMILY$1) {
@@ -17981,9 +18036,9 @@
             }
           } else if (v.u === INHERIT$1) {
             computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : parentComputedStyle[k];
-          } // 只有fontSize会有%
+          } // fontSize和shrinkFontSize会有%
           else if (v.u === PERCENT$4) {
-            computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : parentComputedStyle[k] * v.v * 0.01;
+            computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : _this3.root.computedStyle[FONT_SIZE$2] * v.v * 0.01;
           } else if (v.u === REM$4) {
             computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : _this3.root.computedStyle[FONT_SIZE$2] * v.v;
           } else if (v.u === VW$4) {
@@ -19416,10 +19471,6 @@
 
         if ((__computedStyle[MIX_BLEND_MODE$3] !== 'normal' || this.__mask) && parentComputedStyle) {
           parentComputedStyle[TRANSFORM_STYLE$1] = 'flat';
-        }
-
-        if (isNil$9(__cacheStyle[SHRINK_FONT_SIZE])) {
-          this.__calSize(__currentStyle[SHRINK_FONT_SIZE], __computedStyle[FONT_SIZE$2], true);
         }
 
         this.__bx1 = bx1;
@@ -23995,7 +24046,7 @@
 
           text.__backtrack(bp, lineBoxManager, lineBox, item, total, endSpace, ew, computedStyle, ctx, renderMode, isUpright);
         } else {
-          var ep = new Ellipsis(item.x + item.outerWidth + endSpace, item.y, ew, bp);
+          var ep = new Ellipsis(item.x + item.outerWidth + endSpace, item.y, ew, bp, item, isUpright);
           lineBoxManager.addItem(ep, true);
         }
 

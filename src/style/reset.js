@@ -92,6 +92,7 @@ const DOM = {
   textStrokeColor: 'inherit',
   textStrokeOver: 'inherit',
   writingMode: 'inherit',
+  shrinkFontSize: 0,
 };
 
 const GEOM = {

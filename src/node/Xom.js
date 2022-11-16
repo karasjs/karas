@@ -129,6 +129,7 @@ const {
     TRANSFORM_STYLE,
     BACKFACE_VISIBILITY,
     BOX_SIZING,
+    SHRINK_FONT_SIZE,
   },
 } = enums;
 const { AUTO, PX, PERCENT, INHERIT, NUMBER, RGBA, STRING, REM, VW, VH, VMAX, VMIN, DEG, GRADIENT } = unit;
@@ -1744,6 +1745,9 @@ class Xom extends Node {
     // 影响父级flat的
     if((__computedStyle[MIX_BLEND_MODE] !== 'normal' || this.__mask) && parentComputedStyle) {
       parentComputedStyle[TRANSFORM_STYLE] = 'flat';
+    }
+    if(isNil(__cacheStyle[SHRINK_FONT_SIZE])) {
+      this.__calSize(__currentStyle[SHRINK_FONT_SIZE], __computedStyle[FONT_SIZE], true);
     }
     this.__bx1 = bx1;
     this.__bx2 = bx2;

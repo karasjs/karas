@@ -64,8 +64,9 @@ const { STYLE_KEY, style2Upper, STYLE_KEY: {
   TEXT_STROKE_WIDTH,
   TEXT_STROKE_OVER,
   WRITING_MODE,
+  SHRINK_FONT_SIZE,
 } } = enums;
-const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING, REM, VW, VH, VMAX, VMIN, GRADIENT, calUnit } = unit;
+const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING, EM, REM, VW, VH, VMAX, VMIN, GRADIENT, calUnit } = unit;
 const { isNil, rgba2int, equalArr, equal, replaceRgba2Hex } = util;
 const { isGeom, GEOM, GEOM_KEY_SET } = change;
 const { VALID_STRING_VALUE } = reset;
@@ -751,11 +752,25 @@ function normalize(style, resetList = []) {
         res[FONT_SIZE] = { u: INHERIT };
       }
       else {
-        if([NUMBER, DEG].indexOf(v.u) > -1) {
+        if([NUMBER, DEG, EM].indexOf(v.u) > -1) {
           v.u = PX;
         }
         res[FONT_SIZE] = v;
       }
+    }
+  }
+  temp = style.shrinkFontSize;
+  if(temp !== undefined) {
+    let v = calUnit(temp);
+    // fontSize不能为负数，否则为继承
+    if(v < 0) {
+      res[SHRINK_FONT_SIZE] = { v: 0, u: PX };
+    }
+    else {
+      if([NUMBER, DEG, EM].indexOf(v.u) > -1) {
+        v.u = PX;
+      }
+      res[SHRINK_FONT_SIZE] = v;
     }
   }
   temp = style.textStrokeWidth;

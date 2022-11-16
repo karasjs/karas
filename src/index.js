@@ -94,7 +94,6 @@ let karas = {
     return new klass(tagName, props);
   },
   createCp(klass, props, children = []) {
-    props.children = children;
     return new klass(props, children);
   },
   parse(json, dom, options) {

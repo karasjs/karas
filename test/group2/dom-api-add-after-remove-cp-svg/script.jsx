@@ -6,12 +6,12 @@ class Component extends karas.Component {
 let root = karas.render(
   <svg width="360" height="360">
     <Component/>
-    <Component props={{ t: 1 }}/>
+    <Component t={1}/>
   </svg>,
   '#test'
 );
 root.children[1].remove();
-root.appendChild(<Component props={{ t: 2 }}/>, function() {
+root.appendChild(<Component t={2}/>, function() {
   let input = document.querySelector('input');
   input.value = document.querySelector('svg').innerHTML;
 });

@@ -2910,6 +2910,7 @@
   var DOM = {
     position: 'static',
     display: 'block',
+    boxSizing: 'contentBox',
     top: 'auto',
     right: 'auto',
     bottom: 'auto',
@@ -3069,7 +3070,8 @@
     textOverflow: ['clip', 'ellipsis'],
     alignContent: ['stretch', 'flexStart', 'center', 'flexEnd', 'spaceBetween', 'spaceAround'],
     transformStyle: ['flat', 'preserve3d'],
-    backfaceVisibility: ['visible', 'hidden']
+    backfaceVisibility: ['visible', 'hidden'],
+    boxSizing: ['contentBox', 'borderBox']
   };
   var reset = {
     DOM: DOM,
@@ -9733,7 +9735,7 @@
     } // 直接赋值的string类型
 
 
-    ['position', 'display', 'flexDirection', 'flexWrap', 'justifyContent', 'alignItems', 'alignSelf', 'alignContent', 'overflow', 'mixBlendMode', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundClip', 'textOverflow', 'transformStyle', 'backfaceVisibility'].forEach(function (k) {
+    ['position', 'display', 'boxSizing', 'flexDirection', 'flexWrap', 'justifyContent', 'alignItems', 'alignSelf', 'alignContent', 'overflow', 'mixBlendMode', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundClip', 'textOverflow', 'transformStyle', 'backfaceVisibility'].forEach(function (k) {
       if (style.hasOwnProperty(k)) {
         res[STYLE_KEY$1[style2Upper$1(k)]] = convertStringValue(k, style[k]);
       }
@@ -12902,8 +12904,14 @@
 
       var props = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
       _this = _Event.call(this) || this;
-      _this.__tagName = /(?:function|class)\s+([\w$]+)/.exec(_this.constructor.toString())[1];
-      _this.props = props.props || {};
+      _this.__tagName = /(?:function|class)\s+([\w$]+)/.exec(_this.constructor.toString())[1]; // 构建工具中都是{}，手写可能出现[]情况
+
+      if (Array.isArray(props)) {
+        _this.props = util.arr2hash(props);
+      } else {
+        _this.props = props;
+      }
+
       _this.__parent = null;
       _this.__host = null;
       _this.__ref = {};
@@ -44426,7 +44434,6 @@
     },
     createCp: function createCp(klass, props) {
       var children = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
-      props.children = children;
       return new klass(props, children);
     },
     parse: function parse(json, dom, options) {

@@ -1151,6 +1151,7 @@ function normalize(style, resetList = []) {
   [
     'position',
     'display',
+    'boxSizing',
     'flexDirection',
     'flexWrap',
     'justifyContent',

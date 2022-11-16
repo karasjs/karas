@@ -94,7 +94,8 @@ let karas = {
     return new klass(tagName, props);
   },
   createCp(klass, props, children = []) {
-    return new klass(props, children);
+    props.children = children; // 特例，cp的children通过props传入
+    return new klass(props);
   },
   parse(json, dom, options) {
     return parser.parse(this, json, dom, options);

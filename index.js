@@ -13067,14 +13067,6 @@
         return this.__domParent;
       }
     }, {
-      key: "state",
-      get: function get() {
-        return this.__state;
-      },
-      set: function set(v) {
-        this.__state = v;
-      }
-    }, {
       key: "isDestroyed",
       get: function get() {
         return this.__isDestroyed;
@@ -13127,7 +13119,7 @@
     return Component;
   }(Event);
 
-  Object.keys(o$2.GEOM).concat(['x', 'y', 'width', 'height', 'outerWidth', 'outerHeight', 'clientWidth', 'clientHeight', 'offsetWidth', 'offsetHeight', 'style', 'animationList', 'currentStyle', 'computedStyle', 'cacheStyle', '__currentStyle', '__computedStyle', '__cacheStyle', 'currentProps', '__currentProps', 'cacheProps', '__cacheProps', 'baseline', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', '__layoutData', '__struct', 'bbox', 'contentBoxList', 'listener', 'matrix', 'matrixEvent']).forEach(function (fn) {
+  Object.keys(o$2.GEOM).concat(['x', 'y', 'width', 'height', 'outerWidth', 'outerHeight', 'clientWidth', 'clientHeight', 'offsetWidth', 'offsetHeight', 'style', 'children', 'animationList', 'currentStyle', 'computedStyle', 'cacheStyle', '__currentStyle', '__computedStyle', '__cacheStyle', 'currentProps', '__currentProps', 'cacheProps', '__cacheProps', 'baseline', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', '__layoutData', '__struct', 'bbox', 'contentBoxList', 'listener', 'matrix', 'matrixEvent']).forEach(function (fn) {
     Object.defineProperty(Component.prototype, fn, {
       get: function get() {
         var sr = this.shadowRoot;
@@ -44434,7 +44426,9 @@
     },
     createCp: function createCp(klass, props) {
       var children = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
-      return new klass(props, children);
+      props.children = children; // 特例，cp的children通过props传入
+
+      return new klass(props);
     },
     parse: function parse(json, dom, options) {
       return o.parse(this, json, dom, options);

@@ -148,14 +148,6 @@ class Component extends Event {
     return this.__domParent;
   }
 
-  get state() {
-    return this.__state;
-  }
-
-  set state(v) {
-    this.__state = v;
-  }
-
   get isDestroyed() {
     return this.__isDestroyed;
   }
@@ -208,6 +200,7 @@ Object.keys(change.GEOM).concat([
   'offsetWidth',
   'offsetHeight',
   'style',
+  'children',
   'animationList',
   'currentStyle',
   'computedStyle',

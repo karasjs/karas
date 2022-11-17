@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=0"/>
+  <title>fss</title>
+  <link href="style.css" media="all" rel="stylesheet"/>
+</head>
+<body>
+<div class="pre">单行文本情况下，想要使得过多文字自动缩小文字显示，可设置本值为&lt;fontSize的正值，排版将尝试缩小显示，达到阈值后停止尝试。</div>
+<div id="example"></div>
+<pre><code class="brush:csx"></code></pre>
+<script type="text/jsx">
+  karas.style.font.register('puhui', './Alibaba-PuHuiTi-Regular.ttf');
+  karas.render(
+    <canvas width="360" height="360">
+      <div style={{width:40,background:'#F00',whiteSpace:'nowrap'}}>abcdefg</div>
+      <div style={{width:40,background:'#F00',whiteSpace:'nowrap',overflow:'hidden',
+        textOverflow:'ellipsis',fontSizeShrink:14}}>abcdefg</div>
+      <div style={{width:40,background:'#F00',whiteSpace:'nowrap',overflow:'hidden',
+        textOverflow:'ellipsis',fontSizeShrink:10}}>abcdefg</div>
+      <div style={{width:40,background:'#F00',whiteSpace:'nowrap',
+        fontSizeShrink:10}}>abcdefg</div>
+    </canvas>,
+    '#example'
+  );
+</script>
+<script src="sea.js"></script>
+<script src="homunculus.js"></script>
+<script src="yurine.js"></script>
+<script src="../index.js"></script>
+<script>
+  seajs.config({
+    alias: {
+    },
+    map: [function(url) {
+    }]
+  });
+  define('fs', {});
+  seajs.use(['jssc'], function(jssc) {
+    var code = document.querySelector('pre code');
+    var jsx = document.querySelector('script[type="text/jsx"]');
+    var source = jsx.textContent || jsx.text;
+    source = source.trim().replace(/\n[ ]{2}/g, '\n');
+    var text = document.createTextNode(source);
+    code.appendChild(text);
+    jssc.exec();
+    var head = document.head || document.getElementsByTagName('head')[0];
+    var jsx = document.querySelectorAll('script');
+    for(var i = 0, len = jsx.length; i < len; i++) {
+      var node = jsx[i];
+      if(node.getAttribute('type') === 'text/jsx' && !node.getAttribute('yurine')) {
+        node.setAttribute('yurine', 1);
+        var code = node.textContent || node.text;
+        if(!code) {
+          continue;
+        }
+        code = yurine.parse(code);
+        var script = document.createElement('script');
+        script.async = true;
+        script.text = code;
+        head.appendChild(script);
+      }
+    }
+  });
+</script>
+</body>
+</html>

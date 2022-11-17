@@ -40,6 +40,7 @@ const {
     BORDER_LEFT_WIDTH,
     BORDER_RIGHT_WIDTH,
     FILTER,
+    FONT_SIZE_SHRINK,
   },
   ELLIPSIS,
 } = enums;
@@ -49,6 +50,45 @@ const { CANVAS, SVG, WEBGL } = mode;
 const { isFunction } = util;
 
 /**
+ * 测量的封装，主要是增加了shrinkFontSize声明时，不断尝试fontSize--，直到限制或者满足一行展示要求
+ */
+function measureLineWidth(ctx, renderMode, start, length, content, w, ew, perW, computedStyle,
+                          fontFamily, fontSize, fontWeight, fontSizeShrink, letterSpacing, isUpright) {
+  if(start >= length) {
+    // 特殊情况不应该走进这里
+    return { hypotheticalNum: 0, rw: 0, newLine: false };
+  }
+  let res = measure(ctx, renderMode, start, length, content, w - ew, perW,
+    fontFamily, fontSize, fontWeight, letterSpacing, isUpright);
+  if(res.newLine && fontSizeShrink > 0 && fontSizeShrink < fontSize) {
+    while(res.newLine && fontSize > fontSizeShrink) {
+      // 文字和ellipsis同时设置测量
+      ctx.font = css.setFontStyle(computedStyle, --fontSize);
+      if(renderMode === CANVAS || renderMode === WEBGL) {
+        ew = ctx.measureText(ELLIPSIS).width;
+      }
+      else {
+        ew = inject.measureTextSync(ELLIPSIS, computedStyle[FONT_FAMILY], fontSize, computedStyle[FONT_WEIGHT]);
+      }
+      res = measure(ctx, renderMode, start, length, content, w - ew, perW,
+        fontFamily, fontSize, fontWeight, letterSpacing, isUpright);
+      res.fitFontSize = fontSize;
+      res.ew = ew;
+      // 有ew的时候还要尝试没有是否放得下
+      if(ew) {
+        let t = measure(ctx, renderMode, start, length, content, w, perW,
+          fontFamily, fontSize, fontWeight, letterSpacing, isUpright);
+        if(!t.newLine) {
+          t.fitFontSize = fontSize;
+          res = t;
+        }
+      }
+    }
+  }
+  return res;
+}
+
+/**
  * 在给定宽度w的情况下，测量文字content多少个满足塞下，只支持水平书写，从start的索引开始，content长length
  * 尽可能地少的次数调用canvas的measureText或svg的html节点的width，因为比较消耗性能
  * 这就需要一种算法，不能逐字遍历看总长度是否超过，也不能单字宽度相加因为有文本整形某些字体多个字宽度不等于每个之和
@@ -56,25 +96,9 @@ const { isFunction } = util;
  * 由于知道w和fontSize，因此能推测出平均值为fontSize/w，即字的个数，
  * 进行测量后得出w2，和真实w对比，产生误差d，再看d和fontSize推测差距个数，如此反复
  * 返回内容和end索引和长度，最少也要1个字符
- * @param ctx
- * @param renderMode
- * @param start
- * @param length
- * @param content
- * @param w
- * @param perW
- * @param fontFamily
- * @param fontSize
- * @param fontWeight
- * @param letterSpacing
- * @param isUpright
  */
-function measureLineWidth(ctx, renderMode, start, length, content, w, perW,
-                          fontFamily, fontSize, fontWeight, letterSpacing, isUpright) {
-  if(start >= length) {
-    // 特殊情况不应该走进这里
-    return [0, 0, false];
-  }
+function measure(ctx, renderMode, start, length, content, w, perW,
+                 fontFamily, fontSize, fontWeight, letterSpacing, isUpright) {
   let i = start, j = length, rw = 0, newLine = false;
   // 特殊降级，有letterSpacing时，canvas无法完全兼容，只能采取单字测量的方式完成
   if(letterSpacing && [CANVAS, WEBGL].indexOf(renderMode) > -1) {
@@ -87,7 +111,7 @@ function measureLineWidth(ctx, renderMode, start, length, content, w, perW,
       }
       count += mw;
     }
-    return [i - start, count, newLine || count > w + (1e-10)];
+    return { hypotheticalNum: i - start, rw: count, newLine: newLine || count > w + (1e-10) };
   }
   // 没有letterSpacing或者是svg模式可以完美获取TextMetrics
   let hypotheticalNum = Math.round(w / perW);
@@ -157,7 +181,7 @@ function measureLineWidth(ctx, renderMode, start, length, content, w, perW,
       }
     }
   }
-  return [hypotheticalNum, rw, newLine];
+  return { hypotheticalNum, rw, newLine };
 }
 
 function getFontKey(ff, fs, fw, ls) {
@@ -175,6 +199,7 @@ class Text extends Node {
     this.__widthHash = {}; // 存储当前字体样式key下的charWidth/textWidth
     this.__limitCache = false;
     this.__hasContent = false;
+    this.__fitFontSize = 0; // 自动缩小时的字体大小
   }
 
   /**
@@ -228,7 +253,7 @@ class Text extends Node {
       ctx = renderMode === WEBGL
         ? inject.getFontCanvas().ctx
         : root.ctx;
-      ctx.font = css.setFontStyle(computedStyle);
+      ctx.font = css.setFontStyle(computedStyle, 0);
     }
     // fontSize在中文是正好1个字宽度，英文不一定，等宽为2个，不等宽可能1~2个，特殊字符甚至>2个，取预估均值然后倒数得每个均宽0.8
     let perW = (fontSize * 0.8) + letterSpacing;
@@ -236,10 +261,11 @@ class Text extends Node {
     let mainCoords; // 根据书写模式指向不同x/y
     // 不换行特殊对待，同时考虑overflow和textOverflow
     if(whiteSpace === 'nowrap') {
-      let isTextOverflow, textWidth = this.textWidth;
+      let isTextOverflow, textWidth = this.textWidth, w = size - endSpace - beginSpace;
       let {
         [POSITION]: position,
         [OVERFLOW]: overflow,
+        [FONT_SIZE_SHRINK]: fontSizeShrink,
       } = bp.computedStyle;
       let containerSize = bp.currentStyle[isUpright ? HEIGHT: WIDTH];
       // 只要是overflow隐藏，不管textOverflow如何（默认是clip等同于overflow:hidden的功能）都截取
@@ -254,8 +280,8 @@ class Text extends Node {
       }
       // ellipsis生效情况，本节点开始向前回退查找，尝试放下一部分字符
       if(isTextOverflow && textOverflow === 'ellipsis') {
-        [mainCoords] = this.__lineBack(ctx, renderMode, i, length, content, size - endSpace - beginSpace, perW, x, y, maxW,
-          endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing, isUpright);
+        [mainCoords] = this.__lineBack(ctx, renderMode, i, length, content, w, perW, x, y, maxW,
+          endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, fontSizeShrink, letterSpacing, isUpright);
         lineCount++;
         if(isUpright) {
           x = mainCoords;
@@ -266,6 +292,21 @@ class Text extends Node {
       }
       // 默认是否clip跟随overflow:hidden，无需感知，裁剪由dom做，这里不裁剪
       else {
+        // 但还是要判断缩小字体适应
+        if(fontSizeShrink > 0 && fontSizeShrink < fontSize) {
+          let fs = fontSize;
+          this.__fitFontSize = 0;
+          while(fs > fontSizeShrink && textWidth > w) {
+            if(renderMode === CANVAS || renderMode === WEBGL) {
+              ctx.font = css.setFontStyle(computedStyle, --fs);
+              textWidth = ctx.measureText(content).width + letterSpacing * content.length;
+            }
+            else if(renderMode === SVG) {
+              textWidth = inject.measureTextSync(content, fontFamily, fs, fontWeight) + letterSpacing * content.length;
+            }
+          }
+          this.__fitFontSize = fs;
+        }
         let textBox = new TextBox(this, textBoxes.length, x, y, textWidth, lineHeight,
           content, isUpright);
         textBoxes.push(textBox);
@@ -291,13 +332,13 @@ class Text extends Node {
         if(lineClamp && lineCount + lineClampCount >= lineClamp - 1) {
           limit -= endSpace;
         }
-        let [num, rw, newLine] = measureLineWidth(ctx, renderMode, i, length, content, limit, perW,
-          fontFamily, fontSize, fontWeight, letterSpacing);
+        let { hypotheticalNum: num, rw, newLine } = measureLineWidth(ctx, renderMode, i, length, content, limit, 0, perW,
+          computedStyle, fontFamily, fontSize, fontWeight, 0, letterSpacing);
         // 多行文本截断，这里肯定需要回退，注意防止恰好是最后一个字符，此时无需截取
         if(lineClamp && newLine && lineCount + lineClampCount >= lineClamp - 1 && i + num < length) {
           [mainCoords, maxW] = this.__lineBack(ctx, renderMode, i, i + num, content, limit - endSpace, perW,
             lineCount ? lx : x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager,
-            fontFamily, fontSize, fontWeight, letterSpacing, isUpright);
+            fontFamily, fontSize, fontWeight, 0, letterSpacing, isUpright);
           lineCount++;
           if(isUpright) {
             x = mainCoords;
@@ -309,13 +350,16 @@ class Text extends Node {
         }
         // 最后一行考虑endSpace，可能不够需要回退，但不能是1个字符
         if(i + num === length && endSpace && rw + endSpace > limit + (1e-10) && num > 1) {
-          [num, rw, newLine] = measureLineWidth(ctx, renderMode, i, length, content, limit - endSpace, perW,
-            fontFamily, fontSize, fontWeight, letterSpacing);
+          let res = measureLineWidth(ctx, renderMode, i, length, content, limit - endSpace, 0, perW,
+            computedStyle, fontFamily, fontSize, fontWeight, 0, letterSpacing);
+          num = res.hypotheticalNum;
+          rw = res.rw;
+          newLine = res.newLine;
           // 可能加上endSpace后超过了，还得再判断一次
           if(lineClamp && newLine && lineCount + lineClampCount >= lineClamp - 1) {
             [mainCoords, maxW] = this.__lineBack(ctx, renderMode, i, i + num, content, limit - endSpace, perW,
               lineCount ? lx : x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager,
-              fontFamily, fontSize, fontWeight, letterSpacing, isUpright);
+              fontFamily, fontSize, fontWeight, 0, letterSpacing, isUpright);
             lineCount++;
             if(isUpright) {
               x = mainCoords;
@@ -377,11 +421,11 @@ class Text extends Node {
 
   // 末尾行因ellipsis的缘故向前回退字符生成textBox，可能会因不满足宽度导致无法生成，此时向前继续回退TextBox
   __lineBack(ctx, renderMode, i, length, content, limit, perW, x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager,
-              fontFamily, fontSize, fontWeight, letterSpacing, isUpright) {
+              fontFamily, fontSize, fontWeight, fontSizeShrink, letterSpacing, isUpright) {
     let ew, bp = this.__bp, computedStyle = bp.computedStyle;
     // 临时测量ELLIPSIS的尺寸
     if(renderMode === CANVAS || renderMode === WEBGL) {
-      let font = css.setFontStyle(computedStyle);
+      let font = css.setFontStyle(computedStyle, 0);
       if(ctx.font !== font) {
         ctx.font = font;
       }
@@ -391,14 +435,24 @@ class Text extends Node {
       ew = inject.measureTextSync(ELLIPSIS, computedStyle[FONT_FAMILY], computedStyle[FONT_SIZE], computedStyle[FONT_WEIGHT]);
     }
     if(renderMode === CANVAS || renderMode === WEBGL) {
-      let font = css.setFontStyle(this.computedStyle);
+      let font = css.setFontStyle(this.computedStyle, 0);
       if (ctx.font !== font) {
         ctx.font = font;
       }
     }
-    let [num, rw] = measureLineWidth(ctx, renderMode, i, length, content, limit - ew - endSpace, perW, fontFamily, fontSize, fontWeight, letterSpacing);
+    this.__fitFontSize = 0;
+    let { hypotheticalNum: num, rw, newLine, fitFontSize, ew: ew2 } = measureLineWidth(ctx, renderMode, i, length, content, limit - endSpace, ew, perW,
+      computedStyle, fontFamily, fontSize, fontWeight, fontSizeShrink, letterSpacing);
+    // 缩小的fontSize
+    if(fitFontSize) {
+      this.__fitFontSize = fitFontSize;
+    }
+    if(ew2) {
+      ew = ew2;
+    }
+    // 缩小后可能不再换行，下面的逻辑都要预先判断newLine
     // 还是不够，需要回溯查找前一个inline节点继续回退，同时防止空行首，要至少一个textBox且一个字符
-    if(rw + ew > limit + (1e-10) - endSpace) {
+    if(newLine && rw + ew > limit + (1e-10) - endSpace) {
       // 向前回溯已有的tb，需注意可能是新行开头这时还没生成新的lineBox，而旧行则至少1个内容
       // 新行的话进不来，会添加上面num的内容，旧行不添加只修改之前的tb内容也有可能删除一些
       let lineBox = lineBoxManager.lineBox;
@@ -434,10 +488,11 @@ class Text extends Node {
               [FONT_FAMILY]: fontFamily,
             } = parent.computedStyle;
             if(renderMode === CANVAS || renderMode === WEBGL) {
-              ctx.font = css.setFontStyle(parent.computedStyle);
+              ctx.font = css.setFontStyle(parent.computedStyle, 0);
             }
             // 再进行查找，这里也会有至少一个字符不用担心
-            let [num, rw] = measureLineWidth(ctx, renderMode, 0, length, content, limit - ew + width - endSpace, perW, fontFamily, fontSize, fontWeight, letterSpacing);
+            let { hypotheticalNum: num, rw } = measureLineWidth(ctx, renderMode, 0, length, content, limit + width - endSpace, ew, perW,
+              computedStyle, fontFamily, fontSize, fontWeight, 0, letterSpacing);
             // 可能发生x回退，当tb的内容产生减少时
             if(num !== content.length) {
               tb.__content = content.slice(0, num);
@@ -454,8 +509,8 @@ class Text extends Node {
             lineBox.__resetLb(computedStyle[LINE_HEIGHT],
               isUpright ? css.getVerticalBaseline(computedStyle) : css.getBaseline(computedStyle));
             let ep = isUpright
-              ? new Ellipsis(x, y + rw + endSpace, ew, bp, isUpright)
-              : new Ellipsis(x + rw + endSpace, y, ew, bp, isUpright);
+              ? new Ellipsis(x, y + rw + endSpace, ew, bp, this, isUpright)
+              : new Ellipsis(x + rw + endSpace, y, ew, bp, this, isUpright);
             lineBoxManager.addItem(ep, true);
             if(isUpright) {
               x += Math.max(lineHeight, lineBoxManager.verticalLineHeight);
@@ -524,17 +579,19 @@ class Text extends Node {
     textBoxes.push(textBox);
     lineBoxManager.addItem(textBox, false);
     // ELLIPSIS也作为内容加入，但特殊的是指向最近block使用其样式渲染
-    let ep = isUpright
-      ? new Ellipsis(x, y + rw + endSpace, ew, bp, isUpright)
-      : new Ellipsis(x + rw + endSpace, y, ew, bp, isUpright);
-    lineBoxManager.addItem(ep, true);
+    if(newLine) {
+      let ep = isUpright
+        ? new Ellipsis(x, y + rw + endSpace, ew, bp, this, isUpright)
+        : new Ellipsis(x + rw + endSpace, y, ew, bp, this, isUpright);
+      lineBoxManager.addItem(ep, true);
+    }
     if(isUpright) {
       x += Math.max(lineHeight, lineBoxManager.verticalLineHeight);
     }
     else {
       y += Math.max(lineHeight, lineBoxManager.lineHeight);
     }
-    maxW = Math.max(maxW, rw + ew);
+    maxW = Math.max(maxW, rw + newLine ? ew : 0);
     return [isUpright ? x : y, maxW];
   }
 
@@ -564,11 +621,12 @@ class Text extends Node {
           [FONT_FAMILY]: fontFamily,
         } = parent.computedStyle;
         if(renderMode === CANVAS || renderMode === WEBGL) {
-          ctx.font = css.setFontStyle(parent.computedStyle);
+          ctx.font = css.setFontStyle(parent.computedStyle, 0);
         }
         let perW = (fontSize * 0.8) + letterSpacing;
         // 再进行查找，这里也会有至少一个字符不用担心
-        let [num, rw] = measureLineWidth(ctx, renderMode, 0, length, content, limit - ew - endSpace + width, perW, fontFamily, fontSize, fontWeight, letterSpacing);
+        let { hypotheticalNum: num, rw } = measureLineWidth(ctx, renderMode, 0, length, content, limit - endSpace + width, ew, perW,
+          computedStyle, fontFamily, fontSize, fontWeight, 0, letterSpacing);
         // 可能发生x回退，当tb的内容产生减少时
         if(num !== content.length) {
           tb.__content = content.slice(0, num);
@@ -583,8 +641,8 @@ class Text extends Node {
         lineBox.__resetLb(computedStyle[LINE_HEIGHT],
           isUpright ? css.getVerticalBaseline(computedStyle) : css.getBaseline(computedStyle));
         let ep = isUpright
-          ? new Ellipsis(tb.x, tb.y + rw + endSpace, ew, bp, isUpright)
-          : new Ellipsis(tb.x + rw + endSpace, tb.y, ew, bp, isUpright);
+          ? new Ellipsis(tb.x, tb.y + rw + endSpace, ew, bp, this, isUpright)
+          : new Ellipsis(tb.x + rw + endSpace, tb.y, ew, bp, this, isUpright);
         lineBoxManager.addItem(ep, true);
         return;
       }
@@ -701,7 +759,7 @@ class Text extends Node {
       return;
     }
     if(renderMode === CANVAS) {
-      let font = css.setFontStyle(computedStyle);
+      let font = css.setFontStyle(computedStyle, this.__fitFontSize);
       if(ctx.font !== font) {
         ctx.font = font;
       }
@@ -832,7 +890,7 @@ class Text extends Node {
         if(renderMode === WEBGL) {
           ctx = inject.getFontCanvas().ctx;
         }
-        ctx.font = css.setFontStyle(computedStyle);
+        ctx.font = css.setFontStyle(computedStyle, 0);
         for(let i = 0, len = content.length; i < len; i++) {
           max = Math.max(max, ctx.measureText(content.charAt([i])).width);
         }
@@ -863,7 +921,7 @@ class Text extends Node {
         if(renderMode === WEBGL) {
           ctx = inject.getFontCanvas().ctx;
         }
-        ctx.font = css.setFontStyle(computedStyle);
+        ctx.font = css.setFontStyle(computedStyle, 0);
         o.firstCharWidth = ctx.measureText(content.charAt(0)).width + letterSpacing;
       }
       else if(renderMode === SVG) {
@@ -891,7 +949,7 @@ class Text extends Node {
         if(renderMode === WEBGL) {
           ctx = inject.getFontCanvas().ctx;
         }
-        ctx.font = css.setFontStyle(computedStyle);
+        ctx.font = css.setFontStyle(computedStyle, 0);
         o.textWidth = ctx.measureText(content).width + letterSpacing * content.length;
       }
       else if(renderMode === SVG) {
@@ -995,6 +1053,10 @@ class Text extends Node {
 
   get perspectiveMatrix() {
     return this.__domParent.__perspectiveMatrix;
+  }
+
+  get fitFontSize() {
+    return this.__fitFontSize;
   }
 }
 

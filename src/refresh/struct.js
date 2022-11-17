@@ -282,6 +282,14 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
   }
   let ctxTotal = __cacheTotal.ctx;
 
+  // 离屏画布的原点和尺寸信息存储
+  root.__env = {
+    x: __cacheTotal.x,
+    y: __cacheTotal.y,
+    width: __cacheTotal.width,
+    height: __cacheTotal.height,
+  };
+
   /**
    * 再次遍历每个节点，以局部根节点左上角为基准原点，将所有节点绘制上去
    * 每个子节点的opacity有父继承计算在上面循环已经做好了，直接获取
@@ -482,6 +490,8 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
     __cacheTotal.release();
     __cacheTotal = t;
   }
+
+  root.__env = null;
   return __cacheTotal;
 }
 
@@ -808,6 +818,14 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   dx = -bboxTotal[0];
   dy = -bboxTotal[1];
 
+  // 离屏画布的原点和尺寸信息存储
+  root.__env = {
+    x: __cacheTotal.x,
+    y: __cacheTotal.y,
+    width: __cacheTotal.width,
+    height: __cacheTotal.height,
+  };
+
   // 需要重新计算，因为bbox里是原本位置，这里是新的位置
   let pm, ppt;
   if(isPpt) {
@@ -1083,6 +1101,8 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   gl.deleteFramebuffer(frameBuffer);
   gl.bindTexture(gl.TEXTURE_2D, null);
   gl.viewport(0, 0, W, H);
+
+  root.__env = null;
   return __cacheTotal;
 }
 

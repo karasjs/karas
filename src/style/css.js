@@ -64,8 +64,9 @@ const { STYLE_KEY, style2Upper, STYLE_KEY: {
   TEXT_STROKE_WIDTH,
   TEXT_STROKE_OVER,
   WRITING_MODE,
+  FONT_SIZE_SHRINK,
 } } = enums;
-const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING, REM, VW, VH, VMAX, VMIN, GRADIENT, calUnit } = unit;
+const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING, EM, REM, VW, VH, VMAX, VMIN, GRADIENT, calUnit } = unit;
 const { isNil, rgba2int, equalArr, equal, replaceRgba2Hex } = util;
 const { isGeom, GEOM, GEOM_KEY_SET } = change;
 const { VALID_STRING_VALUE } = reset;
@@ -746,16 +747,32 @@ function normalize(style, resetList = []) {
     }
     else {
       let v = calUnit(temp);
-      // fontSize不能为负数，否则为继承
-      if(v < 0) {
+      // fontSize不能为非正数，否则为继承
+      if(v <= 0) {
         res[FONT_SIZE] = { u: INHERIT };
       }
       else {
-        if([NUMBER, DEG].indexOf(v.u) > -1) {
+        if([NUMBER, DEG, EM].indexOf(v.u) > -1) {
+          v.v = parseInt(v.v); // 防止小数
           v.u = PX;
         }
         res[FONT_SIZE] = v;
       }
+    }
+  }
+  temp = style.fontSizeShrink;
+  if(temp !== undefined) {
+    let v = calUnit(temp);
+    // 不能为非正数，否则为0
+    if(v <= 0) {
+      res[FONT_SIZE_SHRINK] = { v: 0, u: PX };
+    }
+    else {
+      if([NUMBER, DEG, EM].indexOf(v.u) > -1) {
+        v.v = parseInt(v.v); // 防止小数
+        v.u = PX;
+      }
+      res[FONT_SIZE_SHRINK] = v;
     }
   }
   temp = style.textStrokeWidth;
@@ -1151,6 +1168,7 @@ function normalize(style, resetList = []) {
   [
     'position',
     'display',
+    'boxSizing',
     'flexDirection',
     'flexWrap',
     'justifyContent',
@@ -1216,8 +1234,8 @@ function normalize(style, resetList = []) {
   return res;
 }
 
-function setFontStyle(style) {
-  let fontSize = style[FONT_SIZE] || 0;
+function setFontStyle(style, specialFontSize) {
+  let fontSize = specialFontSize || style[FONT_SIZE] || 0;
   let fontFamily = style[FONT_FAMILY] || inject.defaultFontFamily || 'arial';
   if(/\s/.test(fontFamily)) {
     fontFamily = '"' + fontFamily.replace(/"/g, '\\"') + '"';

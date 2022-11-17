@@ -3,6 +3,7 @@ import inject from '../util/inject';
 const DOM = {
   position: 'static',
   display: 'block',
+  boxSizing: 'contentBox',
   top: 'auto',
   right: 'auto',
   bottom: 'auto',
@@ -91,6 +92,7 @@ const DOM = {
   textStrokeColor: 'inherit',
   textStrokeOver: 'inherit',
   writingMode: 'inherit',
+  fontSizeShrink: 0,
 };
 
 const GEOM = {
@@ -170,6 +172,7 @@ const VALID_STRING_VALUE = {
   alignContent: ['stretch', 'flexStart', 'center', 'flexEnd', 'spaceBetween', 'spaceAround'],
   transformStyle: ['flat', 'preserve3d'],
   backfaceVisibility: ['visible', 'hidden'],
+  boxSizing: ['contentBox', 'borderBox'],
 }
 
 export default {

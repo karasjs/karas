@@ -33,6 +33,9 @@
   * inline `渲染简化按dom序而非LineBox序`
   * inlineBlock
   * none
+* boxSizing
+  * contentBox 默认
+  * borderBox
 * top/right/bottom/left
   * auto 默认
   * px
@@ -123,6 +126,12 @@
 * fontSize
   * inherit 默认，根元素为16px
   * px
+  * %
+  * rem
+  * vw
+  * vh
+  * vmax
+  * vmin
 * fontFamily
   * arial 默认
 * fontStyle
@@ -383,7 +392,16 @@
   * nonzero 默认
   * evenodd
 ## 扩展样式
-`因动画场景需要，css的transform在多个时会出现后者覆盖前者的情况，因此将其所有变换单独拆解开来，且坐标系保持相对世界不互相干扰`
+`单行文本情况下，想要使得过多文字自动缩小文字显示，可设置本值为<fontSize的正值，排版将尝试缩小显示，达到阈值后停止尝试。`
+* fontSizeShrink
+  * px 默认0，不生效
+  * %
+  * rem
+  * vw
+  * vh
+  * vmax
+  * vmin
+`因动画场景需要，css的transform在多个时会出现后者覆盖前者的情况，因此将其所有变换单独拆解开来，且坐标系保持相对世界不互相干扰。新版浏览器已支持。`
 * translateX/translateY
   * 0 默认
   * px

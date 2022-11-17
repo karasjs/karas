@@ -128,6 +128,8 @@ const {
     WRITING_MODE,
     TRANSFORM_STYLE,
     BACKFACE_VISIBILITY,
+    BOX_SIZING,
+    FONT_SIZE_SHRINK,
   },
 } = enums;
 const { AUTO, PX, PERCENT, INHERIT, NUMBER, RGBA, STRING, REM, VW, VH, VMAX, VMIN, DEG, GRADIENT } = unit;
@@ -315,7 +317,7 @@ class Xom extends Node {
     let isRoot = !parent;
     let parentComputedStyle = parent && parent.__computedStyle;
     // 继承的特殊处理，根节点用默认值
-    [FONT_SIZE, FONT_FAMILY, FONT_WEIGHT, WRITING_MODE].forEach(k => {
+    [FONT_SIZE, FONT_FAMILY, FONT_WEIGHT, WRITING_MODE, FONT_SIZE_SHRINK].forEach(k => {
       let v = currentStyle[k];
       // ff特殊处理
       if(k === FONT_FAMILY) {
@@ -343,9 +345,9 @@ class Xom extends Node {
       else if(v.u === INHERIT) {
         computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : parentComputedStyle[k];
       }
-      // 只有fontSize会有%
+      // fontSize和shrinkFontSize会有%
       else if(v.u === PERCENT) {
-        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (parentComputedStyle[k] * v.v * 0.01);
+        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (this.root.computedStyle[FONT_SIZE] * v.v * 0.01);
       }
       else if(v.u === REM) {
         computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (this.root.computedStyle[FONT_SIZE] * v.v);
@@ -379,6 +381,7 @@ class Xom extends Node {
     [
       POSITION,
       DISPLAY,
+      BOX_SIZING,
       FLEX_DIRECTION,
       JUSTIFY_CONTENT,
       ALIGN_ITEMS,
@@ -529,7 +532,7 @@ class Xom extends Node {
 
   // dom常用的几种尺寸赋值
   __ioSize(w, h) {
-    let computedStyle = this.computedStyle;
+    let computedStyle = this.__computedStyle;
     // 可能不传，在虚拟布局时用不到
     if(!isNil(w)) {
       this.__width = computedStyle[WIDTH] = w;
@@ -556,6 +559,7 @@ class Xom extends Node {
       [PADDING_TOP]: paddingTop,
       [PADDING_RIGHT]: paddingRight,
       [PADDING_BOTTOM]: paddingBottom,
+      [BOX_SIZING]: boxSizing,
     } = currentStyle;
     let {
       [BORDER_TOP_WIDTH]: borderTopWidth,
@@ -563,21 +567,27 @@ class Xom extends Node {
       [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
       [BORDER_LEFT_WIDTH]: borderLeftWidth,
     } = computedStyle;
-    let mbp = this.__calSize(marginLeft, w, isDirectItem)
-      + this.__calSize(marginRight, w, isDirectItem)
-      + this.__calSize(paddingLeft, w, isDirectItem)
-      + this.__calSize(paddingRight, w, isDirectItem)
-      + borderLeftWidth + borderRightWidth;
     if(isDirectionRow) {
-      res = res.map(item => item + mbp);
+      let m = this.__calSize(marginLeft, w, isDirectItem)
+        + this.__calSize(marginRight, w, isDirectItem);
+      let bp = 0;
+      if(isDirectItem || boxSizing === 'contentBox') {
+        bp = this.__calSize(paddingLeft, w, isDirectItem)
+          + this.__calSize(paddingRight, w, isDirectItem)
+          + borderLeftWidth + borderRightWidth;
+      }
+      res = res.map(item => item + m + bp);
     }
     else {
-      let mbp = this.__calSize(marginTop, w, isDirectItem)
-        + this.__calSize(marginBottom, w, isDirectItem)
-        + this.__calSize(paddingTop, w, isDirectItem)
-        + this.__calSize(paddingBottom, w, isDirectItem)
-        + borderTopWidth + borderBottomWidth;
-      res = res.map(item => item + mbp);
+      let m = this.__calSize(marginTop, w, isDirectItem)
+        + this.__calSize(marginBottom, w, isDirectItem);
+      let bp = 0;
+      if(isDirectItem || boxSizing === 'contentBox') {
+        bp = this.__calSize(paddingTop, w, isDirectItem)
+          + this.__calSize(paddingBottom, w, isDirectItem)
+          + borderTopWidth + borderBottomWidth;
+      }
+      res = res.map(item => item + m + bp);
     }
     return res;
   }
@@ -836,7 +846,7 @@ class Xom extends Node {
     let { x, y, w, h, w2, h2, w3, h3, lx, ly, lineBoxManager, endSpace = 0, isUpright: isParentVertical, container } = data;
     this.__x = x;
     this.__y = y;
-    let { currentStyle, computedStyle } = this;
+    let { __currentStyle: currentStyle, __computedStyle: computedStyle } = this;
     let {
       [WIDTH]: width,
       [HEIGHT]: height,
@@ -856,6 +866,7 @@ class Xom extends Node {
       [PADDING_BOTTOM]: paddingBottom,
       [PADDING_LEFT]: paddingLeft,
       [WRITING_MODE]: writingMode,
+      [BOX_SIZING]: boxSizing,
     } = computedStyle;
     let isUpright = writingMode.indexOf('vertical') === 0;
     // 除了auto外都是固定宽高度
@@ -879,6 +890,9 @@ class Xom extends Node {
       }
       else {
         w = this.__calSize(width, w, true);
+        if(boxSizing === 'borderBox') {
+          w -= borderLeftWidth + borderRightWidth + paddingLeft + paddingRight;
+        }
       }
     }
     if(h2 !== undefined) {
@@ -906,6 +920,9 @@ class Xom extends Node {
         else {
           fixedHeight = true;
           h = this.__calSize(height, h, true);
+        }
+        if(boxSizing === 'borderBox') {
+          h -= borderTopWidth + borderBottomWidth + paddingTop + paddingBottom;
         }
       }
     }
@@ -936,7 +953,7 @@ class Xom extends Node {
       }
     }
     // 传入w3/h3时，flex的item已知目标主尺寸，需减去mbp，其一定是block，和inline互斥
-    if(!isInline) {
+    else {
       if(width.u === AUTO || w3 !== undefined) {
         w -= borderLeftWidth + borderRightWidth + marginLeft + marginRight + paddingLeft + paddingRight;
       }
@@ -3295,6 +3312,18 @@ class Xom extends Node {
 
   get parentLineBox() {
     return this.__parentLineBox;
+  }
+
+  get env() {
+    let root = this.__root;
+    if(root) {
+      return root.__env || {
+        x: 0,
+        y: 0,
+        width: root.__width,
+        height: root.__height,
+      };
+    }
   }
 }
 

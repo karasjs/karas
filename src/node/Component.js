@@ -14,7 +14,7 @@ class Component extends Event {
   constructor(props = {}) {
     super();
     this.__tagName = /(?:function|class)\s+([\w$]+)/.exec(this.constructor.toString())[1];
-    // 构建工具中都是arr，手写可能出现hash情况
+    // 构建工具中都是{}，手写可能出现[]情况
     if(Array.isArray(props)) {
       this.props = util.arr2hash(props);
     }
@@ -148,14 +148,6 @@ class Component extends Event {
     return this.__domParent;
   }
 
-  get state() {
-    return this.__state;
-  }
-
-  set state(v) {
-    this.__state = v;
-  }
-
   get isDestroyed() {
     return this.__isDestroyed;
   }
@@ -208,6 +200,7 @@ Object.keys(change.GEOM).concat([
   'offsetWidth',
   'offsetHeight',
   'style',
+  'children',
   'animationList',
   'currentStyle',
   'computedStyle',

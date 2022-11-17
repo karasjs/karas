@@ -207,7 +207,7 @@ function backtrack(bp, lineBoxManager, lineBox, total, endSpace, isUpright) {
         text.__backtrack(bp, lineBoxManager, lineBox, item, total, endSpace, ew, computedStyle, ctx, renderMode, isUpright);
       }
       else {
-        let ep = new Ellipsis(item.x + item.outerWidth + endSpace, item.y, ew, bp);
+        let ep = new Ellipsis(item.x + item.outerWidth + endSpace, item.y, ew, bp, item, isUpright);
         lineBoxManager.addItem(ep, true);
       }
       break;
@@ -574,7 +574,7 @@ class Dom extends Xom {
     let b = 0;
     let min = 0;
     let max = 0;
-    let { flowChildren, currentStyle, computedStyle } = this;
+    let { flowChildren, __currentStyle: currentStyle, __computedStyle: computedStyle } = this;
     let { x, y, w, h } = data;
     // 计算需考虑style的属性
     let {

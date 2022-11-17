@@ -21364,6 +21364,20 @@
       get: function get() {
         return this.__parentLineBox;
       }
+    }, {
+      key: "env",
+      get: function get() {
+        var root = this.__root;
+
+        if (root) {
+          return root.__env || {
+            x: 0,
+            y: 0,
+            width: root.__width,
+            height: root.__height
+          };
+        }
+      }
     }]);
 
     return Xom;
@@ -33809,7 +33823,14 @@
       ty = __cacheTotal.y;
     }
 
-    var ctxTotal = __cacheTotal.ctx;
+    var ctxTotal = __cacheTotal.ctx; // 离屏画布的原点和尺寸信息存储
+
+    root.__env = {
+      x: __cacheTotal.x,
+      y: __cacheTotal.y,
+      width: __cacheTotal.width,
+      height: __cacheTotal.height
+    };
     /**
      * 再次遍历每个节点，以局部根节点左上角为基准原点，将所有节点绘制上去
      * 每个子节点的opacity有父继承计算在上面循环已经做好了，直接获取
@@ -34084,6 +34105,7 @@
       __cacheTotal = t;
     }
 
+    root.__env = null;
     return __cacheTotal;
   } // 从cacheTotal生成overflow、filter和mask，一定有cacheTotal才会进
 
@@ -34500,7 +34522,14 @@
     cx = w * 0.5;
     cy = h * 0.5;
     dx = -bboxTotal[0];
-    dy = -bboxTotal[1]; // 需要重新计算，因为bbox里是原本位置，这里是新的位置
+    dy = -bboxTotal[1]; // 离屏画布的原点和尺寸信息存储
+
+    root.__env = {
+      x: __cacheTotal.x,
+      y: __cacheTotal.y,
+      width: __cacheTotal.width,
+      height: __cacheTotal.height
+    }; // 需要重新计算，因为bbox里是原本位置，这里是新的位置
 
     var pm, ppt;
 
@@ -34823,6 +34852,7 @@
     gl.deleteFramebuffer(frameBuffer);
     gl.bindTexture(gl.TEXTURE_2D, null);
     gl.viewport(0, 0, W, H);
+    root.__env = null;
     return __cacheTotal;
   }
 
@@ -37365,6 +37395,8 @@
       _this.__lastUpdateP = null; // 每帧addUpdate都会向上检查，很多时候同级无需继续，第一次检查暂存parent对象
 
       builder.buildRoot(_assertThisInitialized(_this), _this.__children);
+      _this.__env = null; // 生成cacheTotal时会覆盖这个信息，得知当前离屏画布信息
+
       return _this;
     }
 

@@ -179,6 +179,7 @@ class Root extends Dom {
     this.__rlv = REBUILD; // 每次刷新最大lv
     this.__lastUpdateP = null; // 每帧addUpdate都会向上检查，很多时候同级无需继续，第一次检查暂存parent对象
     builder.buildRoot(this, this.__children);
+    this.__env = null; // 生成cacheTotal时会覆盖这个信息，得知当前离屏画布信息
   }
 
   __initProps() {

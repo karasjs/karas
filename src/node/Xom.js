@@ -3313,6 +3313,18 @@ class Xom extends Node {
   get parentLineBox() {
     return this.__parentLineBox;
   }
+
+  get env() {
+    let root = this.__root;
+    if(root) {
+      return root.__env || {
+        x: 0,
+        y: 0,
+        width: root.__width,
+        height: root.__height,
+      };
+    }
+  }
 }
 
 export default Xom;

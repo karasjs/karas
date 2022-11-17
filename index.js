@@ -11584,7 +11584,16 @@
 
         res = measure(ctx, renderMode, start, length, content, w - ew, perW, fontFamily, fontSize, fontWeight, letterSpacing, isUpright);
         res.fitFontSize = fontSize;
-        res.ew = ew;
+        res.ew = ew; // 有ew的时候还要尝试没有是否放得下
+
+        if (ew) {
+          var t = measure(ctx, renderMode, start, length, content, w, perW, fontFamily, fontSize, fontWeight, letterSpacing, isUpright);
+
+          if (!t.newLine) {
+            t.fitFontSize = fontSize;
+            res = t;
+          }
+        }
       }
     }
 

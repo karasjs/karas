@@ -252,7 +252,7 @@ class Text extends Node {
     let mainCoords; // 根据书写模式指向不同x/y
     // 不换行特殊对待，同时考虑overflow和textOverflow
     if(whiteSpace === 'nowrap') {
-      let isTextOverflow, textWidth = this.textWidth;
+      let isTextOverflow, textWidth = this.textWidth, w = size - endSpace - beginSpace;
       let {
         [POSITION]: position,
         [OVERFLOW]: overflow,
@@ -271,7 +271,7 @@ class Text extends Node {
       }
       // ellipsis生效情况，本节点开始向前回退查找，尝试放下一部分字符
       if(isTextOverflow && textOverflow === 'ellipsis') {
-        [mainCoords] = this.__lineBack(ctx, renderMode, i, length, content, size - endSpace - beginSpace, perW, x, y, maxW,
+        [mainCoords] = this.__lineBack(ctx, renderMode, i, length, content, w, perW, x, y, maxW,
           endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, fontSizeShrink, letterSpacing, isUpright);
         lineCount++;
         if(isUpright) {
@@ -283,6 +283,21 @@ class Text extends Node {
       }
       // 默认是否clip跟随overflow:hidden，无需感知，裁剪由dom做，这里不裁剪
       else {
+        // 但还是要判断缩小字体适应
+        if(fontSizeShrink > 0 && fontSizeShrink < fontSize) {
+          let fs = fontSize;
+          this.__fitFontSize = 0;
+          while(fs > fontSizeShrink && textWidth > w) {
+            if(renderMode === CANVAS || renderMode === WEBGL) {
+              ctx.font = css.setFontStyle(computedStyle, --fs);
+              textWidth = ctx.measureText(content).width + letterSpacing * content.length;
+            }
+            else if(renderMode === SVG) {
+              textWidth = inject.measureTextSync(content, fontFamily, fs, fontWeight) + letterSpacing * content.length;
+            }
+          }
+          this.__fitFontSize = fs;
+        }
         let textBox = new TextBox(this, textBoxes.length, x, y, textWidth, lineHeight,
           content, isUpright);
         textBoxes.push(textBox);

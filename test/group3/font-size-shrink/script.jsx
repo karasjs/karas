@@ -4,6 +4,8 @@ let o = karas.render(
       textOverflow:'ellipsis',fontSizeShrink:11}}>abcdefg</div>
     <div style={{width:50,whiteSpace:'nowrap',overflow:'hidden',
       textOverflow:'ellipsis',fontSizeShrink:10}}>abcdefg</div>
+    <div style={{width:50,whiteSpace:'nowrap',
+      fontSizeShrink:10}}>abcdefg</div>
   </canvas>,
   '#test'
 );

@@ -11833,7 +11833,9 @@
 
         if (whiteSpace === 'nowrap') {
           var isTextOverflow,
-              textWidth = this.textWidth;
+              textWidth = this.textWidth,
+              _w = size - endSpace - beginSpace;
+
           var _bp$computedStyle = bp.computedStyle,
               position = _bp$computedStyle[POSITION$5],
               overflow = _bp$computedStyle[OVERFLOW$3],
@@ -11851,7 +11853,7 @@
 
 
           if (isTextOverflow && textOverflow === 'ellipsis') {
-            var _this$__lineBack = this.__lineBack(ctx, renderMode, i, length, content, size - endSpace - beginSpace, perW, x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, fontSizeShrink, letterSpacing, isUpright);
+            var _this$__lineBack = this.__lineBack(ctx, renderMode, i, length, content, _w, perW, x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, fontSizeShrink, letterSpacing, isUpright);
 
             var _this$__lineBack2 = _slicedToArray(_this$__lineBack, 1);
 
@@ -11865,6 +11867,23 @@
             }
           } // 默认是否clip跟随overflow:hidden，无需感知，裁剪由dom做，这里不裁剪
           else {
+            // 但还是要判断缩小字体适应
+            if (fontSizeShrink > 0 && fontSizeShrink < fontSize) {
+              var fs = fontSize;
+              this.__fitFontSize = 0;
+
+              while (fs > fontSizeShrink && textWidth > _w) {
+                if (renderMode === CANVAS$2 || renderMode === WEBGL$2) {
+                  ctx.font = css.setFontStyle(computedStyle, --fs);
+                  textWidth = ctx.measureText(content).width + letterSpacing * content.length;
+                } else if (renderMode === SVG$2) {
+                  textWidth = inject.measureTextSync(content, fontFamily, fs, fontWeight) + letterSpacing * content.length;
+                }
+              }
+
+              this.__fitFontSize = fs;
+            }
+
             var textBox = new TextBox(this, textBoxes.length, x, y, textWidth, lineHeight, content, isUpright);
             textBoxes.push(textBox);
             lineBoxManager.addItem(textBox, false);

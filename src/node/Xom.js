@@ -3322,6 +3322,7 @@ class Xom extends Node {
         y: this.__y1,
         width: root.__width,
         height: root.__height,
+        node: root,
       };
     }
   }

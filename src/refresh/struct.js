@@ -286,8 +286,8 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
   root.__env = {
     x: __cacheTotal.x,
     y: __cacheTotal.y,
-    width: __cacheTotal.width,
-    height: __cacheTotal.height,
+    width: __cacheTotal.page.width,
+    height: __cacheTotal.page.height,
   };
 
   /**
@@ -818,14 +818,6 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   dx = -bboxTotal[0];
   dy = -bboxTotal[1];
 
-  // 离屏画布的原点和尺寸信息存储
-  root.__env = {
-    x: __cacheTotal.x,
-    y: __cacheTotal.y,
-    width: __cacheTotal.width,
-    height: __cacheTotal.height,
-  };
-
   // 需要重新计算，因为bbox里是原本位置，这里是新的位置
   let pm, ppt;
   if(isPpt) {
@@ -860,6 +852,15 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   texture = createTexture(gl, null, 0, w, h);
   frameBuffer = genFrameBufferWithTexture(gl, texture, w, h);
   gl.viewport(0, 0, w, h);
+
+  // 离屏画布的原点和尺寸信息存储
+  root.__env = {
+    x: dx,
+    y: dy,
+    width: w,
+    height: h,
+    node,
+  };
 
   // fbo绘制对象纹理不用绑定单元，剩下的纹理绘制用0号
   let lastPage, list = [];
@@ -2397,9 +2398,8 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
             need = true;
           }
         }
+        let isPpt = total && perspective || node.__selfPerspectiveMatrix;
         if(!need && (__refreshLevel & (PPT | CACHE))) {
-          let __domParent = node.__domParent;
-          let isPpt = !isE(__domParent && __domParent.__perspectiveMatrix) || node.__selfPerspectiveMatrix;
           if(isPpt) {
             need = true;
           }
@@ -2415,6 +2415,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
             total,
             node,
             hasMask,
+            isPpt,
           });
         }
         // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total

@@ -10784,7 +10784,7 @@ var DEG$2 = o$4.DEG;
 var CANVAS$4 = mode.CANVAS,
     SVG$4 = mode.SVG,
     WEBGL$4 = mode.WEBGL;
-var TuOrU = /(?:[\xA7\xA9\xAE\xB1\xBC-\xBE\xD7\xF7\u02EA\u02EB\u1100-\u11FF\u1401-\u167F\u18B0-\u18FF\u2016\u2020\u2021\u2030\u2031\u203B\u203C\u2042\u2047-\u2049\u2051\u2065\u20DD-\u20E0\u20E2-\u20E4\u2100\u2101\u2103-\u2109\u210F\u2113\u2114\u2116\u2117\u211E-\u2123\u2125\u2127\u2129\u212E\u2135-\u213F\u2145-\u214A\u214C\u214D\u214F-\u2189\u218C-\u218F\u221E\u2234\u2235\u2300-\u2307\u230C-\u231F\u2324-\u2328\u232B\u237D-\u239A\u23BE-\u23CD\u23CF\u23D1-\u23DB\u23E2-\u2422\u2424-\u24FF\u25A0-\u2619\u2620-\u2767\u2776-\u2793\u2B12-\u2B2F\u2B50-\u2B59\u2B97\u2BB8-\u2BD1\u2BD3-\u2BEB\u2BF0-\u2BFF\u2E50\u2E51\u2E80-\u3007\u3012\u3013\u3020-\u302F\u3031-\u309F\u30A1-\u30FB\u30FD-\uA4CF\uA960-\uA97F\uAC00-\uD7FF\uE000-\uFAFF\uFE10-\uFE1F\uFE30-\uFE48\uFE50-\uFE57\uFE5F-\uFE62\uFE67-\uFE6F\uFF01-\uFF07\uFF0A-\uFF0C\uFF0E-\uFF19\uFF1F-\uFF3A\uFF3C\uFF3E\uFF40-\uFF5A\uFFE0-\uFFE2\uFFE4-\uFFE7\uFFF0-\uFFF8\uFFFC\uFFFD]|\uD802[\uDD80-\uDD9F]|\uD805[\uDD80-\uDDFF]|\uD806[\uDE00-\uDEBF]|[\uD80C\uD81C-\uD822\uD83C\uD83D\uD840-\uD87E\uD880-\uD8BE][\uDC00-\uDFFF]|\uD80D[\uDC00-\uDC3F]|\uD811[\uDC00-\uDE7F]|\uD81B[\uDFE0-\uDFFF]|\uD823[\uDC00-\uDD7F]|\uD82B[\uDFF0-\uDFFF]|\uD82C[\uDC00-\uDEFF]|\uD833[\uDF00-\uDFCF]|\uD834[\uDC00-\uDDFF\uDEE0-\uDF7F]|\uD836[\uDC00-\uDEAF]|\uD83E[\uDD00-\uDEFF]|[\uD87F\uD8BF][\uDC00-\uDFFD])/;
+var TuOrU = /(?:[\xA7\xA9\xAE\xB1\xBC-\xBE\xD7\xF7\u02EA\u02EB\u1100-\u11FF\u1401-\u167F\u18B0-\u18FF\u2016\u2020\u2021\u2030\u2031\u203B\u203C\u2042\u2047-\u2049\u2051\u2065\u20DD-\u20E0\u20E2-\u20E4\u2100\u2101\u2103-\u2109\u210F\u2113\u2114\u2116\u2117\u211E-\u2123\u2125\u2127\u2129\u212E\u2135-\u213F\u2145-\u214A\u214C\u214D\u214F-\u2189\u218C-\u218F\u221E\u2234\u2235\u2300-\u2307\u230C-\u231F\u2324-\u2328\u232B\u237D-\u239A\u23BE-\u23CD\u23CF\u23D1-\u23DB\u23E2-\u2422\u2424-\u24FF\u25A0-\u2619\u2620-\u2767\u2776-\u2793\u2B12-\u2B2F\u2B50-\u2B59\u2B97\u2BB8-\u2BD1\u2BD3-\u2BEB\u2BF0-\u2BFF\u2E50\u2E51\u2E80-\u3000\u3003-\u3007\u3012\u3013\u3020-\u302F\u3031-\u3040\u3042\u3044\u3046\u3048\u304A-\u3062\u3064-\u3082\u3084\u3086\u3088-\u308D\u308F-\u3094\u3097-\u309A\u309D-\u309F\u30A2\u30A4\u30A6\u30A8\u30AA-\u30C2\u30C4-\u30E2\u30E4\u30E6\u30E8-\u30ED\u30EF-\u30F4\u30F7-\u30FB\u30FD-\u3126\u3128-\u31EF\u3200-\u32FE\u3358-\u337A\u3380-\uA4CF\uA960-\uA97F\uAC00-\uD7FF\uE000-\uFAFF\uFE10-\uFE1F\uFE30-\uFE48\uFE53-\uFE57\uFE5F-\uFE62\uFE67-\uFE6F\uFF02-\uFF07\uFF0A\uFF0B\uFF0F-\uFF19\uFF20-\uFF3A\uFF3C\uFF3E\uFF40-\uFF5A\uFFE0-\uFFE2\uFFE4-\uFFE7\uFFF0-\uFFF8\uFFFC\uFFFD]|\uD802[\uDD80-\uDD9F]|\uD805[\uDD80-\uDDFF]|\uD806[\uDE00-\uDEBF]|[\uD80C\uD81C-\uD822\uD83D\uD840-\uD87E\uD880-\uD8BE][\uDC00-\uDFFF]|\uD80D[\uDC00-\uDC5F]|\uD811[\uDC00-\uDE7F]|\uD81B[\uDFE0-\uDFFF]|\uD823[\uDC00-\uDD7F]|\uD82B[\uDFF0-\uDFFF]|\uD82C[\uDC00-\uDEFF]|\uD833[\uDF00-\uDFCF]|\uD834[\uDC00-\uDDFF\uDEE0-\uDF7F]|\uD836[\uDC00-\uDEAF]|\uD83C[\uDC00-\uDDFF\uDE02-\uDFFF]|\uD83E[\uDD00-\uDEFF]|[\uD87F\uD8BF][\uDC00-\uDFFD])/;
 /**
  * 表示一行文本的类，保存它的位置、内容、从属信息，在布局阶段生成，并在渲染阶段被Text调用render()
  * 关系上直属于Text类，一个Text类可能因为换行原因导致有多个TextBox，一行内容中也可能有不同Text从而不同TextBox
@@ -21368,7 +21368,8 @@ var Xom = /*#__PURE__*/function (_Node) {
           x: this.__x1,
           y: this.__y1,
           width: root.__width,
-          height: root.__height
+          height: root.__height,
+          node: root
         };
       }
     }
@@ -33822,8 +33823,8 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
   root.__env = {
     x: __cacheTotal.x,
     y: __cacheTotal.y,
-    width: __cacheTotal.width,
-    height: __cacheTotal.height
+    width: __cacheTotal.page.width,
+    height: __cacheTotal.page.height
   };
   /**
    * 再次遍历每个节点，以局部根节点左上角为基准原点，将所有节点绘制上去
@@ -34516,14 +34517,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   cx = w * 0.5;
   cy = h * 0.5;
   dx = -bboxTotal[0];
-  dy = -bboxTotal[1]; // 离屏画布的原点和尺寸信息存储
-
-  root.__env = {
-    x: __cacheTotal.x,
-    y: __cacheTotal.y,
-    width: __cacheTotal.width,
-    height: __cacheTotal.height
-  }; // 需要重新计算，因为bbox里是原本位置，这里是新的位置
+  dy = -bboxTotal[1]; // 需要重新计算，因为bbox里是原本位置，这里是新的位置
 
   var pm, ppt;
 
@@ -34553,7 +34547,15 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
 
   texture = createTexture(gl, null, 0, w, h);
   frameBuffer = genFrameBufferWithTexture(gl, texture, w, h);
-  gl.viewport(0, 0, w, h); // fbo绘制对象纹理不用绑定单元，剩下的纹理绘制用0号
+  gl.viewport(0, 0, w, h); // 离屏画布的原点和尺寸信息存储
+
+  root.__env = {
+    x: dx,
+    y: dy,
+    width: w,
+    height: h,
+    node: node
+  }; // fbo绘制对象纹理不用绑定单元，剩下的纹理绘制用0号
 
   var lastPage,
       list = [];
@@ -36393,10 +36395,9 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
           }
         }
 
-        if (!need && __refreshLevel & (PPT$1 | CACHE$1)) {
-          var __domParent = node.__domParent;
-          var isPpt = !isE(__domParent && __domParent.__perspectiveMatrix) || node.__selfPerspectiveMatrix;
+        var isPpt = total && perspective || node.__selfPerspectiveMatrix;
 
+        if (!need && __refreshLevel & (PPT$1 | CACHE$1)) {
           if (isPpt) {
             need = true;
           }
@@ -36413,7 +36414,8 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
             lv: lv,
             total: total,
             node: node,
-            hasMask: hasMask
+            hasMask: hasMask,
+            isPpt: isPpt
           });
         } // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total
 
@@ -36643,7 +36645,7 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
           _cacheTotal8 = _node12.__cacheTotal,
           _cacheFilter5 = _node12.__cacheFilter,
           _cacheMask6 = _node12.__cacheMask,
-          _domParent = _node12.__domParent,
+          __domParent = _node12.__domParent,
           __matrix = _node12.__matrix,
           __selfPerspectiveMatrix = _node12.__selfPerspectiveMatrix;
       var m = __matrix;
@@ -36652,22 +36654,22 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
         m = multiply(__selfPerspectiveMatrix, m);
       }
 
-      if (_domParent) {
-        var op = _domParent.__opacity;
+      if (__domParent) {
+        var op = __domParent.__opacity;
 
         if (op !== 1) {
-          opacity *= _domParent.__opacity;
+          opacity *= __domParent.__opacity;
         }
 
-        var pm = _domParent.__perspectiveMatrix,
-            me = _domParent.__matrixEvent;
+        var pm = __domParent.__perspectiveMatrix,
+            me = __domParent.__matrixEvent;
 
         if (pm && pm.length) {
-          m = multiply(_domParent.__perspectiveMatrix, m);
+          m = multiply(__domParent.__perspectiveMatrix, m);
         }
 
         if (me && me.length) {
-          m = multiply(_domParent.__matrixEvent, m);
+          m = multiply(__domParent.__matrixEvent, m);
         }
       }
 
@@ -44501,7 +44503,7 @@ var refresh = {
   CanvasCache: CanvasCache
 };
 
-var version = "0.83.1";
+var version = "0.83.2";
 
 Geom.register('$line', Line);
 Geom.register('$polyline', Polyline);

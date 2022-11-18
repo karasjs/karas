@@ -2398,8 +2398,9 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
             need = true;
           }
         }
-        let isPpt = total && perspective || node.__selfPerspectiveMatrix;
         if(!need && (__refreshLevel & (PPT | CACHE))) {
+          let __domParent = node.__domParent;
+          let isPpt = !isE(__domParent && __domParent.__perspectiveMatrix) || node.__selfPerspectiveMatrix;
           if(isPpt) {
             need = true;
           }
@@ -2407,6 +2408,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         if(isMbm) {
           hasMbm = true;
         }
+        let isPpt = total && perspective || node.__selfPerspectiveMatrix;
         // 这里和canvas不一样，前置cacheAsBitmap条件变成或条件之一，新的ppt层级且画中画需要新的fbo
         if(need) {
           mergeList.push({
@@ -2499,7 +2501,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       lastExtendFlat = isExtendFlat;
       lastPptNode = pptNode;
     }
-  }
+  } console.log('mergeList', mergeList[0])
   // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
   // 这样保证子节点在前，后节点在前，后节点是为了mask先应用自身如filter之后再进行遮罩
   if(mergeList.length) {

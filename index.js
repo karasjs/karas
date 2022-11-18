@@ -8123,7 +8123,8 @@
       TEXT_STROKE_WIDTH$6 = STYLE_KEY$2.TEXT_STROKE_WIDTH,
       TEXT_STROKE_COLOR$6 = STYLE_KEY$2.TEXT_STROKE_COLOR,
       TEXT_STROKE_OVER$5 = STYLE_KEY$2.TEXT_STROKE_OVER,
-      TRANSLATE_PATH$2 = STYLE_KEY$2.TRANSLATE_PATH;
+      TRANSLATE_PATH$2 = STYLE_KEY$2.TRANSLATE_PATH,
+      TRANSFORM_STYLE$2 = STYLE_KEY$2.TRANSFORM_STYLE;
   var GEOM$3 = {};
   var GEOM_KEY_SET$1 = [];
   var o$2 = {
@@ -8150,7 +8151,7 @@
       return tagName && k && GEOM$3.hasOwnProperty(k) && GEOM$3[k].hasOwnProperty(tagName);
     },
     isRepaint: function isRepaint(k, tagName) {
-      return k === COLOR$7 || k === STROKE_WIDTH$9 || k === FILL$4 || k === STROKE_DASHARRAY$2 || k === STROKE_LINECAP$1 || k === STROKE_LINEJOIN$1 || k === STROKE_MITERLIMIT$2 || k === BACKGROUND_COLOR$3 || k === BACKGROUND_IMAGE$3 || k === BACKGROUND_POSITION_X$4 || k === BACKGROUND_POSITION_Y$4 || k === BACKGROUND_REPEAT$1 || k === BACKGROUND_SIZE$3 || k === STROKE$3 || k === BORDER_BOTTOM_COLOR$2 || k === BORDER_LEFT_COLOR$2 || k === BORDER_BOTTOM_COLOR$2 || k === BORDER_RIGHT_COLOR$2 || k === BORDER_TOP_COLOR$2 || k === BORDER_TOP_LEFT_RADIUS$3 || k === BORDER_TOP_RIGHT_RADIUS$3 || k === BORDER_BOTTOM_RIGHT_RADIUS$3 || k === BORDER_BOTTOM_LEFT_RADIUS$3 || k === VISIBILITY$6 || k === BOX_SHADOW$3 || k === OVERFLOW$4 || k === BACKGROUND_CLIP$2 || k === TEXT_STROKE_WIDTH$6 || k === TEXT_STROKE_COLOR$6 || k === TEXT_STROKE_OVER$5 || o$2.isGeom(tagName, k);
+      return k === COLOR$7 || k === STROKE_WIDTH$9 || k === FILL$4 || k === STROKE_DASHARRAY$2 || k === STROKE_LINECAP$1 || k === STROKE_LINEJOIN$1 || k === STROKE_MITERLIMIT$2 || k === BACKGROUND_COLOR$3 || k === BACKGROUND_IMAGE$3 || k === BACKGROUND_POSITION_X$4 || k === BACKGROUND_POSITION_Y$4 || k === BACKGROUND_REPEAT$1 || k === BACKGROUND_SIZE$3 || k === STROKE$3 || k === BORDER_BOTTOM_COLOR$2 || k === BORDER_LEFT_COLOR$2 || k === BORDER_BOTTOM_COLOR$2 || k === BORDER_RIGHT_COLOR$2 || k === BORDER_TOP_COLOR$2 || k === BORDER_TOP_LEFT_RADIUS$3 || k === BORDER_TOP_RIGHT_RADIUS$3 || k === BORDER_BOTTOM_RIGHT_RADIUS$3 || k === BORDER_BOTTOM_LEFT_RADIUS$3 || k === VISIBILITY$6 || k === BOX_SHADOW$3 || k === OVERFLOW$4 || k === BACKGROUND_CLIP$2 || k === TEXT_STROKE_WIDTH$6 || k === TEXT_STROKE_COLOR$6 || k === TEXT_STROKE_OVER$5 || k === TRANSFORM_STYLE$2 || o$2.isGeom(tagName, k);
     },
     isValid: function isValid(tagName, k) {
       if (!k) {
@@ -36401,18 +36402,21 @@
             }
           }
 
-          var isPpt = total && perspective || node.__selfPerspectiveMatrix;
-
           if (!need && __refreshLevel & (PPT$1 | CACHE$1)) {
-            if (isPpt) {
+            var __domParent = node.__domParent;
+
+            var _isPpt = !isE(__domParent && __domParent.__perspectiveMatrix) || node.__selfPerspectiveMatrix;
+
+            if (_isPpt) {
               need = true;
             }
           }
 
           if (isMbm) {
             hasMbm = true;
-          } // 这里和canvas不一样，前置cacheAsBitmap条件变成或条件之一，新的ppt层级且画中画需要新的fbo
+          }
 
+          var isPpt = total && perspective || node.__selfPerspectiveMatrix; // 这里和canvas不一样，前置cacheAsBitmap条件变成或条件之一，新的ppt层级且画中画需要新的fbo
 
           if (need) {
             mergeList.push({
@@ -36486,7 +36490,7 @@
 
           var _isMbm = _mixBlendMode !== 'normal';
 
-          var _isPpt = total && _perspective2 || node.__selfPerspectiveMatrix;
+          var _isPpt2 = total && _perspective2 || node.__selfPerspectiveMatrix;
 
           var isOverflow = overflow === 'hidden' && total;
           var isFilter = _filter && _filter.length;
@@ -36495,14 +36499,14 @@
             hasMbm = true;
           }
 
-          if (node.__cacheAsBitmap || hasMask || isFilter || isOverflow || _isPpt) {
+          if (node.__cacheAsBitmap || hasMask || isFilter || isOverflow || _isPpt2) {
             mergeList.push({
               i: i,
               lv: lv,
               total: total,
               node: node,
               hasMask: hasMask,
-              isPpt: _isPpt
+              isPpt: _isPpt2
             });
           }
         }
@@ -36510,9 +36514,10 @@
         lastRefreshLevel = __refreshLevel;
         lastPptNode = pptNode;
       }
-    } // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
-    // 这样保证子节点在前，后节点在前，后节点是为了mask先应用自身如filter之后再进行遮罩
+    }
 
+    console.log('mergeList', mergeList[0]); // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
+    // 这样保证子节点在前，后节点在前，后节点是为了mask先应用自身如filter之后再进行遮罩
 
     if (mergeList.length) {
       mergeList.sort(function (a, b) {
@@ -36531,7 +36536,7 @@
             _total12 = _mergeList$ii.total,
             _node11 = _mergeList$ii.node,
             _hasMask6 = _mergeList$ii.hasMask,
-            _isPpt2 = _mergeList$ii.isPpt;
+            _isPpt3 = _mergeList$ii.isPpt;
         var _computedStyle4 = _node11.__computedStyle;
         var _filter2 = _computedStyle4[FILTER]; // 有ppt的，向上查找所有父亲index记录，可能出现重复记得提前跳出
 
@@ -36549,7 +36554,7 @@
         if (!_cacheTotal7 || !_cacheTotal7.available) {
           var res = void 0;
 
-          if (_isPpt2) {
+          if (_isPpt3) {
             res = genPptWebgl(renderMode, _cacheTotal7, gl, root, _node11, _i9, _lv6, _total12 || 0, __structs, width, height);
           } else {
             res = genTotalWebgl(renderMode, _cacheTotal7, gl, root, _node11, _i9, _lv6, _total12 || 0, __structs, width, height, null, null, null);
@@ -36651,7 +36656,7 @@
             _cacheTotal8 = _node12.__cacheTotal,
             _cacheFilter5 = _node12.__cacheFilter,
             _cacheMask6 = _node12.__cacheMask,
-            __domParent = _node12.__domParent,
+            _domParent = _node12.__domParent,
             __matrix = _node12.__matrix,
             __selfPerspectiveMatrix = _node12.__selfPerspectiveMatrix;
         var m = __matrix;
@@ -36660,22 +36665,22 @@
           m = multiply(__selfPerspectiveMatrix, m);
         }
 
-        if (__domParent) {
-          var op = __domParent.__opacity;
+        if (_domParent) {
+          var op = _domParent.__opacity;
 
           if (op !== 1) {
-            opacity *= __domParent.__opacity;
+            opacity *= _domParent.__opacity;
           }
 
-          var pm = __domParent.__perspectiveMatrix,
-              me = __domParent.__matrixEvent;
+          var pm = _domParent.__perspectiveMatrix,
+              me = _domParent.__matrixEvent;
 
           if (pm && pm.length) {
-            m = multiply(__domParent.__perspectiveMatrix, m);
+            m = multiply(_domParent.__perspectiveMatrix, m);
           }
 
           if (me && me.length) {
-            m = multiply(__domParent.__matrixEvent, m);
+            m = multiply(_domParent.__matrixEvent, m);
           }
         }
 

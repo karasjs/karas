@@ -528,7 +528,27 @@ svg标准的transform最终计算值，一维6为数组表达，相对于父元�
 #### env
 * **类型** `object` 只读
 * **说明**
-返回当前环境画布信息，默认是root所在画布的原点和尺寸。当配合cacheAsBitmap生成离屏缓存时，返回离屏画布信息。
+返回当前环境画布信息，默认是root所在画布的坐标和尺寸。当配合cacheAsBitmap生成离屏缓存时，返回离屏画布信息。
+* **示例**
+```jsx
+class $ extends karas.Geom {
+  render(renderMode, ctx, dx, dy) {
+    super.render(renderMode, ctx, dx, dy);
+    console.log(this.env);
+    // { x: 100, top: 100, width: 360, height: 360 }
+  }
+}
+let root = karas.render(
+  <canvas width={360} height={360}>
+    <$ style={{
+      position: 'absolute',
+      left: 100,
+      top: 100,
+    }}/>
+  </canvas>,
+  '#selector'
+);
+```
 
 ### 类方法method
 

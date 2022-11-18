@@ -282,7 +282,7 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
   }
   let ctxTotal = __cacheTotal.ctx;
 
-  // 离屏画布的原点和尺寸信息存储
+  // 离屏画布的坐标和尺寸信息存储
   root.__env = {
     x: __cacheTotal.x,
     y: __cacheTotal.y,

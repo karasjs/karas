@@ -7,11 +7,10 @@
   <link href="style.css" media="all" rel="stylesheet"/>
 </head>
 <body>
-<div class="pre">单行文本情况下，想要使得过多文字自动缩小文字显示，可设置本值为&lt;fontSize的正值，排版将尝试缩小显示，达到阈值后停止尝试。</div>
+<div class="pre">单行文本情况下，想要使得过多文字自动缩小文字显示，可设置fontSizeShrink为&lt;fontSize的正值，排版将尝试缩小显示，达到阈值后停止尝试。</div>
 <div id="example"></div>
 <pre><code class="brush:csx"></code></pre>
 <script type="text/jsx">
-  karas.style.font.register('puhui', './Alibaba-PuHuiTi-Regular.ttf');
   karas.render(
     <canvas width="360" height="360">
       <div style={{width:40,background:'#F00',whiteSpace:'nowrap'}}>abcdefg</div>

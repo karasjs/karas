@@ -3318,8 +3318,8 @@ class Xom extends Node {
     let root = this.__root;
     if(root) {
       return root.__env || {
-        x: 0,
-        y: 0,
+        x: this.__x1,
+        y: this.__y1,
         width: root.__width,
         height: root.__height,
       };

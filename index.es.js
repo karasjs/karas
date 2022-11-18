@@ -21365,8 +21365,8 @@ var Xom = /*#__PURE__*/function (_Node) {
 
       if (root) {
         return root.__env || {
-          x: 0,
-          y: 0,
+          x: this.__x1,
+          y: this.__y1,
           width: root.__width,
           height: root.__height
         };
@@ -33817,7 +33817,7 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
     ty = __cacheTotal.y;
   }
 
-  var ctxTotal = __cacheTotal.ctx; // 离屏画布的原点和尺寸信息存储
+  var ctxTotal = __cacheTotal.ctx; // 离屏画布的坐标和尺寸信息存储
 
   root.__env = {
     x: __cacheTotal.x,
@@ -44501,7 +44501,7 @@ var refresh = {
   CanvasCache: CanvasCache
 };
 
-var version = "0.83.0";
+var version = "0.83.1";
 
 Geom.register('$line', Line);
 Geom.register('$polyline', Polyline);

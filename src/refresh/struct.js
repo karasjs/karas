@@ -279,16 +279,16 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
     dby = __cacheTotal.dby;
     tx = __cacheTotal.x;
     ty = __cacheTotal.y;
+
+    // 离屏画布的坐标和尺寸信息存储
+    root.__env = {
+      x: __cacheTotal.x,
+      y: __cacheTotal.y,
+      width: __cacheTotal.page.width,
+      height: __cacheTotal.page.height,
+    };
   }
   let ctxTotal = __cacheTotal.ctx;
-
-  // 离屏画布的坐标和尺寸信息存储
-  root.__env = {
-    x: __cacheTotal.x,
-    y: __cacheTotal.y,
-    width: __cacheTotal.page.width,
-    height: __cacheTotal.page.height,
-  };
 
   /**
    * 再次遍历每个节点，以局部根节点左上角为基准原点，将所有节点绘制上去

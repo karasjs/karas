@@ -2408,7 +2408,6 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         if(isMbm) {
           hasMbm = true;
         }
-        let isPpt = total && perspective || node.__selfPerspectiveMatrix;
         // 这里和canvas不一样，前置cacheAsBitmap条件变成或条件之一，新的ppt层级且画中画需要新的fbo
         if(need) {
           mergeList.push({
@@ -2417,7 +2416,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
             total,
             node,
             hasMask,
-            isPpt,
+            isPpt: total && perspective || node.__selfPerspectiveMatrix,
           });
         }
         // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total

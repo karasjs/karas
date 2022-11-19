@@ -36404,19 +36404,17 @@
 
           if (!need && __refreshLevel & (PPT$1 | CACHE$1)) {
             var __domParent = node.__domParent;
+            var isPpt = !isE(__domParent && __domParent.__perspectiveMatrix) || node.__selfPerspectiveMatrix;
 
-            var _isPpt = !isE(__domParent && __domParent.__perspectiveMatrix) || node.__selfPerspectiveMatrix;
-
-            if (_isPpt) {
+            if (isPpt) {
               need = true;
             }
           }
 
           if (isMbm) {
             hasMbm = true;
-          }
+          } // 这里和canvas不一样，前置cacheAsBitmap条件变成或条件之一，新的ppt层级且画中画需要新的fbo
 
-          var isPpt = total && perspective || node.__selfPerspectiveMatrix; // 这里和canvas不一样，前置cacheAsBitmap条件变成或条件之一，新的ppt层级且画中画需要新的fbo
 
           if (need) {
             mergeList.push({
@@ -36425,7 +36423,7 @@
               total: total,
               node: node,
               hasMask: hasMask,
-              isPpt: isPpt
+              isPpt: total && perspective || node.__selfPerspectiveMatrix
             });
           } // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total
 
@@ -36490,7 +36488,7 @@
 
           var _isMbm = _mixBlendMode !== 'normal';
 
-          var _isPpt2 = total && _perspective2 || node.__selfPerspectiveMatrix;
+          var _isPpt = total && _perspective2 || node.__selfPerspectiveMatrix;
 
           var isOverflow = overflow === 'hidden' && total;
           var isFilter = _filter && _filter.length;
@@ -36499,14 +36497,14 @@
             hasMbm = true;
           }
 
-          if (node.__cacheAsBitmap || hasMask || isFilter || isOverflow || _isPpt2) {
+          if (node.__cacheAsBitmap || hasMask || isFilter || isOverflow || _isPpt) {
             mergeList.push({
               i: i,
               lv: lv,
               total: total,
               node: node,
               hasMask: hasMask,
-              isPpt: _isPpt2
+              isPpt: _isPpt
             });
           }
         }
@@ -36536,7 +36534,7 @@
             _total12 = _mergeList$ii.total,
             _node11 = _mergeList$ii.node,
             _hasMask6 = _mergeList$ii.hasMask,
-            _isPpt3 = _mergeList$ii.isPpt;
+            _isPpt2 = _mergeList$ii.isPpt;
         var _computedStyle4 = _node11.__computedStyle;
         var _filter2 = _computedStyle4[FILTER]; // 有ppt的，向上查找所有父亲index记录，可能出现重复记得提前跳出
 
@@ -36554,7 +36552,7 @@
         if (!_cacheTotal7 || !_cacheTotal7.available) {
           var res = void 0;
 
-          if (_isPpt3) {
+          if (_isPpt2) {
             res = genPptWebgl(renderMode, _cacheTotal7, gl, root, _node11, _i9, _lv6, _total12 || 0, __structs, width, height);
           } else {
             res = genTotalWebgl(renderMode, _cacheTotal7, gl, root, _node11, _i9, _lv6, _total12 || 0, __structs, width, height, null, null, null);

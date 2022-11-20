@@ -818,6 +818,13 @@ class Text extends Node {
       }
       return;
     }
+    this.__widthHash = {};
+    if(util.isNil(s)){
+      s = '';
+    }
+    else {
+      s = s.toString();
+    }
     this.__content = s;
     this.__root.__addUpdate(this.__domParent, null, level.REFLOW, null, null, null, cb);
   }

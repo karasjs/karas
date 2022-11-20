@@ -27269,10 +27269,14 @@
               onlyRight = true;
             }
 
-            x2 = x + clientWidth - computedStyle[RIGHT$1] - (w2 || 0); // 右对齐有尺寸时还需减去margin
+            x2 = x + clientWidth - computedStyle[RIGHT$1] - (w2 || 0); // 右对齐有尺寸时还需减去margin/border/padding的
 
             x2 -= computedStyle[MARGIN_LEFT$1];
             x2 -= computedStyle[MARGIN_RIGHT$1];
+            x2 -= computedStyle[PADDING_LEFT$1];
+            x2 -= computedStyle[PADDING_RIGHT$1];
+            x2 -= computedStyle[BORDER_LEFT_WIDTH$1];
+            x2 -= computedStyle[BORDER_RIGHT_WIDTH$1];
           } else {
             x2 = x + paddingLeft;
 
@@ -27298,10 +27302,14 @@
               onlyBottom = true;
             }
 
-            y2 = y + clientHeight - computedStyle[BOTTOM$1] - (h2 || 0); // 底对齐有尺寸时y值还需减去margin
+            y2 = y + clientHeight - computedStyle[BOTTOM$1] - (h2 || 0); // 底对齐有尺寸时y值还需减去margin/border/padding的
 
             y2 -= computedStyle[MARGIN_TOP];
             y2 -= computedStyle[MARGIN_BOTTOM];
+            y2 -= computedStyle[PADDING_TOP];
+            y2 -= computedStyle[PADDING_BOTTOM];
+            y2 -= computedStyle[BORDER_TOP_WIDTH];
+            y2 -= computedStyle[BORDER_BOTTOM_WIDTH];
           } // 未声明y的找到之前的流布局child，紧随其下
           else {
             y2 = y + paddingTop;
@@ -27367,11 +27375,11 @@
           }, false, false);
 
           if (onlyRight) {
-            item.__offsetX(-item.offsetWidth, true, null);
+            item.__offsetX(-item.width, true, null);
           }
 
           if (onlyBottom) {
-            item.__offsetY(-item.offsetHeight, true, null);
+            item.__offsetY(-item.height, true, null);
           }
 
           item.__layoutStyle();
@@ -36512,10 +36520,9 @@
         lastRefreshLevel = __refreshLevel;
         lastPptNode = pptNode;
       }
-    }
-
-    console.log('mergeList', mergeList[0]); // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
+    } // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
     // 这样保证子节点在前，后节点在前，后节点是为了mask先应用自身如filter之后再进行遮罩
+
 
     if (mergeList.length) {
       mergeList.sort(function (a, b) {

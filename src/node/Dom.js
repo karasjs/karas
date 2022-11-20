@@ -3046,9 +3046,13 @@ class Dom extends Xom {
           onlyRight = true;
         }
         x2 = x + clientWidth - computedStyle[RIGHT] - (w2 || 0);
-        // 右对齐有尺寸时还需减去margin
+        // 右对齐有尺寸时还需减去margin/border/padding的
         x2 -= computedStyle[MARGIN_LEFT];
         x2 -= computedStyle[MARGIN_RIGHT];
+        x2 -= computedStyle[PADDING_LEFT];
+        x2 -= computedStyle[PADDING_RIGHT];
+        x2 -= computedStyle[BORDER_LEFT_WIDTH];
+        x2 -= computedStyle[BORDER_RIGHT_WIDTH];
       }
       else {
         x2 = x + paddingLeft;
@@ -3075,9 +3079,13 @@ class Dom extends Xom {
           onlyBottom = true;
         }
         y2 = y + clientHeight - computedStyle[BOTTOM] - (h2 || 0);
-        // 底对齐有尺寸时y值还需减去margin
+        // 底对齐有尺寸时y值还需减去margin/border/padding的
         y2 -= computedStyle[MARGIN_TOP];
         y2 -= computedStyle[MARGIN_BOTTOM];
+        y2 -= computedStyle[PADDING_TOP];
+        y2 -= computedStyle[PADDING_BOTTOM];
+        y2 -= computedStyle[BORDER_TOP_WIDTH];
+        y2 -= computedStyle[BORDER_BOTTOM_WIDTH];
       }
       // 未声明y的找到之前的流布局child，紧随其下
       else {
@@ -3134,10 +3142,10 @@ class Dom extends Xom {
         container,
       }, false, false);
       if(onlyRight) {
-        item.__offsetX(-item.offsetWidth, true, null);
+        item.__offsetX(-item.width, true, null);
       }
       if(onlyBottom) {
-        item.__offsetY(-item.offsetHeight, true, null);
+        item.__offsetY(-item.height, true, null);
       }
       item.__layoutStyle();
     });

@@ -12515,6 +12515,14 @@ var Text = /*#__PURE__*/function (_Node) {
         return;
       }
 
+      this.__widthHash = {};
+
+      if (util.isNil(s)) {
+        s = '';
+      } else {
+        s = s.toString();
+      }
+
       this.__content = s;
 
       this.__root.__addUpdate(this.__domParent, null, o$1.REFLOW, null, null, null, cb);
@@ -27361,11 +27369,11 @@ var Dom = /*#__PURE__*/function (_Xom) {
         }, false, false);
 
         if (onlyRight) {
-          item.__offsetX(-item.outerWidth, true, null);
+          item.__offsetX(-item.width, true, null);
         }
 
         if (onlyBottom) {
-          item.__offsetY(-item.outerHeight, true, null);
+          item.__offsetY(-item.height, true, null);
         }
 
         item.__layoutStyle();
@@ -36506,10 +36514,9 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
       lastRefreshLevel = __refreshLevel;
       lastPptNode = pptNode;
     }
-  }
-
-  console.log('mergeList', mergeList[0]); // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
+  } // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
   // 这样保证子节点在前，后节点在前，后节点是为了mask先应用自身如filter之后再进行遮罩
+
 
   if (mergeList.length) {
     mergeList.sort(function (a, b) {
@@ -44506,7 +44513,7 @@ var refresh = {
   CanvasCache: CanvasCache
 };
 
-var version = "0.83.2";
+var version = "0.83.3";
 
 Geom.register('$line', Line);
 Geom.register('$polyline', Polyline);

@@ -152,12 +152,20 @@ function renderImage(xom, renderMode, ctx, loadBgi,
         w = h * width / height;
       }
       else {
-        w = width;
-        h = height;
+        w = width / bgW;
+        h = height / bgH;
+        if(w >= h) {
+          w = bgW;
+          h = w * height / width;
+        }
+        else {
+          h = bgH;
+          w = h * width / height;
+        }
       }
     }
     else if(w === -3) {
-      if(bgW > width && bgH > height) {
+      if(width > bgW && height > bgH) {
         w = width / bgW;
         h = height / bgH;
         if(w <= h) {
@@ -169,13 +177,13 @@ function renderImage(xom, renderMode, ctx, loadBgi,
           w = h * width / height;
         }
       }
-      else if(bgW > width) {
-        w = bgW;
-        h = w * height / width;
-      }
-      else if(bgH > height) {
+      else if(width > bgW) {
         h = bgH;
         w = h * width / height;
+      }
+      else if(height > bgH) {
+        w = bgW;
+        h = w * height / width;
       }
       else {
         w = width / bgW;

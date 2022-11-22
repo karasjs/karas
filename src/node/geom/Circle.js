@@ -38,7 +38,7 @@ class Circle extends Geom {
     }
   }
 
-  buildCache(cx, cy, focus) {
+  __buildCache(cx, cy, focus) {
     let { width, r, __cacheProps, isMulti } = this;
     if(isNil(__cacheProps.r) || focus) {
       if(isMulti) {
@@ -57,7 +57,7 @@ class Circle extends Geom {
     if(res.break || renderMode === mode.WEBGL) {
       return res;
     }
-    this.buildCache(res.cx, res.cy);
+    this.__buildCache(res.cx, res.cy);
     this.__renderPolygon(renderMode, ctx, res);
     return res;
   }
@@ -77,7 +77,7 @@ class Circle extends Geom {
       } = this;
       let cx = originX + width * 0.5;
       let cy = originY + height * 0.5;
-      this.buildCache(cx, cy);
+      this.__buildCache(cx, cy);
       let r = 0;
       if(isMulti) {
         let max = 0;

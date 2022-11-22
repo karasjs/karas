@@ -31,7 +31,6 @@ const {
     STROKE_DASHARRAY,
     STROKE_DASHARRAY_STR,
     FILL_RULE,
-    VISIBILITY,
     FLEX_BASIS,
   },
 } = enums;

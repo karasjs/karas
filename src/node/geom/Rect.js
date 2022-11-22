@@ -68,7 +68,7 @@ class Rect extends Geom {
     }
   }
 
-  buildCache(originX, originY, focus) {
+  __buildCache(originX, originY, focus) {
     let { width, height, rx, ry, __cacheProps, isMulti } = this;
     let rebuild;
     if(isNil(__cacheProps.rx) || focus) {
@@ -106,7 +106,7 @@ class Rect extends Geom {
     if(res.break || renderMode === mode.WEBGL) {
       return res;
     }
-    this.buildCache(res.x3, res.y3);
+    this.__buildCache(res.x3, res.y3);
     this.__renderPolygon(renderMode, ctx, res);
     return res;
   }
@@ -127,7 +127,7 @@ class Rect extends Geom {
           [STROKE_WIDTH]: strokeWidth,
         }
       } = this;
-      this.buildCache(originX, originY);
+      this.__buildCache(originX, originY);
       let bbox = super.bbox;
       let half = 0;
       strokeWidth.forEach(item => {

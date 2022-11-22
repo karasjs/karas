@@ -198,7 +198,7 @@ class Line extends Geom {
     }
   }
 
-  buildCache(originX, originY, focus) {
+  __buildCache(originX, originY, focus) {
     let { width, height, __cacheProps, isMulti } = this;
     let rebuild;
     ['xa', 'xb'].forEach(k => {
@@ -247,7 +247,7 @@ class Line extends Geom {
       dy,
     } = res;
     let { __cacheProps, isMulti } = this;
-    let rebuild = this.buildCache(x3, y3);
+    let rebuild = this.__buildCache(x3, y3);
     if(rebuild && renderMode === mode.SVG) {
       let d = '';
       if(isMulti) {
@@ -379,7 +379,7 @@ class Line extends Geom {
         [STROKE_WIDTH]: strokeWidth,
       },
     } = this;
-    this.buildCache(originX, originY);
+    this.__buildCache(originX, originY);
     let { xa, ya, xb, yb, controlA, controlB } = __cacheProps;
     let bbox = super.bbox;
     let half = 0;

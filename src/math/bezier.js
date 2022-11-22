@@ -302,12 +302,12 @@ function pointAtBezierWithLength(points, length, percent = 1, maxIteration = 20,
 
 function sliceBezier(points, t) {
   if(!Array.isArray(points) || points.length < 3) {
-    return;
+    return points;
   }
   let x1, y1, x2, y2, x3, y3, x4, y4;
   let pts0 = points[0], pts1 = points[1], pts2 = points[2], pts3 = points[3];
   if(!pts0 || !pts1 || !pts2) {
-    return;
+    return points;
   }
   if(Array.isArray(pts0)) {
     x1 = pts0[0]; y1 = pts0[1];

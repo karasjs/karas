@@ -38702,7 +38702,7 @@
 
   function sliceBezier(points, t) {
     if (!Array.isArray(points) || points.length < 3) {
-      return;
+      return points;
     }
 
     var x1, y1, x2, y2, x3, y3, x4, y4;
@@ -38712,7 +38712,7 @@
         pts3 = points[3];
 
     if (!pts0 || !pts1 || !pts2) {
-      return;
+      return points;
     }
 
     if (Array.isArray(pts0)) {
@@ -44583,7 +44583,7 @@
     CanvasCache: CanvasCache
   };
 
-  var version = "0.83.3";
+  var version = "0.83.4";
 
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);

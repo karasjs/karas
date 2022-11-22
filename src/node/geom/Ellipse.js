@@ -49,7 +49,7 @@ class Ellipse extends Geom {
     }
   }
 
-  buildCache(cx, cy, focus) {
+  __buildCache(cx, cy, focus) {
     let { width, height, rx, ry, __cacheProps, isMulti } = this;
     let rebuild;
     if(isNil(__cacheProps.rx) || focus) {
@@ -87,7 +87,7 @@ class Ellipse extends Geom {
     if(res.break || renderMode === mode.WEBGL) {
       return res;
     }
-    this.buildCache(res.cx, res.cy);
+    this.__buildCache(res.cx, res.cy);
     this.__renderPolygon(renderMode, ctx, res);
     return res;
   }
@@ -111,7 +111,7 @@ class Ellipse extends Geom {
       } = this;
       let cx = originX + width * 0.5;
       let cy = originY + height * 0.5;
-      this.buildCache(cx, cy);
+      this.__buildCache(cx, cy);
       let rx = 0, ry = 0;
       if(isMulti) {
         let mx = 0, my = 0;

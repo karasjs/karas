@@ -69,7 +69,7 @@ class Sector extends Geom {
     }
   }
 
-  buildCache(cx, cy, focus) {
+  __buildCache(cx, cy, focus) {
     let { width, begin, end, r, edge, closure, __cacheProps, isMulti } = this;
     let rebuild;
     if(isNil(__cacheProps.begin) || focus) {
@@ -153,7 +153,7 @@ class Sector extends Geom {
     if(res.break || renderMode === mode.WEBGL) {
       return res;
     }
-    this.buildCache(res.cx, res.cy);
+    this.__buildCache(res.cx, res.cy);
     let {
       fill: fills,
       fillRule: fillRules,
@@ -332,7 +332,7 @@ class Sector extends Geom {
       } = this;
       let cx = originX + width * 0.5;
       let cy = originY + height * 0.5;
-      this.buildCache(cx, cy);
+      this.__buildCache(cx, cy);
       let r = 0;
       if(isMulti) {
         let max = 0;

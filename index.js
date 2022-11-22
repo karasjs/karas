@@ -22214,9 +22214,8 @@
       STROKE_LINEJOIN = _enums$STYLE_KEY$6.STROKE_LINEJOIN,
       STROKE_DASHARRAY = _enums$STYLE_KEY$6.STROKE_DASHARRAY,
       STROKE_DASHARRAY_STR = _enums$STYLE_KEY$6.STROKE_DASHARRAY_STR,
-      FILL_RULE = _enums$STYLE_KEY$6.FILL_RULE;
-      _enums$STYLE_KEY$6.VISIBILITY;
-      var FLEX_BASIS$2 = _enums$STYLE_KEY$6.FLEX_BASIS;
+      FILL_RULE = _enums$STYLE_KEY$6.FILL_RULE,
+      FLEX_BASIS$2 = _enums$STYLE_KEY$6.FLEX_BASIS;
   var AUTO$3 = o$4.AUTO,
       PX$4 = o$4.PX,
       PERCENT$3 = o$4.PERCENT,
@@ -39261,8 +39260,8 @@
     }
 
     _createClass(Line, [{
-      key: "buildCache",
-      value: function buildCache(originX, originY, focus) {
+      key: "__buildCache",
+      value: function __buildCache(originX, originY, focus) {
         var _this2 = this;
 
         var width = this.width,
@@ -39320,7 +39319,8 @@
             dy = res.dy;
         var __cacheProps = this.__cacheProps,
             isMulti = this.isMulti;
-        var rebuild = this.buildCache(x3, y3);
+
+        var rebuild = this.__buildCache(x3, y3);
 
         if (rebuild && renderMode === mode.SVG) {
           var d = '';
@@ -39522,7 +39522,9 @@
             originX = this.__x3,
             originY = this.__y3,
             strokeWidth = this.computedStyle[STROKE_WIDTH$5];
-        this.buildCache(originX, originY);
+
+        this.__buildCache(originX, originY);
+
         var xa = __cacheProps.xa,
             ya = __cacheProps.ya,
             xb = __cacheProps.xb,
@@ -41726,252 +41728,6 @@
   var STROKE_WIDTH$4 = enums.STYLE_KEY.STROKE_WIDTH;
   var isNil$5 = util.isNil;
 
-  function concatPointAndControl(point, control) {
-    if (Array.isArray(control) && (control.length === 2 || control.length === 4) && Array.isArray(point) && point.length === 2) {
-      return control.concat(point);
-    }
-
-    return point;
-  }
-
-  function getLength(list, isMulti) {
-    var res = [];
-    var total = 0;
-    var increase = [];
-
-    if (isMulti) {
-      total = [];
-      list.forEach(function (list) {
-        var temp = getLength(list);
-        res.push(temp.list);
-        total.push(temp.total);
-        increase.push([0].concat(temp.increase));
-      });
-    } else if (Array.isArray(list)) {
-      total = 0;
-      increase.push(0);
-      var start = 0;
-
-      for (var i = 0, len = list.length; i < len; i++) {
-        var item = list[i];
-
-        if (Array.isArray(item)) {
-          start = i;
-          break;
-        }
-      }
-
-      var prev = list[start];
-
-      for (var _i = start + 1, _len = list.length; _i < _len; _i++) {
-        var _item = list[_i];
-
-        if (!Array.isArray(_item)) {
-          continue;
-        }
-
-        if (_item.length === 2) {
-          var a = Math.abs(_item[0] - prev[0]);
-          var b = Math.abs(_item[1] - prev[1]);
-          var c = Math.sqrt(Math.pow(a, 2) + Math.pow(b, 2));
-          res.push(c);
-          total += c;
-          increase.push(total);
-          prev = _item;
-        } else if (_item.length === 4) {
-          var _c = bezier.bezierLength([prev, [_item[0], _item[1]], [_item[2], _item[3]]]);
-
-          res.push(_c);
-          total += _c;
-          increase.push(total);
-          prev = [_item[2], _item[3]];
-        } else if (_item.length === 6) {
-          var _c2 = bezier.bezierLength([prev, [_item[0], _item[1]], [_item[2], _item[3]], [_item[4], _item[5]]]);
-
-          res.push(_c2);
-          total += _c2;
-          increase.push(total);
-          prev = [_item[4], _item[5]];
-        }
-      }
-    }
-
-    return {
-      list: res,
-      total: total,
-      increase: increase
-    };
-  }
-
-  function getIndex(list, t, i, j) {
-    if (i === j) {
-      if (list[i] > t) {
-        return i - 1;
-      }
-
-      return i;
-    }
-
-    var middle = i + (j - i >> 1);
-
-    if (list[middle] === t) {
-      return middle;
-    } else if (list[middle] > t) {
-      return getIndex(list, t, i, Math.max(middle - 1, i));
-    } else {
-      return getIndex(list, t, Math.min(middle + 1, j), j);
-    }
-  }
-
-  function getNewList(list, len) {
-    var start = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
-    var end = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 1;
-
-    if (start === 0 && end === 1) {
-      return list;
-    }
-
-    if (start === end) {
-      return [];
-    }
-
-    if (start > end) {
-      var _ref = [end, start];
-      start = _ref[0];
-      end = _ref[1];
-    } // start和end只能相差<=1，如果>1则校正
-
-
-    while (end - start > 1) {
-      end--;
-    } // 将start和end统一至最接近0的正值
-
-
-    while (end < 0 || start < 0) {
-      end++;
-      start++;
-    }
-
-    while (end >= 1 && start >= 1) {
-      end--;
-      start--;
-    } // clone出原本顶点列表，防止干扰
-
-
-    var length = list.length;
-    list = util.clone(list);
-    var res = [];
-    var start2 = start > 1 ? start - 1 : start;
-    var end2 = end > 1 ? end - 1 : end;
-    var i = getIndex(len.increase, start2 * len.total, 0, length - 1);
-    var j = getIndex(len.increase, end2 * len.total, 0, length - 1); // start<0或者end>1或者普通情况，一共3种，start和end不可能同时超限
-
-    var isStartLt0 = start < 0;
-    var isEndGt1 = end > 1;
-    end2 *= len.total;
-    var prePercent = 1;
-    var endPoint;
-
-    if (end2 > len.increase[j]) {
-      var prev = list[j].slice(list[j].length - 2); // 最后2个点是x,y，前面是control
-
-      var current = list[j + 1];
-      var l = len.list[j];
-      var diff = end2 - len.increase[j];
-      var t = diff / l;
-      prePercent = t;
-
-      if (current.length === 2) {
-        var a = current[0] - prev[0];
-        var b = current[1] - prev[1];
-
-        if (isEndGt1) {
-          endPoint = [prev[0] + t * a, prev[1] + t * b];
-        } else {
-          t = 1 - t;
-          endPoint = [current[0] - t * a, current[1] - t * b];
-        }
-      } else if (current.length === 4) {
-        var r = bezier.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]]], t);
-        endPoint = [r[1][0], r[1][1], r[2][0], r[2][1]];
-      } else if (current.length === 6) {
-        var _r = bezier.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]], [current[4], current[5]]], t);
-
-        endPoint = [_r[1][0], _r[1][1], _r[2][0], _r[2][1], _r[3][0], _r[3][1]];
-      }
-    }
-
-    start2 *= len.total;
-
-    if (start2 > len.increase[i]) {
-      var _current;
-
-      var _prev = list[i].slice(list[i].length - 2);
-
-      var _l = len.list[i]; // 同一条线段时如果有end裁剪，会影响start长度，这里还要防止头尾绕了一圈的情况
-
-      if (i === j && !isStartLt0 && !isEndGt1 && prePercent !== 1) {
-        _l *= prePercent;
-
-        if (endPoint) {
-          _current = endPoint;
-        }
-      }
-
-      if (!_current) {
-        _current = list[i + 1];
-      }
-
-      var _diff = start2 - len.increase[i];
-
-      var _t = _diff / _l;
-
-      if (_current.length === 2) {
-        var _a = _current[0] - _prev[0];
-
-        var _b = _current[1] - _prev[1];
-
-        if (isStartLt0) {
-          _t = 1 - _t;
-          res.push([_current[0] - _t * _a, _current[1] - _t * _b]);
-        } else {
-          res.push([_prev[0] + _t * _a, _prev[1] + _t * _b]);
-        }
-
-        res.push(_current);
-      } else if (_current.length === 4) {
-        var _r2 = bezier.sliceBezier([[_current[2], _current[3]], [_current[0], _current[1]], _prev], 1 - _t).reverse();
-
-        res.push(_r2[0]);
-        res.push([_r2[1][0], _r2[1][1], _r2[2][0], _r2[2][1]]); // 同一条线段上去除end冲突
-
-        if (i === j && !isStartLt0 && !isEndGt1) {
-          endPoint = null;
-        }
-      } else if (_current.length === 6) {
-        var _r3 = bezier.sliceBezier([[_current[4], _current[5]], [_current[2], _current[3]], [_current[0], _current[1]], _prev], 1 - _t).reverse();
-
-        res.push(_r3[0]);
-        res.push([_r3[1][0], _r3[1][1], _r3[2][0], _r3[2][1], _current[4], _current[5]]);
-
-        if (i === j && !isStartLt0 && !isEndGt1) {
-          endPoint = null;
-        }
-      }
-    } // start和end之间的线段，注意头尾饶了一圈的情况，以及起始点被上方考虑过了
-
-
-    for (var k = i + 2; k <= j + (!isStartLt0 && !isEndGt1 ? 0 : length); k++) {
-      res.push(list[k % length]);
-    }
-
-    if (endPoint) {
-      res.push(endPoint);
-    }
-
-    return res;
-  }
-
   var Polyline = /*#__PURE__*/function (_Geom) {
     _inherits(Polyline, _Geom);
 
@@ -42012,7 +41768,7 @@
             return v;
           });
 
-          for (var _i2 = _this.__end.length; _i2 < _this.__points.length; _i2++) {
+          for (var _i = _this.__end.length; _i < _this.__points.length; _i++) {
             _this.__end.push(1);
           }
         } else if (!isNil$5(props.end)) {
@@ -42149,9 +41905,9 @@
           var res = [],
               temp = list[0];
 
-          for (var _i3 = 1; _i3 < len; _i3++) {
-            var op = (bo[_i3 - 1] || '').toString().toLowerCase();
-            var cur = list[_i3];
+          for (var _i2 = 1; _i2 < len; _i2++) {
+            var op = (bo[_i2 - 1] || '').toString().toLowerCase();
+            var cur = list[_i2];
 
             if (['intersect', 'intersection', 'union', 'subtract', 'subtract2', 'diff', 'difference', 'xor'].indexOf(op) === -1) {
               res = res.concat(chain(temp));
@@ -42200,8 +41956,8 @@
         }
       }
     }, {
-      key: "buildCache",
-      value: function buildCache(originX, originY) {
+      key: "__buildCache",
+      value: function __buildCache(originX, originY) {
         var _this2 = this;
 
         var width = this.width,
@@ -42271,23 +42027,23 @@
               if (Array.isArray(item)) {
                 return item.map(function (point, j) {
                   if (j) {
-                    return concatPointAndControl(point, cl && cl[j - 1]);
+                    return _this2.__concatPointAndControl(point, cl && cl[j - 1]);
                   }
 
                   return point;
                 });
               }
             });
-            __cacheProps.len = getLength(__cacheProps.list2, isMulti);
+            __cacheProps.len = this.__getLength(__cacheProps.list2, isMulti);
           } else {
             __cacheProps.list2 = _points.map(function (point, i) {
               if (i) {
-                return concatPointAndControl(point, _controls[i - 1]);
+                return _this2.__concatPointAndControl(point, _controls[i - 1]);
               }
 
               return point;
             });
-            __cacheProps.len = getLength(__cacheProps.list2, isMulti);
+            __cacheProps.len = this.__getLength(__cacheProps.list2, isMulti);
           }
         }
 
@@ -42296,7 +42052,7 @@
             __cacheProps.list = __cacheProps.list2.map(function (item, i) {
               if (Array.isArray(item)) {
                 var len = __cacheProps.len;
-                return getNewList(item, {
+                return _this2.__getNewList(item, {
                   list: len.list[i],
                   total: len.total[i],
                   increase: len.increase[i]
@@ -42304,7 +42060,7 @@
               }
             });
           } else {
-            __cacheProps.list = getNewList(__cacheProps.list2, __cacheProps.len, __cacheProps.start, __cacheProps.end);
+            __cacheProps.list = this.__getNewList(__cacheProps.list2, __cacheProps.len, __cacheProps.start, __cacheProps.end);
           } // 后处理一次，让polygon支持布尔运算
 
 
@@ -42312,6 +42068,262 @@
         }
 
         return rebuild || rebuildSE;
+      }
+    }, {
+      key: "__getNewList",
+      value: function __getNewList(list, len) {
+        var start = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+        var end = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 1;
+
+        if (start === 0 && end === 1) {
+          return list;
+        }
+
+        if (start === end) {
+          return [];
+        }
+
+        if (start > end) {
+          var _ref = [end, start];
+          start = _ref[0];
+          end = _ref[1];
+        } // start和end只能相差<=1，如果>1则校正
+
+
+        while (end - start > 1) {
+          end--;
+        } // 将start和end统一至最接近0的正值
+
+
+        while (end < 0 || start < 0) {
+          end++;
+          start++;
+        }
+
+        while (end >= 1 && start >= 1) {
+          end--;
+          start--;
+        } // clone出原本顶点列表，防止干扰
+
+
+        var length = list.length;
+        list = util.clone(list);
+        var res = [];
+        var start2 = start > 1 ? start - 1 : start;
+        var end2 = end > 1 ? end - 1 : end;
+
+        var i = this.__getIndex(len.increase, start2 * len.total, 0, length - 1);
+
+        var j = this.__getIndex(len.increase, end2 * len.total, 0, length - 1); // start<0或者end>1或者普通情况，一共3种，start和end不可能同时超限
+
+
+        var isStartLt0 = start < 0;
+        var isEndGt1 = end > 1;
+        end2 *= len.total;
+        var prePercent = 1;
+        var endPoint;
+
+        if (end2 > len.increase[j]) {
+          var prev = list[j].slice(list[j].length - 2); // 最后2个点是x,y，前面是control
+
+          var current = list[j + 1];
+          var l = len.list[j];
+          var diff = end2 - len.increase[j];
+          var t = diff / l;
+          prePercent = t;
+
+          if (current.length === 2) {
+            var a = current[0] - prev[0];
+            var b = current[1] - prev[1];
+
+            if (isEndGt1) {
+              endPoint = [prev[0] + t * a, prev[1] + t * b];
+            } else {
+              t = 1 - t;
+              endPoint = [current[0] - t * a, current[1] - t * b];
+            }
+          } else if (current.length === 4) {
+            var r = bezier.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]]], t);
+            endPoint = [r[1][0], r[1][1], r[2][0], r[2][1]];
+          } else if (current.length === 6) {
+            var _r = bezier.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]], [current[4], current[5]]], t);
+
+            endPoint = [_r[1][0], _r[1][1], _r[2][0], _r[2][1], _r[3][0], _r[3][1]];
+          }
+        }
+
+        start2 *= len.total;
+
+        if (start2 > len.increase[i]) {
+          var _current;
+
+          var _prev = list[i].slice(list[i].length - 2);
+
+          var _l = len.list[i]; // 同一条线段时如果有end裁剪，会影响start长度，这里还要防止头尾绕了一圈的情况
+
+          if (i === j && !isStartLt0 && !isEndGt1 && prePercent !== 1) {
+            _l *= prePercent;
+
+            if (endPoint) {
+              _current = endPoint;
+            }
+          }
+
+          if (!_current) {
+            _current = list[i + 1];
+          }
+
+          var _diff = start2 - len.increase[i];
+
+          var _t = _diff / _l;
+
+          if (_current.length === 2) {
+            var _a = _current[0] - _prev[0];
+
+            var _b = _current[1] - _prev[1];
+
+            if (isStartLt0) {
+              _t = 1 - _t;
+              res.push([_current[0] - _t * _a, _current[1] - _t * _b]);
+            } else {
+              res.push([_prev[0] + _t * _a, _prev[1] + _t * _b]);
+            }
+
+            res.push(_current);
+          } else if (_current.length === 4) {
+            var _r2 = bezier.sliceBezier([[_current[2], _current[3]], [_current[0], _current[1]], _prev], 1 - _t).reverse();
+
+            res.push(_r2[0]);
+            res.push([_r2[1][0], _r2[1][1], _r2[2][0], _r2[2][1]]); // 同一条线段上去除end冲突
+
+            if (i === j && !isStartLt0 && !isEndGt1) {
+              endPoint = null;
+            }
+          } else if (_current.length === 6) {
+            var _r3 = bezier.sliceBezier([[_current[4], _current[5]], [_current[2], _current[3]], [_current[0], _current[1]], _prev], 1 - _t).reverse();
+
+            res.push(_r3[0]);
+            res.push([_r3[1][0], _r3[1][1], _r3[2][0], _r3[2][1], _current[4], _current[5]]);
+
+            if (i === j && !isStartLt0 && !isEndGt1) {
+              endPoint = null;
+            }
+          }
+        } // start和end之间的线段，注意头尾饶了一圈的情况，以及起始点被上方考虑过了
+
+
+        for (var k = i + 2; k <= j + (!isStartLt0 && !isEndGt1 ? 0 : length); k++) {
+          res.push(list[k % length]);
+        }
+
+        if (endPoint) {
+          res.push(endPoint);
+        }
+
+        return res;
+      }
+    }, {
+      key: "__getIndex",
+      value: function __getIndex(list, t, i, j) {
+        if (i === j) {
+          if (list[i] > t) {
+            return i - 1;
+          }
+
+          return i;
+        }
+
+        var middle = i + (j - i >> 1);
+
+        if (list[middle] === t) {
+          return middle;
+        } else if (list[middle] > t) {
+          return this.__getIndex(list, t, i, Math.max(middle - 1, i));
+        } else {
+          return this.__getIndex(list, t, Math.min(middle + 1, j), j);
+        }
+      }
+    }, {
+      key: "__getLength",
+      value: function __getLength(list, isMulti) {
+        var _this3 = this;
+
+        var res = [];
+        var total = 0;
+        var increase = [];
+
+        if (isMulti) {
+          total = [];
+          list.forEach(function (list) {
+            var temp = _this3.__getLength(list);
+
+            res.push(temp.list);
+            total.push(temp.total);
+            increase.push([0].concat(temp.increase));
+          });
+        } else if (Array.isArray(list)) {
+          total = 0;
+          increase.push(0);
+          var start = 0;
+
+          for (var i = 0, len = list.length; i < len; i++) {
+            var item = list[i];
+
+            if (Array.isArray(item)) {
+              start = i;
+              break;
+            }
+          }
+
+          var prev = list[start];
+
+          for (var _i3 = start + 1, _len = list.length; _i3 < _len; _i3++) {
+            var _item = list[_i3];
+
+            if (!Array.isArray(_item)) {
+              continue;
+            }
+
+            if (_item.length === 2) {
+              var a = Math.abs(_item[0] - prev[0]);
+              var b = Math.abs(_item[1] - prev[1]);
+              var c = Math.sqrt(Math.pow(a, 2) + Math.pow(b, 2));
+              res.push(c);
+              total += c;
+              increase.push(total);
+              prev = _item;
+            } else if (_item.length === 4) {
+              var _c = bezier.bezierLength([prev, [_item[0], _item[1]], [_item[2], _item[3]]]);
+
+              res.push(_c);
+              total += _c;
+              increase.push(total);
+              prev = [_item[2], _item[3]];
+            } else if (_item.length === 6) {
+              var _c2 = bezier.bezierLength([prev, [_item[0], _item[1]], [_item[2], _item[3]], [_item[4], _item[5]]]);
+
+              res.push(_c2);
+              total += _c2;
+              increase.push(total);
+              prev = [_item[4], _item[5]];
+            }
+          }
+        }
+
+        return {
+          list: res,
+          total: total,
+          increase: increase
+        };
+      }
+    }, {
+      key: "__concatPointAndControl",
+      value: function __concatPointAndControl(point, control) {
+        if (Array.isArray(control) && (control.length === 2 || control.length === 4) && Array.isArray(point) && point.length === 2) {
+          return control.concat(point);
+        }
+
+        return point;
       }
     }, {
       key: "render",
@@ -42322,7 +42334,7 @@
           return res;
         }
 
-        this.buildCache(res.x3, res.y3);
+        this.__buildCache(res.x3, res.y3);
 
         this.__renderPolygon(renderMode, ctx, res);
 
@@ -42357,7 +42369,8 @@
               originX = this.__x3,
               originY = this.__y3,
               strokeWidth = this.computedStyle[STROKE_WIDTH$4];
-          this.buildCache(originX, originY);
+
+          this.__buildCache(originX, originY);
 
           var bbox = _get(_getPrototypeOf(Polyline.prototype), "bbox", this);
 
@@ -42550,8 +42563,8 @@
     }
 
     _createClass(Sector, [{
-      key: "buildCache",
-      value: function buildCache(cx, cy, focus) {
+      key: "__buildCache",
+      value: function __buildCache(cx, cy, focus) {
         var width = this.width,
             begin = this.begin,
             end = this.end,
@@ -42661,7 +42674,8 @@
           return res;
         }
 
-        this.buildCache(res.cx, res.cy);
+        this.__buildCache(res.cx, res.cy);
+
         var fills = res.fill,
             fillRules = res.fillRule,
             strokes = res.stroke,
@@ -42843,7 +42857,9 @@
               strokeWidth = this.computedStyle[STROKE_WIDTH$3];
           var cx = originX + width * 0.5;
           var cy = originY + height * 0.5;
-          this.buildCache(cx, cy);
+
+          this.__buildCache(cx, cy);
+
           var r = 0;
 
           if (isMulti) {
@@ -42948,8 +42964,8 @@
     }
 
     _createClass(Rect, [{
-      key: "buildCache",
-      value: function buildCache(originX, originY, focus) {
+      key: "__buildCache",
+      value: function __buildCache(originX, originY, focus) {
         var width = this.width,
             height = this.height,
             rx = this.rx,
@@ -43006,7 +43022,7 @@
           return res;
         }
 
-        this.buildCache(res.x3, res.y3);
+        this.__buildCache(res.x3, res.y3);
 
         this.__renderPolygon(renderMode, ctx, res);
 
@@ -43031,7 +43047,8 @@
               width = this.width,
               height = this.height,
               strokeWidth = this.computedStyle[STROKE_WIDTH$2];
-          this.buildCache(originX, originY);
+
+          this.__buildCache(originX, originY);
 
           var bbox = _get(_getPrototypeOf(Rect.prototype), "bbox", this);
 
@@ -43097,8 +43114,8 @@
     }
 
     _createClass(Circle, [{
-      key: "buildCache",
-      value: function buildCache(cx, cy, focus) {
+      key: "__buildCache",
+      value: function __buildCache(cx, cy, focus) {
         var width = this.width,
             r = this.r,
             __cacheProps = this.__cacheProps,
@@ -43127,7 +43144,7 @@
           return res;
         }
 
-        this.buildCache(res.cx, res.cy);
+        this.__buildCache(res.cx, res.cy);
 
         this.__renderPolygon(renderMode, ctx, res);
 
@@ -43151,7 +43168,9 @@
               strokeWidth = this.computedStyle[STROKE_WIDTH$1];
           var cx = originX + width * 0.5;
           var cy = originY + height * 0.5;
-          this.buildCache(cx, cy);
+
+          this.__buildCache(cx, cy);
+
           var r = 0;
 
           if (isMulti) {
@@ -43249,8 +43268,8 @@
     }
 
     _createClass(Ellipse, [{
-      key: "buildCache",
-      value: function buildCache(cx, cy, focus) {
+      key: "__buildCache",
+      value: function __buildCache(cx, cy, focus) {
         var width = this.width,
             height = this.height,
             rx = this.rx,
@@ -43307,7 +43326,7 @@
           return res;
         }
 
-        this.buildCache(res.cx, res.cy);
+        this.__buildCache(res.cx, res.cy);
 
         this.__renderPolygon(renderMode, ctx, res);
 
@@ -43336,7 +43355,9 @@
               strokeWidth = this.computedStyle[STROKE_WIDTH];
           var cx = originX + width * 0.5;
           var cy = originY + height * 0.5;
-          this.buildCache(cx, cy);
+
+          this.__buildCache(cx, cy);
+
           var rx = 0,
               ry = 0;
 

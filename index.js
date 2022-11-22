@@ -38701,17 +38701,43 @@
   }
 
   function sliceBezier(points, t) {
-    var _points3 = _slicedToArray(points, 4),
-        _points3$ = _slicedToArray(_points3[0], 2),
-        x1 = _points3$[0],
-        y1 = _points3$[1],
-        _points3$2 = _slicedToArray(_points3[1], 2),
-        x2 = _points3$2[0],
-        y2 = _points3$2[1],
-        _points3$3 = _slicedToArray(_points3[2], 2),
-        x3 = _points3$3[0],
-        y3 = _points3$3[1],
-        p4 = _points3[3];
+    if (!Array.isArray(points) || points.length < 3) {
+      return;
+    }
+
+    var x1, y1, x2, y2, x3, y3, x4, y4;
+    var pts0 = points[0],
+        pts1 = points[1],
+        pts2 = points[2],
+        pts3 = points[3];
+
+    if (!pts0 || !pts1 || !pts2) {
+      return;
+    }
+
+    if (Array.isArray(pts0)) {
+      x1 = pts0[0];
+      y1 = pts0[1];
+    } else {
+      x1 = pts0.x;
+      y1 = pts0.y;
+    }
+
+    if (Array.isArray(pts1)) {
+      x2 = pts1[0];
+      y2 = pts1[1];
+    } else {
+      x2 = pts1.x;
+      y2 = pts1.y;
+    }
+
+    if (Array.isArray(pts2)) {
+      x3 = pts2[0];
+      y3 = pts2[1];
+    } else {
+      x3 = pts2.x;
+      y3 = pts2.y;
+    }
 
     var x12 = (x2 - x1) * t + x1;
     var y12 = (y2 - y1) * t + y1;
@@ -38721,9 +38747,13 @@
     var y123 = (y23 - y12) * t + y12;
 
     if (points.length === 4) {
-      var _p8 = _slicedToArray(p4, 2),
-          x4 = _p8[0],
-          y4 = _p8[1];
+      if (Array.isArray(pts3)) {
+        x4 = pts3[0];
+        y4 = pts3[1];
+      } else {
+        x4 = pts3.x;
+        y4 = pts3.y;
+      }
 
       var x34 = (x4 - x3) * t + x3;
       var y34 = (y4 - y3) * t + y3;
@@ -38740,6 +38770,11 @@
   function sliceBezier2Both(points) {
     var start = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
     var end = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 1;
+
+    if (!Array.isArray(points) || points.length < 3) {
+      return;
+    }
+
     start = Math.max(start, 0);
     end = Math.min(end, 1);
 
@@ -38923,16 +38958,16 @@
   }
 
   function bezier2Slope(points, t) {
-    var _points4 = _slicedToArray(points, 3),
-        _points4$ = _slicedToArray(_points4[0], 2),
-        x0 = _points4$[0],
-        y0 = _points4$[1],
-        _points4$2 = _slicedToArray(_points4[1], 2),
-        x1 = _points4$2[0],
-        y1 = _points4$2[1],
-        _points4$3 = _slicedToArray(_points4[2], 2),
-        x2 = _points4$3[0],
-        y2 = _points4$3[1];
+    var _points3 = _slicedToArray(points, 3),
+        _points3$ = _slicedToArray(_points3[0], 2),
+        x0 = _points3$[0],
+        y0 = _points3$[1],
+        _points3$2 = _slicedToArray(_points3[1], 2),
+        x1 = _points3$2[0],
+        y1 = _points3$2[1],
+        _points3$3 = _slicedToArray(_points3[2], 2),
+        x2 = _points3$3[0],
+        y2 = _points3$3[1];
 
     var x = 2 * (x0 - 2 * x1 + x2) * t + 2 * x1 - 2 * x0;
 
@@ -38944,19 +38979,19 @@
   }
 
   function bezier3Slope(points, t) {
-    var _points5 = _slicedToArray(points, 4),
-        _points5$ = _slicedToArray(_points5[0], 2),
-        x0 = _points5$[0],
-        y0 = _points5$[1],
-        _points5$2 = _slicedToArray(_points5[1], 2),
-        x1 = _points5$2[0],
-        y1 = _points5$2[1],
-        _points5$3 = _slicedToArray(_points5[2], 2),
-        x2 = _points5$3[0],
-        y2 = _points5$3[1],
-        _points5$4 = _slicedToArray(_points5[3], 2),
-        x3 = _points5$4[0],
-        y3 = _points5$4[1];
+    var _points4 = _slicedToArray(points, 4),
+        _points4$ = _slicedToArray(_points4[0], 2),
+        x0 = _points4$[0],
+        y0 = _points4$[1],
+        _points4$2 = _slicedToArray(_points4[1], 2),
+        x1 = _points4$2[0],
+        y1 = _points4$2[1],
+        _points4$3 = _slicedToArray(_points4[2], 2),
+        x2 = _points4$3[0],
+        y2 = _points4$3[1],
+        _points4$4 = _slicedToArray(_points4[3], 2),
+        x3 = _points4$4[0],
+        y3 = _points4$4[1];
 
     var x = 3 * (-x0 + 3 * x1 - 3 * x2 + x3) * t * t + 2 * (3 * x0 - 6 * x1 + 3 * x2) * t + 3 * x1 - 3 * x0;
 

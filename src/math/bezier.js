@@ -301,7 +301,32 @@ function pointAtBezierWithLength(points, length, percent = 1, maxIteration = 20,
 }
 
 function sliceBezier(points, t) {
-  let [[x1, y1], [x2, y2], [x3, y3], p4] = points;
+  if(!Array.isArray(points) || points.length < 3) {
+    return;
+  }
+  let x1, y1, x2, y2, x3, y3, x4, y4;
+  let pts0 = points[0], pts1 = points[1], pts2 = points[2], pts3 = points[3];
+  if(!pts0 || !pts1 || !pts2) {
+    return;
+  }
+  if(Array.isArray(pts0)) {
+    x1 = pts0[0]; y1 = pts0[1];
+  }
+  else {
+    x1 = pts0.x; y1 = pts0.y;
+  }
+  if(Array.isArray(pts1)) {
+    x2 = pts1[0]; y2 = pts1[1];
+  }
+  else {
+    x2 = pts1.x; y2 = pts1.y;
+  }
+  if(Array.isArray(pts2)) {
+    x3 = pts2[0]; y3 = pts2[1];
+  }
+  else {
+    x3 = pts2.x; y3 = pts2.y;
+  }
   let x12 = (x2 - x1) * t + x1;
   let y12 = (y2 - y1) * t + y1;
   let x23 = (x3 - x2) * t + x2;
@@ -309,7 +334,12 @@ function sliceBezier(points, t) {
   let x123 = (x23 - x12) * t + x12;
   let y123 = (y23 - y12) * t + y12;
   if(points.length === 4) {
-    let [x4, y4] = p4;
+    if(Array.isArray(pts3)) {
+      x4 = pts3[0]; y4 = pts3[1];
+    }
+    else {
+      x4 = pts3.x; y4 = pts3.y;
+    }
     let x34 = (x4 - x3) * t + x3;
     let y34 = (y4 - y3) * t + y3;
     let x234 = (x34 - x23) * t + x23;
@@ -324,6 +354,9 @@ function sliceBezier(points, t) {
 }
 
 function sliceBezier2Both(points, start = 0, end = 1) {
+  if(!Array.isArray(points) || points.length < 3) {
+    return;
+  }
   start = Math.max(start, 0);
   end = Math.min(end, 1);
   if(start === 0 && end === 1) {

@@ -871,7 +871,7 @@ class Text extends Node {
   }
 
   set content(v) {
-    this.__content = v;
+    this.updateContent(v, null);
   }
 
   get textBoxes() {

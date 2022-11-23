@@ -122,6 +122,9 @@ let karas = {
   refresh,
   enums,
   ca,
+  get debug() {
+    return debug.flag;
+  },
   set debug(v) {
     debug.flag = !!v;
   },

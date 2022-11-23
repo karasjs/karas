@@ -522,6 +522,10 @@ class Img extends Dom {
     return this.__loadImg.src;
   }
 
+  set src(v) {
+    this.updateSrc(v, null);
+  }
+
   get isReplaced() {
     return true;
   }

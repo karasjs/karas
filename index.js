@@ -12592,7 +12592,7 @@
         return this.__content;
       },
       set: function set(v) {
-        this.__content = v;
+        this.updateContent(v, null);
       }
     }, {
       key: "textBoxes",
@@ -14429,19 +14429,9 @@
       GEOM$1 = o$2.GEOM;
   var getLevel$1 = o$1.getLevel,
       isRepaint$1 = o$1.isRepaint,
-      NONE$3 = o$1.NONE;
-      o$1.FILTER;
-      o$1.PERSPECTIVE;
-      o$1.REPAINT;
-      o$1.REFLOW;
-      o$1.REBUILD;
-      o$1.CACHE;
-      var TF$2 = o$1.TRANSFORM;
-      o$1.TRANSFORM_ALL;
-      o$1.OPACITY;
-      o$1.MIX_BLEND_MODE;
-      o$1.MASK;
-      var TX$1 = o$1.TRANSLATE_X,
+      NONE$3 = o$1.NONE,
+      TF$2 = o$1.TRANSFORM,
+      TX$1 = o$1.TRANSLATE_X,
       TY$1 = o$1.TRANSLATE_Y,
       TZ$1 = o$1.TRANSLATE_Z,
       RZ$1 = o$1.ROTATE_Z,
@@ -28399,6 +28389,9 @@
       key: "src",
       get: function get() {
         return this.__loadImg.src;
+      },
+      set: function set(v) {
+        this.updateSrc(v, null);
       }
     }, {
       key: "isReplaced",
@@ -44689,6 +44682,10 @@
     refresh: refresh,
     enums: enums,
     ca: ca,
+
+    get debug() {
+      return debug.flag;
+    },
 
     set debug(v) {
       debug.flag = !!v;

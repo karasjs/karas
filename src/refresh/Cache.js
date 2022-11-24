@@ -138,6 +138,10 @@ class Cache {
     return this.__page.texture;
   }
 
+  get updated() {
+    return this.__page.__update;
+  }
+
   static getInstance(renderMode, ctx, rootId, bbox, x1, y1, cacheKlass, pageKlass, excludePage) {
     let w = Math.ceil(bbox[2] - bbox[0]);
     let h = Math.ceil(bbox[3] - bbox[1]);

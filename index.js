@@ -28038,6 +28038,11 @@
       get: function get() {
         return this.__page.texture;
       }
+    }, {
+      key: "updated",
+      get: function get() {
+        return this.__page.__update;
+      }
     }], [{
       key: "getInstance",
       value: function getInstance(renderMode, ctx, rootId, bbox, x1, y1, cacheKlass, pageKlass, excludePage) {
@@ -30346,7 +30351,7 @@
             loadImg.source = ca.source;
             loadImg.width = loadImg.__width = ca.width;
             loadImg.height = loadImg.__height = ca.height;
-            var res = ImgWebglCache.getInstance(mode.WEBGL, gl, gl.__root.__uuid, [0, 0, loadImg.width, loadImg.height], loadImg, 0, 0);
+            var res = ImgWebglCache.getInstance(mode.CANVAS, gl, gl.__root.__uuid, [0, 0, loadImg.width, loadImg.height], loadImg, 0, 0);
 
             if (isFunction$3(cb)) {
               cb(res);
@@ -30356,7 +30361,7 @@
           loadImg.source = ca.source;
           loadImg.width = loadImg.__width = ca.width;
           loadImg.height = loadImg.__height = ca.height;
-          var res = ImgWebglCache.getInstance(mode.WEBGL, gl, gl.__root.__uuid, [0, 0, loadImg.width, loadImg.height], loadImg, 0, 0);
+          var res = ImgWebglCache.getInstance(mode.CANVAS, gl, gl.__root.__uuid, [0, 0, loadImg.width, loadImg.height], loadImg, 0, 0);
 
           if (isFunction$3(cb)) {
             cb(res);

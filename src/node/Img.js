@@ -546,7 +546,7 @@ class Img extends Dom {
         loadImg.source = ca.source;
         loadImg.width = loadImg.__width = ca.width;
         loadImg.height = loadImg.__height = ca.height;
-        let res = ImgWebglCache.getInstance(mode.WEBGL, gl, gl.__root.__uuid, [0, 0, loadImg.width, loadImg.height], loadImg, 0, 0);
+        let res = ImgWebglCache.getInstance(mode.CANVAS, gl, gl.__root.__uuid, [0, 0, loadImg.width, loadImg.height], loadImg, 0, 0);
         if(isFunction(cb)) {
           cb(res);
         }
@@ -556,7 +556,7 @@ class Img extends Dom {
       loadImg.source = ca.source;
       loadImg.width = loadImg.__width = ca.width;
       loadImg.height = loadImg.__height = ca.height;
-      let res = ImgWebglCache.getInstance(mode.WEBGL, gl, gl.__root.__uuid, [0, 0, loadImg.width, loadImg.height], loadImg, 0, 0);
+      let res = ImgWebglCache.getInstance(mode.CANVAS, gl, gl.__root.__uuid, [0, 0, loadImg.width, loadImg.height], loadImg, 0, 0);
       if(isFunction(cb)) {
         cb(res);
       }

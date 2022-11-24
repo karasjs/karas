@@ -302,6 +302,13 @@ class Root extends Dom {
         dom.innerHTML = this.__genHtml(domName);
         this.__dom = dom.querySelector(domName);
       }
+      // 老的销毁
+      else {
+        let old = this.__dom.__root;
+        if(old && old instanceof Root) {
+          old.destroy();
+        }
+      }
     }
     // 没有设置width/height则采用css计算形式
     if(!this.__width || !this.__height) {
@@ -349,10 +356,6 @@ class Root extends Dom {
       this.__renderMode = mode.WEBGL;
     }
     this.draw(true);
-    // 第一次节点没有__root，渲染一次就有了才能diff
-    if(this.__dom.__root && this.__dom.__root instanceof Root) {
-      this.__dom.__root.destroy();
-    }
     this.__eventCbList = initEvent(this.__dom, Root);
     this.__dom.__root = this;
   }

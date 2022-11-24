@@ -10,6 +10,7 @@ import border from '../style/border';
 import level from '../refresh/level';
 import mx from '../math/matrix';
 import geom from '../math/geom';
+import ImgWebglCache from '../gl/ImgWebglCache';
 
 const {
   STYLE_KEY: {
@@ -51,7 +52,7 @@ class Img extends Dom {
       if(!ca) {
         inject.measureImg(src, null);
       }
-      else if(ca && ca.state === inject.LOADED) {
+      else if(ca.state === inject.LOADED) {
         loadImg.source = ca.source;
         loadImg.width = loadImg.__width = ca.width;
         loadImg.height = loadImg.__height = ca.height;
@@ -531,6 +532,36 @@ class Img extends Dom {
   }
 
   static showError = true;
+
+  static toWebglCache(gl, src, cb) {
+    if(!gl || !src) {
+      return;
+    }
+    let loadImg = {
+      src,
+    };
+    let ca = inject.IMG[src];
+    if(!ca) {
+      inject.measureImg(src, function(ca) {
+        loadImg.source = ca.source;
+        loadImg.width = loadImg.__width = ca.width;
+        loadImg.height = loadImg.__height = ca.height;
+        let res = ImgWebglCache.getInstance(mode.WEBGL, gl, gl.__root.__uuid, [0, 0, loadImg.width, loadImg.height], loadImg, 0, 0);
+        if(isFunction(cb)) {
+          cb(res);
+        }
+      });
+    }
+    else if(ca.state === inject.LOADED) {
+      loadImg.source = ca.source;
+      loadImg.width = loadImg.__width = ca.width;
+      loadImg.height = loadImg.__height = ca.height;
+      let res = ImgWebglCache.getInstance(mode.WEBGL, gl, gl.__root.__uuid, [0, 0, loadImg.width, loadImg.height], loadImg, 0, 0);
+      if(isFunction(cb)) {
+        cb(res);
+      }
+    }
+  }
 }
 
 export default Img;

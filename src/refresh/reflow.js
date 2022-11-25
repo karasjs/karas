@@ -339,9 +339,10 @@ function checkNext(root, top, node, hasZ, addDom, removeDom) {
   let ref = current.__prev;
   let hasFlowPrev;
   while(ref) {
-    // 注意有可能是text，视为其父级
+    // 注意有可能是text，此时可以直接用text位置，因为none的话不会进来，而text绝对不会absolute
+    let isText = ref instanceof Text;
     let computedStyle = ref.computedStyle;
-    if(computedStyle[POSITION] !== 'absolute' && computedStyle[DISPLAY] !== 'none') {
+    if(isText || computedStyle[POSITION] !== 'absolute' && computedStyle[DISPLAY] !== 'none') {
       y = ref.y + ref.outerHeight;
       hasFlowPrev = true;
       break;

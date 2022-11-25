@@ -23578,10 +23578,11 @@
     var hasFlowPrev;
 
     while (ref) {
-      // 注意有可能是text，视为其父级
+      // 注意有可能是text，此时可以直接用text位置，因为none的话不会进来，而text绝对不会absolute
+      var isText = ref instanceof Text;
       var computedStyle = ref.computedStyle;
 
-      if (computedStyle[POSITION$2] !== 'absolute' && computedStyle[DISPLAY$4] !== 'none') {
+      if (isText || computedStyle[POSITION$2] !== 'absolute' && computedStyle[DISPLAY$4] !== 'none') {
         y = ref.y + ref.outerHeight;
         hasFlowPrev = true;
         break;

@@ -27,9 +27,9 @@ class ImgWebglCache extends CanvasCache {
         if(!o.count) {
           delete HASH[key];
           this.__page.del(this.__pos);
+          this.__page = null;
         }
       }
-      this.__page = null;
       this.__enabled = false;
       return true;
     }

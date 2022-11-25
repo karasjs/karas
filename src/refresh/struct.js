@@ -752,10 +752,10 @@ function genFrameBufferWithTexture(gl, texture, width, height) {
   let frameBuffer = gl.createFramebuffer();
   gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
-  let check = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
-  if(check !== gl.FRAMEBUFFER_COMPLETE) {
-    inject.error('Framebuffer object is incomplete: ' + check.toString());
-  }
+  // let check = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+  // if(check !== gl.FRAMEBUFFER_COMPLETE) {
+  //   inject.error('Framebuffer object is incomplete: ' + check.toString());
+  // }
   // 离屏窗口0开始
   gl.viewport(0, 0, width, height);
   // gl.clearColor(0, 0, 0, 0);
@@ -1091,10 +1091,9 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   // 删除fbo恢复
   drawTextureCache(gl, list, cx, cy, dx, dy);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  gl.deleteFramebuffer(frameBuffer);
   // 汇入集合
-  frameBuffer = genFrameBufferWithTexture(gl, page.texture, size, size);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, page.texture, 0);
+  gl.viewport(0, 0, size, size);
   drawTex2Cache(gl, gl.program, cacheTotal, texture, w, h);
   gl.deleteTexture(texture);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);

@@ -83,11 +83,11 @@ let o = {
       return true;
     }
     // geom的fill等矢量才有的样式
-    if(tagName.charAt(0) === '$' && RESET_GEOM.hasOwnProperty(k)) {
+    if(tagName && tagName.charAt(0) === '$' && RESET_GEOM.hasOwnProperty(k)) {
       return true;
     }
     if(GEOM.hasOwnProperty(k)) {
-      return GEOM[k].hasOwnProperty(tagName);
+      return tagName && GEOM[k].hasOwnProperty(tagName);
     }
     if(k === 'translatePath') {
       return true;

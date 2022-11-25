@@ -756,6 +756,24 @@ declare namespace karas {
 
       function isValid(tagName: string, k: string): boolean
     }
+
+    class Page {
+      constructor(renderMode: mode, ctx: CanvasRenderingContext2D | WebGLRenderingContext | WebGL2RenderingContext, size: number, number: number)
+    }
+
+    class Cache {
+      constructor(renderMode: mode, ctx: CanvasRenderingContext2D | WebGLRenderingContext | WebGL2RenderingContext, w: number, h: number, bbox: [number], page: Page, pos: number, x1: number, y1: number)
+    }
+
+    namespace webgl {
+      function initShaders(gl: WebGLRenderingContext | WebGL2RenderingContext, vShader: string, fShader: string)
+
+      function drawTextureCache(gl: WebGLRenderingContext | WebGL2RenderingContext, list: [{ cache: Cache, opacity: number, matrix: [number] }], cx: number, cy: number, dx: number, dy: number)
+
+      function createTexture(gl: WebGLRenderingContext | WebGL2RenderingContext, tex: HTMLCanvasElement | HTMLImageElement | WebGLTexture, n: number, width: number, height: number)
+
+      function bindTexture(gl: WebGLRenderingContext | WebGL2RenderingContext, tex: HTMLCanvasElement | HTMLImageElement | WebGLTexture, n: number)
+    }
   }
 
   namespace enums {

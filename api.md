@@ -786,7 +786,12 @@ root.ref.div.updateFormatStyleNoOverwrite({
   * lookUp `boolean`
     是否向上查找父级同时清除缓存。
 * **说明**  
-清除当前节点的缓存，以及向上查找清除所有缓存本节点的节点。在canvas的`cache`的渲染模式和webgl模式时，每个节点都尽可能缓存自己，一些特殊效果节点（如filter）还会生成局部根节点缓存（即以自己未根将所有子节点包括进来形成位图缓存）。在需要的时候可以用这个方法清除缓存重新生成。
+清除当前节点的缓存。在canvas/webgl模式时，每个节点都尽可能缓存自己，一些特殊效果节点（如filter）还会生成局部根节点位图缓存。在需要的时候可以用这个方法清除缓存重新生成。
+
+#### clearTopCache
+* **类型** `Function`
+* **说明**  
+清除当前节点的所有父节点缓存。
 
 #### remove
 * **类型** `Function`
@@ -829,6 +834,26 @@ root.ref.div.refresh(function() {
   console.log('refresh');
 });
 ```
+
+#### addEventListener
+* **类型** `Function`
+* **参数**
+  * type `string`
+    DOM事件类型
+  * cb `Function`
+    事件回调。
+* **说明**  
+添加一个DOM事件侦听，如click。
+
+#### removeEventListener
+* **类型** `Function`
+* **参数**
+  * type `string`
+    DOM事件类型
+  * cb `Function`
+    事件回调。
+* **说明**  
+移除一个DOM事件侦听，如click。
 
 ### html属性attribute
 

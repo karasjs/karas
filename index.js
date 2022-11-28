@@ -13242,7 +13242,7 @@
       }
     });
   });
-  ['__layout', '__layoutFlow', '__layoutStyle', '__layoutAbs', '__layoutNone', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__computeReflow', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'frameAnimate', 'updateStyle', 'getBoundingClientRect', 'getComputedStyle', 'clearCache', '__structure', '__modifyStruct', '__updateStruct', 'flowChildren', 'absChildren', '__isRealInline', '__calBasis', '__calMinMax', '__computeMeasure', 'appendChild', 'prependChild', 'insertBefore', 'insertAfter', 'removeChild', 'remove'].forEach(function (fn) {
+  ['__layout', '__layoutFlow', '__layoutStyle', '__layoutAbs', '__layoutNone', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__computeReflow', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'frameAnimate', 'updateStyle', 'getBoundingClientRect', 'getComputedStyle', 'clearCache', '__structure', '__modifyStruct', '__updateStruct', 'flowChildren', 'absChildren', '__isRealInline', '__calBasis', '__calMinMax', '__computeMeasure', 'appendChild', 'prependChild', 'insertBefore', 'insertAfter', 'removeChild', 'remove', 'addEventListener', 'removeEventListener'].forEach(function (fn) {
     Component.prototype[fn] = function () {
       var sr = this.shadowRoot;
 
@@ -18007,7 +18007,8 @@
 
         if (/^on[a-zA-Z]/.test(k)) {
           k = k.slice(2).toLowerCase();
-          _this.listener[k] = v;
+
+          _this.addEventListener(k, v);
         }
       });
       _this.__animationList = [];
@@ -20503,6 +20504,8 @@
     }, {
       key: "__emitEvent",
       value: function __emitEvent(e, force) {
+        var _this9 = this;
+
         var __isDestroyed = this.__isDestroyed,
             computedStyle = this.__computedStyle,
             __mask = this.__mask;
@@ -20512,18 +20515,26 @@
         }
 
         var type = e.event.type;
-        var listener = this.listener,
+        var __listener = this.__listener,
             __hasMask = this.__hasMask;
         var cb;
 
-        if (listener.hasOwnProperty(type)) {
-          cb = listener[type];
+        if (__listener.hasOwnProperty(type)) {
+          cb = __listener[type];
         } // touchmove之类强制的直接由Root通知即可
 
 
         if (force) {
-          if (computedStyle[POINTER_EVENTS$1] !== 'none' && isFunction$5(cb) && !e.__stopImmediatePropagation) {
-            cb.call(this, e);
+          if (computedStyle[POINTER_EVENTS$1] !== 'none' && !e.__stopImmediatePropagation && (isFunction$5(cb) || Array.isArray(cb))) {
+            if (Array.isArray(cb)) {
+              cb.forEach(function (item) {
+                if (isFunction$5(item)) {
+                  item.call(_this9, e);
+                }
+              });
+            } else {
+              cb.call(this, e);
+            }
           }
 
           return true;
@@ -20789,7 +20800,7 @@
     }, {
       key: "updateFormatStyle",
       value: function updateFormatStyle(style, cb) {
-        var _this9 = this;
+        var _this10 = this;
 
         var root = this.__root,
             currentStyle = this.__currentStyle,
@@ -20802,7 +20813,7 @@
             i = parseInt(i);
           }
 
-          if (!equalStyle(i, isGeom ? currentProps[i] : currentStyle[i], style[i], _this9)) {
+          if (!equalStyle(i, isGeom ? currentProps[i] : currentStyle[i], style[i], _this10)) {
             if (isGeom) {
               currentProps[i] = style[i];
             } else {
@@ -21210,6 +21221,43 @@
 
 
         root.__addUpdate(this, null, REFLOW$3, null, true, null, cb);
+      }
+    }, {
+      key: "addEventListener",
+      value: function addEventListener(type, cb) {
+        if (type && isFunction$5(cb)) {
+          type = type.toLowerCase();
+          var arr = this.__listener[type] = this.__listener[type] || [];
+
+          for (var i = 0, len = arr.length; i < len; i++) {
+            if (arr[i] === cb) {
+              return;
+            }
+          }
+
+          arr.push(cb);
+        }
+      }
+    }, {
+      key: "removeEventListener",
+      value: function removeEventListener(type, cb) {
+        if (!type) {
+          return;
+        }
+
+        type = type.toLowerCase();
+        var arr = this.__listener[type];
+
+        if (Array.isArray(arr) && cb) {
+          for (var i = 0, len = arr.length; i < len; i++) {
+            if (arr[i] === cb) {
+              arr.splice(i, 1);
+              break;
+            }
+          }
+        } else if (isFunction$5(arr) && arr === cb) {
+          delete this.__listener[type];
+        }
       }
     }, {
       key: "tagName",

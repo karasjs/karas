@@ -274,6 +274,8 @@ Object.keys(change.GEOM).concat([
   'insertAfter',
   'removeChild',
   'remove',
+  'addEventListener',
+  'removeEventListener',
 ].forEach(fn => {
   Component.prototype[fn] = function() {
     let sr = this.shadowRoot;

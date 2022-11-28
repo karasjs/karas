@@ -2603,7 +2603,14 @@ class Xom extends Node {
           return;
         }
       }
-      if(isFunction(cb) && !e.__stopImmediatePropagation) {
+      if(Array.isArray(cb) && !e.__stopImmediatePropagation) {
+        cb.forEach(item => {
+          if(isFunction(item)) {
+            item.call(this, e);
+          }
+        });
+      }
+      else if(isFunction(cb) && !e.__stopImmediatePropagation) {
         cb.call(this, e);
       }
       return true;

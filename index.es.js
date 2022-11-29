@@ -20556,7 +20556,13 @@ var Xom = /*#__PURE__*/function (_Node) {
           }
         }
 
-        if (isFunction$5(cb) && !e.__stopImmediatePropagation) {
+        if (Array.isArray(cb) && !e.__stopImmediatePropagation) {
+          cb.forEach(function (item) {
+            if (isFunction$5(item)) {
+              item.call(_this9, e);
+            }
+          });
+        } else if (isFunction$5(cb) && !e.__stopImmediatePropagation) {
           cb.call(this, e);
         }
 
@@ -27560,6 +27566,8 @@ var Dom = /*#__PURE__*/function (_Xom) {
   }, {
     key: "__emitEvent",
     value: function __emitEvent(e, pm, force) {
+      var _this7 = this;
+
       if (force) {
         return _get(_getPrototypeOf(Dom.prototype), "__emitEvent", this).call(this, e, force);
       }
@@ -27626,7 +27634,13 @@ var Dom = /*#__PURE__*/function (_Xom) {
               return;
             }
 
-            if (isFunction$4(cb) && !e.__stopImmediatePropagation) {
+            if (Array.isArray(cb) && !e.__stopImmediatePropagation) {
+              cb.forEach(function (item) {
+                if (isFunction$4(item)) {
+                  item.call(_this7, e);
+                }
+              });
+            } else if (isFunction$4(cb) && !e.__stopImmediatePropagation) {
               cb.call(this, e);
             }
 
@@ -44726,7 +44740,7 @@ var refresh = {
   webgl: webgl
 };
 
-var version = "0.83.7";
+var version = "0.83.8";
 
 Geom.register('$line', Line);
 Geom.register('$polyline', Polyline);

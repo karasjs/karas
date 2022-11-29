@@ -147,6 +147,10 @@ declare namespace karas {
 
     remove(cb: Function): void
 
+    addEventListener(type: string, cb: Function): void
+
+    removeEventListener(type: string, cb: Function): void
+
     get tagName(): string
 
     get listener(): object

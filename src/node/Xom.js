@@ -224,7 +224,7 @@ class Xom extends Node {
       let v = this.props[k];
       if(/^on[a-zA-Z]/.test(k)) {
         k = k.slice(2).toLowerCase();
-        this.listener[k] = v;
+        this.addEventListener(k, v);
       }
     });
     this.__animationList = [];
@@ -2563,15 +2563,25 @@ class Xom extends Node {
       return;
     }
     let { event: { type } } = e;
-    let { listener, __hasMask } = this;
+    let { __listener, __hasMask } = this;
     let cb;
-    if(listener.hasOwnProperty(type)) {
-      cb = listener[type];
+    if(__listener.hasOwnProperty(type)) {
+      cb = __listener[type];
     }
     // touchmove之类强制的直接由Root通知即可
     if(force) {
-      if(computedStyle[POINTER_EVENTS] !== 'none' && isFunction(cb) && !e.__stopImmediatePropagation) {
-        cb.call(this, e);
+      if(computedStyle[POINTER_EVENTS] !== 'none' && !e.__stopImmediatePropagation
+        && (isFunction(cb) || Array.isArray(cb))) {
+        if(Array.isArray(cb)) {
+          cb.forEach(item => {
+            if(isFunction(item)) {
+              item.call(this, e);
+            }
+          });
+        }
+        else {
+          cb.call(this, e);
+        }
       }
       return true;
     }
@@ -2593,7 +2603,14 @@ class Xom extends Node {
           return;
         }
       }
-      if(isFunction(cb) && !e.__stopImmediatePropagation) {
+      if(Array.isArray(cb) && !e.__stopImmediatePropagation) {
+        cb.forEach(item => {
+          if(isFunction(item)) {
+            item.call(this, e);
+          }
+        });
+      }
+      else if(isFunction(cb) && !e.__stopImmediatePropagation) {
         cb.call(this, e);
       }
       return true;
@@ -3122,6 +3139,38 @@ class Xom extends Node {
     }
     // 可见在reflow逻辑做结构关系等
     root.__addUpdate(this, null, REFLOW, null, true, null, cb);
+  }
+
+  addEventListener(type, cb) {
+    if(type && isFunction(cb)) {
+      type = type.toLowerCase();
+      let arr = this.__listener[type] = this.__listener[type] || [];
+      for(let i = 0, len = arr.length; i < len; i++) {
+        if(arr[i] === cb) {
+          return;
+        }
+      }
+      arr.push(cb);
+    }
+  }
+
+  removeEventListener(type, cb) {
+    if(!type) {
+      return;
+    }
+    type = type.toLowerCase();
+    let arr = this.__listener[type];
+    if(Array.isArray(arr) && cb) {
+      for(let i = 0, len = arr.length; i < len; i++) {
+        if(arr[i] === cb) {
+          arr.splice(i, 1);
+          break;
+        }
+      }
+    }
+    else if(isFunction(arr) && arr === cb) {
+      delete this.__listener[type];
+    }
   }
 
   get tagName() {

@@ -2,7 +2,7 @@ import Node from '../node/Node';
 import Component from '../node/Component';
 import util from '../util/util';
 
-let { isPrimitive } = util;
+let { isPrimitive, isNil } = util;
 
 /**
  * 入口方法，animateRecords记录所有的动画结果等初始化后分配开始动画
@@ -10,8 +10,8 @@ let { isPrimitive } = util;
  * @param karas
  * @param json
  * @param animateRecords
- * @param areaStart 为了和AE功能对应，播放一段动画，特增加这2个参数，递归起效
- * @param areaDuration
+ * @param areaStart 为了和AE功能对应，播放一段动画，特增加这2个参数，递归相加起效
+ * @param areaDuration 最外层优先
  * @returns {Node|Component|*}
  */
 function parse(karas, json, animateRecords, areaStart, areaDuration) {
@@ -23,9 +23,15 @@ function parse(karas, json, animateRecords, areaStart, areaDuration) {
       return parse(karas, item, animateRecords, areaStart, areaDuration);
     });
   }
-  let as = areaStart;
-  areaStart += json.areaStart || 0;
-  let ad = json.areaDuration || areaDuration;
+  areaStart += parseInt(json.areaStart) || 0;
+  if(areaDuration === null) {
+    if(!isNil(json.areaDuration)) {
+      let n = parseInt(json.areaDuration);
+      if(!isNaN(n) && n > 0) {
+        areaDuration = n;
+      }
+    }
+  }
   let { tagName, props = {}, children = [], animate = [] } = json;
   if(!tagName) {
     throw new Error('Dom must have a tagName: ' + JSON.stringify(json));
@@ -65,8 +71,8 @@ function parse(karas, json, animateRecords, areaStart, areaDuration) {
       animateRecords.push({
         animate,
         target: vd,
-        areaStart: as,
-        areaDuration: ad,
+        areaStart,
+        areaDuration,
       });
     }
   }

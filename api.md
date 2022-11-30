@@ -3062,8 +3062,12 @@ a.cancel();
   * options `Function`
     * isFrame `boolean`
     传入帧数来代替时间毫秒数
-    * excludeDelay
+    * excludeDelay `boolean`
     不包含delay时间
+    * areaStart `int`
+      见[Animation](#Animation)的options的areaStart。
+    * areaDuration `int`
+      见[Animation](#Animation)的options的areaDuration。
   * cb `Function`
   完成后回调。
 * **说明**  
@@ -3097,8 +3101,12 @@ a.gotoAndPlay(500);
   * options `Function`
     * isFrame `boolean`
     传入帧数来代替时间毫秒数
-    * excludeDelay
+    * excludeDelay `boolean`
     不包含delay时间
+    * areaStart `int`
+    见[Animation](#Animation)的options的areaStart。
+    * areaDuration `int`
+    见[Animation](#Animation)的options的areaDuration。
   * cb `Function`
   完成后回调。
 * **说明**  

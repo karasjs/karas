@@ -992,7 +992,7 @@
   var fnToString = hasOwn.toString;
   var ObjectFunctionString = fnToString.call(Object);
 
-  function isNil$f(v) {
+  function isNil$h(v) {
     return v === undefined || v === null;
   }
 
@@ -1013,7 +1013,7 @@
   }
 
   function stringify(s) {
-    if (isNil$f(s)) {
+    if (isNil$h(s)) {
       return '';
     }
 
@@ -1163,7 +1163,7 @@
       if (c) {
         res = [parseInt(c[1]), parseInt(c[2]), parseInt(c[3])];
 
-        if (!isNil$f(c[4])) {
+        if (!isNil$h(c[4])) {
           res[3] = parseFloat(c[4]);
         } else {
           res[3] = 1;
@@ -1255,7 +1255,7 @@
   }
 
   function clone$3(obj) {
-    if (isNil$f(obj) || _typeof(obj) !== 'object') {
+    if (isNil$h(obj) || _typeof(obj) !== 'object') {
       return obj;
     }
 
@@ -1545,13 +1545,13 @@
     isNumber: isNumber$1,
     isBoolean: isBoolean,
     isDate: isDate,
-    isNil: isNil$f,
+    isNil: isNil$h,
     isPrimitive: function isPrimitive(v) {
       return util.isNil(v) || util.isBoolean(v) || util.isString(v) || util.isNumber(v);
     },
     // css中常用undefined/null表示auto本身
     isAuto: function isAuto(v) {
-      return isNil$f(v) || v === 'auto';
+      return isNil$h(v) || v === 'auto';
     },
     isPlainObject: isPlainObject,
     stringify: stringify,
@@ -6878,7 +6878,7 @@
   };
 
   var rgba2int$2 = util.rgba2int,
-      isNil$e = util.isNil;
+      isNil$g = util.isNil;
   var PX$9 = o$4.PX,
       PERCENT$8 = o$4.PERCENT,
       DEG$4 = o$4.DEG,
@@ -7355,9 +7355,9 @@
 
           if (_points) {
             o.z = [parseFloat(_points[1]), parseFloat(_points[2]), parseFloat(_points[3]), parseFloat(_points[4])];
-            var i5 = !isNil$e(_points[5]),
-                i6 = !isNil$e(_points[6]),
-                i7 = !isNil$e(_points[7]); // 重载，567是偏移x/y和ratio，都可省略即不偏移和半径1，只有5是ratio，只有56是x/y
+            var i5 = !isNil$g(_points[5]),
+                i6 = !isNil$g(_points[6]),
+                i7 = !isNil$g(_points[7]); // 重载，567是偏移x/y和ratio，都可省略即不偏移和半径1，只有5是ratio，只有56是x/y
 
             if (i5 && i6 && i7) {
               o.z.push(parseFloat(_points[5]));
@@ -7657,18 +7657,18 @@
     renderConic: renderConic
   };
 
-  var isNil$d = util.isNil;
+  var isNil$f = util.isNil;
 
   function parseFlex(style, grow, shrink, basis) {
-    if (isNil$d(style.flexGrow)) {
+    if (isNil$f(style.flexGrow)) {
       style.flexGrow = grow || 0;
     }
 
-    if (isNil$d(style.flexShrink)) {
+    if (isNil$f(style.flexShrink)) {
       style.flexShrink = shrink || 0;
     }
 
-    if (isNil$d(style.flexBasis)) {
+    if (isNil$f(style.flexBasis)) {
       style.flexBasis = basis || 0;
     }
   }
@@ -7676,7 +7676,7 @@
   function parseMarginPadding(style, key, list) {
     var temp = style[key];
 
-    if (!isNil$d(temp)) {
+    if (!isNil$f(temp)) {
       var match = temp.toString().match(/([-+]?[\d.]+[pxremvwhina%]*)|(auto)/ig);
 
       if (match) {
@@ -7690,7 +7690,7 @@
         }
 
         list.forEach(function (k, i) {
-          if (isNil$d(style[k])) {
+          if (isNil$f(style[k])) {
             style[k] = match[i];
           }
         });
@@ -7701,22 +7701,22 @@
   function parseOneBorder(style, k) {
     var v = style[k];
 
-    if (isNil$d(v)) {
+    if (isNil$f(v)) {
       return;
     } // 后面会统一格式化处理
 
 
-    if (isNil$d(style[k + 'Width'])) {
+    if (isNil$f(style[k + 'Width'])) {
       var w = /\b[\d.]+[pxremvwhina%]*\b/i.exec(v);
       style[k + 'Width'] = w ? w[0] : 0;
     }
 
-    if (isNil$d(style[k + 'Style'])) {
+    if (isNil$f(style[k + 'Style'])) {
       var s = /\b(solid|dashed|dotted)\b/i.exec(v);
       style[k + 'Style'] = s ? s[1] : 'solid';
     }
 
-    if (isNil$d(style[k + 'Color'])) {
+    if (isNil$f(style[k + 'Color'])) {
       var c = /#[0-9a-f]{3,8}/i.exec(v);
 
       if (c && [4, 7, 9].indexOf(c[0].length) > -1) {
@@ -7762,7 +7762,7 @@
         if (Array.isArray(v)) {
           var length = v.length;
 
-          if (isNil$d(style.backgroundColor)) {
+          if (isNil$f(style.backgroundColor)) {
             var bgc = /^\s*((transparent)|(#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))/i.exec(v[length - 1]);
 
             if (bgc) {
@@ -7775,7 +7775,7 @@
           var bgr = [];
           var bgp = [];
           v.forEach(function (item) {
-            if (isNil$d(style.backgroundImage)) {
+            if (isNil$f(style.backgroundImage)) {
               var gd = reg.gradient.exec(item);
 
               if (gd) {
@@ -7791,7 +7791,7 @@
               }
             }
 
-            if (isNil$d(style.backgroundRepeat)) {
+            if (isNil$f(style.backgroundRepeat)) {
               var repeat = /(no-?)?repeat(-?[xy])?/i.exec(item);
 
               if (repeat) {
@@ -7799,7 +7799,7 @@
               }
             }
 
-            if (isNil$d(style.backgroundPosition)) {
+            if (isNil$f(style.backgroundPosition)) {
               var position = item.match(reg.position);
 
               if (position) {
@@ -7821,7 +7821,7 @@
             this.toFull(style, 'backgroundPosition');
           }
         } else {
-          if (isNil$d(style.backgroundImage)) {
+          if (isNil$f(style.backgroundImage)) {
             var gd = reg.gradient.exec(v);
 
             if (gd) {
@@ -7837,7 +7837,7 @@
             }
           }
 
-          if (isNil$d(style.backgroundRepeat)) {
+          if (isNil$f(style.backgroundRepeat)) {
             var repeat = /(no-?)?repeat(-?[xy])?/i.exec(v);
 
             if (repeat) {
@@ -7845,7 +7845,7 @@
             }
           }
 
-          if (isNil$d(style.backgroundColor)) {
+          if (isNil$f(style.backgroundColor)) {
             var _bgc = /^(transparent)|(#[0-9a-f]{3,8})|(rgba?\s*\(.+?\))/i.exec(v);
 
             if (_bgc) {
@@ -7854,7 +7854,7 @@
             }
           }
 
-          if (isNil$d(style.backgroundPosition)) {
+          if (isNil$f(style.backgroundPosition)) {
             var position = v.match(reg.position);
 
             if (position) {
@@ -7890,7 +7890,7 @@
         v = v.toString().split(/\s+/);
 
         if (v.length) {
-          if (isNil$d(style.flexDirection)) ;
+          if (isNil$f(style.flexDirection)) ;
 
           style.flexDirection = v[0];
 
@@ -7923,7 +7923,7 @@
         }
 
         this[k].forEach(function (k, i) {
-          if (isNil$d(style[k])) {
+          if (isNil$f(style[k])) {
             style[k] = v[0][i] + ' ' + v[1][i];
           }
         });
@@ -7933,7 +7933,7 @@
         }
 
         var isEmpty = this[k].map(function (k2) {
-          return isNil$d(style[k2]);
+          return isNil$f(style[k2]);
         });
         v.forEach(function (v2) {
           v2 = v2.toString().split(/\s+/);
@@ -7957,7 +7957,7 @@
         }
 
         this[k].forEach(function (k, i) {
-          if (isNil$d(style[k])) {
+          if (isNil$f(style[k])) {
             style[k] = _arr3[i];
           }
         });
@@ -7971,7 +7971,7 @@
         }
 
         this[k].forEach(function (k, i) {
-          if (isNil$d(style[k])) {
+          if (isNil$f(style[k])) {
             style[k] = _arr4[i];
           }
         });
@@ -7999,7 +7999,7 @@
         }
       } else if (this[k]) {
         this[k].forEach(function (k) {
-          if (isNil$d(style[k])) {
+          if (isNil$f(style[k])) {
             style[k] = v;
           }
         });
@@ -8338,7 +8338,7 @@
       VMIN$7 = o$4.VMIN,
       GRADIENT$3 = o$4.GRADIENT,
       calUnit$1 = o$4.calUnit;
-  var isNil$c = util.isNil,
+  var isNil$e = util.isNil,
       rgba2int$1 = util.rgba2int,
       equalArr$1 = util.equalArr,
       equal = util.equal,
@@ -8397,7 +8397,7 @@
   }
 
   function camel(v) {
-    if (isNil$c(v)) {
+    if (isNil$e(v)) {
       v = '';
     }
 
@@ -8485,7 +8485,7 @@
 
     temp = style.backgroundPosition;
 
-    if (!isNil$c(temp)) {
+    if (!isNil$e(temp)) {
       abbr$1.toFull(style, 'backgroundPosition');
     } // flex
 
@@ -8505,13 +8505,13 @@
 
     temp = style.margin;
 
-    if (!isNil$c(temp)) {
+    if (!isNil$e(temp)) {
       abbr$1.toFull(style, 'margin');
     }
 
     temp = style.padding;
 
-    if (!isNil$c(temp)) {
+    if (!isNil$e(temp)) {
       abbr$1.toFull(style, 'padding');
     }
 
@@ -8531,7 +8531,7 @@
     ['translate', 'scale', 'skew', 'translate3d', 'scale3d', 'rotate'].forEach(function (k) {
       temp = style[k];
 
-      if (!isNil$c(temp)) {
+      if (!isNil$e(temp)) {
         abbr$1.toFull(style, k);
       }
     }); // 扩展的不能和transform混用，给出警告
@@ -8548,7 +8548,7 @@
       var k = item.k,
           v = item.v;
 
-      if (isNil$c(style[k])) {
+      if (isNil$e(style[k])) {
         style[k] = v;
       }
     }); // 背景图
@@ -8974,7 +8974,7 @@
               }); // 不规范的写法变默认值50%
 
 
-              if (isNil$c(_arr9[i].v)) {
+              if (isNil$e(_arr9[i].v)) {
                 _arr9[i].v = 50;
               }
             }
@@ -13003,7 +13003,7 @@
 
   _defineProperty(Event, "END", 'end');
 
-  var isNil$b = util.isNil,
+  var isNil$d = util.isNil,
       isFunction$8 = util.isFunction,
       extend$2 = util.extend;
   var REGISTER$1 = {};
@@ -13093,7 +13093,7 @@
         this.__isMounted = false;
         var ref = this.props.ref;
 
-        if (!isNil$b(ref) && !isFunction$8(ref)) {
+        if (!isNil$d(ref) && !isFunction$8(ref)) {
           delete this.__root.__ref[ref];
         }
 
@@ -14333,7 +14333,8 @@
   easing['ease-out'] = easing.easeOut;
   easing['ease-in-out'] = easing.easeInOut;
 
-  var isFunction$6 = util.isFunction;
+  var isFunction$6 = util.isFunction,
+      isNil$c = util.isNil;
 
   var Controller = /*#__PURE__*/function () {
     function Controller() {
@@ -14412,7 +14413,7 @@
               var value = animate.value,
                   options = animate.options;
 
-              if (areaStart || areaDuration) {
+              if (areaStart || !isNil$c(areaDuration)) {
                 options = Object.assign({}, options); // clone防止多个使用相同的干扰
 
                 options.areaStart = areaStart;
@@ -14802,7 +14803,7 @@
       VMIN$5 = o$4.VMIN,
       GRADIENT$2 = o$4.GRADIENT,
       calUnit = o$4.calUnit;
-  var isNil$a = util.isNil,
+  var isNil$b = util.isNil,
       isFunction$5 = util.isFunction,
       isNumber = util.isNumber,
       isObject = util.isObject,
@@ -15068,7 +15069,7 @@
         var pv = p ? p[i] : null,
             nv = n ? n[i] : null; // 空或key不等都无变化
 
-        if (isNil$a(pv) || isNil$a(nv) || pv.k !== nv.k) {
+        if (isNil$b(pv) || isNil$b(nv) || pv.k !== nv.k) {
           v.push(null);
         } else {
           has = true;
@@ -15459,7 +15460,7 @@
     } else if (GEOM$1.hasOwnProperty(k)) {
       var tagName = target.tagName;
 
-      if (isNil$a(p)) {
+      if (isNil$b(p)) {
         return;
       } else if (GEOM$1[k][tagName] && isFunction$5(GEOM$1[k][tagName].calDiff)) {
         var fn = GEOM$1[k][tagName].calDiff;
@@ -15478,7 +15479,7 @@
       } // 特殊处理multi
       else if (target.isMulti) {
         if (k === 'points' || k === 'controls') {
-          if (isNil$a(n) || !n.length || isNil$a(p) || !p.length || equalArr(p, n)) {
+          if (isNil$b(n) || !n.length || isNil$b(p) || !p.length || equalArr(p, n)) {
             return;
           }
 
@@ -15488,7 +15489,7 @@
             var _pv = p[_i9];
             var _nv = n[_i9];
 
-            if (isNil$a(_pv) || !_pv.length || isNil$a(_nv) || !_nv.length) {
+            if (isNil$b(_pv) || !_pv.length || isNil$b(_nv) || !_nv.length) {
               res.v.push(null);
             } else {
               var _v12 = [];
@@ -15497,7 +15498,7 @@
                 var pv2 = _pv[_j3];
                 var nv2 = _nv[_j3];
 
-                if (isNil$a(pv2) || isNil$a(nv2)) {
+                if (isNil$b(pv2) || isNil$b(nv2)) {
                   _v12.push(null);
                 } else {
                   var v3 = [];
@@ -15506,7 +15507,7 @@
                     var pv3 = pv2[_k4];
                     var nv3 = nv2[_k4]; // control由4点变2点
 
-                    if (isNil$a(pv3) || isNil$a(nv3)) {
+                    if (isNil$b(pv3) || isNil$b(nv3)) {
                       v3.push(0);
                     } else {
                       v3.push(nv3 - pv3);
@@ -15521,7 +15522,7 @@
             }
           }
         } else if (k === 'controlA' || k === 'controlB') {
-          if (isNil$a(n) || !n.length || isNil$a(p) || !p.length || equalArr(p, n)) {
+          if (isNil$b(n) || !n.length || isNil$b(p) || !p.length || equalArr(p, n)) {
             return;
           }
 
@@ -15531,7 +15532,7 @@
             var _pv2 = p[_i10];
             var _nv2 = n[_i10];
 
-            if (isNil$a(_pv2) || !_pv2.length || isNil$a(_nv2) || !_nv2.length) {
+            if (isNil$b(_pv2) || !_pv2.length || isNil$b(_nv2) || !_nv2.length) {
               res.v.push(null);
             } else {
               res.v.push([_nv2[0] - _pv2[0], _nv2[1] - _pv2[1]]);
@@ -15548,7 +15549,7 @@
             var _pv3 = p[_i11];
             var _nv3 = n[_i11];
 
-            if (isNil$a(_pv3) || isNil$a(_nv3)) {
+            if (isNil$b(_pv3) || isNil$b(_nv3)) {
               _v13.push(0);
             }
 
@@ -15559,7 +15560,7 @@
         }
       } // 非multi特殊处理这几类数组类型数据
       else if (k === 'points' || k === 'controls') {
-        if (isNil$a(n) || !n.length || isNil$a(p) || !p.length || equalArr(p, n)) {
+        if (isNil$b(n) || !n.length || isNil$b(p) || !p.length || equalArr(p, n)) {
           return;
         }
 
@@ -15569,7 +15570,7 @@
           var _pv4 = p[_i12];
           var _nv4 = n[_i12];
 
-          if (isNil$a(_pv4) || !_pv4.length || isNil$a(_nv4) || !_nv4.length) {
+          if (isNil$b(_pv4) || !_pv4.length || isNil$b(_nv4) || !_nv4.length) {
             res.v.push(null);
           } else {
             var _v14 = [];
@@ -15578,7 +15579,7 @@
               var _pv5 = _pv4[_j4];
               var _nv5 = _nv4[_j4]; // control由4点变2点
 
-              if (isNil$a(_pv5) || isNil$a(_nv5)) {
+              if (isNil$b(_pv5) || isNil$b(_nv5)) {
                 _v14.push(0);
               } else {
                 _v14.push(_nv5 - _pv5);
@@ -15589,7 +15590,7 @@
           }
         }
       } else if (k === 'controlA' || k === 'controlB') {
-        if (isNil$a(n) || !n.length || isNil$a(p) || !p.length || equalArr(p, n)) {
+        if (isNil$b(n) || !n.length || isNil$b(p) || !p.length || equalArr(p, n)) {
           return;
         }
 
@@ -16140,13 +16141,26 @@
     return res;
   }
 
-  function gotoOverload(options, cb) {
+  function gotoOverload(animation, options, cb) {
     if (isFunction$5(options)) {
       cb = options;
       options = {};
     }
 
-    return [options || {}, cb];
+    options = options || {};
+
+    if (!isNil$b(options.areaStart)) {
+      animation.areaStart = options.areaStart;
+    }
+
+    if (!isNil$b(options.areaDuration)) {
+      animation.areaDuration = options.areaDuration;
+    }
+
+    return {
+      options: options,
+      cb: cb
+    };
   }
 
   function frameCb(self) {
@@ -16168,6 +16182,8 @@
     }
   }
 
+  var uuid$3 = 0;
+
   var Animation = /*#__PURE__*/function (_Event) {
     _inherits(Animation, _Event);
 
@@ -16175,6 +16191,7 @@
       var _this;
 
       _this = _Event.call(this) || this;
+      _this.id = uuid$3++;
       list = clone$1(list || []);
 
       if (Array.isArray(list)) {
@@ -16252,7 +16269,7 @@
       _this.easing = op.easing;
       _this.areaStart = op.areaStart; // ae中的功能，播放中间一段动画，为0忽略
 
-      _this.areaStart = op.areaDuration;
+      _this.areaDuration = op.areaDuration;
       _this.__currentFrames = {
         reverse: true,
         'alternate-reverse': true
@@ -16760,6 +16777,9 @@
     }, {
       key: "gotoAndPlay",
       value: function gotoAndPlay(v, options, cb) {
+        var t = gotoOverload(this, options, cb);
+        options = t.options;
+        cb = t.cb;
         var isDestroyed = this.__isDestroyed;
         var duration = this.__duration;
         var frames = this.__frames;
@@ -16771,16 +16791,9 @@
 
         if (isDestroyed || dur <= 0 || frames.length < 1) {
           return this;
-        }
+        } // 计算出时间点直接累加播放
 
-        var _gotoOverload = gotoOverload(options, cb);
 
-        var _gotoOverload2 = _slicedToArray(_gotoOverload, 2);
-
-        options = _gotoOverload2[0];
-        cb = _gotoOverload2[1];
-
-        // 计算出时间点直接累加播放
         this.__goto(v, options.isFrame, options.excludeDelay);
 
         if (v > dur + delay - areaStart + endDelay) {
@@ -16794,6 +16807,9 @@
       value: function gotoAndStop(v, options, cb) {
         var _this4 = this;
 
+        var t = gotoOverload(this, options, cb);
+        options = t.options;
+        cb = t.cb;
         var isDestroyed = this.__isDestroyed;
         var duration = this.__duration;
         var frames = this.__frames;
@@ -16807,12 +16823,6 @@
           return this;
         }
 
-        var _gotoOverload3 = gotoOverload(options, cb);
-
-        var _gotoOverload4 = _slicedToArray(_gotoOverload3, 2);
-
-        options = _gotoOverload4[0];
-        cb = _gotoOverload4[1];
         v = this.__goto(v, options.isFrame, options.excludeDelay);
 
         if (v > dur + delay - areaStart + endDelay) {
@@ -16838,7 +16848,7 @@
         var duration = this.__duration;
         var areaDuration = this.__areaDuration;
         var dur = areaDuration ? Math.min(duration, areaDuration) : duration;
-        this.__playState = 'paused'; // this.__cancelTask(); // 应该不需要，gotoAndXxx都会调用play()，里面有
+        this.__playState = 'paused';
 
         if (isNaN(v) || v < 0) {
           throw new Error('Param of gotoAnd(Play/Stop) is illegal: ' + v);
@@ -17440,7 +17450,7 @@
         frames.forEach(function (item) {
           var style = item.style;
           keys.forEach(function (k) {
-            if (!style.hasOwnProperty(k) || isNil$a(style[k])) {
+            if (!style.hasOwnProperty(k) || isNil$b(style[k])) {
               if (GEOM$1.hasOwnProperty(k)) {
                 if (target) {
                   style[k] = clone$1(target.getProps(k));
@@ -17468,7 +17478,7 @@
           keys.forEach(function (k) {
             var v = style[k]; // geom的属性可能在帧中没有
 
-            if (isNil$a(v)) {
+            if (isNil$b(v)) {
               return;
             }
 
@@ -17624,14 +17634,14 @@
                     var n = v[_i26];
                     var cli = cl[_i26];
 
-                    if (!isNil$a(o) && !isNil$a(n)) {
+                    if (!isNil$b(o) && !isNil$b(n)) {
                       for (var j = 0, len2 = Math.min(o.length, n.length); j < len2; j++) {
                         var o2 = o[j];
                         var n2 = n[j];
 
-                        if (!isNil$a(o2) && !isNil$a(n2)) {
+                        if (!isNil$b(o2) && !isNil$b(n2)) {
                           for (var _k7 = 0, len3 = Math.min(o2.length, n2.length); _k7 < len3; _k7++) {
-                            if (!isNil$a(o2[_k7]) && !isNil$a(n2[_k7])) {
+                            if (!isNil$b(o2[_k7]) && !isNil$b(n2[_k7])) {
                               o2[_k7] = cli[j][_k7] + n2[_k7] * percent;
                             }
                           }
@@ -17643,17 +17653,17 @@
                   v.forEach(function (item, i) {
                     var st2 = st[i];
 
-                    if (!isNil$a(item[0]) && !isNil$a(st2[0])) {
+                    if (!isNil$b(item[0]) && !isNil$b(st2[0])) {
                       st2[0] = cl[i][0] + item[0] * percent;
                     }
 
-                    if (!isNil$a(item[1]) && !isNil$a(st2[1])) {
+                    if (!isNil$b(item[1]) && !isNil$b(st2[1])) {
                       st2[1] = cl[i][1] + item[1] * percent;
                     }
                   });
                 } else {
                   v.forEach(function (item, i) {
-                    if (!isNil$a(item) && !isNil$a(st[i])) {
+                    if (!isNil$b(item) && !isNil$b(st[i])) {
                       st[i] = cl[i] + item * percent;
                     }
                   });
@@ -17664,24 +17674,24 @@
                     var _o = st[_i27];
                     var _n = v[_i27];
 
-                    if (!isNil$a(_o) && !isNil$a(_n)) {
+                    if (!isNil$b(_o) && !isNil$b(_n)) {
                       for (var _j6 = 0, _len18 = Math.min(_o.length, _n.length); _j6 < _len18; _j6++) {
-                        if (!isNil$a(_o[_j6]) && !isNil$a(_n[_j6])) {
+                        if (!isNil$b(_o[_j6]) && !isNil$b(_n[_j6])) {
                           _o[_j6] = cl[_i27][_j6] + _n[_j6] * percent;
                         }
                       }
                     }
                   }
                 } else if (k === 'controlA' || k === 'controlB') {
-                  if (!isNil$a(st[0]) && !isNil$a(v[0])) {
+                  if (!isNil$b(st[0]) && !isNil$b(v[0])) {
                     st[0] = cl[0] + v[0] * percent;
                   }
 
-                  if (!isNil$a(st[1]) && !isNil$a(v[1])) {
+                  if (!isNil$b(st[1]) && !isNil$b(v[1])) {
                     st[1] = cl[1] + v[1] * percent;
                   }
                 } else {
-                  if (!isNil$a(st) && !isNil$a(v)) {
+                  if (!isNil$b(st) && !isNil$b(v)) {
                     st = cl + v * percent;
                   }
                 }
@@ -18258,7 +18268,7 @@
   var int2rgba$1 = util.int2rgba,
       rgba2int = util.rgba2int,
       joinArr$1 = util.joinArr,
-      isNil$9 = util.isNil,
+      isNil$a = util.isNil,
       isFunction$4 = util.isFunction;
   var calRelative = css.calRelative,
       calNormalLineHeight = css.calNormalLineHeight,
@@ -18679,14 +18689,14 @@
       value: function __ioSize(w, h) {
         var computedStyle = this.__computedStyle; // 可能不传，在虚拟布局时用不到
 
-        if (!isNil$9(w)) {
+        if (!isNil$a(w)) {
           this.__width = computedStyle[WIDTH$5] = w;
           this.__clientWidth = w += computedStyle[PADDING_LEFT$5] + computedStyle[PADDING_RIGHT$4];
           this.__offsetWidth = w += computedStyle[BORDER_LEFT_WIDTH$5] + computedStyle[BORDER_RIGHT_WIDTH$4];
           this.__outerWidth = w + computedStyle[MARGIN_LEFT$5] + computedStyle[MARGIN_RIGHT$4];
         }
 
-        if (!isNil$9(h)) {
+        if (!isNil$a(h)) {
           this.__height = computedStyle[HEIGHT$5] = h;
           this.__clientHeight = h += computedStyle[PADDING_TOP$3] + computedStyle[PADDING_BOTTOM$2];
           this.__offsetHeight = h += computedStyle[BORDER_TOP_WIDTH$3] + computedStyle[BORDER_BOTTOM_WIDTH$2];
@@ -19209,7 +19219,7 @@
 
         var matrixCache = __cacheStyle[MATRIX$1]; // 优化计算scale不能为0，无法计算倍数差，rotateZ优化不能包含rotateX/rotateY/skew
 
-        if (!isNil$9(optimize)) ; else if (matrixCache && lv < REFLOW$3 && !(lv & TF$1)) {
+        if (!isNil$a(optimize)) ; else if (matrixCache && lv < REFLOW$3 && !(lv & TF$1)) {
           if (lv & SX && !__computedStyle[SCALE_X] || lv & SY && !__computedStyle[SCALE_Y] || lv & SZ && !__computedStyle[SCALE_Z] || lv & RZ && (__computedStyle[ROTATE_X] || __computedStyle[ROTATE_Y] || __computedStyle[SKEW_X] || __computedStyle[SKEW_Y])) ; else {
             optimize = true;
           }
@@ -19629,16 +19639,16 @@
           __computedStyle[k] = __currentStyle[k];
         });
 
-        if (isNil$9(__cacheStyle[FILTER$2])) {
+        if (isNil$a(__cacheStyle[FILTER$2])) {
           this.__calFilter(__currentStyle, __computedStyle, __cacheStyle);
         } // 特殊的判断，MATRIX不存在于样式key中，所有的transform共用一个
 
 
-        if (isNil$9(__cacheStyle[MATRIX$1]) || lv & TRANSFORM_ALL$3) {
+        if (isNil$a(__cacheStyle[MATRIX$1]) || lv & TRANSFORM_ALL$3) {
           this.__calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle, false);
         }
 
-        if (isNil$9(__cacheStyle[BACKGROUND_POSITION_X])) {
+        if (isNil$a(__cacheStyle[BACKGROUND_POSITION_X])) {
           __cacheStyle[BACKGROUND_POSITION_X] = true;
           var bgX = __currentStyle[BACKGROUND_POSITION_X];
           __computedStyle[BACKGROUND_POSITION_X] = (bgX || []).map(function (item) {
@@ -19650,7 +19660,7 @@
           });
         }
 
-        if (isNil$9(__cacheStyle[BACKGROUND_POSITION_Y])) {
+        if (isNil$a(__cacheStyle[BACKGROUND_POSITION_Y])) {
           __cacheStyle[BACKGROUND_POSITION_Y] = true;
           var bgY = __currentStyle[BACKGROUND_POSITION_Y];
           __computedStyle[BACKGROUND_POSITION_Y] = (bgY || []).map(function (item) {
@@ -19662,7 +19672,7 @@
           });
         }
 
-        if (isNil$9(__cacheStyle[BACKGROUND_SIZE])) {
+        if (isNil$a(__cacheStyle[BACKGROUND_SIZE])) {
           __cacheStyle[BACKGROUND_SIZE] = true;
           __computedStyle[BACKGROUND_SIZE] = (__currentStyle[BACKGROUND_SIZE] || []).map(function (item) {
             if (Array.isArray(item)) {
@@ -19680,7 +19690,7 @@
           });
         }
 
-        if (isNil$9(__cacheStyle[BACKGROUND_IMAGE])) {
+        if (isNil$a(__cacheStyle[BACKGROUND_IMAGE])) {
           var bgI = __currentStyle[BACKGROUND_IMAGE];
           __computedStyle[BACKGROUND_IMAGE] = bgI.map(function (item) {
             if (item) {
@@ -19732,7 +19742,7 @@
           });
         }
 
-        if (isNil$9(__cacheStyle[BOX_SHADOW])) {
+        if (isNil$a(__cacheStyle[BOX_SHADOW])) {
           __cacheStyle[BOX_SHADOW] = true;
           __computedStyle[BOX_SHADOW] = (__currentStyle[BOX_SHADOW] || []).map(function (item) {
             return item.map(function (item2, i) {
@@ -19746,12 +19756,12 @@
         }
 
         [BACKGROUND_COLOR, BORDER_TOP_COLOR, BORDER_RIGHT_COLOR, BORDER_BOTTOM_COLOR, BORDER_LEFT_COLOR].forEach(function (k) {
-          if (isNil$9(__cacheStyle[k])) {
+          if (isNil$a(__cacheStyle[k])) {
             __cacheStyle[k] = int2rgba$1(__computedStyle[k] = __currentStyle[k].v);
           }
         }); // 圆角边计算
 
-        if (isNil$9(__cacheStyle[BORDER_TOP_LEFT_RADIUS$1]) || isNil$9(__cacheStyle[BORDER_TOP_RIGHT_RADIUS$1]) || isNil$9(__cacheStyle[BORDER_BOTTOM_RIGHT_RADIUS$1]) || isNil$9(__cacheStyle[BORDER_BOTTOM_LEFT_RADIUS$1])) {
+        if (isNil$a(__cacheStyle[BORDER_TOP_LEFT_RADIUS$1]) || isNil$a(__cacheStyle[BORDER_TOP_RIGHT_RADIUS$1]) || isNil$a(__cacheStyle[BORDER_BOTTOM_RIGHT_RADIUS$1]) || isNil$a(__cacheStyle[BORDER_BOTTOM_LEFT_RADIUS$1])) {
           __cacheStyle[BORDER_TOP_LEFT_RADIUS$1] = __cacheStyle[BORDER_TOP_RIGHT_RADIUS$1] = __cacheStyle[BORDER_BOTTOM_RIGHT_RADIUS$1] = __cacheStyle[BORDER_BOTTOM_LEFT_RADIUS$1] = true; // 非替代的inline计算看contentBox首尾
 
           if (isInline) {
@@ -19777,17 +19787,17 @@
           var kw = STYLE_KEY[style2Upper(k + 'Width')];
           var ks = STYLE_KEY[style2Upper(k + 'Style')]; // width/style变更影响border重新计算
 
-          if (isNil$9(__cacheStyle[kw])) {
+          if (isNil$a(__cacheStyle[kw])) {
             __cacheStyle[kw] = true;
             __cacheStyle[k2] = undefined;
           }
 
-          if (isNil$9(__cacheStyle[ks])) {
+          if (isNil$a(__cacheStyle[ks])) {
             __cacheStyle[ks] = true;
             __cacheStyle[k2] = undefined;
           }
 
-          if (isNil$9(__cacheStyle[k2])) {
+          if (isNil$a(__cacheStyle[k2])) {
             if (k2 === BORDER_TOP) {
               if (borderTopWidth > 0) {
                 if (!isInline) {
@@ -19843,7 +19853,7 @@
 
         if (__currentStyle[FONT_STYLE].u === INHERIT$1) {
           __computedStyle[FONT_STYLE] = parent ? parentComputedStyle[FONT_STYLE] : 'normal';
-        } else if (isNil$9(__cacheStyle[FONT_STYLE])) {
+        } else if (isNil$a(__cacheStyle[FONT_STYLE])) {
           __computedStyle[FONT_STYLE] = __currentStyle[FONT_STYLE].v;
         }
 
@@ -19858,7 +19868,7 @@
           } else {
             __cacheStyle[COLOR$1] = int2rgba$1(__computedStyle[COLOR$1]);
           }
-        } else if (isNil$9(__cacheStyle[COLOR$1])) {
+        } else if (isNil$a(__cacheStyle[COLOR$1])) {
           if (color.u === GRADIENT$1) {
             __cacheStyle[COLOR$1] = __computedStyle[COLOR$1] = color.v;
           } else {
@@ -19876,7 +19886,7 @@
           } else {
             __cacheStyle[TEXT_STROKE_COLOR$1] = int2rgba$1(__computedStyle[TEXT_STROKE_COLOR$1]);
           }
-        } else if (isNil$9(__cacheStyle[TEXT_STROKE_COLOR$1])) {
+        } else if (isNil$a(__cacheStyle[TEXT_STROKE_COLOR$1])) {
           if (textStrokeColor.u === GRADIENT$1) {
             __cacheStyle[TEXT_STROKE_COLOR$1] = __computedStyle[TEXT_STROKE_COLOR$1] = textStrokeColor.v;
           } else if (textStrokeColor.u === RGBA$1) {
@@ -19887,7 +19897,7 @@
         if (__currentStyle[TEXT_STROKE_WIDTH$1].u === INHERIT$1) {
           __computedStyle[TEXT_STROKE_WIDTH$1] = parent ? parentComputedStyle[TEXT_STROKE_WIDTH$1] : reset.INHERIT.textStrokeWidth;
           __cacheStyle[TEXT_STROKE_WIDTH$1] = true;
-        } else if (isNil$9(__cacheStyle[TEXT_STROKE_WIDTH$1])) {
+        } else if (isNil$a(__cacheStyle[TEXT_STROKE_WIDTH$1])) {
           var _v9 = __currentStyle[TEXT_STROKE_WIDTH$1];
 
           if (_v9.u === REM$4) {
@@ -19916,7 +19926,7 @@
 
         if (__currentStyle[VISIBILITY$3].u === INHERIT$1) {
           __computedStyle[VISIBILITY$3] = parent ? parentComputedStyle[VISIBILITY$3] : 'visible';
-        } else if (isNil$9(__cacheStyle[VISIBILITY$3])) {
+        } else if (isNil$a(__cacheStyle[VISIBILITY$3])) {
           __computedStyle[VISIBILITY$3] = __currentStyle[VISIBILITY$3].v;
         }
 
@@ -19924,7 +19934,7 @@
 
         if (__currentStyle[POINTER_EVENTS$1].u === INHERIT$1) {
           __computedStyle[POINTER_EVENTS$1] = parent ? parentComputedStyle[POINTER_EVENTS$1] : 'auto';
-        } else if (isNil$9(__cacheStyle[POINTER_EVENTS$1])) {
+        } else if (isNil$a(__cacheStyle[POINTER_EVENTS$1])) {
           __computedStyle[POINTER_EVENTS$1] = __currentStyle[POINTER_EVENTS$1].v;
         }
 
@@ -19957,14 +19967,14 @@
         var __x1 = this.__x1,
             __y1 = this.__y1;
 
-        if (isNil$9(__cacheStyle[PERSPECTIVE$1])) {
+        if (isNil$a(__cacheStyle[PERSPECTIVE$1])) {
           __cacheStyle[PERSPECTIVE$1] = true;
           rebuild = true;
           var v = __currentStyle[PERSPECTIVE$1];
           __computedStyle[PERSPECTIVE$1] = this.__calSize(v, this.__clientWidth, true);
         }
 
-        if (isNil$9(__cacheStyle[PERSPECTIVE_ORIGIN$1])) {
+        if (isNil$a(__cacheStyle[PERSPECTIVE_ORIGIN$1])) {
           __cacheStyle[PERSPECTIVE_ORIGIN$1] = true;
           rebuild = true;
           __computedStyle[PERSPECTIVE_ORIGIN$1] = __currentStyle[PERSPECTIVE_ORIGIN$1].map(function (item, i) {
@@ -20844,7 +20854,7 @@
 
         var ref = this.props.ref;
 
-        if (!isNil$9(ref) && !isFunction$4(ref)) {
+        if (!isNil$a(ref) && !isFunction$4(ref)) {
           delete this.__root.__ref[ref];
         }
 
@@ -22703,7 +22713,7 @@
       RGBA = o$4.RGBA,
       GRADIENT = o$4.GRADIENT;
   var int2rgba = util.int2rgba,
-      isNil$8 = util.isNil,
+      isNil$9 = util.isNil,
       joinArr = util.joinArr;
   var canvasPolygon$2 = painter.canvasPolygon,
       svgPolygon$1 = painter.svgPolygon;
@@ -22850,7 +22860,7 @@
 
         var res = _get(_getPrototypeOf(Geom.prototype), "__calStyle", this).call(this, lv, __currentStyle, __computedStyle, __cacheStyle);
 
-        if (isNil$8(__cacheStyle[STROKE_WIDTH$6])) {
+        if (isNil$9(__cacheStyle[STROKE_WIDTH$6])) {
           __cacheStyle[STROKE_WIDTH$6] = true;
           var strokeWidth = __currentStyle[STROKE_WIDTH$6] || [];
           var w = this.width;
@@ -22859,7 +22869,7 @@
           });
         }
 
-        if (isNil$8(__cacheStyle[STROKE_DASHARRAY])) {
+        if (isNil$9(__cacheStyle[STROKE_DASHARRAY])) {
           __cacheStyle[STROKE_DASHARRAY] = true;
           __computedStyle[STROKE_DASHARRAY] = __currentStyle[STROKE_DASHARRAY] || [];
           __cacheStyle[STROKE_DASHARRAY_STR] = __computedStyle[STROKE_DASHARRAY].map(function (item) {
@@ -22873,7 +22883,7 @@
         }); // stroke/fll移至render里处理，因为cache涉及渐变坐标偏移
 
         [FILL$1, STROKE].forEach(function (k) {
-          if (isNil$8(__cacheStyle[k])) {
+          if (isNil$9(__cacheStyle[k])) {
             var v = __currentStyle[k];
             var cs = __computedStyle[k] = [];
 
@@ -23557,7 +23567,7 @@
       value: function getProps(k) {
         var v = this.currentProps[k];
 
-        if (!isNil$8(v)) {
+        if (!isNil$9(v)) {
           return v;
         }
 
@@ -37435,7 +37445,7 @@
       TRANSFORM = _enums$STYLE_KEY.TRANSFORM,
       OPACITY = _enums$STYLE_KEY.OPACITY,
       MIX_BLEND_MODE = _enums$STYLE_KEY.MIX_BLEND_MODE;
-  var isNil$7 = util.isNil,
+  var isNil$8 = util.isNil,
       isFunction$1 = util.isFunction;
   var PX = o$4.PX,
       INHERIT = o$4.INHERIT;
@@ -37571,7 +37581,7 @@
       value: function __initProps() {
         var w = this.props.width;
 
-        if (!isNil$7(w)) {
+        if (!isNil$8(w)) {
           var value = parseFloat(w) || 0;
 
           if (value > 0) {
@@ -37581,7 +37591,7 @@
 
         var h = this.props.height;
 
-        if (!isNil$7(h)) {
+        if (!isNil$8(h)) {
           var _value = parseFloat(h) || 0;
 
           if (_value > 0) {
@@ -37634,13 +37644,13 @@
           x = clientX - x;
           y = clientY - y; // 外边的scale影响元素事件响应，根据倍数计算真实的坐标，优先手动指定，否则自动计算
 
-          if (!isNil$7(__scx)) {
+          if (!isNil$8(__scx)) {
             x /= __scx;
           } else {
             x *= this.__width / width;
           }
 
-          if (!isNil$7(__scy)) {
+          if (!isNil$8(__scy)) {
             y /= __scy;
           } else {
             y *= this.__height / height;
@@ -37761,7 +37771,7 @@
           var gl,
               webgl2 = this.props.webgl2;
 
-          if (!isNil$7(webgl2)) {
+          if (!isNil$8(webgl2)) {
             if (webgl2) {
               gl = this.__dom.getContext('webgl2', params);
             }
@@ -39164,7 +39174,7 @@
   };
 
   var STROKE_WIDTH$5 = enums.STYLE_KEY.STROKE_WIDTH;
-  var isNil$6 = util.isNil;
+  var isNil$7 = util.isNil;
 
   function reBuild(target, origin, base, isMulti) {
     if (isMulti) {
@@ -39307,7 +39317,7 @@
           _this.__xa = props.xa.map(function (i) {
             return parseFloat(i) || 0;
           });
-        } else if (!isNil$6(props.xa)) {
+        } else if (!isNil$7(props.xa)) {
           _this.__xa = [parseFloat(props.xa) || 0];
         }
 
@@ -39315,7 +39325,7 @@
           _this.__ya = props.ya.map(function (i) {
             return parseFloat(i) || 0;
           });
-        } else if (!isNil$6(props.ya)) {
+        } else if (!isNil$7(props.ya)) {
           _this.__ya = [parseFloat(props.ya) || 0];
         }
 
@@ -39323,7 +39333,7 @@
           _this.__xb = props.xb.map(function (i) {
             return parseFloat(i) || 0;
           });
-        } else if (!isNil$6(props.xb)) {
+        } else if (!isNil$7(props.xb)) {
           _this.__xb = [parseFloat(props.xb) || 0];
         }
 
@@ -39331,7 +39341,7 @@
           _this.__yb = props.yb.map(function (i) {
             return parseFloat(i) || 0;
           });
-        } else if (!isNil$6(props.yb)) {
+        } else if (!isNil$7(props.yb)) {
           _this.__yb = [parseFloat(props.yb) || 0];
         }
 
@@ -39363,7 +39373,7 @@
           for (var i = _this.__start.length; i < _this.__xa.length; i++) {
             _this.__start.push(0);
           }
-        } else if (!isNil$6(props.start)) {
+        } else if (!isNil$7(props.start)) {
           var v = parseFloat(props.start) || 0;
           _this.__start = _this.__xa.map(function () {
             return v;
@@ -39384,7 +39394,7 @@
           for (var _i = _this.__end.length; _i < _this.__xa.length; _i++) {
             _this.__end.push(1);
           }
-        } else if (!isNil$6(props.end)) {
+        } else if (!isNil$7(props.end)) {
           var _v = parseFloat(props.end);
 
           if (isNaN(_v)) {
@@ -39401,27 +39411,27 @@
         _this.__controlA = [];
         _this.__controlB = [];
 
-        if (!isNil$6(props.xa)) {
+        if (!isNil$7(props.xa)) {
           _this.__xa = parseFloat(props.xa) || 0;
         }
 
-        if (!isNil$6(props.ya)) {
+        if (!isNil$7(props.ya)) {
           _this.__ya = parseFloat(props.ya) || 0;
         }
 
-        if (!isNil$6(props.xb)) {
+        if (!isNil$7(props.xb)) {
           _this.__xb = parseFloat(props.xb) || 0;
         }
 
-        if (!isNil$6(props.yb)) {
+        if (!isNil$7(props.yb)) {
           _this.__yb = parseFloat(props.yb) || 0;
         }
 
-        if (!isNil$6(props.start)) {
+        if (!isNil$7(props.start)) {
           _this.__start = parseFloat(props.start) || 0;
         }
 
-        if (!isNil$6(props.end)) {
+        if (!isNil$7(props.end)) {
           var _v2 = parseFloat(props.end);
 
           if (isNaN(_v2)) {
@@ -39454,25 +39464,25 @@
             isMulti = this.isMulti;
         var rebuild;
         ['xa', 'xb'].forEach(function (k) {
-          if (isNil$6(__cacheProps[k]) || focus) {
+          if (isNil$7(__cacheProps[k]) || focus) {
             rebuild = true;
             __cacheProps[k] = reBuild(_this2[k], originX, width, isMulti);
           }
         });
         ['ya', 'yb'].forEach(function (k) {
-          if (isNil$6(__cacheProps[k]) || focus) {
+          if (isNil$7(__cacheProps[k]) || focus) {
             rebuild = true;
             __cacheProps[k] = reBuild(_this2[k], originY, height, isMulti);
           }
         });
         ['controlA', 'controlB'].forEach(function (k) {
-          if (isNil$6(__cacheProps[k]) || focus) {
+          if (isNil$7(__cacheProps[k]) || focus) {
             rebuild = true;
             __cacheProps[k] = reBuildC(_this2[k], originX, originY, width, height, isMulti);
           }
         });
         ['start', 'end'].forEach(function (k) {
-          if (isNil$6(__cacheProps[k]) || focus) {
+          if (isNil$7(__cacheProps[k]) || focus) {
             rebuild = true;
             __cacheProps[k] = _this2[k];
           }
@@ -39740,7 +39750,7 @@
           var ca = controlA[i];
           var cb = controlB[i];
 
-          if ((isNil$6(ca) || ca.length < 2) && (isNil$6(cb) || cb.length < 2)) {
+          if ((isNil$7(ca) || ca.length < 2) && (isNil$7(cb) || cb.length < 2)) {
             bbox[0] = Math.min(bbox[0], xa - half);
             bbox[0] = Math.min(bbox[0], x2 - half);
             bbox[1] = Math.min(bbox[1], y1 - half);
@@ -39749,7 +39759,7 @@
             bbox[2] = Math.max(bbox[2], x2 + half);
             bbox[3] = Math.max(bbox[3], y1 + half);
             bbox[3] = Math.max(bbox[3], y2 + half);
-          } else if (isNil$6(ca) || ca.length < 2) {
+          } else if (isNil$7(ca) || ca.length < 2) {
             var bezierBox = bezier.bboxBezier(xa, y1, cb[0], cb[1], x2, y2);
             bbox[0] = Math.min(bbox[0], bezierBox[0] - half);
             bbox[0] = Math.min(bbox[0], bezierBox[2] - half);
@@ -39759,7 +39769,7 @@
             bbox[2] = Math.max(bbox[2], bezierBox[2] + half);
             bbox[3] = Math.max(bbox[3], bezierBox[1] + half);
             bbox[3] = Math.max(bbox[3], bezierBox[3] + half);
-          } else if (isNil$6(cb) || cb.length < 2) {
+          } else if (isNil$7(cb) || cb.length < 2) {
             var _bezierBox = bezier.bboxBezier(xa, y1, ca[0], ca[1], x2, y2);
 
             bbox[0] = Math.min(bbox[0], _bezierBox[0] - half);
@@ -41910,7 +41920,7 @@
       xor = bo.xor,
       chain = bo.chain;
   var STROKE_WIDTH$4 = enums.STYLE_KEY.STROKE_WIDTH;
-  var isNil$5 = util.isNil;
+  var isNil$6 = util.isNil;
 
   var Polyline = /*#__PURE__*/function (_Geom) {
     _inherits(Polyline, _Geom);
@@ -41934,7 +41944,7 @@
           for (var i = _this.__start.length; i < _this.__points.length; i++) {
             _this.__start.push(0);
           }
-        } else if (!isNil$5(props.start)) {
+        } else if (!isNil$6(props.start)) {
           var v = parseFloat(props.start) || 0;
           _this.__start = _this.__points.map(function () {
             return v;
@@ -41955,7 +41965,7 @@
           for (var _i = _this.__end.length; _i < _this.__points.length; _i++) {
             _this.__end.push(1);
           }
-        } else if (!isNil$5(props.end)) {
+        } else if (!isNil$6(props.end)) {
           var _v = parseFloat(props.end);
 
           if (isNaN(_v)) {
@@ -41973,11 +41983,11 @@
         _this.__start = 0;
         _this.__end = 1;
 
-        if (!isNil$5(props.start)) {
+        if (!isNil$6(props.start)) {
           _this.__start = parseFloat(props.start) || 0;
         }
 
-        if (!isNil$5(props.end)) {
+        if (!isNil$6(props.end)) {
           var _v2 = parseFloat(props.end);
 
           if (isNaN(_v2)) {
@@ -42154,7 +42164,7 @@
             isMulti = this.isMulti;
         var rebuild, rebuildSE;
 
-        if (isNil$5(__cacheProps.points)) {
+        if (isNil$6(__cacheProps.points)) {
           rebuild = true;
 
           if (isMulti) {
@@ -42168,7 +42178,7 @@
           }
         }
 
-        if (isNil$5(__cacheProps.controls)) {
+        if (isNil$6(__cacheProps.controls)) {
           rebuild = true;
 
           if (isMulti) {
@@ -42184,12 +42194,12 @@
           }
         }
 
-        if (isNil$5(__cacheProps.start)) {
+        if (isNil$6(__cacheProps.start)) {
           rebuildSE = true;
           __cacheProps.start = start;
         }
 
-        if (isNil$5(__cacheProps.end)) {
+        if (isNil$6(__cacheProps.end)) {
           rebuildSE = true;
           __cacheProps.end = end;
         } // polygon会覆盖检查booleanOperations缓存
@@ -42658,7 +42668,7 @@
   }(Polyline);
 
   var STROKE_WIDTH$3 = enums.STYLE_KEY.STROKE_WIDTH;
-  var isNil$4 = util.isNil;
+  var isNil$5 = util.isNil;
   var sectorPoints = geom.sectorPoints;
 
   function getR$3(v, dft) {
@@ -42722,23 +42732,23 @@
 
         _this.__closure = false;
 
-        if (!isNil$4(props.begin)) {
+        if (!isNil$5(props.begin)) {
           _this.__begin = getR$3(props.begin, 0);
         }
 
-        if (!isNil$4(props.end)) {
+        if (!isNil$5(props.end)) {
           _this.__end = getR$3(props.end, 0);
         }
 
-        if (!isNil$4(props.r)) {
+        if (!isNil$5(props.r)) {
           _this.__r = getR$3(props.r, 1);
         }
 
-        if (!isNil$4(props.edge)) {
+        if (!isNil$5(props.edge)) {
           _this.__edge = !!props.edge;
         }
 
-        if (!isNil$4(props.closure)) {
+        if (!isNil$5(props.closure)) {
           _this.__closure = !!props.closure;
         }
       }
@@ -42759,17 +42769,17 @@
             isMulti = this.isMulti;
         var rebuild;
 
-        if (isNil$4(__cacheProps.begin) || focus) {
+        if (isNil$5(__cacheProps.begin) || focus) {
           rebuild = true;
           __cacheProps.begin = (begin || 0) % 360;
         }
 
-        if (isNil$4(__cacheProps.end) || focus) {
+        if (isNil$5(__cacheProps.end) || focus) {
           rebuild = true;
           __cacheProps.end = (end || 0) % 360;
         }
 
-        if (isNil$4(__cacheProps.r) || focus) {
+        if (isNil$5(__cacheProps.r) || focus) {
           rebuild = true;
 
           if (isMulti) {
@@ -42783,12 +42793,12 @@
 
         r = __cacheProps.r;
 
-        if (isNil$4(__cacheProps.edge) || focus) {
+        if (isNil$5(__cacheProps.edge) || focus) {
           rebuild = true;
           __cacheProps.edge = edge;
         }
 
-        if (isNil$4(__cacheProps.closure) || focus) {
+        if (isNil$5(__cacheProps.closure) || focus) {
           rebuild = true;
           __cacheProps.closure = closure;
         }
@@ -42798,7 +42808,7 @@
             __cacheProps.list = [];
             __cacheProps.sList = [];
             begin.forEach(function (begin, i) {
-              var r2 = isNil$4(r[i]) ? width * 0.5 : r[i];
+              var r2 = isNil$5(r[i]) ? width * 0.5 : r[i];
               var list = sectorPoints(cx, cy, r2, parseFloat(begin || 0) % 360, parseFloat(end[i] || 0) % 360);
               var sList = list.slice(0);
 
@@ -43084,7 +43094,7 @@
   }(Geom);
 
   var STROKE_WIDTH$2 = enums.STYLE_KEY.STROKE_WIDTH;
-  var isNil$3 = util.isNil;
+  var isNil$4 = util.isNil;
 
   function genVertex(x, y, width, height) {
     var rx = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
@@ -43135,11 +43145,11 @@
       } else {
         _this.__rx = _this.__ry = 0;
 
-        if (!isNil$3(props.rx)) {
+        if (!isNil$4(props.rx)) {
           _this.__rx = getR$2(props.rx);
         }
 
-        if (!isNil$3(props.ry)) {
+        if (!isNil$4(props.ry)) {
           _this.__ry = getR$2(props.ry);
         }
       }
@@ -43158,7 +43168,7 @@
             isMulti = this.isMulti;
         var rebuild;
 
-        if (isNil$3(__cacheProps.rx) || focus) {
+        if (isNil$4(__cacheProps.rx) || focus) {
           rebuild = true;
 
           if (isMulti) {
@@ -43170,7 +43180,7 @@
           }
         }
 
-        if (isNil$3(__cacheProps.ry) || focus) {
+        if (isNil$4(__cacheProps.ry) || focus) {
           rebuild = true;
 
           if (isMulti) {
@@ -43256,7 +43266,7 @@
   }(Geom);
 
   var STROKE_WIDTH$1 = enums.STYLE_KEY.STROKE_WIDTH;
-  var isNil$2 = util.isNil;
+  var isNil$3 = util.isNil;
 
   function getR$1(v) {
     v = parseFloat(v);
@@ -43283,13 +43293,13 @@
           _this.__r = props.r.map(function (i) {
             return getR$1(i);
           });
-        } else if (!isNil$2(props.r)) {
+        } else if (!isNil$3(props.r)) {
           _this.__r = getR$1(props.r);
         }
       } else {
         _this.__r = 1;
 
-        if (!isNil$2(props.r)) {
+        if (!isNil$3(props.r)) {
           _this.__r = getR$1(props.r);
         }
       }
@@ -43305,7 +43315,7 @@
             __cacheProps = this.__cacheProps,
             isMulti = this.isMulti;
 
-        if (isNil$2(__cacheProps.r) || focus) {
+        if (isNil$3(__cacheProps.r) || focus) {
           if (isMulti) {
             __cacheProps.r = r.map(function (i) {
               return i * width * 0.5;
@@ -43395,7 +43405,7 @@
   }(Geom);
 
   var STROKE_WIDTH = enums.STYLE_KEY.STROKE_WIDTH;
-  var isNil$1 = util.isNil;
+  var isNil$2 = util.isNil;
 
   function getR(v) {
     v = parseFloat(v);
@@ -43423,7 +43433,7 @@
           _this.__rx = props.rx.map(function (i) {
             return getR(i);
           });
-        } else if (!isNil$1(props.rx)) {
+        } else if (!isNil$2(props.rx)) {
           _this.__rx = [getR(props.rx)];
         }
 
@@ -43431,19 +43441,19 @@
           _this.__ry = props.ry.map(function (i) {
             return getR(i);
           });
-        } else if (!isNil$1(props.ry)) {
+        } else if (!isNil$2(props.ry)) {
           _this.__ry = [getR(props.ry)];
         }
       } else {
         _this.__rx = 1;
 
-        if (!isNil$1(props.rx)) {
+        if (!isNil$2(props.rx)) {
           _this.__rx = getR(props.rx);
         }
 
         _this.__ry = 1;
 
-        if (!isNil$1(props.ry)) {
+        if (!isNil$2(props.ry)) {
           _this.__ry = getR(props.ry);
         }
       }
@@ -43462,7 +43472,7 @@
             isMulti = this.isMulti;
         var rebuild;
 
-        if (isNil$1(__cacheProps.rx) || focus) {
+        if (isNil$2(__cacheProps.rx) || focus) {
           rebuild = true;
 
           if (isMulti) {
@@ -43474,7 +43484,7 @@
           }
         }
 
-        if (isNil$1(__cacheProps.ry) || focus) {
+        if (isNil$2(__cacheProps.ry) || focus) {
           rebuild = true;
 
           if (isMulti) {
@@ -43586,15 +43596,16 @@
     return Ellipse;
   }(Geom);
 
-  var isPrimitive$1 = util.isPrimitive;
+  var isPrimitive$1 = util.isPrimitive,
+      isNil$1 = util.isNil;
   /**
    * 入口方法，animateRecords记录所有的动画结果等初始化后分配开始动画
    * offsetTime默认0，递归传下去为右libraryId引用的元素增加偏移时间，为了库元素动画复用而开始时间不同
    * @param karas
    * @param json
    * @param animateRecords
-   * @param areaStart 为了和AE功能对应，播放一段动画，特增加这2个参数，递归起效
-   * @param areaDuration
+   * @param areaStart 为了和AE功能对应，播放一段动画，特增加这2个参数，递归相加起效
+   * @param areaDuration 最外层优先
    * @returns {Node|Component|*}
    */
 
@@ -43609,9 +43620,18 @@
       });
     }
 
-    var as = areaStart;
-    areaStart += json.areaStart || 0;
-    var ad = json.areaDuration || areaDuration;
+    areaStart += parseInt(json.areaStart) || 0;
+
+    if (areaDuration === null) {
+      if (!isNil$1(json.areaDuration)) {
+        var n = parseInt(json.areaDuration);
+
+        if (!isNaN(n) && n > 0) {
+          areaDuration = n;
+        }
+      }
+    }
+
     var tagName = json.tagName,
         _json$props = json.props,
         props = _json$props === void 0 ? {} : _json$props,
@@ -43661,8 +43681,8 @@
         animateRecords.push({
           animate: animate,
           target: vd,
-          areaStart: as,
-          areaDuration: ad
+          areaStart: areaStart,
+          areaDuration: areaDuration
         });
       }
     }
@@ -44213,7 +44233,7 @@
 
       var animateRecords = [];
 
-      var vd = parse(karas, json, animateRecords, 0, 0); // 有dom时parse作为根方法渲染
+      var vd = parse(karas, json, animateRecords, 0, null); // 有dom时parse作为根方法渲染
 
 
       if (dom) {

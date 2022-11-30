@@ -261,8 +261,9 @@ karas.parse(json, {
   },
 });
 ```
-## 时间偏移
-由于复用的需求，一个容器（比如div）包含有动画的节点（比如p），作为库元素library中的一员存在，被多次放入舞台中。希望它们里面的元素（img）以不同时间开始动画，可以在引用libraryId的同层声明offsetTime，会递归增加影响库元素里children的动画delay。
+## 时间段
+由于复用的需求，一个容器（比如div）包含有动画的节点（比如p），作为库元素library中的一员存在，被多次放入舞台中。希望它们里面的元素（img）以不同时间开始动画一段，可以在引用libraryId的同层声明areaStart和areaDuration。
+这和AE的播放一段时间轴动画功能类似。
 ```tsx
 karas.render(
   <svg>
@@ -272,6 +273,8 @@ karas.render(
         children: [
           {
             libraryId: 1,
+            areaStart: 100, // 本节点和递归子节点开始时间都从100ms开始
+            areaDuration: 200, // 本节点和递归子节点播放到200ms就会认为结束一轮
             init: {
               style: {
                 left: 0,

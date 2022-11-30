@@ -1381,12 +1381,19 @@ function calLastStyle(style, target, keys) {
   return res;
 }
 
-function gotoOverload(options, cb) {
+function gotoOverload(animation, options, cb) {
   if(isFunction(options)) {
     cb = options;
     options = {};
   }
-  return [options || {}, cb];
+  options = options || {};
+  if(!isNil(options.areaStart)) {
+    animation.areaStart = options.areaStart;
+  }
+  if(!isNil(options.areaDuration)) {
+    animation.areaDuration = options.areaDuration;
+  }
+  return { options, cb };
 }
 
 function frameCb(self) {
@@ -1405,9 +1412,12 @@ function frameCb(self) {
   }
 }
 
+let uuid = 0;
+
 class Animation extends Event {
   constructor(target, list, options) {
     super();
+    this.id = uuid++;
     list = clone(list || []);
     if(Array.isArray(list)) {
       list = list.filter(item => item && isObject(item));
@@ -1471,7 +1481,7 @@ class Animation extends Event {
     this.direction = op.direction;
     this.easing = op.easing;
     this.areaStart = op.areaStart; // ae中的功能，播放中间一段动画，为0忽略
-    this.areaStart = op.areaDuration;
+    this.areaDuration = op.areaDuration;
     this.__currentFrames = {
       reverse: true,
       'alternate-reverse': true,
@@ -1891,6 +1901,9 @@ class Animation extends Event {
   }
 
   gotoAndPlay(v, options, cb) {
+    let t = gotoOverload(this, options, cb);
+    options = t.options;
+    cb = t.cb;
     let isDestroyed = this.__isDestroyed;
     let duration = this.__duration;
     let frames = this.__frames;
@@ -1902,7 +1915,6 @@ class Animation extends Event {
     if(isDestroyed || dur <= 0 || frames.length < 1) {
       return this;
     }
-    [options, cb] = gotoOverload(options, cb);
     // 计算出时间点直接累加播放
     this.__goto(v, options.isFrame, options.excludeDelay);
     if(v > dur + delay - areaStart + endDelay) {
@@ -1912,6 +1924,9 @@ class Animation extends Event {
   }
 
   gotoAndStop(v, options, cb) {
+    let t = gotoOverload(this, options, cb);
+    options = t.options;
+    cb = t.cb;
     let isDestroyed = this.__isDestroyed;
     let duration = this.__duration;
     let frames = this.__frames;
@@ -1923,7 +1938,6 @@ class Animation extends Event {
     if(isDestroyed || dur <= 0 || frames.length < 1) {
       return this;
     }
-    [options, cb] = gotoOverload(options, cb);
     v = this.__goto(v, options.isFrame, options.excludeDelay);
     if(v > dur + delay - areaStart + endDelay) {
       return this.finish(cb);
@@ -1945,7 +1959,6 @@ class Animation extends Event {
     let areaDuration = this.__areaDuration;
     let dur = areaDuration ? Math.min(duration, areaDuration) : duration;
     this.__playState = 'paused';
-    // this.__cancelTask(); // 应该不需要，gotoAndXxx都会调用play()，里面有
     if(isNaN(v) || v < 0) {
       throw new Error('Param of gotoAnd(Play/Stop) is illegal: ' + v);
     }

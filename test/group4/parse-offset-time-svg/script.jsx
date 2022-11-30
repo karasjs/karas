@@ -18,7 +18,7 @@ let o = karas.render(
             areaStart: 100,
             init: {
               style: {
-                left: 20,
+                left: 0,
                 top: 20,
               }
             }
@@ -28,7 +28,7 @@ let o = karas.render(
             areaStart: 200,
             init: {
               style: {
-                left: 40,
+                left: 0,
                 top: 40,
               }
             }
@@ -92,7 +92,7 @@ let o = karas.render(
             children: [
               {
                 libraryId: 1,
-                areaStart: 300,
+                areaStart: 50,
                 init: {
                   style: {
                     left: 0,

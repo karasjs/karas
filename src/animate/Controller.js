@@ -1,6 +1,6 @@
 import util from '../util/util';
 
-const { isFunction } = util;
+const { isFunction, isNil } = util;
 
 class Controller {
   constructor() {
@@ -52,7 +52,7 @@ class Controller {
         }
         animate.forEach(animate => {
           let { value, options } = animate;
-          if(areaStart || areaDuration) {
+          if(areaStart || !isNil(areaDuration)) {
             options = Object.assign({}, options); // clone防止多个使用相同的干扰
             options.areaStart = areaStart;
             options.areaDuration = areaDuration;

@@ -43,7 +43,7 @@ class Controller {
     if(records.length) {
       // 清除防止重复调用，并且新的json还会进入整体逻辑
       records.splice(0).forEach(item => {
-        let { target, animate } = item;
+        let { target, animate, areaStart, areaDuration } = item;
         if(target.isDestroyed || !animate) {
           return;
         }
@@ -52,6 +52,11 @@ class Controller {
         }
         animate.forEach(animate => {
           let { value, options } = animate;
+          if(areaStart || areaDuration) {
+            options = Object.assign({}, options); // clone防止多个使用相同的干扰
+            options.areaStart = areaStart;
+            options.areaDuration = areaDuration;
+          }
           options.autoPlay = false;
           let o = target.animate(value, options);
           this.add(o, list);

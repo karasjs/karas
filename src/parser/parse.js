@@ -6,22 +6,26 @@ let { isPrimitive } = util;
 
 /**
  * 入口方法，animateRecords记录所有的动画结果等初始化后分配开始动画
- * hash为library库的hash格式，将原本数组转为id和value访问，每递归遇到library形成一个新的scope重新初始化
  * offsetTime默认0，递归传下去为右libraryId引用的元素增加偏移时间，为了库元素动画复用而开始时间不同
  * @param karas
  * @param json
  * @param animateRecords
+ * @param areaStart 为了和AE功能对应，播放一段动画，特增加这2个参数，递归起效
+ * @param areaDuration
  * @returns {Node|Component|*}
  */
-function parse(karas, json, animateRecords) {
+function parse(karas, json, animateRecords, areaStart, areaDuration) {
   if(isPrimitive(json) || json instanceof Node || json instanceof Component) {
     return json;
   }
   if(Array.isArray(json)) {
     return json.map(item => {
-      return parse(karas, item, animateRecords);
+      return parse(karas, item, animateRecords, areaStart, areaDuration);
     });
   }
+  let as = areaStart;
+  areaStart += json.areaStart || 0;
+  let ad = json.areaDuration || areaDuration;
   let { tagName, props = {}, children = [], animate = [] } = json;
   if(!tagName) {
     throw new Error('Dom must have a tagName: ' + JSON.stringify(json));
@@ -36,12 +40,12 @@ function parse(karas, json, animateRecords) {
   else if(/^[A-Z]/.test(tagName)) {
     let cp = Component.getRegister(tagName);
     vd = karas.createCp(cp, props, children.map(item => {
-      return parse(karas, item, animateRecords);
+      return parse(karas, item, animateRecords, areaStart, areaDuration);
     }));
   }
   else {
     vd = karas.createVd(tagName, props, children.map(item => {
-      return parse(karas, item, animateRecords);
+      return parse(karas, item, animateRecords, areaStart, areaDuration);
     }));
   }
   if(animate) {
@@ -61,6 +65,8 @@ function parse(karas, json, animateRecords) {
       animateRecords.push({
         animate,
         target: vd,
+        areaStart: as,
+        areaDuration: ad,
       });
     }
   }

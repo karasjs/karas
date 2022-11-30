@@ -14396,7 +14396,9 @@
           // 清除防止重复调用，并且新的json还会进入整体逻辑
           records.splice(0).forEach(function (item) {
             var target = item.target,
-                animate = item.animate;
+                animate = item.animate,
+                areaStart = item.areaStart,
+                areaDuration = item.areaDuration;
 
             if (target.isDestroyed || !animate) {
               return;
@@ -14409,6 +14411,14 @@
             animate.forEach(function (animate) {
               var value = animate.value,
                   options = animate.options;
+
+              if (areaStart || areaDuration) {
+                options = Object.assign({}, options); // clone防止多个使用相同的干扰
+
+                options.areaStart = areaStart;
+                options.areaDuration = areaDuration;
+              }
+
               options.autoPlay = false;
               var o = target.animate(value, options);
 
@@ -43579,25 +43589,29 @@
   var isPrimitive$1 = util.isPrimitive;
   /**
    * 入口方法，animateRecords记录所有的动画结果等初始化后分配开始动画
-   * hash为library库的hash格式，将原本数组转为id和value访问，每递归遇到library形成一个新的scope重新初始化
    * offsetTime默认0，递归传下去为右libraryId引用的元素增加偏移时间，为了库元素动画复用而开始时间不同
    * @param karas
    * @param json
    * @param animateRecords
+   * @param areaStart 为了和AE功能对应，播放一段动画，特增加这2个参数，递归起效
+   * @param areaDuration
    * @returns {Node|Component|*}
    */
 
-  function parse(karas, json, animateRecords) {
+  function parse(karas, json, animateRecords, areaStart, areaDuration) {
     if (isPrimitive$1(json) || json instanceof Node || json instanceof Component) {
       return json;
     }
 
     if (Array.isArray(json)) {
       return json.map(function (item) {
-        return parse(karas, item, animateRecords);
+        return parse(karas, item, animateRecords, areaStart, areaDuration);
       });
     }
 
+    var as = areaStart;
+    areaStart += json.areaStart || 0;
+    var ad = json.areaDuration || areaDuration;
     var tagName = json.tagName,
         _json$props = json.props,
         props = _json$props === void 0 ? {} : _json$props,
@@ -43621,11 +43635,11 @@
     } else if (/^[A-Z]/.test(tagName)) {
       var cp = Component.getRegister(tagName);
       vd = karas.createCp(cp, props, children.map(function (item) {
-        return parse(karas, item, animateRecords);
+        return parse(karas, item, animateRecords, areaStart, areaDuration);
       }));
     } else {
       vd = karas.createVd(tagName, props, children.map(function (item) {
-        return parse(karas, item, animateRecords);
+        return parse(karas, item, animateRecords, areaStart, areaDuration);
       }));
     }
 
@@ -43646,7 +43660,9 @@
       if (has) {
         animateRecords.push({
           animate: animate,
-          target: vd
+          target: vd,
+          areaStart: as,
+          areaDuration: ad
         });
       }
     }
@@ -44197,7 +44213,7 @@
 
       var animateRecords = [];
 
-      var vd = parse(karas, json, animateRecords); // 有dom时parse作为根方法渲染
+      var vd = parse(karas, json, animateRecords, 0, 0); // 有dom时parse作为根方法渲染
 
 
       if (dom) {

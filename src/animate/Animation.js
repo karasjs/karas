@@ -12,6 +12,7 @@ import change from '../refresh/change';
 import key from './key';
 import mx from '../math/matrix';
 import level from '../refresh/level';
+import Controller from './Controller';
 
 const {
   STYLE_KEY: {
@@ -1404,12 +1405,9 @@ function frameCb(self) {
   }
 }
 
-let uuid = 0;
-
 class Animation extends Event {
   constructor(target, list, options) {
     super();
-    this.__id = uuid++;
     list = clone(list || []);
     if(Array.isArray(list)) {
       list = list.filter(item => item && isObject(item));
@@ -1472,10 +1470,19 @@ class Animation extends Event {
     this.iterations = op.iterations;
     this.direction = op.direction;
     this.easing = op.easing;
+    this.areaStart = op.areaStart; // ae中的功能，播放中间一段动画，为0忽略
+    this.areaStart = op.areaDuration;
     this.__currentFrames = {
       reverse: true,
       'alternate-reverse': true,
     }.hasOwnProperty(op.direction) ? framesR : frames;
+    let controller = op.controller;
+    if(controller instanceof Controller) {
+      controller.add(this);
+    }
+    else if(controller) {
+      this.addControl();
+    }
     // 时间戳
     this.__timestamp = frame.__now;
   }
@@ -1574,6 +1581,8 @@ class Animation extends Event {
     let stayBegin = this.__stayBegin;
     let stayEnd = this.__stayEnd;
     let delay = this.__delay;
+    let areaStart = this.__areaStart;
+    let areaDuration = this.__areaDuration;
     let root = this.__root;
     let duration = this.__duration;
     let endDelay = this.__endDelay;
@@ -1582,6 +1591,7 @@ class Animation extends Event {
     let spfLimit = this.__spfLimit;
     let currentTime = this.__currentTime = this.__nextTime;
     let lastFrame = this.__currentFrame;
+    let dur = areaDuration ? Math.min(duration, areaDuration) : duration;
     this.__isChange = false;
     // 定帧限制每帧时间间隔最大为spf
     if(spfLimit) {
@@ -1609,7 +1619,7 @@ class Animation extends Event {
     }
     this.__firstEnter = false;
     // delay仅第一次生效等待
-    if(currentTime < delay) {
+    if(currentTime < delay - areaStart) {
       if(stayBegin && !this.__isDelay) {
         let currentFrame = this.__currentFrame = currentFrames[0];
         let keys = calLastStyle(currentFrame.style, target, this.__keys);
@@ -1633,14 +1643,14 @@ class Animation extends Event {
     }
     this.__isDelay = false;
     // 减去delay，计算在哪一帧
-    currentTime -= delay;
+    currentTime -= delay - areaStart;
     if(this.__outBeginDelay) {
       this.__outBeginDelay = false;
       this.__begin = true;
     }
     // 超过duration非尾轮需处理回到开头，触发新一轮动画事件，这里可能时间间隔非常大直接跳过几轮
     let playCount = Math.min(iterations - 1, Math.floor(currentTime / duration));
-    currentTime -= duration * playCount;
+    currentTime -= dur * playCount;
     // 如果发生轮换，需重新确定正反向
     if(this.__playCount < playCount) {
       this.__begin = true;
@@ -1663,8 +1673,8 @@ class Animation extends Event {
     // 只有2帧可优化，否则2分查找当前帧
     let i, frameTime;
     if(length === 2) {
-      i = currentTime < duration ? 0 : 1;
-      frameTime = duration;
+      i = currentTime < dur ? 0 : 1;
+      frameTime = dur;
     }
     else {
       i = Animation.binarySearch(0, length - 1, currentTime, currentFrames);
@@ -1678,7 +1688,7 @@ class Animation extends Event {
     }
     // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
     else if(length === 2) {
-      percent = currentTime / duration;
+      percent = currentTime / dur;
     }
     else {
       let total = currentFrames[i + 1].time - frameTime;
@@ -1704,7 +1714,7 @@ class Animation extends Event {
     let needClean;
     let keys;
     if(isLastFrame) {
-      inEndDelay = currentTime < duration + endDelay;
+      inEndDelay = currentTime < dur + endDelay;
       // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
       if(stayEnd) {
         keys = calLastStyle(currentFrame.style, target, this.__keys);
@@ -1885,14 +1895,17 @@ class Animation extends Event {
     let duration = this.__duration;
     let frames = this.__frames;
     let delay = this.__delay;
+    let areaStart = this.__areaStart;
+    let areaDuration = this.__areaDuration;
     let endDelay = this.__endDelay;
-    if(isDestroyed || duration <= 0 || frames.length < 1) {
+    let dur = areaDuration ? Math.min(duration, areaDuration) : duration;
+    if(isDestroyed || dur <= 0 || frames.length < 1) {
       return this;
     }
     [options, cb] = gotoOverload(options, cb);
     // 计算出时间点直接累加播放
     this.__goto(v, options.isFrame, options.excludeDelay);
-    if(v > duration + delay + endDelay) {
+    if(v > dur + delay - areaStart + endDelay) {
       return this.finish(cb);
     }
     return this.play(cb);
@@ -1903,13 +1916,16 @@ class Animation extends Event {
     let duration = this.__duration;
     let frames = this.__frames;
     let delay = this.__delay;
+    let areaStart = this.__areaStart;
+    let areaDuration = this.__areaDuration;
     let endDelay = this.__endDelay;
-    if(isDestroyed || duration <= 0 || frames.length < 1) {
+    let dur = areaDuration ? Math.min(duration, areaDuration) : duration;
+    if(isDestroyed || dur <= 0 || frames.length < 1) {
       return this;
     }
     [options, cb] = gotoOverload(options, cb);
     v = this.__goto(v, options.isFrame, options.excludeDelay);
-    if(v > duration + delay + endDelay) {
+    if(v > dur + delay - areaStart + endDelay) {
       return this.finish(cb);
     }
     // 先play一帧，回调里模拟暂停
@@ -1926,6 +1942,8 @@ class Animation extends Event {
   __goto(v, isFrame, excludeDelay) {
     let iterations = this.__iterations;
     let duration = this.__duration;
+    let areaDuration = this.__areaDuration;
+    let dur = areaDuration ? Math.min(duration, areaDuration) : duration;
     this.__playState = 'paused';
     // this.__cancelTask(); // 应该不需要，gotoAndXxx都会调用play()，里面有
     if(isNaN(v) || v < 0) {
@@ -1942,9 +1960,9 @@ class Animation extends Event {
     v -= this.__delay;
     // 超过时间长度需要累加次数，这里可以超过iterations，因为设定也许会非常大
     let playCount = 0;
-    while(v >= duration && playCount < iterations - 1) {
+    while(v >= dur && playCount < iterations - 1) {
       playCount++;
-      v -= duration;
+      v -= dur;
     }
     this.__playCount = playCount;
     // 防止play()重置时间和当前帧组，提前计算好
@@ -1968,7 +1986,7 @@ class Animation extends Event {
   }
 
   addControl() {
-    let root = this.root;
+    let root = this.__root;
     if(!root) {
       return;
     }
@@ -2013,10 +2031,6 @@ class Animation extends Event {
     if(this.__playState !== 'idle' && this.__playState !== 'finished') {
       inject.warn('Modification will not come into effect when animation is running');
     }
-  }
-
-  get id() {
-    return this.__id;
   }
 
   get target() {
@@ -2231,6 +2245,30 @@ class Animation extends Event {
     v = Math.max(0, parseInt(v) || 0);
     if(this.__playCount !== v) {
       this.__playCount = v;
+    }
+    return v;
+  }
+
+  get areaStart() {
+    return this.__areaStart;
+  }
+
+  set areaStart(v) {
+    v = Math.max(0, parseInt(v) || 0);
+    if(this.__areaStart !== v) {
+      this.__areaStart = v;
+    }
+    return v;
+  }
+
+  get areaDuration() {
+    return this.__areaDuration;
+  }
+
+  set areaDuration(v) {
+    v = Math.max(0, parseInt(v) || 0);
+    if(this.__areaDuration !== v) {
+      this.__areaDuration = v;
     }
     return v;
   }

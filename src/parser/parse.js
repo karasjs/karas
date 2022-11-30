@@ -11,21 +11,17 @@ let { isPrimitive } = util;
  * @param karas
  * @param json
  * @param animateRecords
- * @param opt
- * @param offsetTime
  * @returns {Node|Component|*}
  */
-function parse(karas, json, animateRecords, opt, offsetTime) {
+function parse(karas, json, animateRecords) {
   if(isPrimitive(json) || json instanceof Node || json instanceof Component) {
     return json;
   }
   if(Array.isArray(json)) {
     return json.map(item => {
-      return parse(karas, item, animateRecords, opt, offsetTime);
+      return parse(karas, item, animateRecords);
     });
   }
-  let oft = offsetTime; // 暂存，后续生成动画用这个值
-  offsetTime += json.offsetTime || 0; // 可能有时间偏移加上为递归准备
   let { tagName, props = {}, children = [], animate = [] } = json;
   if(!tagName) {
     throw new Error('Dom must have a tagName: ' + JSON.stringify(json));
@@ -40,12 +36,12 @@ function parse(karas, json, animateRecords, opt, offsetTime) {
   else if(/^[A-Z]/.test(tagName)) {
     let cp = Component.getRegister(tagName);
     vd = karas.createCp(cp, props, children.map(item => {
-      return parse(karas, item, animateRecords, opt, offsetTime);
+      return parse(karas, item, animateRecords);
     }));
   }
   else {
     vd = karas.createVd(tagName, props, children.map(item => {
-      return parse(karas, item, animateRecords, opt, offsetTime);
+      return parse(karas, item, animateRecords);
     }));
   }
   if(animate) {
@@ -65,7 +61,6 @@ function parse(karas, json, animateRecords, opt, offsetTime) {
       animateRecords.push({
         animate,
         target: vd,
-        offsetTime: oft,
       });
     }
   }

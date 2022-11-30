@@ -14333,6 +14333,378 @@
   easing['ease-out'] = easing.easeOut;
   easing['ease-in-out'] = easing.easeInOut;
 
+  var isFunction$6 = util.isFunction;
+
+  var Controller = /*#__PURE__*/function () {
+    function Controller() {
+      this.__records = []; // 默认记录和自动记录
+
+      this.__records2 = []; // 非自动播放的动画记录
+
+      this.__list = []; // 默认初始化播放列表，自动播放也存这里
+
+      this.__list2 = []; // json中autoPlay为false的初始化存入这里
+
+      this.__onList = []; // list中已存在的侦听事件，list2初始化时也需要增加上
+
+      this.__lastTime = {}; // 每个类型的上次触发时间，防止重复emit
+    }
+
+    _createClass(Controller, [{
+      key: "add",
+      value: function add(v) {
+        var list = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : this.__list;
+
+        if (list.indexOf(v) === -1) {
+          list.push(v);
+        }
+      }
+    }, {
+      key: "remove",
+      value: function remove(v) {
+        var i = this.__list.indexOf(v);
+
+        if (i > -1) {
+          this.__list.splice(i, 1);
+        }
+      }
+    }, {
+      key: "__destroy",
+      value: function __destroy() {
+        this.__records = [];
+        this.__records2 = [];
+        this.__list = [];
+        this.__list2 = [];
+      }
+    }, {
+      key: "__action",
+      value: function __action(k, args) {
+        this.__list.forEach(function (item) {
+          item[k].apply(item, args);
+        });
+      }
+    }, {
+      key: "init",
+      value: function init() {
+        var _this = this;
+
+        var records = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.__records;
+        var list = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : this.__list;
+
+        // 检查尚未初始化的record，并初始化，后面才能调用各种控制方法
+        if (records.length) {
+          // 清除防止重复调用，并且新的json还会进入整体逻辑
+          records.splice(0).forEach(function (item) {
+            var target = item.target,
+                animate = item.animate;
+
+            if (target.isDestroyed || !animate) {
+              return;
+            }
+
+            if (!Array.isArray(animate)) {
+              animate = [animate];
+            }
+
+            animate.forEach(function (animate) {
+              var value = animate.value,
+                  options = animate.options;
+              options.autoPlay = false;
+              var o = target.animate(value, options);
+
+              _this.add(o, list);
+            });
+          });
+        } // 非自动播放后初始化需检测事件，给非自动播放添加上，并清空本次
+
+
+        if (records === this.__records2) {
+          var onList = this.__onList;
+          var list2 = this.list2;
+
+          if (list2.length && onList.length) {
+            list2.forEach(function (item) {
+              onList.forEach(function (arr) {
+                var cb = function cb() {
+                  var time = item.timestamp;
+
+                  if (time !== _this.__lastTime[arr[0]]) {
+                    _this.__lastTime[arr[0]] = time;
+                    arr[1] && arr[1]();
+                  }
+                };
+
+                cb.__karasEventCb = arr[1];
+                item.off(arr[0], arr[1]);
+                item.on(arr[0], cb);
+              });
+            });
+          }
+        }
+      }
+    }, {
+      key: "__playAuto",
+      value: function __playAuto() {
+        this.init();
+
+        this.__action('play');
+      }
+    }, {
+      key: "play",
+      value: function play(cb) {
+        this.__mergeAuto();
+
+        this.__onList = [];
+        var once = true;
+
+        this.__action('play', [cb && function (diff) {
+          if (once) {
+            once = false;
+
+            if (isFunction$6(cb)) {
+              cb(diff);
+            }
+          }
+        }]);
+      }
+    }, {
+      key: "pause",
+      value: function pause() {
+        this.__action('pause');
+      }
+    }, {
+      key: "resume",
+      value: function resume(cb) {
+        var once = true;
+
+        this.__action('resume', [cb && function (diff) {
+          if (once) {
+            once = false;
+
+            if (isFunction$6(cb)) {
+              cb(diff);
+            }
+          }
+        }]);
+      }
+    }, {
+      key: "__mergeAuto",
+      value: function __mergeAuto() {
+        this.init();
+        this.init(this.__records2);
+
+        if (this.__list2.length) {
+          this.__list = this.__list.concat(this.__list2);
+          this.__list2 = [];
+        }
+      }
+    }, {
+      key: "cancel",
+      value: function cancel(cb) {
+        this.__mergeAuto();
+
+        this.__onList = [];
+        var once = true;
+
+        this.__action('cancel', [cb && function (diff) {
+          if (once) {
+            once = false;
+
+            if (isFunction$6(cb)) {
+              cb(diff);
+            }
+          }
+        }]);
+      }
+    }, {
+      key: "finish",
+      value: function finish(cb) {
+        this.__mergeAuto();
+
+        this.__onList = [];
+        var once = true;
+
+        this.__action('finish', [cb && function (diff) {
+          if (once) {
+            once = false;
+
+            if (isFunction$6(cb)) {
+              cb(diff);
+            }
+          }
+        }]);
+      }
+    }, {
+      key: "gotoAndStop",
+      value: function gotoAndStop(v, options, cb) {
+        this.__mergeAuto();
+
+        this.__onList = [];
+
+        if (isFunction$6(options)) {
+          cb = options;
+          options = {};
+        }
+
+        var once = true;
+
+        this.__action('gotoAndStop', [v, options, cb && function (diff) {
+          if (once) {
+            once = false;
+
+            if (isFunction$6(cb)) {
+              cb(diff);
+            }
+          }
+        }]);
+      }
+    }, {
+      key: "gotoAndPlay",
+      value: function gotoAndPlay(v, options, cb) {
+        this.__mergeAuto();
+
+        this.__onList = [];
+
+        if (isFunction$6(options)) {
+          cb = options;
+          options = {};
+        }
+
+        var once = true;
+
+        this.__action('gotoAndPlay', [v, options, cb && function (diff) {
+          if (once) {
+            once = false;
+
+            if (isFunction$6(cb)) {
+              cb(diff);
+            }
+          }
+        }]);
+      }
+    }, {
+      key: "on",
+      value: function on(id, handle) {
+        if (!isFunction$6(handle)) {
+          return;
+        }
+
+        if (Array.isArray(id)) {
+          for (var i = 0, len = id.length; i < len; i++) {
+            this.__on(id[i], handle);
+          }
+
+          this.__onList.push([id, handle]);
+        } else {
+          this.__on(id, handle);
+
+          this.__onList.push([id, handle]);
+        }
+      }
+    }, {
+      key: "__on",
+      value: function __on(id, handle) {
+        var _this2 = this;
+
+        this.__list.forEach(function (item) {
+          var cb = function cb() {
+            var time = item.timestamp;
+
+            if (time !== _this2.__lastTime[id]) {
+              _this2.__lastTime[id] = time;
+              handle && handle();
+            }
+          };
+
+          cb.__karasEventCb = handle;
+          item.on(id, cb);
+        });
+      }
+    }, {
+      key: "off",
+      value: function off(id, handle) {
+        if (Array.isArray(id)) {
+          for (var i = 0, len = id.length; i < len; i++) {
+            this.off(id[i], handle);
+          }
+        } else {
+          this.list.forEach(function (item) {
+            item.off(id, handle);
+          });
+        }
+      }
+    }, {
+      key: "list",
+      get: function get() {
+        return this.__list;
+      }
+    }, {
+      key: "list2",
+      get: function get() {
+        return this.__list2;
+      }
+    }, {
+      key: "__set",
+      value: function __set(key, value) {
+        this.list.forEach(function (item) {
+          item[key] = value;
+        });
+      }
+    }, {
+      key: "playbackRate",
+      set: function set(v) {
+        this.__set('playbackRate', v);
+      }
+    }, {
+      key: "iterations",
+      set: function set(v) {
+        this.__set('iterations', v);
+      }
+    }, {
+      key: "playCount",
+      set: function set(v) {
+        this.__set('playCount', v);
+      }
+    }, {
+      key: "fps",
+      set: function set(v) {
+        this.__set('fps', v);
+      }
+    }, {
+      key: "currentTime",
+      set: function set(v) {
+        this.__set('currentTime', v);
+      }
+    }, {
+      key: "spfLimit",
+      set: function set(v) {
+        this.__set('spfLimit', v);
+      }
+    }, {
+      key: "delay",
+      set: function set(v) {
+        this.__set('delay', v);
+      }
+    }, {
+      key: "endDelay",
+      set: function set(v) {
+        this.__set('endDelay', v);
+      }
+    }, {
+      key: "fill",
+      set: function set(v) {
+        this.__set('fill', v);
+      }
+    }, {
+      key: "direction",
+      set: function set(v) {
+        this.__set('direction', v);
+      }
+    }]);
+
+    return Controller;
+  }();
+
   var _enums$STYLE_KEY$9 = enums.STYLE_KEY,
       FILTER$3 = _enums$STYLE_KEY$9.FILTER,
       TRANSFORM_ORIGIN$3 = _enums$STYLE_KEY$9.TRANSFORM_ORIGIN,
@@ -14421,7 +14793,7 @@
       GRADIENT$2 = o$4.GRADIENT,
       calUnit = o$4.calUnit;
   var isNil$a = util.isNil,
-      isFunction$6 = util.isFunction,
+      isFunction$5 = util.isFunction,
       isNumber = util.isNumber,
       isObject = util.isObject,
       clone$1 = util.clone,
@@ -15079,7 +15451,7 @@
 
       if (isNil$a(p)) {
         return;
-      } else if (GEOM$1[k][tagName] && isFunction$6(GEOM$1[k][tagName].calDiff)) {
+      } else if (GEOM$1[k][tagName] && isFunction$5(GEOM$1[k][tagName].calDiff)) {
         var fn = GEOM$1[k][tagName].calDiff;
 
         if (target.isMulti) {
@@ -15759,7 +16131,7 @@
   }
 
   function gotoOverload(options, cb) {
-    if (isFunction$6(options)) {
+    if (isFunction$5(options)) {
       cb = options;
       options = {};
     }
@@ -15777,7 +16149,7 @@
 
     var cb = self.__playCb;
 
-    if (isFunction$6(cb)) {
+    if (isFunction$5(cb)) {
       cb(self.__isChange); // 清理要检查，gotoAndStop()这种cb回调中直接再次调用goto的话cb会不一致不能删除
 
       if (self.__playCb === cb) {
@@ -15786,8 +16158,6 @@
     }
   }
 
-  var uuid$3 = 0;
-
   var Animation = /*#__PURE__*/function (_Event) {
     _inherits(Animation, _Event);
 
@@ -15795,7 +16165,6 @@
       var _this;
 
       _this = _Event.call(this) || this;
-      _this.__id = uuid$3++;
       list = clone$1(list || []);
 
       if (Array.isArray(list)) {
@@ -15871,10 +16240,21 @@
       _this.iterations = op.iterations;
       _this.direction = op.direction;
       _this.easing = op.easing;
+      _this.areaStart = op.areaStart; // ae中的功能，播放中间一段动画，为0忽略
+
+      _this.areaStart = op.areaDuration;
       _this.__currentFrames = {
         reverse: true,
         'alternate-reverse': true
-      }.hasOwnProperty(op.direction) ? framesR : frames; // 时间戳
+      }.hasOwnProperty(op.direction) ? framesR : frames;
+      var controller = op.controller;
+
+      if (controller instanceof Controller) {
+        controller.add(_assertThisInitialized(_this));
+      } else if (controller) {
+        _this.addControl();
+      } // 时间戳
+
 
       _this.__timestamp = frame.__now;
       return _this;
@@ -15998,6 +16378,8 @@
         var stayBegin = this.__stayBegin;
         var stayEnd = this.__stayEnd;
         var delay = this.__delay;
+        var areaStart = this.__areaStart;
+        var areaDuration = this.__areaDuration;
         var root = this.__root;
         var duration = this.__duration;
         var endDelay = this.__endDelay;
@@ -16006,6 +16388,7 @@
         var spfLimit = this.__spfLimit;
         var currentTime = this.__currentTime = this.__nextTime;
         var lastFrame = this.__currentFrame;
+        var dur = areaDuration ? Math.min(duration, areaDuration) : duration;
         this.__isChange = false; // 定帧限制每帧时间间隔最大为spf
 
         if (spfLimit) {
@@ -16037,7 +16420,7 @@
 
         this.__firstEnter = false; // delay仅第一次生效等待
 
-        if (currentTime < delay) {
+        if (currentTime < delay - areaStart) {
           if (stayBegin && !this.__isDelay) {
             var _currentFrame = this.__currentFrame = currentFrames[0];
 
@@ -16069,7 +16452,7 @@
 
         this.__isDelay = false; // 减去delay，计算在哪一帧
 
-        currentTime -= delay;
+        currentTime -= delay - areaStart;
 
         if (this.__outBeginDelay) {
           this.__outBeginDelay = false;
@@ -16078,7 +16461,7 @@
 
 
         var playCount = Math.min(iterations - 1, Math.floor(currentTime / duration));
-        currentTime -= duration * playCount; // 如果发生轮换，需重新确定正反向
+        currentTime -= dur * playCount; // 如果发生轮换，需重新确定正反向
 
         if (this.__playCount < playCount) {
           this.__begin = true;
@@ -16103,8 +16486,8 @@
         var i, frameTime;
 
         if (length === 2) {
-          i = currentTime < duration ? 0 : 1;
-          frameTime = duration;
+          i = currentTime < dur ? 0 : 1;
+          frameTime = dur;
         } else {
           i = Animation.binarySearch(0, length - 1, currentTime, currentFrames);
           frameTime = currentFrames[i].time;
@@ -16116,7 +16499,7 @@
 
         if (isLastFrame) ; // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
         else if (length === 2) {
-          percent = currentTime / duration;
+          percent = currentTime / dur;
         } else {
           var total = currentFrames[i + 1].time - frameTime;
           percent = (currentTime - frameTime) / total;
@@ -16146,7 +16529,7 @@
         var keys;
 
         if (isLastFrame) {
-          inEndDelay = currentTime < duration + endDelay; // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
+          inEndDelay = currentTime < dur + endDelay; // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
 
           if (stayEnd) {
             keys = calLastStyle(currentFrame.style, target, this.__keys);
@@ -16260,7 +16643,7 @@
         }
 
         if (playState === 'finished') {
-          if (isFunction$6(cb)) {
+          if (isFunction$5(cb)) {
             cb();
           }
 
@@ -16310,7 +16693,7 @@
 
             _this2.emit(Event.FINISH, _this2.__isChange);
 
-            if (isFunction$6(cb)) {
+            if (isFunction$5(cb)) {
               cb(_this2.__isChange);
             }
           });
@@ -16333,7 +16716,7 @@
         }
 
         if (playState === 'idle') {
-          if (isFunction$6(cb)) {
+          if (isFunction$5(cb)) {
             cb();
           }
 
@@ -16356,7 +16739,7 @@
 
             _this3.emit(Event.CANCEL, _this3.__isChange);
 
-            if (isFunction$6(cb)) {
+            if (isFunction$5(cb)) {
               cb(_this3.__isChange);
             }
           });
@@ -16371,9 +16754,12 @@
         var duration = this.__duration;
         var frames = this.__frames;
         var delay = this.__delay;
+        var areaStart = this.__areaStart;
+        var areaDuration = this.__areaDuration;
         var endDelay = this.__endDelay;
+        var dur = areaDuration ? Math.min(duration, areaDuration) : duration;
 
-        if (isDestroyed || duration <= 0 || frames.length < 1) {
+        if (isDestroyed || dur <= 0 || frames.length < 1) {
           return this;
         }
 
@@ -16387,7 +16773,7 @@
         // 计算出时间点直接累加播放
         this.__goto(v, options.isFrame, options.excludeDelay);
 
-        if (v > duration + delay + endDelay) {
+        if (v > dur + delay - areaStart + endDelay) {
           return this.finish(cb);
         }
 
@@ -16402,9 +16788,12 @@
         var duration = this.__duration;
         var frames = this.__frames;
         var delay = this.__delay;
+        var areaStart = this.__areaStart;
+        var areaDuration = this.__areaDuration;
         var endDelay = this.__endDelay;
+        var dur = areaDuration ? Math.min(duration, areaDuration) : duration;
 
-        if (isDestroyed || duration <= 0 || frames.length < 1) {
+        if (isDestroyed || dur <= 0 || frames.length < 1) {
           return this;
         }
 
@@ -16416,7 +16805,7 @@
         cb = _gotoOverload4[1];
         v = this.__goto(v, options.isFrame, options.excludeDelay);
 
-        if (v > duration + delay + endDelay) {
+        if (v > dur + delay - areaStart + endDelay) {
           return this.finish(cb);
         } // 先play一帧，回调里模拟暂停
 
@@ -16426,7 +16815,7 @@
 
           _this4.__cancelTask();
 
-          if (isFunction$6(cb)) {
+          if (isFunction$5(cb)) {
             cb();
           }
         });
@@ -16437,6 +16826,8 @@
       value: function __goto(v, isFrame, excludeDelay) {
         var iterations = this.__iterations;
         var duration = this.__duration;
+        var areaDuration = this.__areaDuration;
+        var dur = areaDuration ? Math.min(duration, areaDuration) : duration;
         this.__playState = 'paused'; // this.__cancelTask(); // 应该不需要，gotoAndXxx都会调用play()，里面有
 
         if (isNaN(v) || v < 0) {
@@ -16457,9 +16848,9 @@
 
         var playCount = 0;
 
-        while (v >= duration && playCount < iterations - 1) {
+        while (v >= dur && playCount < iterations - 1) {
           playCount++;
-          v -= duration;
+          v -= dur;
         }
 
         this.__playCount = playCount; // 防止play()重置时间和当前帧组，提前计算好
@@ -16487,7 +16878,7 @@
     }, {
       key: "addControl",
       value: function addControl() {
-        var root = this.root;
+        var root = this.__root;
 
         if (!root) {
           return;
@@ -16546,11 +16937,6 @@
         if (this.__playState !== 'idle' && this.__playState !== 'finished') {
           inject.warn('Modification will not come into effect when animation is running');
         }
-      }
-    }, {
-      key: "id",
-      get: function get() {
-        return this.__id;
       }
     }, {
       key: "target",
@@ -16805,6 +17191,34 @@
 
         if (this.__playCount !== v) {
           this.__playCount = v;
+        }
+
+        return v;
+      }
+    }, {
+      key: "areaStart",
+      get: function get() {
+        return this.__areaStart;
+      },
+      set: function set(v) {
+        v = Math.max(0, parseInt(v) || 0);
+
+        if (this.__areaStart !== v) {
+          this.__areaStart = v;
+        }
+
+        return v;
+      }
+    }, {
+      key: "areaDuration",
+      get: function get() {
+        return this.__areaDuration;
+      },
+      set: function set(v) {
+        v = Math.max(0, parseInt(v) || 0);
+
+        if (this.__areaDuration !== v) {
+          this.__areaDuration = v;
         }
 
         return v;
@@ -17183,7 +17597,7 @@
             } else if (GEOM$1.hasOwnProperty(k)) {
               var tagName = target.tagName;
 
-              if (GEOM$1[k][tagName] && isFunction$6(GEOM$1[k][tagName].calIncrease)) {
+              if (GEOM$1[k][tagName] && isFunction$5(GEOM$1[k][tagName].calIncrease)) {
                 var _fn = GEOM$1[k][tagName].calIncrease;
 
                 if (target.isMulti) {
@@ -17835,7 +18249,7 @@
       rgba2int = util.rgba2int,
       joinArr$1 = util.joinArr,
       isNil$9 = util.isNil,
-      isFunction$5 = util.isFunction;
+      isFunction$4 = util.isFunction;
   var calRelative = css.calRelative,
       calNormalLineHeight = css.calNormalLineHeight,
       calFontFamily = css.calFontFamily,
@@ -20397,7 +20811,7 @@
       value: function refresh(lv, cb) {
         var root = this.__root;
 
-        if (isFunction$5(lv) || !lv) {
+        if (isFunction$4(lv) || !lv) {
           lv = CACHE$3;
         }
 
@@ -20407,7 +20821,7 @@
 
         if (root && !this.__isDestroyed) {
           root.__addUpdate(this, null, lv, null, null, null, cb);
-        } else if (isFunction$5(cb)) {
+        } else if (isFunction$4(cb)) {
           cb(-1);
         }
       }
@@ -20420,7 +20834,7 @@
 
         var ref = this.props.ref;
 
-        if (!isNil$9(ref) && !isFunction$5(ref)) {
+        if (!isNil$9(ref) && !isFunction$4(ref)) {
           delete this.__root.__ref[ref];
         }
 
@@ -20466,10 +20880,10 @@
 
 
         if (force) {
-          if (computedStyle[POINTER_EVENTS$1] !== 'none' && !e.__stopImmediatePropagation && (isFunction$5(cb) || Array.isArray(cb))) {
+          if (computedStyle[POINTER_EVENTS$1] !== 'none' && !e.__stopImmediatePropagation && (isFunction$4(cb) || Array.isArray(cb))) {
             if (Array.isArray(cb)) {
               cb.forEach(function (item) {
-                if (isFunction$5(item)) {
+                if (isFunction$4(item)) {
                   item.call(_this9, e);
                 }
               });
@@ -20505,11 +20919,11 @@
 
           if (Array.isArray(cb) && !e.__stopImmediatePropagation) {
             cb.forEach(function (item) {
-              if (isFunction$5(item)) {
+              if (isFunction$4(item)) {
                 item.call(_this9, e);
               }
             });
-          } else if (isFunction$5(cb) && !e.__stopImmediatePropagation) {
+          } else if (isFunction$4(cb) && !e.__stopImmediatePropagation) {
             cb.call(this, e);
           }
 
@@ -20772,7 +21186,7 @@
         });
 
         if (!keys.length || this.__isDestroyed) {
-          if (isFunction$5(cb)) {
+          if (isFunction$4(cb)) {
             cb();
           }
 
@@ -20830,7 +21244,7 @@
     }, {
       key: "frameAnimate",
       value: function frameAnimate(cb) {
-        if (isFunction$5(cb)) {
+        if (isFunction$4(cb)) {
           var list = this.__frameAnimateList; // 防止重复
 
           for (var i = 0, len = list.length; i < len; i++) {
@@ -21146,7 +21560,7 @@
         }
 
         if (this.__isDestroyed) {
-          if (isFunction$5(cb)) {
+          if (isFunction$4(cb)) {
             cb();
           }
 
@@ -21159,7 +21573,7 @@
         if (this.__computedStyle[DISPLAY$6] === 'none' || parent.__computedStyle[DISPLAY$6] === 'none') {
           this.__destroy();
 
-          if (isFunction$5(cb)) {
+          if (isFunction$4(cb)) {
             cb();
           }
 
@@ -21172,7 +21586,7 @@
     }, {
       key: "addEventListener",
       value: function addEventListener(type, cb) {
-        if (type && isFunction$5(cb)) {
+        if (type && isFunction$4(cb)) {
           type = type.toLowerCase();
           var arr = this.__listener[type] = this.__listener[type] || [];
 
@@ -21202,7 +21616,7 @@
               break;
             }
           }
-        } else if (isFunction$5(arr) && arr === cb) {
+        } else if (isFunction$4(arr) && arr === cb) {
           delete this.__listener[type];
         }
       }
@@ -23999,7 +24413,7 @@
       getVerticalBaseline = css.getVerticalBaseline;
   var extend$1 = util.extend;
       util.isNil;
-      var isFunction$4 = util.isFunction,
+      var isFunction$3 = util.isFunction,
       assignMatrix$1 = util.assignMatrix;
   var CANVAS = mode.CANVAS,
       SVG = mode.SVG,
@@ -27583,11 +27997,11 @@
 
               if (Array.isArray(cb) && !e.__stopImmediatePropagation) {
                 cb.forEach(function (item) {
-                  if (isFunction$4(item)) {
+                  if (isFunction$3(item)) {
                     item.call(_this7, e);
                   }
                 });
-              } else if (isFunction$4(cb) && !e.__stopImmediatePropagation) {
+              } else if (isFunction$3(cb) && !e.__stopImmediatePropagation) {
                 cb.call(this, e);
               }
 
@@ -27625,7 +28039,7 @@
         var zIndexChildren = this.__zIndexChildren = genZIndexChildren(this); // 离屏情况，不刷新
 
         if (this.__isDestroyed) {
-          if (isFunction$4(cb)) {
+          if (isFunction$3(cb)) {
             cb();
           }
 
@@ -27641,7 +28055,7 @@
         if (child.currentStyle[DISPLAY$3] === 'none' || this.__computedStyle[DISPLAY$3] === 'none') {
           child.__layoutNone();
 
-          if (isFunction$4(cb)) {
+          if (isFunction$3(cb)) {
             cb();
           }
 
@@ -27681,7 +28095,7 @@
         var zIndexChildren = this.__zIndexChildren = genZIndexChildren(this); // 离屏情况，不刷新
 
         if (this.__isDestroyed) {
-          if (isFunction$4(cb)) {
+          if (isFunction$3(cb)) {
             cb();
           }
 
@@ -27697,7 +28111,7 @@
         if (child.currentStyle[DISPLAY$3] === 'none' || this.__computedStyle[DISPLAY$3] === 'none') {
           child.__layoutNone();
 
-          if (isFunction$4(cb)) {
+          if (isFunction$3(cb)) {
             cb();
           }
 
@@ -27750,7 +28164,7 @@
 
 
         if (this.__isDestroyed) {
-          if (isFunction$4(cb)) {
+          if (isFunction$3(cb)) {
             cb();
           }
 
@@ -27765,7 +28179,7 @@
         if (child.currentStyle[DISPLAY$3] === 'none' || parent.__computedStyle[DISPLAY$3] === 'none') {
           child.__layoutNone();
 
-          if (isFunction$4(cb)) {
+          if (isFunction$3(cb)) {
             cb();
           }
 
@@ -27810,7 +28224,7 @@
 
 
         if (this.__isDestroyed) {
-          if (isFunction$4(cb)) {
+          if (isFunction$3(cb)) {
             cb();
           }
 
@@ -27825,7 +28239,7 @@
         if (child.currentStyle[DISPLAY$3] === 'none' || parent.__computedStyle[DISPLAY$3] === 'none') {
           child.__layoutNone();
 
-          if (isFunction$4(cb)) {
+          if (isFunction$3(cb)) {
             cb();
           }
 
@@ -29900,7 +30314,7 @@
       VMIN = o$4.VMIN;
   var canvasPolygon$1 = painter.canvasPolygon,
       svgPolygon = painter.svgPolygon;
-  var isFunction$3 = util.isFunction;
+  var isFunction$2 = util.isFunction;
 
   var Img = /*#__PURE__*/function (_Dom) {
     _inherits(Img, _Dom);
@@ -30377,7 +30791,7 @@
           loadImg.src = v;
           inject.measureImg(v, null);
 
-          if (isFunction$3(cb)) {
+          if (isFunction$2(cb)) {
             cb();
           }
 
@@ -30425,7 +30839,7 @@
             loadImg.height = loadImg.__height = ca.height;
             var res = ImgWebglCache.getInstance(mode.CANVAS, gl, root.__uuid, [0, 0, loadImg.width, loadImg.height], loadImg, 0, 0);
 
-            if (isFunction$3(cb)) {
+            if (isFunction$2(cb)) {
               cb(res);
             }
           });
@@ -30435,7 +30849,7 @@
           loadImg.height = loadImg.__height = ca.height;
           var res = ImgWebglCache.getInstance(mode.CANVAS, gl, root.__uuid, [0, 0, loadImg.width, loadImg.height], loadImg, 0, 0);
 
-          if (isFunction$3(cb)) {
+          if (isFunction$2(cb)) {
             cb(res);
           }
         }
@@ -31020,387 +31434,6 @@
       }
     }
   }
-
-  var isFunction$2 = util.isFunction;
-
-  var Controller = /*#__PURE__*/function () {
-    function Controller() {
-      this.__records = []; // 默认记录和自动记录
-
-      this.__records2 = []; // 非自动播放的动画记录
-
-      this.__list = []; // 默认初始化播放列表，自动播放也存这里
-
-      this.__list2 = []; // json中autoPlay为false的初始化存入这里
-
-      this.__onList = []; // list中已存在的侦听事件，list2初始化时也需要增加上
-
-      this.__lastTime = {}; // 每个类型的上次触发时间，防止重复emit
-    }
-
-    _createClass(Controller, [{
-      key: "add",
-      value: function add(v) {
-        var list = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : this.list;
-
-        if (list.indexOf(v) === -1) {
-          list.push(v);
-        }
-      }
-    }, {
-      key: "remove",
-      value: function remove(v) {
-        var i = this.__list.indexOf(v);
-
-        if (i > -1) {
-          this.__list.splice(i, 1);
-        }
-      }
-    }, {
-      key: "__destroy",
-      value: function __destroy() {
-        this.__records = [];
-        this.__records2 = [];
-        this.__list = [];
-        this.__list2 = [];
-      }
-    }, {
-      key: "__action",
-      value: function __action(k, args) {
-        this.__list.forEach(function (item) {
-          item[k].apply(item, args);
-        });
-      }
-    }, {
-      key: "init",
-      value: function init() {
-        var _this = this;
-
-        var records = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.__records;
-        var list = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : this.list;
-
-        // 检查尚未初始化的record，并初始化，后面才能调用各种控制方法
-        if (records.length) {
-          // 清除防止重复调用，并且新的json还会进入整体逻辑
-          records.splice(0).forEach(function (item) {
-            var target = item.target,
-                animate = item.animate,
-                offsetTime = item.offsetTime;
-
-            if (target.isDestroyed || !animate) {
-              return;
-            }
-
-            if (!Array.isArray(animate)) {
-              animate = [animate];
-            }
-
-            animate.forEach(function (animate) {
-              var value = animate.value,
-                  options = animate.options;
-              options.autoPlay = false;
-
-              if (offsetTime) {
-                options = Object.assign({}, options); // clone防止多个使用相同的干扰
-
-                options.delay = options.delay || 0;
-                options.delay += offsetTime;
-              }
-
-              var o = target.animate(value, options);
-
-              _this.add(o, list);
-            });
-          });
-        } // 非自动播放后初始化需检测事件，给非自动播放添加上，并清空本次
-
-
-        if (records === this.__records2) {
-          var onList = this.__onList;
-          var list2 = this.list2;
-
-          if (list2.length && onList.length) {
-            list2.forEach(function (item) {
-              onList.forEach(function (arr) {
-                var cb = function cb() {
-                  var time = item.timestamp;
-
-                  if (time !== _this.__lastTime[arr[0]]) {
-                    _this.__lastTime[arr[0]] = time;
-                    arr[1] && arr[1]();
-                  }
-                };
-
-                cb.__karasEventCb = arr[1];
-                item.off(arr[0], arr[1]);
-                item.on(arr[0], cb);
-              });
-            });
-          }
-        }
-      }
-    }, {
-      key: "__playAuto",
-      value: function __playAuto() {
-        this.init();
-
-        this.__action('play');
-      }
-    }, {
-      key: "play",
-      value: function play(cb) {
-        this.__mergeAuto();
-
-        this.__onList = [];
-        var once = true;
-
-        this.__action('play', [cb && function (diff) {
-          if (once) {
-            once = false;
-
-            if (isFunction$2(cb)) {
-              cb(diff);
-            }
-          }
-        }]);
-      }
-    }, {
-      key: "pause",
-      value: function pause() {
-        this.__action('pause');
-      }
-    }, {
-      key: "resume",
-      value: function resume(cb) {
-        var once = true;
-
-        this.__action('resume', [cb && function (diff) {
-          if (once) {
-            once = false;
-
-            if (isFunction$2(cb)) {
-              cb(diff);
-            }
-          }
-        }]);
-      }
-    }, {
-      key: "__mergeAuto",
-      value: function __mergeAuto() {
-        this.init();
-        this.init(this.__records2);
-
-        if (this.__list2.length) {
-          this.__list = this.__list.concat(this.__list2);
-          this.__list2 = [];
-        }
-      }
-    }, {
-      key: "cancel",
-      value: function cancel(cb) {
-        this.__mergeAuto();
-
-        this.__onList = [];
-        var once = true;
-
-        this.__action('cancel', [cb && function (diff) {
-          if (once) {
-            once = false;
-
-            if (isFunction$2(cb)) {
-              cb(diff);
-            }
-          }
-        }]);
-      }
-    }, {
-      key: "finish",
-      value: function finish(cb) {
-        this.__mergeAuto();
-
-        this.__onList = [];
-        var once = true;
-
-        this.__action('finish', [cb && function (diff) {
-          if (once) {
-            once = false;
-
-            if (isFunction$2(cb)) {
-              cb(diff);
-            }
-          }
-        }]);
-      }
-    }, {
-      key: "gotoAndStop",
-      value: function gotoAndStop(v, options, cb) {
-        this.__mergeAuto();
-
-        this.__onList = [];
-
-        if (isFunction$2(options)) {
-          cb = options;
-          options = {};
-        }
-
-        var once = true;
-
-        this.__action('gotoAndStop', [v, options, cb && function (diff) {
-          if (once) {
-            once = false;
-
-            if (isFunction$2(cb)) {
-              cb(diff);
-            }
-          }
-        }]);
-      }
-    }, {
-      key: "gotoAndPlay",
-      value: function gotoAndPlay(v, options, cb) {
-        this.__mergeAuto();
-
-        this.__onList = [];
-
-        if (isFunction$2(options)) {
-          cb = options;
-          options = {};
-        }
-
-        var once = true;
-
-        this.__action('gotoAndPlay', [v, options, cb && function (diff) {
-          if (once) {
-            once = false;
-
-            if (isFunction$2(cb)) {
-              cb(diff);
-            }
-          }
-        }]);
-      }
-    }, {
-      key: "on",
-      value: function on(id, handle) {
-        if (!isFunction$2(handle)) {
-          return;
-        }
-
-        if (Array.isArray(id)) {
-          for (var i = 0, len = id.length; i < len; i++) {
-            this.__on(id[i], handle);
-          }
-
-          this.__onList.push([id, handle]);
-        } else {
-          this.__on(id, handle);
-
-          this.__onList.push([id, handle]);
-        }
-      }
-    }, {
-      key: "__on",
-      value: function __on(id, handle) {
-        var _this2 = this;
-
-        this.__list.forEach(function (item) {
-          var cb = function cb() {
-            var time = item.timestamp;
-
-            if (time !== _this2.__lastTime[id]) {
-              _this2.__lastTime[id] = time;
-              handle && handle();
-            }
-          };
-
-          cb.__karasEventCb = handle;
-          item.on(id, cb);
-        });
-      }
-    }, {
-      key: "off",
-      value: function off(id, handle) {
-        if (Array.isArray(id)) {
-          for (var i = 0, len = id.length; i < len; i++) {
-            this.off(id[i], handle);
-          }
-        } else {
-          this.list.forEach(function (item) {
-            item.off(id, handle);
-          });
-        }
-      }
-    }, {
-      key: "list",
-      get: function get() {
-        return this.__list;
-      }
-    }, {
-      key: "list2",
-      get: function get() {
-        return this.__list2;
-      }
-    }, {
-      key: "__set",
-      value: function __set(key, value) {
-        this.list.forEach(function (item) {
-          item[key] = value;
-        });
-      }
-    }, {
-      key: "playbackRate",
-      set: function set(v) {
-        this.__set('playbackRate', v);
-      }
-    }, {
-      key: "iterations",
-      set: function set(v) {
-        this.__set('iterations', v);
-      }
-    }, {
-      key: "playCount",
-      set: function set(v) {
-        this.__set('playCount', v);
-      }
-    }, {
-      key: "fps",
-      set: function set(v) {
-        this.__set('fps', v);
-      }
-    }, {
-      key: "currentTime",
-      set: function set(v) {
-        this.__set('currentTime', v);
-      }
-    }, {
-      key: "spfLimit",
-      set: function set(v) {
-        this.__set('spfLimit', v);
-      }
-    }, {
-      key: "delay",
-      set: function set(v) {
-        this.__set('delay', v);
-      }
-    }, {
-      key: "endDelay",
-      set: function set(v) {
-        this.__set('endDelay', v);
-      }
-    }, {
-      key: "fill",
-      set: function set(v) {
-        this.__set('fill', v);
-      }
-    }, {
-      key: "direction",
-      set: function set(v) {
-        this.__set('direction', v);
-      }
-    }]);
-
-    return Controller;
-  }();
 
   var canvasPolygon = painter.canvasPolygon; // 无cache时应用离屏时的优先级，从小到大，OFFSCREEN_MASK2是个特殊的
 
@@ -43551,25 +43584,19 @@
    * @param karas
    * @param json
    * @param animateRecords
-   * @param opt
-   * @param offsetTime
    * @returns {Node|Component|*}
    */
 
-  function parse(karas, json, animateRecords, opt, offsetTime) {
+  function parse(karas, json, animateRecords) {
     if (isPrimitive$1(json) || json instanceof Node || json instanceof Component) {
       return json;
     }
 
     if (Array.isArray(json)) {
       return json.map(function (item) {
-        return parse(karas, item, animateRecords, opt, offsetTime);
+        return parse(karas, item, animateRecords);
       });
     }
-
-    var oft = offsetTime; // 暂存，后续生成动画用这个值
-
-    offsetTime += json.offsetTime || 0; // 可能有时间偏移加上为递归准备
 
     var tagName = json.tagName,
         _json$props = json.props,
@@ -43594,11 +43621,11 @@
     } else if (/^[A-Z]/.test(tagName)) {
       var cp = Component.getRegister(tagName);
       vd = karas.createCp(cp, props, children.map(function (item) {
-        return parse(karas, item, animateRecords, opt, offsetTime);
+        return parse(karas, item, animateRecords);
       }));
     } else {
       vd = karas.createVd(tagName, props, children.map(function (item) {
-        return parse(karas, item, animateRecords, opt, offsetTime);
+        return parse(karas, item, animateRecords);
       }));
     }
 
@@ -43619,8 +43646,7 @@
       if (has) {
         animateRecords.push({
           animate: animate,
-          target: vd,
-          offsetTime: oft
+          target: vd
         });
       }
     }
@@ -44171,7 +44197,7 @@
 
       var animateRecords = [];
 
-      var vd = parse(karas, json, animateRecords, options, 0); // 有dom时parse作为根方法渲染
+      var vd = parse(karas, json, animateRecords); // 有dom时parse作为根方法渲染
 
 
       if (dom) {
@@ -44185,11 +44211,7 @@
 
         var ac = options.controller instanceof Controller ? options.controller : vd.animateController; // 第一次render，收集递归json里面的animateRecords，它在xom的__layout最后生成
 
-        karas.render(vd, dom); // 由于vd首先生成的都是json，根parse要特殊处理将target指向真正的vd引用，json的vd在builder中赋值
-        // animateRecords.forEach(item => {
-        //   item.target = item.target.vd;
-        // });
-        // 直接的json里的animateRecords，再加上递归的parse的json的（第一次render布局时处理）动画一并播放
+        karas.render(vd, dom); // 直接的json里的animateRecords，再加上递归的parse的json的（第一次render布局时处理）动画一并播放
 
         if (options.autoPlay !== false) {
           ac.__records = ac.__records.concat(animateRecords);

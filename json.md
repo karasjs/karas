@@ -281,7 +281,6 @@ karas.render(
           },
           {
             libraryId: 1,
-            offsetTime: 100, // 延迟100ms开始，对引用的库元素的children动画生效，即应用library后所有的children的animate
             init: {
               style: {
                 left: 20,

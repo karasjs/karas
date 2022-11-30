@@ -150,14 +150,14 @@ function initEvent(dom, Root) {
       }
     }
     dom.addEventListener(type, cb);
-    list.push([type, cb]);
+    list.push({ type, cb });
   });
   return list;
 }
 
 function removeEvent(dom, list) {
   list.forEach(item => {
-    dom.removeEventListener(item[0], item[1]);
+    dom.removeEventListener(item.type, item.cb);
   });
 }
 

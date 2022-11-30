@@ -19,9 +19,9 @@ class Controller {
   }
 
   remove(v) {
-    let i = this.list.indexOf(v);
+    let i = this.__list.indexOf(v);
     if(i > -1) {
-      this.list.splice(i, 1);
+      this.__list.splice(i, 1);
     }
   }
 
@@ -33,7 +33,7 @@ class Controller {
   }
 
   __action(k, args) {
-    this.list.forEach(item => {
+    this.__list.forEach(item => {
       item[k].apply(item, args);
     });
   }
@@ -211,7 +211,7 @@ class Controller {
   }
 
   __on(id, handle) {
-    this.list.forEach(item => {
+    this.__list.forEach(item => {
       let cb = () => {
         let time = item.timestamp;
         if(time !== this.__lastTime[id]) {

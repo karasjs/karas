@@ -31109,10 +31109,10 @@
     }, {
       key: "remove",
       value: function remove(v) {
-        var i = this.list.indexOf(v);
+        var i = this.__list.indexOf(v);
 
         if (i > -1) {
-          this.list.splice(i, 1);
+          this.__list.splice(i, 1);
         }
       }
     }, {
@@ -31126,7 +31126,7 @@
     }, {
       key: "__action",
       value: function __action(k, args) {
-        this.list.forEach(function (item) {
+        this.__list.forEach(function (item) {
           item[k].apply(item, args);
         });
       }
@@ -31362,7 +31362,7 @@
       value: function __on(id, handle) {
         var _this2 = this;
 
-        this.list.forEach(function (item) {
+        this.__list.forEach(function (item) {
           var cb = function cb() {
             var time = item.timestamp;
 
@@ -37537,14 +37537,17 @@
       }
 
       dom.addEventListener(type, cb);
-      list.push([type, cb]);
+      list.push({
+        type: type,
+        cb: cb
+      });
     });
     return list;
   }
 
   function removeEvent(dom, list) {
     list.forEach(function (item) {
-      dom.removeEventListener(item[0], item[1]);
+      dom.removeEventListener(item.type, item.cb);
     });
   }
 

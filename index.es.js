@@ -21933,8 +21933,14 @@ var LineBoxManager = /*#__PURE__*/function () {
 
       if (nextNewLine) {
         this.__isNewLine = true;
-        this.__lastX = o.x;
-        this.__lastY = o.y + o.outerHeight;
+
+        if (isUpright) {
+          this.__lastX = o.x + o.outerWidth;
+          this.__lastY = this.__y;
+        } else {
+          this.__lastX = this.__x;
+          this.__lastY = o.y + o.outerHeight;
+        }
       } else {
         if (isUpright) {
           this.__lastX = o.x;
@@ -44684,7 +44690,7 @@ var refresh = {
   webgl: webgl
 };
 
-var version = "0.83.8";
+var version = "0.83.9";
 
 Geom.register('$line', Line);
 Geom.register('$polyline', Polyline);

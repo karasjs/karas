@@ -157,6 +157,9 @@ class Component extends Event {
   }
 
   static getRegister(name) {
+    if(name && !util.isString(name) && name.prototype) {
+      return name;
+    }
     if(!name || !util.isString(name) || !/^[A-Z]/.test(name)) {
       throw new Error('Invalid param');
     }

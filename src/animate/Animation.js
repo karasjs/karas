@@ -234,16 +234,16 @@ function calByUnit(p, n, container, root) {
       return n.v * root.computedStyle[FONT_SIZE] - p.v;
     }
     else if(n.u === VW) {
-      return n.v * root.width * 0.01 - p.v;
+      return n.v * root.__width * 0.01 - p.v;
     }
     else if(n.u === VH) {
-      return n.v * root.height * 0.01 - p.v;
+      return n.v * root.__height * 0.01 - p.v;
     }
     else if(n.u === VMAX) {
-      return n.v * Math.max(root.width, root.height) * 0.01 - p.v;
+      return n.v * Math.max(root.__width, root.__height) * 0.01 - p.v;
     }
     else if(n.u === VMIN) {
-      return n.v * Math.min(root.width, root.height) * 0.01 - p.v;
+      return n.v * Math.min(root.__width, root.__height) * 0.01 - p.v;
     }
   }
   else if(p.u === PERCENT) {
@@ -254,16 +254,16 @@ function calByUnit(p, n, container, root) {
       return n.v * root.computedStyle[FONT_SIZE] * 100 / container - p.v;
     }
     else if(n.u === VW) {
-      return n.v * root.width / container - p.v;
+      return n.v * root.__width / container - p.v;
     }
     else if(n.u === VH) {
-      return n.v * root.height / container - p.v;
+      return n.v * root.__height / container - p.v;
     }
     else if(n.u === VMAX) {
-      return n.v * Math.max(root.width, root.height) / container - p.v;
+      return n.v * Math.max(root.__width, root.__height) / container - p.v;
     }
     else if(n.u === VMIN) {
-      return n.v * Math.min(root.width, root.height) / container - p.v;
+      return n.v * Math.min(root.__width, root.__height) / container - p.v;
     }
   }
   else if(p.u === REM) {
@@ -274,96 +274,96 @@ function calByUnit(p, n, container, root) {
       return n.v * 0.01 * container / root.computedStyle[FONT_SIZE] - p.v;
     }
     else if(n.u === VW) {
-      return n.v * root.width * 0.01 / root.computedStyle[FONT_SIZE] - p.v;
+      return n.v * root.__width * 0.01 / root.computedStyle[FONT_SIZE] - p.v;
     }
     else if(n.u === VH) {
-      return n.v * root.height * 0.01 / root.computedStyle[FONT_SIZE] - p.v;
+      return n.v * root.__height * 0.01 / root.computedStyle[FONT_SIZE] - p.v;
     }
     else if(n.u === VMAX) {
-      return n.v * Math.max(root.width, root.height) * 0.01 / root.computedStyle[FONT_SIZE] - p.v;
+      return n.v * Math.max(root.__width, root.__height) * 0.01 / root.computedStyle[FONT_SIZE] - p.v;
     }
     else if(n.u === VMIN) {
-      return n.v * Math.min(root.width, root.height) * 0.01 / root.computedStyle[FONT_SIZE] - p.v;
+      return n.v * Math.min(root.__width, root.__height) * 0.01 / root.computedStyle[FONT_SIZE] - p.v;
     }
   }
   else if(p.u === VW) {
     if(n.u === PX) {
-      return n.v * 100 / root.width - p.v;
+      return n.v * 100 / root.__width - p.v;
     }
     else if(n.u === REM) {
-      return n.v * 100 * root.computedStyle[FONT_SIZE] / root.width - p.v;
+      return n.v * 100 * root.computedStyle[FONT_SIZE] / root.__width - p.v;
     }
     else if(n.u === PERCENT) {
-      return n.v * container / root.width - p.v;
+      return n.v * container / root.__width - p.v;
     }
     else if(n.u === VH) {
-      return n.v * root.height / root.width - p.v;
+      return n.v * root.__height / root.__width - p.v;
     }
     else if(n.u === VMAX) {
-      return n.v * Math.max(root.width, root.height) / root.width - p.v;
+      return n.v * Math.max(root.__width, root.__height) / root.__width - p.v;
     }
     else if(n.u === VMIN) {
-      return n.v * Math.min(root.width, root.height) / root.width - p.v;
+      return n.v * Math.min(root.__width, root.__height) / root.__width - p.v;
     }
   }
   else if(p.u === VH) {
     if(n.u === PX) {
-      return n.v * 100 / root.height - p.v;
+      return n.v * 100 / root.__height - p.v;
     }
     else if(n.u === REM) {
-      return n.v * 100 * root.computedStyle[FONT_SIZE] / root.height - p.v;
+      return n.v * 100 * root.computedStyle[FONT_SIZE] / root.__height - p.v;
     }
     else if(n.u === VW) {
-      return n.v * root.width / root.height - p.v;
+      return n.v * root.__width / root.__height - p.v;
     }
     else if(n.u === PERCENT) {
-      return n.v * container / root.height - p.v;
+      return n.v * container / root.__height - p.v;
     }
     else if(n.u === VMAX) {
-      return n.v * Math.max(root.width, root.height) / root.height - p.v;
+      return n.v * Math.max(root.__width, root.__height) / root.__height - p.v;
     }
     else if(n.u === VMIN) {
-      return n.v * Math.min(root.width, root.height) / root.height - p.v;
+      return n.v * Math.min(root.__width, root.__height) / root.__height - p.v;
     }
   }
   else if(p.u === VMAX) {
     if(n.u === PX) {
-      return n.v * 100 / Math.max(root.width, root.height) - p.v;
+      return n.v * 100 / Math.max(root.__width, root.__height) - p.v;
     }
     else if(n.u === REM) {
-      return n.v * 100 * root.computedStyle[FONT_SIZE] / Math.max(root.width, root.height) - p.v;
+      return n.v * 100 * root.computedStyle[FONT_SIZE] / Math.max(root.__width, root.__height) - p.v;
     }
     else if(n.u === PERCENT) {
-      return n.v * container / Math.max(root.width, root.height) - p.v;
+      return n.v * container / Math.max(root.__width, root.__height) - p.v;
     }
     else if(n.u === VW) {
-      return n.v * root.width / Math.max(root.width, root.height) - p.v;
+      return n.v * root.__width / Math.max(root.__width, root.__height) - p.v;
     }
     else if(n.u === VH) {
-      return n.v * root.height / Math.max(root.width, root.height) - p.v;
+      return n.v * root.__height / Math.max(root.__width, root.__height) - p.v;
     }
     else if(n.u === VMIN) {
-      return n.v * Math.min(root.width, root.height) / Math.max(root.width, root.height) - p.v;
+      return n.v * Math.min(root.__width, root.__height) / Math.max(root.__width, root.__height) - p.v;
     }
   }
   else if(p.u === VMIN) {
     if(n.u === PX) {
-      return n.v * 100 / Math.min(root.width, root.height) - p.v;
+      return n.v * 100 / Math.min(root.__width, root.__height) - p.v;
     }
     else if(n.u === REM) {
-      return n.v * 100 * root.computedStyle[FONT_SIZE] / Math.min(root.width, root.height) - p.v;
+      return n.v * 100 * root.computedStyle[FONT_SIZE] / Math.min(root.__width, root.__height) - p.v;
     }
     else if(n.u === PERCENT) {
-      return n.v * container / Math.min(root.width, root.height) - p.v;
+      return n.v * container / Math.min(root.__width, root.__height) - p.v;
     }
     else if(n.u === VW) {
-      return n.v * root.width / Math.min(root.width, root.height) - p.v;
+      return n.v * root.__width / Math.min(root.__width, root.__height) - p.v;
     }
     else if(n.u === VH) {
-      return n.v * root.height / Math.min(root.width, root.height) - p.v;
+      return n.v * root.__height / Math.min(root.__width, root.__height) - p.v;
     }
     else if(n.u === VMAX) {
-      return n.v * Math.max(root.width, root.height) / Math.min(root.width, root.height) - p.v;
+      return n.v * Math.max(root.__width, root.__height) / Math.min(root.__width, root.__height) - p.v;
     }
   }
   return 0;
@@ -652,16 +652,16 @@ function calDiff(prev, next, k, target) {
         return { v: (parseFloat(v) || 0) * target.root.computedStyle[FONT_SIZE] * 100, u: PX };
       }
       else if(u === VW) {
-        return { v: (parseFloat(v) || 0) * 0.01 * target.root.width, u: PX };
+        return { v: (parseFloat(v) || 0) * 0.01 * target.root.__width, u: PX };
       }
       else if(u === VH) {
-        return { v: (parseFloat(v) || 0) * 0.01 * target.root.height, u: PX };
+        return { v: (parseFloat(v) || 0) * 0.01 * target.root.__height, u: PX };
       }
       else if(u === VMAX) {
-        return { v: (parseFloat(v) || 0) * 0.01 * Math.max(target.root.width, target.root.height), u: PX };
+        return { v: (parseFloat(v) || 0) * 0.01 * Math.max(target.root.__width, target.root.__height), u: PX };
       }
       else if(u === VMIN) {
-        return { v: (parseFloat(v) || 0) * 0.01 * Math.min(target.root.width, target.root.height), u: PX };
+        return { v: (parseFloat(v) || 0) * 0.01 * Math.min(target.root.__width, target.root.__height), u: PX };
       }
       else {
         return { v: parseFloat(v) || 0, u: PX };

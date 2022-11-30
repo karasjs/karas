@@ -57,6 +57,9 @@ let karas = {
       if(tagName.charAt(0) === '$') {
         return this.createGm(tagName, props);
       }
+      else if(/^A-Z/.test(tagName)) {
+        return this.createCp(tagName, props, children);
+      }
       else {
         return this.createVd(tagName, props, children);
       }
@@ -93,7 +96,8 @@ let karas = {
     }
     return new klass(tagName, props);
   },
-  createCp(klass, props, children = []) {
+  createCp(tagName, props, children = []) {
+    let klass = Component.getRegister(tagName);
     props.children = children; // 特例，cp的children通过props传入
     return new klass(props);
   },

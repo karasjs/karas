@@ -117,60 +117,6 @@ const {
   isRadiusKey,
 } = key;
 
-function unify(frames, target) {
-  let hash = {};
-  let keys = [];
-  // 获取所有关键帧的属性
-  frames.forEach(item => {
-    let style = item.style;
-    Object.keys(style).forEach(k => {
-      let v = style[k];
-      // 未定义的过滤掉，null空有意义
-      if(v !== undefined && !hash.hasOwnProperty(k)) {
-        hash[k] = true;
-        // geom为属性字符串，style都为枚举int
-        if(!GEOM.hasOwnProperty(k)) {
-          k = parseInt(k);
-        }
-        // path动画要转为translateXY，所以手动添加，使2帧之间存在过渡，有可能之前已存在这个动画，可忽视
-        if(k === TRANSLATE_PATH) {
-          if(!hash.hasOwnProperty(TRANSLATE_X)) {
-            keys.push(TRANSLATE_X);
-          }
-          if(!hash.hasOwnProperty(TRANSLATE_Y)) {
-            keys.push(TRANSLATE_Y);
-          }
-          hash[TRANSLATE_X] = hash[TRANSLATE_Y] = true;
-        }
-        keys.push(k);
-      }
-    });
-  });
-  // 添补没有声明完全的关键帧属性为节点当前值
-  frames.forEach(item => {
-    let style = item.style;
-    keys.forEach(k => {
-      if(!style.hasOwnProperty(k) || isNil(style[k])) {
-        if(GEOM.hasOwnProperty(k)) {
-          style[k] = clone(target.getProps(k));
-        }
-        else {
-          if(k === TRANSLATE_X && style.hasOwnProperty(TRANSLATE_PATH)) {
-            style[k] = clone(style[TRANSLATE_PATH][0]);
-          }
-          else if(k === TRANSLATE_Y && style.hasOwnProperty(TRANSLATE_PATH)) {
-            style[k] = clone(style[TRANSLATE_PATH][1]);
-          }
-          else {
-            style[k] = cloneStyle(target.__currentStyle, [k])[k];
-          }
-        }
-      }
-    });
-  });
-  return keys;
-}
-
 /**
  * 通知root更新当前动画，需要根据frame的状态来决定是否是同步插入
  * 在异步时，因为动画本身是异步，需要addRefreshTask
@@ -2422,11 +2368,6 @@ class Animation extends Event {
     let frames = [];
     for(let i = 0, len = list.length; i < len; i++) {
       frames[i] = framing(list[i], duration, easing);
-    }
-    // 为方便两帧之间计算变化，强制统一所有帧的css属性相同，没有写的为节点的当前样式currentStyle
-    let keys = unify(frames, target);
-    if(target) {
-      Animation.inherit(frames, keys, target);
     }
     return frames;
   }

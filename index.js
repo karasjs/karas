@@ -14448,61 +14448,6 @@
       isLengthKey = key.isLengthKey,
       isGradientKey = key.isGradientKey,
       isRadiusKey = key.isRadiusKey;
-
-  function unify(frames, target) {
-    var hash = {};
-    var keys = []; // 获取所有关键帧的属性
-
-    frames.forEach(function (item) {
-      var style = item.style;
-      Object.keys(style).forEach(function (k) {
-        var v = style[k]; // 未定义的过滤掉，null空有意义
-
-        if (v !== undefined && !hash.hasOwnProperty(k)) {
-          hash[k] = true; // geom为属性字符串，style都为枚举int
-
-          if (!GEOM$1.hasOwnProperty(k)) {
-            k = parseInt(k);
-          } // path动画要转为translateXY，所以手动添加，使2帧之间存在过渡，有可能之前已存在这个动画，可忽视
-
-
-          if (k === TRANSLATE_PATH) {
-            if (!hash.hasOwnProperty(TRANSLATE_X$1)) {
-              keys.push(TRANSLATE_X$1);
-            }
-
-            if (!hash.hasOwnProperty(TRANSLATE_Y$1)) {
-              keys.push(TRANSLATE_Y$1);
-            }
-
-            hash[TRANSLATE_X$1] = hash[TRANSLATE_Y$1] = true;
-          }
-
-          keys.push(k);
-        }
-      });
-    }); // 添补没有声明完全的关键帧属性为节点当前值
-
-    frames.forEach(function (item) {
-      var style = item.style;
-      keys.forEach(function (k) {
-        if (!style.hasOwnProperty(k) || isNil$a(style[k])) {
-          if (GEOM$1.hasOwnProperty(k)) {
-            style[k] = clone$1(target.getProps(k));
-          } else {
-            if (k === TRANSLATE_X$1 && style.hasOwnProperty(TRANSLATE_PATH)) {
-              style[k] = clone$1(style[TRANSLATE_PATH][0]);
-            } else if (k === TRANSLATE_Y$1 && style.hasOwnProperty(TRANSLATE_PATH)) {
-              style[k] = clone$1(style[TRANSLATE_PATH][1]);
-            } else {
-              style[k] = cloneStyle(target.__currentStyle, [k])[k];
-            }
-          }
-        }
-      });
-    });
-    return keys;
-  }
   /**
    * 通知root更新当前动画，需要根据frame的状态来决定是否是同步插入
    * 在异步时，因为动画本身是异步，需要addRefreshTask
@@ -14513,7 +14458,6 @@
    * @param aniParams 动画更新的特殊优化参数
    * @param cb
    */
-
 
   function genBeforeRefresh(keys, root, node, aniParams, cb) {
     if (aniParams && !aniParams.allInFn) {
@@ -17029,13 +16973,6 @@
 
         for (var _i21 = 0, _len11 = list.length; _i21 < _len11; _i21++) {
           frames[_i21] = framing(list[_i21], duration, easing);
-        } // 为方便两帧之间计算变化，强制统一所有帧的css属性相同，没有写的为节点的当前样式currentStyle
-
-
-        var keys = unify(frames, target);
-
-        if (target) {
-          Animation.inherit(frames, keys, target);
         }
 
         return frames;

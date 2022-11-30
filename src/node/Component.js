@@ -157,7 +157,7 @@ class Component extends Event {
   }
 
   static getRegister(name) {
-    if(name && !util.isString(name) && name.prototype) {
+    if(name && !util.isString(name) && name.prototype && name.prototype instanceof Component) {
       return name;
     }
     if(!name || !util.isString(name) || !/^[A-Z]/.test(name)) {

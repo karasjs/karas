@@ -96,8 +96,14 @@ class LineBoxManager {
     // 设置结束x的位置给next的inline标记用，o可能是TextBox或inlineBlock，当next新行时注意位置
     if(nextNewLine) {
       this.__isNewLine = true;
-      this.__lastX = o.x;
-      this.__lastY = o.y + o.outerHeight;
+      if(isUpright) {
+        this.__lastX = o.x + o.outerWidth;
+        this.__lastY = this.__y;
+      }
+      else {
+        this.__lastX = this.__x;
+        this.__lastY = o.y + o.outerHeight;
+      }
     }
     else {
       if(isUpright) {

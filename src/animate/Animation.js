@@ -1657,7 +1657,7 @@ class Animation extends Event {
       this.__begin = true;
     }
     // 超过duration非尾轮需处理回到开头，触发新一轮动画事件，这里可能时间间隔非常大直接跳过几轮
-    let playCount = Math.min(iterations - 1, Math.floor(currentTime / duration));
+    let playCount = Math.min(iterations - 1, Math.floor(currentTime / dur));
     currentTime -= dur * playCount;
     // 如果发生轮换，需重新确定正反向
     if(this.__playCount < playCount) {
@@ -1696,7 +1696,7 @@ class Animation extends Event {
     }
     // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
     else if(length === 2) {
-      percent = currentTime / dur;
+      percent = currentTime / duration; // 不能是dur，按照原本计算
     }
     else {
       let total = currentFrames[i + 1].time - frameTime;

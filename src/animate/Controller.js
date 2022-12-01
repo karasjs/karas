@@ -1,6 +1,6 @@
 import util from '../util/util';
 
-const { isFunction } = util;
+const { isFunction, isNil } = util;
 
 class Controller {
   constructor() {
@@ -12,7 +12,7 @@ class Controller {
     this.__lastTime = {}; // 每个类型的上次触发时间，防止重复emit
   }
 
-  add(v, list = this.list) {
+  add(v, list = this.__list) {
     if(list.indexOf(v) === -1) {
       list.push(v);
     }
@@ -38,12 +38,12 @@ class Controller {
     });
   }
 
-  init(records = this.__records, list = this.list) {
+  init(records = this.__records, list = this.__list) {
     // 检查尚未初始化的record，并初始化，后面才能调用各种控制方法
     if(records.length) {
       // 清除防止重复调用，并且新的json还会进入整体逻辑
       records.splice(0).forEach(item => {
-        let { target, animate, offsetTime } = item;
+        let { target, animate, areaStart, areaDuration } = item;
         if(target.isDestroyed || !animate) {
           return;
         }
@@ -52,12 +52,12 @@ class Controller {
         }
         animate.forEach(animate => {
           let { value, options } = animate;
-          options.autoPlay = false;
-          if(offsetTime) {
+          if(areaStart || !isNil(areaDuration)) {
             options = Object.assign({}, options); // clone防止多个使用相同的干扰
-            options.delay = options.delay || 0;
-            options.delay += offsetTime;
+            options.areaStart = areaStart;
+            options.areaDuration = areaDuration;
           }
+          options.autoPlay = false;
           let o = target.animate(value, options);
           this.add(o, list);
         });

@@ -397,19 +397,21 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
         if(hasMask) {
           i += countMaskNum(__structs, i + 1, hasMask);
         }
-        ctxTotal.globalAlpha = node.__opacity;
-        if(m) {
-          ctxTotal.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+        let opacity = ctxTotal.globalAlpha = node.__opacity;
+        if(opacity > 0) {
+          if(m) {
+            ctxTotal.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+          }
+          else {
+            ctxTotal.setTransform(1, 0, 0, 1, 0, 0);
+          }
+          let mixBlendMode = __computedStyle2[MIX_BLEND_MODE];
+          if(mixBlendMode !== 'normal') {
+            ctxTotal.globalCompositeOperation = mbmName(mixBlendMode);
+          }
+          CanvasCache.drawCache(target, __cacheTotal);
+          ctxTotal.globalCompositeOperation = 'source-over';
         }
-        else {
-          ctxTotal.setTransform(1, 0, 0, 1, 0, 0);
-        }
-        let mixBlendMode = __computedStyle2[MIX_BLEND_MODE];
-        if(mixBlendMode !== 'normal') {
-          ctxTotal.globalCompositeOperation = mbmName(mixBlendMode);
-        }
-        CanvasCache.drawCache(target, __cacheTotal);
-        ctxTotal.globalCompositeOperation = 'source-over';
         let oh = offscreenHash[i];
         if(oh) {
           ctxTotal = applyOffscreen(ctxTotal, oh, width, height, false);
@@ -426,14 +428,16 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
           offscreenOverflow = offscreen.offscreenOverflow;
         }
         if(visibility === 'visible') {
-          ctxTotal.globalAlpha = node.__opacity;
-          if(m) {
-            ctxTotal.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+          let opacity = ctxTotal.globalAlpha = node.__opacity;
+          if(opacity > 0) {
+            if(m) {
+              ctxTotal.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+            }
+            else {
+              ctxTotal.setTransform(1, 0, 0, 1, 0, 0);
+            }
+            node.render(renderMode, ctxTotal, dx, dy);
           }
-          else {
-            ctxTotal.setTransform(1, 0, 0, 1, 0, 0);
-          }
-          node.render(renderMode, ctxTotal, dx, dy);
         }
         // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
         if(offscreenBlend) {
@@ -2955,15 +2959,17 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
           ctx.globalAlpha = opacity;
           lastOpacity = opacity;
         }
-        ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
-        let mixBlendMode = __computedStyle[MIX_BLEND_MODE];
-        if(mixBlendMode !== 'normal') {
-          ctx.globalCompositeOperation = mbmName(mixBlendMode);
+        if(opacity > 0) {
+          ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+          let mixBlendMode = __computedStyle[MIX_BLEND_MODE];
+          if(mixBlendMode !== 'normal') {
+            ctx.globalCompositeOperation = mbmName(mixBlendMode);
+          }
+          let { x, y, canvas, x1, y1, dbx, dby, width: w, height: h } = target;
+          ctx.drawImage(canvas, x, y, w, h, x1 - dbx, y1 - dby, w, h);
+          // total应用后记得设置回来
+          ctx.globalCompositeOperation = 'source-over';
         }
-        let { x, y, canvas, x1, y1, dbx, dby, width: w, height: h } = target;
-        ctx.drawImage(canvas, x, y, w, h, x1 - dbx, y1 - dby, w, h);
-        // total应用后记得设置回来
-        ctx.globalCompositeOperation = 'source-over';
         // 父超限但子有total的时候，i此时已经增加到了末尾，也需要检查
         let oh = offscreenHash[i];
         if(oh) {
@@ -2988,8 +2994,10 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
           ctx.globalAlpha = opacity;
           lastOpacity = opacity;
         }
-        ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
-        node.render(renderMode, ctx, 0, 0);
+        if(opacity > 0) {
+          ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+          node.render(renderMode, ctx, 0, 0);
+        }
         // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
         if(offscreenBlend) {
           let j = i + (total || 0);

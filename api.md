@@ -2794,7 +2794,7 @@ karas.animate.easing.getEasing('cubic-bezier(0.42, 0, 0.58, 1)');
 #### options
 * **类型** `Object` 只读
 * **说明**  
-返回动画的参数。
+返回动画的参数，和WAA一样。多了`controller`参数，可指定`Controller`，或者传`true`进入[Root](#Root)的animateController。
 
 #### duration
 * **类型** `Number` 读写
@@ -2901,10 +2901,15 @@ karas.animate.easing.getEasing('cubic-bezier(0.42, 0, 0.58, 1)');
 * **说明**  
 返回/设置spf限制，不能超过此值为最大值。
 
-#### assigning
-* **类型** `boolean` 只读
+#### areaStart
+* **类型** `int` 读写
 * **说明**  
-返回动画是否正在处于赋值给对象过程中，即每帧开始到刷新完成的这段时间。
+返回/设置播放中间一段动画的起始时间，包含`delay`。功能和AE的workAreaStart一样。
+
+#### areaDuration
+* **类型** `int` 读写
+* **说明**  
+返回/设置播放中间一段动画的时长。功能和AE的workAreaDuration一样。
 
 ### 类方法method
 
@@ -3057,8 +3062,12 @@ a.cancel();
   * options `Function`
     * isFrame `boolean`
     传入帧数来代替时间毫秒数
-    * excludeDelay
+    * excludeDelay `boolean`
     不包含delay时间
+    * areaStart `int`
+      见[Animation](#Animation)的options的areaStart。
+    * areaDuration `int`
+      见[Animation](#Animation)的options的areaDuration。
   * cb `Function`
   完成后回调。
 * **说明**  
@@ -3092,8 +3101,12 @@ a.gotoAndPlay(500);
   * options `Function`
     * isFrame `boolean`
     传入帧数来代替时间毫秒数
-    * excludeDelay
+    * excludeDelay `boolean`
     不包含delay时间
+    * areaStart `int`
+    见[Animation](#Animation)的options的areaStart。
+    * areaDuration `int`
+    见[Animation](#Animation)的options的areaDuration。
   * cb `Function`
   完成后回调。
 * **说明**  

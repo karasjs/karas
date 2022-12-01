@@ -34148,22 +34148,25 @@
             i += countMaskNum(__structs, i + 1, hasMask);
           }
 
-          ctxTotal.globalAlpha = _node2.__opacity;
+          var opacity = ctxTotal.globalAlpha = _node2.__opacity;
 
-          if (m) {
-            ctxTotal.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
-          } else {
-            ctxTotal.setTransform(1, 0, 0, 1, 0, 0);
+          if (opacity > 0) {
+            if (m) {
+              ctxTotal.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+            } else {
+              ctxTotal.setTransform(1, 0, 0, 1, 0, 0);
+            }
+
+            var mixBlendMode = __computedStyle2[MIX_BLEND_MODE$1];
+
+            if (mixBlendMode !== 'normal') {
+              ctxTotal.globalCompositeOperation = mbmName(mixBlendMode);
+            }
+
+            CanvasCache.drawCache(target, __cacheTotal);
+            ctxTotal.globalCompositeOperation = 'source-over';
           }
 
-          var mixBlendMode = __computedStyle2[MIX_BLEND_MODE$1];
-
-          if (mixBlendMode !== 'normal') {
-            ctxTotal.globalCompositeOperation = mbmName(mixBlendMode);
-          }
-
-          CanvasCache.drawCache(target, __cacheTotal);
-          ctxTotal.globalCompositeOperation = 'source-over';
           var _oh2 = offscreenHash[i];
 
           if (_oh2) {
@@ -34186,15 +34189,17 @@
           }
 
           if (visibility === 'visible') {
-            ctxTotal.globalAlpha = _node2.__opacity;
+            var _opacity = ctxTotal.globalAlpha = _node2.__opacity;
 
-            if (m) {
-              ctxTotal.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
-            } else {
-              ctxTotal.setTransform(1, 0, 0, 1, 0, 0);
+            if (_opacity > 0) {
+              if (m) {
+                ctxTotal.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+              } else {
+                ctxTotal.setTransform(1, 0, 0, 1, 0, 0);
+              }
+
+              _node2.render(renderMode, ctxTotal, dx, dy);
             }
-
-            _node2.render(renderMode, ctxTotal, dx, dy);
           } // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
 
 
@@ -36336,7 +36341,7 @@
               fill = _node10$computedStyle[FILL],
               _node10$virtualDom = _node10.virtualDom,
               children = _node10$virtualDom.children,
-              _opacity = _node10$virtualDom.opacity;
+              _opacity2 = _node10$virtualDom.opacity;
 
           if (_display !== 'none' && visibility !== 'hidden') {
             // 引用相同无法diff，需要clone
@@ -36365,8 +36370,8 @@
 
                 props.push(['transform', "matrix(".concat(util.joinArr(matrix.m2m6(_matrix2), ','), ")")]); // path没有opacity属性，在vd上，需要弥补
 
-                if (!util.isNil(_opacity) && _opacity !== 1) {
-                  props.push(['opacity', _opacity]);
+                if (!util.isNil(_opacity2) && _opacity2 !== 1) {
+                  props.push(['opacity', _opacity2]);
                 }
               } // img可能有matrix属性，需判断
               else if (tagName === 'image') {
@@ -37224,25 +37229,28 @@
             lastOpacity = opacity;
           }
 
-          ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
-          var mixBlendMode = _computedStyle6[MIX_BLEND_MODE$1];
+          if (opacity > 0) {
+            ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+            var mixBlendMode = _computedStyle6[MIX_BLEND_MODE$1];
 
-          if (mixBlendMode !== 'normal') {
-            ctx.globalCompositeOperation = mbmName(mixBlendMode);
-          }
+            if (mixBlendMode !== 'normal') {
+              ctx.globalCompositeOperation = mbmName(mixBlendMode);
+            }
 
-          var x = target.x,
-              y = target.y,
-              canvas = target.canvas,
-              x1 = target.x1,
-              y1 = target.y1,
-              dbx = target.dbx,
-              dby = target.dby,
-              w = target.width,
-              h = target.height;
-          ctx.drawImage(canvas, x, y, w, h, x1 - dbx, y1 - dby, w, h); // total应用后记得设置回来
+            var x = target.x,
+                y = target.y,
+                canvas = target.canvas,
+                x1 = target.x1,
+                y1 = target.y1,
+                dbx = target.dbx,
+                dby = target.dby,
+                w = target.width,
+                h = target.height;
+            ctx.drawImage(canvas, x, y, w, h, x1 - dbx, y1 - dby, w, h); // total应用后记得设置回来
 
-          ctx.globalCompositeOperation = 'source-over'; // 父超限但子有total的时候，i此时已经增加到了末尾，也需要检查
+            ctx.globalCompositeOperation = 'source-over';
+          } // 父超限但子有total的时候，i此时已经增加到了末尾，也需要检查
+
 
           var _oh5 = offscreenHash[_i11];
 
@@ -37274,9 +37282,11 @@
             lastOpacity = opacity;
           }
 
-          ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+          if (opacity > 0) {
+            ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
 
-          _node13.render(renderMode, ctx, 0, 0); // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
+            _node13.render(renderMode, ctx, 0, 0);
+          } // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
 
 
           if (offscreenBlend) {

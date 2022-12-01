@@ -15772,7 +15772,7 @@
 
         prev.transition.push(ts);
         prev.keys.push(k);
-      } else {
+      } else if (k !== TRANSLATE_PATH) {
         prev.fixed.push(k);
         allInFn = false;
       }
@@ -15780,28 +15780,24 @@
 
 
     if (hasTp) {
-      var _i16 = prev.keys.indexOf(TRANSLATE_X$1);
+      var _i16 = prev.fixed.indexOf(TRANSLATE_X$1);
 
       if (_i16 === -1) {
-        prev.keys.push(TRANSLATE_X$1);
-      }
+        _i16 = prev.keys.indexOf(TRANSLATE_X$1);
 
-      _i16 = prev.keys.indexOf(TRANSLATE_Y$1);
-
-      if (_i16 === -1) {
-        prev.keys.push(TRANSLATE_Y$1);
-      }
-
-      _i16 = prev.fixed.indexOf(TRANSLATE_X$1);
-
-      if (_i16 > -1) {
-        prev.fixed.splice(_i16, 1);
+        if (_i16 === -1) {
+          prev.keys.push(TRANSLATE_X$1);
+        }
       }
 
       _i16 = prev.fixed.indexOf(TRANSLATE_Y$1);
 
-      if (_i16 > -1) {
-        prev.fixed.splice(_i16, 1);
+      if (_i16 === -1) {
+        _i16 = prev.keys.indexOf(TRANSLATE_Y$1);
+
+        if (_i16 === -1) {
+          prev.keys.push(TRANSLATE_Y$1);
+        }
       }
     }
 
@@ -15816,7 +15812,7 @@
         lv |= getLevel$1(_k5);
 
         if (_k5 === Z_INDEX$3) {
-          prev.hasZ = node !== this && ['relative', 'absolute'].indexOf(computedStyle[POSITION$4]) > -1;
+          prev.hasZ = ['relative', 'absolute'].indexOf(computedStyle[POSITION$4]) > -1;
         } else if (_k5 === COLOR$2) {
           prev.hasColor = true;
         } else if (_k5 === TEXT_STROKE_COLOR$2) {

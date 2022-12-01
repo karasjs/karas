@@ -1026,28 +1026,26 @@ function calFrame(prev, next, keys, target) {
       prev.transition.push(ts);
       prev.keys.push(k);
     }
-    else {
+    else if(k !== TRANSLATE_PATH) {
       prev.fixed.push(k);
       allInFn = false;
     }
   }
   // translatePath需特殊处理translate，防止被覆盖
   if(hasTp) {
-    let i = prev.keys.indexOf(TRANSLATE_X);
+    let i = prev.fixed.indexOf(TRANSLATE_X);
     if(i === -1) {
-      prev.keys.push(TRANSLATE_X);
-    }
-    i = prev.keys.indexOf(TRANSLATE_Y);
-    if(i === -1) {
-      prev.keys.push(TRANSLATE_Y);
-    }
-    i = prev.fixed.indexOf(TRANSLATE_X);
-    if(i > -1) {
-      prev.fixed.splice(i, 1);
+      i = prev.keys.indexOf(TRANSLATE_X);
+      if(i === -1) {
+        prev.keys.push(TRANSLATE_X);
+      }
     }
     i = prev.fixed.indexOf(TRANSLATE_Y);
-    if(i > -1) {
-      prev.fixed.splice(i, 1);
+    if(i === -1) {
+      i = prev.keys.indexOf(TRANSLATE_Y);
+      if(i === -1) {
+        prev.keys.push(TRANSLATE_Y);
+      }
     }
   }
   prev.allInFn = allInFn;
@@ -1059,7 +1057,7 @@ function calFrame(prev, next, keys, target) {
       let k = keys[i];
       lv |= getLevel(k);
       if(k === Z_INDEX) {
-        prev.hasZ = node !== this && ['relative', 'absolute'].indexOf(computedStyle[POSITION]) > -1;
+        prev.hasZ = ['relative', 'absolute'].indexOf(computedStyle[POSITION]) > -1;
       }
       else if(k === COLOR) {
         prev.hasColor = true;

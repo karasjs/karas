@@ -919,6 +919,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
       let {
         __domParent: p,
         __selfPerspective: ppt2,
+        __opacity: opacity,
       } = node;
       // 特殊渲染的matrix，局部根节点为原点考虑，和bbox以节点自身主画布参考系不同
       let m;
@@ -1042,7 +1043,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
           __cacheMask,
         } = node;
         let target = i > index ? getCache([__cacheMask, __cacheFilter, __cacheTotal, __cache]) : __cache;
-        if(target) {
+        if(target && opacity > 0) {
           // 局部的mbm和主画布一样，先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
           if(i > index && mixBlendMode !== 'normal') {
             if(list.length) {
@@ -1079,7 +1080,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
           }
         }
         // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
-        if(!target || target === __cache) {
+        if((!target || target === __cache) && opacity > 0) {
           let render = node.render;
           if(render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
             drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
@@ -2675,7 +2676,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       }
       // total和自身cache的尝试，visibility不可见时没有cache
       let target = getCache([__cacheMask, __cacheFilter, __cacheTotal, __cache]);
-      if(target) {
+      if(target && opacity > 0) {
         // 有mbm则需要混合之前的纹理和新纹理到fbo上面，连续的mbm则依次交替绘制到画布或离屏fbo上
         if(mixBlendMode !== 'normal') {
           if(list.length) {
@@ -2708,7 +2709,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         }
       }
       // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
-      if(!target || target === __cache) {
+      if((!target || target === __cache) && opacity > 0) {
         let render = node.render;
         if(render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
           drawTextureCache(gl, list.splice(0), cx, cy, 0, 0);

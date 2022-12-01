@@ -34805,7 +34805,8 @@
         }
 
         var _p2 = _node4.__domParent,
-            ppt2 = _node4.__selfPerspective; // 特殊渲染的matrix，局部根节点为原点考虑，和bbox以节点自身主画布参考系不同
+            ppt2 = _node4.__selfPerspective,
+            opacity = _node4.__opacity; // 特殊渲染的matrix，局部根节点为原点考虑，和bbox以节点自身主画布参考系不同
 
         var m = void 0;
 
@@ -34957,7 +34958,7 @@
 
           var _target4 = i > index ? getCache([_cacheMask2, _cacheFilter2, _cacheTotal3, _cache]) : _cache;
 
-          if (_target4) {
+          if (_target4 && opacity > 0) {
             // 局部的mbm和主画布一样，先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
             if (i > index && mixBlendMode !== 'normal') {
               if (list.length) {
@@ -35005,7 +35006,7 @@
           } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
 
 
-          if (!_target4 || _target4 === _cache) {
+          if ((!_target4 || _target4 === _cache) && opacity > 0) {
             var _render = _node4.render;
 
             if (_render !== DOM_RENDER && _render !== IMG_RENDER && _render !== GEOM_RENDER) {
@@ -36891,7 +36892,7 @@
 
         var _target7 = getCache([_cacheMask6, _cacheFilter5, _cacheTotal8, _cache7]);
 
-        if (_target7) {
+        if (_target7 && opacity > 0) {
           // 有mbm则需要混合之前的纹理和新纹理到fbo上面，连续的mbm则依次交替绘制到画布或离屏fbo上
           if (_mixBlendMode2 !== 'normal') {
             if (list.length) {
@@ -36935,7 +36936,7 @@
         } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
 
 
-        if (!_target7 || _target7 === _cache7) {
+        if ((!_target7 || _target7 === _cache7) && opacity > 0) {
           var render = _node12.render;
 
           if (render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {

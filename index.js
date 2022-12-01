@@ -15753,14 +15753,13 @@
 
     for (var i = 0, len = keys.length; i < len; i++) {
       var k = keys[i];
-
-      if (k === TRANSLATE_PATH) {
-        hasTp = true;
-      }
-
       var ts = calDiff(prev, next, k, target); // 可以形成过渡的才会产生结果返回
 
       if (ts) {
+        if (k === TRANSLATE_PATH) {
+          hasTp = true;
+        }
+
         ts.cs = currentStyle[k];
         var fn = CAL_HASH[k];
 
@@ -15780,24 +15779,28 @@
 
 
     if (hasTp) {
-      var _i16 = prev.fixed.indexOf(TRANSLATE_X$1);
+      var _i16 = prev.keys.indexOf(TRANSLATE_X$1);
 
       if (_i16 === -1) {
-        _i16 = prev.keys.indexOf(TRANSLATE_X$1);
+        prev.keys.push(TRANSLATE_X$1);
+      }
 
-        if (_i16 === -1) {
-          prev.keys.push(TRANSLATE_X$1);
-        }
+      _i16 = prev.keys.indexOf(TRANSLATE_Y$1);
+
+      if (_i16 === -1) {
+        prev.keys.push(TRANSLATE_Y$1);
+      }
+
+      _i16 = prev.fixed.indexOf(TRANSLATE_X$1);
+
+      if (_i16 > -1) {
+        prev.fixed.splice(_i16, 1);
       }
 
       _i16 = prev.fixed.indexOf(TRANSLATE_Y$1);
 
-      if (_i16 === -1) {
-        _i16 = prev.keys.indexOf(TRANSLATE_Y$1);
-
-        if (_i16 === -1) {
-          prev.keys.push(TRANSLATE_Y$1);
-        }
+      if (_i16 > -1) {
+        prev.fixed.splice(_i16, 1);
       }
     }
 

@@ -1009,12 +1009,12 @@ function calFrame(prev, next, keys, target) {
   let currentStyle = target.__currentStyle, hasTp, allInFn = true;
   for(let i = 0, len = keys.length; i < len; i++) {
     let k = keys[i];
-    if(k === TRANSLATE_PATH) {
-      hasTp = true;
-    }
     let ts = calDiff(prev, next, k, target);
     // 可以形成过渡的才会产生结果返回
     if(ts) {
+      if(k === TRANSLATE_PATH) {
+        hasTp = true;
+      }
       ts.cs = currentStyle[k];
       let fn = CAL_HASH[k];
       if(fn) {
@@ -1033,19 +1033,21 @@ function calFrame(prev, next, keys, target) {
   }
   // translatePath需特殊处理translate，防止被覆盖
   if(hasTp) {
-    let i = prev.fixed.indexOf(TRANSLATE_X);
+    let i = prev.keys.indexOf(TRANSLATE_X);
     if(i === -1) {
-      i = prev.keys.indexOf(TRANSLATE_X);
-      if(i === -1) {
-        prev.keys.push(TRANSLATE_X);
-      }
+      prev.keys.push(TRANSLATE_X);
+    }
+    i = prev.keys.indexOf(TRANSLATE_Y);
+    if(i === -1) {
+      prev.keys.push(TRANSLATE_Y);
+    }
+    i = prev.fixed.indexOf(TRANSLATE_X);
+    if(i > -1) {
+      prev.fixed.splice(i, 1);
     }
     i = prev.fixed.indexOf(TRANSLATE_Y);
-    if(i === -1) {
-      i = prev.keys.indexOf(TRANSLATE_Y);
-      if(i === -1) {
-        prev.keys.push(TRANSLATE_Y);
-      }
+    if(i > -1) {
+      prev.fixed.splice(i, 1);
     }
   }
   prev.allInFn = allInFn;

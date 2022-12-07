@@ -18,9 +18,10 @@
       super(tagName, props);
     }
 
-    render(renderMode, refreshLevel, ctx, defs) {
+    render(renderMode, ctx, dx, dy) {
+      let res = super.render(renderMode, ctx, dx, dy);
       // 基类render中已经帮我们计算好许多必需的属性
-      let { originX, originY, display, stroke, strokeWidth, strokeDasharray, strokeDasharrayStr } = super.render(renderMode, refreshLevel, ctx, defs);
+      let { x1, y1, display, stroke, strokeWidth, strokeDasharray, strokeDasharrayStr } = res;
       if(display === 'none') {
         return;
       }
@@ -31,17 +32,17 @@
       if(nx < 2 && ny < 2) {
         return;
       }
-      let endX = originX + width;
-      let endY = originY + height;
+      let endX = x1 + width;
+      let endY = y1 + height;
       let lx = [];
       let ly = [];
       let pw = width / (nx - 1);
       for(let i = 0; i < nx; i++) {
-        ly.push(originX + i * pw);
+        ly.push(x1 + i * pw);
       }
       let ph = height / (ny - 1);
       for(let i = 0; i < ny; i++) {
-        lx.push(originY + i * ph);
+        lx.push(y1 + i * ph);
       }
       if(renderMode === karas.mode.CANVAS) {
         ctx.strokeStyle = stroke;
@@ -49,11 +50,11 @@
         ctx.setLineDash(strokeDasharray);
         ctx.beginPath();
         lx.forEach(item => {
-          ctx.moveTo(originX, item);
+          ctx.moveTo(x1, item);
           ctx.lineTo(endX, item);
         });
         ly.forEach(item => {
-          ctx.moveTo(item, originY);
+          ctx.moveTo(item, y1);
           ctx.lineTo(item, endY);
         });
         ctx.stroke();
@@ -63,7 +64,7 @@
         lx.forEach(item => {
           // 基类也为添加基本svg图形封装好了方法
           this.addGeom('line', [
-            ['x1', originX],
+            ['x1', x1],
             ['y1', item],
             ['x2', endX],
             ['y2', item],
@@ -75,7 +76,7 @@
         ly.forEach(item => {
           this.addGeom('line', [
             ['x1', item],
-            ['y1', originY],
+            ['y1', y1],
             ['x2', item],
             ['y2', endY],
             ['stroke', stroke],

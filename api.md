@@ -1865,16 +1865,16 @@ karas.render(
 * **示例**
 ```jsx
 class Grid extends karas.Geom {
-  render(renderMode, lv, ctx, defs) {
-    let res = super.render(renderMode, lv, ctx, defs);
+  render(renderMode, ctx, dx, dy) {
+    let res = super.render(renderMode, ctx, dx, dy);
     // display:none或者有缓存等特殊情况会标识break，此时无需再次绘制
     if(res.break) {
       return res;
     }
     // 基类方法会返回一些已经计算好的属性方便使用
     let {
-      originX,
-      originY,
+      x1,
+      y1,
       fill,
       stroke,
       strokeWidth,
@@ -1883,23 +1883,21 @@ class Grid extends karas.Geom {
       strokeLinejoin,
       strokeMiterlimit,
       fillRule,
-      dx,
-      dy,
     } = res;
     let { width, height } = this;
-    originX += dx;
-    originY += dy;
+    x1 += dx;
+    y1 += dy;
     if(renderMode === karas.mode.CANVAS) {
       ctx.beginPath();
-      ctx.moveTo(originX, originY);
-      ctx.lineTo(originX + width, originY);
-      ctx.lineTo(originX + width, originY + height);
-      ctx.lineTo(originX, originY + height);
-      ctx.lineTo(originX, originY);
-      ctx.moveTo(originX + width * 0.5, originY);
-      ctx.lineTo(originX + width * 0.5, originY + height);
-      ctx.moveTo(originX, originY + height * 0.5);
-      ctx.lineTo(originX + width, originY + height * 0.5);
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x1 + width, y1);
+      ctx.lineTo(x1 + width, y1 + height);
+      ctx.lineTo(x1, y1 + height);
+      ctx.lineTo(x1, y1);
+      ctx.moveTo(x1 + width * 0.5, y1);
+      ctx.lineTo(x1 + width * 0.5, y1 + height);
+      ctx.moveTo(x1, y1 + height * 0.5);
+      ctx.lineTo(x1 + width, y1 + height * 0.5);
       ctx.stroke();
       ctx.closePath();
     }

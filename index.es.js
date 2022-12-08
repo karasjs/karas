@@ -16184,7 +16184,7 @@ var Animation = /*#__PURE__*/function (_Event) {
     var _this;
 
     _this = _Event.call(this) || this;
-    _this.id = uuid$3++;
+    _this.__id = uuid$3++;
     list = clone$1(list || []);
 
     if (Array.isArray(list)) {
@@ -16265,7 +16265,8 @@ var Animation = /*#__PURE__*/function (_Event) {
     _this.areaDuration = op.areaDuration;
     _this.__currentFrames = {
       reverse: true,
-      'alternate-reverse': true
+      'alternate-reverse': true,
+      alternateReverse: true
     }.hasOwnProperty(op.direction) ? framesR : frames;
     var controller = op.controller;
 
@@ -16375,7 +16376,8 @@ var Animation = /*#__PURE__*/function (_Event) {
 
         this.__currentFrames = {
           reverse: true,
-          'alternate-reverse': true
+          'alternate-reverse': true,
+          alternateReverse: true
         }.hasOwnProperty(direction) ? framesR : frames;
         this.__currentTime = this.__nextTime = this.__fpsTime = 0;
       } // 添加每帧回调且立刻执行，本次执行调用refreshTask也是下一帧再渲染，frame的每帧都是下一帧
@@ -16490,7 +16492,7 @@ var Animation = /*#__PURE__*/function (_Event) {
         var frames = this.__frames;
         var framesR = this.__framesR; // 有正反向播放需要重设帧序列
 
-        if (direction === 'alternate' || direction === 'alternate-reverse') {
+        if (direction === 'alternate' || direction === 'alternate-reverse' || direction === 'alternateReverse') {
           var isEven = playCount % 2 === 0;
 
           if (direction === 'alternate') {
@@ -16875,7 +16877,8 @@ var Animation = /*#__PURE__*/function (_Event) {
 
       if ({
         alternate: true,
-        'alternate-reverse': true
+        'alternate-reverse': true,
+        alternateReverse: true
       }.hasOwnProperty(direction)) {
         var isEven = playCount % 2 === 0;
 
@@ -16950,6 +16953,11 @@ var Animation = /*#__PURE__*/function (_Event) {
       if (this.__playState !== 'idle' && this.__playState !== 'finished') {
         inject.warn('Modification will not come into effect when animation is running');
       }
+    }
+  }, {
+    key: "id",
+    get: function get() {
+      return this.__id;
     }
   }, {
     key: "target",
@@ -44758,7 +44766,7 @@ var refresh = {
   webgl: webgl
 };
 
-var version = "0.84.0";
+var version = "0.84.1";
 
 Geom.register('$line', Line);
 Geom.register('$polyline', Polyline);

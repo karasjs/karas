@@ -1417,7 +1417,7 @@ let uuid = 0;
 class Animation extends Event {
   constructor(target, list, options) {
     super();
-    this.id = uuid++;
+    this.__id = uuid++;
     list = clone(list || []);
     if(Array.isArray(list)) {
       list = list.filter(item => item && isObject(item));
@@ -1485,6 +1485,7 @@ class Animation extends Event {
     this.__currentFrames = {
       reverse: true,
       'alternate-reverse': true,
+      alternateReverse: true,
     }.hasOwnProperty(op.direction) ? framesR : frames;
     let controller = op.controller;
     if(controller instanceof Controller) {
@@ -1571,6 +1572,7 @@ class Animation extends Event {
       this.__currentFrames = {
         reverse: true,
         'alternate-reverse': true,
+        alternateReverse: true,
       }.hasOwnProperty(direction) ? framesR : frames;
       this.__currentTime = this.__nextTime = this.__fpsTime = 0;
     }
@@ -1669,7 +1671,7 @@ class Animation extends Event {
       let frames = this.__frames;
       let framesR = this.__framesR;
       // 有正反向播放需要重设帧序列
-      if(direction === 'alternate' || direction === 'alternate-reverse') {
+      if(direction === 'alternate' || direction === 'alternate-reverse' || direction === 'alternateReverse') {
         let isEven = playCount % 2 === 0;
         if(direction === 'alternate') {
           currentFrames = this.__currentFrames = isEven ? frames : framesR;
@@ -1986,6 +1988,7 @@ class Animation extends Event {
     if({
       alternate: true,
       'alternate-reverse': true,
+      alternateReverse: true,
     }.hasOwnProperty(direction)) {
       let isEven = playCount % 2 === 0;
       if(direction === 'alternate') {
@@ -2044,6 +2047,10 @@ class Animation extends Event {
     if(this.__playState !== 'idle' && this.__playState !== 'finished') {
       inject.warn('Modification will not come into effect when animation is running');
     }
+  }
+
+  get id() {
+    return this.__id;
   }
 
   get target() {

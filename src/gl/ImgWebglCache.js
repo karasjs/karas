@@ -9,14 +9,6 @@ class ImgWebglCache extends CanvasCache {
     super(renderMode, ctx, rootId, w, h, bbox, page, pos, x1, y1);
   }
 
-  clear() {
-    if(this.__available) {
-      this.__available = false;
-      this.update();
-      return true;
-    }
-  }
-
   release() {
     if(this.__enabled) {
       this.clear();

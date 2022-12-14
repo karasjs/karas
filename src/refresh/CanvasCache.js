@@ -27,6 +27,7 @@ class CanvasCache extends Cache {
       let page = this.__page, ctx = page.ctx;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(this.__x, this.__y, this.__width, this.__height);
+      return true;
     }
   }
 

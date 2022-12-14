@@ -30086,6 +30086,7 @@
               ctx = page.ctx;
           ctx.setTransform(1, 0, 0, 1, 0, 0);
           ctx.clearRect(this.__x, this.__y, this.__width, this.__height);
+          return true;
         }
       }
     }, {
@@ -30253,15 +30254,6 @@
     }
 
     _createClass(ImgWebglCache, [{
-      key: "clear",
-      value: function clear() {
-        if (this.__available) {
-          this.__available = false;
-          this.update();
-          return true;
-        }
-      }
-    }, {
       key: "release",
       value: function release() {
         if (this.__enabled) {

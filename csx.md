@@ -402,7 +402,7 @@
   * vmax
   * vmin
 `因动画场景需要，css的transform在多个时会出现后者覆盖前者的情况，因此将其所有变换单独拆解开来，且坐标系保持相对世界不互相干扰。新版浏览器已支持。`
-* translateX/translateY
+* translateX/translateY/translateZ
   * 0 默认
   * px
   * %
@@ -411,13 +411,16 @@
   * vh
   * vmax
   * vmin
-* scaleX/scaleY
+* translatePath 曲线运动路径，二阶/三阶贝塞尔
+  * [x1, y1, x2, y2, x3, y3]
+  * [x1, y1, x2, y2, x3, y3, x4, y4]
+* scaleX/scaleY/scaleZ
   * 1 默认
   * Number[0,∞)
 * skewX/skewY
   * 0 默认
   * Deg[0,360]
-* rotate/rotateZ
+* rotate/rotateX/rotateY/rotateZ
   * 0 默认
   * Deg[0,360]
 ## 简写

@@ -30080,6 +30080,7 @@ var CanvasCache = /*#__PURE__*/function (_Cache) {
             ctx = page.ctx;
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(this.__x, this.__y, this.__width, this.__height);
+        return true;
       }
     }
   }, {
@@ -30247,15 +30248,6 @@ var ImgWebglCache = /*#__PURE__*/function (_CanvasCache) {
   }
 
   _createClass(ImgWebglCache, [{
-    key: "clear",
-    value: function clear() {
-      if (this.__available) {
-        this.__available = false;
-        this.update();
-        return true;
-      }
-    }
-  }, {
     key: "release",
     value: function release() {
       if (this.__enabled) {
@@ -44766,7 +44758,7 @@ var refresh = {
   webgl: webgl
 };
 
-var version = "0.84.1";
+var version = "0.84.2";
 
 Geom.register('$line', Line);
 Geom.register('$polyline', Polyline);

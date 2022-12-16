@@ -48,6 +48,7 @@ function relation(root, host, parent, children, options = {}) {
   }
   else if(children instanceof Xom || children instanceof Component || children instanceof Text) {
     children.__root = root;
+    children.__host = children.__hostRoot = host;
     children.__parent = parent;
     children.__domParent = parent;
     children.__isDestroyed = false;

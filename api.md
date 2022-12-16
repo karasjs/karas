@@ -2034,6 +2034,11 @@ tagName、root、host、prev、next、parent、isDestroyed、x、y、width、hei
 * **说明**  
 局部根节点，即ref所属的根节点。当组件a出现在另一个组件b内部时，a同时有ref，则可通过b.ref.a访问到a，a是属于b的。当组件a直接出现在Root下时，a属于Root。详见[Root](#Root)。
 
+#### hostRoot
+* **类型** `Root/Component` 只读
+* **说明**
+当出现HOC高阶组件式，需要直接访问到顶层组件的引用，可以使用此属性。
+
 ### 类方法method
 
 #### 代理实现

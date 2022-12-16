@@ -24298,6 +24298,7 @@ function relation(root, host, parent, children) {
     });
   } else if (children instanceof Xom || children instanceof Component || children instanceof Text) {
     children.__root = root;
+    children.__host = children.__hostRoot = host;
     children.__parent = parent;
     children.__domParent = parent;
     children.__isDestroyed = false;
@@ -44758,7 +44759,7 @@ var refresh = {
   webgl: webgl
 };
 
-var version = "0.84.2";
+var version = "0.84.3";
 
 Geom.register('$line', Line);
 Geom.register('$polyline', Polyline);

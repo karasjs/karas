@@ -44769,7 +44769,7 @@
     webgl: webgl
   };
 
-  var version = "0.84.3";
+  var version = "0.84.4";
 
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);

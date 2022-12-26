@@ -1043,34 +1043,36 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
           __cacheMask,
         } = node;
         let target = i > index ? getCache([__cacheMask, __cacheFilter, __cacheTotal, __cache]) : __cache;
-        if(target && opacity > 0) {
-          // 局部的mbm和主画布一样，先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
-          if(i > index && mixBlendMode !== 'normal') {
-            if(list.length) {
-              drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
-            }
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
-            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-            let res = genMbmWebgl(gl, texture, target, mixBlendMode, node.__opacity, m, dx, dy, cx, cy, size, size);
-            if(res) {
+        if(target) {
+          if(opacity > 0) {
+            // 局部的mbm和主画布一样，先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
+            if(i > index && mixBlendMode !== 'normal') {
+              if(list.length) {
+                drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+              }
               gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
               gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-              gl.deleteFramebuffer(frameBuffer);
-              gl.deleteTexture(texture);
-              texture = res.texture;
-              frameBuffer = res.frameBuffer;
-              gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
-              gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+              let res = genMbmWebgl(gl, texture, target, mixBlendMode, node.__opacity, m, dx, dy, cx, cy, size, size);
+              if(res) {
+                gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
+                gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+                gl.deleteFramebuffer(frameBuffer);
+                gl.deleteTexture(texture);
+                texture = res.texture;
+                frameBuffer = res.frameBuffer;
+                gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+                gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+              }
+              lastPage = null;
             }
-            lastPage = null;
-          }
-          else {
-            let p = target.__page;
-            if(lastPage && lastPage !== p) {
-              drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+            else {
+              let p = target.__page;
+              if(lastPage && lastPage !== p) {
+                drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+              }
+              lastPage = p;
+              list.push({ cache: target, opacity: node.__opacity, matrix: m });
             }
-            lastPage = p;
-            list.push({cache: target, opacity: node.__opacity, matrix: m});
           }
           if(target !== __cache) {
             i += (total || 0);
@@ -1746,22 +1748,22 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
         }
         // 不变是同级兄弟，无需特殊处理 else {}
         lastLv = lv;
+        // 不考虑mbm
+        let m;
+        if(isE(transform)) {
+          m = mx.identity();
+        }
+        else {
+          m = tf.calMatrixByOrigin(transform, tfo[0] + dbx + node.__x1 - x1, tfo[1] + dby + node.__y1 - y1);
+        }
+        if(!isE(parentMatrix)) {
+          m = multiply(parentMatrix, m);
+        }
+        lastMatrix = m;
+        lastOpacity = parentOpacity * opacity;
         let target = getCache([__cacheMask, __cacheFilter, __cacheTotal, __cache]);
         if(target && (target !== __cache || visibility === 'visible')) {
-          // 不考虑mbm
-          let m;
-          if(isE(transform)) {
-            m = mx.identity();
-          }
-          else {
-            m = tf.calMatrixByOrigin(transform, tfo[0] + target.x1 - x1, tfo[1] + target.y1 - y1);
-          }
-          if(!isE(parentMatrix)) {
-            lastMatrix = multiply(parentMatrix, lastMatrix);
-          }
           m = mx.multiply(inverse, m);
-          lastMatrix = m;
-          lastOpacity = parentOpacity * opacity;
           // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
           if(backfaceVisibility === 'hidden') {
             let m = node.__matrix, x = m[5] < 0 && m[10] < 0, y = m[0] < 0 && m[10] < 0;
@@ -2676,30 +2678,32 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       }
       // total和自身cache的尝试，visibility不可见时没有cache
       let target = getCache([__cacheMask, __cacheFilter, __cacheTotal, __cache]);
-      if(target && opacity > 0) {
-        // 有mbm则需要混合之前的纹理和新纹理到fbo上面，连续的mbm则依次交替绘制到画布或离屏fbo上
-        if(mixBlendMode !== 'normal') {
-          if(list.length) {
-            drawTextureCache(gl, list.splice(0), cx, cy, 0, 0);
-            lastPage = null;
+      if(target) {
+        if(opacity > 0) {
+          // 有mbm则需要混合之前的纹理和新纹理到fbo上面，连续的mbm则依次交替绘制到画布或离屏fbo上
+          if(mixBlendMode !== 'normal') {
+            if(list.length) {
+              drawTextureCache(gl, list.splice(0), cx, cy, 0, 0);
+              lastPage = null;
+            }
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            gl.deleteFramebuffer(frameBuffer);
+            let res = genMbmWebgl(gl, texture, target, mixBlendMode, opacity, m, 0, 0, cx, cy, width, height);
+            if(res) {
+              gl.deleteTexture(texture);
+              texture = res.texture;
+              frameBuffer = res.frameBuffer;
+            }
           }
-          gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
-          gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-          gl.deleteFramebuffer(frameBuffer);
-          let res = genMbmWebgl(gl, texture, target, mixBlendMode, opacity, m, 0, 0, cx, cy, width, height);
-          if(res) {
-            gl.deleteTexture(texture);
-            texture = res.texture;
-            frameBuffer = res.frameBuffer;
+          else {
+            let p = target.__page;
+            if(lastPage && lastPage !== p) {
+              drawTextureCache(gl, list.splice(0), cx, cy, 0, 0);
+            }
+            lastPage = p;
+            list.push({ cache: target, opacity, matrix: m });
           }
-        }
-        else {
-          let p = target.__page;
-          if(lastPage && lastPage !== p) {
-            drawTextureCache(gl, list.splice(0), cx, cy, 0, 0);
-          }
-          lastPage = p;
-          list.push({ cache: target, opacity, matrix: m });
         }
         if(target !== __cache) {
           i += (total || 0);

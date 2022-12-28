@@ -90,7 +90,7 @@ class Page {
         // 空白列检查尺寸是否符合
         for(let j = i + 1, len = i + unitSize; j < len; j++) {
           if(grid[j]) {
-            i = j;
+            i = j - 1;
             continue outer;
           }
         }

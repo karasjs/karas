@@ -28697,7 +28697,7 @@
             // 空白列检查尺寸是否符合
             for (var _j = i + 1, len = i + unitSize; _j < len; _j++) {
               if (grid[_j]) {
-                i = _j;
+                i = _j - 1;
                 continue outer;
               }
             }
@@ -30259,20 +30259,18 @@
       key: "release",
       value: function release() {
         if (this.__enabled) {
-          this.clear();
-          var key = this.key;
+          var key = this.key; // 一定有
 
-          if (HASH$1.hasOwnProperty(key)) {
-            var o = HASH$1[key];
-            o.count--;
+          var o = HASH$1[key];
+          o.count--;
 
-            if (!o.count) {
-              delete HASH$1[key];
+          if (!o.count) {
+            this.clear();
+            delete HASH$1[key];
 
-              this.__page.del(this.__pos);
+            this.__page.del(this.__pos);
 
-              this.__page = null;
-            }
+            this.__page = null;
           }
 
           this.__enabled = false;

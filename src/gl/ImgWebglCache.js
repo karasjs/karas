@@ -11,16 +11,15 @@ class ImgWebglCache extends CanvasCache {
 
   release() {
     if(this.__enabled) {
-      this.clear();
       let key = this.key;
-      if(HASH.hasOwnProperty(key)) {
-        let o = HASH[key];
-        o.count--;
-        if(!o.count) {
-          delete HASH[key];
-          this.__page.del(this.__pos);
-          this.__page = null;
-        }
+      // 一定有
+      let o = HASH[key];
+      o.count--;
+      if(!o.count) {
+        this.clear();
+        delete HASH[key];
+        this.__page.del(this.__pos);
+        this.__page = null;
       }
       this.__enabled = false;
       return true;

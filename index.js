@@ -28691,12 +28691,13 @@
                 }
               }
             } else {
-              i += u;
+              i += u - 1;
             }
-          } else {
+          } else if (i + unitSize <= number) {
             // 空白列检查尺寸是否符合
             for (var _j = i + 1, len = i + unitSize; _j < len; _j++) {
-              if (grid[i]) {
+              if (grid[_j]) {
+                i = _j;
                 continue outer;
               }
             }
@@ -30277,6 +30278,11 @@
           this.__enabled = false;
           return true;
         }
+      }
+    }, {
+      key: "count",
+      get: function get() {
+        return HASH$1[this.key].count;
       }
     }], [{
       key: "getInstance",
@@ -36654,7 +36660,10 @@
               _cache5.__bbox = _bbox3;
               _cache5.__available = true;
               node.__cache = _cache5;
-              node.render(mode.CANVAS, _cache5.ctx, _cache5.dx, _cache5.dy);
+
+              if (!onlyImg || _cache5.count === 1) {
+                node.render(mode.CANVAS, _cache5.ctx, _cache5.dx, _cache5.dy);
+              }
             } else {
               _cache5 && _cache5.release();
               node.__limitCache = true;

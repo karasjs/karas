@@ -2462,7 +2462,9 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
             __cache.__bbox = bbox;
             __cache.__available = true;
             node.__cache = __cache;
-            node.render(mode.CANVAS, __cache.ctx, __cache.dx, __cache.dy);
+            if(!onlyImg || __cache.count === 1) {
+              node.render(mode.CANVAS, __cache.ctx, __cache.dx, __cache.dy);
+            }
           }
           else {
             __cache && __cache.release();

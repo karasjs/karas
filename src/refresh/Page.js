@@ -83,13 +83,14 @@ class Page {
           }
         }
         else {
-          i += u;
+          i += u - 1;
         }
       }
-      else {
+      else if(i + unitSize <= number) {
         // 空白列检查尺寸是否符合
         for(let j = i + 1, len = i + unitSize; j < len; j++) {
-          if(grid[i]) {
+          if(grid[j]) {
+            i = j;
             continue outer;
           }
         }

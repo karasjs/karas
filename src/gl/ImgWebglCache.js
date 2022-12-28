@@ -27,6 +27,10 @@ class ImgWebglCache extends CanvasCache {
     }
   }
 
+  get count() {
+    return HASH[this.key].count;
+  }
+
   static getInstance(renderMode, ctx, rootId, bbox, loadImg, x1, y1) {
     let key = rootId + ',' + loadImg.width + ' ' + loadImg.height + ' ' + loadImg.src;
     if(HASH.hasOwnProperty(key)) {

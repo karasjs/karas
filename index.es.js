@@ -28685,12 +28685,13 @@ var Page = /*#__PURE__*/function () {
               }
             }
           } else {
-            i += u;
+            i += u - 1;
           }
-        } else {
+        } else if (i + unitSize <= number) {
           // 空白列检查尺寸是否符合
           for (var _j = i + 1, len = i + unitSize; _j < len; _j++) {
-            if (grid[i]) {
+            if (grid[_j]) {
+              i = _j - 1;
               continue outer;
             }
           }
@@ -30252,25 +30253,28 @@ var ImgWebglCache = /*#__PURE__*/function (_CanvasCache) {
     key: "release",
     value: function release() {
       if (this.__enabled) {
-        this.clear();
-        var key = this.key;
+        var key = this.key; // 一定有
 
-        if (HASH$1.hasOwnProperty(key)) {
-          var o = HASH$1[key];
-          o.count--;
+        var o = HASH$1[key];
+        o.count--;
 
-          if (!o.count) {
-            delete HASH$1[key];
+        if (!o.count) {
+          this.clear();
+          delete HASH$1[key];
 
-            this.__page.del(this.__pos);
+          this.__page.del(this.__pos);
 
-            this.__page = null;
-          }
+          this.__page = null;
         }
 
         this.__enabled = false;
         return true;
       }
+    }
+  }, {
+    key: "count",
+    get: function get() {
+      return HASH$1[this.key].count;
     }
   }], [{
     key: "getInstance",
@@ -36648,7 +36652,10 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
             _cache5.__bbox = _bbox3;
             _cache5.__available = true;
             node.__cache = _cache5;
-            node.render(mode.CANVAS, _cache5.ctx, _cache5.dx, _cache5.dy);
+
+            if (!onlyImg || _cache5.count === 1) {
+              node.render(mode.CANVAS, _cache5.ctx, _cache5.dx, _cache5.dy);
+            }
           } else {
             _cache5 && _cache5.release();
             node.__limitCache = true;
@@ -44763,7 +44770,7 @@ var refresh = {
   webgl: webgl
 };
 
-var version = "0.84.4";
+var version = "0.84.5";
 
 Geom.register('$line', Line);
 Geom.register('$polyline', Polyline);

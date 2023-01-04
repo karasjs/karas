@@ -30852,7 +30852,7 @@
       }
     }], [{
       key: "toWebglCache",
-      value: function toWebglCache(gl, root, src, cb) {
+      value: function toWebglCache(gl, root, src, x1, y1, cb) {
         if (!gl || !src) {
           return;
         }
@@ -30867,7 +30867,7 @@
             loadImg.source = ca.source;
             loadImg.width = loadImg.__width = ca.width;
             loadImg.height = loadImg.__height = ca.height;
-            var res = ImgWebglCache.getInstance(mode.CANVAS, gl, root.__uuid, [0, 0, loadImg.width, loadImg.height], loadImg, 0, 0);
+            var res = ImgWebglCache.getInstance(mode.CANVAS, gl, root.__uuid, [x1, y1, x1 + loadImg.width, y1 + loadImg.height], loadImg, x1, y1);
 
             if (isFunction$2(cb)) {
               cb(res);
@@ -30877,7 +30877,7 @@
           loadImg.source = ca.source;
           loadImg.width = loadImg.__width = ca.width;
           loadImg.height = loadImg.__height = ca.height;
-          var res = ImgWebglCache.getInstance(mode.CANVAS, gl, root.__uuid, [0, 0, loadImg.width, loadImg.height], loadImg, 0, 0);
+          var res = ImgWebglCache.getInstance(mode.CANVAS, gl, root.__uuid, [x1, y1, x1 + loadImg.width, y1 + loadImg.height], loadImg, x1, y1);
 
           if (isFunction$2(cb)) {
             cb(res);
@@ -44776,7 +44776,7 @@
     webgl: webgl
   };
 
-  var version = "0.84.6";
+  var version = "0.84.7";
 
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);

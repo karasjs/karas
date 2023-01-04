@@ -44776,7 +44776,7 @@
     webgl: webgl
   };
 
-  var version = "0.84.5";
+  var version = "0.84.6";
 
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);
@@ -44809,7 +44809,7 @@
       if (util.isString(tagName)) {
         if (tagName.charAt(0) === '$') {
           return this.createGm(tagName, props);
-        } else if (/^A-Z/.test(tagName)) {
+        } else if (/^[A-Z]/.test(tagName)) {
           return this.createCp(tagName, props, children);
         } else {
           return this.createVd(tagName, props, children);

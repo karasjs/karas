@@ -57,7 +57,7 @@ let karas = {
       if(tagName.charAt(0) === '$') {
         return this.createGm(tagName, props);
       }
-      else if(/^A-Z/.test(tagName)) {
+      else if(/^[A-Z]/.test(tagName)) {
         return this.createCp(tagName, props, children);
       }
       else {

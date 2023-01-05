@@ -13076,11 +13076,14 @@
         });
 
         if (isFunction$8(this.componentDidMount)) {
-          var cb = function cb() {
+          // freeze时不会触发refresh也就没有componentDidMount，所以要侦听unFreeze同时检查isDestroyed
+          var cb = this.__cb = function () {
             if (!_this2.__root.__isDestroyed) {
               _this2.componentDidMount();
 
               _this2.__root.off([Event.REFRESH, Event.UN_FREEZE], cb);
+
+              _this2.__cb = null;
             }
           };
 
@@ -13105,6 +13108,11 @@
 
         if (!isNil$d(ref) && !isFunction$8(ref)) {
           delete this.__root.__ref[ref];
+        } // 极限情况尚未触发需清除
+
+
+        if (this.__cb) {
+          this.__root.off([Event.REFRESH, Event.UN_FREEZE], this.__cb);
         }
 
         if (isFunction$8(this.componentWillUnmount)) {
@@ -44811,7 +44819,7 @@
     webgl: webgl
   };
 
-  var version = "0.85.0";
+  var version = "0.85.1";
 
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);

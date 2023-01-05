@@ -13003,6 +13003,10 @@
 
   _defineProperty(Event, "END", 'end');
 
+  _defineProperty(Event, "FREEZE", 'freeze');
+
+  _defineProperty(Event, "UN_FREEZE", 'unFreeze');
+
   var isNil$d = util.isNil,
       isFunction$8 = util.isFunction,
       extend$2 = util.extend;
@@ -13072,9 +13076,15 @@
         });
 
         if (isFunction$8(this.componentDidMount)) {
-          this.__root.once(Event.REFRESH, function () {
-            _this2.componentDidMount();
-          });
+          var cb = function cb() {
+            if (!_this2.__root.__isDestroyed) {
+              _this2.componentDidMount();
+
+              _this2.__root.off([Event.REFRESH, Event.UN_FREEZE], cb);
+            }
+          };
+
+          this.__root.once([Event.REFRESH, Event.UN_FREEZE], cb);
         }
       }
     }, {
@@ -38464,11 +38474,13 @@
       key: "freeze",
       value: function freeze() {
         this.__freeze = true;
+        this.emit(Event.FREEZE);
       }
     }, {
       key: "unFreeze",
       value: function unFreeze() {
         this.__freeze = false;
+        this.emit(Event.UN_FREEZE);
       }
     }, {
       key: "dom",

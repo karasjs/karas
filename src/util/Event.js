@@ -126,6 +126,9 @@ class Event {
   static CANCEL = 'cancel';
   static BEGIN = 'begin';
   static END = 'end';
+  static FREEZE = 'freeze';
+  static UN_FREEZE = 'unFreeze';
+
 }
 
 export default Event;

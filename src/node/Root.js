@@ -923,10 +923,12 @@ class Root extends Dom {
 
   freeze() {
     this.__freeze = true;
+    this.emit(Event.FREEZE);
   }
 
   unFreeze() {
     this.__freeze = false;
+    this.emit(Event.UN_FREEZE);
   }
 
   get dom() {

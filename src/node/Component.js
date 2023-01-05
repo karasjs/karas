@@ -60,9 +60,13 @@ class Component extends Event {
       }
     });
     if(isFunction(this.componentDidMount)) {
-      this.__root.once(Event.REFRESH, () => {
-        this.componentDidMount();
-      });
+      let cb = () => {
+        if(!this.__root.__isDestroyed) {
+          this.componentDidMount();
+          this.__root.off([Event.REFRESH, Event.UN_FREEZE], cb);
+        }
+      };
+      this.__root.once([Event.REFRESH, Event.UN_FREEZE], cb);
     }
   }
 

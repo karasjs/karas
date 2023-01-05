@@ -37591,6 +37591,7 @@
 
       _this.__task = [];
       _this.__ref = {};
+      _this.__freeze = false;
       _this.__animateController = new Controller();
       Event.mix(_assertThisInitialized(_this));
       _this.__uuid = uuid++;
@@ -37896,9 +37897,10 @@
 
         if (isFirst) {
           this.__reLayout();
-        }
+        } // freeze()冻住不渲染，但第一次不能生效
 
-        if (this.props.noRender) {
+
+        if (this.props.noRender || !isFirst && this.__freeze) {
           return;
         }
 
@@ -38446,6 +38448,16 @@
       value: function __clearWebgl(ctx) {
         ctx.clearColor(0, 0, 0, 0);
         ctx.clear(ctx.COLOR_BUFFER_BIT);
+      }
+    }, {
+      key: "freeze",
+      value: function freeze() {
+        this.__freeze = true;
+      }
+    }, {
+      key: "unFreeze",
+      value: function unFreeze() {
+        this.__freeze = false;
       }
     }, {
       key: "dom",

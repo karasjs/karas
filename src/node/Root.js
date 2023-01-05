@@ -173,6 +173,7 @@ class Root extends Dom {
     // this.__scy = 1;
     this.__task = [];
     this.__ref = {};
+    this.__freeze = false;
     this.__animateController = new Controller();
     Event.mix(this);
     this.__uuid = uuid++;
@@ -424,7 +425,8 @@ class Root extends Dom {
     if(isFirst) {
       this.__reLayout();
     }
-    if(this.props.noRender) {
+    // freeze()冻住不渲染，但第一次不能生效
+    if(this.props.noRender || !isFirst && this.__freeze) {
       return;
     }
     let rlv = this.__rlv;
@@ -914,6 +916,14 @@ class Root extends Dom {
   __clearWebgl(ctx) {
     ctx.clearColor(0, 0, 0, 0);
     ctx.clear(ctx.COLOR_BUFFER_BIT);
+  }
+
+  freeze() {
+    this.__freeze = true;
+  }
+
+  unFreeze() {
+    this.__freeze = false;
   }
 
   get dom() {

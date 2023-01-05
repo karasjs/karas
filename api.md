@@ -972,6 +972,41 @@ let root = karas.render(
 console.log(root.getTargetAtPoint(10, 10)); // { target: span, path: [0, 0], zPath: [0, 0] }
 ```
 
+#### draw
+* **类型** `Function`
+* **参数**
+  * isFirst `Boolean` 是否第一次，在append到真实DOM上的时候默认true
+* * **说明**  
+强制刷新这个画布实例。
+
+#### destroy
+* **类型** `Function`
+* * **说明**  
+销毁回收画布实例，并不会删除真实DOM节点，需同时手动调用。
+
+#### scale
+* **参数**
+  * x `Number`
+  * y `Number`
+* **说明**  
+设置缩放，一般在特殊高清模式下使用，影响坐标点计算。
+
+#### resize
+* **参数**
+  * w `Number` 宽
+  * h `Number` 高
+  * cb `Function` 回调
+* **说明**  
+重新调整画布尺寸大小。
+
+#### freeze
+* **说明**  
+冻住这个画布实例，所有的更新都不触发渲染绘制，使得一直停留在之前的状态上。
+
+#### unFreeze
+* **说明**  
+解冻这个画布实例，恢复正常状态。
+
 <a name="Geom"></a>
 ## Geom
 * **类型** `class`

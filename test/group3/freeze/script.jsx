@@ -23,4 +23,4 @@ root.ref.div2.updateStyle({
 setTimeout(function() {
   root.unFreeze();
   root.draw();
-}, 100);
+}, 60);

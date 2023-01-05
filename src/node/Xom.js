@@ -3112,8 +3112,10 @@ class Xom extends Node {
       let target = this.isShadowRoot ? this.hostRoot : this;
       i = parent.__children.indexOf(target);
       parent.__children.splice(i, 1);
-      i = parent.__zIndexChildren.indexOf(target);
-      parent.__zIndexChildren.splice(i, 1);
+      if(parent.__zIndexChildren) {
+        i = parent.__zIndexChildren.indexOf(target);
+        parent.__zIndexChildren.splice(i, 1);
+      }
       let { __prev, __next } = target;
       if(__prev) {
         __prev.__next = __next;

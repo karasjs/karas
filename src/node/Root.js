@@ -618,6 +618,9 @@ class Root extends Dom {
    * 添加更新，分析repaint/reflow和上下影响，异步刷新
    */
   __addUpdate(node, keys, focus, addDom, removeDom, aniParams, cb) {
+    if(this.__isDestroyed) {
+      return;
+    }
     if(node instanceof Component) {
       node = node.shadowRoot;
     }

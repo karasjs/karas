@@ -21564,9 +21564,11 @@ var Xom = /*#__PURE__*/function (_Node) {
 
         parent.__children.splice(i, 1);
 
-        i = parent.__zIndexChildren.indexOf(target);
+        if (parent.__zIndexChildren) {
+          i = parent.__zIndexChildren.indexOf(target);
 
-        parent.__zIndexChildren.splice(i, 1);
+          parent.__zIndexChildren.splice(i, 1);
+        }
 
         var __prev = target.__prev,
             __next = target.__next;
@@ -24776,7 +24778,12 @@ var Dom = /*#__PURE__*/function (_Xom) {
   }, {
     key: "__deleteStruct",
     value: function __deleteStruct(child, childIndex) {
-      var cs = child.__struct;
+      var cs = child.__struct; // 未添加到真实DOM时没有
+
+      if (!cs) {
+        return;
+      }
+
       var total = (cs.total || 0) + 1;
       var root = this.__root,
           structs = root.__structs;
@@ -38105,6 +38112,10 @@ var Root = /*#__PURE__*/function (_Dom) {
   }, {
     key: "__addUpdate",
     value: function __addUpdate(node, keys, focus, addDom, removeDom, aniParams, cb) {
+      if (this.__isDestroyed) {
+        return;
+      }
+
       if (node instanceof Component) {
         node = node.shadowRoot;
       }

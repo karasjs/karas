@@ -346,6 +346,10 @@ class Dom extends Xom {
 
   __deleteStruct(child, childIndex) {
     let cs = child.__struct;
+    // 未添加到真实DOM时没有
+    if(!cs) {
+      return;
+    }
     let total = (cs.total || 0) + 1;
     let root = this.__root, structs = root.__structs;
     let i = structs.indexOf(cs);

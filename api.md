@@ -975,7 +975,8 @@ console.log(root.getTargetAtPoint(10, 10)); // { target: span, path: [0, 0], zPa
 #### draw
 * **类型** `Function`
 * **参数**
-  * isFirst `Boolean` 是否第一次，在append到真实DOM上的时候默认true
+  * isFirst `Boolean`
+    是否第一次，在append到真实DOM上的时候默认true。
 * * **说明**  
 强制刷新这个画布实例。
 
@@ -993,9 +994,12 @@ console.log(root.getTargetAtPoint(10, 10)); // { target: span, path: [0, 0], zPa
 
 #### resize
 * **参数**
-  * w `Number` 宽
-  * h `Number` 高
-  * cb `Function` 回调
+  * w `Number`
+    宽。
+  * h `Number`
+    高。
+  * cb `Function`
+    回调。
 * **说明**  
 重新调整画布尺寸大小。
 
@@ -1205,6 +1209,26 @@ karas.render(
     修改完渲染的回调。
 * **说明**
 修改图片的url。
+
+### 静态方法
+
+#### toWebglCache
+* **类型** `Function`
+* **参数**
+  * gl `WebGLContext`
+    webgl的上下文。
+  * root `Root`
+    根节点。
+  * src `String`
+    图片url。
+  * x `Number`
+    x位置。
+  * y `Number`
+    y位置。
+  * cb `Function`
+    成功回调。
+* **说明**
+将一张图片转为webgl的缓存纹理以供渲染。
 
 <a name="Component"></a>
 ## Component

@@ -242,6 +242,9 @@ declare namespace karas {
 
     getTargetAtPoint(x: number, y: number, includeIgnore: boolean): Node | Component | null
 
+    freeze(): void
+
+    unFreeze(): void
     get dom(): HTMLElement
 
     get uuid(): number

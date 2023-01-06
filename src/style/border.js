@@ -2880,7 +2880,7 @@ function calBorderRadiusInline(contentBoxList, currentStyle, computedStyle) {
 }
 
 function renderBorder(xom, renderMode, ctx, points, color, dx, dy) {
-  if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+  if(renderMode === mode.CANVAS) {
     ctx.beginPath();
     if(ctx.fillStyle !== color) {
       ctx.fillStyle = color;

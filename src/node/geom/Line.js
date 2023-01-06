@@ -276,7 +276,7 @@ class Line extends Geom {
       }
       __cacheProps.d = d;
     }
-    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+    if(renderMode === mode.CANVAS) {
       strokes.forEach((stroke, i) => {
         let strokeWidth = strokeWidths[i];
         let isStrokeRE = strokeWidth > 0 && stroke.k === 'radial' && Array.isArray(stroke.v);

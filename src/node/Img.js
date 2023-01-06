@@ -189,7 +189,7 @@ class Img extends Dom {
         [originX + width * 0.9, originY + height * 0.8],
         [originX + width * 0.15, originY + height * 0.8]
       ];
-      if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+      if(renderMode === mode.CANVAS) {
         ctx.strokeStyle = stroke;
         ctx.lineWidth = strokeWidth;
         ctx.fillStyle = fill;
@@ -250,7 +250,7 @@ class Img extends Dom {
       // 圆角需要生成一个mask
       let list = border.calRadius(originX, originY, width, height,
         borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
-      if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+      if(renderMode === mode.CANVAS) {
         // 有border-radius需模拟遮罩裁剪
         if(list) {
           ctx.save();

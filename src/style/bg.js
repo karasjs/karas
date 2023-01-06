@@ -54,7 +54,7 @@ function renderBgc(xom, renderMode, ctx, color, list, x, y, w, h, btlr, btrr, bb
       return arr;
     });
   }
-  if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+  if(renderMode === mode.CANVAS) {
     if(matrix) {
       ctx.save();
       let me = xom.matrixEvent;
@@ -314,7 +314,7 @@ function renderImage(xom, renderMode, ctx, loadBgi,
         }
       }
     }
-    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+    if(renderMode === mode.CANVAS) {
       if(needMask) {
         ctx.save();
         renderBgc(this, renderMode, ctx, '#FFF', null,

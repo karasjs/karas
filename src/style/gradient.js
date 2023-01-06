@@ -697,7 +697,7 @@ function renderConic(xom, renderMode, ctx, res, x, y, w, h, btlr, btrr, bbrr, bb
       [x, y],
     ];
   }
-  if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+  if(renderMode === mode.CANVAS) {
     let offscreen = inject.getOffscreenCanvas(w, h, '__$$CONIC_GRADIENT$$__', null);
     let imgData = offscreen.ctx.getImageData(0,0, w, h);
     gradient.getConicGradientImage(res.cx - x, res.cy - y, res.w, res.h, res.stop, imgData.data);

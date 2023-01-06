@@ -6844,7 +6844,7 @@
   }
 
   function renderBorder(xom, renderMode, ctx, points, color, dx, dy) {
-    if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+    if (renderMode === mode.CANVAS) {
       ctx.beginPath();
 
       if (ctx.fillStyle !== color) {
@@ -7633,7 +7633,7 @@
       list = [[x, y], [x + w, y], [x + w, y + h], [x, y + h], [x, y]];
     }
 
-    if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+    if (renderMode === mode.CANVAS) {
       var offscreen = inject.getOffscreenCanvas(w, h, '__$$CONIC_GRADIENT$$__', null);
       var imgData = offscreen.ctx.getImageData(0, 0, w, h);
       gradient$1.getConicGradientImage(res.cx - x, res.cy - y, res.w, res.h, res.stop, imgData.data);
@@ -13625,7 +13625,7 @@
       });
     }
 
-    if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+    if (renderMode === mode.CANVAS) {
       if (matrix$1) {
         ctx.save();
         var me = xom.matrixEvent;
@@ -13901,7 +13901,7 @@
         }
       }
 
-      if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+      if (renderMode === mode.CANVAS) {
         if (needMask) {
           ctx.save();
           renderBgc(this, renderMode, ctx, '#FFF', null, bx1, by1, bgW, bgH, btlr, btrr, bbrr, bblr, 'clip');
@@ -17806,7 +17806,7 @@
     var outer = [[x1 - n, y1 - n], [x1 - n, y2 + n], [x2 + n, y2 + n], [x2 + n, y1 - n], [x1 - n, y1 - n]];
 
     if (color[3] > 0) {
-      if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+      if (renderMode === mode.CANVAS) {
         ctx.save();
         ctx.beginPath(); // inset裁剪box外面
 
@@ -30536,7 +30536,7 @@
           var r = strokeWidth * 5;
           var pts = [[originX + width * 0.15, originY + height * 0.7], [originX + width * 0.3, originY + height * 0.4], [originX + width * 0.5, originY + height * 0.6], [originX + width * 0.6, originY + height * 0.5], [originX + width * 0.9, originY + height * 0.8], [originX + width * 0.15, originY + height * 0.8]];
 
-          if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+          if (renderMode === mode.CANVAS) {
             ctx.strokeStyle = stroke;
             ctx.lineWidth = strokeWidth;
             ctx.fillStyle = fill;
@@ -30587,7 +30587,7 @@
           // 圆角需要生成一个mask
           var list = border.calRadius(originX, originY, width, height, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
 
-          if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+          if (renderMode === mode.CANVAS) {
             // 有border-radius需模拟遮罩裁剪
             if (list) {
               ctx.save();
@@ -39648,7 +39648,7 @@
           __cacheProps.d = d;
         }
 
-        if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+        if (renderMode === mode.CANVAS) {
           strokes.forEach(function (stroke, i) {
             var strokeWidth = strokeWidths[i];
             var isStrokeRE = strokeWidth > 0 && stroke.k === 'radial' && Array.isArray(stroke.v);

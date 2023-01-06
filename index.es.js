@@ -13070,9 +13070,9 @@ var Component = /*#__PURE__*/function (_Event) {
       });
 
       if (isFunction$8(this.componentDidMount)) {
-        // freeze时不会触发refresh也就没有componentDidMount，所以要侦听unFreeze同时检查isDestroyed
+        // 可能已经销毁
         var cb = this.__cb = function () {
-          if (!_this2.__root.__isDestroyed) {
+          if (!_this2.__root.__isDestroyed && !_this2.__isDestroyed) {
             _this2.componentDidMount();
 
             _this2.__root.off(Event.REFRESH, cb);

@@ -60,9 +60,9 @@ class Component extends Event {
       }
     });
     if(isFunction(this.componentDidMount)) {
-      // freeze时不会触发refresh也就没有componentDidMount，所以要侦听unFreeze同时检查isDestroyed
+      // 可能已经销毁
       let cb = this.__cb = () => {
-        if(!this.__root.__isDestroyed) {
+        if(!this.__root.__isDestroyed && !this.__isDestroyed) {
           this.componentDidMount();
           this.__root.off(Event.REFRESH, cb);
           this.__cb = null;

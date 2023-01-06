@@ -64,11 +64,11 @@ class Component extends Event {
       let cb = this.__cb = () => {
         if(!this.__root.__isDestroyed) {
           this.componentDidMount();
-          this.__root.off([Event.REFRESH, Event.UN_FREEZE], cb);
+          this.__root.off(Event.REFRESH, cb);
           this.__cb = null;
         }
       };
-      this.__root.once([Event.REFRESH, Event.UN_FREEZE], cb);
+      this.__root.once(Event.REFRESH, cb);
     }
   }
 
@@ -88,7 +88,8 @@ class Component extends Event {
     }
     // 极限情况尚未触发需清除
     if(this.__cb) {
-      this.__root.off([Event.REFRESH, Event.UN_FREEZE], this.__cb);
+      this.__root.off(Event.REFRESH, this.__cb);
+      this.__cb = null;
     }
     if(isFunction(this.componentWillUnmount)) {
       this.componentWillUnmount();

@@ -425,11 +425,12 @@ class Root extends Dom {
     if(isFirst) {
       this.__reLayout();
     }
+    let rlv = this.__rlv;
     // freeze()冻住不渲染，但第一次不能生效
     if(this.props.noRender || !isFirst && this.__freeze) {
+      this.emit(Event.REFRESH, rlv, true);
       return;
     }
-    let rlv = this.__rlv;
     if(renderMode === mode.CANVAS) {
       this.__clearCanvas(ctx);
       renderCanvas(renderMode, ctx, this, isFirst, rlv);
@@ -456,7 +457,7 @@ class Root extends Dom {
       this.__clearWebgl(ctx);
       renderWebgl(renderMode, ctx, this, isFirst, rlv);
     }
-    this.emit(Event.REFRESH, rlv);
+    this.emit(Event.REFRESH, rlv, false);
     this.__rlv = NONE;
   }
 

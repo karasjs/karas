@@ -13075,13 +13075,13 @@ var Component = /*#__PURE__*/function (_Event) {
           if (!_this2.__root.__isDestroyed) {
             _this2.componentDidMount();
 
-            _this2.__root.off([Event.REFRESH, Event.UN_FREEZE], cb);
+            _this2.__root.off(Event.REFRESH, cb);
 
             _this2.__cb = null;
           }
         };
 
-        this.__root.once([Event.REFRESH, Event.UN_FREEZE], cb);
+        this.__root.once(Event.REFRESH, cb);
       }
     }
   }, {
@@ -13106,7 +13106,9 @@ var Component = /*#__PURE__*/function (_Event) {
 
 
       if (this.__cb) {
-        this.__root.off([Event.REFRESH, Event.UN_FREEZE], this.__cb);
+        this.__root.off(Event.REFRESH, this.__cb);
+
+        this.__cb = null;
       }
 
       if (isFunction$8(this.componentWillUnmount)) {
@@ -37916,14 +37918,14 @@ var Root = /*#__PURE__*/function (_Dom) {
 
       if (isFirst) {
         this.__reLayout();
-      } // freeze()冻住不渲染，但第一次不能生效
-
-
-      if (this.props.noRender || !isFirst && this.__freeze) {
-        return;
       }
 
-      var rlv = this.__rlv;
+      var rlv = this.__rlv; // freeze()冻住不渲染，但第一次不能生效
+
+      if (this.props.noRender || !isFirst && this.__freeze) {
+        this.emit(Event.REFRESH, rlv, true);
+        return;
+      }
 
       if (renderMode === mode.CANVAS) {
         this.__clearCanvas(ctx);
@@ -37953,7 +37955,7 @@ var Root = /*#__PURE__*/function (_Dom) {
         renderWebgl(renderMode, ctx, this, isFirst, rlv);
       }
 
-      this.emit(Event.REFRESH, rlv);
+      this.emit(Event.REFRESH, rlv, false);
       this.__rlv = NONE;
     }
   }, {

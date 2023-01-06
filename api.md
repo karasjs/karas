@@ -978,7 +978,7 @@ console.log(root.getTargetAtPoint(10, 10)); // { target: span, path: [0, 0], zPa
   * isFirst `Boolean`
     是否第一次，在append到真实DOM上的时候默认true。
 * * **说明**  
-强制刷新这个画布实例。
+强制刷新这个画布实例。会让[Root](#Root)触发`refresh`事件。
 
 #### destroy
 * **类型** `Function`
@@ -1005,11 +1005,11 @@ console.log(root.getTargetAtPoint(10, 10)); // { target: span, path: [0, 0], zPa
 
 #### freeze
 * **说明**  
-冻住这个画布实例，所有的更新都不触发渲染绘制，使得一直停留在之前的状态上。
+冻住这个画布实例，所有的更新都不触发渲染绘制，使得一直停留在之前的状态上。会让[Root](#Root)触发`freeze`事件。
 
 #### unFreeze
 * **说明**  
-解冻这个画布实例，恢复正常状态。
+解冻这个画布实例，恢复正常状态。会让[Root](#Root)触发`unFreeze`事件。
 
 <a name="Geom"></a>
 ## Geom
@@ -1351,7 +1351,7 @@ obj.emit('event-id');
 * **值** `refresh`
 * **参数**
   * lv `Number`
-    最大刷新等级。
+    最大刷新等级，当无刷新触发时为-1。
 * **说明**  
 枚举变量，一般在侦听[Root](#Root)刷新时使用。
 * **示例**
@@ -1560,6 +1560,16 @@ a.on(karas.Event.END, function() {
   console.log('end'); // 因为播放循环2次，所以第2轮结束时才会触发。
 });
 ```
+
+#### FREEZE
+* **类型** `String`
+* **说明**  
+枚举变量，调用[Root](#Root)的freeze()时触发。
+
+#### UN_FREEZE
+* **类型** `String`
+* **说明**  
+  枚举变量，调用[Root](#Root)的unFreeze()时触发。
 
 <a name="虚拟Dom"></a>
 ## 虚拟Dom

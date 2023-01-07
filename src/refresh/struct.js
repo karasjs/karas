@@ -2817,7 +2817,7 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
       } = node;
       node.__refreshLevel = NONE;
       // filter变化需重新生成，cacheTotal本身就存在要判断下；CACHE取消重新生成则无需判断
-      // img在只有自身的情况下自动生成并特殊对待，多个相同引用的img使用同一份资源
+      // img在只有自身的情况下自动生成并特殊对待，cache是<img>标签，多个相同引用的img使用同一份资源
       let need = node.__cacheAsBitmap &&
         ((__refreshLevel & (CACHE | FT)) || __refreshLevel >= REPAINT);
       if(!need && node instanceof Img) {

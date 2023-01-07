@@ -1616,6 +1616,11 @@
     }
 
     var ctx = o.getContext('2d');
+
+    if (!ctx) {
+      inject.error('Total canvas memory use exceeds the maximum limit');
+    }
+
     return {
       canvas: o,
       ctx: ctx,
@@ -1625,6 +1630,7 @@
         ctx.globalAlpha = 1;
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, width, height);
+        o.width = o.height = 0;
         this.available = false;
 
         if (debug.flag && o) {
@@ -37070,7 +37076,7 @@
         var __refreshLevel = node.__refreshLevel,
             __cacheTotal = node.__cacheTotal;
         node.__refreshLevel = NONE$1; // filter变化需重新生成，cacheTotal本身就存在要判断下；CACHE取消重新生成则无需判断
-        // img在只有自身的情况下自动生成并特殊对待，多个相同引用的img使用同一份资源
+        // img在只有自身的情况下自动生成并特殊对待，cache是<img>标签，多个相同引用的img使用同一份资源
 
         var need = node.__cacheAsBitmap && (__refreshLevel & (CACHE$1 | FT$1) || __refreshLevel >= REPAINT$1);
 
@@ -37618,7 +37624,8 @@
 
       _this.__task = [];
       _this.__ref = {};
-      _this.__freeze = false;
+      _this.__freeze = false; // 冻住只计算不渲染
+
       _this.__animateController = new Controller();
       Event.mix(_assertThisInitialized(_this));
       _this.__uuid = uuid++;
@@ -38483,14 +38490,18 @@
     }, {
       key: "freeze",
       value: function freeze() {
-        this.__freeze = true;
-        this.emit(Event.FREEZE);
+        if (!this.__freeze) {
+          this.__freeze = true;
+          this.emit(Event.FREEZE);
+        }
       }
     }, {
       key: "unFreeze",
       value: function unFreeze() {
-        this.__freeze = false;
-        this.emit(Event.UN_FREEZE);
+        if (this.__freeze) {
+          this.__freeze = false;
+          this.emit(Event.UN_FREEZE);
+        }
       }
     }, {
       key: "dom",

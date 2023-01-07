@@ -173,7 +173,7 @@ class Root extends Dom {
     // this.__scy = 1;
     this.__task = [];
     this.__ref = {};
-    this.__freeze = false;
+    this.__freeze = false; // 冻住只计算不渲染
     this.__animateController = new Controller();
     Event.mix(this);
     this.__uuid = uuid++;
@@ -923,13 +923,17 @@ class Root extends Dom {
   }
 
   freeze() {
-    this.__freeze = true;
-    this.emit(Event.FREEZE);
+    if(!this.__freeze) {
+      this.__freeze = true;
+      this.emit(Event.FREEZE);
+    }
   }
 
   unFreeze() {
-    this.__freeze = false;
-    this.emit(Event.UN_FREEZE);
+    if(this.__freeze) {
+      this.__freeze = false;
+      this.emit(Event.UN_FREEZE);
+    }
   }
 
   get dom() {

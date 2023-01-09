@@ -537,7 +537,7 @@ class Img extends Dom {
       return;
     }
     loadImg.src = v;
-    this.__loadAndRefresh(loadImg, () => {
+    this.__loadAndRefresh(loadImg, res => {
       let props = this.props;
       if(res.success) {
         if(isFunction(props.onLoad)) {

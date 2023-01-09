@@ -30772,14 +30772,14 @@
           b = max = min = this.__calSize(main, isDirectionRow ? w : h, true);
         } // auto和content固定尺寸比例计算
         else if (__loadImg.source || __loadImg.error) {
-          var _res = this.__preLayout(data);
+          var res = this.__preLayout(data);
 
           if (cross.u !== AUTO) {
             cross = this.__calSize(cross, isDirectionRow ? h : w, true);
-            var ratio = _res.w / _res.h;
+            var ratio = res.w / res.h;
             b = max = min = isDirectionRow ? cross * ratio : cross / ratio;
           } else {
-            b = max = min = isDirectionRow ? _res.w : _res.h;
+            b = max = min = isDirectionRow ? res.w : res.h;
           }
         } // 直接item的mpb影响basis
 
@@ -30890,7 +30890,7 @@
 
         loadImg.src = v;
 
-        this.__loadAndRefresh(loadImg, function () {
+        this.__loadAndRefresh(loadImg, function (res) {
           var props = _this2.props;
 
           if (res.success) {
@@ -30953,11 +30953,10 @@
           loadImg.source = ca.source;
           loadImg.width = loadImg.__width = ca.width;
           loadImg.height = loadImg.__height = ca.height;
-
-          var _res2 = ImgWebglCache.getInstance(mode.CANVAS, gl, root.__uuid, [x1, y1, x1 + loadImg.width, y1 + loadImg.height], loadImg, x1, y1);
+          var res = ImgWebglCache.getInstance(mode.CANVAS, gl, root.__uuid, [x1, y1, x1 + loadImg.width, y1 + loadImg.height], loadImg, x1, y1);
 
           if (isFunction$2(cb)) {
-            cb(_res2);
+            cb(res);
           }
         }
       }
@@ -44876,7 +44875,7 @@
     webgl: webgl
   };
 
-  var version = "0.85.2";
+  var version = "0.85.3";
 
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);

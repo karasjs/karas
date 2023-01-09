@@ -30392,13 +30392,15 @@ var Img = /*#__PURE__*/function (_Dom) {
 
       if (!ca) {
         inject.measureImg(src, function (res) {
-          if (res.success) {
-            if (isFunction$2(props.onLoad)) {
-              props.onLoad();
-            }
-          } else {
-            if (isFunction$2(props.onError)) {
-              props.onError();
+          if (src === loadImg.src) {
+            if (res.success) {
+              if (isFunction$2(props.onLoad)) {
+                props.onLoad();
+              }
+            } else {
+              if (isFunction$2(props.onError)) {
+                props.onError();
+              }
             }
           }
         });
@@ -30861,15 +30863,17 @@ var Img = /*#__PURE__*/function (_Dom) {
 
         if (v && v !== loadImg.src) {
           inject.measureImg(v, function (res) {
-            var props = _this2.props;
+            if (loadImg.src === v) {
+              var props = _this2.props;
 
-            if (res.success) {
-              if (isFunction$2(props.onLoad)) {
-                props.onLoad();
-              }
-            } else {
-              if (isFunction$2(props.onError)) {
-                props.onError();
+              if (res.success) {
+                if (isFunction$2(props.onLoad)) {
+                  props.onLoad();
+                }
+              } else {
+                if (isFunction$2(props.onError)) {
+                  props.onError();
+                }
               }
             }
           });
@@ -30883,24 +30887,23 @@ var Img = /*#__PURE__*/function (_Dom) {
       }
 
       loadImg.src = v;
+      inject.measureImg(v, function (res) {
+        if (loadImg.src === v) {
+          var props = _this2.props;
 
-      this.__loadAndRefresh(loadImg, function (res) {
-        var props = _this2.props;
-
-        if (res.success) {
-          if (isFunction$2(props.onLoad)) {
-            props.onLoad();
+          if (res.success) {
+            if (isFunction$2(props.onLoad)) {
+              props.onLoad();
+            }
+          } else {
+            if (isFunction$2(props.onError)) {
+              props.onError();
+            }
           }
-        } else {
-          if (isFunction$2(props.onError)) {
-            props.onError();
-          }
-        }
-
-        if (isFunction$2(cb)) {
-          cb();
         }
       });
+
+      this.__loadAndRefresh(loadImg, cb);
     }
   }, {
     key: "appendChild",

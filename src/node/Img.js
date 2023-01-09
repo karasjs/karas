@@ -51,14 +51,16 @@ class Img extends Dom {
       let ca = inject.IMG[src];
       if(!ca) {
         inject.measureImg(src, res => {
-          if(res.success) {
-            if(isFunction(props.onLoad)) {
-              props.onLoad();
+          if(src === loadImg.src) {
+            if(res.success) {
+              if(isFunction(props.onLoad)) {
+                props.onLoad();
+              }
             }
-          }
-          else {
-            if(isFunction(props.onError)) {
-              props.onError();
+            else {
+              if(isFunction(props.onError)) {
+                props.onError();
+              }
             }
           }
         });
@@ -518,15 +520,17 @@ class Img extends Dom {
       loadImg.src = v;
       if(v && v !== loadImg.src) {
         inject.measureImg(v, res => {
-          let props = this.props;
-          if(res.success) {
-            if(isFunction(props.onLoad)) {
-              props.onLoad();
+          if(loadImg.src === v) {
+            let props = this.props;
+            if(res.success) {
+              if(isFunction(props.onLoad)) {
+                props.onLoad();
+              }
             }
-          }
-          else {
-            if(isFunction(props.onError)) {
-              props.onError();
+            else {
+              if(isFunction(props.onError)) {
+                props.onError();
+              }
             }
           }
         });
@@ -537,22 +541,22 @@ class Img extends Dom {
       return;
     }
     loadImg.src = v;
-    this.__loadAndRefresh(loadImg, res => {
-      let props = this.props;
-      if(res.success) {
-        if(isFunction(props.onLoad)) {
-          props.onLoad();
+    inject.measureImg(v, res => {
+      if(loadImg.src === v) {
+        let props = this.props;
+        if(res.success) {
+          if(isFunction(props.onLoad)) {
+            props.onLoad();
+          }
         }
-      }
-      else {
-        if(isFunction(props.onError)) {
-          props.onError();
+        else {
+          if(isFunction(props.onError)) {
+            props.onError();
+          }
         }
-      }
-      if(isFunction(cb)) {
-        cb();
       }
     });
+    this.__loadAndRefresh(loadImg, cb);
   }
 
   appendChild() {

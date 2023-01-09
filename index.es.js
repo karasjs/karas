@@ -1610,6 +1610,11 @@ function offscreenCanvas(key, width, height, message) {
   }
 
   var ctx = o.getContext('2d');
+
+  if (!ctx) {
+    inject.error('Total canvas memory use exceeds the maximum limit');
+  }
+
   return {
     canvas: o,
     ctx: ctx,
@@ -1619,6 +1624,7 @@ function offscreenCanvas(key, width, height, message) {
       ctx.globalAlpha = 1;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, width, height);
+      o.width = o.height = 0;
       this.available = false;
 
       if (debug.flag && o) {
@@ -6838,7 +6844,7 @@ function calBorderRadiusInline(contentBoxList, currentStyle, computedStyle) {
 }
 
 function renderBorder(xom, renderMode, ctx, points, color, dx, dy) {
-  if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+  if (renderMode === mode.CANVAS) {
     ctx.beginPath();
 
     if (ctx.fillStyle !== color) {
@@ -7627,7 +7633,7 @@ function renderConic(xom, renderMode, ctx, res, x, y, w, h, btlr, btrr, bbrr, bb
     list = [[x, y], [x + w, y], [x + w, y + h], [x, y + h], [x, y]];
   }
 
-  if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+  if (renderMode === mode.CANVAS) {
     var offscreen = inject.getOffscreenCanvas(w, h, '__$$CONIC_GRADIENT$$__', null);
     var imgData = offscreen.ctx.getImageData(0, 0, w, h);
     gradient$1.getConicGradientImage(res.cx - x, res.cy - y, res.w, res.h, res.stop, imgData.data);
@@ -13619,7 +13625,7 @@ function renderBgc(xom, renderMode, ctx, color, list, x, y, w, h, btlr, btrr, bb
     });
   }
 
-  if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+  if (renderMode === mode.CANVAS) {
     if (matrix$1) {
       ctx.save();
       var me = xom.matrixEvent;
@@ -13895,7 +13901,7 @@ function renderImage(xom, renderMode, ctx, loadBgi, bx1, by1, bx2, by2, btlr, bt
       }
     }
 
-    if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+    if (renderMode === mode.CANVAS) {
       if (needMask) {
         ctx.save();
         renderBgc(this, renderMode, ctx, '#FFF', null, bx1, by1, bgW, bgH, btlr, btrr, bbrr, bblr, 'clip');
@@ -17800,7 +17806,7 @@ function renderBoxShadow(xom, renderMode, ctx, data, x1, y1, x2, y2, w, h) {
   var outer = [[x1 - n, y1 - n], [x1 - n, y2 + n], [x2 + n, y2 + n], [x2 + n, y1 - n], [x1 - n, y1 - n]];
 
   if (color[3] > 0) {
-    if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+    if (renderMode === mode.CANVAS) {
       ctx.save();
       ctx.beginPath(); // inset裁剪box外面
 
@@ -30530,7 +30536,7 @@ var Img = /*#__PURE__*/function (_Dom) {
         var r = strokeWidth * 5;
         var pts = [[originX + width * 0.15, originY + height * 0.7], [originX + width * 0.3, originY + height * 0.4], [originX + width * 0.5, originY + height * 0.6], [originX + width * 0.6, originY + height * 0.5], [originX + width * 0.9, originY + height * 0.8], [originX + width * 0.15, originY + height * 0.8]];
 
-        if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+        if (renderMode === mode.CANVAS) {
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
           ctx.fillStyle = fill;
@@ -30581,7 +30587,7 @@ var Img = /*#__PURE__*/function (_Dom) {
         // 圆角需要生成一个mask
         var list = border.calRadius(originX, originY, width, height, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
 
-        if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+        if (renderMode === mode.CANVAS) {
           // 有border-radius需模拟遮罩裁剪
           if (list) {
             ctx.save();
@@ -37064,7 +37070,7 @@ function renderCanvas$1(renderMode, ctx, root, isFirst, rlv) {
       var __refreshLevel = node.__refreshLevel,
           __cacheTotal = node.__cacheTotal;
       node.__refreshLevel = NONE$1; // filter变化需重新生成，cacheTotal本身就存在要判断下；CACHE取消重新生成则无需判断
-      // img在只有自身的情况下自动生成并特殊对待，多个相同引用的img使用同一份资源
+      // img在只有自身的情况下自动生成并特殊对待，cache是<img>标签，多个相同引用的img使用同一份资源
 
       var need = node.__cacheAsBitmap && (__refreshLevel & (CACHE$1 | FT$1) || __refreshLevel >= REPAINT$1);
 
@@ -37612,7 +37618,8 @@ var Root = /*#__PURE__*/function (_Dom) {
 
     _this.__task = [];
     _this.__ref = {};
-    _this.__freeze = false;
+    _this.__freeze = false; // 冻住只计算不渲染
+
     _this.__animateController = new Controller();
     Event.mix(_assertThisInitialized(_this));
     _this.__uuid = uuid++;
@@ -38477,14 +38484,18 @@ var Root = /*#__PURE__*/function (_Dom) {
   }, {
     key: "freeze",
     value: function freeze() {
-      this.__freeze = true;
-      this.emit(Event.FREEZE);
+      if (!this.__freeze) {
+        this.__freeze = true;
+        this.emit(Event.FREEZE);
+      }
     }
   }, {
     key: "unFreeze",
     value: function unFreeze() {
-      this.__freeze = false;
-      this.emit(Event.UN_FREEZE);
+      if (this.__freeze) {
+        this.__freeze = false;
+        this.emit(Event.UN_FREEZE);
+      }
     }
   }, {
     key: "dom",
@@ -39642,7 +39653,7 @@ var Line = /*#__PURE__*/function (_Geom) {
         __cacheProps.d = d;
       }
 
-      if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+      if (renderMode === mode.CANVAS) {
         strokes.forEach(function (stroke, i) {
           var strokeWidth = strokeWidths[i];
           var isStrokeRE = strokeWidth > 0 && stroke.k === 'radial' && Array.isArray(stroke.v);

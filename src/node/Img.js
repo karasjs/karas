@@ -50,7 +50,18 @@ class Img extends Dom {
     else {
       let ca = inject.IMG[src];
       if(!ca) {
-        inject.measureImg(src, null);
+        inject.measureImg(src, res => {
+          if(res.success) {
+            if(isFunction(props.onLoad)) {
+              props.onLoad();
+            }
+          }
+          else {
+            if(isFunction(props.onError)) {
+              props.onError();
+            }
+          }
+        });
       }
       else if(ca.state === inject.LOADED) {
         loadImg.source = ca.source;
@@ -505,14 +516,43 @@ class Img extends Dom {
     // 相等或空且当前error直接返回
     if(v === loadImg.src || this.__isDestroyed || !v && loadImg.error) {
       loadImg.src = v;
-      inject.measureImg(v, null);
+      if(v && v !== loadImg.src) {
+        inject.measureImg(v, res => {
+          let props = this.props;
+          if(res.success) {
+            if(isFunction(props.onLoad)) {
+              props.onLoad();
+            }
+          }
+          else {
+            if(isFunction(props.onError)) {
+              props.onError();
+            }
+          }
+        });
+      }
       if(isFunction(cb)) {
         cb();
       }
       return;
     }
     loadImg.src = v;
-    this.__loadAndRefresh(loadImg, cb);
+    this.__loadAndRefresh(loadImg, () => {
+      let props = this.props;
+      if(res.success) {
+        if(isFunction(props.onLoad)) {
+          props.onLoad();
+        }
+      }
+      else {
+        if(isFunction(props.onError)) {
+          props.onError();
+        }
+      }
+      if(isFunction(cb)) {
+        cb();
+      }
+    });
   }
 
   appendChild() {

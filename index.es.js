@@ -30391,7 +30391,17 @@ var Img = /*#__PURE__*/function (_Dom) {
       var ca = inject.IMG[src];
 
       if (!ca) {
-        inject.measureImg(src, null);
+        inject.measureImg(src, function (res) {
+          if (res.success) {
+            if (isFunction$2(props.onLoad)) {
+              props.onLoad();
+            }
+          } else {
+            if (isFunction$2(props.onError)) {
+              props.onError();
+            }
+          }
+        });
       } else if (ca.state === inject.LOADED) {
         loadImg.source = ca.source;
         loadImg.width = loadImg.__width = ca.width;
@@ -30756,14 +30766,14 @@ var Img = /*#__PURE__*/function (_Dom) {
         b = max = min = this.__calSize(main, isDirectionRow ? w : h, true);
       } // auto和content固定尺寸比例计算
       else if (__loadImg.source || __loadImg.error) {
-        var res = this.__preLayout(data);
+        var _res = this.__preLayout(data);
 
         if (cross.u !== AUTO) {
           cross = this.__calSize(cross, isDirectionRow ? h : w, true);
-          var ratio = res.w / res.h;
+          var ratio = _res.w / _res.h;
           b = max = min = isDirectionRow ? cross * ratio : cross / ratio;
         } else {
-          b = max = min = isDirectionRow ? res.w : res.h;
+          b = max = min = isDirectionRow ? _res.w : _res.h;
         }
       } // 直接item的mpb影响basis
 
@@ -30842,11 +30852,28 @@ var Img = /*#__PURE__*/function (_Dom) {
   }, {
     key: "updateSrc",
     value: function updateSrc(v, cb) {
+      var _this2 = this;
+
       var loadImg = this.__loadImg; // 相等或空且当前error直接返回
 
       if (v === loadImg.src || this.__isDestroyed || !v && loadImg.error) {
         loadImg.src = v;
-        inject.measureImg(v, null);
+
+        if (v && v !== loadImg.src) {
+          inject.measureImg(v, function (res) {
+            var props = _this2.props;
+
+            if (res.success) {
+              if (isFunction$2(props.onLoad)) {
+                props.onLoad();
+              }
+            } else {
+              if (isFunction$2(props.onError)) {
+                props.onError();
+              }
+            }
+          });
+        }
 
         if (isFunction$2(cb)) {
           cb();
@@ -30857,7 +30884,23 @@ var Img = /*#__PURE__*/function (_Dom) {
 
       loadImg.src = v;
 
-      this.__loadAndRefresh(loadImg, cb);
+      this.__loadAndRefresh(loadImg, function () {
+        var props = _this2.props;
+
+        if (res.success) {
+          if (isFunction$2(props.onLoad)) {
+            props.onLoad();
+          }
+        } else {
+          if (isFunction$2(props.onError)) {
+            props.onError();
+          }
+        }
+
+        if (isFunction$2(cb)) {
+          cb();
+        }
+      });
     }
   }, {
     key: "appendChild",
@@ -30904,10 +30947,11 @@ var Img = /*#__PURE__*/function (_Dom) {
         loadImg.source = ca.source;
         loadImg.width = loadImg.__width = ca.width;
         loadImg.height = loadImg.__height = ca.height;
-        var res = ImgWebglCache.getInstance(mode.CANVAS, gl, root.__uuid, [x1, y1, x1 + loadImg.width, y1 + loadImg.height], loadImg, x1, y1);
+
+        var _res2 = ImgWebglCache.getInstance(mode.CANVAS, gl, root.__uuid, [x1, y1, x1 + loadImg.width, y1 + loadImg.height], loadImg, x1, y1);
 
         if (isFunction$2(cb)) {
-          cb(res);
+          cb(_res2);
         }
       }
     }

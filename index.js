@@ -28794,12 +28794,11 @@
         }
 
         var m = MAX,
-            n = NUMBER; // 只有超过一定尺寸时用8192最大尺寸，大部分情况4096足够，且8192会轻微卡顿一下
-
-        if (size <= 2048 && MAX === 8192) {
-          m = 4096;
-          n = Math.ceil(m / UNIT);
-        }
+            n = NUMBER; // 限制使用2048，部分机型大尺寸会卡或者黑屏，webgl甚至不渲染，超过的 TODO:
+        // if(size < 2048 && MAX === 8192) {
+        //   m = 2048;
+        //   n = Math.ceil(m / UNIT);
+        // }
 
         var key = rootId + ',' + renderMode; // 每个root复用自己的合图，webgl中为了隔离不同实例
 
@@ -28813,7 +28812,9 @@
             continue;
           }
 
-          if ((pos = item.getFreePos(unitSize)) > -1) {
+          pos = item.getFreePos(unitSize);
+
+          if (pos > -1) {
             page = item;
             break;
           }
@@ -28881,7 +28882,7 @@
 
         if (MAX_TEXTURE_SIZE !== MAX) {
           // 超过限制会明显卡一下
-          Page.MAX = Math.min(MAX_TEXTURE_SIZE, 8192);
+          Page.MAX = Math.min(MAX_TEXTURE_SIZE, 2048);
         }
       }
     }]);
@@ -30319,16 +30320,73 @@
       key: "getInstance",
       value: function getInstance(renderMode, ctx, rootId, bbox, loadImg, x1, y1) {
         var key = rootId + ',' + loadImg.width + ' ' + loadImg.height + ' ' + loadImg.src;
+        var w = bbox[2] - bbox[0],
+            h = bbox[3] - bbox[1];
 
         if (HASH$1.hasOwnProperty(key)) {
           var o = HASH$1[key];
           o.count++;
-          var w = bbox[2] - bbox[0],
-              h = bbox[3] - bbox[1];
           var _cache = o.cache;
           var res = new ImgWebglCache(renderMode, ctx, rootId, w, h, bbox, _cache.page, _cache.pos, x1, y1);
           res.key = key;
           return res;
+        } // 超过动态合图纹理MAX一半的使用单图纹理，没有count数据不调用render
+
+
+        if (w > Page.MAX * 0.5 || h > Page.MAX * 0.5) {
+          var _cache2 = {
+            key: key,
+            renderMode: renderMode,
+            ctx: ctx,
+            rootId: rootId,
+            __tx1: 0,
+            __ty1: 0,
+            __tx2: 1,
+            __ty2: 1,
+            __width: w,
+            __height: h,
+            __available: true,
+            __enabled: true,
+
+            get available() {
+              return this.__available;
+            },
+
+            get enabled() {
+              return this.__enabled;
+            },
+
+            __page: {
+              del: function del() {
+                ctx.deleteTexture(this.texture);
+              },
+              texture: webgl.createTexture(ctx, loadImg.source, 0, null, null)
+            },
+            release: function release() {
+              if (this.__enabled) {
+                var _key = this.key; // 一定有
+
+                var _o = HASH$1[_key];
+                _o.count--;
+
+                if (!_o.count) {
+                  delete HASH$1[_key];
+
+                  this.__page.del();
+
+                  this.__page = null;
+                }
+
+                this.__enabled = false;
+                return true;
+              }
+            }
+          };
+          HASH$1[key] = {
+            cache: _cache2,
+            count: 1
+          };
+          return _cache2;
         }
 
         var cache = Cache.getInstance(renderMode, ctx, rootId, bbox, x1, y1, this, CanvasPage, null); // 超限为空

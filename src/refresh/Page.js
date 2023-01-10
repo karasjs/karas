@@ -142,11 +142,11 @@ class Page {
       unitSize <<= 1;
     }
     let m = MAX, n = NUMBER;
-    // 只有超过一定尺寸时用8192最大尺寸，大部分情况4096足够，且8192会轻微卡顿一下
-    if(size <= 2048 && MAX === 8192) {
-      m = 4096;
-      n = Math.ceil(m / UNIT);
-    }
+    // 限制使用2048，部分机型大尺寸会卡或者黑屏，webgl甚至不渲染，超过的 TODO:
+    // if(size < 2048 && MAX === 8192) {
+    //   m = 2048;
+    //   n = Math.ceil(m / UNIT);
+    // }
     let key = rootId + ',' + renderMode;
     // 每个root复用自己的合图，webgl中为了隔离不同实例
     let list = HASH[key] = HASH[key] || [];
@@ -156,7 +156,8 @@ class Page {
       if(excludePage && item === excludePage || item.__size !== m) {
         continue;
       }
-      if((pos = item.getFreePos(unitSize)) > -1) {
+      pos = item.getFreePos(unitSize);
+      if(pos > -1) {
         page = item;
         break;
       }
@@ -209,7 +210,7 @@ class Page {
     init = true;
     if(MAX_TEXTURE_SIZE !== MAX) {
       // 超过限制会明显卡一下
-      Page.MAX = Math.min(MAX_TEXTURE_SIZE, 8192);
+      Page.MAX = Math.min(MAX_TEXTURE_SIZE, 2048);
     }
   }
 }

@@ -39,6 +39,47 @@ class ImgWebglCache extends CanvasCache {
       let o = HASH[key];
       o.count++;
       let cache = o.cache;
+      if(w > Page.MAX * 0.5 || h > Page.MAX * 0.5) {
+        return {
+          key,
+          renderMode,
+          ctx,
+          rootId,
+          __tx1: 0,
+          __ty1: 0,
+          __tx2: 1,
+          __ty2: 1,
+          __width: w,
+          __height: h,
+          __available: true,
+          __enabled: true,
+          get available() {
+            return this.__available;
+          },
+          get enabled() {
+            return this.__enabled;
+          },
+          __page: cache.page,
+          get page() {
+            return this.__page;
+          },
+          release() {
+            if(this.__enabled) {
+              let key = this.key;
+              // 一定有
+              let o = HASH[key];
+              o.count--;
+              if(!o.count) {
+                delete HASH[key];
+                this.__page.del();
+                this.__page = null;
+              }
+              this.__enabled = false;
+              return true;
+            }
+          },
+        };
+      }
       let res = new ImgWebglCache(renderMode, ctx, rootId, w, h, bbox, cache.page, cache.pos, x1, y1);
       res.key = key;
       return res;
@@ -69,6 +110,9 @@ class ImgWebglCache extends CanvasCache {
             ctx.deleteTexture(this.texture);
           },
           texture: webgl.createTexture(ctx, loadImg.source, 0, null, null),
+        },
+        get page() {
+          return this.__page;
         },
         release() {
           if(this.__enabled) {

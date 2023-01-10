@@ -30321,6 +30321,58 @@ var ImgWebglCache = /*#__PURE__*/function (_CanvasCache) {
         var o = HASH$1[key];
         o.count++;
         var _cache = o.cache;
+
+        if (w > Page.MAX * 0.5 || h > Page.MAX * 0.5) {
+          return {
+            key: key,
+            renderMode: renderMode,
+            ctx: ctx,
+            rootId: rootId,
+            __tx1: 0,
+            __ty1: 0,
+            __tx2: 1,
+            __ty2: 1,
+            __width: w,
+            __height: h,
+            __available: true,
+            __enabled: true,
+
+            get available() {
+              return this.__available;
+            },
+
+            get enabled() {
+              return this.__enabled;
+            },
+
+            __page: _cache.page,
+
+            get page() {
+              return this.__page;
+            },
+
+            release: function release() {
+              if (this.__enabled) {
+                var _key = this.key; // 一定有
+
+                var _o = HASH$1[_key];
+                _o.count--;
+
+                if (!_o.count) {
+                  delete HASH$1[_key];
+
+                  this.__page.del();
+
+                  this.__page = null;
+                }
+
+                this.__enabled = false;
+                return true;
+              }
+            }
+          };
+        }
+
         var res = new ImgWebglCache(renderMode, ctx, rootId, w, h, bbox, _cache.page, _cache.pos, x1, y1);
         res.key = key;
         return res;
@@ -30356,15 +30408,20 @@ var ImgWebglCache = /*#__PURE__*/function (_CanvasCache) {
             },
             texture: webgl.createTexture(ctx, loadImg.source, 0, null, null)
           },
+
+          get page() {
+            return this.__page;
+          },
+
           release: function release() {
             if (this.__enabled) {
-              var _key = this.key; // 一定有
+              var _key2 = this.key; // 一定有
 
-              var _o = HASH$1[_key];
-              _o.count--;
+              var _o2 = HASH$1[_key2];
+              _o2.count--;
 
-              if (!_o.count) {
-                delete HASH$1[_key];
+              if (!_o2.count) {
+                delete HASH$1[_key2];
 
                 this.__page.del();
 
@@ -44930,7 +44987,7 @@ var refresh = {
   webgl: webgl
 };
 
-var version = "0.85.4";
+var version = "0.85.5";
 
 Geom.register('$line', Line);
 Geom.register('$polyline', Polyline);

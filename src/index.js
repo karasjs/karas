@@ -28,6 +28,8 @@ import refresh from './refresh/index';
 import { version } from '../package.json';
 import ca from './gl/ca';
 
+const { isString } = util;
+
 Geom.register('$line', Line);
 Geom.register('$polyline', Polyline);
 Geom.register('$polygon', Polygon);
@@ -53,7 +55,7 @@ let karas = {
     for(let i = 2, len = arguments.length; i < len; i++) {
       children.push(arguments[i]);
     }
-    if(util.isString(tagName)) {
+    if(isString(tagName)) {
       if(tagName.charAt(0) === '$') {
         return this.createGm(tagName, props);
       }
@@ -88,7 +90,7 @@ let karas = {
   },
   createGm(tagName, props) {
     let klass = Geom.getRegister(tagName);
-    if(!util.isString(tagName)) {
+    if(!isString(tagName)) {
       let s = /^function ([\w$]+)/.exec(tagName.toString());
       if(s && s.length > 1) {
         tagName = s[1];
@@ -98,7 +100,10 @@ let karas = {
   },
   createCp(tagName, props, children = []) {
     let klass = Component.getRegister(tagName);
-    props.children = children; // 特例，cp的children通过props传入
+    if(isString(tagName)) {
+      props.tagName = tagName; // 特例，tagName如果是string需要记录下来
+    }
+    props.children = children; // 特例，children通过props传入
     return new klass(props);
   },
   parse(json, dom, options) {

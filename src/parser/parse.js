@@ -45,6 +45,7 @@ function parse(karas, json, animateRecords, areaStart, areaDuration) {
   }
   else if(/^[A-Z]/.test(tagName)) {
     let cp = Component.getRegister(tagName);
+    props.tagName = props.tagName || tagName;
     vd = karas.createCp(cp, props, children.map(item => {
       return parse(karas, item, animateRecords, areaStart, areaDuration);
     }));

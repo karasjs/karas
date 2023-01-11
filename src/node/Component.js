@@ -13,7 +13,7 @@ const REGISTER = {};
 class Component extends Event {
   constructor(props = {}) {
     super();
-    this.__tagName = /(?:function|class)\s+([\w$]+)/.exec(this.constructor.toString())[1];
+    this.__tagName = props.tagName || /(?:function|class)\s+([\w$]+)/.exec(this.constructor.toString())[1];
     // 构建工具中都是{}，手写可能出现[]情况
     if(Array.isArray(props)) {
       this.props = util.arr2hash(props);

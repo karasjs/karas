@@ -977,7 +977,7 @@ function isType(type) {
 }
 
 var isObject$1 = isType('Object');
-var isString$1 = isType('String');
+var isString$2 = isType('String');
 var isFunction$b = isType('Function');
 var isNumber$1 = isType('Number');
 var isBoolean = isType('Boolean');
@@ -1534,7 +1534,7 @@ function replaceRgba2Hex$1(s) {
 
 var util = {
   isObject: isObject$1,
-  isString: isString$1,
+  isString: isString$2,
   isFunction: isFunction$b,
   isNumber: isNumber$1,
   isBoolean: isBoolean,
@@ -2762,7 +2762,7 @@ var opentype = {
   }
 };
 
-var isString = util.isString;
+var isString$1 = util.isString;
 var CALLBACK = {};
 var o$3 = {
   info: {
@@ -2827,7 +2827,7 @@ var o$3 = {
     // url和data同时需要，也可以先data后url，不能先url后data
     name = name.toLowerCase();
 
-    if (!isString(url) && !(url instanceof ArrayBuffer)) {
+    if (!isString$1(url) && !(url instanceof ArrayBuffer)) {
       data = url;
       url = null;
     }
@@ -13020,7 +13020,7 @@ var Component = /*#__PURE__*/function (_Event) {
 
     var props = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
     _this = _Event.call(this) || this;
-    _this.__tagName = /(?:function|class)\s+([\w$]+)/.exec(_this.constructor.toString())[1]; // 构建工具中都是{}，手写可能出现[]情况
+    _this.__tagName = props.tagName || /(?:function|class)\s+([\w$]+)/.exec(_this.constructor.toString())[1]; // 构建工具中都是{}，手写可能出现[]情况
 
     if (Array.isArray(props)) {
       _this.props = util.arr2hash(props);
@@ -43893,6 +43893,7 @@ function parse(karas, json, animateRecords, areaStart, areaDuration) {
     vd = karas.createGm(tagName, props);
   } else if (/^[A-Z]/.test(tagName)) {
     var cp = Component.getRegister(tagName);
+    props.tagName = props.tagName || tagName;
     vd = karas.createCp(cp, props, children.map(function (item) {
       return parse(karas, item, animateRecords, areaStart, areaDuration);
     }));
@@ -44987,8 +44988,9 @@ var refresh = {
   webgl: webgl
 };
 
-var version = "0.85.6";
+var version = "0.85.7";
 
+var isString = util.isString;
 Geom.register('$line', Line);
 Geom.register('$polyline', Polyline);
 Geom.register('$polygon', Polygon);
@@ -45017,7 +45019,7 @@ var karas$1 = {
       children.push(arguments[i]);
     }
 
-    if (util.isString(tagName)) {
+    if (isString(tagName)) {
       if (tagName.charAt(0) === '$') {
         return this.createGm(tagName, props);
       } else if (/^[A-Z]/.test(tagName)) {
@@ -45054,7 +45056,7 @@ var karas$1 = {
   createGm: function createGm(tagName, props) {
     var klass = Geom.getRegister(tagName);
 
-    if (!util.isString(tagName)) {
+    if (!isString(tagName)) {
       var s = /^function ([\w$]+)/.exec(tagName.toString());
 
       if (s && s.length > 1) {
@@ -45067,7 +45069,12 @@ var karas$1 = {
   createCp: function createCp(tagName, props) {
     var children = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
     var klass = Component.getRegister(tagName);
-    props.children = children; // 特例，cp的children通过props传入
+
+    if (isString(tagName)) {
+      props.tagName = tagName; // 特例，tagName如果是string需要记录下来
+    }
+
+    props.children = children; // 特例，children通过props传入
 
     return new klass(props);
   },

@@ -1111,7 +1111,7 @@ function normalize(style, resetList = []) {
   }
   temp = style.pointerEvents;
   if(temp !== undefined) {
-    if(temp === null || /inherit/i.test(temp)) {
+    if(temp === null || /inherit/i.test(temp) || /auto/i.test(temp)) {
       res[POINTER_EVENTS] = { u: INHERIT };
     }
     else {

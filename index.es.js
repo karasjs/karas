@@ -9690,7 +9690,7 @@ function normalize$1(style) {
   temp = style.pointerEvents;
 
   if (temp !== undefined) {
-    if (temp === null || /inherit/i.test(temp)) {
+    if (temp === null || /inherit/i.test(temp) || /auto/i.test(temp)) {
       res[POINTER_EVENTS$2] = {
         u: INHERIT$3
       };
@@ -44987,7 +44987,7 @@ var refresh = {
   webgl: webgl
 };
 
-var version = "0.85.5";
+var version = "0.85.6";
 
 Geom.register('$line', Line);
 Geom.register('$polyline', Polyline);

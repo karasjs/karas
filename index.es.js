@@ -21614,12 +21614,12 @@ var Xom = /*#__PURE__*/function (_Node) {
         }
 
         return;
-      }
-
-      parent.__deleteStruct(this, i); // 不可见仅改变数据结构
+      } // root没有
 
 
-      if (this.__computedStyle[DISPLAY$6] === 'none' || parent.__computedStyle[DISPLAY$6] === 'none') {
+      parent && parent.__deleteStruct(this, i); // 不可见仅改变数据结构
+
+      if (this.__computedStyle[DISPLAY$6] === 'none' || parent && parent.__computedStyle[DISPLAY$6] === 'none') {
         this.__destroy();
 
         if (isFunction$4(cb)) {
@@ -28464,9 +28464,9 @@ var Cache = /*#__PURE__*/function () {
       this.dy = this.__y - bbox[1];
       this.dbx = x1 - bbox[0]; // 原始sx1/sy1和box原点的差值
 
-      this.dby = y1 - bbox[1];
-      this.update();
-    }
+      this.dby = y1 - bbox[1]; // this.update();
+    } // canvas绘制时主动调用更新
+
   }, {
     key: "update",
     value: function update() {
@@ -36722,6 +36722,8 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
             __cache.__available = true;
             node.__cache = __cache;
             node.render(mode.CANVAS, __cache.ctx, __cache.dx, __cache.dy);
+
+            __cache.update();
           } else {
             __cache && __cache.release();
             node.__limitCache = true;
@@ -36869,6 +36871,8 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
 
             if (!onlyImg || _cache5.count === 1) {
               node.render(mode.CANVAS, _cache5.ctx, _cache5.dx, _cache5.dy);
+
+              _cache5.update();
             }
           } else {
             _cache5 && _cache5.release();
@@ -38147,8 +38151,19 @@ var Root = /*#__PURE__*/function (_Dom) {
       this.__rlv = NONE;
     }
   }, {
+    key: "remove",
+    value: function remove() {
+      _get(_getPrototypeOf(Root.prototype), "remove", this).call(this);
+
+      this.destroy();
+    }
+  }, {
     key: "destroy",
     value: function destroy() {
+      this.children.forEach(function (item) {
+        item.remove();
+      });
+
       this.__destroy();
 
       this.__animateController.__destroy();
@@ -38160,9 +38175,13 @@ var Root = /*#__PURE__*/function (_Dom) {
         n.__root = null;
       }
 
-      var gl = this.ctx;
+      var gl = this.__ctx;
 
-      if (this.renderMode === mode.WEBGL) {
+      if (this.renderMode === mode.CANVAS) {
+        this.__clearCanvas(gl);
+      } else if (this.renderMode === mode.WEBGL) {
+        this.__clearWebgl(gl);
+
         ['program', 'programMask', 'programClip', 'programOverflow', 'programCm', 'programDs', 'programMbmMp', 'programMbmSr', 'programMbmOl', 'programMbmDk', 'programMbmLt', 'programMbmCd', 'programMbmCb', 'programMbmHl', 'programMbmSl', 'programMbmDf', 'programMbmEx', 'programMbmHue', 'programMbmSt', 'programMbmCl', 'programMbmLm'].forEach(function (k) {
           var p = gl[k];
           gl.deleteShader(p.vertexShader);
@@ -45008,7 +45027,7 @@ var refresh = {
   webgl: webgl
 };
 
-var version = "0.85.8";
+var version = "0.85.9";
 
 var isString = util.isString;
 Geom.register('$line', Line);

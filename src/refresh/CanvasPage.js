@@ -20,6 +20,17 @@ class CanvasPage extends Page {
     }
   }
 
+  del(pos) {
+    super.del(pos);
+    if(!this.__count) {
+      let t = this.texture;
+      if(t) {
+        let gl = this.__ctx;
+        gl.deleteTexture(t);
+      }
+    }
+  }
+
   get offscreen() {
     return this.__offscreen;
   }

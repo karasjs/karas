@@ -34,6 +34,8 @@ class Page {
     // webgl贴图缓存更新使用，canvas/img等发生变更需刷新重新生成texture，fbo的texture不需要
     this.__update = false;
     this.time = 0;
+    this.__ctx = ctx;
+    this.__count = 0;
   }
 
   add(unitSize, pos) {
@@ -44,6 +46,7 @@ class Page {
         grid[i + j * number] = unitSize;
       }
     }
+    this.__count++;
   }
 
   del(pos) {
@@ -58,6 +61,7 @@ class Page {
         }
       }
     }
+    this.__count--;
   }
 
   getCoords(pos) {

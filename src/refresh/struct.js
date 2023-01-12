@@ -2454,9 +2454,13 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
           if(!onlyImg) {
             if(__cache) {
               __cache.reset(bbox, x1, y1);
+              // 特殊的单独img变为非纯img，需重新生成cache
+              if(!(__cache instanceof CanvasCache)) {
+                __cache = node.__cache = CanvasCache.getInstance(mode.CANVAS, gl, root.__uuid, bbox, x1, y1, null);
+              }
             }
             else {
-              __cache = CanvasCache.getInstance(mode.CANVAS, gl, root.__uuid, bbox, x1, y1, null);
+              __cache = node.__cache = CanvasCache.getInstance(mode.CANVAS, gl, root.__uuid, bbox, x1, y1, null);
             }
           }
           if(__cache && __cache.enabled) {

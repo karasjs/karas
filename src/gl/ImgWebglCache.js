@@ -33,8 +33,9 @@ class ImgWebglCache extends CanvasCache {
   }
 
   static getInstance(renderMode, ctx, rootId, bbox, loadImg, x1, y1) {
-    let key = rootId + ',' + loadImg.width + ' ' + loadImg.height + ' ' + loadImg.src;
     let w = loadImg.width, h = loadImg.height;
+    let w2 = bbox[2] - bbox[0], h2 = bbox[3] - bbox[1];
+    let key = rootId + ',' + loadImg.width + ' ' + loadImg.height + ' ' + loadImg.src;
     if(HASH.hasOwnProperty(key)) {
       let o = HASH[key];
       o.count++;
@@ -45,12 +46,13 @@ class ImgWebglCache extends CanvasCache {
           renderMode,
           ctx,
           rootId,
+          __bbox: bbox,
           __tx1: 0,
           __ty1: 0,
           __tx2: 1,
           __ty2: 1,
-          __width: w,
-          __height: h,
+          __width: w2,
+          __height: h2,
           __available: true,
           __enabled: true,
           get available() {
@@ -62,6 +64,13 @@ class ImgWebglCache extends CanvasCache {
           __page: cache.page,
           get page() {
             return this.__page;
+          },
+          get bbox() {
+            return this.__bbox;
+          },
+          reset(bbox, x1, y1) {
+            this.release();
+            this.__bbox = bbox;
           },
           release() {
             if(this.__enabled) {
@@ -91,12 +100,13 @@ class ImgWebglCache extends CanvasCache {
         renderMode,
         ctx,
         rootId,
+        __bbox: bbox,
         __tx1: 0,
         __ty1: 0,
         __tx2: 1,
         __ty2: 1,
-        __width: w,
-        __height: h,
+        __width: w2,
+        __height: h2,
         __available: true,
         __enabled: true,
         get available() {
@@ -113,6 +123,13 @@ class ImgWebglCache extends CanvasCache {
         },
         get page() {
           return this.__page;
+        },
+        get bbox() {
+          return this.__bbox;
+        },
+        reset(bbox, x1, y1) {
+          this.release();
+          this.__bbox = bbox;
         },
         release() {
           if(this.__enabled) {

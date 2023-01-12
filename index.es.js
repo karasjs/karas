@@ -28465,7 +28465,7 @@ var Cache = /*#__PURE__*/function () {
       this.dbx = x1 - bbox[0]; // 原始sx1/sy1和box原点的差值
 
       this.dby = y1 - bbox[1]; // this.update();
-    } // canvas绘制时主动调用更新
+    } // canvas绘制时主动调用更新bbox, x1, y1
 
   }, {
     key: "update",
@@ -30333,9 +30333,11 @@ var ImgWebglCache = /*#__PURE__*/function (_CanvasCache) {
   }], [{
     key: "getInstance",
     value: function getInstance(renderMode, ctx, rootId, bbox, loadImg, x1, y1) {
-      var key = rootId + ',' + loadImg.width + ' ' + loadImg.height + ' ' + loadImg.src;
       var w = loadImg.width,
           h = loadImg.height;
+      var w2 = bbox[2] - bbox[0],
+          h2 = bbox[3] - bbox[1];
+      var key = rootId + ',' + loadImg.width + ' ' + loadImg.height + ' ' + loadImg.src;
 
       if (HASH$1.hasOwnProperty(key)) {
         var o = HASH$1[key];
@@ -30348,12 +30350,13 @@ var ImgWebglCache = /*#__PURE__*/function (_CanvasCache) {
             renderMode: renderMode,
             ctx: ctx,
             rootId: rootId,
+            __bbox: bbox,
             __tx1: 0,
             __ty1: 0,
             __tx2: 1,
             __ty2: 1,
-            __width: w,
-            __height: h,
+            __width: w2,
+            __height: h2,
             __available: true,
             __enabled: true,
 
@@ -30371,6 +30374,14 @@ var ImgWebglCache = /*#__PURE__*/function (_CanvasCache) {
               return this.__page;
             },
 
+            get bbox() {
+              return this.__bbox;
+            },
+
+            reset: function reset(bbox, x1, y1) {
+              this.release();
+              this.__bbox = bbox;
+            },
             release: function release() {
               if (this.__enabled) {
                 var _key = this.key; // 一定有
@@ -30405,12 +30416,13 @@ var ImgWebglCache = /*#__PURE__*/function (_CanvasCache) {
           renderMode: renderMode,
           ctx: ctx,
           rootId: rootId,
+          __bbox: bbox,
           __tx1: 0,
           __ty1: 0,
           __tx2: 1,
           __ty2: 1,
-          __width: w,
-          __height: h,
+          __width: w2,
+          __height: h2,
           __available: true,
           __enabled: true,
 
@@ -30433,6 +30445,14 @@ var ImgWebglCache = /*#__PURE__*/function (_CanvasCache) {
             return this.__page;
           },
 
+          get bbox() {
+            return this.__bbox;
+          },
+
+          reset: function reset(bbox, x1, y1) {
+            this.release();
+            this.__bbox = bbox;
+          },
           release: function release() {
             if (this.__enabled) {
               var _key2 = this.key; // 一定有
@@ -36858,9 +36878,14 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
 
           if (!onlyImg) {
             if (_cache5) {
-              _cache5.reset(_bbox3, x1, y1);
+              _cache5.reset(_bbox3, x1, y1); // 特殊的单独img变为非纯img，需重新生成cache
+
+
+              if (!(_cache5 instanceof CanvasCache)) {
+                _cache5 = node.__cache = CanvasCache.getInstance(mode.CANVAS, gl, root.__uuid, _bbox3, x1, y1, null);
+              }
             } else {
-              _cache5 = CanvasCache.getInstance(mode.CANVAS, gl, root.__uuid, _bbox3, x1, y1, null);
+              _cache5 = node.__cache = CanvasCache.getInstance(mode.CANVAS, gl, root.__uuid, _bbox3, x1, y1, null);
             }
           }
 
@@ -45027,7 +45052,7 @@ var refresh = {
   webgl: webgl
 };
 
-var version = "0.85.9";
+var version = "0.85.10";
 
 var isString = util.isString;
 Geom.register('$line', Line);

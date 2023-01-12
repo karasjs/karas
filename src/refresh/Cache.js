@@ -44,7 +44,7 @@ class Cache {
     // this.update();
   }
 
-  // canvas绘制时主动调用更新
+  // canvas绘制时主动调用更新bbox, x1, y1
   update() {
     this.__page.__update = true;
   }

@@ -28652,6 +28652,8 @@ var Page = /*#__PURE__*/function () {
 
     this.__update = false;
     this.time = 0;
+    this.__ctx = ctx;
+    this.__count = 0;
   }
 
   _createClass(Page, [{
@@ -28667,6 +28669,8 @@ var Page = /*#__PURE__*/function () {
           grid[i + j * number] = unitSize;
         }
       }
+
+      this.__count++;
     }
   }, {
     key: "del",
@@ -28686,6 +28690,8 @@ var Page = /*#__PURE__*/function () {
           }
         }
       }
+
+      this.__count--;
     }
   }, {
     key: "getCoords",
@@ -30062,6 +30068,20 @@ var CanvasPage = /*#__PURE__*/function (_Page) {
       }
     }
   }, {
+    key: "del",
+    value: function del(pos) {
+      _get(_getPrototypeOf(CanvasPage.prototype), "del", this).call(this, pos);
+
+      if (!this.__count) {
+        var t = this.texture;
+
+        if (t) {
+          var gl = this.__ctx;
+          gl.deleteTexture(t);
+        }
+      }
+    }
+  }, {
     key: "offscreen",
     get: function get() {
       return this.__offscreen;
@@ -30314,8 +30334,8 @@ var ImgWebglCache = /*#__PURE__*/function (_CanvasCache) {
     key: "getInstance",
     value: function getInstance(renderMode, ctx, rootId, bbox, loadImg, x1, y1) {
       var key = rootId + ',' + loadImg.width + ' ' + loadImg.height + ' ' + loadImg.src;
-      var w = bbox[2] - bbox[0],
-          h = bbox[3] - bbox[1];
+      var w = loadImg.width,
+          h = loadImg.height;
 
       if (HASH$1.hasOwnProperty(key)) {
         var o = HASH$1[key];
@@ -44988,7 +45008,7 @@ var refresh = {
   webgl: webgl
 };
 
-var version = "0.85.7";
+var version = "0.85.8";
 
 var isString = util.isString;
 Geom.register('$line', Line);

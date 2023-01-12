@@ -41,9 +41,10 @@ class Cache {
     this.dy = this.__y - bbox[1];
     this.dbx = x1 - bbox[0]; // 原始sx1/sy1和box原点的差值
     this.dby = y1 - bbox[1];
-    this.update();
+    // this.update();
   }
 
+  // canvas绘制时主动调用更新
   update() {
     this.__page.__update = true;
   }

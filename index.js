@@ -28470,9 +28470,9 @@
         this.dy = this.__y - bbox[1];
         this.dbx = x1 - bbox[0]; // 原始sx1/sy1和box原点的差值
 
-        this.dby = y1 - bbox[1];
-        this.update();
-      }
+        this.dby = y1 - bbox[1]; // this.update();
+      } // canvas绘制时主动调用更新
+
     }, {
       key: "update",
       value: function update() {
@@ -36728,6 +36728,8 @@
               __cache.__available = true;
               node.__cache = __cache;
               node.render(mode.CANVAS, __cache.ctx, __cache.dx, __cache.dy);
+
+              __cache.update();
             } else {
               __cache && __cache.release();
               node.__limitCache = true;
@@ -36875,6 +36877,8 @@
 
               if (!onlyImg || _cache5.count === 1) {
                 node.render(mode.CANVAS, _cache5.ctx, _cache5.dx, _cache5.dy);
+
+                _cache5.update();
               }
             } else {
               _cache5 && _cache5.release();

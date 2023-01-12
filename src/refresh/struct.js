@@ -2328,6 +2328,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
             __cache.__available = true;
             node.__cache = __cache;
             node.render(mode.CANVAS, __cache.ctx, __cache.dx, __cache.dy);
+            __cache.update();
           }
           else {
             __cache && __cache.release();
@@ -2464,6 +2465,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
             node.__cache = __cache;
             if(!onlyImg || __cache.count === 1) {
               node.render(mode.CANVAS, __cache.ctx, __cache.dx, __cache.dy);
+              __cache.update();
             }
           }
           else {

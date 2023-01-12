@@ -461,7 +461,15 @@ class Root extends Dom {
     this.__rlv = NONE;
   }
 
+  remove() {
+    super.remove();
+    this.destroy();
+  }
+
   destroy() {
+    this.children.forEach(item => {
+      item.remove();
+    });
     this.__destroy();
     this.__animateController.__destroy();
     let n = this.dom;
@@ -469,8 +477,12 @@ class Root extends Dom {
       removeEvent(n, this.__eventCbList || []);
       n.__root = null;
     }
-    let gl = this.ctx;
-    if(this.renderMode === mode.WEBGL) {
+    let gl = this.__ctx;
+    if(this.renderMode === mode.CANVAS) {
+      this.__clearCanvas(gl);
+    }
+    else if(this.renderMode === mode.WEBGL) {
+      this.__clearWebgl(gl);
       [
         'program',
         'programMask',

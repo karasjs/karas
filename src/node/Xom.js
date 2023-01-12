@@ -3130,9 +3130,10 @@ class Xom extends Node {
       }
       return;
     }
-    parent.__deleteStruct(this, i);
+    // root没有
+    parent && parent.__deleteStruct(this, i);
     // 不可见仅改变数据结构
-    if(this.__computedStyle[DISPLAY] === 'none' || parent.__computedStyle[DISPLAY] === 'none') {
+    if(this.__computedStyle[DISPLAY] === 'none' || parent && parent.__computedStyle[DISPLAY] === 'none') {
       this.__destroy();
       if(isFunction(cb)) {
         cb();

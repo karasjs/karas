@@ -21620,12 +21620,12 @@
           }
 
           return;
-        }
-
-        parent.__deleteStruct(this, i); // 不可见仅改变数据结构
+        } // root没有
 
 
-        if (this.__computedStyle[DISPLAY$6] === 'none' || parent.__computedStyle[DISPLAY$6] === 'none') {
+        parent && parent.__deleteStruct(this, i); // 不可见仅改变数据结构
+
+        if (this.__computedStyle[DISPLAY$6] === 'none' || parent && parent.__computedStyle[DISPLAY$6] === 'none') {
           this.__destroy();
 
           if (isFunction$4(cb)) {
@@ -38153,8 +38153,19 @@
         this.__rlv = NONE;
       }
     }, {
+      key: "remove",
+      value: function remove() {
+        _get(_getPrototypeOf(Root.prototype), "remove", this).call(this);
+
+        this.destroy();
+      }
+    }, {
       key: "destroy",
       value: function destroy() {
+        this.children.forEach(function (item) {
+          item.remove();
+        });
+
         this.__destroy();
 
         this.__animateController.__destroy();
@@ -38166,9 +38177,13 @@
           n.__root = null;
         }
 
-        var gl = this.ctx;
+        var gl = this.__ctx;
 
-        if (this.renderMode === mode.WEBGL) {
+        if (this.renderMode === mode.CANVAS) {
+          this.__clearCanvas(gl);
+        } else if (this.renderMode === mode.WEBGL) {
+          this.__clearWebgl(gl);
+
           ['program', 'programMask', 'programClip', 'programOverflow', 'programCm', 'programDs', 'programMbmMp', 'programMbmSr', 'programMbmOl', 'programMbmDk', 'programMbmLt', 'programMbmCd', 'programMbmCb', 'programMbmHl', 'programMbmSl', 'programMbmDf', 'programMbmEx', 'programMbmHue', 'programMbmSt', 'programMbmCl', 'programMbmLm'].forEach(function (k) {
             var p = gl[k];
             gl.deleteShader(p.vertexShader);

@@ -1642,6 +1642,13 @@ var LOADING = 1;
 var LOADED = 2;
 var FONT = {};
 var COMPONENT = {};
+var MAX_LOAD_NUM = 0;
+var imgCount = 0,
+    imgQueue = [],
+    fontCount = 0,
+    fontQueue = [],
+    componentCount = 0,
+    componentQueue = [];
 var div;
 var SUPPORT_FONT = {};
 var defaultFontFamilyData;
@@ -1710,6 +1717,15 @@ var inject = {
   INIT: INIT,
   LOADED: LOADED,
   LOADING: LOADING,
+
+  get MAX_LOAD_NUM() {
+    return MAX_LOAD_NUM;
+  },
+
+  set MAX_LOAD_NUM(v) {
+    MAX_LOAD_NUM = parseInt(v) || 0;
+  },
+
   measureImg: function measureImg(url, cb) {
     if (Array.isArray(url)) {
       if (!url.length) {
@@ -1749,48 +1765,71 @@ var inject = {
     } else if (cache.state === LOADING) {
       cb && cache.task.push(cb);
     } else {
-      cache.state = LOADING;
-      cb && cache.task.push(cb);
-      var img = new Image();
+      var load = function load(url, cache) {
+        var img = new Image();
 
-      img.onload = function () {
-        cache.state = LOADED;
-        cache.success = true;
-        cache.width = img.width;
-        cache.height = img.height;
-        cache.source = img;
-        cache.url = url;
-        var list = cache.task.splice(0);
-        list.forEach(function (cb) {
-          return cb(cache);
-        });
-      };
+        img.onload = function () {
+          cache.state = LOADED;
+          cache.success = true;
+          cache.width = img.width;
+          cache.height = img.height;
+          cache.source = img;
+          cache.url = url;
+          var list = cache.task.splice(0);
+          list.forEach(function (cb) {
+            cb(cache);
+          });
+          imgCount--;
 
-      img.onerror = function (e) {
-        cache.state = LOADED;
-        cache.success = false;
-        cache.url = url;
-        var list = cache.task.splice(0);
-        list.forEach(function (cb) {
-          return cb(cache);
-        });
-      };
+          if (imgQueue.length) {
+            var o = imgQueue.shift();
+            load(o, IMG[o]);
+          }
+        };
 
-      if (url.substr(0, 5) !== 'data:') {
-        var host = /^(?:\w+:)?\/\/([^/:]+)/.exec(url);
+        img.onerror = function (e) {
+          cache.state = LOADED;
+          cache.success = false;
+          cache.url = url;
+          var list = cache.task.splice(0);
+          list.forEach(function (cb) {
+            return cb(cache);
+          });
+          imgCount--;
 
-        if (host) {
-          if (typeof location === 'undefined' || location.hostname !== host[1]) {
-            img.crossOrigin = 'anonymous';
+          if (imgQueue.length) {
+            var o = imgQueue.shift();
+            load(o, cache);
+          }
+        };
+
+        if (url.substr(0, 5) !== 'data:') {
+          var host = /^(?:\w+:)?\/\/([^/:]+)/.exec(url);
+
+          if (host) {
+            if (typeof location === 'undefined' || location.hostname !== host[1]) {
+              img.crossOrigin = 'anonymous';
+            }
           }
         }
+
+        img.src = url;
+
+        if (debug.flag && typeof document !== 'undefined') {
+          document.body.appendChild(img);
+        }
+      };
+
+      cache.state = LOADING;
+      cb && cache.task.push(cb);
+
+      if (MAX_LOAD_NUM > 0 && imgCount >= MAX_LOAD_NUM) {
+        imgQueue.push(url);
+        return;
       }
 
-      img.src = url;
-
-      if (debug.flag && typeof document !== 'undefined') {
-        document.body.appendChild(img);
-      }
+      imgCount++;
+      load(url, cache);
     }
   },
   warn: function warn(s) {
@@ -1999,54 +2038,79 @@ var inject = {
     } else if (cache.state === LOADING) {
       cb && cache.task.push(cb);
     } else {
-      var success = function success(ab) {
-        var f = new FontFace(fontFamily, ab);
-        f.load().then(function () {
-          if (typeof document !== 'undefined') {
-            document.fonts.add(f);
-          }
+      var load = function load(fontFamily, url, cache) {
+        if (url instanceof ArrayBuffer) {
+          success(url);
+        } else {
+          var request = new XMLHttpRequest();
+          request.open('get', url, true);
+          request.responseType = 'arraybuffer';
 
+          request.onload = function () {
+            if (request.response) {
+              success(request.response);
+            } else {
+              error();
+            }
+          };
+
+          request.onerror = error;
+          request.send();
+        }
+
+        function success(ab) {
+          var f = new FontFace(fontFamily, ab);
+          f.load().then(function () {
+            if (typeof document !== 'undefined') {
+              document.fonts.add(f);
+            }
+
+            cache.state = LOADED;
+            cache.success = true;
+            cache.url = url;
+            var list = cache.task.splice(0);
+            list.forEach(function (cb) {
+              return cb(cache, ab);
+            });
+          })["catch"](error);
+          fontCount++;
+
+          if (fontQueue.length) {
+            var o = fontQueue.shift();
+            load(o.fontFamily, o.url, FONT[o.url]);
+          }
+        }
+
+        function error() {
           cache.state = LOADED;
-          cache.success = true;
+          cache.success = false;
           cache.url = url;
           var list = cache.task.splice(0);
           list.forEach(function (cb) {
-            return cb(cache, ab);
+            return cb(cache);
           });
-        })["catch"](error);
-      };
+          fontCount--;
 
-      var error = function error() {
-        cache.state = LOADED;
-        cache.success = false;
-        cache.url = url;
-        var list = cache.task.splice(0);
-        list.forEach(function (cb) {
-          return cb(cache);
-        });
+          if (fontQueue.length) {
+            var o = fontQueue.shift();
+            load(o.fontFamily, o.url, FONT[o.url]);
+          }
+        }
       };
 
       cache.state = LOADING;
       cb && cache.task.push(cb);
 
-      if (url instanceof ArrayBuffer) {
-        success(url);
-      } else {
-        var request = new XMLHttpRequest();
-        request.open('get', url, true);
-        request.responseType = 'arraybuffer';
-
-        request.onload = function () {
-          if (request.response) {
-            success(request.response);
-          } else {
-            error();
-          }
-        };
-
-        request.onerror = error;
-        request.send();
+      if (MAX_LOAD_NUM > 0 && fontCount >= MAX_LOAD_NUM) {
+        fontQueue.push({
+          fontFamily: fontFamily,
+          url: url
+        });
+        return;
       }
+
+      fontCount++;
+      load(fontFamily, url, cache);
     }
   },
   loadComponent: function loadComponent(url, cb) {
@@ -2088,35 +2152,58 @@ var inject = {
     } else if (cache.state === LOADING) {
       cb && cache.task.push(cb);
     } else {
+      var load = function load(url, cache) {
+        var script = document.createElement('script');
+        script.src = url;
+        script.async = true;
+
+        script.onload = function () {
+          cache.state = LOADED;
+          cache.success = true;
+          cache.url = url;
+          var list = cache.task.splice(0);
+          list.forEach(function (cb) {
+            return cb(cache);
+          });
+          document.head.removeChild(script);
+          componentCount--;
+
+          if (componentQueue.length) {
+            var o = componentQueue.shift();
+            load(o, COMPONENT[o]);
+          }
+        };
+
+        script.onerror = function () {
+          cache.state = LOADED;
+          cache.success = false;
+          cache.url = url;
+          var list = cache.task.splice(0);
+          list.forEach(function (cb) {
+            return cb(cache);
+          });
+          document.head.removeChild(script);
+          componentCount--;
+
+          if (componentQueue.length) {
+            var o = componentQueue.shift();
+            load(o, COMPONENT[o]);
+          }
+        };
+
+        document.head.appendChild(script);
+      };
+
       cache.state = LOADING;
       cb && cache.task.push(cb);
-      var script = document.createElement('script');
-      script.src = url;
-      script.async = true;
 
-      script.onload = function () {
-        cache.state = LOADED;
-        cache.success = true;
-        cache.url = url;
-        var list = cache.task.splice(0);
-        list.forEach(function (cb) {
-          return cb(cache);
-        });
-        document.head.removeChild(script);
-      };
+      if (MAX_LOAD_NUM > 0 && componentCount >= MAX_LOAD_NUM) {
+        componentQueue.push(url);
+        return;
+      }
 
-      script.onerror = function () {
-        cache.state = LOADED;
-        cache.success = false;
-        cache.url = url;
-        var list = cache.task.splice(0);
-        list.forEach(function (cb) {
-          return cb(cache);
-        });
-        document.head.removeChild(script);
-      };
-
-      document.head.appendChild(script);
+      componentCount++;
+      load(url, cache);
     }
   }
 };
@@ -45052,7 +45139,7 @@ var refresh = {
   webgl: webgl
 };
 
-var version = "0.85.11";
+var version = "0.85.12";
 
 var isString = util.isString;
 Geom.register('$line', Line);

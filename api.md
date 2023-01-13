@@ -2498,6 +2498,11 @@ karas.inject.cancelAnimationFrame(id);
 * **说明**  
 内部的错误信息会调用，默认实现是`console.error(s)`。可以覆盖实现降级错误信息上报。
 
+### MAX_LOAD_NUM
+* **类型** `int` 读写
+* **说明**  
+最大并发请求http数量，默认0不限制，可设置为正整数。
+
 <a name="style包"></a>
 ## style包
 包含`css`、`reset`、`unit`、`font`、`abbr`子对象。
@@ -3646,16 +3651,24 @@ karas.refresh.Cache.NUM = 5;
 * **说明**  
 canvas的位图缓存分页功能实现，若干个离屏canvas共用一份，类似内存管理。
 
-#### CONFIG
-* **类型** Object 读写
+#### MAX
+* **类型** `int` 读写
 * **说明**  
-读取/设置一个正方形尺寸和相对的数量。比如8和8，指8*8像素的正方形，一共8*8=64个放在一个离屏canvas上。注意浏览器有最大尺寸限制，以及大尺寸canvas性能会降低。默认见下面示例。
+读取/设置一个正方形动态合图尺寸，最终为2的幂指数大小，webgl专用。默认根据`MAX_TEXTURE_SIZE`参数获取。
 * **示例**
 ```jsx
-karas.refresh.Page.CONFIG = {
-  SIZE:   [8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096],
-  NUMBER: [8,  8,  8,  8,   8,   4,   2,    1,    1,    1],
-};
+karas.refresh.Page.MAX = 4096; // 手动可设置较大或较小的尺寸没有限制
+```
+
+#### init
+* **类型** `Function`
+* **参数**
+  * v `int`
+* **说明**  
+读取/设置一个正方形动态合图尺寸，最终为2的幂指数大小，webgl专用。默认根据`MAX_TEXTURE_SIZE`参数获取，且不超过2048。
+* **示例**
+```jsx
+karas.refresh.Page.init(4096); // 会被限制到2048最大值
 ```
 
 <a name="ShadowDom"></a>

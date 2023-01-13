@@ -28849,7 +28849,8 @@
         return MAX;
       },
       set: function set(MAX_TEXTURE_SIZE) {
-        // 确保MAX_TEXTURE_SIZE是2的幂级数，如果不是向下取整
+        _init = true; // 确保MAX_TEXTURE_SIZE是2的幂级数，如果不是向下取整
+
         var n = 2;
 
         while (n < MAX_TEXTURE_SIZE) {
@@ -28879,12 +28880,11 @@
       }
     }, {
       key: "init",
-      value: function init(MAX_TEXTURE_SIZE) {
-        if (_init) {
+      value: function init(MAX_TEXTURE_SIZE, isAuto) {
+        // 手动随时设置，自动仅第一次生效
+        if (_init && isAuto) {
           return;
         }
-
-        _init = true;
 
         if (MAX_TEXTURE_SIZE !== MAX) {
           // 超过限制会明显卡一下
@@ -36690,7 +36690,7 @@
 
   function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
     if (isFirst) {
-      Page.init(gl.getParameter(gl.MAX_TEXTURE_SIZE));
+      Page.init(gl.getParameter(gl.MAX_TEXTURE_SIZE), true);
     }
 
     var __structs = root.__structs,

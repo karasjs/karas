@@ -184,6 +184,7 @@ class Page {
   }
 
   static set MAX(MAX_TEXTURE_SIZE) {
+    init = true;
     // 确保MAX_TEXTURE_SIZE是2的幂级数，如果不是向下取整
     let n = 2;
     while(n < MAX_TEXTURE_SIZE) {
@@ -207,11 +208,11 @@ class Page {
     return uuid++;
   }
 
-  static init(MAX_TEXTURE_SIZE) {
-    if(init) {
+  static init(MAX_TEXTURE_SIZE, isAuto) {
+    // 手动随时设置，自动仅第一次生效
+    if(init && isAuto) {
       return;
     }
-    init = true;
     if(MAX_TEXTURE_SIZE !== MAX) {
       // 超过限制会明显卡一下
       Page.MAX = Math.min(MAX_TEXTURE_SIZE, 2048);

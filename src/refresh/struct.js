@@ -2278,7 +2278,7 @@ function renderSvg(renderMode, ctx, root, isFirst, rlv) {
 
 function renderWebgl(renderMode, gl, root, isFirst, rlv) {
   if(isFirst) {
-    Page.init(gl.getParameter(gl.MAX_TEXTURE_SIZE));
+    Page.init(gl.getParameter(gl.MAX_TEXTURE_SIZE), true);
   }
   let { __structs, width, height } = root;
   let cx = width * 0.5, cy = height * 0.5;

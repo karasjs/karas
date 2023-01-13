@@ -59,6 +59,8 @@ const LOADING = 1;
 const LOADED = 2;
 const FONT = {};
 const COMPONENT = {};
+let MAX_LOAD_NUM = 0;
+let imgCount = 0, imgQueue = [], fontCount = 0, fontQueue = [], componentCount = 0, componentQueue = [];
 let div;
 
 const SUPPORT_FONT = {};
@@ -121,6 +123,12 @@ let inject = {
   INIT,
   LOADED,
   LOADING,
+  get MAX_LOAD_NUM() {
+    return MAX_LOAD_NUM;
+  },
+  set MAX_LOAD_NUM(v) {
+    MAX_LOAD_NUM = parseInt(v) || 0;
+  },
   measureImg(url, cb) {
     if(Array.isArray(url)) {
       if(!url.length) {
@@ -161,36 +169,56 @@ let inject = {
     else {
       cache.state = LOADING;
       cb && cache.task.push(cb);
-      let img = new Image();
-      img.onload = function() {
-        cache.state = LOADED;
-        cache.success = true;
-        cache.width = img.width;
-        cache.height = img.height;
-        cache.source = img;
-        cache.url = url;
-        let list = cache.task.splice(0);
-        list.forEach(cb => cb(cache));
-      };
-      img.onerror = function(e) {
-        cache.state = LOADED;
-        cache.success = false;
-        cache.url = url;
-        let list = cache.task.splice(0);
-        list.forEach(cb => cb(cache));
-      };
-      if(url.substr(0, 5) !== 'data:') {
-        let host = /^(?:\w+:)?\/\/([^/:]+)/.exec(url);
-        if(host) {
-          if(typeof location === 'undefined' || location.hostname !== host[1]) {
-            img.crossOrigin = 'anonymous';
+      if(MAX_LOAD_NUM > 0 && imgCount >= MAX_LOAD_NUM) {
+        imgQueue.push(url);
+        return;
+      }
+      imgCount++;
+      function load(url, cache) {
+        let img = new Image();
+        img.onload = function() {
+          cache.state = LOADED;
+          cache.success = true;
+          cache.width = img.width;
+          cache.height = img.height;
+          cache.source = img;
+          cache.url = url;
+          let list = cache.task.splice(0);
+          list.forEach(cb => {
+            cb(cache);
+          });
+          imgCount--;
+          if(imgQueue.length) {
+            let o = imgQueue.shift();
+            load(o, IMG[o]);
+          }
+        };
+        img.onerror = function(e) {
+          cache.state = LOADED;
+          cache.success = false;
+          cache.url = url;
+          let list = cache.task.splice(0);
+          list.forEach(cb => cb(cache));
+          imgCount--;
+          if(imgQueue.length) {
+            let o = imgQueue.shift();
+            load(o, cache);
+          }
+        };
+        if(url.substr(0, 5) !== 'data:') {
+          let host = /^(?:\w+:)?\/\/([^/:]+)/.exec(url);
+          if(host) {
+            if(typeof location === 'undefined' || location.hostname !== host[1]) {
+              img.crossOrigin = 'anonymous';
+            }
           }
         }
+        img.src = url;
+        if(debug.flag && typeof document !== 'undefined') {
+          document.body.appendChild(img);
+        }
       }
-      img.src = url;
-      if(debug.flag && typeof document !== 'undefined') {
-        document.body.appendChild(img);
-      }
+      load(url, cache);
     }
   },
   warn(s) {
@@ -358,44 +386,67 @@ let inject = {
     else {
       cache.state = LOADING;
       cb && cache.task.push(cb);
-      if(url instanceof ArrayBuffer) {
-        success(url);
+      if(MAX_LOAD_NUM > 0 && fontCount >= MAX_LOAD_NUM) {
+        fontQueue.push({
+          fontFamily,
+          url,
+        });
+        return;
       }
-      else {
-        let request = new XMLHttpRequest();
-        request.open('get', url, true);
-        request.responseType = 'arraybuffer';
-        request.onload = function() {
-          if(request.response) {
-            success(request.response);
+      fontCount++;
+      function load(fontFamily, url, cache) {
+        if(url instanceof ArrayBuffer) {
+          success(url);
+        }
+        else {
+          let request = new XMLHttpRequest();
+          request.open('get', url, true);
+          request.responseType = 'arraybuffer';
+          request.onload = function() {
+            if(request.response) {
+              success(request.response);
+            }
+            else {
+              error();
+            }
+          };
+          request.onerror = error;
+          request.send();
+        }
+
+        function success(ab) {
+          let f = new FontFace(fontFamily, ab);
+          f.load().then(function() {
+            if(typeof document !== 'undefined') {
+              document.fonts.add(f);
+            }
+            cache.state = LOADED;
+            cache.success = true;
+            cache.url = url;
+            let list = cache.task.splice(0);
+            list.forEach(cb => cb(cache, ab));
+          }).catch(error);
+          fontCount++;
+          if(fontQueue.length) {
+            let o = fontQueue.shift();
+            load(o.fontFamily, o.url, FONT[o.url]);
           }
-          else {
-            error();
-          }
-        };
-        request.onerror = error;
-        request.send();
-      }
-      function success(ab) {
-        let f = new FontFace(fontFamily, ab);
-        f.load().then(function() {
-          if(typeof document !== 'undefined') {
-            document.fonts.add(f);
-          }
+        }
+
+        function error() {
           cache.state = LOADED;
-          cache.success = true;
+          cache.success = false;
           cache.url = url;
           let list = cache.task.splice(0);
-          list.forEach(cb => cb(cache, ab));
-        }).catch(error);
+          list.forEach(cb => cb(cache));
+          fontCount--;
+          if(fontQueue.length) {
+            let o = fontQueue.shift();
+            load(o.fontFamily, o.url, FONT[o.url]);
+          }
+        }
       }
-      function error() {
-        cache.state = LOADED;
-        cache.success = false;
-        cache.url = url;
-        let list = cache.task.splice(0);
-        list.forEach(cb => cb(cache));
-      }
+      load(fontFamily, url, cache);
     }
   },
   loadComponent(url, cb) {
@@ -438,26 +489,44 @@ let inject = {
     else {
       cache.state = LOADING;
       cb && cache.task.push(cb);
-      let script = document.createElement('script');
-      script.src = url;
-      script.async = true;
-      script.onload = function() {
-        cache.state = LOADED;
-        cache.success = true;
-        cache.url = url;
-        let list = cache.task.splice(0);
-        list.forEach(cb => cb(cache));
-        document.head.removeChild(script);
-      };
-      script.onerror = function() {
-        cache.state = LOADED;
-        cache.success = false;
-        cache.url = url;
-        let list = cache.task.splice(0);
-        list.forEach(cb => cb(cache));
-        document.head.removeChild(script);
-      };
-      document.head.appendChild(script);
+      if(MAX_LOAD_NUM > 0 && componentCount >= MAX_LOAD_NUM) {
+        componentQueue.push(url);
+        return;
+      }
+      componentCount++;
+      function load(url, cache) {
+        let script = document.createElement('script');
+        script.src = url;
+        script.async = true;
+        script.onload = function() {
+          cache.state = LOADED;
+          cache.success = true;
+          cache.url = url;
+          let list = cache.task.splice(0);
+          list.forEach(cb => cb(cache));
+          document.head.removeChild(script);
+          componentCount--;
+          if(componentQueue.length) {
+            let o = componentQueue.shift();
+            load(o, COMPONENT[o]);
+          }
+        };
+        script.onerror = function() {
+          cache.state = LOADED;
+          cache.success = false;
+          cache.url = url;
+          let list = cache.task.splice(0);
+          list.forEach(cb => cb(cache));
+          document.head.removeChild(script);
+          componentCount--;
+          if(componentQueue.length) {
+            let o = componentQueue.shift();
+            load(o, COMPONENT[o]);
+          }
+        };
+        document.head.appendChild(script);
+      }
+      load(url, cache);
     }
   },
 };

@@ -45058,7 +45058,7 @@
     webgl: webgl
   };
 
-  var version = "0.85.10";
+  var version = "0.85.11";
 
   var isString = util.isString;
   Geom.register('$line', Line);

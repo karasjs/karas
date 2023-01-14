@@ -157,6 +157,19 @@ class Cache {
     let { page, pos } = res;
     return new cacheKlass(renderMode, ctx, rootId, w, h, bbox, page, pos, x1, y1);
   }
+
+  static getImgInstance(renderMode, ctx, rootId, bbox, x1, y1, w, h, cacheKlass, pageKlass, excludePage) {
+    let n = Math.max(w, h);
+    if(n <= 0) {
+      return;
+    }
+    let res = pageKlass.getInstance(renderMode, ctx, rootId, n, excludePage);
+    if(!res) {
+      return;
+    }
+    let { page, pos } = res;
+    return new cacheKlass(renderMode, ctx, rootId, w, h, bbox, page, pos, x1, y1);
+  }
 }
 
 export default Cache;

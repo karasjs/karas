@@ -28703,6 +28703,25 @@
             pos = res.pos;
         return new cacheKlass(renderMode, ctx, rootId, w, h, bbox, page, pos, x1, y1);
       }
+    }, {
+      key: "getImgInstance",
+      value: function getImgInstance(renderMode, ctx, rootId, bbox, x1, y1, w, h, cacheKlass, pageKlass, excludePage) {
+        var n = Math.max(w, h);
+
+        if (n <= 0) {
+          return;
+        }
+
+        var res = pageKlass.getInstance(renderMode, ctx, rootId, n, excludePage);
+
+        if (!res) {
+          return;
+        }
+
+        var page = res.page,
+            pos = res.pos;
+        return new cacheKlass(renderMode, ctx, rootId, w, h, bbox, page, pos, x1, y1);
+      }
     }]);
 
     return Cache;
@@ -29189,9 +29208,7 @@
           cache = _list$i.cache,
           opacity = _list$i.opacity,
           matrix = _list$i.matrix;
-      var width = cache.__width,
-          height = cache.__height,
-          tx1 = cache.__tx1,
+      var tx1 = cache.__tx1,
           ty1 = cache.__ty1,
           tx2 = cache.__tx2,
           ty2 = cache.__ty2,
@@ -29211,8 +29228,8 @@
       var bx = bbox[0],
           by = bbox[1];
       var xa = bx + dx,
-          ya = by + height + dy;
-      var xb = bx + width + dx,
+          ya = by + bbox[3] - bbox[1] + dy;
+      var xb = bx + bbox[2] - bbox[0] + dx,
           yb = by + dy;
 
       var _calRectPoint = calRectPoint$1(xa, ya, xb, yb, matrix),
@@ -30573,7 +30590,7 @@
           return _cache2;
         }
 
-        var cache = Cache.getInstance(renderMode, ctx, rootId, bbox, x1, y1, this, CanvasPage, null); // 超限为空
+        var cache = Cache.getImgInstance(renderMode, ctx, rootId, bbox, x1, y1, w, h, this, CanvasPage, null); // 超限为空
 
         if (cache) {
           cache.key = key;
@@ -36965,7 +36982,13 @@
 
               if (loadImg.onlyImg && !loadImg.error && loadImg.source) {
                 onlyImg = true;
-                _cache5 = node.__cache = ImgWebglCache.getInstance(mode.CANVAS, gl, root.__uuid, _bbox3, loadImg, x1, y1);
+                _cache5 = node.__cache = ImgWebglCache.getInstance(mode.CANVAS, gl, root.__uuid, _bbox3, loadImg, x1, y1); // 纯img按原尺寸绘制
+
+                if (_cache5 && _cache5.enabled && _cache5.count === 1) {
+                  _cache5.ctx.drawImage(loadImg.source, x1 + _cache5.dx, y1 + _cache5.dy);
+
+                  _cache5.update();
+                }
               }
             }
 
@@ -36987,7 +37010,7 @@
               _cache5.__available = true;
               node.__cache = _cache5;
 
-              if (!onlyImg || _cache5.count === 1) {
+              if (!onlyImg) {
                 node.render(mode.CANVAS, _cache5.ctx, _cache5.dx, _cache5.dy);
 
                 _cache5.update();

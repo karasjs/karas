@@ -2449,6 +2449,11 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
             if(loadImg.onlyImg && !loadImg.error && loadImg.source) {
               onlyImg = true;
               __cache = node.__cache = ImgWebglCache.getInstance(mode.CANVAS, gl, root.__uuid, bbox, loadImg, x1, y1);
+              // 纯img按原尺寸绘制
+              if(__cache && __cache.enabled && __cache.count === 1) {
+                __cache.ctx.drawImage(loadImg.source, x1 + __cache.dx, y1 + __cache.dy);
+                __cache.update();
+              }
             }
           }
           if(!onlyImg) {
@@ -2467,7 +2472,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
             __cache.__bbox = bbox;
             __cache.__available = true;
             node.__cache = __cache;
-            if(!onlyImg || __cache.count === 1) {
+            if(!onlyImg) {
               node.render(mode.CANVAS, __cache.ctx, __cache.dx, __cache.dy);
               __cache.update();
             }

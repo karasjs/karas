@@ -180,8 +180,7 @@ function drawTextureCache(gl, list, cx, cy, dx, dy) {
   }
   for(let i = 0; i < length; i++) {
     let { cache, opacity, matrix } = list[i];
-    let { __width: width, __height: height,
-      __tx1: tx1, __ty1: ty1, __tx2: tx2, __ty2: ty2,
+    let { __tx1: tx1, __ty1: ty1, __tx2: tx2, __ty2: ty2,
       __page: page, __bbox: bbox } = cache;
     if(!i) {
       // canvas需要生成texture，texture则强制不会进来
@@ -192,8 +191,8 @@ function drawTextureCache(gl, list, cx, cy, dx, dy) {
     }
     // 计算顶点坐标和纹理坐标，转换[0,1]对应关系
     let bx = bbox[0], by = bbox[1];
-    let xa = bx + dx, ya = by + height + dy;
-    let xb = bx + width + dx, yb = by + dy;
+    let xa = bx + dx, ya = by + bbox[3] - bbox[1] + dy;
+    let xb = bx + bbox[2] - bbox[0] + dx, yb = by + dy;
     let { x1, y1, z1, w1, x2, y2, z2, w2, x3, y3, z3, w3, x4, y4, z4, w4 } = calRectPoint(xa, ya, xb, yb, matrix);
     // console.warn(x1,y1,z1,w1,',',x2,y2,z2,w2,',',x3,y3,z3,w3,',',x4,y4,z4,w4);
     // z范围取所有、对角线最大值，只有当非0有值时才求

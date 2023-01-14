@@ -28523,8 +28523,9 @@
     _createClass(Cache, [{
       key: "__init",
       value: function __init(w, h, bbox, page, pos, x1, y1) {
-        this.__width = w;
-        this.__height = h;
+        this.__width = this.__tw = w; // 由于图片共享一个，可能出现绘制尺寸和缓存尺寸不一致，所以单独存2份数据
+
+        this.__height = this.__th = h;
         this.__bbox = bbox;
         this.__page = page;
         this.__pos = pos;
@@ -28720,7 +28721,10 @@
 
         var page = res.page,
             pos = res.pos;
-        return new cacheKlass(renderMode, ctx, rootId, w, h, bbox, page, pos, x1, y1);
+        var o = new cacheKlass(renderMode, ctx, rootId, w, h, bbox, page, pos, x1, y1);
+        o.__tw = bbox[2] - bbox[0];
+        o.__th = bbox[3] - bbox[1];
+        return o;
       }
     }]);
 
@@ -29208,7 +29212,9 @@
           cache = _list$i.cache,
           opacity = _list$i.opacity,
           matrix = _list$i.matrix;
-      var tx1 = cache.__tx1,
+      var width = cache.__tw,
+          height = cache.__th,
+          tx1 = cache.__tx1,
           ty1 = cache.__ty1,
           tx2 = cache.__tx2,
           ty2 = cache.__ty2,
@@ -29228,8 +29234,8 @@
       var bx = bbox[0],
           by = bbox[1];
       var xa = bx + dx,
-          ya = by + bbox[3] - bbox[1] + dy;
-      var xb = bx + bbox[2] - bbox[0] + dx,
+          ya = by + height + dy;
+      var xb = bx + width + dx,
           yb = by + dy;
 
       var _calRectPoint = calRectPoint$1(xa, ya, xb, yb, matrix),

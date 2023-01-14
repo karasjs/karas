@@ -15,8 +15,8 @@ class Cache {
   }
 
   __init(w, h, bbox, page, pos, x1, y1) {
-    this.__width = w;
-    this.__height = h;
+    this.__width = this.__tw = w; // 由于图片共享一个，可能出现绘制尺寸和缓存尺寸不一致，所以单独存2份数据
+    this.__height = this.__th = h;
     this.__bbox = bbox;
     this.__page = page;
     this.__pos = pos;
@@ -168,7 +168,10 @@ class Cache {
       return;
     }
     let { page, pos } = res;
-    return new cacheKlass(renderMode, ctx, rootId, w, h, bbox, page, pos, x1, y1);
+    let o = new cacheKlass(renderMode, ctx, rootId, w, h, bbox, page, pos, x1, y1);
+    o.__tw = bbox[2] - bbox[0];
+    o.__th = bbox[3] - bbox[1];
+    return o;
   }
 }
 

@@ -28517,8 +28517,9 @@ var Cache = /*#__PURE__*/function () {
   _createClass(Cache, [{
     key: "__init",
     value: function __init(w, h, bbox, page, pos, x1, y1) {
-      this.__width = w;
-      this.__height = h;
+      this.__width = this.__tw = w; // 由于图片共享一个，可能出现绘制尺寸和缓存尺寸不一致，所以单独存2份数据
+
+      this.__height = this.__th = h;
       this.__bbox = bbox;
       this.__page = page;
       this.__pos = pos;
@@ -28696,6 +28697,28 @@ var Cache = /*#__PURE__*/function () {
       var page = res.page,
           pos = res.pos;
       return new cacheKlass(renderMode, ctx, rootId, w, h, bbox, page, pos, x1, y1);
+    }
+  }, {
+    key: "getImgInstance",
+    value: function getImgInstance(renderMode, ctx, rootId, bbox, x1, y1, w, h, cacheKlass, pageKlass, excludePage) {
+      var n = Math.max(w, h);
+
+      if (n <= 0) {
+        return;
+      }
+
+      var res = pageKlass.getInstance(renderMode, ctx, rootId, n, excludePage);
+
+      if (!res) {
+        return;
+      }
+
+      var page = res.page,
+          pos = res.pos;
+      var o = new cacheKlass(renderMode, ctx, rootId, w, h, bbox, page, pos, x1, y1);
+      o.__tw = bbox[2] - bbox[0];
+      o.__th = bbox[3] - bbox[1];
+      return o;
     }
   }]);
 
@@ -29183,8 +29206,8 @@ function drawTextureCache$1(gl, list, cx, cy, dx, dy) {
         cache = _list$i.cache,
         opacity = _list$i.opacity,
         matrix = _list$i.matrix;
-    var width = cache.__width,
-        height = cache.__height,
+    var width = cache.__tw,
+        height = cache.__th,
         tx1 = cache.__tx1,
         ty1 = cache.__ty1,
         tx2 = cache.__tx2,
@@ -30492,6 +30515,8 @@ var ImgWebglCache = /*#__PURE__*/function (_CanvasCache) {
         }
 
         var res = new ImgWebglCache(renderMode, ctx, rootId, w, h, bbox, _cache.page, _cache.pos, x1, y1);
+        res.__tw = w2;
+        res.__th = h2;
         res.key = key;
         return res;
       } // 超过动态合图纹理MAX一半的使用单图纹理，没有count数据不调用render
@@ -30567,7 +30592,7 @@ var ImgWebglCache = /*#__PURE__*/function (_CanvasCache) {
         return _cache2;
       }
 
-      var cache = Cache.getInstance(renderMode, ctx, rootId, bbox, x1, y1, this, CanvasPage, null); // 超限为空
+      var cache = Cache.getImgInstance(renderMode, ctx, rootId, bbox, x1, y1, w, h, this, CanvasPage, null); // 超限为空
 
       if (cache) {
         cache.key = key;
@@ -36959,7 +36984,13 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
 
             if (loadImg.onlyImg && !loadImg.error && loadImg.source) {
               onlyImg = true;
-              _cache5 = node.__cache = ImgWebglCache.getInstance(mode.CANVAS, gl, root.__uuid, _bbox3, loadImg, x1, y1);
+              _cache5 = node.__cache = ImgWebglCache.getInstance(mode.CANVAS, gl, root.__uuid, _bbox3, loadImg, x1, y1); // 纯img按原尺寸绘制
+
+              if (_cache5 && _cache5.enabled && _cache5.count === 1) {
+                _cache5.ctx.drawImage(loadImg.source, x1 + _cache5.dx, y1 + _cache5.dy);
+
+                _cache5.update();
+              }
             }
           }
 
@@ -36981,7 +37012,7 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
             _cache5.__available = true;
             node.__cache = _cache5;
 
-            if (!onlyImg || _cache5.count === 1) {
+            if (!onlyImg) {
               node.render(mode.CANVAS, _cache5.ctx, _cache5.dx, _cache5.dy);
 
               _cache5.update();
@@ -45139,7 +45170,7 @@ var refresh = {
   webgl: webgl
 };
 
-var version = "0.85.12";
+var version = "0.85.13";
 
 var isString = util.isString;
 Geom.register('$line', Line);

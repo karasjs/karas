@@ -30521,6 +30521,8 @@
           }
 
           var res = new ImgWebglCache(renderMode, ctx, rootId, w, h, bbox, _cache.page, _cache.pos, x1, y1);
+          res.__tw = w2;
+          res.__th = h2;
           res.key = key;
           return res;
         } // 超过动态合图纹理MAX一半的使用单图纹理，没有count数据不调用render

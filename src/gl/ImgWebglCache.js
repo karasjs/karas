@@ -90,6 +90,8 @@ class ImgWebglCache extends CanvasCache {
         };
       }
       let res = new ImgWebglCache(renderMode, ctx, rootId, w, h, bbox, cache.page, cache.pos, x1, y1);
+      res.__tw = w2;
+      res.__th = h2;
       res.key = key;
       return res;
     }

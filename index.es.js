@@ -30533,8 +30533,10 @@ var ImgWebglCache = /*#__PURE__*/function (_CanvasCache) {
           __ty1: 0,
           __tx2: 1,
           __ty2: 1,
-          __width: w2,
-          __height: h2,
+          __width: w,
+          __height: h,
+          __tw: w2,
+          __th: h2,
           __available: true,
           __enabled: true,
 
@@ -45170,7 +45172,7 @@ var refresh = {
   webgl: webgl
 };
 
-var version = "0.85.13";
+var version = "0.85.14";
 
 var isString = util.isString;
 Geom.register('$line', Line);

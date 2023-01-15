@@ -107,8 +107,10 @@ class ImgWebglCache extends CanvasCache {
         __ty1: 0,
         __tx2: 1,
         __ty2: 1,
-        __width: w2,
-        __height: h2,
+        __width: w,
+        __height: h,
+        __tw: w2,
+        __th: h2,
         __available: true,
         __enabled: true,
         get available() {

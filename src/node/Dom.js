@@ -66,9 +66,9 @@ const {
 } = enums;
 const { AUTO, PX, PERCENT, REM, VW, VH, VMAX, VMIN } = unit;
 const { isRelativeOrAbsolute, getBaseline, getVerticalBaseline } = css;
-const { extend, isNil, isFunction, assignMatrix } = util;
+const { extend, isFunction,  } = util;
 const { CANVAS, SVG, WEBGL } = mode;
-const { isE, multiply } = mx;
+const { isE, multiply, assignMatrix } = mx;
 const { REFLOW } = level;
 
 // 渲染获取zIndex顺序

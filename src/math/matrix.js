@@ -1,6 +1,6 @@
 // 生成4*4单位矩阵
 function identity() {
-  return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+  return new Float64Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
 }
 
 // 矩阵a*b，固定两个matrix都是长度16
@@ -26,6 +26,15 @@ function multiply(a, b) {
     c[i + 12] = a0 * b[12] + a1 * b[13] + a2 * b[14] + a3 * b[15];
   }
   return c;
+}
+
+function multiply2(a, b) {
+  if(isE(a)) {
+    return b;
+  }
+  if(isE(b)) {
+    return a;
+  }
 }
 
 // 特殊优化，b为tfo，因此既只有12/13/14有值
@@ -401,6 +410,28 @@ function calRectPoint(xa, ya, xb, yb, matrix) {
   return { x1, y1, z1, w1, x2, y2, z2, w2, x3, y3, z3, w3, x4, y4, z4, w4 };
 }
 
+function assignMatrix(t, v) {
+  if(t && v) {
+    t[0] = v[0];
+    t[1] = v[1];
+    t[2] = v[2];
+    t[3] = v[3];
+    t[4] = v[4];
+    t[5] = v[5];
+    t[6] = v[6];
+    t[7] = v[7];
+    t[8] = v[8];
+    t[9] = v[9];
+    t[10] = v[10];
+    t[11] = v[11];
+    t[12] = v[12];
+    t[13] = v[13];
+    t[14] = v[14];
+    t[15] = v[15];
+  }
+  return t;
+}
+
 export default {
   identity,
   multiply,
@@ -424,4 +455,5 @@ export default {
   inverse,
   isE,
   m2m6,
+  assignMatrix,
 };

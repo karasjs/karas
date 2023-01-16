@@ -450,7 +450,7 @@
 
   // 生成4*4单位矩阵
   function identity$1() {
-    return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+    return new Float64Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
   } // 矩阵a*b，固定两个matrix都是长度16
 
 
@@ -481,7 +481,7 @@
     }
 
     return c;
-  } // 特殊优化，b为tfo，因此既只有12/13/14有值
+  }
 
 
   function multiplyTfo$1(m, x, y) {
@@ -949,6 +949,29 @@
     };
   }
 
+  function assignMatrix$2(t, v) {
+    if (t && v) {
+      t[0] = v[0];
+      t[1] = v[1];
+      t[2] = v[2];
+      t[3] = v[3];
+      t[4] = v[4];
+      t[5] = v[5];
+      t[6] = v[6];
+      t[7] = v[7];
+      t[8] = v[8];
+      t[9] = v[9];
+      t[10] = v[10];
+      t[11] = v[11];
+      t[12] = v[12];
+      t[13] = v[13];
+      t[14] = v[14];
+      t[15] = v[15];
+    }
+
+    return t;
+  }
+
   var matrix = {
     identity: identity$1,
     multiply: multiply$4,
@@ -971,7 +994,8 @@
     point2d: point2d$1,
     inverse: inverse$1,
     isE: isE$5,
-    m2m6: m2m6
+    m2m6: m2m6,
+    assignMatrix: assignMatrix$2
   };
 
   var toString = {}.toString;
@@ -1495,29 +1519,6 @@
     return typeof Ctor === 'function' && fnToString.call(Ctor) === ObjectFunctionString;
   }
 
-  function assignMatrix$2(t, v) {
-    if (t && v) {
-      t[0] = v[0];
-      t[1] = v[1];
-      t[2] = v[2];
-      t[3] = v[3];
-      t[4] = v[4];
-      t[5] = v[5];
-      t[6] = v[6];
-      t[7] = v[7];
-      t[8] = v[8];
-      t[9] = v[9];
-      t[10] = v[10];
-      t[11] = v[11];
-      t[12] = v[12];
-      t[13] = v[13];
-      t[14] = v[14];
-      t[15] = v[15];
-    }
-
-    return t;
-  }
-
   function prefixHex(s) {
     if (s.length === 1) {
       return '0' + s;
@@ -1573,7 +1574,6 @@
     extend: extend$3,
     joinArr: joinArr$3,
     transformBbox: transformBbox$1,
-    assignMatrix: assignMatrix$2,
     prefixHex: prefixHex,
     replaceRgba2Hex: replaceRgba2Hex$1
   };
@@ -18522,8 +18522,8 @@
       _this.__isInline = false;
       _this.__hasContent = false;
       _this.__opacity = 1;
-      _this.__matrix = [];
-      _this.__matrixEvent = [];
+      _this.__matrix = null;
+      _this.__matrixEvent = null;
       _this.__perspectiveMatrix = null;
       _this.__frameAnimateList = [];
       _this.__contentBoxList = []; // inline存储内容用
@@ -24560,15 +24560,14 @@
   var isRelativeOrAbsolute = css.isRelativeOrAbsolute,
       getBaseline = css.getBaseline,
       getVerticalBaseline = css.getVerticalBaseline;
-  var extend$1 = util.extend;
-      util.isNil;
-      var isFunction$3 = util.isFunction,
-      assignMatrix$1 = util.assignMatrix;
+  var extend$1 = util.extend,
+      isFunction$3 = util.isFunction;
   var CANVAS = mode.CANVAS,
       SVG = mode.SVG,
       WEBGL = mode.WEBGL;
   var isE$2 = matrix.isE,
-      multiply$1 = matrix.multiply;
+      multiply$1 = matrix.multiply,
+      assignMatrix$1 = matrix.assignMatrix;
   var REFLOW$1 = o$1.REFLOW; // 渲染获取zIndex顺序
 
   function genZIndexChildren(dom) {
@@ -34104,10 +34103,10 @@
   var isE = matrix.isE,
       inverse = matrix.inverse,
       multiply = matrix.multiply,
-      calRectPoint = matrix.calRectPoint;
+      calRectPoint = matrix.calRectPoint,
+      assignMatrix = matrix.assignMatrix;
   var mbmName = mbm.mbmName;
-  var assignMatrix = util.assignMatrix,
-      transformBbox = util.transformBbox;
+  var transformBbox = util.transformBbox;
   var drawTextureCache = webgl.drawTextureCache,
       createTexture = webgl.createTexture,
       bindTexture = webgl.bindTexture,

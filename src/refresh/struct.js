@@ -61,9 +61,9 @@ const {
   CACHE,
   MASK,
 } = level;
-const { isE, inverse, multiply, calRectPoint } = mx;
+const { isE, inverse, multiply, calRectPoint, assignMatrix } = mx;
 const { mbmName } = mbm;
-const { assignMatrix, transformBbox } = util;
+const { transformBbox } = util;
 const {
   drawTextureCache,
   createTexture,

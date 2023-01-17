@@ -30,11 +30,23 @@ function multiply(a, b) {
 
 function multiply2(a, b) {
   if(isE(a)) {
-    return b;
+    assignMatrix(a, b);
+    return a;
   }
   if(isE(b)) {
     return a;
   }
+  for(let i = 0; i < 4; i++) {
+    let a0 = a[i] || 0;
+    let a1 = a[i + 4] || 0;
+    let a2 = a[i + 8] || 0;
+    let a3 = a[i + 12] || 0;
+    a[i] = a0 * b[0] + a1 * b[1] + a2 * b[2] + a3 * b[3];
+    a[i + 4] = a0 * b[4] + a1 * b[5] + a2 * b[6] + a3 * b[7];
+    a[i + 8] = a0 * b[8] + a1 * b[9] + a2 * b[10] + a3 * b[11];
+    a[i + 12] = a0 * b[12] + a1 * b[13] + a2 * b[14] + a3 * b[15];
+  }
+  return a;
 }
 
 // 特殊优化，b为tfo，因此既只有12/13/14有值
@@ -293,6 +305,25 @@ function isE(m) {
   return m[0] === 1 && m[1] === 0 && m[2] === 0 && m[3] === 1 && m[4] === 0 && m[5] === 0;
 }
 
+function toE(m) {
+  m[0] = 1;
+  m[1] = 0;
+  m[2] = 0;
+  m[3] = 0;
+  m[4] = 0;
+  m[5] = 1;
+  m[6] = 0;
+  m[7] = 0;
+  m[8] = 0;
+  m[9] = 0;
+  m[10] = 1;
+  m[11] = 0;
+  m[12] = 0;
+  m[13] = 0;
+  m[14] = 0;
+  m[15] = 1;
+}
+
 /**
  * 求任意4*4矩阵的逆矩阵，行列式为 0 则返回单位矩阵兜底
  * 格式：matrix3d(a1, b1, c1, d1, a2, b2, c2, d2, a3, b3, c3, d3, a4, b4, c4, d4)
@@ -435,6 +466,7 @@ function assignMatrix(t, v) {
 export default {
   identity,
   multiply,
+  multiply2,
   multiplyTfo,
   tfoMultiply,
   multiplyTranslateX,
@@ -454,6 +486,7 @@ export default {
   point2d,
   inverse,
   isE,
+  toE,
   m2m6,
   assignMatrix,
 };

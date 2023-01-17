@@ -137,7 +137,7 @@ const { int2rgba, rgba2int, joinArr, isNil, isFunction } = util;
 const { calRelative, calNormalLineHeight, calFontFamily, spreadBoxShadow, spreadFilter } = css;
 const { GEOM } = change;
 const { mbmName, isValidMbm } = mbm;
-const { point2d,  multiply,
+const { point2d, toE, identity, assignMatrix,  multiply,
   multiplyRotateX, multiplyRotateY, multiplyRotateZ,
   multiplySkewX, multiplySkewY,
   multiplyScaleX, multiplyScaleY, multiplyScaleZ } = mx;
@@ -242,9 +242,10 @@ class Xom extends Node {
     this.__isInline = false;
     this.__hasContent = false;
     this.__opacity = 1;
-    this.__matrix = null;
-    this.__matrixEvent = null;
-    this.__perspectiveMatrix = null;
+    this.__matrix = identity();
+    this.__matrixEvent = identity();
+    this.__perspectiveMatrix = identity();
+    this.__selfPerspectiveMatrix = identity();
     this.__frameAnimateList = [];
     this.__contentBoxList = []; // inline存储内容用
     this.__cacheAsBitmap = !!this.props.cacheAsBitmap;
@@ -1019,7 +1020,7 @@ class Xom extends Node {
     } = this;
     if(this.__isInline) {
       __computedStyle[TRANSFORM_ORIGIN] = [__x1, __y1];
-      return __cacheStyle[MATRIX] = this.__matrix = mx.identity();
+      return __cacheStyle[MATRIX] = toE(this.__matrix);
     }
     let matrixCache = __cacheStyle[MATRIX];
     // 优化计算scale不能为0，无法计算倍数差，rotateZ优化不能包含rotateX/rotateY/skew
@@ -1157,11 +1158,11 @@ class Xom extends Node {
     else {
       if(__cacheStyle[TRANSFORM_ORIGIN] === undefined) {
         __cacheStyle[TRANSFORM_ORIGIN] = true;
-        matrixCache = null;
         __computedStyle[TRANSFORM_ORIGIN] = __currentStyle[TRANSFORM_ORIGIN].map((item, i) => {
           return this.__calSize(item, i ? __offsetHeight : __offsetWidth, true);
         });
       }
+      // 任何一个transform子项变更会清空cacheStyle，即重新计算
       if(__cacheStyle[TRANSFORM] === undefined
         || __cacheStyle[TRANSLATE_X] === undefined
         || __cacheStyle[TRANSLATE_Y] === undefined
@@ -1188,10 +1189,9 @@ class Xom extends Node {
           = __cacheStyle[SKEW_X]
           = __cacheStyle[SKEW_Y]
           = true;
-        matrixCache = null;
         this.__selfPerspective = 0;
-        this.__selfPerspectiveMatrix = null;
-        let matrix, ct = __currentStyle[TRANSFORM];
+        let matrix, spm = this.__selfPerspectiveMatrix, ct = __currentStyle[TRANSFORM];
+        toE(spm);
         // transform相对于自身
         if(ct && ct.length) {
           let first = ct[0];
@@ -1199,7 +1199,7 @@ class Xom extends Node {
           if(first.k === PERSPECTIVE) {
             let ppt = this.__selfPerspective = this.__calSize(first.v, this.__clientWidth, true);
             let tfo = __computedStyle[TRANSFORM_ORIGIN];
-            this.__selfPerspectiveMatrix = tf.calPerspectiveMatrix(ppt, tfo[0] + __x1, tfo[1] + __y1);
+            assignMatrix(spm, tf.calPerspectiveMatrix(ppt, tfo[0] + __x1, tfo[1] + __y1));
             matrix = tf.calMatrix(ct.slice(1), __offsetWidth, __offsetHeight, this.__root);
           }
           else {
@@ -1361,13 +1361,13 @@ class Xom extends Node {
         }
         __computedStyle[TRANSFORM] = matrix || mx.identity();
       }
-      if(!matrixCache) {
-        let m = __computedStyle[TRANSFORM];
-        let tfo = __computedStyle[TRANSFORM_ORIGIN];
-        matrixCache = __cacheStyle[MATRIX] = tf.calMatrixByOrigin(m, tfo[0] + __x1, tfo[1] + __y1);
-      }
+      let m = __computedStyle[TRANSFORM];
+      let tfo = __computedStyle[TRANSFORM_ORIGIN];
+      let t = tf.calMatrixByOrigin(m, tfo[0] + __x1, tfo[1] + __y1);
+      assignMatrix(this.__matrix, t);
+      matrixCache = __cacheStyle[MATRIX] = this.__matrix;
     }
-    return this.__matrix = matrixCache;
+    return matrixCache;
   }
 
   /**

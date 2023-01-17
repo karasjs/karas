@@ -449,14 +449,14 @@
   };
 
   // 生成4*4单位矩阵
-  function identity$1() {
+  function identity$2() {
     return new Float64Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
   } // 矩阵a*b，固定两个matrix都是长度16
 
 
   function multiply$4(a, b) {
     if (!a && !b) {
-      return identity$1();
+      return identity$2();
     }
 
     if (isE$5(a)) {
@@ -482,6 +482,30 @@
 
     return c;
   }
+
+  function multiply2(a, b) {
+    if (isE$5(a)) {
+      assignMatrix$3(a, b);
+      return a;
+    }
+
+    if (isE$5(b)) {
+      return a;
+    }
+
+    for (var i = 0; i < 4; i++) {
+      var a0 = a[i] || 0;
+      var a1 = a[i + 4] || 0;
+      var a2 = a[i + 8] || 0;
+      var a3 = a[i + 12] || 0;
+      a[i] = a0 * b[0] + a1 * b[1] + a2 * b[2] + a3 * b[3];
+      a[i + 4] = a0 * b[4] + a1 * b[5] + a2 * b[6] + a3 * b[7];
+      a[i + 8] = a0 * b[8] + a1 * b[9] + a2 * b[10] + a3 * b[11];
+      a[i + 12] = a0 * b[12] + a1 * b[13] + a2 * b[14] + a3 * b[15];
+    }
+
+    return a;
+  } // 特殊优化，b为tfo，因此既只有12/13/14有值
 
 
   function multiplyTfo$1(m, x, y) {
@@ -803,6 +827,25 @@
 
     return m[0] === 1 && m[1] === 0 && m[2] === 0 && m[3] === 1 && m[4] === 0 && m[5] === 0;
   }
+
+  function toE$1(m) {
+    m[0] = 1;
+    m[1] = 0;
+    m[2] = 0;
+    m[3] = 0;
+    m[4] = 0;
+    m[5] = 1;
+    m[6] = 0;
+    m[7] = 0;
+    m[8] = 0;
+    m[9] = 0;
+    m[10] = 1;
+    m[11] = 0;
+    m[12] = 0;
+    m[13] = 0;
+    m[14] = 0;
+    m[15] = 1;
+  }
   /**
    * 求任意4*4矩阵的逆矩阵，行列式为 0 则返回单位矩阵兜底
    * 格式：matrix3d(a1, b1, c1, d1, a2, b2, c2, d2, a3, b3, c3, d3, a4, b4, c4, d4)
@@ -843,7 +886,7 @@
     var det = s[0] * inv[0] + s[1] * inv[4] + s[2] * inv[8] + s[3] * inv[12];
 
     if (det === 0) {
-      return identity$1();
+      return identity$2();
     }
 
     det = 1 / det;
@@ -949,7 +992,7 @@
     };
   }
 
-  function assignMatrix$2(t, v) {
+  function assignMatrix$3(t, v) {
     if (t && v) {
       t[0] = v[0];
       t[1] = v[1];
@@ -973,8 +1016,9 @@
   }
 
   var matrix = {
-    identity: identity$1,
+    identity: identity$2,
     multiply: multiply$4,
+    multiply2: multiply2,
     multiplyTfo: multiplyTfo$1,
     tfoMultiply: tfoMultiply$1,
     multiplyTranslateX: multiplyTranslateX$1,
@@ -994,8 +1038,9 @@
     point2d: point2d$1,
     inverse: inverse$1,
     isE: isE$5,
+    toE: toE$1,
     m2m6: m2m6,
-    assignMatrix: assignMatrix$2
+    assignMatrix: assignMatrix$3
   };
 
   var toString = {}.toString;
@@ -10616,7 +10661,7 @@
       VH$6 = o$4.VH,
       VMAX$6 = o$4.VMAX,
       VMIN$6 = o$4.VMIN;
-  var identity = matrix.identity,
+  var identity$1 = matrix.identity,
       multiply$3 = matrix.multiply,
       multiplyTfo = matrix.multiplyTfo,
       tfoMultiply = matrix.tfoMultiply,
@@ -10742,7 +10787,7 @@
   }
 
   function calMatrix(transform, ow, oh, root) {
-    var m = identity();
+    var m = identity$1();
 
     for (var i = 0, len = transform.length; i < len; i++) {
       var item = transform[i];
@@ -10775,7 +10820,7 @@
       else if (k === PERSPECTIVE$4 && !i) {
         m = multiplyPerspective(m, v);
       } else if (k === ROTATE_3D$3) {
-        var t = identity();
+        var t = identity$1();
         calRotate3d$2(t, [v[0], v[1], v[2], v[3].v]);
         m = multiply$3(m, t);
       } else if (k === MATRIX$3) {
@@ -10833,7 +10878,7 @@
 
   function calPerspectiveMatrix(ppt, ox, oy) {
     if (ppt && ppt > 0) {
-      var res = identity();
+      var res = identity$1();
       ppt = Math.max(ppt, 1);
       res[11] = -1 / ppt;
 
@@ -18399,6 +18444,9 @@
   var mbmName$1 = mbm.mbmName,
       isValidMbm = mbm.isValidMbm;
   var point2d = matrix.point2d,
+      toE = matrix.toE,
+      identity = matrix.identity,
+      assignMatrix$2 = matrix.assignMatrix,
       multiply$2 = matrix.multiply,
       multiplyRotateX = matrix.multiplyRotateX,
       multiplyRotateY = matrix.multiplyRotateY,
@@ -18522,9 +18570,10 @@
       _this.__isInline = false;
       _this.__hasContent = false;
       _this.__opacity = 1;
-      _this.__matrix = null;
-      _this.__matrixEvent = null;
-      _this.__perspectiveMatrix = null;
+      _this.__matrix = identity();
+      _this.__matrixEvent = identity();
+      _this.__perspectiveMatrix = identity();
+      _this.__selfPerspectiveMatrix = identity();
       _this.__frameAnimateList = [];
       _this.__contentBoxList = []; // inline存储内容用
 
@@ -19334,7 +19383,7 @@
 
         if (this.__isInline) {
           __computedStyle[TRANSFORM_ORIGIN$2] = [__x1, __y1];
-          return __cacheStyle[MATRIX$1] = this.__matrix = matrix.identity();
+          return __cacheStyle[MATRIX$1] = toE(this.__matrix);
         }
 
         var matrixCache = __cacheStyle[MATRIX$1]; // 优化计算scale不能为0，无法计算倍数差，rotateZ优化不能包含rotateX/rotateY/skew
@@ -19489,19 +19538,19 @@
         else {
           if (__cacheStyle[TRANSFORM_ORIGIN$2] === undefined) {
             __cacheStyle[TRANSFORM_ORIGIN$2] = true;
-            matrixCache = null;
             __computedStyle[TRANSFORM_ORIGIN$2] = __currentStyle[TRANSFORM_ORIGIN$2].map(function (item, i) {
               return _this4.__calSize(item, i ? __offsetHeight : __offsetWidth, true);
             });
-          }
+          } // 任何一个transform子项变更会清空cacheStyle，即重新计算
+
 
           if (__cacheStyle[TRANSFORM$3] === undefined || __cacheStyle[TRANSLATE_X] === undefined || __cacheStyle[TRANSLATE_Y] === undefined || __cacheStyle[TRANSLATE_Z] === undefined || __cacheStyle[ROTATE_X] === undefined || __cacheStyle[ROTATE_Y] === undefined || __cacheStyle[ROTATE_Z] === undefined || __cacheStyle[ROTATE_3D] === undefined || __cacheStyle[SCALE_X] === undefined || __cacheStyle[SCALE_Y] === undefined || __cacheStyle[SCALE_Z] === undefined || __cacheStyle[SKEW_X] === undefined || __cacheStyle[SKEW_Y] === undefined) {
             __cacheStyle[TRANSFORM$3] = __cacheStyle[TRANSLATE_X] = __cacheStyle[TRANSLATE_Y] = __cacheStyle[TRANSLATE_Z] = __cacheStyle[ROTATE_X] = __cacheStyle[ROTATE_Y] = __cacheStyle[ROTATE_Z] = __cacheStyle[SCALE_X] = __cacheStyle[SCALE_Y] = __cacheStyle[SCALE_Z] = __cacheStyle[SKEW_X] = __cacheStyle[SKEW_Y] = true;
-            matrixCache = null;
             this.__selfPerspective = 0;
-            this.__selfPerspectiveMatrix = null;
             var matrix$1,
-                ct = __currentStyle[TRANSFORM$3]; // transform相对于自身
+                spm = this.__selfPerspectiveMatrix,
+                ct = __currentStyle[TRANSFORM$3];
+            toE(spm); // transform相对于自身
 
             if (ct && ct.length) {
               var first = ct[0]; // 特殊处理，抽取出来transform的ppt，视为tfo原点的透视
@@ -19509,8 +19558,8 @@
               if (first.k === PERSPECTIVE$1) {
                 var ppt = this.__selfPerspective = this.__calSize(first.v, this.__clientWidth, true);
 
-                var tfo = __computedStyle[TRANSFORM_ORIGIN$2];
-                this.__selfPerspectiveMatrix = transform$1.calPerspectiveMatrix(ppt, tfo[0] + __x1, tfo[1] + __y1);
+                var _tfo = __computedStyle[TRANSFORM_ORIGIN$2];
+                assignMatrix$2(spm, transform$1.calPerspectiveMatrix(ppt, _tfo[0] + __x1, _tfo[1] + __y1));
                 matrix$1 = transform$1.calMatrix(ct.slice(1), __offsetWidth, __offsetHeight, this.__root);
               } else {
                 matrix$1 = transform$1.calMatrix(ct, __offsetWidth, __offsetHeight, this.__root);
@@ -19699,14 +19748,16 @@
             __computedStyle[TRANSFORM$3] = matrix$1 || matrix.identity();
           }
 
-          if (!matrixCache) {
-            var m = __computedStyle[TRANSFORM$3];
-            var _tfo = __computedStyle[TRANSFORM_ORIGIN$2];
-            matrixCache = __cacheStyle[MATRIX$1] = transform$1.calMatrixByOrigin(m, _tfo[0] + __x1, _tfo[1] + __y1);
-          }
+          var m = __computedStyle[TRANSFORM$3];
+          var tfo = __computedStyle[TRANSFORM_ORIGIN$2];
+
+          var _t2 = transform$1.calMatrixByOrigin(m, tfo[0] + __x1, tfo[1] + __y1);
+
+          assignMatrix$2(this.__matrix, _t2);
+          matrixCache = __cacheStyle[MATRIX$1] = this.__matrix;
         }
 
-        return this.__matrix = matrixCache;
+        return matrixCache;
       }
       /**
        * 将currentStyle计算为computedStyle，同时存入cacheStyle可缓存的结果防止无变更重复计算，返回背景渲染范围
@@ -28123,8 +28174,8 @@
             return;
           }
         } // 递归传下来的pm如果有说明是cache的子元素且需要重新计算matrix
-        else if (!matrix.isE(pm)) {
-          util.assignMatrix(this.__matrixEvent, matrix.multiply(pm, this.__matrix));
+        else if (!isE$2(pm)) {
+          assignMatrix$1(this.__matrixEvent, matrix.multiply(pm, this.__matrix));
         } // 找到对应的callback
 
 

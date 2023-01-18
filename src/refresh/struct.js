@@ -2664,10 +2664,10 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         }
         let pm = __domParent.__perspectiveMatrix, me = __domParent.__matrixEvent;
         if(pm && pm.length) {
-          m = multiply(__domParent.__perspectiveMatrix, m);
+          m = multiply(pm, m);
         }
         if(me && me.length) {
-          m = multiply(__domParent.__matrixEvent, m);
+          m = multiply(me, m);
         }
       }
       node.__opacity = opacity;
@@ -2680,7 +2680,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       }
       // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
       if(backfaceVisibility === 'hidden') {
-        let m = node.__matrix, x = m[5] < 0 && m[10] < 0, y = m[0] < 0 && m[10] < 0;
+        let m = __matrix, x = m[5] < 0 && m[10] < 0, y = m[0] < 0 && m[10] < 0;
         if(x || y) {
           i += total || 0;
           if(hasMask) {

@@ -481,31 +481,27 @@
     }
 
     return c;
-  }
-
-  function multiply2(a, b) {
-    if (isE$5(a)) {
-      assignMatrix$3(a, b);
-      return a;
-    }
-
-    if (isE$5(b)) {
-      return a;
-    }
-
-    for (var i = 0; i < 4; i++) {
-      var a0 = a[i] || 0;
-      var a1 = a[i + 4] || 0;
-      var a2 = a[i + 8] || 0;
-      var a3 = a[i + 12] || 0;
-      a[i] = a0 * b[0] + a1 * b[1] + a2 * b[2] + a3 * b[3];
-      a[i + 4] = a0 * b[4] + a1 * b[5] + a2 * b[6] + a3 * b[7];
-      a[i + 8] = a0 * b[8] + a1 * b[9] + a2 * b[10] + a3 * b[11];
-      a[i + 12] = a0 * b[12] + a1 * b[13] + a2 * b[14] + a3 * b[15];
-    }
-
-    return a;
-  } // 特殊优化，b为tfo，因此既只有12/13/14有值
+  } // function multiply2(a, b) {
+  //   if(isE(a)) {
+  //     assignMatrix(a, b);
+  //     return a;
+  //   }
+  //   if(isE(b)) {
+  //     return a;
+  //   }
+  //   for(let i = 0; i < 4; i++) {
+  //     let a0 = a[i] || 0;
+  //     let a1 = a[i + 4] || 0;
+  //     let a2 = a[i + 8] || 0;
+  //     let a3 = a[i + 12] || 0;
+  //     a[i] = a0 * b[0] + a1 * b[1] + a2 * b[2] + a3 * b[3];
+  //     a[i + 4] = a0 * b[4] + a1 * b[5] + a2 * b[6] + a3 * b[7];
+  //     a[i + 8] = a0 * b[8] + a1 * b[9] + a2 * b[10] + a3 * b[11];
+  //     a[i + 12] = a0 * b[12] + a1 * b[13] + a2 * b[14] + a3 * b[15];
+  //   }
+  //   return a;
+  // }
+  // 特殊优化，b为tfo，因此既只有12/13/14有值
 
 
   function multiplyTfo$1(m, x, y) {
@@ -1018,7 +1014,7 @@
   var matrix = {
     identity: identity$2,
     multiply: multiply$4,
-    multiply2: multiply2,
+    // multiply2,
     multiplyTfo: multiplyTfo$1,
     tfoMultiply: tfoMultiply$1,
     multiplyTranslateX: multiplyTranslateX$1,
@@ -37276,11 +37272,11 @@
               me = _domParent.__matrixEvent;
 
           if (pm && pm.length) {
-            m = multiply(_domParent.__perspectiveMatrix, m);
+            m = multiply(pm, m);
           }
 
           if (me && me.length) {
-            m = multiply(_domParent.__matrixEvent, m);
+            m = multiply(me, m);
           }
         }
 
@@ -37297,7 +37293,7 @@
 
 
         if (backfaceVisibility === 'hidden') {
-          var _m6 = _node12.__matrix,
+          var _m6 = __matrix,
               _x8 = _m6[5] < 0 && _m6[10] < 0,
               _y8 = _m6[0] < 0 && _m6[10] < 0;
 

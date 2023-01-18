@@ -37087,7 +37087,7 @@
 
           var _isMbm = _mixBlendMode !== 'normal';
 
-          var _isPpt = total && _perspective2 || node.__selfPerspectiveMatrix;
+          var _isPpt = total && _perspective2 || !isE(node.__selfPerspectiveMatrix);
 
           var isOverflow = overflow === 'hidden' && total;
           var isFilter = _filter && _filter.length;

@@ -2493,7 +2493,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
           [PERSPECTIVE]: perspective,
         } = __computedStyle;
         let isMbm = mixBlendMode !== 'normal';
-        let isPpt = total && perspective || node.__selfPerspectiveMatrix;
+        let isPpt = total && perspective || !isE(node.__selfPerspectiveMatrix);
         let isOverflow = overflow === 'hidden' && total;
         let isFilter = filter && filter.length;
         if(isMbm) {

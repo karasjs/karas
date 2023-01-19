@@ -1,6 +1,6 @@
 // 生成4*4单位矩阵
 function identity() {
-  return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+  return new Float64Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
 }
 
 // 矩阵a*b，固定两个matrix都是长度16
@@ -27,6 +27,27 @@ function multiply(a, b) {
   }
   return c;
 }
+
+// function multiply2(a, b) {
+//   if(isE(a)) {
+//     assignMatrix(a, b);
+//     return a;
+//   }
+//   if(isE(b)) {
+//     return a;
+//   }
+//   for(let i = 0; i < 4; i++) {
+//     let a0 = a[i] || 0;
+//     let a1 = a[i + 4] || 0;
+//     let a2 = a[i + 8] || 0;
+//     let a3 = a[i + 12] || 0;
+//     a[i] = a0 * b[0] + a1 * b[1] + a2 * b[2] + a3 * b[3];
+//     a[i + 4] = a0 * b[4] + a1 * b[5] + a2 * b[6] + a3 * b[7];
+//     a[i + 8] = a0 * b[8] + a1 * b[9] + a2 * b[10] + a3 * b[11];
+//     a[i + 12] = a0 * b[12] + a1 * b[13] + a2 * b[14] + a3 * b[15];
+//   }
+//   return a;
+// }
 
 // 特殊优化，b为tfo，因此既只有12/13/14有值
 function multiplyTfo(m, x, y) {
@@ -284,6 +305,25 @@ function isE(m) {
   return m[0] === 1 && m[1] === 0 && m[2] === 0 && m[3] === 1 && m[4] === 0 && m[5] === 0;
 }
 
+function toE(m) {
+  m[0] = 1;
+  m[1] = 0;
+  m[2] = 0;
+  m[3] = 0;
+  m[4] = 0;
+  m[5] = 1;
+  m[6] = 0;
+  m[7] = 0;
+  m[8] = 0;
+  m[9] = 0;
+  m[10] = 1;
+  m[11] = 0;
+  m[12] = 0;
+  m[13] = 0;
+  m[14] = 0;
+  m[15] = 1;
+}
+
 /**
  * 求任意4*4矩阵的逆矩阵，行列式为 0 则返回单位矩阵兜底
  * 格式：matrix3d(a1, b1, c1, d1, a2, b2, c2, d2, a3, b3, c3, d3, a4, b4, c4, d4)
@@ -401,9 +441,32 @@ function calRectPoint(xa, ya, xb, yb, matrix) {
   return { x1, y1, z1, w1, x2, y2, z2, w2, x3, y3, z3, w3, x4, y4, z4, w4 };
 }
 
+function assignMatrix(t, v) {
+  if(t && v) {
+    t[0] = v[0];
+    t[1] = v[1];
+    t[2] = v[2];
+    t[3] = v[3];
+    t[4] = v[4];
+    t[5] = v[5];
+    t[6] = v[6];
+    t[7] = v[7];
+    t[8] = v[8];
+    t[9] = v[9];
+    t[10] = v[10];
+    t[11] = v[11];
+    t[12] = v[12];
+    t[13] = v[13];
+    t[14] = v[14];
+    t[15] = v[15];
+  }
+  return t;
+}
+
 export default {
   identity,
   multiply,
+  // multiply2,
   multiplyTfo,
   tfoMultiply,
   multiplyTranslateX,
@@ -423,5 +486,7 @@ export default {
   point2d,
   inverse,
   isE,
+  toE,
   m2m6,
+  assignMatrix,
 };

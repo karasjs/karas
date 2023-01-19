@@ -66,9 +66,9 @@ const {
 } = enums;
 const { AUTO, PX, PERCENT, REM, VW, VH, VMAX, VMIN } = unit;
 const { isRelativeOrAbsolute, getBaseline, getVerticalBaseline } = css;
-const { extend, isNil, isFunction, assignMatrix } = util;
+const { extend, isFunction } = util;
 const { CANVAS, SVG, WEBGL } = mode;
-const { isE, multiply } = mx;
+const { isE, multiply, assignMatrix } = mx;
 const { REFLOW } = level;
 
 // 渲染获取zIndex顺序
@@ -3248,8 +3248,8 @@ class Dom extends Xom {
       }
     }
     // 递归传下来的pm如果有说明是cache的子元素且需要重新计算matrix
-    else if(!mx.isE(pm)) {
-      util.assignMatrix(this.__matrixEvent, mx.multiply(pm, this.__matrix));
+    else if(!isE(pm)) {
+      assignMatrix(this.__matrixEvent, mx.multiply(pm, this.__matrix));
     }
     // 找到对应的callback
     let { event: { type } } = e;

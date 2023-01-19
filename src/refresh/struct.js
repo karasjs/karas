@@ -61,9 +61,9 @@ const {
   CACHE,
   MASK,
 } = level;
-const { isE, inverse, multiply, calRectPoint } = mx;
+const { isE, inverse, multiply, calRectPoint, assignMatrix } = mx;
 const { mbmName } = mbm;
-const { assignMatrix, transformBbox } = util;
+const { transformBbox } = util;
 const {
   drawTextureCache,
   createTexture,
@@ -2493,7 +2493,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
           [PERSPECTIVE]: perspective,
         } = __computedStyle;
         let isMbm = mixBlendMode !== 'normal';
-        let isPpt = total && perspective || node.__selfPerspectiveMatrix;
+        let isPpt = total && perspective || !isE(node.__selfPerspectiveMatrix);
         let isOverflow = overflow === 'hidden' && total;
         let isFilter = filter && filter.length;
         if(isMbm) {
@@ -2664,10 +2664,10 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         }
         let pm = __domParent.__perspectiveMatrix, me = __domParent.__matrixEvent;
         if(pm && pm.length) {
-          m = multiply(__domParent.__perspectiveMatrix, m);
+          m = multiply(pm, m);
         }
         if(me && me.length) {
-          m = multiply(__domParent.__matrixEvent, m);
+          m = multiply(me, m);
         }
       }
       node.__opacity = opacity;
@@ -2680,7 +2680,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       }
       // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
       if(backfaceVisibility === 'hidden') {
-        let m = node.__matrix, x = m[5] < 0 && m[10] < 0, y = m[0] < 0 && m[10] < 0;
+        let m = __matrix, x = m[5] < 0 && m[10] < 0, y = m[0] < 0 && m[10] < 0;
         if(x || y) {
           i += total || 0;
           if(hasMask) {

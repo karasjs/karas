@@ -454,28 +454,6 @@ function isPlainObject(obj) {
   return typeof Ctor === 'function' && fnToString.call(Ctor) === ObjectFunctionString;
 }
 
-function assignMatrix(t, v) {
-  if(t && v) {
-    t[0] = v[0];
-    t[1] = v[1];
-    t[2] = v[2];
-    t[3] = v[3];
-    t[4] = v[4];
-    t[5] = v[5];
-    t[6] = v[6];
-    t[7] = v[7];
-    t[8] = v[8];
-    t[9] = v[9];
-    t[10] = v[10];
-    t[11] = v[11];
-    t[12] = v[12];
-    t[13] = v[13];
-    t[14] = v[14];
-    t[15] = v[15];
-  }
-  return t;
-}
-
 function prefixHex(s) {
   if(s.length === 1) {
     return '0' + s;
@@ -531,7 +509,6 @@ let util = {
   extend,
   joinArr,
   transformBbox,
-  assignMatrix,
   prefixHex,
   replaceRgba2Hex,
 };

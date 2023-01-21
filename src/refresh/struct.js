@@ -1999,6 +1999,7 @@ function renderSvg(renderMode, ctx, root, isFirst, rlv) {
         node,
         total,
         hasMask,
+        isText,
       } = __structs[i];
       let __cacheDefs = node.__cacheDefs;
       let __refreshLevel = node.__refreshLevel;

@@ -36245,9 +36245,9 @@
           _node = _structs$i.node,
           _total = _structs$i.total,
           hasMask = _structs$i.hasMask,
-          _isText = _structs$i.isText;
+          isText = _structs$i.isText;
 
-      if (_isText) {
+      if (isText) {
         if (_node.__limitCache) {
           inject.warn('Bbox of Text(' + index + ')' + ' is oversize' + _node.offsetWidth + ', ' + _node.offsetHeight);
           return;
@@ -36463,9 +36463,9 @@
           _lv = _structs$i2.lv,
           _total2 = _structs$i2.total,
           hasMask = _structs$i2.hasMask,
-          _isText2 = _structs$i2.isText; // 排除Text
+          isText = _structs$i2.isText; // 排除Text
 
-      if (_isText2) {
+      if (isText) {
         _node2.render(renderMode, ctxTotal, dx, dy);
 
         var oh = offscreenHash[i];
@@ -36775,9 +36775,9 @@
               _lv2 = _structs$i3.lv,
               _total4 = _structs$i3.total,
               _hasMask2 = _structs$i3.hasMask,
-              _isText3 = _structs$i3.isText; // 排除Text
+              isText = _structs$i3.isText; // 排除Text
 
-          if (_isText3) {
+          if (isText) {
             _node3.render(renderMode, ctx, dx, dy);
 
             if (offscreenHash.hasOwnProperty(i)) {
@@ -37186,9 +37186,9 @@
           _node4 = _structs$i4.node,
           _total6 = _structs$i4.total,
           hasMask = _structs$i4.hasMask,
-          _isText4 = _structs$i4.isText; // 先看text，visibility会在内部判断，display会被parent判断
+          isText = _structs$i4.isText; // 先看text，visibility会在内部判断，display会被parent判断
 
-      if (_isText4) {
+      if (isText) {
         var __cache = _node4.__cache;
 
         if (__cache && __cache.available) {
@@ -37292,9 +37292,9 @@
                 _node5 = _structs$j.node,
                 _total7 = _structs$j.total,
                 _hasMask4 = _structs$j.hasMask,
-                _isText5 = _structs$j.isText;
+                _isText = _structs$j.isText;
 
-            if (!_isText5) {
+            if (!_isText) {
               var _computedStyle2 = _node5.__computedStyle;
 
               if (_computedStyle2[DISPLAY$1] === 'none' || _node5.__mask) {
@@ -37493,9 +37493,9 @@
           _node6 = _structs$i5.node,
           _total8 = _structs$i5.total,
           hasMask = _structs$i5.hasMask,
-          _isText6 = _structs$i5.isText;
+          isText = _structs$i5.isText;
 
-      if (_isText6) {
+      if (isText) {
         var mh = mergeHash[i];
 
         if (mh) {
@@ -37658,9 +37658,9 @@
               _node8 = _structs$_i.node,
               _total10 = _structs$_i.total,
               _hasMask5 = _structs$_i.hasMask,
-              _isText7 = _structs$_i.isText;
+              _isText2 = _structs$_i.isText;
 
-          if (_isText7) {
+          if (_isText2) {
             var _cache2 = _node8.__cache;
 
             if (_cache2 && _cache2.available) {
@@ -38188,9 +38188,9 @@
             _lv5 = _structs$i6.lv,
             _total11 = _structs$i6.total,
             hasMask = _structs$i6.hasMask,
-            _isText8 = _structs$i6.isText;
+            isText = _structs$i6.isText;
 
-        if (_isText8) {
+        if (isText) {
           var __cache = _node9.__cache;
 
           if (__cache && __cache.available) {
@@ -38533,7 +38533,8 @@
         var _structs$i7 = __structs[i],
             node = _structs$i7.node,
             total = _structs$i7.total,
-            hasMask = _structs$i7.hasMask;
+            hasMask = _structs$i7.hasMask,
+            isText = _structs$i7.isText;
         var __cacheDefs = node.__cacheDefs;
         var __refreshLevel = node.__refreshLevel; // 只要涉及到matrix和opacity就影响mask
 
@@ -38943,11 +38944,11 @@
             lv = _structs$i8.lv,
             total = _structs$i8.total,
             hasMask = _structs$i8.hasMask,
-            _isText9 = _structs$i8.isText;
+            isText = _structs$i8.isText;
         node.__index = i; // 生成total需要
         // Text特殊处理，webgl中先渲染为bitmap，再作为贴图绘制，缓存交由text内部判断，直接调用渲染纹理方法
 
-        if (_isText9) {
+        if (isText) {
           if (lastRefreshLevel >= REPAINT$1) {
             var bbox = node.bbox,
                 x = node.__x,
@@ -39266,9 +39267,9 @@
           _node12 = _structs$_i3.node,
           _total13 = _structs$_i3.total,
           _hasMask7 = _structs$_i3.hasMask,
-          _isText10 = _structs$_i3.isText; // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
+          _isText3 = _structs$_i3.isText; // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
 
-      if (_isText10) {
+      if (_isText3) {
         // text特殊之处，__config部分是复用parent的
         var _cache6 = _node12.__cache;
 
@@ -39513,9 +39514,9 @@
             lv = _structs$i9.lv,
             total = _structs$i9.total,
             hasMask = _structs$i9.hasMask,
-            _isText11 = _structs$i9.isText; // 排除Text，要么根节点直接绘制，要么被局部根节点汇总，自身并不缓存（fillText比位图更快）
+            isText = _structs$i9.isText; // 排除Text，要么根节点直接绘制，要么被局部根节点汇总，自身并不缓存（fillText比位图更快）
 
-        if (_isText11) {
+        if (isText) {
           continue;
         }
 
@@ -39619,9 +39620,9 @@
           _lv7 = _structs$_i4.lv,
           _total14 = _structs$_i4.total,
           _hasMask8 = _structs$_i4.hasMask,
-          _isText12 = _structs$_i4.isText; // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
+          _isText4 = _structs$_i4.isText; // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
 
-      if (_isText12) {
+      if (_isText4) {
         _node13.render(renderMode, ctx, 0, 0);
 
         var oh = offscreenHash[_i11];

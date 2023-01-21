@@ -11323,8 +11323,8 @@
       LINE_HEIGHT$6 = _enums$STYLE_KEY$g.LINE_HEIGHT;
   var DEG$2 = o$4.DEG;
   var CANVAS$4 = mode.CANVAS,
-      SVG$4 = mode.SVG,
-      WEBGL$4 = mode.WEBGL;
+      SVG$4 = mode.SVG;
+      mode.WEBGL;
   var TuOrU = /(?:[\xA7\xA9\xAE\xB1\xBC-\xBE\xD7\xF7\u02EA\u02EB\u1100-\u11FF\u1401-\u167F\u18B0-\u18FF\u2016\u2020\u2021\u2030\u2031\u203B\u203C\u2042\u2047-\u2049\u2051\u2065\u20DD-\u20E0\u20E2-\u20E4\u2100\u2101\u2103-\u2109\u210F\u2113\u2114\u2116\u2117\u211E-\u2123\u2125\u2127\u2129\u212E\u2135-\u213F\u2145-\u214A\u214C\u214D\u214F-\u2189\u218C-\u218F\u221E\u2234\u2235\u2300-\u2307\u230C-\u231F\u2324-\u2328\u232B\u237D-\u239A\u23BE-\u23CD\u23CF\u23D1-\u23DB\u23E2-\u2422\u2424-\u24FF\u25A0-\u2619\u2620-\u2767\u2776-\u2793\u2B12-\u2B2F\u2B50-\u2B59\u2B97\u2BB8-\u2BD1\u2BD3-\u2BEB\u2BF0-\u2BFF\u2E50\u2E51\u2E80-\u3000\u3003-\u3007\u3012\u3013\u3020-\u302F\u3031-\u3040\u3042\u3044\u3046\u3048\u304A-\u3062\u3064-\u3082\u3084\u3086\u3088-\u308D\u308F-\u3094\u3097-\u309A\u309D-\u309F\u30A2\u30A4\u30A6\u30A8\u30AA-\u30C2\u30C4-\u30E2\u30E4\u30E6\u30E8-\u30ED\u30EF-\u30F4\u30F7-\u30FB\u30FD-\u3126\u3128-\u31EF\u3200-\u32FE\u3358-\u337A\u3380-\uA4CF\uA960-\uA97F\uAC00-\uD7FF\uE000-\uFAFF\uFE10-\uFE1F\uFE30-\uFE48\uFE53-\uFE57\uFE5F-\uFE62\uFE67-\uFE6F\uFF02-\uFF07\uFF0A\uFF0B\uFF0F-\uFF19\uFF20-\uFF3A\uFF3C\uFF3E\uFF40-\uFF5A\uFFE0-\uFFE2\uFFE4-\uFFE7\uFFF0-\uFFF8\uFFFC\uFFFD]|\uD802[\uDD80-\uDD9F]|\uD805[\uDD80-\uDDFF]|\uD806[\uDE00-\uDEBF]|[\uD80C\uD81C-\uD822\uD83D\uD840-\uD87E\uD880-\uD8BE][\uDC00-\uDFFF]|\uD80D[\uDC00-\uDC5F]|\uD811[\uDC00-\uDE7F]|\uD81B[\uDFE0-\uDFFF]|\uD823[\uDC00-\uDD7F]|\uD82B[\uDFF0-\uDFFF]|\uD82C[\uDC00-\uDEFF]|\uD833[\uDF00-\uDFCF]|\uD834[\uDC00-\uDDFF\uDEE0-\uDF7F]|\uD836[\uDC00-\uDEAF]|\uD83C[\uDC00-\uDDFF\uDE02-\uDFFF]|\uD83E[\uDD00-\uDEFF]|[\uD87F\uD8BF][\uDC00-\uDFFD])/;
   /**
    * 表示一行文本的类，保存它的位置、内容、从属信息，在布局阶段生成，并在渲染阶段被Text调用render()
@@ -11405,7 +11405,7 @@
         var i = 0,
             length = content.length;
 
-        if (renderMode === CANVAS$4 || renderMode === WEBGL$4) {
+        if (renderMode === CANVAS$4) {
           var me = dom.matrixEvent,
               list;
           var dev1 = 0,
@@ -14605,7 +14605,6 @@
       value: function __init() {
         var self = this;
         var task = self.task,
-            roots = self.roots,
             rootTask = self.rootTask;
         inject.cancelAnimationFrame(self.id);
         var last = self.__now = inject.now();
@@ -14616,24 +14615,22 @@
           self.id = inject.requestAnimationFrame(function () {
             var now = self.__now = inject.now();
 
-            if (isPause || !task.length && !rootTask.length) {
+            if (isPause || !task.length) {
               return;
             }
 
-            rootTask.splice(0); // 直接清空即可，会被roots包含，里面会检查Root的刷新和wasm
-
             var diff = now - last;
-            diff = Math.max(diff, 0);
-            var r = roots.slice(0);
-            traversalBefore(r, r.length, diff); // let delta = diff * 0.06; // 比例是除以1/60s，等同于*0.06
+            diff = Math.max(diff, 0); // let delta = diff * 0.06; // 比例是除以1/60s，等同于*0.06
 
             last = now; // 优先动画计算
 
             var clone = task.slice(0);
             var length = clone.length; // 普通的before/after，动画计算在before，所有回调在after
 
-            traversalBefore(clone, length, diff); // let list = self.__rootTask.splice(0);
-            // for(let i = 0, len = list.length; i < len; i++) {
+            traversalBefore(clone, length, diff); // 中间夹着Root的draw()，如果有wasm，在draw之前计算
+
+            var list = rootTask.splice(0);
+            traversalBefore(list, list.length, diff); // for(let i = 0, len = list.length; i < len; i++) {
             //   let item = list[i];
             //   item && item(diff);
             // }
@@ -14642,7 +14639,7 @@
             traversalAfter(clone, length, diff); // 执行每个Root的刷新并清空
             // 还有则继续，没有则停止节省性能
 
-            if (task.length || rootTask.length) {
+            if (task.length) {
               cb();
             }
           });
@@ -40855,9 +40852,10 @@
             for (var __structs = this.__structs, __struct = node.__struct, _i3 = __structs.indexOf(__struct) + 1, _len2 = _i3 + (__struct.total || 0); _i3 < _len2; _i3++) {
               var _structs$_i = __structs[_i3],
                   _node2 = _structs$_i.node,
-                  total = _structs$_i.total; // text的style指向parent，不用管
+                  total = _structs$_i.total,
+                  isText = _structs$_i.isText; // text的style指向parent，不用管
 
-              if (_node2 instanceof Text) {
+              if (isText) {
                 continue;
               }
 
@@ -41004,7 +41002,8 @@
       key: "__frameDraw",
       value: function __frameDraw(cb) {
         if (!this.__task.length) {
-          frame.addRootTask(this);
+          frame.addRootTask(this); // 不确定是否有raf调用，加个空的
+
           frame.nextFrame(function () {}); // frame.__rootTask.push(() => {
           //   // 需要先获得累积的刷新回调再刷新，防止refresh触发事件中再次调用刷新
           //   let list = this.__task.splice(0);
@@ -41013,11 +41012,9 @@
           //     item && item();
           //   });
           // });
-
-          this.__task.push(cb);
-        } else if (cb) {
-          this.__task.push(cb);
         }
+
+        this.__task.push(cb);
       }
       /**
        * 每帧优先调用Root的回调，将上一帧的数据绘制出来，因为刷新（如动画）都是异步的，
@@ -41028,15 +41025,6 @@
     }, {
       key: "__before",
       value: function __before(diff) {
-        var list = this.__task.splice(0);
-
-        if (list.length) {
-          this.draw(false);
-          list.forEach(function (item) {
-            item && item();
-          });
-        }
-
         if (this.__renderMode !== mode.SVG) {
           var wr = this.__wasmRoot;
 
@@ -41047,6 +41035,15 @@
               this.__frameDraw(null);
             }
           }
+        }
+
+        var list = this.__task.splice(0);
+
+        if (list.length) {
+          this.draw(false);
+          list.forEach(function (item) {
+            item && item();
+          });
         }
       }
     }, {

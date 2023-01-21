@@ -830,9 +830,10 @@ class Root extends Dom {
           let {
             node,
             total,
+            isText,
           } = __structs[i];
           // text的style指向parent，不用管
-          if(node instanceof Text) {
+          if(isText) {
             continue;
           }
           let currentStyle = node.__currentStyle, cacheStyle = node.__cacheStyle;
@@ -959,6 +960,7 @@ class Root extends Dom {
   __frameDraw(cb) {
     if(!this.__task.length) {
       frame.addRootTask(this);
+      // 不确定是否有raf调用，加个空的
       frame.nextFrame(() => {
       });
       // frame.__rootTask.push(() => {
@@ -969,11 +971,8 @@ class Root extends Dom {
       //     item && item();
       //   });
       // });
-      this.__task.push(cb);
     }
-    else if(cb) {
-      this.__task.push(cb);
-    }
+    this.__task.push(cb);
   }
 
   /**
@@ -982,13 +981,6 @@ class Root extends Dom {
    * 然后判断有无wasm，有的话先执行wasm的动画计算，frame里的是js版的动画。
    */
   __before(diff) {
-    let list = this.__task.splice(0);
-    if(list.length) {
-      this.draw(false);
-      list.forEach(item => {
-        item && item();
-      });
-    }
     if(this.__renderMode !== mode.SVG) {
       let wr = this.__wasmRoot;
       if(wr) {
@@ -998,6 +990,13 @@ class Root extends Dom {
           this.__frameDraw(null);
         }
       }
+    }
+    let list = this.__task.splice(0);
+    if(list.length) {
+      this.draw(false);
+      list.forEach(item => {
+        item && item();
+      });
     }
   }
 

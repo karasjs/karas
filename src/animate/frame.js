@@ -29,7 +29,7 @@ class Frame {
 
   __init() {
     let self = this;
-    let { task, roots, rootTask } = self;
+    let { task, rootTask } = self;
     inject.cancelAnimationFrame(self.id);
     let last = self.__now = inject.now();
     function cb() {
@@ -37,14 +37,11 @@ class Frame {
       inject.cancelAnimationFrame(self.id);
       self.id = inject.requestAnimationFrame(function() {
         let now = self.__now = inject.now();
-        if(isPause || !task.length && !rootTask.length) {
+        if(isPause || !task.length) {
           return;
         }
-        rootTask.splice(0); // 直接清空即可，会被roots包含，里面会检查Root的刷新和wasm
         let diff = now - last;
         diff = Math.max(diff, 0);
-        let r = roots.slice(0);
-        traversalBefore(r, r.length, diff);
         // let delta = diff * 0.06; // 比例是除以1/60s，等同于*0.06
         last = now;
         // 优先动画计算
@@ -52,7 +49,9 @@ class Frame {
         let length = clone.length;
         // 普通的before/after，动画计算在before，所有回调在after
         traversalBefore(clone, length, diff);
-        // let list = self.__rootTask.splice(0);
+        // 中间夹着Root的draw()，如果有wasm，在draw之前计算
+        let list = rootTask.splice(0);
+        traversalBefore(list, list.length, diff);
         // for(let i = 0, len = list.length; i < len; i++) {
         //   let item = list[i];
         //   item && item(diff);
@@ -61,7 +60,7 @@ class Frame {
         traversalAfter(clone, length, diff);
         // 执行每个Root的刷新并清空
         // 还有则继续，没有则停止节省性能
-        if(task.length || rootTask.length) {
+        if(task.length) {
           cb();
         }
       });

@@ -280,28 +280,28 @@ class Dom extends Xom {
     return arr;
   }
 
-  __modifyStruct() {
-    let struct = this.__struct;
-    let total = struct.total || 0;
-    let root = this.__root, __structs = root.__structs;
-    // 新生成了struct，引用也变了
-    let nss = this.__structure(struct.lv, struct.childIndex);
-    let i = __structs.indexOf(struct);
-    root.__structs.splice(i, total + 1, ...nss);
-    let d = 0;
-    if(this !== root) {
-      struct = this.__struct;
-      d = (struct.total || 0) - total;
-      if(d) {
-        let p = this.__domParent;
-        while(p) {
-          p.__struct.total = p.__struct.total || 0;
-          p.__struct.total += d;
-          p = p.__domParent;
-        }
-      }
-    }
-  }
+  // __modifyStruct() {
+  //   let struct = this.__struct;
+  //   let total = struct.total || 0;
+  //   let root = this.__root, __structs = root.__structs;
+  //   // 新生成了struct，引用也变了
+  //   let nss = this.__structure(struct.lv, struct.childIndex);
+  //   let i = __structs.indexOf(struct);
+  //   root.__structs.splice(i, total + 1, ...nss);
+  //   let d = 0;
+  //   if(this !== root) {
+  //     struct = this.__struct;
+  //     d = (struct.total || 0) - total;
+  //     if(d) {
+  //       let p = this.__domParent;
+  //       while(p) {
+  //         p.__struct.total = p.__struct.total || 0;
+  //         p.__struct.total += d;
+  //         p = p.__domParent;
+  //       }
+  //     }
+  //   }
+  // }
 
   __insertStruct(child, childIndex) {
     let struct = this.__struct;
@@ -318,14 +318,22 @@ class Dom extends Xom {
     else {
       i = structs.indexOf(struct) + 1;
     }
-    let total;
+    let total, wr = root.__wasmRoot;
     if(Array.isArray(cs)) {
       structs.splice(i, 0, ...cs);
       total = (cs[0].total || 0) + 1;
+      if(wr) {
+        for(let j = cs.length - 1; j >= 0; j--) {
+          wr.insert_node(i, cs[j].node.__wasmNode.ptr + 8);
+        }
+      }
     }
     else {
       structs.splice(i, 0, cs);
       total = (cs.total || 0) + 1;
+      if(wr) {
+        wr.insert_node(i, cs.node.__wasmNode.ptr + 8);
+      }
     }
     // 调整后面children的childIndex，+1
     i++;
@@ -354,6 +362,12 @@ class Dom extends Xom {
     let root = this.__root, structs = root.__structs;
     let i = structs.indexOf(cs);
     structs.splice(i, total);
+    let wr = root.__wasmRoot;
+    if(wr) {
+      for(let j = i + total; j >= i; j--) {
+        wr.remove_node(j);
+      }
+    }
     // zIndexChildren后面的childIndex偏移
     let zIndexChildren = this.__zIndexChildren;
     for(let i = childIndex + 1, len = zIndexChildren.length; i < len; i++) {
@@ -377,7 +391,8 @@ class Dom extends Xom {
    * 因为zIndex/abs/add的变化造成的更新，只需重排这一段顺序即可
    */
   __updateStruct() {
-    let structs = this.__root.__structs;
+    let root = this.__root;
+    let structs = root.__structs;
     let struct = this.__struct;
     let total = struct.total || 0;
     let index = structs.indexOf(struct);
@@ -392,7 +407,7 @@ class Dom extends Xom {
       cs.childIndex = i; // 仅后面排序用
     });
     // 按之前的structs划分为相同数量的若干段进行排序
-    let source = [], arr = [], count = 0;
+    let source = [], count = 0;
     for(let i = index + 1; i <= index + total; i++) {
       let cs = structs[i];
       let o = {
@@ -415,6 +430,12 @@ class Dom extends Xom {
         list = list.concat(item.list);
       });
       structs.splice(index + 1, total, ...list);
+      let wr = root.__wasmRoot;
+      if(wr) {
+        for(let i = index + 1; i <= index + total; i++) {
+          wr.set_node(structs[i].node, i);
+        }
+      }
     }
   }
 
@@ -3310,7 +3331,7 @@ class Dom extends Xom {
       return;
     }
     // 在dom中则整体设置关系和struct，不可见提前跳出
-    builder.relation(root, host, this, child, {});
+    builder.relation(root, host || root, this, child, {});
     this.__insertStruct(child, zIndexChildren.indexOf(child));
     // 可能为component，不能用__currentStyle
     if(child.currentStyle[DISPLAY] === 'none' || this.__computedStyle[DISPLAY] === 'none') {

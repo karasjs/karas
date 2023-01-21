@@ -261,10 +261,14 @@ class Xom extends Node {
     if(this.__hasMask) {
       res.hasMask = this.__hasMask;
     }
+    let wn = this.__wasmNode;
+    if(wn) {
+      wn.lv = lv;
+    }
     return res;
   }
 
-  __modifyStruct() {}
+  // __modifyStruct() {}
 
   // 设置margin/padding的实际值，layout时执行，inline的垂直方向仍然计算值，但在布局时被忽略
   __mp(currentStyle, computedStyle, w) {
@@ -290,7 +294,7 @@ class Xom extends Node {
         return v.v * w * 0.01;
       }
     }
-    else if(v.u === REM || v.u === REM) {
+    else if(v.u === REM) {
       return v.v * this.__root.computedStyle[FONT_SIZE];
     }
     else if(v.u === VW) {
@@ -781,6 +785,19 @@ class Xom extends Node {
     let cacheStyle = this.__cacheStyle;
     this.__calStyle(level.REFLOW, currentStyle, computedStyle, cacheStyle);
     this.__calPerspective(currentStyle, computedStyle, cacheStyle);
+    let wn = this.__wasmNode;
+    if(wn) {
+      let crs = this.__currentStyle;
+      wn.set_style(this.__x1, this.__y1, this.__offsetWidth, this.__offsetHeight,
+        crs[TRANSLATE_X].v, crs[TRANSLATE_Y].v, crs[TRANSLATE_Z].v,
+        crs[ROTATE_X].v, crs[ROTATE_Y].v, crs[ROTATE_Z].v,
+        crs[ROTATE_3D][0], crs[ROTATE_3D][1], crs[ROTATE_3D][2], crs[ROTATE_3D][3].v,
+        crs[SCALE_X].v, crs[SCALE_Y].v, crs[SCALE_Z].v,
+        crs[SKEW_X].v, crs[SKEW_Y].v, crs[OPACITY],
+        crs[TRANSFORM_ORIGIN][0].v, crs[TRANSFORM_ORIGIN][1].v,
+        crs[TRANSLATE_X].u, crs[TRANSLATE_Y].u, crs[TRANSLATE_Z].u,
+        crs[TRANSFORM_ORIGIN][0].u, crs[TRANSFORM_ORIGIN][1].u);
+    }
   }
 
   __execAr() {
@@ -2554,6 +2571,12 @@ class Xom extends Node {
       = this.__prev = this.__next
       = this.__parent = this.__domParent = null;
     this.__reset0();
+    let wa = this.__wasmNode;
+    if(wa) {
+      wa.clear();
+      wa.free();
+      this.__wasmNode = null;
+    }
   }
 
   // 先查找到注册了事件的节点，再捕获冒泡判断增加性能
@@ -2849,6 +2872,13 @@ class Xom extends Node {
       animation.__destroy();
       return animation;
     }
+    let wn = this.__wasmNode;
+    if(wn) {
+      let wa = animation.__wasmAnimation;
+      if(wa) {
+        wn.add_ani(wa.ptr + 8);
+      }
+    }
     this.__animationList.push(animation);
     if(options.autoPlay === false) {
       return animation;
@@ -2863,6 +2893,13 @@ class Xom extends Node {
         o.cancel();
         o.__destroy();
         this.__animationList.splice(i, 1);
+        let wn = this.__wasmNode;
+        if(wn) {
+          let wa = animation.__wasmAnimation;
+          if(wa) {
+            wn.remove_ani(wa.ptr + 8);
+          }
+        }
       }
     }
   }
@@ -2872,6 +2909,10 @@ class Xom extends Node {
       o.cancel();
       o.__destroy();
     });
+    let wn = this.__wasmNode;
+    if(wn) {
+      wn.clear();
+    }
   }
 
   frameAnimate(cb) {

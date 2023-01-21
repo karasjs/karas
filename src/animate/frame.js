@@ -21,26 +21,30 @@ let isPause;
 
 class Frame {
   constructor() {
-    this.__rootTask = []; // 动画刷新后，每个root注册的刷新回调执行
-    this.__task = [];
+    this.__rootTask = []; // 每帧先执行Root的刷新操作，之前动画或其他异步更新引发的
+    this.__roots = []; // wasm情况下每个Root实例留个钩子引用，每帧检查动画任务行
+    this.__task = []; // 普通比如飞wasm动画的任务执行
     this.__now = inject.now();
   }
 
   __init() {
     let self = this;
-    let { task } = self;
+    let { task, roots, rootTask } = self;
     inject.cancelAnimationFrame(self.id);
     let last = self.__now = inject.now();
     function cb() {
       // 必须清除，可能会发生重复，当动画finish回调中gotoAndPlay(0)，下方结束判断发现aTask还有值会继续，新的init也会进入再次执行
       inject.cancelAnimationFrame(self.id);
       self.id = inject.requestAnimationFrame(function() {
-        if(isPause || !task.length) {
+        let now = self.__now = inject.now();
+        if(isPause || !task.length && !rootTask.length) {
           return;
         }
-        let now = self.__now = inject.now();
+        rootTask.splice(0); // 直接清空即可，会被roots包含，里面会检查Root的刷新和wasm
         let diff = now - last;
         diff = Math.max(diff, 0);
+        let r = roots.slice(0);
+        traversalBefore(r, r.length, diff);
         // let delta = diff * 0.06; // 比例是除以1/60s，等同于*0.06
         last = now;
         // 优先动画计算
@@ -48,16 +52,16 @@ class Frame {
         let length = clone.length;
         // 普通的before/after，动画计算在before，所有回调在after
         traversalBefore(clone, length, diff);
-        let list = self.__rootTask.splice(0);
-        for(let i = 0, len = list.length; i < len; i++) {
-          let item = list[i];
-          item && item(diff);
-        }
+        // let list = self.__rootTask.splice(0);
+        // for(let i = 0, len = list.length; i < len; i++) {
+        //   let item = list[i];
+        //   item && item(diff);
+        // }
         // 刷新成功后调用after，确保图像生成
         traversalAfter(clone, length, diff);
         // 执行每个Root的刷新并清空
         // 还有则继续，没有则停止节省性能
-        if(task.length) {
+        if(task.length || rootTask.length) {
           cb();
         }
       });
@@ -133,8 +137,31 @@ class Frame {
     }
   }
 
+  addRoot(root) {
+    this.__roots.push(root);
+  }
+
+  removeRoot(root) {
+    let i = this.__roots.indexOf(root);
+    if(i > -1) {
+      this.__roots.splice(i, 1);
+    }
+  }
+
+  addRootTask(root) {
+    this.__rootTask.push(root);
+  }
+
   get task() {
     return this.__task;
+  }
+
+  get roots() {
+    return this.__roots;
+  }
+
+  get rootTask() {
+    return this.__rootTask;
   }
 }
 

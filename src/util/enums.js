@@ -143,6 +143,15 @@ Object.keys(STYLE_KEY).forEach(k => {
   STYLE_V_KEY[l] = k2;
 });
 
+const WASM_STYLE = {
+  TRANSLATE_X: 0,
+  TRANSLATE_Y: 1,
+  TRANSLATE_Z: 2,
+  ROTATE_Z: 3,
+  SCALE_X: 4,
+  SCALE_Y: 5,
+};
+
 export default {
   STYLE_KEY, // 大写常量为k，数字为值
   STYLE_R_KEY, // 数字为k，大写常量为值
@@ -151,4 +160,5 @@ export default {
   style2Lower,
   style2Upper,
   ELLIPSIS: '…',
+  WASM_STYLE,
 };

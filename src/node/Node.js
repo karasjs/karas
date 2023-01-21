@@ -17,6 +17,7 @@ class Node {
     this.__bbox = null;
     this.__filterBbox = null;
     this.__isDestroyed = true;
+    this.__wasmNode = null;
   }
 
   __structure(lv, j) {

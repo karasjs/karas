@@ -179,7 +179,7 @@ function drawTextureCache(gl, list, cx, cy, dx, dy) {
     vtOpacity = lastVtOpacity = new Float32Array(length * 6);
   }
   for(let i = 0; i < length; i++) {
-    let { cache, opacity, matrix } = list[i];
+    let { cache, opacity, matrix, vertex, index } = list[i];
     let { __tw: width, __th: height,
       __tx1: tx1, __ty1: ty1, __tx2: tx2, __ty2: ty2,
       __page: page, __bbox: bbox } = cache;
@@ -191,26 +191,65 @@ function drawTextureCache(gl, list, cx, cy, dx, dy) {
       bindTexture(gl, page.texture, 0);
     }
     // 计算顶点坐标和纹理坐标，转换[0,1]对应关系
-    let bx = bbox[0], by = bbox[1];
-    let xa = bx + dx, ya = by + height + dy;
-    let xb = bx + width + dx, yb = by + dy;
-    let { x1, y1, z1, w1, x2, y2, z2, w2, x3, y3, z3, w3, x4, y4, z4, w4 } = calRectPoint(xa, ya, xb, yb, matrix);
-    // console.warn(x1,y1,z1,w1,',',x2,y2,z2,w2,',',x3,y3,z3,w3,',',x4,y4,z4,w4);
-    // z范围取所有、对角线最大值，只有当非0有值时才求
-    let z = Math.max(Math.abs(z1), Math.abs(z2));
-    z = Math.max(z, Math.abs(z3));
-    z = Math.max(z, Math.abs(z4));
-    if(z) {
-      z = Math.max(z, Math.sqrt(cx * cx + cy * cy));
+    let x1, y1, z1, w1, x2, y2, z2, w2, x3, y3, z3, w3, x4, y4, z4, w4;
+    // wasm中计算好的顶点
+    if(vertex) {
+      let j = index * 16;
+      x1 = vertex[j];
+      y1 = vertex[j + 1];
+      z1 = vertex[j + 2];
+      w1 = vertex[j + 3];
+      x2 = vertex[j + 4];
+      y2 = vertex[j + 5];
+      z2 = vertex[j + 6];
+      w2 = vertex[j + 7];
+      x3 = vertex[j + 8];
+      y3 = vertex[j + 9];
+      z3 = vertex[j + 10];
+      w3 = vertex[j + 11];
+      x4 = vertex[j + 12];
+      y4 = vertex[j + 13];
+      z4 = vertex[j + 14];
+      w4 = vertex[j + 15];
     }
-    let t = convertCoords2Gl(x1, y1, z1, w1, cx, cy, z);
-    x1 = t.x; y1 = t.y; z1 = t.z;
-    t = convertCoords2Gl(x2, y2, z2, w2, cx, cy, z);
-    x2 = t.x; y2 = t.y; z2 = t.z;
-    t = convertCoords2Gl(x3, y3, z3, w3, cx, cy, z);
-    x3 = t.x; y3 = t.y; z3 = t.z;
-    t = convertCoords2Gl(x4, y4, z4, w4, cx, cy, z);
-    x4 = t.x; y4 = t.y; z4 = t.z;
+    else {
+      let bx = bbox[0], by = bbox[1];
+      let xa = bx + dx, ya = by + height + dy;
+      let xb = bx + width + dx, yb = by + dy;
+      let t = calRectPoint(xa, ya, xb, yb, matrix);
+      x1 = t.x1;
+      y1 = t.y1;
+      z1 = t.z1;
+      w1 = t.w1;
+      x2 = t.x2;
+      y2 = t.y2;
+      z2 = t.z2;
+      w2 = t.w2;
+      x3 = t.x3;
+      y3 = t.y3;
+      z3 = t.z3;
+      w3 = t.w3;
+      x4 = t.x4;
+      y4 = t.y4;
+      z4 = t.z4;
+      w4 = t.w4;
+      // console.warn(x1,y1,z1,w1,',',x2,y2,z2,w2,',',x3,y3,z3,w3,',',x4,y4,z4,w4);
+      // z范围取所有、对角线最大值，只有当非0有值时才求
+      let z = Math.max(Math.abs(z1), Math.abs(z2));
+      z = Math.max(z, Math.abs(z3));
+      z = Math.max(z, Math.abs(z4));
+      if(z) {
+        z = Math.max(z, Math.sqrt(cx * cx + cy * cy));
+      }
+      t = convertCoords2Gl(x1, y1, z1, w1, cx, cy, z);
+      x1 = t.x; y1 = t.y; z1 = t.z;
+      t = convertCoords2Gl(x2, y2, z2, w2, cx, cy, z);
+      x2 = t.x; y2 = t.y; z2 = t.z;
+      t = convertCoords2Gl(x3, y3, z3, w3, cx, cy, z);
+      x3 = t.x; y3 = t.y; z3 = t.z;
+      t = convertCoords2Gl(x4, y4, z4, w4, cx, cy, z);
+      x4 = t.x; y4 = t.y; z4 = t.z;
+    }
     // console.log(x1,y1,z1,w1,',',x2,y2,z2,w2,',',x3,y3,z3,w3,',',x4,y4,z4,w4);
     let j = i * 24;
     vtPoint[j] = x1;

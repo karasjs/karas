@@ -866,6 +866,12 @@ class Text extends Node {
     root.__addUpdate(this, null, level.REFLOW, null, true, null, cb);
   }
 
+  __structure(lv, j) {
+    let o = super.__structure(lv, j);
+    o.isText = true;
+    return o;
+  }
+
   get content() {
     return this.__content;
   }

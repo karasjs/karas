@@ -37,14 +37,20 @@ function offscreenCanvas(key, width, height, message) {
   return {
     canvas: o,
     ctx,
-    enabled: true,
-    available: true,
+    __enabled: true,
+    __available: true,
+    get enabled() {
+      return this.__enabled;
+    },
+    get available() {
+      return this.__available;
+    },
     release() {
       ctx.globalAlpha = 1;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, width, height);
       o.width = o.height = 0;
-      this.available = false;
+      this.__available = false;
       if(debug.flag && o) {
         document.body.removeChild(o);
       }

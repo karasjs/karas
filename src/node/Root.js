@@ -50,6 +50,7 @@ import fragmentColor from '../gl/mbm/color.frag';
 import fragmentLuminosity from '../gl/mbm/luminosity.frag';
 import vertexSs from '../gl/ss.vert';
 import fragmentSs from '../gl/ss.frag';
+import wasm from '../wasm/index';
 
 const {
   STYLE_KEY: {
@@ -73,6 +74,20 @@ const {
     TRANSFORM,
     OPACITY,
     MIX_BLEND_MODE,
+    FONT_SIZE,
+    TRANSLATE_X,
+    TRANSLATE_Y,
+    TRANSLATE_Z,
+    ROTATE_X,
+    ROTATE_Y,
+    ROTATE_Z,
+    ROTATE_3D,
+    SCALE_X,
+    SCALE_Y,
+    SCALE_Z,
+    SKEW_X,
+    SKEW_Y,
+    TRANSFORM_ORIGIN,
   },
 } = enums;
 const { isNil, isFunction } = util;
@@ -179,6 +194,14 @@ class Root extends Dom {
     this.__uuid = uuid++;
     this.__rlv = REBUILD; // 每次刷新最大lv
     this.__lastUpdateP = null; // 每帧addUpdate都会向上检查，很多时候同级无需继续，第一次检查暂存parent对象
+    if(wasm.wasm && (props.wasm === undefined || props.wasm)) {
+      this.__wasmRoot = wasm.Root.new();
+      let wn = this.__wasmNode = wasm.Node.new(false);
+      wn.set_root(this.__wasmRoot.ptr + 8);
+    }
+    else {
+      this.__wasmRoot = null;
+    }
     builder.buildRoot(this, this.__children);
     this.__env = null; // 生成cacheTotal时会覆盖这个信息，得知当前离屏画布信息
   }
@@ -356,9 +379,15 @@ class Root extends Dom {
       this.__initShader(gl);
       this.__renderMode = mode.WEBGL;
     }
+    let wr = this.__wasmRoot;
+    if(wr) {
+      wr.mode = this.__renderMode;
+    }
     this.draw(true);
     this.__eventCbList = initEvent(this.__dom, Root);
     this.__dom.__root = this;
+    frame.removeRoot(this);
+    frame.addRoot(this);
   }
 
   __initShader(gl) {
@@ -412,7 +441,20 @@ class Root extends Dom {
       h: height,
       isUpright,
     }, null);
-    this.__structs = this.__structure(0, 0);
+    let s = this.__structs = this.__structure(0, 0);
+    let wr = this.__wasmRoot;
+    if(wr) {
+      wr.font_size = this.__computedStyle[FONT_SIZE];
+      wr.clear();
+      for(let i = 0, len = s.length; i < len; i++) {
+        let { node } = s[i];
+        if(node instanceof Component) {
+          node = node.shadowRoot;
+        }
+        let wn = node.__wasmNode; // 一定有
+        wr.add_node(wn.ptr + 8);
+      }
+    }
   }
 
   draw(isFirst) {
@@ -520,6 +562,12 @@ class Root extends Dom {
         }
       }
     }
+    let wr = this.__wasmRoot;
+    if(wr) {
+      wr.clear();
+      wr.free();
+      this.__wasmRoot = null;
+    }
   }
 
   scale(x = 1, y = x) {
@@ -539,6 +587,10 @@ class Root extends Dom {
     }
     else if(isFunction(cb)) {
       cb(-1);
+    }
+    let wr = this.__wasmRoot;
+    if(wr) {
+      wr.resize(w, h);
     }
   }
 
@@ -598,7 +650,7 @@ class Root extends Dom {
    * @private
    */
   __checkRoot(renderMode, width, height) {
-    let { dom, currentStyle, computedStyle } = this;
+    let { dom, currentStyle, computedStyle, __wasmRoot } = this;
     // canvas/svg作为根节点一定是block或flex，不会是inline
     if(['flex', 'block'].indexOf(currentStyle[DISPLAY]) === -1) {
       computedStyle[DISPLAY] = currentStyle[DISPLAY] = 'block';
@@ -624,6 +676,9 @@ class Root extends Dom {
     else if(renderMode === mode.SVG) {
       dom.setAttribute('width', width);
       dom.setAttribute('height', height);
+    }
+    if(__wasmRoot) {
+      __wasmRoot.resize(width, height);
     }
   }
 
@@ -903,20 +958,46 @@ class Root extends Dom {
   // 异步进行root刷新操作，多次调用缓存结果，刷新成功后回调
   __frameDraw(cb) {
     if(!this.__task.length) {
-      frame.nextFrame(() => {
-      });
-      frame.__rootTask.push(() => {
-        // 需要先获得累积的刷新回调再刷新，防止refresh触发事件中再次调用刷新
-        let list = this.__task.splice(0);
-        this.draw(false);
-        list.forEach(item => {
-          item && item();
-        });
-      });
+      frame.addRootTask(this);
+      // frame.nextFrame(() => {
+      // });
+      // frame.__rootTask.push(() => {
+      //   // 需要先获得累积的刷新回调再刷新，防止refresh触发事件中再次调用刷新
+      //   let list = this.__task.splice(0);
+      //   this.draw(false);
+      //   list.forEach(item => {
+      //     item && item();
+      //   });
+      // });
       this.__task.push(cb);
     }
     else if(cb) {
       this.__task.push(cb);
+    }
+  }
+
+  /**
+   * 每帧优先调用Root的回调，将上一帧的数据绘制出来，因为刷新（如动画）都是异步的，
+   * 数据先变更，之后触发下一帧的重绘。
+   * 然后判断有无wasm，有的话先执行wasm的动画计算，frame里的是js版的动画。
+   */
+  __before(diff) {
+    let list = this.__task.splice(0);
+    if(list.length) {
+      this.draw(false);
+      list.forEach(item => {
+        item && item();
+      });
+    }
+    if(this.__renderMode !== mode.SVG) {
+      let wr = this.__wasmRoot;
+      if(wr) {
+        let n = wr.on_frame(diff);
+        // 有动画执行了需刷新
+        if(n && !this.__task.length) {
+          this.__frameDraw(null);
+        }
+      }
     }
   }
 

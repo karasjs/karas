@@ -17626,8 +17626,8 @@
 
 
   function calFrame(prev, next, keys, target) {
-    var currentStyle = target.__currentStyle,
-        hasTp,
+    target.__currentStyle;
+        var hasTp,
         allInFn = true;
 
     for (var i = 0, len = keys.length; i < len; i++) {
@@ -17637,9 +17637,9 @@
       if (ts) {
         if (k === TRANSLATE_PATH) {
           hasTp = true;
-        }
+        } // ts.cs = currentStyle[k];
 
-        ts.cs = currentStyle[k];
+
         var fn = CAL_HASH[k];
 
         if (fn) {
@@ -17767,9 +17767,9 @@
   CAL_HASH[BACKGROUND_IMAGE$1] = CAL_HASH[FILL$2] = CAL_HASH[STROKE$1] = calGradient;
   CAL_HASH[BACKGROUND_COLOR$1] = CAL_HASH[BORDER_BOTTOM_COLOR$1] = CAL_HASH[BORDER_LEFT_COLOR$1] = CAL_HASH[BORDER_RIGHT_COLOR$1] = CAL_HASH[BORDER_TOP_COLOR$1] = CAL_HASH[COLOR$2] = CAL_HASH[TEXT_STROKE_COLOR$2] = calColor; // transform特殊处理，只有1个matrix，有可能不存在，需给默认矩阵
 
-  function calTransform(k, v, percent, cs, cl, frame, currentStyle) {
-    if (!cs || !cs.length) {
-      cs = frame.style[k] = [{
+  function calTransform(k, v, percent, st, cl, frame, currentStyle) {
+    if (!st || !st.length) {
+      st = frame.style[k] = [{
         k: MATRIX$2,
         v: matrix.identity()
       }];
@@ -17783,24 +17783,24 @@
     }
 
     for (var i = 0; i < 16; i++) {
-      cs[0].v[i] = cl[0].v[i] + v[i] * percent;
+      st[0].v[i] = cl[0].v[i] + v[i] * percent;
     }
   }
 
-  function calRotate3d$1(k, v, percent, cs, cl, frame, currentStyle) {
-    cs[0] = cl[0] + v[0] * percent;
-    cs[1] = cl[1] + v[1] * percent;
-    cs[2] = cl[2] + v[2] * percent;
-    cs[3].v = cl[3].v + v[3] * percent;
+  function calRotate3d$1(k, v, percent, st, cl, frame, currentStyle) {
+    st[0] = cl[0] + v[0] * percent;
+    st[1] = cl[1] + v[1] * percent;
+    st[2] = cl[2] + v[2] * percent;
+    st[3].v = cl[3].v + v[3] * percent;
   }
 
-  function calFilter(k, v, percent, cs, cl, frame, currentStyle) {
+  function calFilter(k, v, percent, st, cl, frame, currentStyle) {
     for (var i = 0, len = v.length; i < len; i++) {
       var item = v[i];
 
       if (item) {
-        var k2 = cs[i].k,
-            v2 = cs[i].v,
+        var k2 = st[i].k,
+            v2 = st[i].v,
             clv = cl[i].v; // 只有dropShadow是多个数组，存放x/y/blur/spread/color
 
         if (k2 === 'dropShadow') {
@@ -17823,44 +17823,44 @@
     }
   }
 
-  function calOrigin(k, v, percent, cs, cl, frame, currentStyle) {
+  function calOrigin(k, v, percent, st, cl, frame, currentStyle) {
     if (v[0] !== 0) {
-      cs[0].v = cl[0].v + v[0] * percent;
+      st[0].v = cl[0].v + v[0] * percent;
     }
 
     if (v[1] !== 0) {
-      cs[1].v = cl[1].v + v[1] * percent;
+      st[1].v = cl[1].v + v[1] * percent;
     }
   }
 
-  function calPosition(k, v, percent, cs, cl, frame, currentStyle) {
-    cs.forEach(function (item, i) {
+  function calPosition(k, v, percent, st, cl, frame, currentStyle) {
+    st.forEach(function (item, i) {
       if (v[i]) {
         item.v = cl[i].v + v[i] * percent;
       }
     });
   }
 
-  function calBoxShadow(k, v, percent, cs, cl, frame, currentStyle) {
-    for (var i = 0, len = Math.min(cs.length, v.length); i < len; i++) {
+  function calBoxShadow(k, v, percent, st, cl, frame, currentStyle) {
+    for (var i = 0, len = Math.min(st.length, v.length); i < len; i++) {
       if (!v[i]) {
         continue;
       } // x/y/blur/spread
 
 
       for (var j = 0; j < 4; j++) {
-        cs[i][j].v = cl[i][j].v + v[i][j] * percent;
+        st[i][j].v = cl[i][j].v + v[i][j] * percent;
       } // rgba
 
 
       for (var _j5 = 0; _j5 < 4; _j5++) {
-        cs[i][4][_j5] = cl[i][4][_j5] + v[i][4][_j5] * percent;
+        st[i][4][_j5] = cl[i][4][_j5] + v[i][4][_j5] * percent;
       }
     }
   }
 
-  function calBgSize(k, v, percent, cs, cl, frame, currentStyle) {
-    cs.forEach(function (item, i) {
+  function calBgSize(k, v, percent, st, cl, frame, currentStyle) {
+    st.forEach(function (item, i) {
       var o = v[i];
 
       if (o) {
@@ -17870,22 +17870,22 @@
     });
   }
 
-  function calNumber(k, v, percent, cs, cl, frame, currentStyle) {
-    cs = cl + v * percent; // 精度问题可能会超过[0,1]区间
+  function calNumber(k, v, percent, st, cl, frame, currentStyle) {
+    st = cl + v * percent; // 精度问题可能会超过[0,1]区间
 
     if (k === OPACITY$4) {
-      if (cs < 0) {
-        cs = 0;
-      } else if (cs > 1) {
-        cs = 1;
+      if (st < 0) {
+        st = 0;
+      } else if (st > 1) {
+        st = 1;
       }
     }
 
-    currentStyle[k] = cs;
+    currentStyle[k] = st;
   } // 特殊的曲线运动计算，转换为translateXY，出现在最后一定会覆盖原本的translate防重
 
 
-  function calPath(k, v, percent, cs, cl, frame, currentStyle) {
+  function calPath(k, v, percent, st, cl, frame, currentStyle) {
     var t = 1 - percent;
 
     if (v.length === 8) {
@@ -17909,12 +17909,12 @@
     }
   }
 
-  function calLength(k, v, percent, cs, cl, frame, currentStyle) {
-    cs.v = cl + v * percent;
+  function calLength(k, v, percent, st, cl, frame, currentStyle) {
+    st.v = cl + v * percent;
   }
 
-  function calGradient(k, v, percent, cs, cl, frame, currentStyle) {
-    cs.forEach(function (st2, i) {
+  function calGradient(k, v, percent, st, cl, frame, currentStyle) {
+    st.forEach(function (st2, i) {
       var v2 = v[i];
 
       if (!v2) {
@@ -17982,8 +17982,8 @@
   } // color可能超限[0,255]，但浏览器已经做了限制，无需关心
 
 
-  function calColor(k, v, percent, cs, cl, frame, currentStyle) {
-    var t = cs.v;
+  function calColor(k, v, percent, st, cl, frame, currentStyle) {
+    var t = st.v;
     t[0] = cl[0] + v[0] * percent;
     t[1] = cl[1] + v[1] * percent;
     t[2] = cl[2] + v[2] * percent;
@@ -18482,7 +18482,7 @@
 
               for (var _i18 = 0, len = transition.length; _i18 < len; _i18++) {
                 var item = transition[_i18];
-                item.cs = currentStyle[item.k] = item.st;
+                currentStyle[item.k] = item.st;
               }
             }
 
@@ -19640,15 +19640,15 @@
             var item = transition[_i23];
             var k = item.k,
                 v = item.v,
-                cs = item.cs,
+                st = item.st,
                 cl = item.cl,
                 fn = item.fn; // 可能updateStyle()甚至手动修改了currentStyle，需要重新赋值
 
-            if (cs !== currentStyle[k]) {
-              cs = item.cs = currentStyle[k];
+            if (st !== currentStyle[k]) {
+              currentStyle[k] = st;
             }
 
-            fn(k, v, percent, cs, cl, frame, currentStyle);
+            fn(k, v, percent, st, cl, frame, currentStyle);
           }
         } else {
           var currentProps = target.__currentProps,
@@ -19658,18 +19658,17 @@
             var item = transition[_i24];
             var k = item.k,
                 v = item.v,
-                cs = item.cs,
                 st = item.st,
                 cl = item.cl,
                 fn = item.fn;
 
             if (fn) {
               // 可能updateStyle()甚至手动修改了currentStyle，需要重新赋值
-              if (cs !== currentStyle[k]) {
-                cs = item.cs = currentStyle[k];
+              if (st !== currentStyle[k]) {
+                currentStyle[k] = st;
               }
 
-              fn(k, v, percent, cs, cl, frame, currentStyle);
+              fn(k, v, percent, st, cl, frame, currentStyle);
             } else if (GEOM$1.hasOwnProperty(k)) {
               var tagName = target.tagName;
 
@@ -21796,7 +21795,7 @@
                 _this5.ctx;
                 inject.measureImg(bgi.v, function (data) {
                   // 还需判断url，防止重复加载时老的替换新的，失败不绘制bgi
-                  if (data.success && data.url === loadBgi.url && !_this5.isDestroyed) {
+                  if (data.success && data.url === loadBgi.url && !_this5.__isDestroyed) {
                     loadBgi.source = data.source;
                     loadBgi.width = data.width;
                     loadBgi.height = data.height;
@@ -38639,7 +38638,7 @@
           _i7 += total || 0;
           virtualDom.cache = true;
         } else {
-          __cacheTotal && (__cacheTotal.available = true);
+          __cacheTotal && (__cacheTotal.__available = true);
           virtualDom = node.__virtualDom = util.extend({}, virtualDom); // dom要清除children缓存，geom和img无需
 
           if (node instanceof Dom && !(node instanceof Img)) {
@@ -41005,9 +41004,8 @@
       key: "__frameDraw",
       value: function __frameDraw(cb) {
         if (!this.__task.length) {
-          frame.addRootTask(this); // frame.nextFrame(() => {
-          // });
-          // frame.__rootTask.push(() => {
+          frame.addRootTask(this);
+          frame.nextFrame(function () {}); // frame.__rootTask.push(() => {
           //   // 需要先获得累积的刷新回调再刷新，防止refresh触发事件中再次调用刷新
           //   let list = this.__task.splice(0);
           //   this.draw(false);

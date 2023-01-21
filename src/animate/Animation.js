@@ -1063,7 +1063,7 @@ function calFrame(prev, next, keys, target) {
       if(k === TRANSLATE_PATH) {
         hasTp = true;
       }
-      ts.cs = currentStyle[k];
+      // ts.cs = currentStyle[k];
       let fn = CAL_HASH[k];
       if(fn) {
         ts.fn = fn;
@@ -1132,7 +1132,7 @@ function calFrame(prev, next, keys, target) {
         || (lv & SY) && !computedStyle[SCALE_Y]
         || (lv & SZ) && !computedStyle[SCALE_Z]
         || (lv & RZ) && (computedStyle[ROTATE_X] || computedStyle[ROTATE_Y]
-          || computedStyle[SKEW_X] || computedStyle[SKEW_Y])
+        || computedStyle[SKEW_X] || computedStyle[SKEW_Y])
       )) {
         prev.optimize = false;
       }
@@ -1197,30 +1197,30 @@ CAL_HASH[BACKGROUND_COLOR] = CAL_HASH[BORDER_BOTTOM_COLOR] = CAL_HASH[BORDER_LEF
   = CAL_HASH[BORDER_TOP_COLOR] = CAL_HASH[COLOR] = CAL_HASH[TEXT_STROKE_COLOR] = calColor;
 
 // transform特殊处理，只有1个matrix，有可能不存在，需给默认矩阵
-function calTransform(k, v, percent, cs, cl, frame, currentStyle) {
-  if(!cs || !cs.length) {
-    cs = frame.style[k] = [{k: MATRIX, v: mx.identity()}];
+function calTransform(k, v, percent, st, cl, frame, currentStyle) {
+  if(!st || !st.length) {
+    st = frame.style[k] = [{k: MATRIX, v: mx.identity()}];
   }
   if(!cl || !cl.length) {
     cl = frame.clone[k] = [{k: MATRIX, v: mx.identity()}];
   }
   for(let i = 0; i < 16; i++) {
-    cs[0].v[i] = cl[0].v[i] + v[i] * percent;
+    st[0].v[i] = cl[0].v[i] + v[i] * percent;
   }
 }
 
-function calRotate3d(k, v, percent, cs, cl, frame, currentStyle) {
-  cs[0] = cl[0] + v[0] * percent;
-  cs[1] = cl[1] + v[1] * percent;
-  cs[2] = cl[2] + v[2] * percent;
-  cs[3].v = cl[3].v + v[3] * percent;
+function calRotate3d(k, v, percent, st, cl, frame, currentStyle) {
+  st[0] = cl[0] + v[0] * percent;
+  st[1] = cl[1] + v[1] * percent;
+  st[2] = cl[2] + v[2] * percent;
+  st[3].v = cl[3].v + v[3] * percent;
 }
 
-function calFilter(k, v, percent, cs, cl, frame, currentStyle) {
+function calFilter(k, v, percent, st, cl, frame, currentStyle) {
   for(let i = 0, len = v.length; i < len; i++) {
     let item = v[i];
     if(item) {
-      let k2 = cs[i].k, v2 = cs[i].v, clv = cl[i].v;
+      let k2 = st[i].k, v2 = st[i].v, clv = cl[i].v;
       // 只有dropShadow是多个数组，存放x/y/blur/spread/color
       if(k2 === 'dropShadow') {
         v2[0].v = clv[0].v + item[0] * percent;
@@ -1241,41 +1241,41 @@ function calFilter(k, v, percent, cs, cl, frame, currentStyle) {
   }
 }
 
-function calOrigin(k, v, percent, cs, cl, frame, currentStyle) {
+function calOrigin(k, v, percent, st, cl, frame, currentStyle) {
   if(v[0] !== 0) {
-    cs[0].v = cl[0].v + v[0] * percent;
+    st[0].v = cl[0].v + v[0] * percent;
   }
   if(v[1] !== 0) {
-    cs[1].v = cl[1].v + v[1] * percent;
+    st[1].v = cl[1].v + v[1] * percent;
   }
 }
 
-function calPosition(k, v, percent, cs, cl, frame, currentStyle) {
-  cs.forEach((item, i) => {
+function calPosition(k, v, percent, st, cl, frame, currentStyle) {
+  st.forEach((item, i) => {
     if(v[i]) {
       item.v = cl[i].v + v[i] * percent;
     }
   });
 }
 
-function calBoxShadow(k, v, percent, cs, cl, frame, currentStyle) {
-  for(let i = 0, len = Math.min(cs.length, v.length); i < len; i++) {
+function calBoxShadow(k, v, percent, st, cl, frame, currentStyle) {
+  for(let i = 0, len = Math.min(st.length, v.length); i < len; i++) {
     if(!v[i]) {
       continue;
     }
     // x/y/blur/spread
     for(let j = 0; j < 4; j++) {
-      cs[i][j].v = cl[i][j].v + v[i][j] * percent;
+      st[i][j].v = cl[i][j].v + v[i][j] * percent;
     }
     // rgba
     for(let j = 0; j < 4; j++) {
-      cs[i][4][j] = cl[i][4][j] + v[i][4][j] * percent;
+      st[i][4][j] = cl[i][4][j] + v[i][4][j] * percent;
     }
   }
 }
 
-function calBgSize(k, v, percent, cs, cl, frame, currentStyle) {
-  cs.forEach((item, i) => {
+function calBgSize(k, v, percent, st, cl, frame, currentStyle) {
+  st.forEach((item, i) => {
     let o = v[i];
     if(o) {
       item[0].v = cl[i][0].v + o[0] * percent;
@@ -1284,22 +1284,22 @@ function calBgSize(k, v, percent, cs, cl, frame, currentStyle) {
   });
 }
 
-function calNumber(k, v, percent, cs, cl, frame, currentStyle) {
-  cs = cl + v * percent;
+function calNumber(k, v, percent, st, cl, frame, currentStyle) {
+  st = cl + v * percent;
   // 精度问题可能会超过[0,1]区间
   if(k === OPACITY) {
-    if(cs < 0) {
-      cs = 0;
+    if(st < 0) {
+      st = 0;
     }
-    else if(cs > 1) {
-      cs = 1;
+    else if(st > 1) {
+      st = 1;
     }
   }
-  currentStyle[k] = cs;
+  currentStyle[k] = st;
 }
 
 // 特殊的曲线运动计算，转换为translateXY，出现在最后一定会覆盖原本的translate防重
-function calPath(k, v, percent, cs, cl, frame, currentStyle) {
+function calPath(k, v, percent, st, cl, frame, currentStyle) {
   let t = 1 - percent;
   if(v.length === 8) {
     currentStyle[TRANSLATE_X] = {
@@ -1333,12 +1333,12 @@ function calPath(k, v, percent, cs, cl, frame, currentStyle) {
   }
 }
 
-function calLength(k, v, percent, cs, cl, frame, currentStyle) {
-  cs.v = cl + v * percent;
+function calLength(k, v, percent, st, cl, frame, currentStyle) {
+  st.v = cl + v * percent;
 }
 
-function calGradient(k, v, percent, cs, cl, frame, currentStyle) {
-  cs.forEach((st2, i) => {
+function calGradient(k, v, percent, st, cl, frame, currentStyle) {
+  st.forEach((st2, i) => {
     let v2 = v[i];
     if(!v2) {
       return;
@@ -1400,8 +1400,8 @@ function calGradient(k, v, percent, cs, cl, frame, currentStyle) {
 }
 
 // color可能超限[0,255]，但浏览器已经做了限制，无需关心
-function calColor(k, v, percent, cs, cl, frame, currentStyle) {
-  let t = cs.v;
+function calColor(k, v, percent, st, cl, frame, currentStyle) {
+  let t = st.v;
   t[0] = cl[0] + v[0] * percent;
   t[1] = cl[1] + v[1] * percent;
   t[2] = cl[2] + v[2] * percent;
@@ -1825,7 +1825,7 @@ class Animation extends Event {
           let currentStyle = target.__currentStyle;
           for(let i = 0, len = transition.length; i < len; i++) {
             let item = transition[i];
-            item.cs = currentStyle[item.k] = item.st;
+            currentStyle[item.k] = item.st;
           }
         }
         this.__isChange = !!keys.length;
@@ -2781,25 +2781,25 @@ class Animation extends Event {
     if(allInFn) {
       for(let i = 0, len = transition.length; i < len; i++) {
         let item = transition[i];
-        let k = item.k, v = item.v, cs = item.cs, cl = item.cl, fn = item.fn;
+        let k = item.k, v = item.v, st = item.st, cl = item.cl, fn = item.fn;
         // 可能updateStyle()甚至手动修改了currentStyle，需要重新赋值
-        if(cs !== currentStyle[k]) {
-          cs = item.cs = currentStyle[k];
+        if(st !== currentStyle[k]) {
+          currentStyle[k] = st;
         }
-        fn(k, v, percent, cs, cl, frame, currentStyle);
+        fn(k, v, percent, st, cl, frame, currentStyle);
       }
     }
     else {
       let currentProps = target.__currentProps, modify;
       for(let i = 0, len = transition.length; i < len; i++) {
         let item = transition[i];
-        let k = item.k, v = item.v, cs = item.cs, st = item.st, cl = item.cl, fn = item.fn;
+        let k = item.k, v = item.v, st = item.st, cl = item.cl, fn = item.fn;
         if(fn) {
           // 可能updateStyle()甚至手动修改了currentStyle，需要重新赋值
-          if(cs !== currentStyle[k]) {
-            cs = item.cs = currentStyle[k];
+          if(st !== currentStyle[k]) {
+            currentStyle[k] = st;
           }
-          fn(k, v, percent, cs, cl, frame, currentStyle);
+          fn(k, v, percent, st, cl, frame, currentStyle);
         }
         else if(GEOM.hasOwnProperty(k)) {
           let tagName = target.tagName;

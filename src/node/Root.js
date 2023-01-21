@@ -959,8 +959,8 @@ class Root extends Dom {
   __frameDraw(cb) {
     if(!this.__task.length) {
       frame.addRootTask(this);
-      // frame.nextFrame(() => {
-      // });
+      frame.nextFrame(() => {
+      });
       // frame.__rootTask.push(() => {
       //   // 需要先获得累积的刷新回调再刷新，防止refresh触发事件中再次调用刷新
       //   let list = this.__task.splice(0);

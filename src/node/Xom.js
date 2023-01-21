@@ -1522,7 +1522,7 @@ class Xom extends Node {
             let ctx = this.ctx;
             inject.measureImg(bgi.v, data => {
               // 还需判断url，防止重复加载时老的替换新的，失败不绘制bgi
-              if(data.success && data.url === loadBgi.url && !this.isDestroyed) {
+              if(data.success && data.url === loadBgi.url && !this.__isDestroyed) {
                 loadBgi.source = data.source;
                 loadBgi.width = data.width;
                 loadBgi.height = data.height;

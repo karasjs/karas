@@ -2091,7 +2091,7 @@ function renderSvg(renderMode, ctx, root, isFirst, rlv) {
         virtualDom.cache = true;
       }
       else {
-        __cacheTotal && (__cacheTotal.available = true);
+        __cacheTotal && (__cacheTotal.__available = true);
         virtualDom = node.__virtualDom = util.extend({}, virtualDom);
         // dom要清除children缓存，geom和img无需
         if(node instanceof Dom && !(node instanceof Img)) {

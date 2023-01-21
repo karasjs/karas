@@ -79,7 +79,7 @@ class Frame {
     if(isFunction(handle)) {
       handle = {
         __after: handle,
-        __karasFramecb: handle,
+        __karasFrameCb: handle,
       };
     }
     task.push(handle);
@@ -93,7 +93,7 @@ class Frame {
     for(let i = 0, len = task.length; i < len; i++) {
       let item = task[i];
       // 需考虑nextFrame包裹的引用对比
-      if(item === handle || item.__karasFramecb === handle) {
+      if(item === handle || item.__karasFrameCb === handle) {
         task.splice(i, 1);
         break;
       }
@@ -121,7 +121,7 @@ class Frame {
         this.offFrame(cb);
       },
     };
-    cb.__karasFramecb = handle;
+    cb.__karasFrameCb = handle;
     this.onFrame(cb);
   }
 

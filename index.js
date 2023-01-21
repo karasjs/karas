@@ -14663,7 +14663,7 @@
         if (isFunction$7(handle)) {
           handle = {
             __after: handle,
-            __karasFramecb: handle
+            __karasFrameCb: handle
           };
         }
 
@@ -14681,7 +14681,7 @@
         for (var i = 0, len = task.length; i < len; i++) {
           var item = task[i]; // 需考虑nextFrame包裹的引用对比
 
-          if (item === handle || item.__karasFramecb === handle) {
+          if (item === handle || item.__karasFrameCb === handle) {
             task.splice(i, 1);
             break;
           }
@@ -14716,7 +14716,7 @@
             _this.offFrame(cb);
           }
         };
-        cb.__karasFramecb = handle;
+        cb.__karasFrameCb = handle;
         this.onFrame(cb);
       }
     }, {
@@ -18184,26 +18184,27 @@
 
       _this.__firstPlay = true;
       _this.__firstEnter = true;
-      var iterations = _this.iterations = op.iterations;
       var duration = _this.duration = op.duration;
       var ea = _this.easing = op.easing;
       var fps = parseInt(op.fps) || 0;
 
       if (fps <= 0) {
         fps = 60;
-      } // this.spfLimit = op.spfLimit;
+      }
 
+      _this.fps = fps; // this.spfLimit = op.spfLimit;
 
       _this.delay = op.delay;
       _this.endDelay = op.endDelay;
       _this.playbackRate = op.playbackRate;
       _this.fill = op.fill;
       _this.iterations = op.iterations;
+      _this.direction = op.direction;
       _this.areaStart = op.areaStart; // ae中的功能，播放中间一段动画，为0忽略
 
       _this.areaDuration = op.areaDuration;
 
-      var _this$__init = _this.__init(list, iterations, duration, ea, target),
+      var _this$__init = _this.__init(list, duration, ea, target),
           frames = _this$__init.frames,
           framesR = _this$__init.framesR,
           keys = _this$__init.keys,
@@ -18221,7 +18222,7 @@
         reverse: true,
         'alternate-reverse': true,
         alternateReverse: true
-      }.hasOwnProperty(op.direction) ? framesR : frames;
+      }.hasOwnProperty(_this.__direction) ? framesR : frames;
       var controller = op.controller;
 
       if (controller instanceof Controller) {
@@ -18237,7 +18238,7 @@
 
     _createClass(Animation, [{
       key: "__init",
-      value: function __init(list, iterations, duration, ea, target) {
+      value: function __init(list, duration, ea, target) {
         if (list.length < 1) {
           return {
             frames: [],
@@ -23371,7 +23372,7 @@
           var list = this.__frameAnimateList; // 防止重复
 
           for (var i = 0, len = list.length; i < len; i++) {
-            if (list[i].__karasFramecb === cb) {
+            if (list[i].__karasFrameCb === cb) {
               return cb;
             }
           }
@@ -23380,7 +23381,7 @@
             __after: function __after(diff) {
               cb(diff);
             },
-            __karasFramecb: cb
+            __karasFrameCb: cb
           };
           list.push(enter);
           frame.onFrame(enter);
@@ -23391,7 +23392,7 @@
       key: "removeFrameAnimate",
       value: function removeFrameAnimate(cb) {
         for (var i = 0, list = this.__frameAnimateList, len = list.length; i < len; i++) {
-          if (list[i].__karasFramecb === cb) {
+          if (list[i].__karasFrameCb === cb) {
             list.splice(i, 1);
             frame.offFrame(cb);
             return;
@@ -36243,9 +36244,10 @@
       var _structs$i = __structs[i],
           _node = _structs$i.node,
           _total = _structs$i.total,
-          hasMask = _structs$i.hasMask;
+          hasMask = _structs$i.hasMask,
+          _isText = _structs$i.isText;
 
-      if (_node instanceof Text) {
+      if (_isText) {
         if (_node.__limitCache) {
           inject.warn('Bbox of Text(' + index + ')' + ' is oversize' + _node.offsetWidth + ', ' + _node.offsetHeight);
           return;
@@ -36460,9 +36462,10 @@
           _node2 = _structs$i2.node,
           _lv = _structs$i2.lv,
           _total2 = _structs$i2.total,
-          hasMask = _structs$i2.hasMask; // 排除Text
+          hasMask = _structs$i2.hasMask,
+          _isText2 = _structs$i2.isText; // 排除Text
 
-      if (_node2 instanceof Text) {
+      if (_isText2) {
         _node2.render(renderMode, ctxTotal, dx, dy);
 
         var oh = offscreenHash[i];
@@ -36771,9 +36774,10 @@
               _node3 = _structs$i3.node,
               _lv2 = _structs$i3.lv,
               _total4 = _structs$i3.total,
-              _hasMask2 = _structs$i3.hasMask; // 排除Text
+              _hasMask2 = _structs$i3.hasMask,
+              _isText3 = _structs$i3.isText; // 排除Text
 
-          if (_node3 instanceof Text) {
+          if (_isText3) {
             _node3.render(renderMode, ctx, dx, dy);
 
             if (offscreenHash.hasOwnProperty(i)) {
@@ -37181,9 +37185,10 @@
       var _structs$i4 = __structs[i],
           _node4 = _structs$i4.node,
           _total6 = _structs$i4.total,
-          hasMask = _structs$i4.hasMask; // 先看text，visibility会在内部判断，display会被parent判断
+          hasMask = _structs$i4.hasMask,
+          _isText4 = _structs$i4.isText; // 先看text，visibility会在内部判断，display会被parent判断
 
-      if (_node4 instanceof Text) {
+      if (_isText4) {
         var __cache = _node4.__cache;
 
         if (__cache && __cache.available) {
@@ -37286,9 +37291,10 @@
             var _structs$j = __structs[j],
                 _node5 = _structs$j.node,
                 _total7 = _structs$j.total,
-                _hasMask4 = _structs$j.hasMask;
+                _hasMask4 = _structs$j.hasMask,
+                _isText5 = _structs$j.isText;
 
-            if (!(_node5 instanceof Text)) {
+            if (!_isText5) {
               var _computedStyle2 = _node5.__computedStyle;
 
               if (_computedStyle2[DISPLAY$1] === 'none' || _node5.__mask) {
@@ -37486,9 +37492,10 @@
           _lv3 = _structs$i5.lv,
           _node6 = _structs$i5.node,
           _total8 = _structs$i5.total,
-          hasMask = _structs$i5.hasMask;
+          hasMask = _structs$i5.hasMask,
+          _isText6 = _structs$i5.isText;
 
-      if (_node6 instanceof Text) {
+      if (_isText6) {
         var mh = mergeHash[i];
 
         if (mh) {
@@ -37650,9 +37657,10 @@
           var _structs$_i = __structs[_i2],
               _node8 = _structs$_i.node,
               _total10 = _structs$_i.total,
-              _hasMask5 = _structs$_i.hasMask;
+              _hasMask5 = _structs$_i.hasMask,
+              _isText7 = _structs$_i.isText;
 
-          if (_node8 instanceof Text) {
+          if (_isText7) {
             var _cache2 = _node8.__cache;
 
             if (_cache2 && _cache2.available) {
@@ -38179,9 +38187,10 @@
             _node9 = _structs$i6.node,
             _lv5 = _structs$i6.lv,
             _total11 = _structs$i6.total,
-            hasMask = _structs$i6.hasMask;
+            hasMask = _structs$i6.hasMask,
+            _isText8 = _structs$i6.isText;
 
-        if (_node9 instanceof Text) {
+        if (_isText8) {
           var __cache = _node9.__cache;
 
           if (__cache && __cache.available) {
@@ -38549,7 +38558,7 @@
               });
             }
           } // 去除特殊的filter，普通节点或不影响的mask在<REPAINT下defs的其它都可缓存
-          else if (!(node instanceof Text)) {
+          else if (!isText) {
             __cacheDefs.forEach(function (item) {
               ctx.addCache(item);
             });
@@ -38628,7 +38637,7 @@
       lastLv = lv;
       var virtualDom = void 0; // svg小刷新等级时直接修改vd，这样Geom不再感知
 
-      if (__refreshLevel < REPAINT$1 && !(node instanceof Text)) {
+      if (__refreshLevel < REPAINT$1 && !isText) {
         virtualDom = node.__virtualDom; // total可以跳过所有孩子节点省略循环
 
         if (__cacheTotal && __cacheTotal.available) {
@@ -38704,7 +38713,7 @@
         virtualDom.lv = __refreshLevel;
       } else {
         // >=REPAINT会调用render，重新生成defsCache，text没有这个东西
-        if (!(node instanceof Text)) {
+        if (!isText) {
           node.__cacheDefs.splice(0);
 
           var _matrix = node.__matrix;
@@ -38719,7 +38728,7 @@
         node.render(renderMode, ctx, 0, 0);
         virtualDom = node.__virtualDom; // svg mock，每次都生成，每个节点都是局部根，更新时自底向上清除
 
-        if (!(node instanceof Text)) {
+        if (!isText) {
           var o = node.__cacheTotal = node.__cacheTotal || {
             __available: true,
 
@@ -38933,11 +38942,12 @@
             node = _structs$i8.node,
             lv = _structs$i8.lv,
             total = _structs$i8.total,
-            hasMask = _structs$i8.hasMask;
+            hasMask = _structs$i8.hasMask,
+            _isText9 = _structs$i8.isText;
         node.__index = i; // 生成total需要
         // Text特殊处理，webgl中先渲染为bitmap，再作为贴图绘制，缓存交由text内部判断，直接调用渲染纹理方法
 
-        if (node instanceof Text) {
+        if (_isText9) {
           if (lastRefreshLevel >= REPAINT$1) {
             var bbox = node.bbox,
                 x = node.__x,
@@ -39256,9 +39266,9 @@
           _node12 = _structs$_i3.node,
           _total13 = _structs$_i3.total,
           _hasMask7 = _structs$_i3.hasMask,
-          isText = _structs$_i3.isText; // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
+          _isText10 = _structs$_i3.isText; // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
 
-      if (isText) {
+      if (_isText10) {
         // text特殊之处，__config部分是复用parent的
         var _cache6 = _node12.__cache;
 
@@ -39502,9 +39512,10 @@
             node = _structs$i9.node,
             lv = _structs$i9.lv,
             total = _structs$i9.total,
-            hasMask = _structs$i9.hasMask; // 排除Text，要么根节点直接绘制，要么被局部根节点汇总，自身并不缓存（fillText比位图更快）
+            hasMask = _structs$i9.hasMask,
+            _isText11 = _structs$i9.isText; // 排除Text，要么根节点直接绘制，要么被局部根节点汇总，自身并不缓存（fillText比位图更快）
 
-        if (node instanceof Text) {
+        if (_isText11) {
           continue;
         }
 
@@ -39608,9 +39619,9 @@
           _lv7 = _structs$_i4.lv,
           _total14 = _structs$_i4.total,
           _hasMask8 = _structs$_i4.hasMask,
-          isText = _structs$_i4.isText; // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
+          _isText12 = _structs$_i4.isText; // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
 
-      if (isText) {
+      if (_isText12) {
         _node13.render(renderMode, ctx, 0, 0);
 
         var oh = offscreenHash[_i11];

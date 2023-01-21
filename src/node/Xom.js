@@ -2920,7 +2920,7 @@ class Xom extends Node {
       let list = this.__frameAnimateList;
       // 防止重复
       for(let i = 0, len = list.length; i < len; i++) {
-        if(list[i].__karasFramecb === cb) {
+        if(list[i].__karasFrameCb === cb) {
           return cb;
         }
       }
@@ -2928,7 +2928,7 @@ class Xom extends Node {
         __after(diff) {
           cb(diff);
         },
-        __karasFramecb: cb,
+        __karasFrameCb: cb,
       };
       list.push(enter);
       frame.onFrame(enter);
@@ -2938,7 +2938,7 @@ class Xom extends Node {
 
   removeFrameAnimate(cb) {
     for(let i = 0, list = this.__frameAnimateList, len = list.length; i < len; i++) {
-      if(list[i].__karasFramecb === cb) {
+      if(list[i].__karasFrameCb === cb) {
         list.splice(i, 1);
         frame.offFrame(cb);
         return;

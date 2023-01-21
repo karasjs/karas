@@ -1571,22 +1571,23 @@ class Animation extends Event {
     this.__isChange = false; // 每帧是否有变化，无变化不刷新也会触发frame事件
     this.__firstPlay = true;
     this.__firstEnter = true;
-    let iterations = this.iterations = op.iterations;
     let duration = this.duration = op.duration;
     let ea = this.easing = op.easing;
     let fps = parseInt(op.fps) || 0;
     if(fps <= 0) {
       fps = 60;
     }
+    this.fps = fps;
     // this.spfLimit = op.spfLimit;
     this.delay = op.delay;
     this.endDelay = op.endDelay;
     this.playbackRate = op.playbackRate;
     this.fill = op.fill;
     this.iterations = op.iterations;
+    this.direction = op.direction;
     this.areaStart = op.areaStart; // ae中的功能，播放中间一段动画，为0忽略
     this.areaDuration = op.areaDuration;
-    let { frames, framesR, keys, originStyle } = this.__init(list, iterations, duration, ea, target);
+    let { frames, framesR, keys, originStyle } = this.__init(list, duration, ea, target);
     this.__frames = frames;
     this.__framesR = framesR;
     this.__fps = fps;
@@ -1599,7 +1600,7 @@ class Animation extends Event {
       reverse: true,
       'alternate-reverse': true,
       alternateReverse: true,
-    }.hasOwnProperty(op.direction) ? framesR : frames;
+    }.hasOwnProperty(this.__direction) ? framesR : frames;
     let controller = op.controller;
     if(controller instanceof Controller) {
       controller.add(this);
@@ -1611,7 +1612,7 @@ class Animation extends Event {
     this.__timestamp = frame.__now;
   }
 
-  __init(list, iterations, duration, ea, target) {
+  __init(list, duration, ea, target) {
     if(list.length < 1) {
       return { frames: [], framesR: [], keys: [], originStyle: {} };
     }

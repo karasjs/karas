@@ -133,8 +133,9 @@ function genBboxTotal(node, __structs, index, total, lv, isPpt) {
       node,
       total,
       hasMask,
+      isText,
     } = __structs[i];
-    if(node instanceof Text) {
+    if(isText) {
       if(node.__limitCache) {
         inject.warn('Bbox of Text(' + index + ')' + ' is oversize'
           + node.offsetWidth + ', ' + node.offsetHeight);
@@ -323,9 +324,10 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
       lv,
       total,
       hasMask,
+      isText,
     } = __structs[i];
     // 排除Text
-    if(node instanceof Text) {
+    if(isText) {
       node.render(renderMode, ctxTotal, dx, dy);
       let oh = offscreenHash[i];
       if(oh) {
@@ -554,9 +556,10 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
           lv,
           total,
           hasMask,
+          isText,
         } = __structs[i];
         // 排除Text
-        if(node instanceof Text) {
+        if(isText) {
           node.render(renderMode, ctx, dx, dy);
           if(offscreenHash.hasOwnProperty(i)) {
             ctx = applyOffscreen(ctx, offscreenHash[i], width, height, false);
@@ -887,9 +890,10 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
       node,
       total,
       hasMask,
+      isText,
     } = __structs[i];
     // 先看text，visibility会在内部判断，display会被parent判断
-    if(node instanceof Text) {
+    if(isText) {
       let __cache = node.__cache;
       if(__cache && __cache.available) {
         let {
@@ -975,8 +979,9 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
             node,
             total,
             hasMask,
+            isText,
           } = __structs[j];
-          if(!(node instanceof Text)) {
+          if(!isText) {
             let __computedStyle = node.__computedStyle;
             if(__computedStyle[DISPLAY] === 'none' || node.__mask) {
               j += (total || 0);
@@ -1141,8 +1146,9 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
       node,
       total,
       hasMask,
+      isText,
     } = __structs[i];
-    if(node instanceof Text) {
+    if(isText) {
       let mh = mergeHash[i];
       if(mh) {
         isFlat = mh.isFlat;
@@ -1270,8 +1276,9 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
           node,
           total,
           hasMask,
+          isText,
         } = __structs[i];
-        if(node instanceof Text) {
+        if(isText) {
           let __cache = node.__cache;
           if(__cache && __cache.available) {
             let {
@@ -1694,8 +1701,9 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
         lv,
         total,
         hasMask,
+        isText,
       } = __structs[i];
-      if(node instanceof Text) {
+      if(isText) {
         let __cache = node.__cache;
         if(__cache && __cache.available) {
           let {
@@ -2014,7 +2022,7 @@ function renderSvg(renderMode, ctx, root, isFirst, rlv) {
           }
         }
         // 去除特殊的filter，普通节点或不影响的mask在<REPAINT下defs的其它都可缓存
-        else if(!(node instanceof Text)) {
+        else if(!isText) {
           __cacheDefs.forEach(item => {
             ctx.addCache(item);
           });
@@ -2083,7 +2091,7 @@ function renderSvg(renderMode, ctx, root, isFirst, rlv) {
     lastLv = lv;
     let virtualDom;
     // svg小刷新等级时直接修改vd，这样Geom不再感知
-    if(__refreshLevel < REPAINT && !(node instanceof Text)) {
+    if(__refreshLevel < REPAINT && !isText) {
       virtualDom = node.__virtualDom;
       // total可以跳过所有孩子节点省略循环
       if(__cacheTotal && __cacheTotal.available) {
@@ -2153,7 +2161,7 @@ function renderSvg(renderMode, ctx, root, isFirst, rlv) {
     }
     else {
       // >=REPAINT会调用render，重新生成defsCache，text没有这个东西
-      if(!(node instanceof Text)) {
+      if(!isText) {
         node.__cacheDefs.splice(0);
         let matrix = node.__matrix;
         if(parentMatrix) {
@@ -2164,7 +2172,7 @@ function renderSvg(renderMode, ctx, root, isFirst, rlv) {
       node.render(renderMode, ctx, 0, 0);
       virtualDom = node.__virtualDom;
       // svg mock，每次都生成，每个节点都是局部根，更新时自底向上清除
-      if(!(node instanceof Text)) {
+      if(!isText) {
         let o = node.__cacheTotal = node.__cacheTotal || {
           __available: true,
           get available() {
@@ -2333,10 +2341,11 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         lv,
         total,
         hasMask,
+        isText,
       } = __structs[i];
       node.__index = i; // 生成total需要
       // Text特殊处理，webgl中先渲染为bitmap，再作为贴图绘制，缓存交由text内部判断，直接调用渲染纹理方法
-      if(node instanceof Text) {
+      if(isText) {
         if(lastRefreshLevel >= REPAINT) {
           let bbox = node.bbox, x = node.__x, y = node.__y;
           let __cache = node.__cache;
@@ -2847,9 +2856,10 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
         lv,
         total,
         hasMask,
+        isText,
       } = __structs[i];
       // 排除Text，要么根节点直接绘制，要么被局部根节点汇总，自身并不缓存（fillText比位图更快）
-      if(node instanceof Text) {
+      if(isText) {
         continue;
       }
       let __computedStyle = node.__computedStyle;

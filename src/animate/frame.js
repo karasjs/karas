@@ -36,6 +36,7 @@ class Frame {
       // 必须清除，可能会发生重复，当动画finish回调中gotoAndPlay(0)，下方结束判断发现aTask还有值会继续，新的init也会进入再次执行
       inject.cancelAnimationFrame(self.id);
       self.id = inject.requestAnimationFrame(function() {
+        // console.log('frame', task.length, task.slice(0))
         let now = self.__now = inject.now();
         if(isPause || !task.length) {
           return;
@@ -46,19 +47,20 @@ class Frame {
         last = now;
         // 优先动画计算
         let clone = task.slice(0);
-        let length = clone.length;
+        let len1 = clone.length;
         // 普通的before/after，动画计算在before，所有回调在after
-        traversalBefore(clone, length, diff);
-        // 中间夹着Root的draw()，如果有wasm，在draw之前计算
-        let list = rootTask.splice(0);
-        traversalBefore(list, list.length, diff);
+        traversalBefore(clone, len1, diff);
+        // Root的before，包含draw()，如果有wasm，在draw之前计算
+        // let list = rootTask.splice(0);
+        // let len2 = list.length;
+        // traversalBefore(list, len2, diff);
         // for(let i = 0, len = list.length; i < len; i++) {
         //   let item = list[i];
         //   item && item(diff);
         // }
         // 刷新成功后调用after，确保图像生成
-        traversalAfter(clone, length, diff);
-        // 执行每个Root的刷新并清空
+        traversalAfter(clone, len1, diff);
+        // traversalAfter(list, len2, diff);
         // 还有则继续，没有则停止节省性能
         if(task.length) {
           cb();

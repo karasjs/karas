@@ -167,23 +167,6 @@ const PLAY_STATE = {
 };
 
 /**
- * 通知root更新当前动画，需要根据frame的状态来决定是否是同步插入
- * 在异步时，因为动画本身是异步，需要addRefreshTask
- * 而如果此时frame在执行before过程中，说明帧动画本身是在before计算的，需要同步插入
- * @param keys 样式所有的key
- * @param root
- * @param node
- * @param aniParams 动画更新的特殊优化参数
- * @param cb
- */
-function genBeforeRefresh(keys, root, node, aniParams, cb) {
-  if(aniParams && !aniParams.allInFn) {
-    aniParams = null;
-  }
-  root.__addUpdate(node, keys, null, null, null, aniParams, cb);
-}
-
-/**
  * 将每帧的样式格式化，提取出offset属性并转化为时间，提取出缓动曲线easing
  * 加好空数组transition/keys，后续计算两帧之间变化时存入
  * 加好空数组fixed，后续计算无帧变化时存入
@@ -214,7 +197,7 @@ function framing(style, duration, es) {
     easing: easing || es,
     timingFunction: getEasing(easing || es),
     transition: [], // 变化的属性
-    keys: [], // 变化的k
+    trans: [], // 变化的k
     fixed: [], // 不变的k
     lastPercent: -1,
   };
@@ -1054,7 +1037,7 @@ function calDiffGradient(p, n, target) {
  * 同时不变化的key也得存入fixed
  */
 function calFrame(prev, next, keys, target) {
-  let currentStyle = target.__currentStyle, hasTp, allInFn = true;
+  let hasTp, allInFn = true;
   for(let i = 0, len = keys.length; i < len; i++) {
     let k = keys[i];
     let ts = calDiff(prev, next, k, target);
@@ -1065,29 +1048,31 @@ function calFrame(prev, next, keys, target) {
       }
       // ts.cs = currentStyle[k];
       let fn = CAL_HASH[k];
+      // Geom特殊属性没有fn
       if(fn) {
         ts.fn = fn;
       }
-      else {
-        allInFn = false;
-      }
+      // else {
+      //   allInFn = false;
+      // }
       prev.transition.push(ts);
-      prev.keys.push(k);
+      prev.trans.push(k);
     }
+    // 无法形成连续计算的或者不变的记录下来
     else if(k !== TRANSLATE_PATH) {
       prev.fixed.push(k);
-      allInFn = false;
+      // allInFn = false;
     }
   }
   // translatePath需特殊处理translate，防止被覆盖
   if(hasTp) {
-    let i = prev.keys.indexOf(TRANSLATE_X);
+    let i = prev.trans.indexOf(TRANSLATE_X);
     if(i === -1) {
-      prev.keys.push(TRANSLATE_X);
+      prev.trans.push(TRANSLATE_X);
     }
-    i = prev.keys.indexOf(TRANSLATE_Y);
+    i = prev.trans.indexOf(TRANSLATE_Y);
     if(i === -1) {
-      prev.keys.push(TRANSLATE_Y);
+      prev.trans.push(TRANSLATE_Y);
     }
     i = prev.fixed.indexOf(TRANSLATE_X);
     if(i > -1) {
@@ -1098,49 +1083,53 @@ function calFrame(prev, next, keys, target) {
       prev.fixed.splice(i, 1);
     }
   }
-  prev.allInFn = allInFn;
+  // prev.allInFn = allInFn;
   // 特殊优化，加速通知Root的更新
-  if(allInFn) {
-    let lv = NONE;
-    let computedStyle = target.__computedStyle;
-    for(let i = 0, len = keys.length; i < len; i++) {
-      let k = keys[i];
-      lv |= getLevel(k);
-      if(k === Z_INDEX) {
-        prev.hasZ = ['relative', 'absolute'].indexOf(computedStyle[POSITION]) > -1;
-      }
-      else if(k === COLOR) {
-        prev.hasColor = true;
-      }
-      else if(k === TEXT_STROKE_COLOR) {
-        prev.hasTsColor = true;
-      }
-      else if(k === TEXT_STROKE_WIDTH) {
-        prev.hasTsWidth = true;
-      }
-      else if(k === TEXT_STROKE_OVER) {
-        prev.hasTsOver = true;
-      }
+  // if(allInFn) {
+  let lv = NONE;
+  let computedStyle = target.__computedStyle;
+  let trans = prev.trans;
+  // 此帧过程中一定变化的，预先计算lv加速，一些影响继承的标识后续特殊处理
+  for(let i = 0, len = trans.length; i < len; i++) {
+    let k = trans[i];
+    lv |= getLevel(k);
+    if(k === Z_INDEX) {
+      // prev.hasZ = ['relative', 'absolute'].indexOf(computedStyle[POSITION]) > -1;
+      // prev.hasZ = true;
     }
-    // 提前计算
-    prev.lv = lv;
-    prev.isRepaint = isRepaint(lv);
-    // 常见的几种动画matrix计算是否可优化提前计算
-    if(prev.isRepaint && (lv & (TX | TY | TZ | RZ | SCALE))) {
-      if((lv & TF) || (
-        (lv & SX) && !computedStyle[SCALE_X]
-        || (lv & SY) && !computedStyle[SCALE_Y]
-        || (lv & SZ) && !computedStyle[SCALE_Z]
-        || (lv & RZ) && (computedStyle[ROTATE_X] || computedStyle[ROTATE_Y]
-        || computedStyle[SKEW_X] || computedStyle[SKEW_Y])
-      )) {
-        prev.optimize = false;
-      }
-      else {
-        prev.optimize = true;
-      }
+    else if(k === COLOR) {
+      prev.hasColor = true;
+    }
+    else if(k === TEXT_STROKE_COLOR) {
+      prev.hasTsColor = true;
+    }
+    else if(k === TEXT_STROKE_WIDTH) {
+      prev.hasTsWidth = true;
+    }
+    else if(k === TEXT_STROKE_OVER) {
+      prev.hasTsOver = true;
+    }
+    // display和visibility固定在fixed里这里不出现
+  }
+  // 提前计算，不包含fixed的
+  prev.lv = lv;
+  prev.isRepaint = isRepaint(lv);
+  // 常见的几种动画matrix计算是否可优化提前计算
+  if(prev.isRepaint && (lv & (TX | TY | TZ | RZ | SCALE))) {
+    if((lv & TF) || (
+      (lv & SX) && !computedStyle[SCALE_X]
+      || (lv & SY) && !computedStyle[SCALE_Y]
+      || (lv & SZ) && !computedStyle[SCALE_Z]
+      || (lv & RZ) && (computedStyle[ROTATE_X] || computedStyle[ROTATE_Y]
+      || computedStyle[SKEW_X] || computedStyle[SKEW_Y])
+    )) {
+      // prev.optimize = false;
+    }
+    else {
+      prev.optimize = true;
     }
   }
+  // }
   return next;
 }
 
@@ -1447,16 +1436,17 @@ function gotoOverload(animation, options, cb) {
 function frameCb(self) {
   self.emit(Event.FRAME, self.__isChange);
   if(self.__firstPlay) {
+    // self.__startTime = frame.__now; // 开始时间为第一帧时间
     self.__firstPlay = false;
     self.emit(Event.PLAY);
   }
   let cb = self.__playCb;
-  if(isFunction(cb)) {
+  if(cb) {
+    self.__playCb = null;
     cb(self.__isChange);
     // 清理要检查，gotoAndStop()这种cb回调中直接再次调用goto的话cb会不一致不能删除
-    if(self.__playCb === cb) {
-      self.__playCb = null;
-    }
+    // if(self.__playCb === cb) {
+    // }
   }
 }
 
@@ -1570,7 +1560,6 @@ class Animation extends Event {
     this.__root = target.__root;
     this.__isChange = false; // 每帧是否有变化，无变化不刷新也会触发frame事件
     this.__firstPlay = true;
-    this.__firstEnter = true;
     let duration = this.duration = op.duration;
     let ea = this.easing = op.easing;
     let fps = parseInt(op.fps) || 0;
@@ -1578,7 +1567,6 @@ class Animation extends Event {
       fps = 60;
     }
     this.fps = fps;
-    // this.spfLimit = op.spfLimit;
     this.delay = op.delay;
     this.endDelay = op.endDelay;
     this.playbackRate = op.playbackRate;
@@ -1706,7 +1694,6 @@ class Animation extends Event {
 
   __clean(isFinish) {
     this.__cancelTask();
-    this.__nextTime = 0;
     if(isFinish) {
       // gotoAndStop到一个很大的时间的话，也需要防止超过
       this.__currentTime = this.__delay + this.__duration * this.__iterations + this.__endDelay;
@@ -1729,12 +1716,10 @@ class Animation extends Event {
     if(playState === 'running') {
       return this;
     }
-    this.__cancelTask();
     this.__playCb = cb;
     this.__playState = 'running';
     // 每次play调用标识第一次运行，需响应play事件和回调
     this.__firstPlay = true;
-    this.__firstEnter = true;
     this.__playCount = 0;
     // 防止finish/cancel事件重复触发，每次播放重置
     this.__hasFin = false;
@@ -1750,11 +1735,29 @@ class Animation extends Event {
         'alternate-reverse': true,
         alternateReverse: true,
       }.hasOwnProperty(direction) ? framesR : frames;
-      this.__currentTime = this.__nextTime = this.__fpsTime = 0;
+      this.__currentTime = this.__fpsTime = 0;
+      if(this.__stayBegin) {
+        let currentFrame = this.__currentFrame = this.__currentFrames[0];
+        let target = this.__target, root = this.__root;
+        let keys = calLastStyle(currentFrame.style, target, this.__keys);
+        let isChange = !!keys.length;
+        if(this.__stopCb) {
+          root.__cancelFrameDraw(this.__stopCb);
+        }
+        // 有变化的backwards才更新，否则无需理会，不需要回调，极端情况立刻pause()回造成一次无用刷新
+        if(isChange) {
+          root.__addUpdate(target, keys, false, false, false, null);
+        }
+      }
     }
-    frame.onFrame(this);
-    this.__startTime = frame.__now;
+    // 开始时间为调用play时的帧时间
+    this.__startTime = frame.__now || (frame.__now = inject.now());
     this.__end = false;
+    // 由root统一控制，防止重复play
+    let root = this.__root;
+    if(root.__ani.indexOf(this) === -1) {
+      root.__onFrame(this);
+    }
     let wa = this.__wasmAnimation;
     if(wa) {
       wa.play_count = 0;
@@ -1775,7 +1778,6 @@ class Animation extends Event {
     let fps = this.__fps;
     let currentFrames = this.__currentFrames;
     let iterations = this.__iterations;
-    let stayBegin = this.__stayBegin;
     let stayEnd = this.__stayEnd;
     let delay = this.__delay;
     let areaStart = this.__areaStart;
@@ -1785,28 +1787,17 @@ class Animation extends Event {
     let endDelay = this.__endDelay;
     let length = currentFrames.length;
     let playbackRate = this.__playbackRate;
-    // let spfLimit = this.__spfLimit;
-    let currentTime = this.__currentTime = this.__nextTime;
     let lastFrame = this.__currentFrame;
     let dur = areaDuration ? Math.min(duration, areaDuration) : duration;
     this.__isChange = false;
-    // 定帧限制每帧时间间隔最大为spf
-    // if(spfLimit) {
-    //   if(spfLimit === true) {
-    //     diff = Math.min(diff, 1000 / fps);
-    //   }
-    //   else if(spfLimit > 0) {
-    //     diff = Math.min(diff, spfLimit);
-    //   }
-    // }
     // 播放时间累加，并且考虑播放速度加成
     if(playbackRate !== 1 && playbackRate > 0) {
       diff *= playbackRate;
     }
     // 用本帧和上帧时间差，计算累加运行时间currentTime，以便定位当前应该处于哪个时刻
-    this.__nextTime += diff;
+    let currentTime = this.__currentTime += diff;
     // 增加的fps功能，当<60时计算跳帧，每帧运行依旧累加时间，达到fps时重置，第一帧强制不跳
-    if(!this.__firstEnter && fps > 0 && fps !== 60) {
+    if(!this.__firstPlay && fps > 0 && fps !== 60) {
       diff = this.__fpsTime += diff;
       if(diff < 1000 / fps) {
         this.__inFps = true;
@@ -1814,24 +1805,8 @@ class Animation extends Event {
       }
       this.__fpsTime = 0;
     }
-    this.__firstEnter = false;
     // delay仅第一次生效等待
     if(currentTime < delay - areaStart) {
-      if(stayBegin && !this.__isDelay) {
-        let currentFrame = this.__currentFrame = currentFrames[0];
-        let keys = calLastStyle(currentFrame.style, target, this.__keys);
-        // 特殊处理，将ts上的cs指向当前currentStyle，一些继承样式如color被更新，否则delay后计算会报错
-        let transition = currentFrame.transition;
-        if(transition) {
-          let currentStyle = target.__currentStyle;
-          for(let i = 0, len = transition.length; i < len; i++) {
-            let item = transition[i];
-            currentStyle[item.k] = item.st;
-          }
-        }
-        this.__isChange = !!keys.length;
-        genBeforeRefresh(keys, root, target, currentFrame, null);
-      }
       this.__begin = false; // 默认是true，delay置false防触发
       // 即便不刷新，依旧执行帧回调，同时标明让后续第一帧响应begin
       this.__outBeginDelay = true;
@@ -1909,40 +1884,45 @@ class Animation extends Event {
      * 8. 多次播放有endDelay且fill停留
      */
     let needClean;
-    let keys;
+    let temp, trans, fixed;
     if(isLastFrame) {
       inEndDelay = currentTime < dur + endDelay;
       // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
       if(stayEnd) {
-        keys = calLastStyle(currentFrame.style, target, this.__keys);
+        temp = calLastStyle(currentFrame.style, target, this.__keys);
       }
       // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
       else {
-        keys = calLastStyle(this.__originStyle, target, this.__keys);
-        currentFrame = null; // 特殊清空，genBeforeRefresh（）时不传过去
+        temp = calLastStyle(this.__originStyle, target, this.__keys);
+        // currentFrame = null; // 特殊清空，genBeforeRefresh（）时不传过去 TODO
+        currentFrame = {
+          style: this.__originStyle,
+        };
       }
       // 进入endDelay或结束阶段触发end事件，注意只触发一次，防重在触发的地方做
       this.__nextEnd = true;
       if(!inEndDelay) {
         this.__playCount++;
         this.__finished = true;
-        frame.offFrame(this);
+        root.__offFrame(this);
         needClean = true;
-        this.__nextTime = 0;
       }
     }
     else {
-      keys = Animation.calIntermediateStyle(currentFrame, percent, target);
+      temp = Animation.calIntermediateStyle(currentFrame, percent, target, notSameFrame);
     }
-    this.__isChange = !keys.length;
-    genBeforeRefresh(keys, root, target, currentFrame, null);
+    trans = temp.trans || [];
+    fixed = temp.fixed;
+    this.__isChange = !!trans.length || !!fixed;
+    // genBeforeRefresh(keys, root, target, currentFrame, null);
+    root.__addAniUpdate(target, trans, fixed, currentFrame);
     if(needClean) {
-      let playCb = this.__playCb;
+      // let playCb = this.__playCb;
       this.__clean(true);
       // 丑陋的做法，防止gotoAndStop()这样的cb被clean()掉
-      if(playCb) {
-        this.__playCb = playCb;
-      }
+      // if(playCb) {
+      //   this.__playCb = playCb;
+      // }
     }
   }
 
@@ -1969,7 +1949,7 @@ class Animation extends Event {
     }
   }
 
-  pause(silence) {
+  pause() {
     let isDestroyed = this.__isDestroyed;
     let duration = this.__duration;
     let { pending } = this;
@@ -1982,9 +1962,7 @@ class Animation extends Event {
       wa.play_state = PLAY_STATE.PAUSED;
     }
     this.__cancelTask();
-    if(!silence) {
-      this.emit(Event.PAUSE);
-    }
+    this.emit(Event.PAUSE);
     return this;
   }
 
@@ -2026,7 +2004,7 @@ class Animation extends Event {
       let target = this.__target;
       let style;
       // 是否停留在最后一帧
-      let currentFrame = null;
+      let currentFrame;
       if(this.__stayEnd) {
         let framesR = this.__framesR;
         let direction = this.__direction;
@@ -2045,17 +2023,29 @@ class Animation extends Event {
       }
       else {
         style = this.__originStyle;
+        currentFrame = {
+          style,
+        };
       }
       this.__currentFrame = currentFrame;
       let keys = calLastStyle(style, target, this.__keys);
-      this.__isChange = !keys.length;
-      genBeforeRefresh(keys, root, target, currentFrame, () => {
+      let isChange = !!keys.length;
+      if(this.__stopCb) {
+        root.__cancelFrameDraw(this.__stopCb);
+      }
+      this.__stopCb = () => {
         frameCb(this);
-        this.emit(Event.FINISH, this.__isChange);
+        this.emit(Event.FINISH, isChange);
         if(isFunction(cb)) {
-          cb(this.__isChange);
+          cb(isChange);
         }
-      });
+      };
+      if(isChange) {
+        root.__addUpdate(target, keys, false, false, false, this.__stopCb);
+      }
+      else {
+        this.__stopCb();
+      }
     }
     return this;
   }
@@ -2087,14 +2077,23 @@ class Animation extends Event {
     if(root) {
       let target = this.__target;
       let keys = calLastStyle(this.__originStyle, target, this.__keys);
-      this.__isChange = !keys.length;
-      genBeforeRefresh(keys, root, target, null,() => {
+      let isChange = !!keys.length;
+      if(this.__stopCb) {
+        root.__cancelFrameDraw(this.__stopCb);
+      }
+      this.__stopCb = () => {
         frameCb(this);
-        this.emit(Event.CANCEL, this.__isChange);
+        this.emit(Event.FINISH, isChange);
         if(isFunction(cb)) {
-          cb(this.__isChange);
+          cb(isChange);
         }
-      });
+      };
+      if(isChange) {
+        root.__addUpdate(target, keys, false, false, false, this.__stopCb);
+      }
+      else {
+        this.__stopCb();
+      }
     }
     return this;
   }
@@ -2173,7 +2172,7 @@ class Animation extends Event {
       v += this.__delay;
     }
     // 在时间范围内设置好时间，复用play直接跳到播放点
-    this.__nextTime = v;
+    this.__currentTime = v;
     if(wa) {
       wa.next_time = v;
     }
@@ -2230,8 +2229,8 @@ class Animation extends Event {
   }
 
   __cancelTask() {
-    frame.offFrame(this);
-    this.__playCb = null;
+    this.__root.__offFrame(this);
+    // this.__playCb = null; TODO 简化
   }
 
   __destroy() {
@@ -2431,19 +2430,6 @@ class Animation extends Event {
     v = Math.max(0, parseFloat(v) || 0);
     if(this.__currentTime !== v) {
       this.__currentTime = v;
-      this.__nextTime = v;
-    }
-    return v;
-  }
-
-  get nextTime() {
-    return this.__nextTime;
-  }
-
-  set nextTime(v) {
-    v = Math.max(0, parseFloat(v) || 0);
-    if(this.__nextTime !== v) {
-      this.__nextTime = v;
     }
     return v;
   }
@@ -2764,146 +2750,148 @@ class Animation extends Event {
     return i;
   }
 
-  static calIntermediateStyle(frame, percent, target) {
+  static calIntermediateStyle(frame, percent, target, notSameFrame) {
     let style = frame.style;
     let transition = frame.transition;
     let timingFunction = frame.timingFunction;
-    let allInFn = frame.allInFn;
+    // let allInFn = frame.allInFn;
     if(timingFunction && timingFunction !== linear) {
       percent = timingFunction(percent);
     }
     // 同一关键帧同一percent可以不刷新，比如diff为0时，或者steps情况，离开会清空
     if(frame.lastPercent === percent) {
-      return [];
+      return {};
     }
     frame.lastPercent = percent;
-    let currentStyle = target.__currentStyle, res = frame.keys;
+    let currentStyle = target.__currentStyle, trans = frame.trans, fixed;
     // 特殊性能优化，for拆开v8会提升不少
-    if(allInFn) {
-      for(let i = 0, len = transition.length; i < len; i++) {
-        let item = transition[i];
-        let k = item.k, v = item.v, st = item.st, cl = item.cl, fn = item.fn;
+    // if(allInFn) {
+    //   for(let i = 0, len = transition.length; i < len; i++) {
+    //     let item = transition[i];
+    //     let k = item.k, v = item.v, st = item.st, cl = item.cl, fn = item.fn;
+    //     // 可能updateStyle()甚至手动修改了currentStyle，需要重新赋值
+    //     if(st !== currentStyle[k]) {
+    //       currentStyle[k] = st;
+    //     }
+    //     fn(k, v, percent, st, cl, frame, currentStyle);
+    //   }
+    // }
+    // else {
+    let currentProps = target.__currentProps, modify;
+    for(let i = 0, len = transition.length; i < len; i++) {
+      let item = transition[i];
+      let k = item.k, v = item.v, st = item.st, cl = item.cl, fn = item.fn;
+      if(fn) {
         // 可能updateStyle()甚至手动修改了currentStyle，需要重新赋值
         if(st !== currentStyle[k]) {
           currentStyle[k] = st;
         }
         fn(k, v, percent, st, cl, frame, currentStyle);
       }
-    }
-    else {
-      let currentProps = target.__currentProps, modify;
-      for(let i = 0, len = transition.length; i < len; i++) {
-        let item = transition[i];
-        let k = item.k, v = item.v, st = item.st, cl = item.cl, fn = item.fn;
-        if(fn) {
-          // 可能updateStyle()甚至手动修改了currentStyle，需要重新赋值
-          if(st !== currentStyle[k]) {
-            currentStyle[k] = st;
+      else if(GEOM.hasOwnProperty(k)) {
+        let tagName = target.tagName;
+        if(GEOM[k][tagName] && isFunction(GEOM[k][tagName].calIncrease)) {
+          let fn = GEOM[k][tagName].calIncrease;
+          if(target.isMulti) {
+            st = st.map((item, i) => {
+              return fn(item, v[i], percent);
+            });
           }
-          fn(k, v, percent, st, cl, frame, currentStyle);
+          else {
+            st = fn(st, v, percent);
+          }
         }
-        else if(GEOM.hasOwnProperty(k)) {
-          let tagName = target.tagName;
-          if(GEOM[k][tagName] && isFunction(GEOM[k][tagName].calIncrease)) {
-            let fn = GEOM[k][tagName].calIncrease;
-            if(target.isMulti) {
-              st = st.map((item, i) => {
-                return fn(item, v[i], percent);
-              });
-            }
-            else {
-              st = fn(st, v, percent);
-            }
-          }
-          else if(target.isMulti) {
-            if(k === 'points' || k === 'controls') {
-              for(let i = 0, len = Math.min(st.length, v.length); i < len; i++) {
-                let o = st[i];
-                let n = v[i];
-                let cli = cl[i];
-                if(!isNil(o) && !isNil(n)) {
-                  for(let j = 0, len2 = Math.min(o.length, n.length); j < len2; j++) {
-                    let o2 = o[j];
-                    let n2 = n[j];
-                    if(!isNil(o2) && !isNil(n2)) {
-                      for(let k = 0, len3 = Math.min(o2.length, n2.length); k < len3; k++) {
-                        if(!isNil(o2[k]) && !isNil(n2[k])) {
-                          o2[k] = cli[j][k] + n2[k] * percent;
-                        }
+        else if(target.isMulti) {
+          if(k === 'points' || k === 'controls') {
+            for(let i = 0, len = Math.min(st.length, v.length); i < len; i++) {
+              let o = st[i];
+              let n = v[i];
+              let cli = cl[i];
+              if(!isNil(o) && !isNil(n)) {
+                for(let j = 0, len2 = Math.min(o.length, n.length); j < len2; j++) {
+                  let o2 = o[j];
+                  let n2 = n[j];
+                  if(!isNil(o2) && !isNil(n2)) {
+                    for(let k = 0, len3 = Math.min(o2.length, n2.length); k < len3; k++) {
+                      if(!isNil(o2[k]) && !isNil(n2[k])) {
+                        o2[k] = cli[j][k] + n2[k] * percent;
                       }
                     }
                   }
                 }
               }
             }
-            else if(k === 'controlA' || k === 'controlB') {
-              v.forEach((item, i) => {
-                let st2 = st[i];
-                if(!isNil(item[0]) && !isNil(st2[0])) {
-                  st2[0] = cl[i][0] + item[0] * percent;
-                }
-                if(!isNil(item[1]) && !isNil(st2[1])) {
-                  st2[1] = cl[i][1] + item[1] * percent;
-                }
-              });
-            }
-            else {
-              v.forEach((item, i) => {
-                if(!isNil(item) && !isNil(st[i])) {
-                  st[i] = cl[i] + item * percent;
-                }
-              });
-            }
+          }
+          else if(k === 'controlA' || k === 'controlB') {
+            v.forEach((item, i) => {
+              let st2 = st[i];
+              if(!isNil(item[0]) && !isNil(st2[0])) {
+                st2[0] = cl[i][0] + item[0] * percent;
+              }
+              if(!isNil(item[1]) && !isNil(st2[1])) {
+                st2[1] = cl[i][1] + item[1] * percent;
+              }
+            });
           }
           else {
-            if(k === 'points' || k === 'controls') {
-              for(let i = 0, len = Math.min(st.length, v.length); i < len; i++) {
-                let o = st[i];
-                let n = v[i];
-                if(!isNil(o) && !isNil(n)) {
-                  for(let j = 0, len2 = Math.min(o.length, n.length); j < len2; j++) {
-                    if(!isNil(o[j]) && !isNil(n[j])) {
-                      o[j] = cl[i][j] + n[j] * percent;
-                    }
+            v.forEach((item, i) => {
+              if(!isNil(item) && !isNil(st[i])) {
+                st[i] = cl[i] + item * percent;
+              }
+            });
+          }
+        }
+        else {
+          if(k === 'points' || k === 'controls') {
+            for(let i = 0, len = Math.min(st.length, v.length); i < len; i++) {
+              let o = st[i];
+              let n = v[i];
+              if(!isNil(o) && !isNil(n)) {
+                for(let j = 0, len2 = Math.min(o.length, n.length); j < len2; j++) {
+                  if(!isNil(o[j]) && !isNil(n[j])) {
+                    o[j] = cl[i][j] + n[j] * percent;
                   }
                 }
               }
             }
-            else if(k === 'controlA' || k === 'controlB') {
-              if(!isNil(st[0]) && !isNil(v[0])) {
-                st[0] = cl[0] + v[0] * percent;
-              }
-              if(!isNil(st[1]) && !isNil(v[1])) {
-                st[1] = cl[1] + v[1] * percent;
-              }
-            }
-            else {
-              if(!isNil(st) && !isNil(v)) {
-                st = cl + v * percent;
-              }
-            }
           }
-          currentProps[k] = st;
-        }
-        // string等的直接量，在不同帧之间可能存在变化，同帧变化后不再改变
-        else {
-          if(currentStyle[k] !== st) {
-            currentStyle[k] = st;
+          else if(k === 'controlA' || k === 'controlB') {
+            if(!isNil(st[0]) && !isNil(v[0])) {
+              st[0] = cl[0] + v[0] * percent;
+            }
+            if(!isNil(st[1]) && !isNil(v[1])) {
+              st[1] = cl[1] + v[1] * percent;
+            }
           }
           else {
-            if(!modify) {
-              modify = true;
-              res = res.slice(0);
+            if(!isNil(st) && !isNil(v)) {
+              st = cl + v * percent;
             }
-            let j = res.indexOf(k);
-            res.splice(j, 1);
           }
         }
+        currentProps[k] = st;
       }
-      // 无变化的也得检查是否和当前相等，防止跳到一个不变化的帧上，而前一帧有变化的情况，allInFn不会有这里
-      let fixed = frame.fixed;
-      for(let i = 0, len = fixed.length; i < len; i++) {
-        let k = fixed[i];
+      // string等的直接量，在不同帧之间可能存在变化，同帧变化后不再改变引用
+      else {
+        if(currentStyle[k] !== st) {
+          currentStyle[k] = st;
+        }
+        else {
+          if(!modify) {
+            modify = true;
+            trans = trans.slice(0);
+          }
+          let j = trans.indexOf(k);
+          trans.splice(j, 1);
+        }
+      }
+    }
+      // 无变化的也得检查是否和当前相等，防止跳到一个不变化的帧上，而前一帧有变化的情况，大部分都是无变化
+    if(notSameFrame) {
+      fixed = [];
+      let f = frame.fixed;
+      for(let i = 0, len = f.length; i < len; i++) {
+        let k = f[i];
         let isGeom = GEOM.hasOwnProperty(k);
         if(!equalStyle(k, style[k], isGeom ? currentProps[k] : currentStyle[k], target)) {
           if(GEOM.hasOwnProperty(k)) {
@@ -2912,15 +2900,12 @@ class Animation extends Event {
           else {
             currentStyle[k] = style[k];
           }
-          if(!modify) {
-            modify = true;
-            res = res.slice(0);
-          }
-          res.push(k);
+          fixed.push(k);
         }
       }
     }
-    return res;
+    // }
+    return { trans, fixed };
   }
 }
 

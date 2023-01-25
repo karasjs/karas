@@ -27,6 +27,7 @@ import math from './math/index';
 import refresh from './refresh/index';
 import { version } from '../package.json';
 import ca from './gl/ca';
+import wasm from './wasm/index';
 
 const { isString } = util;
 
@@ -40,6 +41,7 @@ Geom.register('$ellipse', Ellipse);
 
 let karas = {
   version,
+  wasm,
   render(root, dom) {
     if(!(root instanceof Root)) {
       throw new Error('Render dom must be canvas/svg/webgl');

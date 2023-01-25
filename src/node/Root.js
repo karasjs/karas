@@ -1,6 +1,5 @@
 import Xom from './Xom';
 import Dom from './Dom';
-import Text from './Text';
 import Component from './Component';
 import Defs from './Defs';
 import Geom from './geom/Geom';
@@ -94,7 +93,7 @@ const { isNil, isFunction } = util;
 const { PX, INHERIT } = unit;
 const {
   getLevel,
-  isRepaint,
+  isReflow,
   NONE,
   FILTER: FT,
   PERSPECTIVE: PPT,
@@ -186,7 +185,8 @@ class Root extends Dom {
     this.__mh = 0;
     // this.__scx = 1; // 默认缩放，css改变canvas/svg缩放后影响事件坐标，有值手动指定，否则自动计算
     // this.__scy = 1;
-    this.__task = [];
+    this.__task = []; // 更新样式异步刷新&回调
+    this.__ani = []; // 动画异步刷新&回调
     this.__ref = {};
     this.__freeze = false; // 冻住只计算不渲染
     this.__animateController = new Controller();
@@ -685,7 +685,7 @@ class Root extends Dom {
   /**
    * 添加更新，分析repaint/reflow和上下影响，异步刷新
    */
-  __addUpdate(node, keys, focus, addDom, removeDom, aniParams, cb) {
+  __addUpdate(node, keys, focus, addDom, removeDom, cb) {
     if(this.__isDestroyed) {
       return;
     }
@@ -694,77 +694,134 @@ class Root extends Dom {
     }
     let {
       __computedStyle: computedStyle,
-      __currentStyle: currentStyle,
       __cacheStyle: cacheStyle,
       __cacheProps,
-      __mask,
-      __domParent,
     } = node;
     let hasZ, hasVisibility, hasColor, hasDisplay, hasTsColor, hasTsWidth, hasTsOver;
     // 可能无keys但有aniParams，多防御一下，比如steps动画
-    let lv = focus || (aniParams && keys && keys.length ? aniParams.lv : NONE);
+    let lv = focus || NONE;
     // 清空对应改变的cacheStyle
     if(keys) {
-      if(aniParams) {
-        for(let i = 0, len = keys.length; i < len; i++) {
-          let k = keys[i];
-          cacheStyle[k] = undefined;
+      for(let i = 0, len = keys.length; i < len; i++) {
+        let k = keys[i];
+        if(node instanceof Geom && isGeom(node.tagName, k)) {
+          lv |= REPAINT;
+          __cacheProps[k] = undefined;
         }
-        hasZ = aniParams.hasZ;
-        hasColor = aniParams.hasColor;
-        hasTsColor = aniParams.hasTsColor;
-        hasTsWidth = aniParams.hasTsWidth;
-        hasTsOver = aniParams.hasTsOver;
-      }
-      else {
-        for(let i = 0, len = keys.length; i < len; i++) {
-          let k = keys[i];
-          if(node instanceof Geom && isGeom(node.tagName, k)) {
-            lv |= REPAINT;
-            __cacheProps[k] = undefined;
+        else {
+          // repaint置空，如果reflow会重新生成空的
+          cacheStyle[k] = undefined;
+          // TRBL变化只对relative/absolute起作用，其它忽视
+          if((k === TOP || k === RIGHT || k === BOTTOM || k === LEFT)
+            && ['relative', 'absolute'].indexOf(computedStyle[POSITION]) === -1) {
+            continue;
           }
-          else {
-            // repaint置空，如果reflow会重新生成空的
-            cacheStyle[k] = undefined;
-            // TRBL变化只对relative/absolute起作用，其它忽视
-            if((k === TOP || k === RIGHT || k === BOTTOM || k === LEFT)
-              && ['relative', 'absolute'].indexOf(computedStyle[POSITION]) === -1) {
-              continue;
-            }
-            // 细化等级
-            lv |= getLevel(k);
-            if(k === DISPLAY) {
-              hasDisplay = true;
-            }
-            else if(k === Z_INDEX) {
-              hasZ = node !== this && ['relative', 'absolute'].indexOf(computedStyle[POSITION]) > -1;
-            }
-            else if(k === VISIBILITY) {
-              hasVisibility = true;
-            }
-            else if(k === COLOR) {
-              hasColor = true;
-            }
-            else if(k === TEXT_STROKE_COLOR) {
-              hasTsColor = true;
-            }
-            else if(k === TEXT_STROKE_WIDTH) {
-              hasTsWidth = true;
-            }
-            else if(k === TEXT_STROKE_OVER) {
-              hasTsOver = true;
-            }
+          // 细化等级
+          lv |= getLevel(k);
+          if(k === DISPLAY) {
+            hasDisplay = true;
+          }
+          else if(k === Z_INDEX) {
+            hasZ = node !== this && ['relative', 'absolute'].indexOf(computedStyle[POSITION]) > -1;
+          }
+          else if(k === VISIBILITY) {
+            hasVisibility = true;
+          }
+          else if(k === COLOR) {
+            hasColor = true;
+          }
+          else if(k === TEXT_STROKE_COLOR) {
+            hasTsColor = true;
+          }
+          else if(k === TEXT_STROKE_WIDTH) {
+            hasTsWidth = true;
+          }
+          else if(k === TEXT_STROKE_OVER) {
+            hasTsOver = true;
           }
         }
       }
     }
-    // 没有变化，add/remove强制focus
-    // 本身节点为none，变更无效，此时没有display变化，add/remove在操作时已经判断不会进入
-    if(lv === NONE || computedStyle[DISPLAY] === 'none' && !hasDisplay) {
-      if(cb && isFunction(cb)) {
-        cb();
-      }
+    let res = this.__calUpdate(node, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver,
+      false, false, false, cb);
+    if(res) {
+      this.__frameDraw(cb);
+    }
+    else {
+      cb && cb();
+    }
+  }
+
+  __addAniUpdate(node, trans, fixed, frame) {
+    // diff为0或者极端跳帧情况相同时无变化
+    if(this.__isDestroyed || !trans.length && !fixed) {
       return;
+    }
+    let {
+      __computedStyle: computedStyle,
+      __cacheStyle: cacheStyle,
+      __cacheProps,
+    } = node;
+    let hasZ, hasVisibility, hasColor, hasDisplay, hasTsColor, hasTsWidth, hasTsOver;
+    hasColor = frame.hasColor;
+    hasTsColor = frame.hasTsColor;
+    hasTsWidth = frame.hasTsWidth;
+    hasTsOver = frame.hasTsOver;
+    let ignoreTRBL = false;
+    let lv = frame.lv || NONE;
+    let len = trans.length;
+    for(let i = 0; i < len; i++) {
+      let k = trans[i];
+      if(node instanceof Geom && isGeom(node.tagName, k)) {
+        __cacheProps[k] = undefined;
+      }
+      else {
+        // repaint置空，如果reflow会重新生成空的
+        cacheStyle[k] = undefined;
+        // TRBL变化只对relative/absolute起作用，其它忽视，如果position也变化会重新布局生效
+        if((k === TOP || k === RIGHT || k === BOTTOM || k === LEFT)
+          && ['relative', 'absolute'].indexOf(computedStyle[POSITION]) === -1) {
+          ignoreTRBL = true;
+        }
+        else if(k === Z_INDEX) {
+          hasZ = node !== this && ['relative', 'absolute'].indexOf(computedStyle[POSITION]) > -1;
+        }
+      }
+    }
+    if(fixed) {
+      for(let i = 0, len = fixed.length; i < len; i++) {
+        let k = fixed[i];
+        lv |= getLevel(k);
+        // 特殊的2个，影响是否需要刷新生效
+        if(k === DISPLAY) {
+          hasDisplay = true;
+        }
+        else if(k === VISIBILITY) {
+          hasVisibility = true;
+        }
+      }
+    }
+    // 无效的变化
+    if(ignoreTRBL && len === 1 && !fixed) {
+      return;
+    }
+    this.__calUpdate(node, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver,
+      false, false, frame.optimize);
+  }
+
+  __calUpdate(node, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver,
+              addDom, removeDom, optimize, cb) {
+    let {
+      __computedStyle: computedStyle,
+      __currentStyle: currentStyle,
+      __cacheStyle: cacheStyle,
+      __mask,
+      __domParent,
+    } = node;
+    // 没有变化或none无需刷新
+    if(lv === NONE
+      || computedStyle[DISPLAY] === 'none' && !hasDisplay) {
+      return false;
     }
     // transform变化清空重算，比较特殊，MATRIX的cache需手动清理
     if(lv & TF) {
@@ -785,9 +842,26 @@ class Root extends Dom {
         }
       }
     }
-    // aniParams在动画引擎提前计算好了
-    let isRp = aniParams && aniParams.isRepaint || isRepaint(lv);
-    if(isRp) {
+    let isRf = isReflow(lv);
+    if(isRf) {
+      let top = reflow.checkTop(this, node, addDom, removeDom);
+      if(top === this) {
+        this.__reLayout();
+      }
+      // 布局影响next的所有节点，重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
+      else {
+        reflow.checkNext(this, top, node, hasZ, addDom, removeDom);
+      }
+      if(removeDom) {
+        let temp = node;
+        while(temp.isShadowRoot) {
+          temp = temp.__host;
+          temp.__destroy();
+        }
+        node.__destroy();
+      }
+    }
+    else {
       // dom在>=REPAINT时total失效，svg的Geom比较特殊
       let need = lv >= REPAINT;
       if(need) {
@@ -805,7 +879,7 @@ class Root extends Dom {
         if(lv & TRANSFORM_ALL) {
           // 特殊的ppt需清空cacheTotal
           let o = node.__selfPerspectiveMatrix;
-          node.__calMatrix(lv, currentStyle, computedStyle, cacheStyle, aniParams && aniParams.optimize);
+          node.__calMatrix(lv, currentStyle, computedStyle, cacheStyle, optimize);
           let n = node.__selfPerspectiveMatrix;
           if(!util.equalArr(o, n)) {
             need = true;
@@ -921,24 +995,6 @@ class Root extends Dom {
         }
       }
     }
-    else {
-      let top = reflow.checkTop(this, node, addDom, removeDom);
-      if(top === this) {
-        this.__reLayout();
-      }
-      // 布局影响next的所有节点，重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
-      else {
-        reflow.checkNext(this, top, node, hasZ, addDom, removeDom);
-      }
-      if(removeDom) {
-        let temp = node;
-        while(temp.isShadowRoot) {
-          temp = temp.__host;
-          temp.__destroy();
-        }
-        node.__destroy();
-      }
-    }
     node.__refreshLevel |= lv;
     // 有被清除的cache则设置到Root上
     if(hasRelease) {
@@ -950,35 +1006,50 @@ class Root extends Dom {
     else {
       this.__rlv |= lv;
     }
-    if(cb && !isFunction(cb)) {
-      cb = null;
-    }
-    this.__frameDraw(cb);
+    return true;
   }
 
   // 异步进行root刷新操作，多次调用缓存结果，刷新成功后回调
   __frameDraw(cb) {
-    if(!this.__task.length) {
-      frame.addRootTask(this);
-      // 不确定是否有raf调用，加个空的
-      frame.nextFrame(() => {
-      });
-      // frame.__rootTask.push(() => {
-      //   // 需要先获得累积的刷新回调再刷新，防止refresh触发事件中再次调用刷新
-      //   let list = this.__task.splice(0);
-      //   this.draw(false);
-      //   list.forEach(item => {
-      //     item && item();
-      //   });
-      // });
-    }
+    this.__onFrame(null);
     this.__task.push(cb);
   }
 
+  __cancelFrameDraw(cb) {
+    let task = this.__task;
+    let i = task.indexOf(cb);
+    if(i > -1) {
+      task.splice(i, 1);
+      if(!task.length && !this.__ani.length) {
+        frame.offFrame(this);
+      }
+    }
+  }
+
+  // 所有动画由Root代理，方便控制pause，主动更新时参数传null复用，
+  // 注意逻辑耦合，任意动画/主动更新第一次触发时，需把ani和task的队列填充，以防重复onFrame调用
+  __onFrame(animation) {
+    let ani = this.__ani, task = this.__task;
+    if(!ani.length && !task.length) {
+      frame.onFrame(this);
+    }
+    animation && ani.push(animation);
+  }
+
+  __offFrame(animation) {
+    let ani = this.__ani;
+    let i = ani.indexOf(animation);
+    if(i > -1) {
+      ani.splice(i, 1);
+      if(!ani.length && !this.__task.length) {
+        frame.offFrame(this);
+      }
+    }
+  }
+
   /**
-   * 每帧优先调用Root的回调，将上一帧的数据绘制出来，因为刷新（如动画）都是异步的，
-   * 数据先变更，之后触发下一帧的重绘。
-   * 然后判断有无wasm，有的话先执行wasm的动画计算，frame里的是js版的动画。
+   * 每帧调用Root的before回调，将存储的动画before执行，触发数据先变更完，之后若有变化或主动更新则刷新
+   * wasm的执行也放在和动画__before一起，先后顺序无要求
    */
   __before(diff) {
     if(this.__renderMode !== mode.SVG) {
@@ -987,16 +1058,33 @@ class Root extends Dom {
         let n = wr.on_frame(diff);
         // 有动画执行了需刷新
         if(n && !this.__task.length) {
-          this.__frameDraw(null);
         }
       }
     }
-    let list = this.__task.splice(0);
-    if(list.length) {
+    let ani = this.__ani, len = ani.length, list = this.__task.splice(0), len2 = list.length;
+    for(let i = 0; i < len; i++) {
+      ani[i].__before(diff);
+    }
+    if(len || len2) {
       this.draw(false);
-      list.forEach(item => {
-        item && item();
-      });
+    }
+  }
+
+  /**
+   * 每帧调用的Root的after回调，将所有动画的after执行，以及主动更新的回调执行
+   * 当都清空的时候，取消raf对本Root的侦听
+   */
+  __after(diff) {
+    let ani = this.__ani, len = ani.length, task = this.__task, len2 = task.length;
+    for(let i = 0; i < len; i++) {
+      ani[i].__after(diff);
+    }
+    for(let i = 0; i < len2; i++) {
+      let item = task[i];
+      item && item(diff);
+    }
+    if(!len && !len2) {
+      frame.offFrame(this);
     }
   }
 

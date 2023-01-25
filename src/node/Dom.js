@@ -3345,7 +3345,7 @@ class Dom extends Xom {
     if(child instanceof Text) {
       child = this;
     }
-    root.__addUpdate(child, null, REFLOW, true, null, null, cb);
+    root.__addUpdate(child, null, REFLOW, true, null, cb);
   }
 
   prependChild(child, cb) {
@@ -3386,7 +3386,7 @@ class Dom extends Xom {
     if(child instanceof Text) {
       child = this;
     }
-    root.__addUpdate(child, null, REFLOW, true, null, null, cb);
+    root.__addUpdate(child, null, REFLOW, true, null, cb);
   }
 
   insertBefore(child, cb) {
@@ -3438,7 +3438,7 @@ class Dom extends Xom {
     if(child instanceof Text) {
       child = parent;
     }
-    root.__addUpdate(child, null, REFLOW, true, null, null, cb);
+    root.__addUpdate(child, null, REFLOW, true, null, cb);
   }
 
   insertAfter(child, cb) {
@@ -3485,7 +3485,7 @@ class Dom extends Xom {
     if(child instanceof Text) {
       child = parent;
     }
-    root.__addUpdate(child, null, REFLOW, true, null, null, cb);
+    root.__addUpdate(child, null, REFLOW, true, null, cb);
   }
 
   removeChild(target, cb) {

@@ -1061,7 +1061,7 @@ class Root extends Dom {
         }
       }
     }
-    let ani = this.__ani, len = ani.length, list = this.__task.splice(0), len2 = list.length;
+    let ani = this.__ani, len = ani.length, len2 = this.__task.length;
     for(let i = 0; i < len; i++) {
       ani[i].__before(diff);
     }
@@ -1075,7 +1075,7 @@ class Root extends Dom {
    * 当都清空的时候，取消raf对本Root的侦听
    */
   __after(diff) {
-    let ani = this.__ani, len = ani.length, task = this.__task, len2 = task.length;
+    let ani = this.__ani, len = ani.length, task = this.__task.splice(0), len2 = task.length;
     for(let i = 0; i < len; i++) {
       ani[i].__after(diff);
     }
@@ -1083,6 +1083,7 @@ class Root extends Dom {
       let item = task[i];
       item && item(diff);
     }
+    len2 = this.__task.length;
     if(!len && !len2) {
       frame.offFrame(this);
     }

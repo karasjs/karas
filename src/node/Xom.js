@@ -522,7 +522,7 @@ class Xom extends Node {
       if(item === fontFamily) {
         // 加载成功回调可能没注册信息，需要多判断一下
         if(font.hasRegister(item)) {
-          root.__addUpdate(node, null, REFLOW, null, null, null, null);
+          root.__addUpdate(node, null, REFLOW, null, null, null);
         }
         // 后面低优先级的无需再看
         return;
@@ -1527,7 +1527,7 @@ class Xom extends Node {
                 loadBgi.width = data.width;
                 loadBgi.height = data.height;
                 __cacheStyle[BACKGROUND_IMAGE] = undefined;
-                root.__addUpdate(node, null, REPAINT, null, null, null, null);
+                root.__addUpdate(node, null, REPAINT, null, null, null);
               }
             });
           }
@@ -2542,7 +2542,7 @@ class Xom extends Node {
       this.clearCache(lv < REPAINT);
     }
     if(root && !this.__isDestroyed) {
-      root.__addUpdate(this, null, lv, null, null, null, cb);
+      root.__addUpdate(this, null, lv, null, null, cb);
     }
     else if(isFunction(cb)) {
       cb(-1);
@@ -2862,7 +2862,7 @@ class Xom extends Node {
       return;
     }
     if(root) {
-      root.__addUpdate(this, keys, null, null, null, null, cb);
+      root.__addUpdate(this, keys, null, null, null, cb);
     }
   }
 
@@ -3182,7 +3182,7 @@ class Xom extends Node {
       return;
     }
     // 可见在reflow逻辑做结构关系等
-    root.__addUpdate(this, null, REFLOW, null, true, null, cb);
+    root.__addUpdate(this, null, REFLOW, null, true, cb);
   }
 
   addEventListener(type, cb) {
@@ -3353,7 +3353,7 @@ class Xom extends Node {
             p.__computedStyle[TRANSFORM_STYLE] = p.__currentStyle[TRANSFORM_STYLE];
           }
         }
-        root.__addUpdate(this, null, MASK, null, null, null, null);
+        root.__addUpdate(this, null, MASK, null, null, null);
       }
     }
   }
@@ -3377,7 +3377,7 @@ class Xom extends Node {
             p.__computedStyle[TRANSFORM_STYLE] = p.__currentStyle[TRANSFORM_STYLE];
           }
         }
-        root.__addUpdate(this, null, MASK, null, null, null, null);
+        root.__addUpdate(this, null, MASK, null, null, null);
       }
     }
   }

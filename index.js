@@ -13065,7 +13065,7 @@
 
         this.__content = s;
 
-        this.__root.__addUpdate(this.__domParent, null, o$1.REFLOW, null, null, null, cb);
+        this.__root.__addUpdate(this.__domParent, null, o$1.REFLOW, null, null, cb);
       }
     }, {
       key: "remove",
@@ -13118,7 +13118,7 @@
         } // 可见在reflow逻辑做结构关系等，text视为父变更
 
 
-        root.__addUpdate(this, null, o$1.REFLOW, null, true, null, cb);
+        root.__addUpdate(this, null, o$1.REFLOW, null, true, cb);
       }
     }, {
       key: "__structure",
@@ -20705,7 +20705,7 @@
           if (item === fontFamily) {
             // 加载成功回调可能没注册信息，需要多判断一下
             if (o$3.hasRegister(item)) {
-              root.__addUpdate(node, null, REFLOW$3, null, null, null, null);
+              root.__addUpdate(node, null, REFLOW$3, null, null, null);
             } // 后面低优先级的无需再看
 
 
@@ -21771,7 +21771,7 @@
                     loadBgi.height = data.height;
                     __cacheStyle[BACKGROUND_IMAGE] = undefined;
 
-                    root.__addUpdate(node, null, REPAINT$3, null, null, null, null);
+                    root.__addUpdate(node, null, REPAINT$3, null, null, null);
                   }
                 });
               }
@@ -22882,7 +22882,7 @@
         }
 
         if (root && !this.__isDestroyed) {
-          root.__addUpdate(this, null, lv, null, null, null, cb);
+          root.__addUpdate(this, null, lv, null, null, cb);
         } else if (isFunction$4(cb)) {
           cb(-1);
         }
@@ -23264,7 +23264,7 @@
         }
 
         if (root) {
-          root.__addUpdate(this, keys, null, null, null, null, cb);
+          root.__addUpdate(this, keys, null, null, null, cb);
         }
       }
     }, {
@@ -23679,7 +23679,7 @@
         } // 可见在reflow逻辑做结构关系等
 
 
-        root.__addUpdate(this, null, REFLOW$3, null, true, null, cb);
+        root.__addUpdate(this, null, REFLOW$3, null, true, cb);
       }
     }, {
       key: "addEventListener",
@@ -23886,7 +23886,7 @@
               }
             }
 
-            root.__addUpdate(this, null, MASK$2, null, null, null, null);
+            root.__addUpdate(this, null, MASK$2, null, null, null);
           }
         }
       }
@@ -23913,7 +23913,7 @@
               }
             }
 
-            root.__addUpdate(this, null, MASK$2, null, null, null, null);
+            root.__addUpdate(this, null, MASK$2, null, null, null);
           }
         }
       }
@@ -30217,7 +30217,7 @@
           child = this;
         }
 
-        root.__addUpdate(child, null, REFLOW$1, true, null, null, cb);
+        root.__addUpdate(child, null, REFLOW$1, true, null, cb);
       }
     }, {
       key: "prependChild",
@@ -30273,7 +30273,7 @@
           child = this;
         }
 
-        root.__addUpdate(child, null, REFLOW$1, true, null, null, cb);
+        root.__addUpdate(child, null, REFLOW$1, true, null, cb);
       }
     }, {
       key: "insertBefore",
@@ -30340,7 +30340,7 @@
           child = parent;
         }
 
-        root.__addUpdate(child, null, REFLOW$1, true, null, null, cb);
+        root.__addUpdate(child, null, REFLOW$1, true, null, cb);
       }
     }, {
       key: "insertAfter",
@@ -30400,7 +30400,7 @@
           child = parent;
         }
 
-        root.__addUpdate(child, null, REFLOW$1, true, null, null, cb);
+        root.__addUpdate(child, null, REFLOW$1, true, null, cb);
       }
     }, {
       key: "removeChild",
@@ -33118,9 +33118,9 @@
                   height = _self$__currentStyle[HEIGHT$1];
 
               if (width.u !== AUTO && height.u !== AUTO) {
-                root.__addUpdate(self, null, o$1.REPAINT, null, null, null, cb);
+                root.__addUpdate(self, null, o$1.REPAINT, null, null, cb);
               } else {
-                root.__addUpdate(self, null, o$1.REFLOW, null, null, null, cb);
+                root.__addUpdate(self, null, o$1.REFLOW, null, null, cb);
               }
             };
 
@@ -41101,8 +41101,7 @@
 
         var ani = this.__ani,
             len = ani.length,
-            list = this.__task.splice(0),
-            len2 = list.length;
+            len2 = this.__task.length;
 
         for (var i = 0; i < len; i++) {
           ani[i].__before(diff);
@@ -41122,7 +41121,7 @@
       value: function __after(diff) {
         var ani = this.__ani,
             len = ani.length,
-            task = this.__task,
+            task = this.__task.splice(0),
             len2 = task.length;
 
         for (var i = 0; i < len; i++) {
@@ -41133,6 +41132,8 @@
           var item = task[_i3];
           item && item(diff);
         }
+
+        len2 = this.__task.length;
 
         if (!len && !len2) {
           frame.offFrame(this);

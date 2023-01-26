@@ -1922,8 +1922,10 @@ class Animation extends Event {
     }
     else {
       let { trans, fixed } = Animation.calIntermediateStyle(currentFrame, percent, target, notSameFrame);
-      root.__addAniUpdate(target, trans, fixed, currentFrame);
-      this.__isChange = !!trans.length || !!fixed;
+      if(trans.length || fixed.length) {
+        root.__addAniUpdate(target, trans, fixed, currentFrame);
+        this.__isChange = !!trans.length || !!fixed.length;
+      }
     }
   }
 
@@ -2761,10 +2763,10 @@ class Animation extends Event {
     }
     // 同一关键帧同一percent可以不刷新，比如diff为0时，或者steps情况，离开会清空
     if(frame.lastPercent === percent) {
-      return {};
+      return { trans: [], fixed: [] };
     }
     frame.lastPercent = percent;
-    let currentStyle = target.__currentStyle, trans = frame.trans, fixed;
+    let currentStyle = target.__currentStyle, trans = frame.trans, fixed = [];
     // 特殊性能优化，for拆开v8会提升不少
     // if(allInFn) {
     //   for(let i = 0, len = transition.length; i < len; i++) {
@@ -2889,7 +2891,6 @@ class Animation extends Event {
     }
       // 无变化的也得检查是否和当前相等，防止跳到一个不变化的帧上，而前一帧有变化的情况，大部分都是无变化
     if(notSameFrame) {
-      fixed = [];
       let f = frame.fixed;
       for(let i = 0, len = f.length; i < len; i++) {
         let k = f[i];

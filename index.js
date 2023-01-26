@@ -14613,7 +14613,7 @@
           // 必须清除，可能会发生重复，当动画finish回调中gotoAndPlay(0)，下方结束判断发现aTask还有值会继续，新的init也会进入再次执行
           inject.cancelAnimationFrame(self.id);
           self.id = inject.requestAnimationFrame(function () {
-            console.log('frame', task.length, task.slice(0));
+            // console.log('frame', task.length, task.slice(0))
             var now = self.__now = inject.now();
 
             if (isPause || !task.length) {
@@ -18581,9 +18581,11 @@
               trans = _Animation$calInterme.trans,
               fixed = _Animation$calInterme.fixed;
 
-          root.__addAniUpdate(target, trans, fixed, currentFrame);
+          if (trans.length || fixed.length) {
+            root.__addAniUpdate(target, trans, fixed, currentFrame);
 
-          this.__isChange = !!trans.length || !!fixed;
+            this.__isChange = !!trans.length || !!fixed.length;
+          }
         }
       }
     }, {
@@ -19605,13 +19607,16 @@
 
 
         if (frame.lastPercent === percent) {
-          return {};
+          return {
+            trans: [],
+            fixed: []
+          };
         }
 
         frame.lastPercent = percent;
         var currentStyle = target.__currentStyle,
             trans = frame.trans,
-            fixed; // 特殊性能优化，for拆开v8会提升不少
+            fixed = []; // 特殊性能优化，for拆开v8会提升不少
         // if(allInFn) {
         //   for(let i = 0, len = transition.length; i < len; i++) {
         //     let item = transition[i];
@@ -19750,7 +19755,6 @@
 
 
         if (notSameFrame) {
-          fixed = [];
           var f = frame.fixed;
 
           for (var _i23 = 0, _len16 = f.length; _i23 < _len16; _i23++) {
@@ -40485,7 +40489,6 @@
           renderWebgl(renderMode, ctx, this, isFirst, rlv);
         }
 
-        console.error('refresh');
         this.emit(Event.REFRESH, rlv, false);
         this.__rlv = NONE;
       }
@@ -40701,8 +40704,6 @@
           return;
         }
 
-        console.log('__addUpdate');
-
         if (node instanceof Component) {
           node = node.shadowRoot;
         }
@@ -40764,7 +40765,7 @@
       key: "__addAniUpdate",
       value: function __addAniUpdate(node, trans, fixed, frame) {
         // diff为0或者极端跳帧情况相同时无变化
-        if (this.__isDestroyed || !trans.length && !fixed) {
+        if (this.__isDestroyed) {
           return;
         }
 
@@ -40797,21 +40798,19 @@
           }
         }
 
-        if (fixed) {
-          for (var _i2 = 0, _len = fixed.length; _i2 < _len; _i2++) {
-            var _k = fixed[_i2];
-            lv |= getLevel(_k); // 特殊的2个，影响是否需要刷新生效
+        for (var _i2 = 0, _len = fixed.length; _i2 < _len; _i2++) {
+          var _k = fixed[_i2];
+          lv |= getLevel(_k); // 特殊的2个，影响是否需要刷新生效
 
-            if (_k === DISPLAY) {
-              hasDisplay = true;
-            } else if (_k === VISIBILITY) {
-              hasVisibility = true;
-            }
+          if (_k === DISPLAY) {
+            hasDisplay = true;
+          } else if (_k === VISIBILITY) {
+            hasVisibility = true;
           }
         } // 无效的变化
 
 
-        if (ignoreTRBL && len === 1 && !fixed) {
+        if (ignoreTRBL && len === 1 && !fixed.length) {
           return;
         }
 
@@ -41081,12 +41080,7 @@
         if (!this.__isInFrame) {
           frame.onFrame(this);
           this.__isInFrame = true;
-        } // let ani = this.__ani, task = this.__task, taskClone = this.__taskClone;
-        // console.log('__onFrame', task.length, taskClone.length)
-        // if(!ani.length && !task.length && !taskClone.length) {console.warn('addFrame')
-        //   frame.onFrame(this);
-        // }
-
+        }
 
         animation && this.__ani.push(animation);
       }
@@ -41113,8 +41107,6 @@
     }, {
       key: "__before",
       value: function __before(diff) {
-        console.log('__before');
-
         if (this.__renderMode !== mode.SVG) {
           var wr = this.__wasmRoot;
 
@@ -41146,8 +41138,6 @@
     }, {
       key: "__after",
       value: function __after(diff) {
-        console.log('__after');
-
         var ani = this.__aniClone,
             len = ani.length,
             task = this.__taskClone.splice(0),
@@ -41164,10 +41154,8 @@
 
         len = this.__ani.length;
         len2 = this.__task.length;
-        console.log('af', len, len2);
 
         if (!len && !len2) {
-          console.warn('removeFrame');
           frame.offFrame(this);
           this.__isInFrame = false;
         }

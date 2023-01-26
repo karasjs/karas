@@ -503,7 +503,7 @@ class Root extends Dom {
     else if(renderMode === mode.WEBGL) {
       this.__clearWebgl(ctx);
       renderWebgl(renderMode, ctx, this, isFirst, rlv);
-    }console.error('refresh')
+    }
     this.emit(Event.REFRESH, rlv, false);
     this.__rlv = NONE;
   }
@@ -693,7 +693,7 @@ class Root extends Dom {
   __addUpdate(node, keys, focus, addDom, removeDom, cb) {
     if(this.__isDestroyed) {
       return;
-    }console.log('__addUpdate')
+    }
     if(node instanceof Component) {
       node = node.shadowRoot;
     }
@@ -759,7 +759,7 @@ class Root extends Dom {
 
   __addAniUpdate(node, trans, fixed, frame) {
     // diff为0或者极端跳帧情况相同时无变化
-    if(this.__isDestroyed || !trans.length && !fixed) {
+    if(this.__isDestroyed) {
       return;
     }
     let {
@@ -793,21 +793,19 @@ class Root extends Dom {
         }
       }
     }
-    if(fixed) {
-      for(let i = 0, len = fixed.length; i < len; i++) {
-        let k = fixed[i];
-        lv |= getLevel(k);
-        // 特殊的2个，影响是否需要刷新生效
-        if(k === DISPLAY) {
-          hasDisplay = true;
-        }
-        else if(k === VISIBILITY) {
-          hasVisibility = true;
-        }
+    for(let i = 0, len = fixed.length; i < len; i++) {
+      let k = fixed[i];
+      lv |= getLevel(k);
+      // 特殊的2个，影响是否需要刷新生效
+      if(k === DISPLAY) {
+        hasDisplay = true;
+      }
+      else if(k === VISIBILITY) {
+        hasVisibility = true;
       }
     }
     // 无效的变化
-    if(ignoreTRBL && len === 1 && !fixed) {
+    if(ignoreTRBL && len === 1 && !fixed.length) {
       return;
     }
     this.__calUpdate(node, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver,
@@ -1040,11 +1038,6 @@ class Root extends Dom {
       frame.onFrame(this);
       this.__isInFrame = true;
     }
-    // let ani = this.__ani, task = this.__task, taskClone = this.__taskClone;
-    // console.log('__onFrame', task.length, taskClone.length)
-    // if(!ani.length && !task.length && !taskClone.length) {console.warn('addFrame')
-    //   frame.onFrame(this);
-    // }
     animation && this.__ani.push(animation);
   }
 
@@ -1064,7 +1057,7 @@ class Root extends Dom {
    * 每帧调用Root的before回调，将存储的动画before执行，触发数据先变更完，之后若有变化或主动更新则刷新
    * wasm的执行也放在和动画__before一起，先后顺序无要求
    */
-  __before(diff) {console.log('__before')
+  __before(diff) {
     if(this.__renderMode !== mode.SVG) {
       let wr = this.__wasmRoot;
       if(wr) {
@@ -1088,7 +1081,7 @@ class Root extends Dom {
    * 每帧调用的Root的after回调，将所有动画的after执行，以及主动更新的回调执行
    * 当都清空的时候，取消raf对本Root的侦听
    */
-  __after(diff) {console.log('__after')
+  __after(diff) {
     let ani = this.__aniClone, len = ani.length, task = this.__taskClone.splice(0), len2 = task.length;
     for(let i = 0; i < len; i++) {
       ani[i].__after(diff);
@@ -1098,8 +1091,8 @@ class Root extends Dom {
       item && item(diff);
     }
     len = this.__ani.length;
-    len2 = this.__task.length;console.log('af', len, len2)
-    if(!len && !len2) {console.warn('removeFrame')
+    len2 = this.__task.length;
+    if(!len && !len2) {
       frame.offFrame(this);
       this.__isInFrame = false;
     }

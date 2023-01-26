@@ -41138,7 +41138,7 @@
       value: function __after(diff) {
         var ani = this.__aniClone,
             len = ani.length,
-            task = this.__taskClone,
+            task = this.__taskClone.splice(0),
             len2 = task.length;
 
         for (var i = 0; i < len; i++) {

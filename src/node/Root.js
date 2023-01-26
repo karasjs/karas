@@ -1081,7 +1081,7 @@ class Root extends Dom {
    * 当都清空的时候，取消raf对本Root的侦听
    */
   __after(diff) {
-    let ani = this.__aniClone, len = ani.length, task = this.__taskClone, len2 = task.length;
+    let ani = this.__aniClone, len = ani.length, task = this.__taskClone.splice(0), len2 = task.length;
     for(let i = 0; i < len; i++) {
       ani[i].__after(diff);
     }

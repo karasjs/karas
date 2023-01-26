@@ -36,7 +36,7 @@ class Frame {
       // 必须清除，可能会发生重复，当动画finish回调中gotoAndPlay(0)，下方结束判断发现aTask还有值会继续，新的init也会进入再次执行
       inject.cancelAnimationFrame(self.id);
       self.id = inject.requestAnimationFrame(function() {
-        // console.log('frame', task.length, task.slice(0))
+        console.log('frame', task.length, task.slice(0))
         let now = self.__now = inject.now();
         if(isPause || !task.length) {
           return;

@@ -189,6 +189,7 @@ class Root extends Dom {
     this.__ani = []; // 动画异步刷新&回调
     this.__taskClone = []; // 同下
     this.__aniClone = []; // 动画执行时的副本，防止某动画before时进行删除操作无法执行after或其他动画
+    this.__isInFrame = false;
     this.__arList = []; // parse中dom的动画解析预存到Root上，layout后执行
     this.__ref = {};
     this.__freeze = false; // 冻住只计算不渲染
@@ -502,7 +503,7 @@ class Root extends Dom {
     else if(renderMode === mode.WEBGL) {
       this.__clearWebgl(ctx);
       renderWebgl(renderMode, ctx, this, isFirst, rlv);
-    }
+    }console.error('refresh')
     this.emit(Event.REFRESH, rlv, false);
     this.__rlv = NONE;
   }
@@ -692,7 +693,7 @@ class Root extends Dom {
   __addUpdate(node, keys, focus, addDom, removeDom, cb) {
     if(this.__isDestroyed) {
       return;
-    }
+    }console.log('__addUpdate')
     if(node instanceof Component) {
       node = node.shadowRoot;
     }
@@ -1027,6 +1028,7 @@ class Root extends Dom {
       task.splice(i, 1);
       if(!task.length && !this.__ani.length) {
         frame.offFrame(this);
+        this.__isInFrame = false;
       }
     }
   }
@@ -1034,11 +1036,16 @@ class Root extends Dom {
   // 所有动画由Root代理，方便控制pause，主动更新时参数传null复用，
   // 注意逻辑耦合，任意动画/主动更新第一次触发时，需把ani和task的队列填充，以防重复onFrame调用
   __onFrame(animation) {
-    let ani = this.__ani, task = this.__task, taskClone = this.__taskClone;
-    if(!ani.length && !task.length && !taskClone.length) {
+    if(!this.__isInFrame) {
       frame.onFrame(this);
+      this.__isInFrame = true;
     }
-    animation && ani.push(animation);
+    // let ani = this.__ani, task = this.__task, taskClone = this.__taskClone;
+    // console.log('__onFrame', task.length, taskClone.length)
+    // if(!ani.length && !task.length && !taskClone.length) {console.warn('addFrame')
+    //   frame.onFrame(this);
+    // }
+    animation && this.__ani.push(animation);
   }
 
   __offFrame(animation) {
@@ -1046,8 +1053,9 @@ class Root extends Dom {
     let i = ani.indexOf(animation);
     if(i > -1) {
       ani.splice(i, 1);
-      if(!ani.length && !this.__task.length && !this.__taskClone.length) {
+      if(!ani.length && !this.__task.length) {
         frame.offFrame(this);
+        this.__isInFrame = false;
       }
     }
   }
@@ -1056,7 +1064,7 @@ class Root extends Dom {
    * 每帧调用Root的before回调，将存储的动画before执行，触发数据先变更完，之后若有变化或主动更新则刷新
    * wasm的执行也放在和动画__before一起，先后顺序无要求
    */
-  __before(diff) {
+  __before(diff) {console.log('__before')
     if(this.__renderMode !== mode.SVG) {
       let wr = this.__wasmRoot;
       if(wr) {
@@ -1080,7 +1088,7 @@ class Root extends Dom {
    * 每帧调用的Root的after回调，将所有动画的after执行，以及主动更新的回调执行
    * 当都清空的时候，取消raf对本Root的侦听
    */
-  __after(diff) {
+  __after(diff) {console.log('__after')
     let ani = this.__aniClone, len = ani.length, task = this.__taskClone.splice(0), len2 = task.length;
     for(let i = 0; i < len; i++) {
       ani[i].__after(diff);
@@ -1090,9 +1098,10 @@ class Root extends Dom {
       item && item(diff);
     }
     len = this.__ani.length;
-    len2 = this.__task.length;
-    if(!len && !len2) {
+    len2 = this.__task.length;console.log('af', len, len2)
+    if(!len && !len2) {console.warn('removeFrame')
       frame.offFrame(this);
+      this.__isInFrame = false;
     }
   }
 

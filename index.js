@@ -20655,7 +20655,7 @@
 
         var width = currentStyle[WIDTH$5],
             height = currentStyle[HEIGHT$5];
-        this.__width = this.__height = 0; // 布局前固定尺寸的线设置好，子元素percent尺寸要用到，flex的子元素侧轴stretch也要特殊提前处理，认为定高
+        this.__width = this.__height = 0; // 布局前固定尺寸的先设置好，子元素percent尺寸要用到，flex的子元素侧轴stretch也要特殊提前处理，认为定高
 
         if (width.u !== AUTO$4) {
           this.__width = computedStyle[WIDTH$5] = this.__calSize(width, isRoot ? this.__width : parent.__width, true);
@@ -20677,6 +20677,8 @@
             }
           }
         }
+
+        this.__layoutStyle();
       }
     }, {
       key: "__emitFontRegister",
@@ -20825,7 +20827,6 @@
 
         if (!isAbs && !isColumn && !isRow) {
           this.clearCache();
-          this.__cacheStyle = [];
           this.__refreshLevel = REFLOW$3;
           this.__limitCache = false;
           this.__isInline = false;
@@ -20996,8 +20997,8 @@
           __computedStyle[WIDTH$5] = this.__width;
           __computedStyle[HEIGHT$5] = this.__height; // abs为parse的根节点时特殊自己执行，前提是真布局
 
-          if (position !== 'absolute') {
-            this.__execAr();
+          if (position !== 'absolute' && this.__animateRecords) {
+            this.__root.__addAr(this);
           }
 
           this.__hasComputeReflow = false;
@@ -21037,7 +21038,7 @@
               item.target = item.target.vd;
             }
           });
-          var ac = ar.controller || this.root.animateController; // 不自动播放进入记录列表，初始化并等待手动调用
+          var ac = ar.controller || this.__root.animateController; // 不自动播放进入记录列表，初始化并等待手动调用
 
           if (ar.options && ar.options.autoPlay === false) {
             ac.__records2 = ac.__records2.concat(ar.list);
@@ -22350,11 +22351,8 @@
             borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$5],
             borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$4],
             borderTopWidth = computedStyle[BORDER_TOP_WIDTH$3],
-            borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$2];
-        var isRealInline = this.__isInline; // cache的canvas模式已经提前计算好了，其它需要现在计算
-
-        var matrix$1 = this.__matrix;
-        var backgroundColor = computedStyle[BACKGROUND_COLOR],
+            borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$2],
+            backgroundColor = computedStyle[BACKGROUND_COLOR],
             borderTopColor = computedStyle[BORDER_TOP_COLOR],
             borderRightColor = computedStyle[BORDER_RIGHT_COLOR],
             borderBottomColor = computedStyle[BORDER_BOTTOM_COLOR],
@@ -22374,6 +22372,9 @@
             mixBlendMode = computedStyle[MIX_BLEND_MODE$3],
             backgroundClip = computedStyle[BACKGROUND_CLIP],
             writingMode = computedStyle[WRITING_MODE$2];
+        var isRealInline = this.__isInline; // cache的canvas模式已经提前计算好了，其它需要现在计算
+
+        var matrix$1 = this.__matrix;
         var isUpright = writingMode.indexOf('vertical') === 0;
 
         if (renderMode === SVG$1) {
@@ -23410,8 +23411,6 @@
           this.__refreshLevel |= lv;
 
           if (lv >= REFLOW$3) {
-            this.__cacheStyle = [];
-
             this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
           }
 
@@ -23450,8 +23449,6 @@
           this.__refreshLevel |= lv;
 
           if (lv >= REFLOW$3) {
-            this.__cacheStyle = [];
-
             this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
           }
 
@@ -23506,8 +23503,6 @@
           this.__refreshLevel |= lv;
 
           if (lv >= REFLOW$3) {
-            this.__cacheStyle = [];
-
             this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
           }
         }
@@ -23538,8 +23533,6 @@
           this.__refreshLevel |= lv;
 
           if (lv >= REFLOW$3) {
-            this.__cacheStyle = [];
-
             this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
           }
         }
@@ -27337,26 +27330,20 @@
 
         return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], isDirectChild);
       } // flow的layout包裹方法，布局后递归计算computedStyle，abs节点在__layoutAbs中做
+      // __layout(data, isAbs, isColumn, isRow) {console.log('__layout', this.tagName)
+      //   super.__layout(data, isAbs, isColumn, isRow);
+      //   // this.__layoutStyle();
+      // }
+      // 布局结束后递归向下计算computedStyle，父级必须先算因为有inherit
+      // __layoutStyle() {
+      //   super.__layoutStyle();
+      //   this.flowChildren.forEach(child => {
+      //     if(!(child instanceof Text)) {
+      //       child.__layoutStyle();
+      //     }
+      //   });
+      // }
 
-    }, {
-      key: "__layout",
-      value: function __layout(data, isAbs, isColumn, isRow) {
-        _get(_getPrototypeOf(Dom.prototype), "__layout", this).call(this, data, isAbs, isColumn, isRow);
-
-        this.__layoutStyle();
-      } // 布局结束后递归向下计算computedStyle，父级必须先算因为有inherit
-
-    }, {
-      key: "__layoutStyle",
-      value: function __layoutStyle() {
-        _get(_getPrototypeOf(Dom.prototype), "__layoutStyle", this).call(this);
-
-        this.flowChildren.forEach(function (child) {
-          if (!(child instanceof Text)) {
-            child.__layoutStyle();
-          }
-        });
-      }
     }, {
       key: "__layoutNone",
       value: function __layoutNone() {
@@ -30040,7 +30027,9 @@
           }
         }); // 根节点自己特殊执行，不在layout统一
 
-        this.__execAr();
+        if (this.__animateRecords) {
+          this.__root.__addAr(this);
+        }
       }
     }, {
       key: "render",
@@ -40098,6 +40087,8 @@
 
       _this.__aniClone = []; // 动画执行时的副本，防止某动画before时进行删除操作无法执行after或其他动画
 
+      _this.__arList = []; // parse中dom的动画解析预存到Root上，layout后执行
+
       _this.__ref = {};
       _this.__freeze = false; // 冻住只计算不渲染
 
@@ -40301,7 +40292,7 @@
 
 
         if (!this.__width || !this.__height) {
-          inject.warn('Karas render target with a width or height of 0.');
+          inject.warn('karas render target with a width or height of 0.');
         }
 
         var params = Object.assign({}, ca, this.props.contextAttributes); // 只有canvas有ctx，svg用真实dom
@@ -40424,6 +40415,8 @@
             wr.add_node(wn.ptr + 8);
           }
         }
+
+        this.__checkAr();
       }
     }, {
       key: "draw",
@@ -40856,6 +40849,8 @@
           } // 布局影响next的所有节点，重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
           else {
             reflow.checkNext(this, top, node, hasZ, addDom, removeDom);
+
+            this.__checkAr();
           }
 
           if (removeDom) {
@@ -41177,6 +41172,20 @@
         if (this.__freeze) {
           this.__freeze = false;
           this.emit(Event.UN_FREEZE);
+        }
+      }
+    }, {
+      key: "__addAr",
+      value: function __addAr(node) {
+        this.__arList.push(node);
+      }
+    }, {
+      key: "__checkAr",
+      value: function __checkAr() {
+        var list = this.__arList.splice(0);
+
+        for (var i = 0, len = list.length; i < len; i++) {
+          list[i].__execAr();
         }
       }
     }, {

@@ -188,6 +188,7 @@ class Root extends Dom {
     this.__task = []; // 更新样式异步刷新&回调
     this.__ani = []; // 动画异步刷新&回调
     this.__aniClone = []; // 动画执行时的副本，防止某动画before时进行删除操作无法执行after或其他动画
+    this.__arList = []; // parse中dom的动画解析预存到Root上，layout后执行
     this.__ref = {};
     this.__freeze = false; // 冻住只计算不渲染
     this.__animateController = new Controller();
@@ -349,7 +350,7 @@ class Root extends Dom {
     }
     // 最终无宽高给出警告
     if(!this.__width || !this.__height) {
-      inject.warn('Karas render target with a width or height of 0.')
+      inject.warn('karas render target with a width or height of 0.')
     }
     let params = Object.assign({}, ca, this.props.contextAttributes);
     // 只有canvas有ctx，svg用真实dom
@@ -456,6 +457,7 @@ class Root extends Dom {
         wr.add_node(wn.ptr + 8);
       }
     }
+    this.__checkAr();
   }
 
   draw(isFirst) {
@@ -852,6 +854,7 @@ class Root extends Dom {
       // 布局影响next的所有节点，重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
       else {
         reflow.checkNext(this, top, node, hasZ, addDom, removeDom);
+        this.__checkAr();
       }
       if(removeDom) {
         let temp = node;
@@ -1116,6 +1119,17 @@ class Root extends Dom {
     if(this.__freeze) {
       this.__freeze = false;
       this.emit(Event.UN_FREEZE);
+    }
+  }
+
+  __addAr(node) {
+    this.__arList.push(node);
+  }
+
+  __checkAr() {
+    let list = this.__arList.splice(0);
+    for(let i = 0, len = list.length; i < len; i++) {
+      list[i].__execAr();
     }
   }
 

@@ -478,7 +478,7 @@ class Xom extends Node {
       [HEIGHT]: height,
     } = currentStyle;
     this.__width = this.__height = 0;
-    // 布局前固定尺寸的线设置好，子元素percent尺寸要用到，flex的子元素侧轴stretch也要特殊提前处理，认为定高
+    // 布局前固定尺寸的先设置好，子元素percent尺寸要用到，flex的子元素侧轴stretch也要特殊提前处理，认为定高
     if(width.u !== AUTO) {
       this.__width = computedStyle[WIDTH] = this.__calSize(width, isRoot ? this.__width : parent.__width, true);
     }
@@ -500,6 +500,7 @@ class Xom extends Node {
         }
       }
     }
+    this.__layoutStyle();
   }
 
   __emitFontRegister(fontFamily) {
@@ -628,7 +629,6 @@ class Xom extends Node {
     // 防止display:none不统计mask，isVirtual忽略，abs/flex布局后续会真正来走一遍
     if(!isAbs && !isColumn && !isRow) {
       this.clearCache();
-      this.__cacheStyle = [];
       this.__refreshLevel = REFLOW;
       this.__limitCache = false;
       this.__isInline = false;
@@ -771,8 +771,8 @@ class Xom extends Node {
       __computedStyle[WIDTH] = this.__width;
       __computedStyle[HEIGHT] = this.__height;
       // abs为parse的根节点时特殊自己执行，前提是真布局
-      if(position !== 'absolute') {
-        this.__execAr();
+      if(position !== 'absolute' && this.__animateRecords) {
+        this.__root.__addAr(this);
       }
       this.__hasComputeReflow = false;
     }
@@ -811,7 +811,7 @@ class Xom extends Node {
           item.target = item.target.vd;
         }
       });
-      let ac = ar.controller || this.root.animateController;
+      let ac = ar.controller || this.__root.animateController;
       // 不自动播放进入记录列表，初始化并等待手动调用
       if(ar.options && ar.options.autoPlay === false) {
         ac.__records2 = ac.__records2.concat(ar.list);
@@ -2044,11 +2044,6 @@ class Xom extends Node {
       [BORDER_RIGHT_WIDTH]: borderRightWidth,
       [BORDER_TOP_WIDTH]: borderTopWidth,
       [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
-    } = computedStyle;
-    let isRealInline = this.__isInline;
-    // cache的canvas模式已经提前计算好了，其它需要现在计算
-    let matrix = this.__matrix;
-    let {
       [BACKGROUND_COLOR]: backgroundColor,
       [BORDER_TOP_COLOR]: borderTopColor,
       [BORDER_RIGHT_COLOR]: borderRightColor,
@@ -2070,6 +2065,9 @@ class Xom extends Node {
       [BACKGROUND_CLIP]: backgroundClip,
       [WRITING_MODE]: writingMode,
     } = computedStyle;
+    let isRealInline = this.__isInline;
+    // cache的canvas模式已经提前计算好了，其它需要现在计算
+    let matrix = this.__matrix;
     let isUpright = writingMode.indexOf('vertical') === 0;
     if(renderMode === SVG) {
       if(opacity === 1) {
@@ -2972,7 +2970,6 @@ class Xom extends Node {
     if(lv) {
       this.__refreshLevel |= lv;
       if(lv >= REFLOW) {
-        this.__cacheStyle = [];
         this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
       }
       if(this.__bbox) {
@@ -3003,7 +3000,6 @@ class Xom extends Node {
     if(lv) {
       this.__refreshLevel |= lv;
       if(lv >= REFLOW) {
-        this.__cacheStyle = [];
         this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
       }
       if(this.__bbox) {
@@ -3047,7 +3043,6 @@ class Xom extends Node {
     if(lv) {
       this.__refreshLevel |= lv;
       if(lv >= REFLOW) {
-        this.__cacheStyle = [];
         this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
       }
     }
@@ -3072,7 +3067,6 @@ class Xom extends Node {
     if(lv) {
       this.__refreshLevel |= lv;
       if(lv >= REFLOW) {
-        this.__cacheStyle = [];
         this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
       }
     }

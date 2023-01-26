@@ -753,20 +753,20 @@ class Dom extends Xom {
   }
 
   // flow的layout包裹方法，布局后递归计算computedStyle，abs节点在__layoutAbs中做
-  __layout(data, isAbs, isColumn, isRow) {
-    super.__layout(data, isAbs, isColumn, isRow);
-    this.__layoutStyle();
-  }
+  // __layout(data, isAbs, isColumn, isRow) {console.log('__layout', this.tagName)
+  //   super.__layout(data, isAbs, isColumn, isRow);
+  //   // this.__layoutStyle();
+  // }
 
   // 布局结束后递归向下计算computedStyle，父级必须先算因为有inherit
-  __layoutStyle() {
-    super.__layoutStyle();
-    this.flowChildren.forEach(child => {
-      if(!(child instanceof Text)) {
-        child.__layoutStyle();
-      }
-    });
-  }
+  // __layoutStyle() {
+  //   super.__layoutStyle();
+  //   this.flowChildren.forEach(child => {
+  //     if(!(child instanceof Text)) {
+  //       child.__layoutStyle();
+  //     }
+  //   });
+  // }
 
   __layoutNone() {
     super.__layoutNone();
@@ -3198,7 +3198,9 @@ class Dom extends Xom {
       }
     });
     // 根节点自己特殊执行，不在layout统一
-    this.__execAr();
+    if(this.__animateRecords) {
+      this.__root.__addAr(this);
+    }
   }
 
   render(renderMode, ctx, dx, dy) {

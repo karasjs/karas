@@ -1884,20 +1884,20 @@ class Animation extends Event {
      * 8. 多次播放有endDelay且fill停留
      */
     let needClean;
-    let temp, trans, fixed;
     if(isLastFrame) {
+      let keys;
       inEndDelay = currentTime < dur + endDelay;
       // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
       if(stayEnd) {
-        temp = calLastStyle(currentFrame.style, target, this.__keys);
+        keys = calLastStyle(currentFrame.style, target, this.__keys);
       }
       // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
       else {
-        temp = calLastStyle(this.__originStyle, target, this.__keys);
+        keys = calLastStyle(this.__originStyle, target, this.__keys);
         // currentFrame = null; // 特殊清空，genBeforeRefresh（）时不传过去 TODO
-        currentFrame = {
-          style: this.__originStyle,
-        };
+        // currentFrame = {
+        //   style: this.__originStyle,
+        // };
       }
       // 进入endDelay或结束阶段触发end事件，注意只触发一次，防重在触发的地方做
       this.__nextEnd = true;
@@ -1907,22 +1907,23 @@ class Animation extends Event {
         root.__offFrame(this);
         needClean = true;
       }
+      let c = this.__isChange = !!keys.length;
+      if(c) {
+        root.__addUpdate(target, keys, false, false, false, null);
+      }
+      if(needClean) {
+        // let playCb = this.__playCb;
+        this.__clean(true);
+        // 丑陋的做法，防止gotoAndStop()这样的cb被clean()掉
+        // if(playCb) {
+        //   this.__playCb = playCb;
+        // }
+      }
     }
     else {
-      temp = Animation.calIntermediateStyle(currentFrame, percent, target, notSameFrame);
-    }
-    trans = temp.trans || [];
-    fixed = temp.fixed;
-    this.__isChange = !!trans.length || !!fixed;
-    // genBeforeRefresh(keys, root, target, currentFrame, null);
-    root.__addAniUpdate(target, trans, fixed, currentFrame);
-    if(needClean) {
-      // let playCb = this.__playCb;
-      this.__clean(true);
-      // 丑陋的做法，防止gotoAndStop()这样的cb被clean()掉
-      // if(playCb) {
-      //   this.__playCb = playCb;
-      // }
+      let { trans, fixed } = Animation.calIntermediateStyle(currentFrame, percent, target, notSameFrame);
+      root.__addAniUpdate(target, trans, fixed, currentFrame);
+      this.__isChange = !!trans.length || !!fixed;
     }
   }
 

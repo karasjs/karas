@@ -500,7 +500,6 @@ class Xom extends Node {
         }
       }
     }
-    this.__layoutStyle();
   }
 
   __emitFontRegister(fontFamily) {

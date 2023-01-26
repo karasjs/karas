@@ -40091,6 +40091,8 @@
 
       _this.__ani = []; // 动画异步刷新&回调
 
+      _this.__aniClone = []; // 动画执行时的副本，防止某动画before时进行删除操作无法执行after或其他动画
+
       _this.__ref = {};
       _this.__freeze = false; // 冻住只计算不渲染
 
@@ -40735,7 +40737,7 @@
           }
         }
 
-        var res = this.__calUpdate(node, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver, false, false, false, cb);
+        var res = this.__calUpdate(node, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver, addDom, removeDom, false);
 
         if (res) {
           this.__frameDraw(cb);
@@ -40802,7 +40804,7 @@
       }
     }, {
       key: "__calUpdate",
-      value: function __calUpdate(node, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver, addDom, removeDom, optimize, cb) {
+      value: function __calUpdate(node, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver, addDom, removeDom, optimize) {
         var computedStyle = node.__computedStyle,
             currentStyle = node.__currentStyle,
             cacheStyle = node.__cacheStyle,
@@ -41099,7 +41101,7 @@
           }
         }
 
-        var ani = this.__ani,
+        var ani = this.__aniClone = this.__ani.slice(0),
             len = ani.length,
             len2 = this.__task.length;
 
@@ -41119,7 +41121,7 @@
     }, {
       key: "__after",
       value: function __after(diff) {
-        var ani = this.__ani,
+        var ani = this.__aniClone,
             len = ani.length,
             task = this.__task.splice(0),
             len2 = task.length;
@@ -41133,6 +41135,7 @@
           item && item(diff);
         }
 
+        len = this.__ani.length;
         len2 = this.__task.length;
 
         if (!len && !len2) {

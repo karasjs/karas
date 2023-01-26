@@ -187,6 +187,7 @@ class Root extends Dom {
     // this.__scy = 1;
     this.__task = []; // 更新样式异步刷新&回调
     this.__ani = []; // 动画异步刷新&回调
+    this.__aniClone = []; // 动画执行时的副本，防止某动画before时进行删除操作无法执行after或其他动画
     this.__ref = {};
     this.__freeze = false; // 冻住只计算不渲染
     this.__animateController = new Controller();
@@ -743,7 +744,7 @@ class Root extends Dom {
       }
     }
     let res = this.__calUpdate(node, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver,
-      false, false, false, cb);
+      addDom, removeDom, false);
     if(res) {
       this.__frameDraw(cb);
     }
@@ -810,7 +811,7 @@ class Root extends Dom {
   }
 
   __calUpdate(node, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver,
-              addDom, removeDom, optimize, cb) {
+              addDom, removeDom, optimize) {
     let {
       __computedStyle: computedStyle,
       __currentStyle: currentStyle,
@@ -1061,7 +1062,7 @@ class Root extends Dom {
         }
       }
     }
-    let ani = this.__ani, len = ani.length, len2 = this.__task.length;
+    let ani = this.__aniClone = this.__ani.slice(0), len = ani.length, len2 = this.__task.length;
     for(let i = 0; i < len; i++) {
       ani[i].__before(diff);
     }
@@ -1075,7 +1076,7 @@ class Root extends Dom {
    * 当都清空的时候，取消raf对本Root的侦听
    */
   __after(diff) {
-    let ani = this.__ani, len = ani.length, task = this.__task.splice(0), len2 = task.length;
+    let ani = this.__aniClone, len = ani.length, task = this.__task.splice(0), len2 = task.length;
     for(let i = 0; i < len; i++) {
       ani[i].__after(diff);
     }
@@ -1083,6 +1084,7 @@ class Root extends Dom {
       let item = task[i];
       item && item(diff);
     }
+    len = this.__ani.length;
     len2 = this.__task.length;
     if(!len && !len2) {
       frame.offFrame(this);

@@ -20825,6 +20825,7 @@
 
         if (!isAbs && !isColumn && !isRow) {
           this.clearCache();
+          this.__cacheStyle = [];
           this.__refreshLevel = REFLOW$3;
           this.__limitCache = false;
           this.__isInline = false;
@@ -23409,6 +23410,8 @@
           this.__refreshLevel |= lv;
 
           if (lv >= REFLOW$3) {
+            this.__cacheStyle = [];
+
             this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
           }
 
@@ -23447,6 +23450,8 @@
           this.__refreshLevel |= lv;
 
           if (lv >= REFLOW$3) {
+            this.__cacheStyle = [];
+
             this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
           }
 
@@ -23501,6 +23506,8 @@
           this.__refreshLevel |= lv;
 
           if (lv >= REFLOW$3) {
+            this.__cacheStyle = [];
+
             this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
           }
         }
@@ -23531,6 +23538,8 @@
           this.__refreshLevel |= lv;
 
           if (lv >= REFLOW$3) {
+            this.__cacheStyle = [];
+
             this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
           }
         }

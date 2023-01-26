@@ -628,6 +628,7 @@ class Xom extends Node {
     // 防止display:none不统计mask，isVirtual忽略，abs/flex布局后续会真正来走一遍
     if(!isAbs && !isColumn && !isRow) {
       this.clearCache();
+      this.__cacheStyle = [];
       this.__refreshLevel = REFLOW;
       this.__limitCache = false;
       this.__isInline = false;
@@ -2969,6 +2970,7 @@ class Xom extends Node {
     if(lv) {
       this.__refreshLevel |= lv;
       if(lv >= REFLOW) {
+        this.__cacheStyle = [];
         this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
       }
       if(this.__bbox) {
@@ -2999,6 +3001,7 @@ class Xom extends Node {
     if(lv) {
       this.__refreshLevel |= lv;
       if(lv >= REFLOW) {
+        this.__cacheStyle = [];
         this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
       }
       if(this.__bbox) {
@@ -3042,6 +3045,7 @@ class Xom extends Node {
     if(lv) {
       this.__refreshLevel |= lv;
       if(lv >= REFLOW) {
+        this.__cacheStyle = [];
         this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
       }
     }
@@ -3066,6 +3070,7 @@ class Xom extends Node {
     if(lv) {
       this.__refreshLevel |= lv;
       if(lv >= REFLOW) {
+        this.__cacheStyle = [];
         this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
       }
     }

@@ -9,7 +9,7 @@ let root = karas.render(
   </canvas>,
   '#test'
 );
-root.on('refresh', function() {
+root.once('refresh', function() {
   let input = document.querySelector('input');
   input.value = document.querySelector('canvas').toDataURL();
 });

@@ -7,7 +7,7 @@ let o = karas.render(
 );
 let input = document.querySelector('#base64');
 input.value = document.querySelector('canvas').toDataURL();
-o.on('refresh', function() {
+o.once('refresh', function() {
   let input = document.querySelector('#base642');
   input.value = document.querySelector('canvas').toDataURL();
 });

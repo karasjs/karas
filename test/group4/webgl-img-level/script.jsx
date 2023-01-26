@@ -184,7 +184,7 @@ let o = karas.render(
   </webgl>,
   '#test'
 );
-o.on('refresh', function() {
+o.once('refresh', function() {
   o.ref.img.updateStyle({
     translateY: 100
   }, function() {

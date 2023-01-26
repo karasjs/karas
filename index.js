@@ -21767,7 +21767,6 @@
                 loadBgi.source = null;
                 var node = _this5;
                 var root = _this5.__root;
-                _this5.ctx;
                 inject.measureImg(bgi.v, function (data) {
                   // 还需判断url，防止重复加载时老的替换新的，失败不绘制bgi
                   if (data.success && data.url === loadBgi.url && !_this5.__isDestroyed) {
@@ -40097,6 +40096,8 @@
 
       _this.__ani = []; // 动画异步刷新&回调
 
+      _this.__taskClone = []; // 同下
+
       _this.__aniClone = []; // 动画执行时的副本，防止某动画before时进行删除操作无法执行after或其他动画
 
       _this.__arList = []; // parse中dom的动画解析预存到Root上，layout后执行
@@ -41073,9 +41074,10 @@
       key: "__onFrame",
       value: function __onFrame(animation) {
         var ani = this.__ani,
-            task = this.__task;
+            task = this.__task,
+            taskClone = this.__taskClone;
 
-        if (!ani.length && !task.length) {
+        if (!ani.length && !task.length && !taskClone.length) {
           frame.onFrame(this);
         }
 
@@ -41090,7 +41092,7 @@
         if (i > -1) {
           ani.splice(i, 1);
 
-          if (!ani.length && !this.__task.length) {
+          if (!ani.length && !this.__task.length && !this.__taskClone.length) {
             frame.offFrame(this);
           }
         }
@@ -41115,7 +41117,8 @@
 
         var ani = this.__aniClone = this.__ani.slice(0),
             len = ani.length,
-            len2 = this.__task.length;
+            task = this.__taskClone = this.__task.splice(0),
+            len2 = task.length;
 
         for (var i = 0; i < len; i++) {
           ani[i].__before(diff);
@@ -41135,7 +41138,7 @@
       value: function __after(diff) {
         var ani = this.__aniClone,
             len = ani.length,
-            task = this.__task.splice(0),
+            task = this.__taskClone,
             len2 = task.length;
 
         for (var i = 0; i < len; i++) {

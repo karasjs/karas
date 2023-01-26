@@ -28,7 +28,7 @@ let o = karas.parse({
 }, '#test');
 let input = document.querySelector('input');
 let n = 0;
-o.on('refresh', function() {
+o.once('refresh', function() {
   n++;
   o.animateController.pause();
 });

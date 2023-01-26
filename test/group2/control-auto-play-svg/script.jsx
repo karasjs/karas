@@ -31,7 +31,7 @@ let o = karas.parse({
 let input = document.querySelector('input');
 let n = 0;
 input.value = n;
-o.on('refresh', function() {
+o.once('refresh', function() {
   n++;
   input.value = n;
 });

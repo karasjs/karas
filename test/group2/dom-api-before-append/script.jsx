@@ -13,7 +13,7 @@ let root = karas.render(
   </canvas>
 );
 root.children[0].remove();
-root.on('refresh', function() {
+root.once('refresh', function() {
   let input = document.querySelector('#base64');
   let canvas = document.querySelector('canvas');
   input.value = canvas.toDataURL();

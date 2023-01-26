@@ -187,6 +187,7 @@ class Root extends Dom {
     // this.__scy = 1;
     this.__task = []; // 更新样式异步刷新&回调
     this.__ani = []; // 动画异步刷新&回调
+    this.__taskClone = []; // 同下
     this.__aniClone = []; // 动画执行时的副本，防止某动画before时进行删除操作无法执行after或其他动画
     this.__arList = []; // parse中dom的动画解析预存到Root上，layout后执行
     this.__ref = {};
@@ -1033,8 +1034,8 @@ class Root extends Dom {
   // 所有动画由Root代理，方便控制pause，主动更新时参数传null复用，
   // 注意逻辑耦合，任意动画/主动更新第一次触发时，需把ani和task的队列填充，以防重复onFrame调用
   __onFrame(animation) {
-    let ani = this.__ani, task = this.__task;
-    if(!ani.length && !task.length) {
+    let ani = this.__ani, task = this.__task, taskClone = this.__taskClone;
+    if(!ani.length && !task.length && !taskClone.length) {
       frame.onFrame(this);
     }
     animation && ani.push(animation);
@@ -1045,7 +1046,7 @@ class Root extends Dom {
     let i = ani.indexOf(animation);
     if(i > -1) {
       ani.splice(i, 1);
-      if(!ani.length && !this.__task.length) {
+      if(!ani.length && !this.__task.length && !this.__taskClone.length) {
         frame.offFrame(this);
       }
     }
@@ -1065,7 +1066,8 @@ class Root extends Dom {
         }
       }
     }
-    let ani = this.__aniClone = this.__ani.slice(0), len = ani.length, len2 = this.__task.length;
+    let ani = this.__aniClone = this.__ani.slice(0), len = ani.length,
+      task = this.__taskClone = this.__task.splice(0), len2 = task.length;
     for(let i = 0; i < len; i++) {
       ani[i].__before(diff);
     }
@@ -1079,7 +1081,7 @@ class Root extends Dom {
    * 当都清空的时候，取消raf对本Root的侦听
    */
   __after(diff) {
-    let ani = this.__aniClone, len = ani.length, task = this.__task.splice(0), len2 = task.length;
+    let ani = this.__aniClone, len = ani.length, task = this.__taskClone, len2 = task.length;
     for(let i = 0; i < len; i++) {
       ani[i].__after(diff);
     }

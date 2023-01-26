@@ -21,6 +21,6 @@ let animation = t.animate([
 });
 let input = document.querySelector('input');
 let n = 0;
-o.on('refresh', function() {
+o.once('refresh', function() {
   input.value += '/' + t.getComputedStyle().backgroundColor;
 });

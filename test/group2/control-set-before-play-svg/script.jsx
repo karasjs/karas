@@ -27,7 +27,7 @@ let root = karas.parse({
 });
 root.animateController.playbackRate = 1000;
 root.animateController.play();
-root.on('refresh', function() {
+root.once('refresh', function() {
   let input = document.querySelector('input');
   input.value = root.ref.div.getComputedStyle('translateX').translateX;
 })

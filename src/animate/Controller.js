@@ -246,7 +246,10 @@ class Controller {
   }
 
   __set(key, value) {
-    this.list.forEach(item => {
+    this.__list.forEach(item => {
+      item[key] = value;
+    });
+    this.__list2.forEach(item => {
       item[key] = value;
     });
   }

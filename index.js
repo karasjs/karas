@@ -15256,7 +15256,11 @@
     }, {
       key: "__set",
       value: function __set(key, value) {
-        this.list.forEach(function (item) {
+        this.__list.forEach(function (item) {
+          item[key] = value;
+        });
+
+        this.__list2.forEach(function (item) {
           item[key] = value;
         });
       }

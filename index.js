@@ -41124,13 +41124,16 @@
         var ani = this.__aniClone = this.__ani.slice(0),
             len = ani.length,
             task = this.__taskClone = this.__task.splice(0),
-            len2 = task.length;
+            len2 = task.length; // 动画帧时间>0才有效
 
-        for (var i = 0; i < len; i++) {
-          ani[i].__before(diff);
+
+        if (diff > 0) {
+          for (var i = 0; i < len; i++) {
+            ani[i].__before(diff);
+          }
         }
 
-        if (len || len2) {
+        if (diff > 0 && len || len2) {
           this.draw(false);
         }
       }
@@ -41147,8 +41150,10 @@
             task = this.__taskClone.splice(0),
             len2 = task.length;
 
-        for (var i = 0; i < len; i++) {
-          ani[i].__after(diff);
+        if (diff > 0) {
+          for (var i = 0; i < len; i++) {
+            ani[i].__after(diff);
+          }
         }
 
         for (var _i3 = 0; _i3 < len2; _i3++) {

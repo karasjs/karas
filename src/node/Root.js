@@ -1086,10 +1086,9 @@ class Root extends Dom {
    */
   __after(diff) {
     let ani = this.__aniClone, len = ani.length, task = this.__taskClone.splice(0), len2 = task.length;
-    if(diff > 0) {
-      for(let i = 0; i < len; i++) {
-        ani[i].__after(diff);
-      }
+    // after仍然执行不管diff是否>0，确保frame事件
+    for(let i = 0; i < len; i++) {
+      ani[i].__after(diff);
     }
     for(let i = 0; i < len2; i++) {
       let item = task[i];

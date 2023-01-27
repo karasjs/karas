@@ -1448,6 +1448,7 @@ function frameCb(self) {
     // if(self.__playCb === cb) {
     // }
   }
+  self.__isChange = false; // 重置，有可能下帧时间为0只执行after
 }
 
 function wasmFrame(wa, wList, wHash, frames, isReverse) {

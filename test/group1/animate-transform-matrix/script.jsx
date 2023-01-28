@@ -21,7 +21,7 @@ let animation = t.animate([
 let n = 1;
 animation.on(karas.Event.FRAME, () => {
   if(n++ === 1) {
-    input.value += '/' + t.getComputedStyle().transform[13] > 10;
+    input.value += '/' + (t.getComputedStyle().transform[12] > 10);
   }
 });
 animation.on(karas.Event.FINISH, () => {

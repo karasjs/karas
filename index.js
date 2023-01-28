@@ -18934,7 +18934,7 @@
           var keys;
           inEndDelay = currentTime < dur + this.__endDelay; // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
 
-          if (this.__stayEnd) {
+          if (this.__stayEnd || inEndDelay) {
             keys = calLastStyle(currentFrame.style, target, this.__keys);
           } // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
           else {

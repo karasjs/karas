@@ -21,7 +21,7 @@ let n = 0;
 let l = t.getComputedStyle().lineHeight;
 animation.on(karas.Event.FRAME, () => {
   if(n++ === 1) {
-    input.value = t.getComputedStyle().fontSize > 16 + ',' + t.getComputedStyle().lineHeight > l;
+    input.value = t.getComputedStyle().fontSize > 16 && t.getComputedStyle().lineHeight > l;
   }
 });
 animation.on(karas.Event.FINISH, () => {

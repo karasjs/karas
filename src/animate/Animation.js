@@ -1725,18 +1725,20 @@ class Animation extends Event {
     // 防止finish/cancel事件重复触发，每次播放重置
     this.__hasFin = false;
     this.__hasCancel = false;
+    this.__currentTime = this.__fpsTime = 0;
+    this.__initCurrentFrames(0);
     // 只有第一次调用会进初始化，另外finish/cancel视为销毁也会重新初始化
-    if(!this.__enterFrame) {
-      this.__enterFrame = true;
-      let framesR = this.__framesR;
-      let direction = this.__direction;
-      // 初始化根据方向确定帧序列
-      this.__currentFrames = {
-        reverse: true,
-        'alternate-reverse': true,
-        alternateReverse: true,
-      }.hasOwnProperty(direction) ? framesR : frames;
-      this.__currentTime = this.__fpsTime = 0;
+    // if(!this.__enterFrame) {
+    //   this.__enterFrame = true;
+    //   let framesR = this.__framesR;
+    //   let direction = this.__direction;
+    //   // 初始化根据方向确定帧序列
+    //   this.__currentFrames = {
+    //     reverse: true,
+    //     'alternate-reverse': true,
+    //     alternateReverse: true,
+    //   }.hasOwnProperty(direction) ? framesR : frames;
+    //   this.__currentTime = this.__fpsTime = 0;
       if(this.__stayBegin) {
         let currentFrame = this.__currentFrame = this.__currentFrames[0];
         let target = this.__target, root = this.__root;
@@ -1750,7 +1752,7 @@ class Animation extends Event {
           root.__addUpdate(target, keys, false, false, false, null);
         }
       }
-    }
+    // }
     // 开始时间为调用play时的帧时间
     this.__startTime = frame.__now || (frame.__now = inject.now());
     this.__end = false;
@@ -1775,20 +1777,14 @@ class Animation extends Event {
     if(this.__ignore) {
       return;
     }
-    let target = this.__target;
     let fps = this.__fps;
     let currentFrames = this.__currentFrames;
     let iterations = this.__iterations;
-    let stayEnd = this.__stayEnd;
     let delay = this.__delay;
     let areaStart = this.__areaStart;
     let areaDuration = this.__areaDuration;
-    let root = this.__root;
     let duration = this.__duration;
-    let endDelay = this.__endDelay;
-    let length = currentFrames.length;
     let playbackRate = this.__playbackRate;
-    let lastFrame = this.__currentFrame;
     let dur = areaDuration ? Math.min(duration, areaDuration) : duration;
     this.__isChange = false;
     // 播放时间累加，并且考虑播放速度加成
@@ -1798,7 +1794,7 @@ class Animation extends Event {
     // 用本帧和上帧时间差，计算累加运行时间currentTime，以便定位当前应该处于哪个时刻
     let currentTime = this.__currentTime += diff;
     // 增加的fps功能，当<60时计算跳帧，每帧运行依旧累加时间，达到fps时重置，第一帧强制不跳
-    if(!this.__firstPlay && fps > 0 && fps !== 60) {
+    if(!this.__firstPlay && fps > 0 && (fps !== 60 || fps !== 120)) {
       diff = this.__fpsTime += diff;
       if(diff < 1000 / fps) {
         this.__inFps = true;
@@ -1828,106 +1824,9 @@ class Animation extends Event {
     if(this.__playCount < playCount) {
       this.__begin = true;
       this.__playCount = playCount;
-      let direction = this.__direction;
-      let frames = this.__frames;
-      let framesR = this.__framesR;
-      // 有正反向播放需要重设帧序列
-      if(direction === 'alternate' || direction === 'alternate-reverse' || direction === 'alternateReverse') {
-        let isEven = playCount % 2 === 0;
-        if(direction === 'alternate') {
-          currentFrames = this.__currentFrames = isEven ? frames : framesR;
-        }
-        else {
-          currentFrames = this.__currentFrames = isEven ? framesR : frames;
-        }
-      }
+      currentFrames = this.__initCurrentFrames(playCount);
     }
-    let isLastCount = playCount >= iterations - 1;
-    // 只有2帧可优化，否则2分查找当前帧
-    let i, frameTime;
-    if(length === 2) {
-      i = currentTime < dur ? 0 : 1;
-      frameTime = dur;
-    }
-    else {
-      i = Animation.binarySearch(0, length - 1, currentTime, currentFrames);
-      frameTime = currentFrames[i].time;
-    }
-    // 最后一帧结束动画，仅最后一轮才会进入，需处理endDelay
-    let isLastFrame = isLastCount && i === length - 1;
-    let percent = 0;
-    if(isLastFrame) {
-      // 无需任何处理
-    }
-    // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
-    else if(length === 2) {
-      percent = currentTime / duration; // 不能是dur，按照原本计算
-    }
-    else {
-      let total = currentFrames[i + 1].time - frameTime;
-      percent = (currentTime - frameTime) / total;
-    }
-    let inEndDelay, currentFrame = currentFrames[i];
-    let notSameFrame = lastFrame !== currentFrame;
-    // 对比前后两帧是否为同一关键帧，不是则清除之前关键帧上的percent标识为-1，这样可以识别跳帧和本轮第一次进入此帧
-    if(notSameFrame) {
-      lastFrame && (lastFrame.lastPercent = -1);
-      this.__currentFrame = currentFrame;
-    }
-    /** 这里要考虑全几种场景：
-     * 1. 单次播放无endDelay且fill不停留（有/无差异，下同）
-     * 2. 单次播放无endDelay且fill停留
-     * 3. 单次播放有endDelay且fill不停留
-     * 4. 单次播放有endDelay且fill停留
-     * 5. 多次播放无endDelay且fill不停留（尾次/非尾次，下同）
-     * 6. 多次播放无endDelay且fill停留
-     * 7. 多次播放有endDelay且fill不停留
-     * 8. 多次播放有endDelay且fill停留
-     */
-    let needClean;
-    if(isLastFrame) {
-      let keys;
-      inEndDelay = currentTime < dur + endDelay;
-      // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
-      if(stayEnd) {
-        keys = calLastStyle(currentFrame.style, target, this.__keys);
-      }
-      // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
-      else {
-        keys = calLastStyle(this.__originStyle, target, this.__keys);
-        // currentFrame = null; // 特殊清空，genBeforeRefresh（）时不传过去 TODO
-        // currentFrame = {
-        //   style: this.__originStyle,
-        // };
-      }
-      // 进入endDelay或结束阶段触发end事件，注意只触发一次，防重在触发的地方做
-      this.__nextEnd = true;
-      if(!inEndDelay) {
-        this.__playCount++;
-        this.__finished = true;
-        root.__offFrame(this);
-        needClean = true;
-      }
-      let c = this.__isChange = !!keys.length;
-      if(c) {
-        root.__addUpdate(target, keys, false, false, false, null);
-      }
-      if(needClean) {
-        // let playCb = this.__playCb;
-        this.__clean(true);
-        // 丑陋的做法，防止gotoAndStop()这样的cb被clean()掉
-        // if(playCb) {
-        //   this.__playCb = playCb;
-        // }
-      }
-    }
-    else {
-      let { trans, fixed } = Animation.calIntermediateStyle(currentFrame, percent, target, notSameFrame);
-      if(trans.length || fixed.length) {
-        root.__addAniUpdate(target, trans, fixed, currentFrame);
-        this.__isChange = !!trans.length || !!fixed.length;
-      }
-    }
+    this.__calCurrent(currentFrames, this.__currentFrame, currentTime, dur, duration, null);
   }
 
   __after() {
@@ -1947,7 +1846,7 @@ class Animation extends Event {
     }
     if(this.__finished) {
       this.__begin = this.__end = this.__isDelay = this.__finished
-        = this.__inFps = this.__enterFrame = false;
+        = this.__inFps = false;
       this.__playState = 'finished';
       this.emit(Event.FINISH, this.__isChange);
     }
@@ -1997,7 +1896,8 @@ class Animation extends Event {
     // 先清除所有回调任务，多次调用finish也会清除只留最后一次
     this.__clean(true);
     this.__begin = this.__end = this.__isDelay = this.__finished
-      = this.__inFps = this.__enterFrame = false;
+      = this.__inFps = false;
+    this.__timestamp = frame.__now = frame.__now || inject.now();
     this.__playState = 'finished';
     let wa = this.__wasmAnimation;
     if(wa) {
@@ -2068,9 +1968,10 @@ class Animation extends Event {
       }
       return this;
     }
-    this.__clean();
+    this.__clean(false);
     this.__begin = this.__end = this.__isDelay = this.__finished
-      = this.__inFps = this.__enterFrame = false;
+      = this.__inFps = false;
+    this.__timestamp = frame.__now = frame.__now || inject.now();
     this.__playState = 'idle';
     let wa = this.__wasmAnimation;
     if(wa) {
@@ -2119,7 +2020,7 @@ class Animation extends Event {
     }
     // 计算出时间点直接累加播放
     this.__goto(v, options.isFrame, options.excludeDelay);
-    if(v > dur + delay - areaStart + endDelay) {
+    if(v >= dur + delay - areaStart + endDelay) {
       return this.finish(cb);
     }
     return this.play(cb);
@@ -2136,26 +2037,54 @@ class Animation extends Event {
     let areaStart = this.__areaStart;
     let areaDuration = this.__areaDuration;
     let endDelay = this.__endDelay;
+    let currentTime = this.__currentTime;
     let dur = areaDuration ? Math.min(duration, areaDuration) : duration;
     if(isDestroyed || dur <= 0 || frames.length < 1) {
       return this;
     }
+    let lastFrame = this.__currentFrame;
     let wa = this.__wasmAnimation;
     v = this.__goto(v, options.isFrame, options.excludeDelay);
-    if(v > dur + delay - areaStart + endDelay) {
+    if(v >= dur + delay - areaStart + endDelay) {
       return this.finish(cb);
     }
-    // 先play一帧，回调里模拟暂停
-    return this.play(() => {
-      this.__playState = 'paused';
-      if(wa) {
-        wa.play_state = PLAY_STATE.PAUSED;
-      }
-      this.__cancelTask();
+    this.__cancelTask();
+    this.__playState = 'paused';
+    if(wa) {
+      wa.play_state = PLAY_STATE.PAUSED;
+    }
+    this.__timestamp = frame.__now = frame.__now || inject.now();
+    if(v === currentTime) {
       if(isFunction(cb)) {
         cb();
       }
-    });
+      return;
+    }
+    let root = this.__root;
+    this.__stopCb = () => {
+      frameCb(this);
+      if(isFunction(cb)) {
+        cb(true);
+      }
+    };
+    let currentFrames = this.__currentFrames;
+    if(v < delay - areaStart) {
+      if(this.__stayBegin) {
+        let currentFrame = this.__currentFrame = currentFrames[0];
+        let target = this.__target;
+        let keys = calLastStyle(currentFrame.style, target, this.__keys);
+        let isChange = !!keys.length;
+        if(this.__stopCb) {
+          root.__cancelFrameDraw(this.__stopCb);
+        }
+        // 有变化的backwards才更新，否则无需理会，不需要回调，极端情况立刻pause()回造成一次无用刷新
+        if(isChange) {
+          root.__addUpdate(target, keys, false, false, false, null);
+        }
+      }
+      return;
+    }
+    this.__calCurrent(currentFrames, this.__currentFrame, this.__currentTime = v, dur, duration, this.__stopCb);
   }
 
   // 返回不包含delay且去除多轮的时间
@@ -2185,11 +2114,15 @@ class Animation extends Event {
     let playCount = Math.min(iterations - 1, Math.floor(v / dur));
     v -= dur * playCount;
     this.__playCount = playCount;
-    // 防止play()重置时间和当前帧组，提前计算好
-    this.__enterFrame = true;
+    this.__initCurrentFrames(playCount);
+    return v;
+  }
+
+  __initCurrentFrames(playCount) {
     let frames = this.__frames;
     let framesR = this.__framesR;
     let direction = this.__direction;
+    // 初始化根据方向确定帧序列
     if({
       alternate: true,
       'alternate-reverse': true,
@@ -2197,13 +2130,100 @@ class Animation extends Event {
     }.hasOwnProperty(direction)) {
       let isEven = playCount % 2 === 0;
       if(direction === 'alternate') {
-        this.__currentFrames = isEven ? frames : framesR;
+        return this.__currentFrames = isEven ? frames : framesR;
       }
       else {
-        this.__currentFrames = isEven ? framesR : frames;
+        return this.__currentFrames = isEven ? framesR : frames;
       }
     }
-    return v;
+    return this.__currentFrames = (direction === 'reverse' ? framesR : frames);
+  }
+
+  __calCurrent(currentFrames, lastFrame, currentTime, dur, duration, gotoCb) {
+    let root = this.__root, target = this.__target;
+    let isLastCount = this.__playCount >= this.__iterations - 1, length = currentFrames.length;
+    // 只有2帧可优化，否则2分查找当前帧
+    let i, frameTime;
+    if(length === 2) {
+      i = currentTime < dur ? 0 : 1;
+      frameTime = dur;
+    }
+    else {
+      i = Animation.binarySearch(0, length - 1, currentTime, currentFrames);
+      frameTime = currentFrames[i].time;
+    }
+    // 最后一帧结束动画，仅最后一轮才会进入，需处理endDelay
+    let isLastFrame = isLastCount && i === length - 1;
+    let percent = 0;
+    if(isLastFrame) {
+      // 无需任何处理
+    }
+    // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
+    else if(length === 2) {
+      percent = currentTime / duration; // 不能是dur，按照原本计算
+    }
+    else {
+      let total = currentFrames[i + 1].time - frameTime;
+      percent = (currentTime - frameTime) / total;
+    }
+    let inEndDelay, currentFrame = currentFrames[i];
+    let notSameFrame = lastFrame !== currentFrame;
+    // 对比前后两帧是否为同一关键帧，不是则清除之前关键帧上的percent标识为-1，这样可以识别跳帧和本轮第一次进入此帧
+    if(notSameFrame) {
+      lastFrame && (lastFrame.lastPercent = -1);
+      this.__currentFrame = currentFrame;
+    }
+    /** 这里要考虑全几种场景：
+     * 1. 单次播放无endDelay且fill不停留（有/无差异，下同）
+     * 2. 单次播放无endDelay且fill停留
+     * 3. 单次播放有endDelay且fill不停留
+     * 4. 单次播放有endDelay且fill停留
+     * 5. 多次播放无endDelay且fill不停留（尾次/非尾次，下同）
+     * 6. 多次播放无endDelay且fill停留
+     * 7. 多次播放有endDelay且fill不停留
+     * 8. 多次播放有endDelay且fill停留
+     */
+    if(isLastFrame) {
+      let keys;
+      inEndDelay = currentTime < dur + this.__endDelay;
+      // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
+      if(this.__stayEnd) {
+        keys = calLastStyle(currentFrame.style, target, this.__keys);
+      }
+      // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
+      else {
+        keys = calLastStyle(this.__originStyle, target, this.__keys);
+      }
+      // 进入endDelay或结束阶段触发end事件，注意只触发一次，防重在触发的地方做
+      this.__nextEnd = true;
+      if(!inEndDelay) {
+        this.__playCount++;
+        this.__finished = true;
+        root.__offFrame(this);
+        this.__clean(true);
+      }
+      let c = this.__isChange = !!keys.length;
+      if(c) {
+        root.__addUpdate(target, keys, false, false, false, null);
+      }
+    }
+    else {
+      let { trans, fixed } = Animation.calIntermediateStyle(currentFrame, percent, target, notSameFrame);
+      this.__isChange = !!trans.length || !!fixed.length;
+      // gotoAndStop特殊调用，不走动画更新而走普通更新
+      if(gotoCb) {
+        if(trans.length || fixed.length) {
+          root.__addUpdate(target, trans.concat(fixed), false, false, false, gotoCb);
+        }
+        else {
+          gotoCb();
+        }
+      }
+      // 普通动画更新
+      else if(trans.length || fixed.length) {
+        root.__addAniUpdate(target, trans, fixed, currentFrame);
+      }
+    }
   }
 
   addControl() {
@@ -2211,15 +2231,16 @@ class Animation extends Event {
     if(!root) {
       return;
     }
-    let ac = root.animateController;
+    let ac = root.__animateController;
     if(ac) {
+      this.__isControlled = true;
       ac.add(this);
     }
   }
 
   removeControl() {
     let root = this.__root;
-    if(!root) {
+    if(!root || !this.__isControlled) {
       return;
     }
     let ac = root.__animateController;
@@ -2228,13 +2249,16 @@ class Animation extends Event {
     }
   }
 
-  __setTarget(target) {
-    this.__target = target;
-  }
-
   __cancelTask() {
-    this.__root.__offFrame(this);
-    // this.__playCb = null; TODO 简化
+    let root = this.__root;
+    if(!root) {
+      return;
+    }
+    root.__offFrame(this);
+    if(this.__stopCb) {
+      root.__cancelFrameDraw(this.__stopCb);
+    }
+    this.__playCb = this.__stopCb = null;
   }
 
   __destroy() {
@@ -2242,7 +2266,7 @@ class Animation extends Event {
       return;
     }
     this.removeControl();
-    this.__clean();
+    this.__cancelTask();
     this.__target = this.__root = null;
     this.__startTime = 0;
     this.__isDestroyed = true;

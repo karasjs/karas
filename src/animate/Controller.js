@@ -59,6 +59,7 @@ class Controller {
           }
           options.autoPlay = false;
           let o = target.animate(value, options);
+          o.__isControlled = true;
           this.add(o, list);
         });
       });

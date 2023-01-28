@@ -41132,7 +41132,7 @@
           ani[i].__before(diff);
         }
 
-        if (diff > 0 && len || len2) {
+        if (len || len2) {
           this.draw(false);
         }
       }

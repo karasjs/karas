@@ -826,7 +826,7 @@ class Text extends Node {
       s = s.toString();
     }
     this.__content = s;
-    this.__root.__addUpdate(this.__domParent, null, level.REFLOW, null, null, cb);
+    this.__root.__addUpdate(this.__domParent, null, level.REFLOW, false, false, false, cb);
   }
 
   remove(cb) {
@@ -863,7 +863,7 @@ class Text extends Node {
       return;
     }
     // 可见在reflow逻辑做结构关系等，text视为父变更
-    root.__addUpdate(this, null, level.REFLOW, null, true, cb);
+    root.__addUpdate(this, null, level.REFLOW, false, true, false, cb);
   }
 
   __structure(lv, j) {

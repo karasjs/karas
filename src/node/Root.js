@@ -690,7 +690,7 @@ class Root extends Dom {
   /**
    * 添加更新，分析repaint/reflow和上下影响，异步刷新
    */
-  __addUpdate(node, keys, focus, addDom, removeDom, cb) {
+  __addUpdate(node, keys, focus, addDom, removeDom, sync, cb) {
     if(this.__isDestroyed) {
       return;
     }
@@ -749,6 +749,10 @@ class Root extends Dom {
     }
     let res = this.__calUpdate(node, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver,
       addDom, removeDom, false);
+    // 动画在最后一针要finish或者cancel时，特殊调用同步计算无需刷新
+    if(sync) {
+      return;
+    }
     if(res) {
       this.__frameDraw(cb);
     }

@@ -472,10 +472,10 @@ class Img extends Dom {
         function reload() {
           let { __currentStyle: { [WIDTH]: width, [HEIGHT]: height } } = self;
           if(width.u !== AUTO && height.u !== AUTO) {
-            root.__addUpdate(self, null, level.REPAINT, null, null, cb);
+            root.__addUpdate(self, null, level.REPAINT, false, false, false, cb);
           }
           else {
-            root.__addUpdate(self, null, level.REFLOW, null, null, cb);
+            root.__addUpdate(self, null, level.REFLOW, false, false, false, cb);
           }
         }
         if(data.success) {

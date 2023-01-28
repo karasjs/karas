@@ -13065,7 +13065,7 @@
 
         this.__content = s;
 
-        this.__root.__addUpdate(this.__domParent, null, o$1.REFLOW, null, null, cb);
+        this.__root.__addUpdate(this.__domParent, null, o$1.REFLOW, false, false, false, cb);
       }
     }, {
       key: "remove",
@@ -13118,7 +13118,7 @@
         } // 可见在reflow逻辑做结构关系等，text视为父变更
 
 
-        root.__addUpdate(this, null, o$1.REFLOW, null, true, cb);
+        root.__addUpdate(this, null, o$1.REFLOW, false, true, false, cb);
       }
     }, {
       key: "__structure",
@@ -18027,7 +18027,6 @@
     self.emit(Event.FRAME, self.__isChange);
 
     if (self.__firstPlay) {
-      // self.__startTime = frame.__now; // 开始时间为第一帧时间
       self.__firstPlay = false;
       self.emit(Event.PLAY);
     }
@@ -18036,9 +18035,7 @@
 
     if (cb) {
       self.__playCb = null;
-      cb(self.__isChange); // 清理要检查，gotoAndStop()这种cb回调中直接再次调用goto的话cb会不一致不能删除
-      // if(self.__playCb === cb) {
-      // }
+      cb(self.__isChange);
     }
 
     self.__isChange = false; // 重置，有可能下帧时间为0只执行after
@@ -18389,7 +18386,7 @@
 
 
           if (isChange) {
-            _root.__addUpdate(target, keys, false, false, false, null);
+            _root.__addUpdate(target, keys, false, false, false, false, null);
           }
         } // }
         // 开始时间为调用play时的帧时间
@@ -18633,7 +18630,7 @@
           };
 
           if (isChange) {
-            root.__addUpdate(target, keys, false, false, false, this.__stopCb);
+            root.__addUpdate(target, keys, false, false, false, false, this.__stopCb);
           } else {
             this.__stopCb();
           }
@@ -18697,7 +18694,7 @@
           };
 
           if (isChange) {
-            root.__addUpdate(target, keys, false, false, false, this.__stopCb);
+            root.__addUpdate(target, keys, false, false, false, false, this.__stopCb);
           } else {
             this.__stopCb();
           }
@@ -18714,8 +18711,6 @@
         var isDestroyed = this.__isDestroyed;
         var duration = this.__duration;
         var frames = this.__frames;
-        var delay = this.__delay;
-        var areaStart = this.__areaStart;
         var areaDuration = this.__areaDuration;
         var endDelay = this.__endDelay;
         var dur = areaDuration ? Math.min(duration, areaDuration) : duration;
@@ -18727,8 +18722,14 @@
 
         this.__goto(v, options.isFrame, options.excludeDelay);
 
-        if (v >= dur + delay - areaStart + endDelay) {
-          return this.finish(cb);
+        if (v >= dur + endDelay) {
+          if (this.__stayEnd) {
+            this.finish(cb);
+          } else {
+            this.cancel(cb);
+          }
+
+          return;
         }
 
         return this.play(cb);
@@ -18744,8 +18745,6 @@
         var isDestroyed = this.__isDestroyed;
         var duration = this.__duration;
         var frames = this.__frames;
-        var delay = this.__delay;
-        var areaStart = this.__areaStart;
         var areaDuration = this.__areaDuration;
         var endDelay = this.__endDelay;
         var currentTime = this.__currentTime;
@@ -18755,12 +18754,17 @@
           return this;
         }
 
-        this.__currentFrame;
         var wa = this.__wasmAnimation;
         v = this.__goto(v, options.isFrame, options.excludeDelay);
 
-        if (v >= dur + delay - areaStart + endDelay) {
-          return this.finish(cb);
+        if (v >= dur + endDelay) {
+          if (this.__stayEnd) {
+            this.finish(cb);
+          } else {
+            this.cancel(cb);
+          }
+
+          return;
         }
 
         this.__cancelTask();
@@ -18793,7 +18797,7 @@
 
         var currentFrames = this.__currentFrames;
 
-        if (v < delay - areaStart) {
+        if (v < 0) {
           if (this.__stayBegin) {
             var currentFrame = this.__currentFrame = currentFrames[0];
             var target = this.__target;
@@ -18806,14 +18810,14 @@
 
 
             if (isChange) {
-              root.__addUpdate(target, keys, false, false, false, null);
+              root.__addUpdate(target, keys, false, false, false, false, null);
             }
           }
 
           return;
         }
 
-        this.__calCurrent(currentFrames, this.__currentFrame, this.__currentTime = v, dur, duration, this.__stopCb);
+        this.__calCurrent(currentFrames, this.__currentFrame, v, dur, duration, this.__stopCb);
       } // 返回不包含delay且去除多轮的时间
 
     }, {
@@ -18845,7 +18849,7 @@
           wa.next_time = v;
         }
 
-        v -= this.__delay; // 超过时间长度需要累加次数，这里可以超过iterations，因为设定也许会非常大
+        v -= this.__delay - this.__areaStart; // 超过时间长度需要累加次数，这里可以超过iterations，因为设定也许会非常大
 
         var playCount = Math.min(iterations - 1, Math.floor(v / dur));
         v -= dur * playCount;
@@ -18946,15 +18950,13 @@
             this.__playCount++;
             this.__finished = true;
 
-            root.__offFrame(this);
-
             this.__clean(true);
           }
 
           var c = this.__isChange = !!keys.length;
 
           if (c) {
-            root.__addUpdate(target, keys, false, false, false, null);
+            root.__addUpdate(target, keys, false, false, false, true, null);
           }
         } else {
           var _Animation$calInterme = Animation.calIntermediateStyle(currentFrame, percent, target, notSameFrame),
@@ -18965,7 +18967,7 @@
 
           if (gotoCb) {
             if (trans.length || fixed.length) {
-              root.__addUpdate(target, trans.concat(fixed), false, false, false, gotoCb);
+              root.__addUpdate(target, trans.concat(fixed), false, false, false, false, gotoCb);
             } else {
               gotoCb();
             }
@@ -20761,7 +20763,7 @@
           if (item === fontFamily) {
             // 加载成功回调可能没注册信息，需要多判断一下
             if (o$3.hasRegister(item)) {
-              root.__addUpdate(node, null, REFLOW$3, null, null, null);
+              root.__addUpdate(node, null, REFLOW$3, false, false, false, null);
             } // 后面低优先级的无需再看
 
 
@@ -21826,7 +21828,7 @@
                     loadBgi.height = data.height;
                     __cacheStyle[BACKGROUND_IMAGE] = undefined;
 
-                    root.__addUpdate(node, null, REPAINT$3, null, null, null);
+                    root.__addUpdate(node, null, REPAINT$3, false, false, false, null);
                   }
                 });
               }
@@ -22937,7 +22939,7 @@
         }
 
         if (root && !this.__isDestroyed) {
-          root.__addUpdate(this, null, lv, null, null, cb);
+          root.__addUpdate(this, null, lv, false, false, false, cb);
         } else if (isFunction$4(cb)) {
           cb(-1);
         }
@@ -23319,7 +23321,7 @@
         }
 
         if (root) {
-          root.__addUpdate(this, keys, null, null, null, cb);
+          root.__addUpdate(this, keys, null, false, false, false, cb);
         }
       }
     }, {
@@ -23734,7 +23736,7 @@
         } // 可见在reflow逻辑做结构关系等
 
 
-        root.__addUpdate(this, null, REFLOW$3, null, true, cb);
+        root.__addUpdate(this, null, REFLOW$3, false, true, false, cb);
       }
     }, {
       key: "addEventListener",
@@ -23941,7 +23943,7 @@
               }
             }
 
-            root.__addUpdate(this, null, MASK$2, null, null, null);
+            root.__addUpdate(this, null, MASK$2, false, false, false, null);
           }
         }
       }
@@ -23968,7 +23970,7 @@
               }
             }
 
-            root.__addUpdate(this, null, MASK$2, null, null, null);
+            root.__addUpdate(this, null, MASK$2, false, false, false, null);
           }
         }
       }
@@ -23991,7 +23993,7 @@
               this.__computedStyle[TRANSFORM_STYLE$1] = this.__currentStyle[TRANSFORM_STYLE$1];
             }
 
-            root.__addUpdate(this, null, REPAINT$3, null, null, null, null);
+            root.__addUpdate(this, null, REPAINT$3, false, false, false, null, null);
           }
         }
       }
@@ -30273,7 +30275,7 @@
           child = this;
         }
 
-        root.__addUpdate(child, null, REFLOW$1, true, null, cb);
+        root.__addUpdate(child, null, REFLOW$1, true, false, false, cb);
       }
     }, {
       key: "prependChild",
@@ -30329,7 +30331,7 @@
           child = this;
         }
 
-        root.__addUpdate(child, null, REFLOW$1, true, null, cb);
+        root.__addUpdate(child, null, REFLOW$1, true, false, false, cb);
       }
     }, {
       key: "insertBefore",
@@ -30396,7 +30398,7 @@
           child = parent;
         }
 
-        root.__addUpdate(child, null, REFLOW$1, true, null, cb);
+        root.__addUpdate(child, null, REFLOW$1, true, false, false, cb);
       }
     }, {
       key: "insertAfter",
@@ -30456,7 +30458,7 @@
           child = parent;
         }
 
-        root.__addUpdate(child, null, REFLOW$1, true, null, cb);
+        root.__addUpdate(child, null, REFLOW$1, true, false, false, cb);
       }
     }, {
       key: "removeChild",
@@ -33174,9 +33176,9 @@
                   height = _self$__currentStyle[HEIGHT$1];
 
               if (width.u !== AUTO && height.u !== AUTO) {
-                root.__addUpdate(self, null, o$1.REPAINT, null, null, cb);
+                root.__addUpdate(self, null, o$1.REPAINT, false, false, false, cb);
               } else {
-                root.__addUpdate(self, null, o$1.REFLOW, null, null, cb);
+                root.__addUpdate(self, null, o$1.REFLOW, false, false, false, cb);
               }
             };
 
@@ -40746,7 +40748,7 @@
 
     }, {
       key: "__addUpdate",
-      value: function __addUpdate(node, keys, focus, addDom, removeDom, cb) {
+      value: function __addUpdate(node, keys, focus, addDom, removeDom, sync, cb) {
         if (this.__isDestroyed) {
           return;
         }
@@ -40800,7 +40802,12 @@
           }
         }
 
-        var res = this.__calUpdate(node, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver, addDom, removeDom, false);
+        var res = this.__calUpdate(node, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver, addDom, removeDom, false); // 动画在最后一针要finish或者cancel时，特殊调用同步计算无需刷新
+
+
+        if (sync) {
+          return;
+        }
 
         if (res) {
           this.__frameDraw(cb);

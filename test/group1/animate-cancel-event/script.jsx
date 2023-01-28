@@ -13,7 +13,7 @@ let animation = t.animate([
     color: '#00F',
   }
 ], {
-  duration: 200,
+  duration: 100,
 });
 let input = document.querySelector('input');
 let n = 0;

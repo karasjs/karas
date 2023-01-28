@@ -13,16 +13,16 @@ let animation = t.animate([
     borderLeftColor: '#00F',
   }
 ], {
-  duration: 200,
+  duration: 100,
   fill: 'forwards',
 });
 let input = document.querySelector('input');
 let n = 0;
 animation.on(karas.Event.FRAME, () => {
-  if(n++ === 0) {
-    input.value = t.getComputedStyle().borderLeftColor;
+  if(n++ === 1) {
+    input.value = t.getComputedStyle().borderLeftColor[0] < 255;
   }
 });
 animation.on(karas.Event.FINISH, () => {
-  input.value += '/' + t.getComputedStyle().borderLeftColor;
+  input.value = '/' + t.getComputedStyle().borderLeftColor;
 });

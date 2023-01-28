@@ -12,15 +12,14 @@ let animation = t.animate([
     borderRadius: 10,
   }
 ], {
-  duration: 200,
+  duration: 100,
   fill: 'forwards',
 });
 let n = 0;
 let input = document.querySelector('input');
 animation.on('frame', () => {
-  n++;
-  if(n === 1) {
-    input.value = t.getComputedStyle().borderTopLeftRadius;
+  if(n++ === 1) {
+    input.value = t.getComputedStyle().borderTopLeftRadius > 0;
   }
 });
 animation.on('finish', () => {

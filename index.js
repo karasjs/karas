@@ -18359,19 +18359,7 @@
         this.__hasCancel = false;
         this.__currentTime = this.__fpsTime = 0;
 
-        this.__initCurrentFrames(0); // 只有第一次调用会进初始化，另外finish/cancel视为销毁也会重新初始化
-        // if(!this.__enterFrame) {
-        //   this.__enterFrame = true;
-        //   let framesR = this.__framesR;
-        //   let direction = this.__direction;
-        //   // 初始化根据方向确定帧序列
-        //   this.__currentFrames = {
-        //     reverse: true,
-        //     'alternate-reverse': true,
-        //     alternateReverse: true,
-        //   }.hasOwnProperty(direction) ? framesR : frames;
-        //   this.__currentTime = this.__fpsTime = 0;
-
+        this.__initCurrentFrames(0);
 
         if (this.__stayBegin) {
           var currentFrame = this.__currentFrame = this.__currentFrames[0];
@@ -18388,8 +18376,7 @@
           if (isChange) {
             _root.__addUpdate(target, keys, false, false, false, false, null);
           }
-        } // }
-        // 开始时间为调用play时的帧时间
+        } // 开始时间为调用play时的帧时间
 
 
         this.__startTime = frame.__now || (frame.__now = inject.now());
@@ -18686,7 +18673,7 @@
           this.__stopCb = function () {
             frameCb(_this3);
 
-            _this3.emit(Event.FINISH, isChange);
+            _this3.emit(Event.CANCEL, isChange);
 
             if (isFunction$5(cb)) {
               cb(isChange);
@@ -18720,7 +18707,7 @@
         } // 计算出时间点直接累加播放
 
 
-        this.__goto(v, options.isFrame, options.excludeDelay);
+        v = this.__goto(v, options.isFrame, options.excludeDelay);
 
         if (v >= dur + endDelay) {
           if (this.__stayEnd) {
@@ -18955,7 +18942,13 @@
 
           var c = this.__isChange = !!keys.length;
 
-          if (c) {
+          if (gotoCb) {
+            if (c) {
+              root.__addUpdate(target, keys, false, false, false, false, gotoCb);
+            } else {
+              gotoCb();
+            }
+          } else if (c) {
             root.__addUpdate(target, keys, false, false, false, true, null);
           }
         } else {
@@ -19343,23 +19336,7 @@
         }
 
         return playState !== 'finished' || this.__stayEnd || this.__stayBegin;
-      } // get spfLimit() {
-      //   return this.__spfLimit;
-      // }
-      //
-      // set spfLimit(v) {
-      //   if(util.isNumber(v) || /^\d/.test(v)) {
-      //     v = Math.max(0, parseInt(v) || 0);
-      //   }
-      //   else {
-      //     v = !!v;
-      //   }
-      //   if(this.__spfLimit !== v) {
-      //     this.__spfLimit = v;
-      //   }
-      //   return v;
-      // }
-
+      }
     }], [{
       key: "parse",
       value: function parse(list, duration, easing, target) {
@@ -40802,7 +40779,7 @@
           }
         }
 
-        var res = this.__calUpdate(node, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver, addDom, removeDom, false); // 动画在最后一针要finish或者cancel时，特殊调用同步计算无需刷新
+        var res = this.__calUpdate(node, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver, addDom, removeDom, false); // 动画在最后一帧要finish或者cancel时，特殊调用同步计算无需刷新，不会有cb
 
 
         if (sync) {
@@ -40866,7 +40843,10 @@
 
         if (ignoreTRBL && len === 1 && !fixed.length) {
           return;
-        }
+        } // 设置有动画造成了更新
+
+
+        this.__aniChange = true;
 
         this.__calUpdate(node, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver, false, false, frame.optimize);
       }
@@ -41174,13 +41154,16 @@
         var ani = this.__aniClone = this.__ani.slice(0),
             len = ani.length,
             task = this.__taskClone = this.__task.splice(0),
-            len2 = task.length;
+            len2 = task.length; // 先重置标识，动画没有触发更新，在每个__before执行，如果调用了更新则更改标识
+
+
+        this.__aniChange = false;
 
         for (var i = 0; i < len; i++) {
           ani[i].__before(diff);
         }
 
-        if (len || len2) {
+        if (this.__aniChange || len2) {
           this.draw(false);
         }
       }

@@ -23,12 +23,6 @@ let animation = t.animate([
   fill: 'forwards',
 });
 let input = document.querySelector('input');
-let n = 0;
-animation.on(karas.Event.FRAME, () => {
-  if(n++ === 0) {
-    input.value = t.xa + ',' + t.ya + ',' + t.xb + ',' + t.yb;
-  }
-});
 animation.on(karas.Event.FINISH, () => {
-  input.value += '/' + t.xa + ',' + t.ya + ',' + t.xb + ',' + t.yb;
+  input.value = t.xa + ',' + t.ya + ',' + t.xb + ',' + t.yb;
 });

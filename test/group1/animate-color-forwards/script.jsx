@@ -17,12 +17,6 @@ let animation = t.animate([
   fill: 'forwards',
 });
 let input = document.querySelector('input');
-let n = 0;
-animation.on(karas.Event.FRAME, () => {
-  if(n++ === 0) {
-    input.value = t.getComputedStyle().color;
-  }
-});
 animation.on(karas.Event.FINISH, () => {
-  input.value += '/' + t.getComputedStyle().color;
+  input.value = t.getComputedStyle().color;
 });

@@ -13,7 +13,7 @@ let animation = t.animate([
     left: 100,
   }
 ], {
-  duration: 150,
+  duration: 100,
   endDelay: 150,
 });
 animation.on(karas.Event.FINISH, () => {

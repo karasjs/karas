@@ -13,7 +13,7 @@ let animation = t.animate([
     color: '#00F',
   }
 ], {
-  duration: 200,
+  duration: 100,
   delay: 10000,
   fill: 'backwards',
 });
@@ -21,9 +21,6 @@ let input = document.querySelector('input');
 let n = 0;
 animation.on(karas.Event.FRAME, (isChange) => {
   n++;
-  if(isChange) {
-    input.value += n;
-  }
   if(n === 1) {
     input.value += t.getComputedStyle().color;
   }

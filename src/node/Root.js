@@ -749,7 +749,7 @@ class Root extends Dom {
     }
     let res = this.__calUpdate(node, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver,
       addDom, removeDom, false);
-    // 动画在最后一针要finish或者cancel时，特殊调用同步计算无需刷新
+    // 动画在最后一帧要finish或者cancel时，特殊调用同步计算无需刷新，不会有cb
     if(sync) {
       return;
     }
@@ -812,6 +812,8 @@ class Root extends Dom {
     if(ignoreTRBL && len === 1 && !fixed.length) {
       return;
     }
+    // 设置有动画造成了更新
+    this.__aniChange = true;
     this.__calUpdate(node, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver,
       false, false, frame.optimize);
   }
@@ -1073,10 +1075,12 @@ class Root extends Dom {
     }
     let ani = this.__aniClone = this.__ani.slice(0), len = ani.length,
       task = this.__taskClone = this.__task.splice(0), len2 = task.length;
+    // 先重置标识，动画没有触发更新，在每个__before执行，如果调用了更新则更改标识
+    this.__aniChange = false;
     for(let i = 0; i < len; i++) {
       ani[i].__before(diff);
     }
-    if(len || len2) {
+    if(this.__aniChange || len2) {
       this.draw(false);
     }
   }

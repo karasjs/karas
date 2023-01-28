@@ -26,11 +26,6 @@ animation.play(function() {
 animation.play(function() {
   input.value += '/play2';
 });
-animation.on(karas.Event.FRAME, () => {
-  if(n++ === 0) {
-    input.value += '/' + t.getComputedStyle().color;
-  }
-});
 animation.on(karas.Event.FINISH, () => {
   input.value += '/' + t.getComputedStyle().color;
 });

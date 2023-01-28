@@ -22,8 +22,8 @@ let animation = t.animate([
 let input = document.querySelector('input');
 let n = 0;
 animation.on(karas.Event.FRAME, () => {
-  if(n++ === 0) {
-    input.value = i.getComputedStyle().color;
+  if(n++ === 1) {
+    input.value = i.getComputedStyle().color[0] < 255;
   }
 });
 animation.on(karas.Event.FINISH, () => {

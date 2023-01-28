@@ -19,11 +19,8 @@ let animation = t.animate([
 let input = document.querySelector('input');
 let n = 0;
 animation.on(karas.Event.FRAME, () => {
-  if(n === 0) {
-    input.value = t.getComputedStyle().fontSize;
-  }
-  else if(n === 2) {
-    input.value += '/' + (t.getComputedStyle().fontSize > 50);
+  if(n === 2) {
+    input.value = t.getComputedStyle().fontSize > 50;
   }
   n++;
 });

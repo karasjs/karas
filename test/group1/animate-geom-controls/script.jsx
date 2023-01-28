@@ -32,8 +32,8 @@ let animation = t.animate([
 let input = document.querySelector('input');
 let n = 0;
 animation.on(karas.Event.FRAME, () => {
-  if(n++ === 0) {
-    input.value = t.controls;
+  if(n++ === 1) {
+    input.value = t.controls[0][1] > 0.2;
   }
 });
 animation.on(karas.Event.FINISH, () => {

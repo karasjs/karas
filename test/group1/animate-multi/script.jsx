@@ -36,12 +36,6 @@ let animation2 = t2.animate([
   fill: 'forwards',
 });
 let input = document.querySelector('input');
-let n = 0;
-animation2.on(karas.Event.FRAME, () => {
-  if(n++ === 0) {
-    input.value = t.getComputedStyle().width + ',' + t2.getComputedStyle().height;
-  }
-});
 animation2.on(karas.Event.FINISH, () => {
-  input.value += '/' + t.getComputedStyle().width + ',' + t2.getComputedStyle().height;
+  input.value = t.getComputedStyle().width + ',' + t2.getComputedStyle().height;
 });

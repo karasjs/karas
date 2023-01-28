@@ -30,5 +30,5 @@ let animation2 = t.animate([
 let input = document.querySelector('input');
 animation.gotoAndStop(10);
 animation2.gotoAndStop(10, () => {
-  input.value += t.getComputedStyle().left + ',' + t.getComputedStyle().top;
+  input.value = t.getComputedStyle().left + ',' + t.getComputedStyle().top;
 });

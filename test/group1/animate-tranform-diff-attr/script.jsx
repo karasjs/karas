@@ -18,12 +18,6 @@ let animation = t.animate([
   duration: 200,
   fill: 'forwards',
 });
-let n = 0;
-animation.on(karas.Event.FRAME, () => {
-  if(n++ === 0) {
-    input.value += '/' + t.getComputedStyle().transform;
-  }
-});
 animation.on(karas.Event.FINISH, () => {
-  input.value += '/' + t.getComputedStyle().transform;
+  input.value = t.getComputedStyle().transform;
 });

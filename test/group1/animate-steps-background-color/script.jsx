@@ -20,6 +20,6 @@ let animation = t.animate([
   easing: 'steps(3)',
 });
 let input = document.querySelector('input');
-o.once('refresh', function() {
+o.on('refresh', function() {
   input.value += '/' + t.getComputedStyle().backgroundColor;
 });

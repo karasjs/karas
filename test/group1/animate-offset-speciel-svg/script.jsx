@@ -23,10 +23,9 @@ let animation = t.animate([
 let input = document.querySelector('input');
 let n = 0;
 animation.on(karas.Event.FRAME, () => {
-  if(n === 1) {
-    input.value += '/' + (t.getComputedStyle().translateX < 100);
+  if(n++ === 1) {
+    input.value = t.getComputedStyle().translateX < 100;
   }
-  n++;
 });
 animation.on(karas.Event.FINISH, () => {
   input.value += '/' + t.getComputedStyle().translateX;

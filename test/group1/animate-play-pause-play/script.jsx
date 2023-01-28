@@ -19,8 +19,8 @@ let animation = t.animate([
 let input = document.querySelector('input');
 let n = 0;
 animation.on(karas.Event.FRAME, () => {
-  if(n++ === 0) {
-    input.value = t.getComputedStyle().fontSize + ',' + t.getComputedStyle().lineHeight;
+  if(n++ === 1) {
+    input.value = t.getComputedStyle().fontSize > 16;
     animation.pause();
     animation.play(function() {
       input.value += '/play';

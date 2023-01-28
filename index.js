@@ -18346,6 +18346,10 @@
         }
 
         if (playState === 'running') {
+          if (isFunction$5(cb)) {
+            cb();
+          }
+
           return this;
         }
 
@@ -18432,7 +18436,7 @@
 
         var currentTime = this.__currentTime += diff; // 增加的fps功能，当<60时计算跳帧，每帧运行依旧累加时间，达到fps时重置，第一帧强制不跳
 
-        if (!this.__firstPlay && fps > 0 && (fps !== 60 || fps !== 120)) {
+        if (!this.__firstPlay && fps > 0 && fps !== 60 && fps !== 120) {
           diff = this.__fpsTime += diff;
 
           if (diff < 1000 / fps) {

@@ -22,8 +22,8 @@ animation.play(function() {
 });
 let n = 0;
 animation.on(karas.Event.FRAME, () => {
-  if(n++ === 0) {
-    input.value += '/' + t.getComputedStyle().width;
+  if(n++ === 1) {
+    input.value += '/' + t.getComputedStyle().width > 100;
   }
 });
 animation.on(karas.Event.FINISH, () => {

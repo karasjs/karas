@@ -1711,6 +1711,9 @@ class Animation extends Event {
       return this;
     }
     if(playState === 'running') {
+      if(isFunction(cb)) {
+        cb();
+      }
       return this;
     }
     this.__playCb = cb;
@@ -1782,7 +1785,7 @@ class Animation extends Event {
     // 用本帧和上帧时间差，计算累加运行时间currentTime，以便定位当前应该处于哪个时刻
     let currentTime = this.__currentTime += diff;
     // 增加的fps功能，当<60时计算跳帧，每帧运行依旧累加时间，达到fps时重置，第一帧强制不跳
-    if(!this.__firstPlay && fps > 0 && (fps !== 60 || fps !== 120)) {
+    if(!this.__firstPlay && fps > 0 && fps !== 60 && fps !== 120) {
       diff = this.__fpsTime += diff;
       if(diff < 1000 / fps) {
         this.__inFps = true;

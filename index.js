@@ -17698,8 +17698,7 @@
       if (lv & TF$2 || lv & SX$1 && !computedStyle[SCALE_X$1] || lv & SY$1 && !computedStyle[SCALE_Y$1] || lv & SZ$1 && !computedStyle[SCALE_Z$1] || lv & RZ$1 && (computedStyle[ROTATE_X$1] || computedStyle[ROTATE_Y$1] || computedStyle[SKEW_X$1] || computedStyle[SKEW_Y$1])) ; else {
         prev.optimize = true;
       }
-    } // }
-
+    }
 
     return next;
   }
@@ -17716,8 +17715,13 @@
           // steps有效定义正整数
           if (steps && steps > 0) {
             var per = 1 / steps;
-            var n = stepsD === 'start' ? Math.ceil(percent / per) : Math.floor(percent / per);
-            return n / steps;
+            var res = Math.floor(percent / per); // 默认end
+
+            if (stepsD === 'start') {
+              res++;
+            }
+
+            return res / steps;
           }
 
           return percent;
@@ -19636,7 +19640,7 @@
       value: function calIntermediateStyle(frame, percent, target, notSameFrame) {
         var style = frame.style;
         var transition = frame.transition;
-        var timingFunction = frame.timingFunction; // let allInFn = frame.allInFn;
+        var timingFunction = frame.timingFunction;
 
         if (timingFunction && timingFunction !== linear) {
           percent = timingFunction(percent);
@@ -19653,20 +19657,7 @@
         frame.lastPercent = percent;
         var currentStyle = target.__currentStyle,
             trans = frame.trans,
-            fixed = []; // 特殊性能优化，for拆开v8会提升不少
-        // if(allInFn) {
-        //   for(let i = 0, len = transition.length; i < len; i++) {
-        //     let item = transition[i];
-        //     let k = item.k, v = item.v, st = item.st, cl = item.cl, fn = item.fn;
-        //     // 可能updateStyle()甚至手动修改了currentStyle，需要重新赋值
-        //     if(st !== currentStyle[k]) {
-        //       currentStyle[k] = st;
-        //     }
-        //     fn(k, v, percent, st, cl, frame, currentStyle);
-        //   }
-        // }
-        // else {
-
+            fixed = [];
         var currentProps = target.__currentProps,
             modify;
 
@@ -19809,8 +19800,7 @@
               fixed.push(k);
             }
           }
-        } // }
-
+        }
 
         return {
           trans: trans,

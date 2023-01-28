@@ -1122,14 +1122,11 @@ function calFrame(prev, next, keys, target) {
       || (lv & SZ) && !computedStyle[SCALE_Z]
       || (lv & RZ) && (computedStyle[ROTATE_X] || computedStyle[ROTATE_Y]
       || computedStyle[SKEW_X] || computedStyle[SKEW_Y])
-    )) {
-      // prev.optimize = false;
-    }
+    )) {}
     else {
       prev.optimize = true;
     }
   }
-  // }
   return next;
 }
 
@@ -1143,8 +1140,12 @@ function getEasing(ea) {
         // steps有效定义正整数
         if(steps && steps > 0) {
           let per = 1 / steps;
-          let n = stepsD === 'start' ? Math.ceil(percent / per) : Math.floor(percent / per);
-          return n / steps;
+          let res = Math.floor(percent / per);
+          // 默认end
+          if(stepsD === 'start') {
+            res++;
+          }
+          return res / steps;
         }
         return percent;
       };
@@ -2771,7 +2772,6 @@ class Animation extends Event {
     let style = frame.style;
     let transition = frame.transition;
     let timingFunction = frame.timingFunction;
-    // let allInFn = frame.allInFn;
     if(timingFunction && timingFunction !== linear) {
       percent = timingFunction(percent);
     }
@@ -2781,19 +2781,6 @@ class Animation extends Event {
     }
     frame.lastPercent = percent;
     let currentStyle = target.__currentStyle, trans = frame.trans, fixed = [];
-    // 特殊性能优化，for拆开v8会提升不少
-    // if(allInFn) {
-    //   for(let i = 0, len = transition.length; i < len; i++) {
-    //     let item = transition[i];
-    //     let k = item.k, v = item.v, st = item.st, cl = item.cl, fn = item.fn;
-    //     // 可能updateStyle()甚至手动修改了currentStyle，需要重新赋值
-    //     if(st !== currentStyle[k]) {
-    //       currentStyle[k] = st;
-    //     }
-    //     fn(k, v, percent, st, cl, frame, currentStyle);
-    //   }
-    // }
-    // else {
     let currentProps = target.__currentProps, modify;
     for(let i = 0, len = transition.length; i < len; i++) {
       let item = transition[i];
@@ -2903,7 +2890,7 @@ class Animation extends Event {
         }
       }
     }
-      // 无变化的也得检查是否和当前相等，防止跳到一个不变化的帧上，而前一帧有变化的情况，大部分都是无变化
+    // 无变化的也得检查是否和当前相等，防止跳到一个不变化的帧上，而前一帧有变化的情况，大部分都是无变化
     if(notSameFrame) {
       let f = frame.fixed;
       for(let i = 0, len = f.length; i < len; i++) {
@@ -2920,7 +2907,6 @@ class Animation extends Event {
         }
       }
     }
-    // }
     return { trans, fixed };
   }
 }

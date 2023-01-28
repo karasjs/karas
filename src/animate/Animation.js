@@ -1721,7 +1721,12 @@ class Animation extends Event {
     // 防止finish/cancel事件重复触发，每次播放重置
     this.__hasFin = false;
     this.__hasCancel = false;
-    this.__currentTime = this.__fpsTime = 0;
+    // gotoAndPlay时间已经计算好
+    if(!this.__gotoAndPlay) {
+      this.__currentTime = 0;
+    }
+    this.__gotoAndPlay = false;
+    this.__fpsTime = 0;
     this.__initCurrentFrames(0);
     if(this.__stayBegin) {
       let currentFrame = this.__currentFrame = this.__currentFrames[0];
@@ -2010,6 +2015,7 @@ class Animation extends Event {
       }
       return;
     }
+    this.__gotoAndPlay = true;
     return this.play(cb);
   }
 

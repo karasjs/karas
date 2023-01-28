@@ -16,6 +16,7 @@ let animation = t.animate([
   duration: 200,
   fill: 'forwards',
 });
+let input = document.querySelector('input');
 animation.on('finish', () => {
   input.value = JSON.stringify(t.getComputedStyle().filter);
 });

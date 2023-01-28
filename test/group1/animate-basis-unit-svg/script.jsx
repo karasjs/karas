@@ -26,7 +26,7 @@ t2.animate([
     flexBasis: 10,
   }
 ], {
-  duration: 200,
+  duration: 100,
   fill: 'forwards',
 });
 let n = 0;

@@ -18,7 +18,6 @@ let animation = t.animate([
   iterations: 2,
 });
 let input = document.querySelector('input');
-let n = 0;
 animation.on('begin', () => {
   input.value += '/' + (t.currentStyle[karas.enums.STYLE_KEY.TRANSLATE_X].v < 100);
 });

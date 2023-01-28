@@ -18356,8 +18356,14 @@
         this.__playCount = 0; // 防止finish/cancel事件重复触发，每次播放重置
 
         this.__hasFin = false;
-        this.__hasCancel = false;
-        this.__currentTime = this.__fpsTime = 0;
+        this.__hasCancel = false; // gotoAndPlay时间已经计算好
+
+        if (!this.__gotoAndPlay) {
+          this.__currentTime = 0;
+        }
+
+        this.__gotoAndPlay = false;
+        this.__fpsTime = 0;
 
         this.__initCurrentFrames(0);
 
@@ -18719,6 +18725,7 @@
           return;
         }
 
+        this.__gotoAndPlay = true;
         return this.play(cb);
       }
     }, {

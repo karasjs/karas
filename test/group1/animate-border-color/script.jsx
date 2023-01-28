@@ -24,5 +24,5 @@ animation.on(karas.Event.FRAME, () => {
   }
 });
 animation.on(karas.Event.FINISH, () => {
-  input.value = '/' + t.getComputedStyle().borderLeftColor;
+  input.value += '/' + t.getComputedStyle().borderLeftColor;
 });

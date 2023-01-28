@@ -19,7 +19,7 @@ let n = 0;
 let input = document.querySelector('input');
 animation.on('frame', () => {
   if(n++ === 1) {
-    input.value = t.getComputedStyle().borderTopLeftRadius > 0;
+    input.value = t.getComputedStyle().borderTopLeftRadius[0] >= 0;
   }
 });
 animation.on('finish', () => {

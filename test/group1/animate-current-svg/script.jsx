@@ -29,7 +29,7 @@ animation.on('finish', () => {
     fill: 'forwards',
   });
   a.on('begin', () => {
-    input.value += '/' + t.currentStyle[karas.enums.STYLE_KEY.TRANSLATE_X] > 100;
+    input.value += '/' + (t.currentStyle[karas.enums.STYLE_KEY.TRANSLATE_X].v >= 100);
   });
   t.removeAnimate(animation);
 });

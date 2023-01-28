@@ -47,12 +47,6 @@ let animation = t.animate([
   fill: 'forwards',
 });
 let input = document.querySelector('input');
-let n = 0;
-animation.on(karas.Event.BEGIN, () => {
-  if(n++ === 0) {
-    input.value += JSON.stringify(o.virtualDom);
-  }
-});
 animation.on(karas.Event.FINISH, () => {
-  input.value += JSON.stringify(o.virtualDom);
+  input.value = JSON.stringify(o.virtualDom);
 });

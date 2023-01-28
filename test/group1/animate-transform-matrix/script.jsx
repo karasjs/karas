@@ -18,7 +18,7 @@ let animation = t.animate([
   duration: 200,
   fill: 'forwards',
 });
-let n = 1;
+let n = 0;
 animation.on(karas.Event.FRAME, () => {
   if(n++ === 1) {
     input.value += '/' + (t.getComputedStyle().transform[12] > 10);

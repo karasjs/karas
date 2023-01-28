@@ -18039,6 +18039,8 @@
       // if(self.__playCb === cb) {
       // }
     }
+
+    self.__isChange = false; // 重置，有可能下帧时间为0只执行after
   }
 
   function wasmFrame(wa, wList, wHash, frames, isReverse) {
@@ -41124,13 +41126,10 @@
         var ani = this.__aniClone = this.__ani.slice(0),
             len = ani.length,
             task = this.__taskClone = this.__task.splice(0),
-            len2 = task.length; // 动画帧时间>0才有效
+            len2 = task.length;
 
-
-        if (diff > 0) {
-          for (var i = 0; i < len; i++) {
-            ani[i].__before(diff);
-          }
+        for (var i = 0; i < len; i++) {
+          ani[i].__before(diff);
         }
 
         if (diff > 0 && len || len2) {
@@ -41148,12 +41147,11 @@
         var ani = this.__aniClone,
             len = ani.length,
             task = this.__taskClone.splice(0),
-            len2 = task.length;
+            len2 = task.length; // after仍然执行不管diff是否>0，确保frame事件
 
-        if (diff > 0) {
-          for (var i = 0; i < len; i++) {
-            ani[i].__after(diff);
-          }
+
+        for (var i = 0; i < len; i++) {
+          ani[i].__after(diff);
         }
 
         for (var _i3 = 0; _i3 < len2; _i3++) {

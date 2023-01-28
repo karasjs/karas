@@ -1069,11 +1069,8 @@ class Root extends Dom {
     }
     let ani = this.__aniClone = this.__ani.slice(0), len = ani.length,
       task = this.__taskClone = this.__task.splice(0), len2 = task.length;
-    // 动画帧时间>0才有效
-    if(diff > 0) {
-      for(let i = 0; i < len; i++) {
-        ani[i].__before(diff);
-      }
+    for(let i = 0; i < len; i++) {
+      ani[i].__before(diff);
     }
     if(diff > 0 && len || len2) {
       this.draw(false);

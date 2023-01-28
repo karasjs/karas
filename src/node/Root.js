@@ -751,6 +751,9 @@ class Root extends Dom {
       addDom, removeDom, false);
     // 动画在最后一帧要finish或者cancel时，特殊调用同步计算无需刷新，不会有cb
     if(sync) {
+      if(res) {
+        this.__aniChange = true;
+      }
       return;
     }
     if(res) {

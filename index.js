@@ -40783,6 +40783,10 @@
 
 
         if (sync) {
+          if (res) {
+            this.__aniChange = true;
+          }
+
           return;
         }
 

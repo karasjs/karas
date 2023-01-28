@@ -17,7 +17,6 @@ let animation = t.animate([
   endDelay: 200,
 });
 let input = document.querySelector('input');
-animation.gotoAndStop(300);
-o.on('refresh', () => {
+animation.gotoAndStop(300, function() {
   input.value = t.getComputedStyle().display;
 });

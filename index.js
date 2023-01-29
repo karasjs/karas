@@ -41130,7 +41130,7 @@
           this.__isInFrame = true;
         }
 
-        cb && this.__task.push(cb);
+        this.__task.push(cb);
       }
     }, {
       key: "__offFrame",

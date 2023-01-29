@@ -1049,7 +1049,7 @@ class Root extends Dom {
       frame.onFrame(this);
       this.__isInFrame = true;
     }
-    cb && this.__task.push(cb);
+    this.__task.push(cb);
   }
 
   __offFrame(cb) {

@@ -46590,33 +46590,39 @@
 
   function replaceLibraryVars(json, hash, vars) {
     // 新版同级vars语法，增加可以修改library子元素中递归子属性
-    if (json.hasOwnProperty('vars')) {
+    if (json && json.hasOwnProperty('vars')) {
       var slot = json.vars;
-      delete json.vars;
 
       if (!Array.isArray(slot)) {
         slot = [slot];
       }
 
-      slot.forEach(function (item) {
-        var id = item.id,
-            member = item.member;
+      var hasChanged;
+
+      for (var i = 0, len = slot.length; i < len; i++) {
+        var _slot$i = slot[i],
+            id = _slot$i.id,
+            member = _slot$i.member;
 
         if (!Array.isArray(member)) {
           member = [member];
         } // library.xxx，需要>=2的长度，开头必须是library
 
 
-        if (Array.isArray(member) && member.length > 1 && vars && vars.hasOwnProperty(id)) {
-          if (member[0] === 'library') {
+        if (Array.isArray(member) && member[0] === 'library') {
+          slot.splice(i--, 1);
+          len--;
+          hasChanged = true;
+
+          if (vars && vars.hasOwnProperty(id)) {
             var target = hash;
 
-            for (var i = 1, len = member.length; i < len; i++) {
-              var k = member[i]; // 最后一个属性可以为空
+            outer: for (var _i = 1, _len = member.length; _i < _len; _i++) {
+              var k = member[_i]; // 最后一个属性可以为空
 
-              if (target.hasOwnProperty(k) || i === len - 1) {
+              if (target.hasOwnProperty(k) || _i === _len - 1) {
                 // 最后一个member表达式替换
-                if (i === len - 1) {
+                if (_i === _len - 1) {
                   var v = vars[id];
                   var old = target[k]; // 支持函数模式和值模式
 
@@ -46625,7 +46631,7 @@
                   } // 直接替换library的子对象，需补充id和tagName
 
 
-                  if (i === 1) {
+                  if (_i === 1) {
                     target[k] = Object.assign({
                       id: old.id,
                       tagName: old.tagName
@@ -46640,12 +46646,18 @@
                 }
               } else {
                 inject.error('Library slot miss ' + k);
-                return;
+                break outer;
               }
             }
           }
         }
-      });
+      }
+
+      if (!slot.length) {
+        delete json.vars;
+      } else if (hasChanged) {
+        json.vars = slot;
+      }
     }
   }
 
@@ -46781,10 +46793,10 @@
 
       if (/^#\d+$/.test(fontFamily)) {
         var fonts = opt.fonts,
-            _i = parseInt(fontFamily.slice(1));
+            _i2 = parseInt(fontFamily.slice(1));
 
         if (Array.isArray(fonts)) {
-          style.fontFamily = fonts[_i];
+          style.fontFamily = fonts[_i2];
         }
       } // 先替换style的
 

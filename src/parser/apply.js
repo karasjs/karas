@@ -63,21 +63,25 @@ function initLibrary(item, hash) {
 // 有library的json一级初始化library供链接前，可以替换library里的内容
 function replaceLibraryVars(json, hash, vars) {
   // 新版同级vars语法，增加可以修改library子元素中递归子属性
-  if(json.hasOwnProperty('vars')) {
+  if(json && json.hasOwnProperty('vars')) {
     let slot = json.vars;
-    delete json.vars;
     if(!Array.isArray(slot)) {
       slot = [slot];
     }
-    slot.forEach(item => {
-      let { id, member } = item;
+    let hasChanged;
+    for(let i = 0, len = slot.length; i < len; i++) {
+      let { id, member } = slot[i];
       if(!Array.isArray(member)) {
         member = [member];
       }
       // library.xxx，需要>=2的长度，开头必须是library
-      if(Array.isArray(member) && member.length > 1 && vars && vars.hasOwnProperty(id)) {
-        if(member[0] === 'library') {
+      if(Array.isArray(member) && member[0] === 'library') {
+        slot.splice(i--, 1);
+        len--;
+        hasChanged = true;
+        if(vars && vars.hasOwnProperty(id)) {
           let target = hash;
+          outer:
           for(let i = 1, len = member.length; i < len; i++) {
             let k = member[i];
             // 最后一个属性可以为空
@@ -106,12 +110,18 @@ function replaceLibraryVars(json, hash, vars) {
             }
             else {
               inject.error('Library slot miss ' + k);
-              return;
+              break outer;
             }
           }
         }
       }
-    });
+    }
+    if(!slot.length) {
+      delete json.vars;
+    }
+    else if(hasChanged) {
+      json.vars = slot;
+    }
   }
 }
 

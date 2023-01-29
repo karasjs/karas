@@ -1750,9 +1750,7 @@ class Animation extends Event {
     this.__end = false;
     // 由root统一控制，防止重复play
     let root = this.__root;
-    if(root.__ani.indexOf(this) === -1) {
-      root.__onFrame(this);
-    }
+    root.__onAniFrame(this);
     let wa = this.__wasmAnimation;
     if(wa) {
       wa.play_count = 0;
@@ -2261,7 +2259,7 @@ class Animation extends Event {
     if(!root) {
       return;
     }
-    root.__offFrame(this);
+    root.__offAniFrame(this);
     if(this.__stopCb) {
       root.__offFrame(this.__stopCb);
     }

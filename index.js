@@ -18398,9 +18398,7 @@
 
         var root = this.__root;
 
-        if (root.__ani.indexOf(this) === -1) {
-          root.__onFrame(this);
-        }
+        root.__onAniFrame(this);
 
         var wa = this.__wasmAnimation;
 
@@ -19025,7 +19023,7 @@
           return;
         }
 
-        root.__offFrame(this);
+        root.__offAniFrame(this);
 
         if (this.__stopCb) {
           root.__offFrame(this.__stopCb);

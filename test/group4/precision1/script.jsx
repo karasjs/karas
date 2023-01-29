@@ -25,7 +25,7 @@ karas.render(
                   "tagName": "span",
                   "props": {
                     "style": {
-                      "fz": "0.32rem",
+                      "fontSize": "0.32rem",
                       "flex": 1
                     },
                   },
@@ -38,7 +38,7 @@ karas.render(
                   "props": {
                     "style": {
                       "padding": "0 0.06848rem 0 0.06848rem",
-                      "fz": "0.228rem",
+                      "fontSize": "0.228rem",
                     }
                   },
                   "children": [

@@ -2002,6 +2002,7 @@ class Animation extends Event {
     let frames = this.__frames;
     let areaDuration = this.__areaDuration;
     let endDelay = this.__endDelay;
+    let playState = this.__playState;
     let dur = areaDuration ? Math.min(duration, areaDuration) : duration;
     if(isDestroyed || dur <= 0 || frames.length < 1) {
       return this;
@@ -2016,6 +2017,10 @@ class Animation extends Event {
         this.cancel(cb);
       }
       return;
+    }
+    // 防止重复动画
+    if(playState === 'running') {
+      this.__root.__offAniFrame(this);
     }
     this.__gotoAndPlay = true;
     return this.play(cb);

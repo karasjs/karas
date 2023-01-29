@@ -18712,6 +18712,7 @@
         var frames = this.__frames;
         var areaDuration = this.__areaDuration;
         var endDelay = this.__endDelay;
+        var playState = this.__playState;
         var dur = areaDuration ? Math.min(duration, areaDuration) : duration;
 
         if (isDestroyed || dur <= 0 || frames.length < 1) {
@@ -18729,6 +18730,11 @@
           }
 
           return;
+        } // 防止重复动画
+
+
+        if (playState === 'running') {
+          this.__root.__offAniFrame(this);
         }
 
         this.__gotoAndPlay = true;

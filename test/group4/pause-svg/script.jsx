@@ -26,6 +26,6 @@ setTimeout(function() {
   o.resume();
   setTimeout(function() {
     let res = div.getComputedStyle();
-    input.value += '/' + res.translateX > 0 && res.translateY === 10;
+    input.value += '/' + (res.translateX > 0 && res.translateY === 10);
   }, 100);
 }, 100);

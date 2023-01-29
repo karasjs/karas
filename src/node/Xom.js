@@ -2914,38 +2914,48 @@ class Xom extends Node {
 
   frameAnimate(cb) {
     if(isFunction(cb)) {
-      let list = this.__frameAnimateList;
-      // 防止重复
-      for(let i = 0, len = list.length; i < len; i++) {
-        if(list[i].__karasFrameCb === cb) {
-          return cb;
-        }
-      }
-      let enter = {
-        __after(diff) {
-          cb(diff);
-        },
-        __karasFrameCb: cb,
-      };
-      list.push(enter);
-      frame.onFrame(enter);
-      return cb;
+      // let list = this.__frameAnimateList;
+      // // 防止重复
+      // for(let i = 0, len = list.length; i < len; i++) {
+      //   if(list[i].__karasFrameCb === cb) {
+      //     return cb;
+      //   }
+      // }
+      // let enter = {
+      //   __after(diff) {
+      //     cb(diff);
+      //   },
+      //   __karasFrameCb: cb,
+      // };
+      // list.push(enter);
+      this.__frameAnimateList.push(cb);
+      this.__root.__onFrame(cb);
     }
   }
 
   removeFrameAnimate(cb) {
-    for(let i = 0, list = this.__frameAnimateList, len = list.length; i < len; i++) {
-      if(list[i].__karasFrameCb === cb) {
-        list.splice(i, 1);
-        frame.offFrame(cb);
-        return;
+    if(isFunction(cb)) {
+      let frameAnimateList = this.__frameAnimateList;
+      let i = frameAnimateList.indexOf(cb);
+      if(i > -1) {
+        frameAnimateList.splice(i, 1);
+        this.__root.__offFrame(cb);
       }
     }
+    // let root = this.__root;
+    // for(let i = 0, list = this.__frameAnimateList, len = list.length; i < len; i++) {
+    //   if(list[i].__karasFrameCb === cb) {
+    //     list.splice(i, 1);
+    //     root.__offFrame(cb);
+    //     return;
+    //   }
+    // }
   }
 
   clearFrameAnimate() {
+    let root = this.__root;
     this.__frameAnimateList.splice(0).forEach(o => {
-      frame.offFrame(o);
+      root.__offFrame(cb);
     });
   }
 

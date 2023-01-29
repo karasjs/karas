@@ -190,6 +190,8 @@ class Root extends Dom {
     this.__taskClone = []; // 同下
     this.__aniClone = []; // 动画执行时的副本，防止某动画before时进行删除操作无法执行after或其他动画
     this.__isInFrame = false;
+    this.__pause = false;
+    this.__currentPause = false;
     this.__arList = []; // parse中dom的动画解析预存到Root上，layout后执行
     this.__ref = {};
     this.__freeze = false; // 冻住只计算不渲染
@@ -757,7 +759,7 @@ class Root extends Dom {
       return;
     }
     if(res) {
-      this.__frameDraw(cb);
+      this.__onFrame(cb);
     }
     else {
       cb && cb();
@@ -1023,12 +1025,34 @@ class Root extends Dom {
   }
 
   // 异步进行root刷新操作，多次调用缓存结果，刷新成功后回调
-  __frameDraw(cb) {
-    this.__onFrame(null);
-    this.__task.push(cb);
+  // __frameDraw(cb) {
+  //   this.__onFrame(null);
+  //   this.__task.push(cb);
+  // }
+  //
+  // __cancelFrameDraw(cb) {
+  //   let task = this.__task;
+  //   let i = task.indexOf(cb);
+  //   if(i > -1) {
+  //     task.splice(i, 1);
+  //     if(!task.length && !this.__ani.length) {
+  //       frame.offFrame(this);
+  //       this.__isInFrame = false;
+  //     }
+  //   }
+  // }
+
+  // 所有动画由Root代理，方便控制pause，主动更新时参数传null复用，
+  // 注意逻辑耦合，任意动画/主动更新第一次触发时，需把ani和task的队列填充，以防重复onFrame调用
+  __onFrame(cb) {
+    if(!this.__isInFrame) {
+      frame.onFrame(this);
+      this.__isInFrame = true;
+    }
+    cb && this.__task.push(cb);
   }
 
-  __cancelFrameDraw(cb) {
+  __offFrame(cb) {
     let task = this.__task;
     let i = task.indexOf(cb);
     if(i > -1) {
@@ -1040,17 +1064,15 @@ class Root extends Dom {
     }
   }
 
-  // 所有动画由Root代理，方便控制pause，主动更新时参数传null复用，
-  // 注意逻辑耦合，任意动画/主动更新第一次触发时，需把ani和task的队列填充，以防重复onFrame调用
-  __onFrame(animation) {
+  __onAniFrame(animation) {
     if(!this.__isInFrame) {
       frame.onFrame(this);
       this.__isInFrame = true;
     }
-    animation && this.__ani.push(animation);
+    this.__ani.push(animation);
   }
 
-  __offFrame(animation) {
+  __offAniFrame(animation) {
     let ani = this.__ani;
     let i = ani.indexOf(animation);
     if(i > -1) {
@@ -1080,8 +1102,12 @@ class Root extends Dom {
       task = this.__taskClone = this.__task.splice(0), len2 = task.length;
     // 先重置标识，动画没有触发更新，在每个__before执行，如果调用了更新则更改标识
     this.__aniChange = false;
-    for(let i = 0; i < len; i++) {
-      ani[i].__before(diff);
+    // 动画用同一帧内的pause判断
+    this.__currentPause = this.__pause;
+    if(!this.__currentPause) {
+      for(let i = 0; i < len; i++) {
+        ani[i].__before(diff);
+      }
     }
     if(this.__aniChange || len2) {
       this.draw(false);
@@ -1094,9 +1120,11 @@ class Root extends Dom {
    */
   __after(diff) {
     let ani = this.__aniClone, len = ani.length, task = this.__taskClone.splice(0), len2 = task.length;
-    // after仍然执行不管diff是否>0，确保frame事件
-    for(let i = 0; i < len; i++) {
-      ani[i].__after(diff);
+    // 动画用同一帧内的pause判断
+    if(!this.__currentPause) {
+      for(let i = 0; i < len; i++) {
+        ani[i].__after(diff);
+      }
     }
     for(let i = 0; i < len2; i++) {
       let item = task[i];
@@ -1136,6 +1164,14 @@ class Root extends Dom {
       this.__freeze = false;
       this.emit(Event.UN_FREEZE);
     }
+  }
+
+  pause() {
+    this.__pause = true;
+  }
+
+  resume() {
+    this.__pause = false;
   }
 
   __addAr(node) {

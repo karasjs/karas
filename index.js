@@ -18383,7 +18383,7 @@
           var isChange = !!keys.length;
 
           if (this.__stopCb) {
-            _root.__cancelFrameDraw(this.__stopCb);
+            _root.__offFrame(this.__stopCb);
           } // 有变化的backwards才更新，否则无需理会，不需要回调，极端情况立刻pause()回造成一次无用刷新
 
 
@@ -18617,7 +18617,7 @@
           var isChange = !!keys.length;
 
           if (this.__stopCb) {
-            root.__cancelFrameDraw(this.__stopCb);
+            root.__offFrame(this.__stopCb);
           }
 
           this.__stopCb = function () {
@@ -18681,7 +18681,7 @@
           var isChange = !!keys.length;
 
           if (this.__stopCb) {
-            root.__cancelFrameDraw(this.__stopCb);
+            root.__offFrame(this.__stopCb);
           }
 
           this.__stopCb = function () {
@@ -18807,7 +18807,7 @@
             var isChange = !!keys.length;
 
             if (this.__stopCb) {
-              root.__cancelFrameDraw(this.__stopCb);
+              root.__offFrame(this.__stopCb);
             } // 有变化的backwards才更新，否则无需理会，不需要回调，极端情况立刻pause()回造成一次无用刷新
 
 
@@ -19028,7 +19028,7 @@
         root.__offFrame(this);
 
         if (this.__stopCb) {
-          root.__cancelFrameDraw(this.__stopCb);
+          root.__offFrame(this.__stopCb);
         }
 
         this.__playCb = this.__stopCb = null;
@@ -23376,41 +23376,54 @@
       key: "frameAnimate",
       value: function frameAnimate(cb) {
         if (isFunction$4(cb)) {
-          var list = this.__frameAnimateList; // 防止重复
+          // let list = this.__frameAnimateList;
+          // // 防止重复
+          // for(let i = 0, len = list.length; i < len; i++) {
+          //   if(list[i].__karasFrameCb === cb) {
+          //     return cb;
+          //   }
+          // }
+          // let enter = {
+          //   __after(diff) {
+          //     cb(diff);
+          //   },
+          //   __karasFrameCb: cb,
+          // };
+          // list.push(enter);
+          this.__frameAnimateList.push(cb);
 
-          for (var i = 0, len = list.length; i < len; i++) {
-            if (list[i].__karasFrameCb === cb) {
-              return cb;
-            }
-          }
-
-          var enter = {
-            __after: function __after(diff) {
-              cb(diff);
-            },
-            __karasFrameCb: cb
-          };
-          list.push(enter);
-          frame.onFrame(enter);
-          return cb;
+          this.__root.__onFrame(cb);
         }
       }
     }, {
       key: "removeFrameAnimate",
       value: function removeFrameAnimate(cb) {
-        for (var i = 0, list = this.__frameAnimateList, len = list.length; i < len; i++) {
-          if (list[i].__karasFrameCb === cb) {
-            list.splice(i, 1);
-            frame.offFrame(cb);
-            return;
+        if (isFunction$4(cb)) {
+          var frameAnimateList = this.__frameAnimateList;
+          var i = frameAnimateList.indexOf(cb);
+
+          if (i > -1) {
+            frameAnimateList.splice(i, 1);
+
+            this.__root.__offFrame(cb);
           }
-        }
+        } // let root = this.__root;
+        // for(let i = 0, list = this.__frameAnimateList, len = list.length; i < len; i++) {
+        //   if(list[i].__karasFrameCb === cb) {
+        //     list.splice(i, 1);
+        //     root.__offFrame(cb);
+        //     return;
+        //   }
+        // }
+
       }
     }, {
       key: "clearFrameAnimate",
       value: function clearFrameAnimate() {
+        var root = this.__root;
+
         this.__frameAnimateList.splice(0).forEach(function (o) {
-          frame.offFrame(o);
+          root.__offFrame(cb);
         });
       } // isLayout为false时，为relative，true则是absolute/justify/marginAuto等直接改layoutData数据的
       // lv是reflow偏移时传入，需要清除cacheStyle，并且对位图cache进行偏移设置
@@ -40132,6 +40145,8 @@
       _this.__aniClone = []; // 动画执行时的副本，防止某动画before时进行删除操作无法执行after或其他动画
 
       _this.__isInFrame = false;
+      _this.__pause = false;
+      _this.__currentPause = false;
       _this.__arList = []; // parse中dom的动画解析预存到Root上，layout后执行
 
       _this.__ref = {};
@@ -40792,7 +40807,7 @@
         }
 
         if (res) {
-          this.__frameDraw(cb);
+          this.__onFrame(cb);
         } else {
           cb && cb();
         }
@@ -41088,17 +41103,38 @@
 
         return true;
       } // 异步进行root刷新操作，多次调用缓存结果，刷新成功后回调
+      // __frameDraw(cb) {
+      //   this.__onFrame(null);
+      //   this.__task.push(cb);
+      // }
+      //
+      // __cancelFrameDraw(cb) {
+      //   let task = this.__task;
+      //   let i = task.indexOf(cb);
+      //   if(i > -1) {
+      //     task.splice(i, 1);
+      //     if(!task.length && !this.__ani.length) {
+      //       frame.offFrame(this);
+      //       this.__isInFrame = false;
+      //     }
+      //   }
+      // }
+      // 所有动画由Root代理，方便控制pause，主动更新时参数传null复用，
+      // 注意逻辑耦合，任意动画/主动更新第一次触发时，需把ani和task的队列填充，以防重复onFrame调用
 
     }, {
-      key: "__frameDraw",
-      value: function __frameDraw(cb) {
-        this.__onFrame(null);
+      key: "__onFrame",
+      value: function __onFrame(cb) {
+        if (!this.__isInFrame) {
+          frame.onFrame(this);
+          this.__isInFrame = true;
+        }
 
-        this.__task.push(cb);
+        cb && this.__task.push(cb);
       }
     }, {
-      key: "__cancelFrameDraw",
-      value: function __cancelFrameDraw(cb) {
+      key: "__offFrame",
+      value: function __offFrame(cb) {
         var task = this.__task;
         var i = task.indexOf(cb);
 
@@ -41110,22 +41146,20 @@
             this.__isInFrame = false;
           }
         }
-      } // 所有动画由Root代理，方便控制pause，主动更新时参数传null复用，
-      // 注意逻辑耦合，任意动画/主动更新第一次触发时，需把ani和task的队列填充，以防重复onFrame调用
-
+      }
     }, {
-      key: "__onFrame",
-      value: function __onFrame(animation) {
+      key: "__onAniFrame",
+      value: function __onAniFrame(animation) {
         if (!this.__isInFrame) {
           frame.onFrame(this);
           this.__isInFrame = true;
         }
 
-        animation && this.__ani.push(animation);
+        this.__ani.push(animation);
       }
     }, {
-      key: "__offFrame",
-      value: function __offFrame(animation) {
+      key: "__offAniFrame",
+      value: function __offAniFrame(animation) {
         var ani = this.__ani;
         var i = ani.indexOf(animation);
 
@@ -41162,10 +41196,14 @@
             len2 = task.length; // 先重置标识，动画没有触发更新，在每个__before执行，如果调用了更新则更改标识
 
 
-        this.__aniChange = false;
+        this.__aniChange = false; // 动画用同一帧内的pause判断
 
-        for (var i = 0; i < len; i++) {
-          ani[i].__before(diff);
+        this.__currentPause = this.__pause;
+
+        if (!this.__currentPause) {
+          for (var i = 0; i < len; i++) {
+            ani[i].__before(diff);
+          }
         }
 
         if (this.__aniChange || len2) {
@@ -41183,11 +41221,13 @@
         var ani = this.__aniClone,
             len = ani.length,
             task = this.__taskClone.splice(0),
-            len2 = task.length; // after仍然执行不管diff是否>0，确保frame事件
+            len2 = task.length; // 动画用同一帧内的pause判断
 
 
-        for (var i = 0; i < len; i++) {
-          ani[i].__after(diff);
+        if (!this.__currentPause) {
+          for (var i = 0; i < len; i++) {
+            ani[i].__after(diff);
+          }
         }
 
         for (var _i3 = 0; _i3 < len2; _i3++) {
@@ -41234,6 +41274,16 @@
           this.__freeze = false;
           this.emit(Event.UN_FREEZE);
         }
+      }
+    }, {
+      key: "pause",
+      value: function pause() {
+        this.__pause = true;
+      }
+    }, {
+      key: "resume",
+      value: function resume() {
+        this.__pause = false;
       }
     }, {
       key: "__addAr",

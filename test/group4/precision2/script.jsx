@@ -1,6 +1,6 @@
-karalignSelf.parse(
+karas.parse(
   {
-    "tagName": "canvalignSelf",
+    "tagName": "canvas",
     "props":
       {
         "width": 360,

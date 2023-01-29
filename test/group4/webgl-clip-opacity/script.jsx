@@ -10,7 +10,7 @@ let o = karas.render(
                 "position": "absolute",
                 "width": 250,
                 "height": 250,
-                "fontSize": [
+                "fill": [
                   "rgba(0,0,0,1)"
                 ],
                 "strokeWidth": 0,
@@ -38,10 +38,10 @@ let o = karas.render(
             "props": {
               "style": {
                 "position": "absolute",
-                "visiblity": "visible",
+                "visibility": "visible",
                 "width": 196.22,
                 "height": 111.25,
-                "fontSize": "rgb(238,224,0,1)",
+                "fill": "rgb(238,224,0,1)",
                 "left": 0,
                 "top": 70,
                 opacity: 0.3,

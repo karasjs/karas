@@ -41242,19 +41242,22 @@
             len3 = frameTask.length; // 动画用同一帧内的pause判断
 
 
-        if (!this.__pause) {
+        var pause = this.__pause;
+
+        if (!pause) {
           for (var i = 0; i < len; i++) {
             ani[i].__after(diff);
           }
-        }
 
-        for (var _i3 = 0; _i3 < len2; _i3++) {
-          var item = task[_i3];
-          item && item(diff);
-        }
+          for (var _i3 = 0; _i3 < len3; _i3++) {
+            var item = frameTask[_i3];
+            item && item(diff);
+          }
+        } // frameDraw不受pause影响，即主动更新样式之类非动画/帧动画
 
-        for (var _i4 = 0; _i4 < len3; _i4++) {
-          var _item = frameTask[_i4];
+
+        for (var _i4 = 0; _i4 < len2; _i4++) {
+          var _item = task[_i4];
           _item && _item(diff);
         }
 

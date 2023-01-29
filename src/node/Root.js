@@ -1148,17 +1148,19 @@ class Root extends Dom {
       task = this.__taskClone.splice(0), len2 = task.length,
       frameTask = this.__frameTask, len3 = frameTask.length;
     // 动画用同一帧内的pause判断
-    if(!this.__pause) {
+    let pause = this.__pause;
+    if(!pause) {
       for(let i = 0; i < len; i++) {
         ani[i].__after(diff);
       }
+      for(let i = 0; i < len3; i++) {
+        let item = frameTask[i];
+        item && item(diff);
+      }
     }
+    // frameDraw不受pause影响，即主动更新样式之类非动画/帧动画
     for(let i = 0; i < len2; i++) {
       let item = task[i];
-      item && item(diff);
-    }
-    for(let i = 0; i < len3; i++) {
-      let item = frameTask[i];
       item && item(diff);
     }
     len = this.__ani.length;

@@ -18,8 +18,9 @@ let o = karas.parse({
       children: [{
         libraryId: 'a',
       }],
-      'var-children.0': {
+      vars: {
         id: 'c',
+        member: ['children', 0],
       },
     }, {
       vars: {

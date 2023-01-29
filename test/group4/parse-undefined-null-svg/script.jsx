@@ -11,8 +11,13 @@ let o = karas.parse({
         style: {
           color: '#F00',
           background: '#000',
-          'var-color': { id: 'color' },
-          'var-background': { id: 'background' }
+          vars: [{
+            id: 'color',
+            member: ['color']
+          }, {
+            id: 'background',
+            member: ['background']
+          }]
         }
       },
       children: [123]

@@ -1,5 +1,4 @@
 import parse from './parse';
-import abbr from './abbr';
 import inject from '../util/inject';
 import util from '../util/util';
 import font from '../style/font';
@@ -148,7 +147,6 @@ let o = {
       cb();
     }
   },
-  abbr,
 };
 
 export default o;

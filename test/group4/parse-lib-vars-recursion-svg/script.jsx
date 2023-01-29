@@ -12,9 +12,10 @@ let o = karas.parse({
           },
         },
         children: [123],
-        'var-children.0': {
+        vars: {
           id: 'c',
-        },
+          member: ['children', 0]
+        }
       }],
       tagName: 'div',
       props: {},

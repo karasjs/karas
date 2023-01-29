@@ -41,12 +41,13 @@ let o = karas.parse({
         tagName: 'img',
         props: { src: "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" }
       }],
-      "var-library.1": {
-        id: 'aaa'
-      },
-      "var-library.a": {
-        id: 'bbb'
-      },
+      vars: [{
+        id: 'aaa',
+        member: ['library', 1],
+      }, {
+        id: 'bbb',
+        member: ['library', 'a'],
+      }],
     }
   ],
 }, '#test', {

@@ -20,9 +20,10 @@ let o = karas.parse({
         options: {
           duration: 200,
           fill: 'both',
-          'var-iterations': {
-            id: 'a'
-          }
+          vars: {
+            id: 'a',
+            member: 'iterations',
+          },
         },
       },
       children: [123]

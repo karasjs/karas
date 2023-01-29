@@ -8264,7 +8264,7 @@
     }
   }
 
-  var abbr$1 = {
+  var abbr = {
     margin: ['marginTop', 'marginRight', 'marginBottom', 'marginLeft'],
     padding: ['paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft'],
     border: ['borderTop', 'borderRight', 'borderBottom', 'borderLeft'],
@@ -8980,85 +8980,85 @@
     var temp = style.border;
 
     if (temp) {
-      abbr$1.toFull(style, 'border');
+      abbr.toFull(style, 'border');
     }
 
     ['borderTop', 'borderRight', 'borderBottom', 'borderLeft'].forEach(function (k) {
-      abbr$1.toFull(style, k);
+      abbr.toFull(style, k);
     });
     temp = style.borderWidth;
 
     if (temp) {
-      abbr$1.toFull(style, 'borderWidth');
+      abbr.toFull(style, 'borderWidth');
     }
 
     temp = style.borderColor;
 
     if (temp) {
-      abbr$1.toFull(style, 'borderColor');
+      abbr.toFull(style, 'borderColor');
     }
 
     temp = style.borderStyle;
 
     if (temp) {
-      abbr$1.toFull(style, 'borderStyle');
+      abbr.toFull(style, 'borderStyle');
     }
 
     temp = style.borderRadius;
 
     if (temp) {
-      abbr$1.toFull(style, 'borderRadius');
+      abbr.toFull(style, 'borderRadius');
     }
 
     temp = style.background; // 处理渐变背景缩写
 
     if (temp) {
-      abbr$1.toFull(style, 'background');
+      abbr.toFull(style, 'background');
     } // 背景位置
 
 
     temp = style.backgroundPosition;
 
     if (!isNil$e(temp)) {
-      abbr$1.toFull(style, 'backgroundPosition');
+      abbr.toFull(style, 'backgroundPosition');
     } // flex
 
 
     temp = style.flex;
 
     if (temp) {
-      abbr$1.toFull(style, 'flex');
+      abbr.toFull(style, 'flex');
     } // flex-flow
 
 
     temp = style.flexFlow;
 
     if (temp) {
-      abbr$1.toFull(style, 'flexFlow');
+      abbr.toFull(style, 'flexFlow');
     }
 
     temp = style.margin;
 
     if (!isNil$e(temp)) {
-      abbr$1.toFull(style, 'margin');
+      abbr.toFull(style, 'margin');
     }
 
     temp = style.padding;
 
     if (!isNil$e(temp)) {
-      abbr$1.toFull(style, 'padding');
+      abbr.toFull(style, 'padding');
     }
 
     temp = style.textStroke;
 
     if (temp) {
-      abbr$1.toFull(style, 'textStroke');
+      abbr.toFull(style, 'textStroke');
     }
 
     temp = style.rotate3d;
 
     if (temp) {
-      abbr$1.toFull(style, 'rotate3d');
+      abbr.toFull(style, 'rotate3d');
     } // 扩展css，将transform几个值拆分为独立的css为动画准备，同时不能使用transform
 
 
@@ -9066,7 +9066,7 @@
       temp = style[k];
 
       if (!isNil$e(temp)) {
-        abbr$1.toFull(style, k);
+        abbr.toFull(style, k);
       }
     }); // 扩展的不能和transform混用，给出警告
 
@@ -19386,8 +19386,8 @@
 
 
           Object.keys(current).forEach(function (k) {
-            if (abbr$1.hasOwnProperty(k)) {
-              abbr$1.toFull(current, k);
+            if (abbr.hasOwnProperty(k)) {
+              abbr.toFull(current, k);
             }
           }); // 检查key合法性
 
@@ -23593,8 +23593,8 @@
           }
 
           temp.forEach(function (k) {
-            if (abbr$1.hasOwnProperty(k)) {
-              abbr$1[k].forEach(function (k) {
+            if (abbr.hasOwnProperty(k)) {
+              abbr[k].forEach(function (k) {
                 keys.push(STYLE_KEY[style2Upper(k)]);
               });
             } else {
@@ -46521,105 +46521,11 @@
     return vd;
   }
 
-  var fullCssProperty = {
-    skewX: 'kx',
-    skewY: 'ky',
-    transform: 'tf',
-    fontSize: 'fz',
-    offset: 'os',
-    easing: 'e',
-    filter: 'ft',
-    boxShadow: 'bd',
-    overflow: 'of',
-    backgroundClip: 'bp',
-    textOverflow: 'tof',
-    flexWrap: 'fp',
-    perspective: 'ppt',
-    rotate3d: 'r3'
-  };
-  var abbrCssProperty$1 = {
-    os: 'offset',
-    // 非css属性不会被下面反向遍历插入，手动
-    e: 'easing'
-  };
-  var fullAnimate = {
-    value: 'v',
-    options: 'o'
-  };
-  var abbrAnimate$1 = {};
-  var fullAnimateOption = {
-    duration: 'dt',
-    delay: 'd',
-    endDelay: 'ed',
-    iterations: 'i',
-    direction: 'dc',
-    fill: 'f',
-    fps: 'fp',
-    playbackRate: 'p',
-    spfLimit: 'sl'
-  };
-  var abbrAnimateOption$1 = {};
-  reset.DOM_KEY_SET.concat(reset.GEOM_KEY_SET).forEach(function (k) {
-    if (fullCssProperty.hasOwnProperty(k)) {
-      abbrCssProperty$1[fullCssProperty[k]] = k;
-      return;
-    }
-
-    var v = k.charAt(0) + k.replace(/[a-z]/g, '').toLowerCase();
-    fullCssProperty[k] = v;
-    abbrCssProperty$1[v] = k;
-  });
-  Object.keys(fullAnimate).forEach(function (k) {
-    abbrAnimate$1[fullAnimate[k]] = k;
-  });
-  Object.keys(fullAnimateOption).forEach(function (k) {
-    abbrAnimateOption$1[fullAnimateOption[k]] = k;
-  });
-  var abbr = {
-    fullCssProperty: fullCssProperty,
-    abbrCssProperty: abbrCssProperty$1,
-    fullAnimate: fullAnimate,
-    abbrAnimate: abbrAnimate$1,
-    fullAnimateOption: fullAnimateOption,
-    abbrAnimateOption: abbrAnimateOption$1
-  };
-
   var isNil = util.isNil,
       isFunction = util.isFunction,
       isPrimitive = util.isPrimitive,
       clone = util.clone,
       extend = util.extend;
-  var abbrCssProperty = abbr.abbrCssProperty,
-      abbrAnimateOption = abbr.abbrAnimateOption,
-      abbrAnimate = abbr.abbrAnimate;
-  /**
-   * 还原缩写到全称，涉及样式和动画属性，已过时
-   * @param target 还原的对象
-   * @param hash 缩写映射
-   */
-
-  function abbr2full(target, hash) {
-    // 也许节点没写样式
-    if (target) {
-      Object.keys(target).forEach(function (k) {
-        // var-attr格式特殊考虑，仅映射attr部分，var-还要保留
-        if (k.indexOf('var-') === 0) {
-          var k2 = k.slice(4);
-
-          if (hash.hasOwnProperty(k2)) {
-            var fk = hash[k2];
-            target['var-' + fk] = target[k]; // delete target[k];
-          }
-        } // 普通样式缩写还原
-        else if (hash.hasOwnProperty(k)) {
-          var _fk = hash[k];
-          target[_fk] = target[k]; // 删除以免二次解析
-
-          delete target[k];
-        }
-      });
-    }
-  }
   /**
    * 链接json中的某个child到library文件，
    * props需要是clone的，因为防止多个child使用同一个库文件
@@ -46628,7 +46534,6 @@
    * @param child
    * @param libraryItem
    */
-
 
   function linkLibrary(child, libraryItem) {
     // 规定图层child只有init和动画，属性和子图层来自库
@@ -46642,14 +46547,8 @@
 
     if (libraryItem.library) {
       child.library = libraryItem.library;
-    } // library的var-也要继承过来，本身的var-优先级更高，目前只有children会出现优先级情况
+    } // 删除以免二次解析
 
-
-    Object.keys(libraryItem).forEach(function (k) {
-      if (k.indexOf('var-') === 0 && !child.hasOwnProperty(k)) {
-        child[k] = libraryItem[k];
-      }
-    }); // 删除以免二次解析
 
     delete child.libraryId;
     var init = child.init;
@@ -46747,134 +46646,57 @@
           }
         }
       });
-    } // 兼容老版var-，只支持一级library元素
-    else {
-      Object.keys(json).forEach(function (k) {
-        if (k.indexOf('var-library.') === 0) {
-          var v = json[k];
-          delete json[k];
-
-          if (!v || !vars) {
-            return;
-          }
-
-          var k2 = k.slice(12); // 有id且变量里面传入了替换的值
-
-          if (k2 && v.id && vars.hasOwnProperty(v.id)) {
-            var value = vars[v.id];
-
-            if (isFunction(value)) {
-              value = value(v);
-            } // library对象也要加上id，与正常的library保持一致
-
-
-            hash[k2] = Object.assign({
-              id: k2
-            }, value);
-          }
-        }
-      });
     }
   }
 
   function replaceVars(json, vars) {
-    if (json) {
-      // 新版vars语法
-      if (json.hasOwnProperty('vars')) {
-        var slot = json.vars;
-        delete json.vars;
+    // 新版vars语法
+    if (json && json.hasOwnProperty('vars')) {
+      var slot = json.vars;
+      delete json.vars;
 
-        if (!Array.isArray(slot)) {
-          slot = [slot];
-        }
+      if (!Array.isArray(slot)) {
+        slot = [slot];
+      }
 
-        if (Array.isArray(slot)) {
-          slot.forEach(function (item) {
-            var id = item.id,
-                member = item.member;
+      if (Array.isArray(slot)) {
+        slot.forEach(function (item) {
+          var id = item.id,
+              member = item.member;
 
-            if (!Array.isArray(member)) {
-              member = [member];
-            } // 排除特殊的library
-
-
-            if (Array.isArray(member) && member.length && member[0] !== 'library' && vars && vars.hasOwnProperty(id)) {
-              var target = json;
-
-              for (var i = 0, len = member.length; i < len; i++) {
-                var k = member[i]; // 最后一个属性可以为空
-
-                if (target.hasOwnProperty(k) || i === len - 1) {
-                  // 最后一个member表达式替换
-                  if (i === len - 1) {
-                    var v = vars[id]; // undefined和null意义不同
-
-                    if (v === undefined) {
-                      return;
-                    } // 支持函数模式和值模式
+          if (!Array.isArray(member)) {
+            member = [member];
+          } // 排除特殊的library
 
 
-                    if (isFunction(v)) {
-                      v = v(target[k]);
-                    }
+          if (Array.isArray(member) && member.length && member[0] !== 'library' && vars && vars.hasOwnProperty(id)) {
+            var target = json;
 
-                    target[k] = v;
-                  } else {
-                    target = target[k];
+            for (var i = 0, len = member.length; i < len; i++) {
+              var k = member[i]; // 最后一个属性可以为空
+
+              if (target.hasOwnProperty(k) || i === len - 1) {
+                // 最后一个member表达式替换
+                if (i === len - 1) {
+                  var v = vars[id]; // undefined和null意义不同
+
+                  if (v === undefined) {
+                    return;
+                  } // 支持函数模式和值模式
+
+
+                  if (isFunction(v)) {
+                    v = v(target[k]);
                   }
+
+                  target[k] = v;
                 } else {
-                  inject.error('Slot miss ' + k);
-                  return;
+                  target = target[k];
                 }
-              }
-            }
-          });
-        }
-      } else {
-        Object.keys(json).forEach(function (k) {
-          if (k.indexOf('var-') === 0) {
-            var v = json[k];
-            delete json[k];
-
-            if (!v || !vars) {
-              return;
-            }
-
-            var k2 = k.slice(4); // 有id且变量里面传入了替换的值，值可为null，因为某些情况下空为自动
-
-            if (k2 && v.id && vars.hasOwnProperty(v.id)) {
-              var value = vars[v.id]; // undefined和null意义不同
-
-              if (value === undefined) {
+              } else {
+                inject.error('Slot miss ' + k);
                 return;
               }
-
-              var target = json; // 如果有.则特殊处理子属性
-
-              if (k2.indexOf('.') > -1) {
-                var list = k2.split('.');
-                var len = list.length;
-
-                for (var i = 0; i < len - 1; i++) {
-                  k2 = list[i]; // 避免异常
-
-                  if (target[k2]) {
-                    target = target[k2];
-                  } else {
-                    inject.warn('parseJson vars is not exist: ' + v.id + ', ' + k + ', ' + list.slice(0, i).join('.'));
-                    return;
-                  }
-                }
-
-                k2 = list[len - 1];
-              } // 支持函数模式和值模式
-
-
-              if (isFunction(value)) {
-                value = value(v);
-              }
-
-              target[k2] = value;
             }
           }
         });
@@ -46964,9 +46786,8 @@
         if (Array.isArray(fonts)) {
           style.fontFamily = fonts[_i];
         }
-      }
+      } // 先替换style的
 
-      opt.abbr !== false && abbr2full(style, abbrCssProperty); // 先替换style的
 
       replaceVars(style, opt.vars);
     } // 再替换静态属性，style也作为属性的一种
@@ -46983,19 +46804,16 @@
       }
 
       animate.forEach(function (item) {
-        opt.abbr !== false && abbr2full(item, abbrAnimate);
         var value = item.value,
             options = item.options; // 忽略空动画
 
         if (Array.isArray(value) && value.length) {
           value.forEach(function (item) {
-            opt.abbr !== false && abbr2full(item, abbrCssProperty);
             replaceVars(item, opt.vars);
           });
         }
 
         if (options) {
-          opt.abbr !== false && abbr2full(options, abbrAnimateOption);
           replaceVars(options, opt.vars);
           replaceAnimateOptions(options, opt);
         }
@@ -47009,16 +46827,7 @@
   function apply$1 (json) {
     var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 
-    // json中定义无abbr
-    if (json.abbr === false) {
-      options.abbr = false;
-    }
-
-    if (options.abbr !== false) {
-      inject.warn('Abbr in json is deprecated');
-    } // 特殊单例声明无需clone加速解析
-
-
+    // 特殊单例声明无需clone加速解析
     if (!options.singleton && !json.singleton) {
       json = util.clone(json);
     }
@@ -47200,8 +47009,7 @@
       } else {
         cb();
       }
-    },
-    abbr: abbr
+    }
   };
 
   var style = {
@@ -47209,7 +47017,7 @@
     reset: reset,
     unit: o$4,
     font: o$3,
-    abbr: abbr$1,
+    abbr: abbr,
     transform: transform$1
   };
 

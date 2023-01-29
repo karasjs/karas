@@ -18383,7 +18383,7 @@
           var isChange = !!keys.length;
 
           if (this.__stopCb) {
-            _root.__offFrame(this.__stopCb);
+            _root.__cancelFrameDraw(this.__stopCb);
           } // 有变化的backwards才更新，否则无需理会，不需要回调，极端情况立刻pause()回造成一次无用刷新
 
 
@@ -18615,7 +18615,7 @@
           var isChange = !!keys.length;
 
           if (this.__stopCb) {
-            root.__offFrame(this.__stopCb);
+            root.__cancelFrameDraw(this.__stopCb);
           }
 
           this.__stopCb = function () {
@@ -18805,7 +18805,7 @@
             var isChange = !!keys.length;
 
             if (this.__stopCb) {
-              root.__offFrame(this.__stopCb);
+              root.__cancelFrameDraw(this.__stopCb);
             } // 有变化的backwards才更新，否则无需理会，不需要回调，极端情况立刻pause()回造成一次无用刷新
 
 
@@ -19026,7 +19026,7 @@
         root.__offAniFrame(this);
 
         if (this.__stopCb) {
-          root.__offFrame(this.__stopCb);
+          root.__cancelFrameDraw(this.__stopCb);
         }
 
         this.__playCb = this.__stopCb = null;
@@ -23374,20 +23374,6 @@
       key: "frameAnimate",
       value: function frameAnimate(cb) {
         if (isFunction$4(cb)) {
-          // let list = this.__frameAnimateList;
-          // // 防止重复
-          // for(let i = 0, len = list.length; i < len; i++) {
-          //   if(list[i].__karasFrameCb === cb) {
-          //     return cb;
-          //   }
-          // }
-          // let enter = {
-          //   __after(diff) {
-          //     cb(diff);
-          //   },
-          //   __karasFrameCb: cb,
-          // };
-          // list.push(enter);
           this.__frameAnimateList.push(cb);
 
           this.__root.__onFrame(cb);
@@ -23405,15 +23391,7 @@
 
             this.__root.__offFrame(cb);
           }
-        } // let root = this.__root;
-        // for(let i = 0, list = this.__frameAnimateList, len = list.length; i < len; i++) {
-        //   if(list[i].__karasFrameCb === cb) {
-        //     list.splice(i, 1);
-        //     root.__offFrame(cb);
-        //     return;
-        //   }
-        // }
-
+        }
       }
     }, {
       key: "clearFrameAnimate",
@@ -40136,6 +40114,8 @@
 
       _this.__task = []; // 更新样式异步刷新&回调
 
+      _this.__frameTask = []; // 帧动画回调汇总
+
       _this.__ani = []; // 动画异步刷新&回调
 
       _this.__taskClone = []; // 同下
@@ -40144,7 +40124,6 @@
 
       _this.__isInFrame = false;
       _this.__pause = false;
-      _this.__currentPause = false;
       _this.__arList = []; // parse中dom的动画解析预存到Root上，layout后执行
 
       _this.__ref = {};
@@ -40805,7 +40784,7 @@
         }
 
         if (res) {
-          this.__onFrame(cb);
+          this.__frameDraw(cb);
         } else {
           cb && cb();
         }
@@ -41121,8 +41100,8 @@
       // 注意逻辑耦合，任意动画/主动更新第一次触发时，需把ani和task的队列填充，以防重复onFrame调用
 
     }, {
-      key: "__onFrame",
-      value: function __onFrame(cb) {
+      key: "__frameDraw",
+      value: function __frameDraw(cb) {
         if (!this.__isInFrame) {
           frame.onFrame(this);
           this.__isInFrame = true;
@@ -41131,15 +41110,48 @@
         this.__task.push(cb);
       }
     }, {
-      key: "__offFrame",
-      value: function __offFrame(cb) {
+      key: "__cancelFrameDraw",
+      value: function __cancelFrameDraw(cb) {
+        if (!cb) {
+          return;
+        }
+
         var task = this.__task;
         var i = task.indexOf(cb);
 
         if (i > -1) {
           task.splice(i, 1);
 
-          if (!task.length && !this.__ani.length) {
+          if (!task.length && !this.__frameTask.length && !this.__ani.length) {
+            frame.offFrame(this);
+            this.__isInFrame = false;
+          }
+        }
+      }
+    }, {
+      key: "__onFrame",
+      value: function __onFrame(cb) {
+        if (!this.__isInFrame) {
+          frame.onFrame(this);
+          this.__isInFrame = true;
+        }
+
+        this.__frameTask.push(cb);
+      }
+    }, {
+      key: "__offFrame",
+      value: function __offFrame(cb) {
+        if (!cb) {
+          return;
+        }
+
+        var frameTask = this.__frameTask;
+        var i = frameTask.indexOf(cb);
+
+        if (i > -1) {
+          frameTask.splice(i, 1);
+
+          if (!frameTask.length && !this.__task.length && !this.__ani.length) {
             frame.offFrame(this);
             this.__isInFrame = false;
           }
@@ -41164,7 +41176,7 @@
         if (i > -1) {
           ani.splice(i, 1);
 
-          if (!ani.length && !this.__task.length) {
+          if (!ani.length && !this.__task.length && !this.__frameTask.length) {
             frame.offFrame(this);
             this.__isInFrame = false;
           }
@@ -41191,20 +41203,20 @@
         var ani = this.__aniClone = this.__ani.slice(0),
             len = ani.length,
             task = this.__taskClone = this.__task.splice(0),
-            len2 = task.length; // 先重置标识，动画没有触发更新，在每个__before执行，如果调用了更新则更改标识
+            len2 = task.length,
+            frameTask = this.__frameTask,
+            len3 = frameTask.length; // 先重置标识，动画没有触发更新，在每个__before执行，如果调用了更新则更改标识
 
 
-        this.__aniChange = false; // 动画用同一帧内的pause判断
+        this.__aniChange = false;
 
-        this.__currentPause = this.__pause;
-
-        if (!this.__currentPause) {
+        if (!this.__pause) {
           for (var i = 0; i < len; i++) {
             ani[i].__before(diff);
           }
         }
 
-        if (this.__aniChange || len2) {
+        if (this.__aniChange || len2 || len3) {
           this.draw(false);
         }
       }
@@ -41219,10 +41231,12 @@
         var ani = this.__aniClone,
             len = ani.length,
             task = this.__taskClone.splice(0),
-            len2 = task.length; // 动画用同一帧内的pause判断
+            len2 = task.length,
+            frameTask = this.__frameTask,
+            len3 = frameTask.length; // 动画用同一帧内的pause判断
 
 
-        if (!this.__currentPause) {
+        if (!this.__pause) {
           for (var i = 0; i < len; i++) {
             ani[i].__after(diff);
           }
@@ -41233,10 +41247,16 @@
           item && item(diff);
         }
 
+        for (var _i4 = 0; _i4 < len3; _i4++) {
+          var _item = frameTask[_i4];
+          _item && _item(diff);
+        }
+
         len = this.__ani.length;
         len2 = this.__task.length;
+        len3 = frameTask.length;
 
-        if (!len && !len2) {
+        if (!len && !len2 && !len3) {
           frame.offFrame(this);
           this.__isInFrame = false;
         }

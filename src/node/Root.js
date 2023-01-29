@@ -186,12 +186,12 @@ class Root extends Dom {
     // this.__scx = 1; // 默认缩放，css改变canvas/svg缩放后影响事件坐标，有值手动指定，否则自动计算
     // this.__scy = 1;
     this.__task = []; // 更新样式异步刷新&回调
+    this.__frameTask = []; // 帧动画回调汇总
     this.__ani = []; // 动画异步刷新&回调
     this.__taskClone = []; // 同下
     this.__aniClone = []; // 动画执行时的副本，防止某动画before时进行删除操作无法执行after或其他动画
     this.__isInFrame = false;
     this.__pause = false;
-    this.__currentPause = false;
     this.__arList = []; // parse中dom的动画解析预存到Root上，layout后执行
     this.__ref = {};
     this.__freeze = false; // 冻住只计算不渲染
@@ -759,7 +759,7 @@ class Root extends Dom {
       return;
     }
     if(res) {
-      this.__onFrame(cb);
+      this.__frameDraw(cb);
     }
     else {
       cb && cb();
@@ -1044,7 +1044,7 @@ class Root extends Dom {
 
   // 所有动画由Root代理，方便控制pause，主动更新时参数传null复用，
   // 注意逻辑耦合，任意动画/主动更新第一次触发时，需把ani和task的队列填充，以防重复onFrame调用
-  __onFrame(cb) {
+  __frameDraw(cb) {
     if(!this.__isInFrame) {
       frame.onFrame(this);
       this.__isInFrame = true;
@@ -1052,12 +1052,38 @@ class Root extends Dom {
     this.__task.push(cb);
   }
 
-  __offFrame(cb) {
+  __cancelFrameDraw(cb) {
+    if(!cb) {
+      return;
+    }
     let task = this.__task;
     let i = task.indexOf(cb);
     if(i > -1) {
       task.splice(i, 1);
-      if(!task.length && !this.__ani.length) {
+      if(!task.length && !this.__frameTask.length && !this.__ani.length) {
+        frame.offFrame(this);
+        this.__isInFrame = false;
+      }
+    }
+  }
+
+  __onFrame(cb) {
+    if(!this.__isInFrame) {
+      frame.onFrame(this);
+      this.__isInFrame = true;
+    }
+    this.__frameTask.push(cb);
+  }
+
+  __offFrame(cb) {
+    if(!cb) {
+      return;
+    }
+    let frameTask = this.__frameTask;
+    let i = frameTask.indexOf(cb);
+    if(i > -1) {
+      frameTask.splice(i, 1);
+      if(!frameTask.length && !this.__task.length && !this.__ani.length) {
         frame.offFrame(this);
         this.__isInFrame = false;
       }
@@ -1077,7 +1103,7 @@ class Root extends Dom {
     let i = ani.indexOf(animation);
     if(i > -1) {
       ani.splice(i, 1);
-      if(!ani.length && !this.__task.length) {
+      if(!ani.length && !this.__task.length && !this.__frameTask.length) {
         frame.offFrame(this);
         this.__isInFrame = false;
       }
@@ -1099,17 +1125,16 @@ class Root extends Dom {
       }
     }
     let ani = this.__aniClone = this.__ani.slice(0), len = ani.length,
-      task = this.__taskClone = this.__task.splice(0), len2 = task.length;
+      task = this.__taskClone = this.__task.splice(0), len2 = task.length,
+      frameTask = this.__frameTask, len3 = frameTask.length;
     // 先重置标识，动画没有触发更新，在每个__before执行，如果调用了更新则更改标识
     this.__aniChange = false;
-    // 动画用同一帧内的pause判断
-    this.__currentPause = this.__pause;
-    if(!this.__currentPause) {
+    if(!this.__pause) {
       for(let i = 0; i < len; i++) {
         ani[i].__before(diff);
       }
     }
-    if(this.__aniChange || len2) {
+    if(this.__aniChange || len2 || len3) {
       this.draw(false);
     }
   }
@@ -1119,9 +1144,11 @@ class Root extends Dom {
    * 当都清空的时候，取消raf对本Root的侦听
    */
   __after(diff) {
-    let ani = this.__aniClone, len = ani.length, task = this.__taskClone.splice(0), len2 = task.length;
+    let ani = this.__aniClone, len = ani.length,
+      task = this.__taskClone.splice(0), len2 = task.length,
+      frameTask = this.__frameTask, len3 = frameTask.length;
     // 动画用同一帧内的pause判断
-    if(!this.__currentPause) {
+    if(!this.__pause) {
       for(let i = 0; i < len; i++) {
         ani[i].__after(diff);
       }
@@ -1130,9 +1157,14 @@ class Root extends Dom {
       let item = task[i];
       item && item(diff);
     }
+    for(let i = 0; i < len3; i++) {
+      let item = frameTask[i];
+      item && item(diff);
+    }
     len = this.__ani.length;
     len2 = this.__task.length;
-    if(!len && !len2) {
+    len3 = frameTask.length;
+    if(!len && !len2 && !len3) {
       frame.offFrame(this);
       this.__isInFrame = false;
     }

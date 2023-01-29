@@ -1738,7 +1738,7 @@ class Animation extends Event {
       let keys = calLastStyle(currentFrame.style, target, this.__keys);
       let isChange = !!keys.length;
       if(this.__stopCb) {
-        root.__offFrame(this.__stopCb);
+        root.__cancelFrameDraw(this.__stopCb);
       }
       // 有变化的backwards才更新，否则无需理会，不需要回调，极端情况立刻pause()回造成一次无用刷新
       if(isChange) {
@@ -1925,7 +1925,7 @@ class Animation extends Event {
       let keys = calLastStyle(style, target, this.__keys);
       let isChange = !!keys.length;
       if(this.__stopCb) {
-        root.__offFrame(this.__stopCb);
+        root.__cancelFrameDraw(this.__stopCb);
       }
       this.__stopCb = () => {
         frameCb(this);
@@ -2073,7 +2073,7 @@ class Animation extends Event {
         let keys = calLastStyle(currentFrame.style, target, this.__keys);
         let isChange = !!keys.length;
         if(this.__stopCb) {
-          root.__offFrame(this.__stopCb);
+          root.__cancelFrameDraw(this.__stopCb);
         }
         // 有变化的backwards才更新，否则无需理会，不需要回调，极端情况立刻pause()回造成一次无用刷新
         if(isChange) {
@@ -2261,7 +2261,7 @@ class Animation extends Event {
     }
     root.__offAniFrame(this);
     if(this.__stopCb) {
-      root.__offFrame(this.__stopCb);
+      root.__cancelFrameDraw(this.__stopCb);
     }
     this.__playCb = this.__stopCb = null;
   }

@@ -2914,20 +2914,6 @@ class Xom extends Node {
 
   frameAnimate(cb) {
     if(isFunction(cb)) {
-      // let list = this.__frameAnimateList;
-      // // 防止重复
-      // for(let i = 0, len = list.length; i < len; i++) {
-      //   if(list[i].__karasFrameCb === cb) {
-      //     return cb;
-      //   }
-      // }
-      // let enter = {
-      //   __after(diff) {
-      //     cb(diff);
-      //   },
-      //   __karasFrameCb: cb,
-      // };
-      // list.push(enter);
       this.__frameAnimateList.push(cb);
       this.__root.__onFrame(cb);
     }
@@ -2942,14 +2928,6 @@ class Xom extends Node {
         this.__root.__offFrame(cb);
       }
     }
-    // let root = this.__root;
-    // for(let i = 0, list = this.__frameAnimateList, len = list.length; i < len; i++) {
-    //   if(list[i].__karasFrameCb === cb) {
-    //     list.splice(i, 1);
-    //     root.__offFrame(cb);
-    //     return;
-    //   }
-    // }
   }
 
   clearFrameAnimate() {

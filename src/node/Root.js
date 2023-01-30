@@ -186,6 +186,7 @@ class Root extends Dom {
     // this.__scx = 1; // 默认缩放，css改变canvas/svg缩放后影响事件坐标，有值手动指定，否则自动计算
     // this.__scy = 1;
     this.__task = []; // 更新样式异步刷新&回调
+    this.__taskClone = []; // 动画执行时可能会修改task，每帧执行前先clone出来防止被篡改
     this.__frameTask = []; // 帧动画回调汇总
     this.__ani = []; // 动画异步刷新&回调
     this.__isInFrame = false;
@@ -1123,7 +1124,7 @@ class Root extends Dom {
       }
     }
     let ani = this.__ani, len = ani.length,
-      task = this.__task, len2 = task.length,
+      task = this.__taskClone = this.__task.splice(0), len2 = task.length,
       frameTask = this.__frameTask, len3 = frameTask.length;
     // 先重置标识，动画没有触发更新，在每个__before执行，如果调用了更新则更改标识
     this.__aniChange = false;
@@ -1142,10 +1143,10 @@ class Root extends Dom {
    * 当都清空的时候，取消raf对本Root的侦听
    */
   __after(diff) {
-    let ani = this.__ani, len = ani.length,
-      task = this.__task.splice(0), len2 = task.length,
-      frameTask = this.__frameTask, len3 = frameTask.length;
-    // 动画用同一帧内的pause判断
+    let ani = this.__ani.slice(0), len = ani.length,
+      task = this.__taskClone.splice(0), len2 = task.length,
+      frameTask = this.__frameTask.slice(0), len3 = frameTask.length;
+    // 动画用同一帧内的pause判断，ani的after可能会改变队列（比如结束），需要先制作副本
     let pause = this.__pause;
     if(!pause) {
       for(let i = 0; i < len; i++) {
@@ -1161,9 +1162,9 @@ class Root extends Dom {
       let item = task[i];
       item && item(diff);
     }
-    len = ani.length; // 动画和一次渲染任务可能会改变队列
+    len = this.__ani.length; // 动画和渲染任务可能会改变自己的任务队列
     len2 = this.__task.length;
-    len3 = frameTask.length;
+    len3 = this.__frameTask.length;
     if(!len && !len2 && !len3) {
       frame.offFrame(this);
       this.__isInFrame = false;

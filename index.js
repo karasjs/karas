@@ -40123,6 +40123,8 @@
 
       _this.__task = []; // 更新样式异步刷新&回调
 
+      _this.__taskClone = []; // 动画执行时可能会修改task，每帧执行前先clone出来防止被篡改
+
       _this.__frameTask = []; // 帧动画回调汇总
 
       _this.__ani = []; // 动画异步刷新&回调
@@ -41207,10 +41209,11 @@
 
         var ani = this.__ani,
             len = ani.length,
-            task = this.__task,
+            task = this.__taskClone = this.__task.splice(0),
             len2 = task.length,
             frameTask = this.__frameTask,
             len3 = frameTask.length; // 先重置标识，动画没有触发更新，在每个__before执行，如果调用了更新则更改标识
+
 
         this.__aniChange = false;
 
@@ -41232,12 +41235,12 @@
     }, {
       key: "__after",
       value: function __after(diff) {
-        var ani = this.__ani,
+        var ani = this.__ani.slice(0),
             len = ani.length,
-            task = this.__task.splice(0),
+            task = this.__taskClone.splice(0),
             len2 = task.length,
-            frameTask = this.__frameTask,
-            len3 = frameTask.length; // 动画用同一帧内的pause判断
+            frameTask = this.__frameTask.slice(0),
+            len3 = frameTask.length; // 动画用同一帧内的pause判断，ani的after可能会改变队列（比如结束），需要先制作副本
 
 
         var pause = this.__pause;
@@ -41259,10 +41262,10 @@
           _item && _item(diff);
         }
 
-        len = ani.length; // 动画和一次渲染任务可能会改变队列
+        len = this.__ani.length; // 动画和渲染任务可能会改变自己的任务队列
 
         len2 = this.__task.length;
-        len3 = frameTask.length;
+        len3 = this.__frameTask.length;
 
         if (!len && !len2 && !len3) {
           frame.offFrame(this);

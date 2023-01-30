@@ -1838,6 +1838,7 @@ class Animation extends Event {
       this.emit(Event.END, this.__playCount - 1);
     }
     if(this.__finished) {
+      this.__clean(true);
       this.__begin = this.__end = this.__isDelay = this.__finished
         = this.__inFps = false;
       this.__playState = 'finished';
@@ -2205,7 +2206,6 @@ class Animation extends Event {
       if(!inEndDelay) {
         this.__playCount++;
         this.__finished = true;
-        this.__clean(true);
       }
       let c = this.__isChange = !!keys.length;
       if(gotoCb) {

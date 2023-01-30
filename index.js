@@ -18505,6 +18505,8 @@
         }
 
         if (this.__finished) {
+          this.__clean(true);
+
           this.__begin = this.__end = this.__isDelay = this.__finished = this.__inFps = false;
           this.__playState = 'finished';
           this.emit(Event.FINISH, this.__isChange);
@@ -18958,8 +18960,6 @@
           if (!inEndDelay) {
             this.__playCount++;
             this.__finished = true;
-
-            this.__clean(true);
           }
 
           var c = this.__isChange = !!keys.length;
@@ -41259,9 +41259,9 @@
           _item && _item(diff);
         }
 
-        len = ani.length;
-        len2 = this.__task.length; // 只有一次渲染的任务会清空队列重取长度
+        len = ani.length; // 动画和一次渲染任务可能会改变队列
 
+        len2 = this.__task.length;
         len3 = frameTask.length;
 
         if (!len && !len2 && !len3) {

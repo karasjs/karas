@@ -18128,6 +18128,8 @@
       _this = _Event.call(this) || this;
       _this.__id = uuid$3++;
       _this.__wasmAnimation = null;
+      _this.__fromGoto = false; // play()和gotoAndPlay()区分来源
+
       list = clone$1(list || []);
 
       if (Array.isArray(list)) {
@@ -18366,11 +18368,12 @@
         this.__hasFin = false;
         this.__hasCancel = false; // gotoAndPlay时间已经计算好
 
-        if (!this.__gotoAndPlay) {
+        if (this.__fromGoto) {
+          this.__fromGoto = false;
+        } else {
           this.__currentTime = 0;
         }
 
-        this.__gotoAndPlay = false;
         this.__fpsTime = 0;
 
         this.__initCurrentFrames(0);
@@ -18737,7 +18740,7 @@
           this.__root.__offAniFrame(this);
         }
 
-        this.__gotoAndPlay = true;
+        this.__fromGoto = true;
         return this.play(cb);
       }
     }, {
@@ -40124,10 +40127,6 @@
 
       _this.__ani = []; // 动画异步刷新&回调
 
-      _this.__taskClone = []; // 同下
-
-      _this.__aniClone = []; // 动画执行时的副本，防止某动画before时进行删除操作无法执行after或其他动画
-
       _this.__isInFrame = false;
       _this.__pause = false;
       _this.__arList = []; // parse中dom的动画解析预存到Root上，layout后执行
@@ -41206,13 +41205,12 @@
           }
         }
 
-        var ani = this.__aniClone = this.__ani.slice(0),
+        var ani = this.__ani,
             len = ani.length,
-            task = this.__taskClone = this.__task.splice(0),
+            task = this.__task,
             len2 = task.length,
             frameTask = this.__frameTask,
             len3 = frameTask.length; // 先重置标识，动画没有触发更新，在每个__before执行，如果调用了更新则更改标识
-
 
         this.__aniChange = false;
 
@@ -41234,9 +41232,9 @@
     }, {
       key: "__after",
       value: function __after(diff) {
-        var ani = this.__aniClone,
+        var ani = this.__ani,
             len = ani.length,
-            task = this.__taskClone.splice(0),
+            task = this.__task.splice(0),
             len2 = task.length,
             frameTask = this.__frameTask,
             len3 = frameTask.length; // 动画用同一帧内的pause判断
@@ -41261,8 +41259,9 @@
           _item && _item(diff);
         }
 
-        len = this.__ani.length;
-        len2 = this.__task.length;
+        len = ani.length;
+        len2 = this.__task.length; // 只有一次渲染的任务会清空队列重取长度
+
         len3 = frameTask.length;
 
         if (!len && !len2 && !len3) {

@@ -1520,6 +1520,7 @@ class Animation extends Event {
     super();
     this.__id = uuid++;
     this.__wasmAnimation = null;
+    this.__fromGoto = false; // play()和gotoAndPlay()区分来源
     list = clone(list || []);
     if(Array.isArray(list)) {
       list = list.filter(item => item && isObject(item));
@@ -1726,10 +1727,12 @@ class Animation extends Event {
     this.__hasFin = false;
     this.__hasCancel = false;
     // gotoAndPlay时间已经计算好
-    if(!this.__gotoAndPlay) {
+    if(this.__fromGoto) {
+      this.__fromGoto = false;
+    }
+    else {
       this.__currentTime = 0;
     }
-    this.__gotoAndPlay = false;
     this.__fpsTime = 0;
     this.__initCurrentFrames(0);
     if(this.__stayBegin) {
@@ -2022,7 +2025,7 @@ class Animation extends Event {
     if(playState === 'running') {
       this.__root.__offAniFrame(this);
     }
-    this.__gotoAndPlay = true;
+    this.__fromGoto = true;
     return this.play(cb);
   }
 

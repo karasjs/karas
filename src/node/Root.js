@@ -188,8 +188,6 @@ class Root extends Dom {
     this.__task = []; // 更新样式异步刷新&回调
     this.__frameTask = []; // 帧动画回调汇总
     this.__ani = []; // 动画异步刷新&回调
-    this.__taskClone = []; // 同下
-    this.__aniClone = []; // 动画执行时的副本，防止某动画before时进行删除操作无法执行after或其他动画
     this.__isInFrame = false;
     this.__pause = false;
     this.__arList = []; // parse中dom的动画解析预存到Root上，layout后执行
@@ -1124,8 +1122,8 @@ class Root extends Dom {
         }
       }
     }
-    let ani = this.__aniClone = this.__ani.slice(0), len = ani.length,
-      task = this.__taskClone = this.__task.splice(0), len2 = task.length,
+    let ani = this.__ani, len = ani.length,
+      task = this.__task, len2 = task.length,
       frameTask = this.__frameTask, len3 = frameTask.length;
     // 先重置标识，动画没有触发更新，在每个__before执行，如果调用了更新则更改标识
     this.__aniChange = false;
@@ -1144,8 +1142,8 @@ class Root extends Dom {
    * 当都清空的时候，取消raf对本Root的侦听
    */
   __after(diff) {
-    let ani = this.__aniClone, len = ani.length,
-      task = this.__taskClone.splice(0), len2 = task.length,
+    let ani = this.__ani, len = ani.length,
+      task = this.__task.splice(0), len2 = task.length,
       frameTask = this.__frameTask, len3 = frameTask.length;
     // 动画用同一帧内的pause判断
     let pause = this.__pause;
@@ -1163,8 +1161,8 @@ class Root extends Dom {
       let item = task[i];
       item && item(diff);
     }
-    len = this.__ani.length;
-    len2 = this.__task.length;
+    len = ani.length;
+    len2 = this.__task.length; // 只有一次渲染的任务会清空队列重取长度
     len3 = frameTask.length;
     if(!len && !len2 && !len3) {
       frame.offFrame(this);

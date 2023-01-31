@@ -18403,7 +18403,8 @@
 
 
         this.__startTime = frame.__now || (frame.__now = inject.now());
-        this.__begin = this.__isDelay = false; // 由root统一控制，防止重复play
+        this.__begin = true;
+        this.__isDelay = false; // 由root统一控制，防止重复play
 
         var root = this.__root;
 

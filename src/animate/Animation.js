@@ -1735,7 +1735,8 @@ class Animation extends Event {
     }
     // 开始时间为调用play时的帧时间
     this.__startTime = frame.__now || (frame.__now = inject.now());
-    this.__begin = this.__isDelay = false;
+    this.__begin =  true;
+    this.__isDelay = false;
     // 由root统一控制，防止重复play
     let root = this.__root;
     root.__onAniFrame(this);

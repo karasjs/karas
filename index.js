@@ -13546,8 +13546,6 @@
 
   _defineProperty(Event, "BEGIN", 'begin');
 
-  _defineProperty(Event, "END", 'end');
-
   _defineProperty(Event, "FREEZE", 'freeze');
 
   _defineProperty(Event, "UN_FREEZE", 'unFreeze');
@@ -18930,9 +18928,10 @@
         }
 
         var currentFrame = currentFrames[i];
-        var notSameFrame = lastFrame !== currentFrame; // 对比前后两帧是否为同一关键帧，一些fixed无渐变的属性在不同帧之间才会变化
+        var notSameFrame = lastFrame !== currentFrame; // 对比前后两帧是否为同一关键帧，不是则清除之前关键帧上的percent标识为-1，这样可以识别跳帧和本轮第一次进入此帧
 
         if (notSameFrame) {
+          lastFrame && (lastFrame.lastPercent = -1);
           this.__currentFrame = currentFrame;
         }
 
@@ -19648,8 +19647,17 @@
 
         if (timingFunction && timingFunction !== linear) {
           percent = timingFunction(percent);
+        } // 同一关键帧同一percent可以不刷新，比如diff为0时，或者steps情况，离开会清空
+
+
+        if (frame.lastPercent === percent) {
+          return {
+            trans: [],
+            fixed: []
+          };
         }
 
+        frame.lastPercent = percent;
         var currentStyle = target.__currentStyle,
             trans = frame.trans,
             fixed = [];
@@ -19754,21 +19762,7 @@
             }
 
             currentProps[k] = st;
-          } // string等的直接量，在不同帧之间可能存在变化，同帧变化后不再改变引用
-          // else {
-          //   if(currentStyle[k] !== st) {
-          //     currentStyle[k] = st;
-          //   }
-          //   else {
-          //     if(!modify) {
-          //       modify = true;
-          //       trans = trans.slice(0);
-          //     }
-          //     let j = trans.indexOf(k);
-          //     trans.splice(j, 1);
-          //   }
-          // }
-
+          }
         };
 
         for (var _i22 = 0, _len14 = transition.length; _i22 < _len14; _i22++) {

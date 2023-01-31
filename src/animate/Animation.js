@@ -2160,8 +2160,9 @@ class Animation extends Event {
     }
     let currentFrame = currentFrames[i];
     let notSameFrame = lastFrame !== currentFrame;
-    // 对比前后两帧是否为同一关键帧，一些fixed无渐变的属性在不同帧之间才会变化
+    // 对比前后两帧是否为同一关键帧，不是则清除之前关键帧上的percent标识为-1，这样可以识别跳帧和本轮第一次进入此帧
     if(notSameFrame) {
+      lastFrame && (lastFrame.lastPercent = -1);
       this.__currentFrame = currentFrame;
     }
     let root = this.__root, target = this.__target;
@@ -2753,6 +2754,11 @@ class Animation extends Event {
     if(timingFunction && timingFunction !== linear) {
       percent = timingFunction(percent);
     }
+    // 同一关键帧同一percent可以不刷新，比如diff为0时，或者steps情况，离开会清空
+    if(frame.lastPercent === percent) {
+      return { trans: [], fixed: [] };
+    }
+    frame.lastPercent = percent;
     let currentStyle = target.__currentStyle, trans = frame.trans, fixed = [];
     let currentProps = target.__currentProps;
     for(let i = 0, len = transition.length; i < len; i++) {
@@ -2848,20 +2854,6 @@ class Animation extends Event {
         }
         currentProps[k] = st;
       }
-      // string等的直接量，在不同帧之间可能存在变化，同帧变化后不再改变引用
-      // else {
-      //   if(currentStyle[k] !== st) {
-      //     currentStyle[k] = st;
-      //   }
-      //   else {
-      //     if(!modify) {
-      //       modify = true;
-      //       trans = trans.slice(0);
-      //     }
-      //     let j = trans.indexOf(k);
-      //     trans.splice(j, 1);
-      //   }
-      // }
     }
     // string等的直接量，在不同帧之间可能存在变化，同帧变化后不再改变引用，因此前提是发生帧变化
     // 再检查是否和当前相等，防止跳到一个不变化的帧上，而前一帧有变化的情况，大部分都是无变化

@@ -227,6 +227,9 @@ let inject = {
       load(url, cache);
     }
   },
+  log(s) {
+    console.log(s);
+  },
   warn(s) {
     console.warn(s);
   },

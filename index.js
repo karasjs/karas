@@ -2270,6 +2270,9 @@
         load(url, cache);
       }
     },
+    log: function log(s) {
+      console.log(s);
+    },
     warn: function warn(s) {
       console.warn(s);
     },
@@ -15563,24 +15566,6 @@
        */
 
     }, {
-      key: "next_time",
-      get: function get() {
-        var ret = wasm.__wbg_get_animation_next_time(this.ptr);
-
-        return ret;
-      }
-      /**
-       * @param {number} arg0
-       */
-      ,
-      set: function set(arg0) {
-        wasm.__wbg_set_animation_next_time(this.ptr, arg0);
-      }
-      /**
-       * @returns {number}
-       */
-
-    }, {
       key: "play_count",
       get: function get() {
         var ret = wasm.__wbg_get_animation_play_count(this.ptr);
@@ -15700,23 +15685,15 @@
        */
 
     }, {
-      key: "anima_ptr",
+      key: "set_bezier",
       value:
-      /**
-       */
-      function anima_ptr() {
-        wasm.animation_anima_ptr(this.ptr);
-      }
       /**
        * @param {number} c1
        * @param {number} c2
        * @param {number} c3
        * @param {number} c4
        */
-
-    }, {
-      key: "set_bezier",
-      value: function set_bezier(c1, c2, c3, c4) {
+      function set_bezier(c1, c2, c3, c4) {
         wasm.animation_set_bezier(this.ptr, c1, c2, c3, c4);
       }
       /**
@@ -15748,15 +15725,45 @@
         wasm.animation_add_item(this.ptr, is_reverse, k, v, u, d);
       }
       /**
+       * @param {number} play_count
+       */
+
+    }, {
+      key: "init_current_frames",
+      value: function init_current_frames(play_count) {
+        wasm.animation_init_current_frames(this.ptr, play_count);
+      }
+      /**
+       * @param {number} dur
+       * @param {boolean} from_goto
+       * @returns {boolean}
+       */
+
+    }, {
+      key: "cal_current",
+      value: function cal_current(dur, from_goto) {
+        var ret = wasm.animation_cal_current(this.ptr, dur, from_goto);
+        return ret !== 0;
+      }
+      /**
        * @param {number} diff
-       * @returns {number}
+       * @returns {boolean}
        */
 
     }, {
       key: "on_frame",
       value: function on_frame(diff) {
         var ret = wasm.animation_on_frame(this.ptr, diff);
-        return ret >>> 0;
+        return ret !== 0;
+      }
+      /**
+       * @param {number} current_time
+       */
+
+    }, {
+      key: "goto",
+      value: function goto(current_time) {
+        wasm.__wbg_set_animation_current_time(this.ptr, current_time);
       }
     }], [{
       key: "__wrap",
@@ -16514,18 +16521,22 @@
   var wasm$1 = {
     init: function init(url, cb) {
       return _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
-        var req, input, imports, _yield$load, instance;
-
+        var req, input, imports, res;
         return _regeneratorRuntime().wrap(function _callee$(_context) {
           while (1) {
             switch (_context.prev = _context.next) {
               case 0:
+                if (!((typeof fetch === "undefined" ? "undefined" : _typeof(fetch)) !== undefined && util.isFunction(fetch))) {
+                  _context.next = 13;
+                  break;
+                }
+
                 req = typeof location !== 'undefined' ? new URL(url, location.href) : new URL(url);
                 input = fetch(req);
                 imports = {
                   wbg: {
                     __wbg_log_7bf8a72f8beaaabe: function __wbg_log_7bf8a72f8beaaabe(arg0, arg1) {
-                      console.log(getStringFromWasm0(arg0, arg1));
+                      inject.log(getStringFromWasm0(arg0, arg1));
                     },
                     __wbindgen_throw: function __wbindgen_throw(arg0, arg1) {
                       throw new Error(getStringFromWasm0(arg0, arg1));
@@ -16533,20 +16544,23 @@
                   }
                 };
                 _context.t0 = load;
-                _context.next = 6;
+                _context.next = 7;
                 return input;
 
-              case 6:
+              case 7:
                 _context.t1 = _context.sent;
                 _context.t2 = imports;
-                _context.next = 10;
+                _context.next = 11;
                 return (0, _context.t0)(_context.t1, _context.t2);
 
-              case 10:
-                _yield$load = _context.sent;
-                instance = _yield$load.instance;
-                wasm = instance.exports;
+              case 11:
+                res = _context.sent;
 
+                if (res) {
+                  wasm = res.instance.exports;
+                }
+
+              case 13:
                 if (cb) {
                   cb(wasm);
                 }
@@ -16757,6 +16771,8 @@
       // 变化的k
       fixed: [],
       // 不变的k
+      wasmTrans: [],
+      // 特殊的几个wasm优化计算的k
       lastPercent: -1
     };
   }
@@ -17620,23 +17636,19 @@
       if (ts) {
         if (k === TRANSLATE_PATH) {
           hasTp = true;
-        } // ts.cs = currentStyle[k];
-
+        }
 
         var fn = CAL_HASH[k]; // Geom特殊属性没有fn
 
         if (fn) {
           ts.fn = fn;
-        } // else {
-        //   allInFn = false;
-        // }
-
+        }
 
         prev.transition.push(ts);
         prev.trans.push(k);
       } // 无法形成连续计算的或者不变的记录下来
       else if (k !== TRANSLATE_PATH) {
-        prev.fixed.push(k); // allInFn = false;
+        prev.fixed.push(k);
       }
     } // translatePath需特殊处理translate，防止被覆盖
 
@@ -17665,9 +17677,7 @@
       if (_i16 > -1) {
         prev.fixed.splice(_i16, 1);
       }
-    } // prev.allInFn = allInFn;
-    // 特殊优化，加速通知Root的更新
-    // if(allInFn) {
+    } // 特殊优化，加速通知Root的更新
 
 
     var lv = NONE$3;
@@ -17678,7 +17688,7 @@
       var _k5 = trans[_i17];
       lv |= getLevel$1(_k5);
 
-      if (_k5 === Z_INDEX$3) ; else if (_k5 === COLOR$2) {
+      if (_k5 === COLOR$2) {
         prev.hasColor = true;
       } else if (_k5 === TEXT_STROKE_COLOR$2) {
         prev.hasTsColor = true;
@@ -17691,10 +17701,9 @@
     } // 提前计算，不包含fixed的
 
 
-    prev.lv = lv;
-    prev.isRepaint = isRepaint(lv); // 常见的几种动画matrix计算是否可优化提前计算
+    prev.lv = lv; // 常见的几种动画matrix计算是否可优化提前计算
 
-    if (prev.isRepaint && lv & (TX$1 | TY$1 | TZ$1 | RZ$1 | SCALE$1)) {
+    if (isRepaint(lv) && lv & (TX$1 | TY$1 | TZ$1 | RZ$1 | SCALE$1)) {
       if (lv & TF$2 || lv & SX$1 && !computedStyle[SCALE_X$1] || lv & SY$1 && !computedStyle[SCALE_Y$1] || lv & SZ$1 && !computedStyle[SCALE_Z$1] || lv & RZ$1 && (computedStyle[ROTATE_X$1] || computedStyle[ROTATE_Y$1] || computedStyle[SKEW_X$1] || computedStyle[SKEW_Y$1])) ; else {
         prev.optimize = true;
       }
@@ -18028,7 +18037,7 @@
   }
 
   function frameCb(self) {
-    self.emit(Event.FRAME, self.__isChange);
+    self.emit(Event.FRAME, self.__isDelay);
 
     if (self.__firstPlay) {
       self.__firstPlay = false;
@@ -18039,10 +18048,8 @@
 
     if (cb) {
       self.__playCb = null;
-      cb(self.__isChange);
+      cb(self.__isDelay);
     }
-
-    self.__isChange = false; // 重置，有可能下帧时间为0只执行after
   }
 
   function wasmFrame(wa, wList, wHash, frames, isReverse) {
@@ -18050,6 +18057,8 @@
       var _frames$i = frames[i],
           style = _frames$i.style,
           transition = _frames$i.transition,
+          trans = _frames$i.trans,
+          wasmTrans = _frames$i.wasmTrans,
           time = _frames$i.time,
           _easing = _frames$i.easing;
       var eType = EASING.DEFAULT,
@@ -18091,27 +18100,28 @@
 
       wa.add_frame(isReverse, time, eType, x1, y1, x2, y2);
 
-      for (var j = 0, _len9 = wList.length; j < _len9; j++) {
-        var k = wList[j];
-        var o = style[k];
-        var n = WASM_STYLE_KEY[k];
-        var diff = 0; // 最后一帧没差异数据默认0
+      for (var j = 0, _len9 = transition.length; j < _len9; j++) {
+        var item = transition[j],
+            k = item.k;
 
-        for (var l = 0, _len10 = transition.length; l < _len10; l++) {
-          var item = transition[l];
+        if (wHash.hasOwnProperty(k)) {
+          var o = style[k];
+          var n = WASM_STYLE_KEY[k];
+          var diff = item.v; // 相关记录提取出来存到wasm记录上标识
 
-          if (item.k === k) {
-            diff = item.v;
-            transition.splice(l, 1);
-            break;
+          transition.splice(j, 1);
+          trans.splice(j, 1);
+          wasmTrans.push(k); // transformOrigin和rotate3d是复合型对应多条，其它简单型
+
+          if (k === TRANSFORM_ORIGIN$3) {
+            wa.add_item(isReverse, n, o[0].v, o[0].u, diff[0]);
+            wa.add_item(isReverse, n + 1, o[1].v, o[1].u, diff[1]);
+          } else if (k === ROTATE_3D$1) ; else {
+            wa.add_item(isReverse, n, o.v, o.u, diff);
           }
-        }
 
-        if (k === TRANSFORM_ORIGIN$3) {
-          wa.add_item(isReverse, n, o[0].v, o[0].u, diff[0]);
-          wa.add_item(isReverse, n + 1, o[1].v, o[1].u, diff[1]);
-        } else if (k === ROTATE_3D$1) ; else {
-          wa.add_item(isReverse, n, o.v, o.u, diff);
+          j--;
+          _len9--;
         }
       }
     }
@@ -18128,6 +18138,8 @@
       _this = _Event.call(this) || this;
       _this.__id = uuid$3++;
       _this.__wasmAnimation = null;
+      _this.__ignore = false; // wasm全部接管无需运行before/after
+
       _this.__fromGoto = false; // play()和gotoAndPlay()区分来源
 
       list = clone$1(list || []);
@@ -18170,8 +18182,7 @@
       _this.__playState = 'idle';
       _this.__target = target;
       _this.__root = target.__root;
-      _this.__isChange = false; // 每帧是否有变化，无变化不刷新也会触发frame事件
-
+      _this.__isDelay = false;
       _this.__firstPlay = true;
       var duration = _this.duration = op.duration;
       var ea = _this.easing = op.easing;
@@ -18183,7 +18194,6 @@
 
       _this.fps = fps;
       _this.delay = op.delay;
-      _this.endDelay = op.endDelay;
       _this.playbackRate = op.playbackRate;
       _this.fill = op.fill;
       _this.iterations = op.iterations;
@@ -18204,7 +18214,6 @@
       _this.__keys = keys;
       _this.__originStyle = originStyle;
       _this.__isDelay = false;
-      _this.__outBeginDelay = false;
       _this.__playCount = 0;
       _this.__currentFrames = {
         reverse: true,
@@ -18299,7 +18308,7 @@
               }
             }
 
-            var wa = this.__wasmAnimation = wasm$1.Animation["new"](DIRECTION[this.__direction] || 0, this.__duration, this.__fps, this.__delay, this.__endDelay, FILLS[this.__fill] || 0, this.__playbackRate, iter, this.__areaStart, this.__areaDuration, easeType);
+            var wa = this.__wasmAnimation = wasm$1.Animation["new"](DIRECTION[this.__direction] || 0, this.__duration, this.__fps, this.__delay, FILLS[this.__fill] || 0, this.__playbackRate, iter, this.__areaStart, this.__areaDuration, easeType);
 
             if (easeType === EASING.EASE_CUSTOM) {
               var v = ea.match(/[\d.]+/g);
@@ -18310,7 +18319,7 @@
             }
 
             wasmFrame(wa, wList, wHash, frames, false);
-            wasmFrame(wa, wList, wHash, framesR, true); // 全部交由wasm
+            wasmFrame(wa, wList, wHash, framesR, true); // 没有其他的则全部交由wasm
 
             if (wList.length === keys.length) {
               this.__ignore = true;
@@ -18332,7 +18341,7 @@
 
         if (isFinish) {
           // gotoAndStop到一个很大的时间的话，也需要防止超过
-          this.__currentTime = this.__delay + this.__duration * this.__iterations + this.__endDelay;
+          this.__currentTime = this.__delay + this.__duration * this.__iterations;
           this.__playState = 'finished';
         } else {
           this.__playCount = this.__currentTime = 0;
@@ -18363,10 +18372,7 @@
         this.__playState = 'running'; // 每次play调用标识第一次运行，需响应play事件和回调
 
         this.__firstPlay = true;
-        this.__playCount = 0; // 防止finish/cancel事件重复触发，每次播放重置
-
-        this.__hasFin = false;
-        this.__hasCancel = false; // gotoAndPlay时间已经计算好
+        this.__playCount = 0; // gotoAndPlay时间已经计算好
 
         if (this.__fromGoto) {
           this.__fromGoto = false;
@@ -18397,7 +18403,7 @@
 
 
         this.__startTime = frame.__now || (frame.__now = inject.now());
-        this.__end = false; // 由root统一控制，防止重复play
+        this.__begin = this.__isDelay = false; // 由root统一控制，防止重复play
 
         var root = this.__root;
 
@@ -18431,10 +18437,9 @@
         var areaDuration = this.__areaDuration;
         var duration = this.__duration;
         var playbackRate = this.__playbackRate;
-        var dur = areaDuration ? Math.min(duration, areaDuration) : duration;
-        this.__isChange = false; // 播放时间累加，并且考虑播放速度加成
+        var dur = areaDuration ? Math.min(duration, areaDuration) : duration; // 播放时间累加，并且考虑播放速度加成
 
-        if (playbackRate !== 1 && playbackRate > 0) {
+        if (playbackRate !== 1) {
           diff *= playbackRate;
         } // 用本帧和上帧时间差，计算累加运行时间currentTime，以便定位当前应该处于哪个时刻
 
@@ -18457,17 +18462,15 @@
           this.__begin = false; // 默认是true，delay置false防触发
           // 即便不刷新，依旧执行帧回调，同时标明让后续第一帧响应begin
 
-          this.__outBeginDelay = true;
           this.__isDelay = true;
           return;
-        }
+        } // 减去delay，计算在哪一帧
 
-        this.__isDelay = false; // 减去delay，计算在哪一帧
 
         currentTime -= delay - areaStart;
 
-        if (this.__outBeginDelay) {
-          this.__outBeginDelay = false;
+        if (this.__isDelay) {
+          this.__isDelay = false;
           this.__begin = true;
         } // 超过duration非尾轮需处理回到开头，触发新一轮动画事件，这里可能时间间隔非常大直接跳过几轮
 
@@ -18496,20 +18499,14 @@
         if (this.__begin) {
           this.__begin = false;
           this.emit(Event.BEGIN, this.__playCount);
-        } // end事件只触发一次，末轮进入endDelay或直接结束时
-
-
-        if (this.__nextEnd && !this.__end) {
-          this.__end = true;
-          this.emit(Event.END, this.__playCount - 1);
         }
 
         if (this.__finished) {
           this.__clean(true);
 
-          this.__begin = this.__end = this.__isDelay = this.__finished = this.__inFps = false;
+          this.__begin = this.__finished = this.__inFps = false;
           this.__playState = 'finished';
-          this.emit(Event.FINISH, this.__isChange);
+          this.emit(Event.FINISH, true);
         }
       }
     }, {
@@ -18564,7 +18561,7 @@
 
         if (playState === 'finished') {
           if (isFunction$5(cb)) {
-            cb();
+            cb(false);
           }
 
           return this;
@@ -18573,7 +18570,7 @@
 
         this.__clean(true);
 
-        this.__begin = this.__end = this.__isDelay = this.__finished = this.__inFps = false;
+        this.__begin = this.__isDelay = this.__finished = this.__inFps = false;
         this.__timestamp = frame.__now = frame.__now || inject.now();
         this.__playState = 'finished';
         var wa = this.__wasmAnimation;
@@ -18624,7 +18621,9 @@
           }
 
           this.__stopCb = function () {
-            frameCb(_this2);
+            if (isChange) {
+              frameCb(_this2);
+            }
 
             _this2.emit(Event.FINISH, isChange);
 
@@ -18658,7 +18657,7 @@
 
         if (playState === 'idle') {
           if (isFunction$5(cb)) {
-            cb();
+            cb(false);
           }
 
           return this;
@@ -18666,7 +18665,7 @@
 
         this.__clean(false);
 
-        this.__begin = this.__end = this.__isDelay = this.__finished = this.__inFps = false;
+        this.__begin = this.__isDelay = this.__finished = this.__inFps = false;
         this.__timestamp = frame.__now = frame.__now || inject.now();
         this.__playState = 'idle';
         var wa = this.__wasmAnimation;
@@ -18688,7 +18687,9 @@
           }
 
           this.__stopCb = function () {
-            frameCb(_this3);
+            if (isChange) {
+              frameCb(_this3);
+            }
 
             _this3.emit(Event.CANCEL, isChange);
 
@@ -18716,7 +18717,6 @@
         var duration = this.__duration;
         var frames = this.__frames;
         var areaDuration = this.__areaDuration;
-        var endDelay = this.__endDelay;
         var playState = this.__playState;
         var dur = areaDuration ? Math.min(duration, areaDuration) : duration;
 
@@ -18727,7 +18727,7 @@
 
         v = this.__goto(v, options.isFrame, options.excludeDelay);
 
-        if (v >= dur + endDelay) {
+        if (v >= dur) {
           if (this.__stayEnd) {
             this.finish(cb);
           } else {
@@ -18757,7 +18757,6 @@
         var duration = this.__duration;
         var frames = this.__frames;
         var areaDuration = this.__areaDuration;
-        var endDelay = this.__endDelay;
         var currentTime = this.__currentTime;
         var dur = areaDuration ? Math.min(duration, areaDuration) : duration;
 
@@ -18768,7 +18767,7 @@
         var wa = this.__wasmAnimation;
         v = this.__goto(v, options.isFrame, options.excludeDelay);
 
-        if (v >= dur + endDelay) {
+        if (v >= dur) {
           if (this.__stayEnd) {
             this.finish(cb);
           } else {
@@ -18790,30 +18789,32 @@
 
         if (v === currentTime) {
           if (isFunction$5(cb)) {
-            cb();
+            cb(false);
           }
 
           return;
         }
 
         var root = this.__root;
+        var currentFrames = this.__currentFrames;
+        var isChange;
 
         this.__stopCb = function () {
-          frameCb(_this4);
+          if (isChange) {
+            frameCb(_this4);
+          }
 
           if (isFunction$5(cb)) {
-            cb(true);
+            cb(isChange);
           }
         };
-
-        var currentFrames = this.__currentFrames;
 
         if (v < 0) {
           if (this.__stayBegin) {
             var currentFrame = this.__currentFrame = currentFrames[0];
             var target = this.__target;
             var keys = calLastStyle(currentFrame.style, target, this.__keys);
-            var isChange = !!keys.length;
+            isChange = !!keys.length;
 
             if (this.__stopCb) {
               root.__cancelFrameDraw(this.__stopCb);
@@ -18821,14 +18822,20 @@
 
 
             if (isChange) {
-              root.__addUpdate(target, keys, false, false, false, false, null);
+              root.__addUpdate(target, keys, false, false, false, false, this.__stopCb);
+            } else {
+              this.__stopCb();
             }
           }
 
           return;
         }
 
-        this.__calCurrent(currentFrames, this.__currentFrame, v, dur, duration, this.__stopCb);
+        if (wa) {
+          wa.cal_current(dur, true);
+        }
+
+        this.__calCurrent(currentFrames, this.__currentFrame, v, dur, duration, isFunction$5(cb) ? cb : function () {});
       } // 返回不包含delay且去除多轮的时间
 
     }, {
@@ -18892,24 +18899,21 @@
         }
 
         return this.__currentFrames = direction === 'reverse' ? framesR : frames;
-      }
+      } // 有gotoCb时是来自gotoAndStop，gotoAndPlay则复用play
+
     }, {
       key: "__calCurrent",
       value: function __calCurrent(currentFrames, lastFrame, currentTime, dur, duration, gotoCb) {
-        var root = this.__root,
-            target = this.__target;
         var isLastCount = this.__playCount >= this.__iterations - 1,
             length = currentFrames.length; // 只有2帧可优化，否则2分查找当前帧
 
-        var i, frameTime;
+        var i;
 
         if (length === 2) {
           i = currentTime < dur ? 0 : 1;
-          frameTime = dur;
         } else {
           i = Animation.binarySearch(0, length - 1, currentTime, currentFrames);
-          frameTime = currentFrames[i].time;
-        } // 最后一帧结束动画，仅最后一轮才会进入，需处理endDelay
+        } // 最后一帧结束动画，仅最后一轮才会进入
 
 
         var isLastFrame = isLastCount && i === length - 1;
@@ -18919,77 +18923,80 @@
         else if (length === 2) {
           percent = currentTime / duration; // 不能是dur，按照原本计算
         } else {
-          var total = currentFrames[i + 1].time - frameTime;
-          percent = (currentTime - frameTime) / total;
+          var time = currentFrames[i].time;
+          var total = currentFrames[i + 1].time - time;
+          percent = (currentTime - time) / total;
         }
 
-        var inEndDelay,
-            currentFrame = currentFrames[i];
-        var notSameFrame = lastFrame !== currentFrame; // 对比前后两帧是否为同一关键帧，不是则清除之前关键帧上的percent标识为-1，这样可以识别跳帧和本轮第一次进入此帧
+        var currentFrame = currentFrames[i];
+        var notSameFrame = lastFrame !== currentFrame; // 对比前后两帧是否为同一关键帧，一些fixed无渐变的属性在不同帧之间才会变化
 
         if (notSameFrame) {
-          lastFrame && (lastFrame.lastPercent = -1);
           this.__currentFrame = currentFrame;
         }
-        /** 这里要考虑全几种场景：
-         * 1. 单次播放无endDelay且fill不停留（有/无差异，下同）
-         * 2. 单次播放无endDelay且fill停留
-         * 3. 单次播放有endDelay且fill不停留
-         * 4. 单次播放有endDelay且fill停留
-         * 5. 多次播放无endDelay且fill不停留（尾次/非尾次，下同）
-         * 6. 多次播放无endDelay且fill停留
-         * 7. 多次播放有endDelay且fill不停留
-         * 8. 多次播放有endDelay且fill停留
-         */
 
+        var root = this.__root,
+            target = this.__target; // 最后结束特殊处理
 
         if (isLastFrame) {
-          var keys;
-          inEndDelay = currentTime < dur + this.__endDelay; // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
+          var keys; // 是否停留在最后一帧
 
           if (this.__stayEnd) {
             keys = calLastStyle(currentFrame.style, target, this.__keys);
-          } // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
-          else {
+          } else {
             keys = calLastStyle(this.__originStyle, target, this.__keys);
-          } // 进入endDelay或结束阶段触发end事件，注意只触发一次，防重在触发的地方做
-
-
-          this.__nextEnd = true;
-
-          if (!inEndDelay) {
-            this.__playCount++;
-            this.__finished = true;
           }
 
-          var c = this.__isChange = !!keys.length;
+          this.__playCount++;
+          this.__finished = true; // gotoAndStop有参数回调特殊对待
 
           if (gotoCb) {
-            if (c) {
-              root.__addUpdate(target, keys, false, false, false, false, gotoCb);
-            } else {
-              gotoCb();
-            }
-          } else if (c) {
+            this.__gotoStopCb(root, target, keys, gotoCb);
+          } // 普通动画有样式变更才触发真实刷新，且sync标识同步应用，和动画节奏一样
+          else if (keys.length) {
             root.__addUpdate(target, keys, false, false, false, true, null);
           }
-        } else {
-          var _Animation$calInterme = Animation.calIntermediateStyle(currentFrame, percent, target, notSameFrame),
+        } // 动画内部除非同帧内且本帧没有任何变化，否则会一直触发，哪怕diff时间为0
+        else {
+          var _Animation$calInterme = Animation.calIntermediateStyle(currentFrame, percent, target, lastFrame !== currentFrame),
               trans = _Animation$calInterme.trans,
               fixed = _Animation$calInterme.fixed;
 
-          this.__isChange = !!trans.length || !!fixed.length; // gotoAndStop特殊调用，不走动画更新而走普通更新
+          var _keys = trans.concat(fixed); // gotoAndStop有参数回调特殊对待
+
 
           if (gotoCb) {
-            if (trans.length || fixed.length) {
-              root.__addUpdate(target, trans.concat(fixed), false, false, false, false, gotoCb);
-            } else {
-              gotoCb();
-            }
-          } // 普通动画更新
-          else if (trans.length || fixed.length) {
+            this.__gotoStopCb(root, target, _keys, gotoCb);
+          } // 普通动画同步更新sync
+          else if (_keys.length) {
             root.__addAniUpdate(target, trans, fixed, currentFrame);
           }
+        }
+      }
+    }, {
+      key: "__gotoStopCb",
+      value: function __gotoStopCb(root, target, keys, gotoCb) {
+        var _this5 = this;
+
+        if (this.__stopCb) {
+          root.__cancelFrameDraw(this.__stopCb);
+        }
+
+        var isChange = !!keys.length;
+
+        this.__stopCb = function () {
+          if (isChange) {
+            frameCb(_this5);
+          }
+
+          gotoCb(isChange); // 一定有，入口判断没有会变成一个空函数
+        };
+
+        if (isChange) {
+          root.__addUpdate(target, keys, false, false, false, false, this.__stopCb);
+        } else {
+          this.__stopCb(); // 无变化同步执行
+
         }
       }
     }, {
@@ -19119,22 +19126,6 @@
 
         if (this.__delay !== v) {
           this.__delay = v;
-
-          this.__checkModify();
-        }
-
-        return v;
-      }
-    }, {
-      key: "endDelay",
-      get: function get() {
-        return this.__endDelay;
-      },
-      set: function set(v) {
-        v = Math.max(0, parseFloat(v) || 0);
-
-        if (this.__endDelay !== v) {
-          this.__endDelay = v;
 
           this.__checkModify();
         }
@@ -19365,7 +19356,7 @@
         // 过滤时间非法的，过滤后续offset<=前面的
         var offset = -1;
 
-        var _loop = function _loop(_i18, _len11) {
+        var _loop = function _loop(_i18, _len10) {
           var current = list[_i18];
 
           if (current.hasOwnProperty('offset')) {
@@ -19376,17 +19367,17 @@
             if (isNaN(current.offset) || current.offset < 0 || current.offset > 1) {
               list.splice(_i18, 1);
               _i18--;
-              _len11--;
+              _len10--;
               i = _i18;
-              len = _len11;
+              len = _len10;
               return "continue";
             } // <=前面的
             else if (current.offset <= offset) {
               list.splice(_i18, 1);
               _i18--;
-              _len11--;
+              _len10--;
               i = _i18;
-              len = _len11;
+              len = _len10;
               return "continue";
             }
           } // 缩写处理
@@ -19404,7 +19395,7 @@
             }
           });
           i = _i18;
-          len = _len11;
+          len = _len10;
         };
 
         for (var i = 0, len = list.length; i < len; i++) {
@@ -19457,14 +19448,14 @@
         } // 计算没有设置offset的帧
 
 
-        for (var _i19 = 1, _len12 = list.length; _i19 < _len12; _i19++) {
+        for (var _i19 = 1, _len11 = list.length; _i19 < _len11; _i19++) {
           var start = list[_i19]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
 
           if (!start.hasOwnProperty('offset')) {
             var end = void 0;
             var j = _i19 + 1;
 
-            for (; j < _len12; j++) {
+            for (; j < _len11; j++) {
               end = list[j];
 
               if (end.hasOwnProperty('offset')) {
@@ -19487,7 +19478,7 @@
 
         var frames = [];
 
-        for (var _i20 = 0, _len13 = list.length; _i20 < _len13; _i20++) {
+        for (var _i20 = 0, _len12 = list.length; _i20 < _len12; _i20++) {
           var o = framing(list[_i20], duration, easing);
           o.index = _i20;
           frames[_i20] = o;
@@ -19608,7 +19599,7 @@
         var prev = frames[0];
         prev.clone = cloneStyle(prev.style, keys);
 
-        for (var _i21 = 1, _len14 = frames.length; _i21 < _len14; _i21++) {
+        for (var _i21 = 1, _len13 = frames.length; _i21 < _len13; _i21++) {
           var next = frames[_i21];
           next.clone = cloneStyle(next.style, keys);
           prev = calFrame(prev, next, keys, target);
@@ -19642,6 +19633,11 @@
 
         return i;
       }
+      /**
+       * 计算真变化，对于有连续变化补间的，即有trans的，优化认为一定触发了重绘，哪怕和原始style相等或者diff为0
+       * 对于无补间的如display这种，在不同帧之间才认为可能触发重绘，因为性能开销小可以再次比对真实情况判断是否需要真实重绘
+       */
+
     }, {
       key: "calIntermediateStyle",
       value: function calIntermediateStyle(frame, percent, target, notSameFrame) {
@@ -19651,24 +19647,14 @@
 
         if (timingFunction && timingFunction !== linear) {
           percent = timingFunction(percent);
-        } // 同一关键帧同一percent可以不刷新，比如diff为0时，或者steps情况，离开会清空
-
-
-        if (frame.lastPercent === percent) {
-          return {
-            trans: [],
-            fixed: []
-          };
         }
 
-        frame.lastPercent = percent;
         var currentStyle = target.__currentStyle,
             trans = frame.trans,
             fixed = [];
-        var currentProps = target.__currentProps,
-            modify;
+        var currentProps = target.__currentProps;
 
-        var _loop2 = function _loop2(_i22, _len15) {
+        var _loop2 = function _loop2(_i22, _len14) {
           var item = transition[_i22];
           var k = item.k,
               v = item.v,
@@ -19698,7 +19684,7 @@
               }
             } else if (target.isMulti) {
               if (k === 'points' || k === 'controls') {
-                for (var _i24 = 0, _len17 = Math.min(st.length, v.length); _i24 < _len17; _i24++) {
+                for (var _i24 = 0, _len16 = Math.min(st.length, v.length); _i24 < _len16; _i24++) {
                   var o = st[_i24];
                   var n = v[_i24];
                   var cli = cl[_i24];
@@ -19739,12 +19725,12 @@
               }
             } else {
               if (k === 'points' || k === 'controls') {
-                for (var _i25 = 0, _len18 = Math.min(st.length, v.length); _i25 < _len18; _i25++) {
+                for (var _i25 = 0, _len17 = Math.min(st.length, v.length); _i25 < _len17; _i25++) {
                   var _o = st[_i25];
                   var _n = v[_i25];
 
                   if (!isNil$b(_o) && !isNil$b(_n)) {
-                    for (var _j6 = 0, _len19 = Math.min(_o.length, _n.length); _j6 < _len19; _j6++) {
+                    for (var _j6 = 0, _len18 = Math.min(_o.length, _n.length); _j6 < _len18; _j6++) {
                       if (!isNil$b(_o[_j6]) && !isNil$b(_n[_j6])) {
                         _o[_j6] = cl[_i25][_j6] + _n[_j6] * percent;
                       }
@@ -19768,31 +19754,32 @@
 
             currentProps[k] = st;
           } // string等的直接量，在不同帧之间可能存在变化，同帧变化后不再改变引用
-          else {
-            if (currentStyle[k] !== st) {
-              currentStyle[k] = st;
-            } else {
-              if (!modify) {
-                modify = true;
-                trans = trans.slice(0);
-              }
+          // else {
+          //   if(currentStyle[k] !== st) {
+          //     currentStyle[k] = st;
+          //   }
+          //   else {
+          //     if(!modify) {
+          //       modify = true;
+          //       trans = trans.slice(0);
+          //     }
+          //     let j = trans.indexOf(k);
+          //     trans.splice(j, 1);
+          //   }
+          // }
 
-              var _j7 = trans.indexOf(k);
-
-              trans.splice(_j7, 1);
-            }
-          }
         };
 
-        for (var _i22 = 0, _len15 = transition.length; _i22 < _len15; _i22++) {
+        for (var _i22 = 0, _len14 = transition.length; _i22 < _len14; _i22++) {
           _loop2(_i22);
-        } // 无变化的也得检查是否和当前相等，防止跳到一个不变化的帧上，而前一帧有变化的情况，大部分都是无变化
+        } // string等的直接量，在不同帧之间可能存在变化，同帧变化后不再改变引用，因此前提是发生帧变化
+        // 再检查是否和当前相等，防止跳到一个不变化的帧上，而前一帧有变化的情况，大部分都是无变化
 
 
         if (notSameFrame) {
           var f = frame.fixed;
 
-          for (var _i23 = 0, _len16 = f.length; _i23 < _len16; _i23++) {
+          for (var _i23 = 0, _len15 = f.length; _i23 < _len15; _i23++) {
             var k = f[_i23];
 
             var _isGeom2 = GEOM$1.hasOwnProperty(k);
@@ -23327,7 +23314,7 @@
           var wa = animation.__wasmAnimation;
 
           if (wa) {
-            wn.add_ani(wa.ptr + 8);
+            wn.add_ani(wa.ptr);
           }
         }
 
@@ -23358,7 +23345,7 @@
               var wa = animation.__wasmAnimation;
 
               if (wa) {
-                wn.remove_ani(wa.ptr + 8);
+                wn.remove_ani(wa.ptr);
               }
             }
           }
@@ -26422,12 +26409,9 @@
 
       if (root.__wasmRoot) {
         if (children instanceof Xom) {
-          var o = children.__wasmNode = wasm$1.Node["new"](false);
-          o.set_root(root.__wasmRoot.ptr + 8);
+          children.__wasmNode = wasm$1.Node["new"](false);
         } else if (children instanceof Text) {
-          var _o = children.__wasmNode = wasm$1.Node["new"](true);
-
-          _o.set_root(root.__wasmRoot.ptr + 8);
+          children.__wasmNode = wasm$1.Node["new"](true);
         }
       } // ref
 
@@ -26493,13 +26477,9 @@
 
         if (root.__wasmRoot) {
           if (sr instanceof Xom) {
-            var _o2 = sr.__wasmNode = wasm$1.Node["new"](false);
-
-            _o2.set_root(root.__wasmRoot.ptr + 8);
+            sr.__wasmNode = wasm$1.Node["new"](false);
           } else if (sr instanceof Text) {
-            var _o3 = sr.__wasmNode = wasm$1.Node["new"](true);
-
-            _o3.set_root(root.__wasmRoot.ptr + 8);
+            sr.__wasmNode = wasm$1.Node["new"](true);
           }
         }
       }
@@ -26821,29 +26801,7 @@
         res.num = zIndexChildren.length;
         res.total = total;
         return arr;
-      } // __modifyStruct() {
-      //   let struct = this.__struct;
-      //   let total = struct.total || 0;
-      //   let root = this.__root, __structs = root.__structs;
-      //   // 新生成了struct，引用也变了
-      //   let nss = this.__structure(struct.lv, struct.childIndex);
-      //   let i = __structs.indexOf(struct);
-      //   root.__structs.splice(i, total + 1, ...nss);
-      //   let d = 0;
-      //   if(this !== root) {
-      //     struct = this.__struct;
-      //     d = (struct.total || 0) - total;
-      //     if(d) {
-      //       let p = this.__domParent;
-      //       while(p) {
-      //         p.__struct.total = p.__struct.total || 0;
-      //         p.__struct.total += d;
-      //         p = p.__domParent;
-      //       }
-      //     }
-      //   }
-      // }
-
+      }
     }, {
       key: "__insertStruct",
       value: function __insertStruct(child, childIndex) {
@@ -26876,7 +26834,7 @@
 
           if (wr) {
             for (var j = cs.length - 1; j >= 0; j--) {
-              wr.insert_node(i, cs[j].node.__wasmNode.ptr + 8);
+              wr.insert_node(i, cs[j].node.__wasmNode.ptr);
             }
           }
         } else {
@@ -26884,7 +26842,7 @@
           total = (cs.total || 0) + 1;
 
           if (wr) {
-            wr.insert_node(i, cs.node.__wasmNode.ptr + 8);
+            wr.insert_node(i, cs.node.__wasmNode.ptr);
           }
         } // 调整后面children的childIndex，+1
 
@@ -40142,11 +40100,11 @@
       _this.__rlv = REBUILD; // 每次刷新最大lv
 
       _this.__lastUpdateP = null; // 每帧addUpdate都会向上检查，很多时候同级无需继续，第一次检查暂存parent对象
+      // 开启wasm后，默认使用，除非显示取消
 
       if (wasm$1.wasm && (props.wasm === undefined || props.wasm)) {
         _this.__wasmRoot = wasm$1.Root["new"]();
-        var wn = _this.__wasmNode = wasm$1.Node["new"](false);
-        wn.set_root(_this.__wasmRoot.ptr + 8);
+        _this.__wasmNode = wasm$1.Node["new"](false);
       } else {
         _this.__wasmRoot = null;
       }
@@ -40456,7 +40414,7 @@
 
             var wn = node.__wasmNode; // 一定有
 
-            wr.add_node(wn.ptr + 8);
+            wr.add_node(wn.ptr);
           }
         }
 
@@ -40891,9 +40849,10 @@
               hasRelease = prev.__cacheMask.release() || hasRelease;
             }
           }
-        }
+        } // 大部分动画都是repaint初始化已经知道
 
-        var isRf = isReflow(lv);
+
+        var isRf = optimize ? false : isReflow(lv);
 
         if (isRf) {
           var top = reflow.checkTop(this, node, addDom, removeDom);
@@ -41197,16 +41156,6 @@
     }, {
       key: "__before",
       value: function __before(diff) {
-        if (this.__renderMode !== mode.SVG) {
-          var wr = this.__wasmRoot;
-
-          if (wr) {
-            var n = wr.on_frame(diff); // 有动画执行了需刷新
-
-            if (n && !this.__task.length) ;
-          }
-        }
-
         var ani = this.__ani,
             len = ani.length,
             task = this.__taskClone = this.__task.splice(0),
@@ -41218,6 +41167,16 @@
         this.__aniChange = false;
 
         if (!this.__pause) {
+          var wr = this.__wasmRoot;
+
+          if (wr) {
+            var n = wr.on_frame(diff); // 有动画执行了需刷新
+
+            if (n) {
+              this.__aniChange = true;
+            }
+          }
+
           for (var i = 0; i < len; i++) {
             ani[i].__before(diff);
           }

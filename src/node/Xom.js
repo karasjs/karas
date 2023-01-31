@@ -2873,7 +2873,7 @@ class Xom extends Node {
     if(wn) {
       let wa = animation.__wasmAnimation;
       if(wa) {
-        wn.add_ani(wa.ptr + 8);
+        wn.add_ani(wa.ptr);
       }
     }
     this.__animationList.push(animation);
@@ -2894,7 +2894,7 @@ class Xom extends Node {
         if(wn) {
           let wa = animation.__wasmAnimation;
           if(wa) {
-            wn.remove_ani(wa.ptr + 8);
+            wn.remove_ani(wa.ptr);
           }
         }
       }

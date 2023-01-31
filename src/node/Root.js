@@ -199,10 +199,10 @@ class Root extends Dom {
     this.__uuid = uuid++;
     this.__rlv = REBUILD; // 每次刷新最大lv
     this.__lastUpdateP = null; // 每帧addUpdate都会向上检查，很多时候同级无需继续，第一次检查暂存parent对象
+    // 开启wasm后，默认使用，除非显示取消
     if(wasm.wasm && (props.wasm === undefined || props.wasm)) {
       this.__wasmRoot = wasm.Root.new();
-      let wn = this.__wasmNode = wasm.Node.new(false);
-      wn.set_root(this.__wasmRoot.ptr + 8);
+      this.__wasmNode = wasm.Node.new(false);
     }
     else {
       this.__wasmRoot = null;
@@ -457,7 +457,7 @@ class Root extends Dom {
           node = node.shadowRoot;
         }
         let wn = node.__wasmNode; // 一定有
-        wr.add_node(wn.ptr + 8);
+        wr.add_node(wn.ptr);
       }
     }
     this.__checkAr();
@@ -855,7 +855,8 @@ class Root extends Dom {
         }
       }
     }
-    let isRf = isReflow(lv);
+    // 大部分动画都是repaint初始化已经知道
+    let isRf = optimize ? false : isReflow(lv);
     if(isRf) {
       let top = reflow.checkTop(this, node, addDom, removeDom);
       if(top === this) {
@@ -1114,21 +1115,20 @@ class Root extends Dom {
    * wasm的执行也放在和动画__before一起，先后顺序无要求
    */
   __before(diff) {
-    if(this.__renderMode !== mode.SVG) {
-      let wr = this.__wasmRoot;
-      if(wr) {
-        let n = wr.on_frame(diff);
-        // 有动画执行了需刷新
-        if(n && !this.__task.length) {
-        }
-      }
-    }
     let ani = this.__ani, len = ani.length,
       task = this.__taskClone = this.__task.splice(0), len2 = task.length,
       frameTask = this.__frameTask, len3 = frameTask.length;
     // 先重置标识，动画没有触发更新，在每个__before执行，如果调用了更新则更改标识
     this.__aniChange = false;
     if(!this.__pause) {
+      let wr = this.__wasmRoot;
+      if(wr) {
+        let n = wr.on_frame(diff);
+        // 有动画执行了需刷新
+        if(n) {
+          this.__aniChange = true;
+        }
+      }
       for(let i = 0; i < len; i++) {
         ani[i].__before(diff);
       }

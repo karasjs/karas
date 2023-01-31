@@ -62,11 +62,9 @@ function relation(root, host, parent, children, options = {}) {
     if(root.__wasmRoot) {
       if(children instanceof Xom) {
         let o = children.__wasmNode = wasm.Node.new(false);
-        o.set_root(root.__wasmRoot.ptr + 8);
       }
       else if(children instanceof Text) {
         let o = children.__wasmNode = wasm.Node.new(true);
-        o.set_root(root.__wasmRoot.ptr + 8);
       }
     }
     // ref
@@ -124,11 +122,9 @@ function relation(root, host, parent, children, options = {}) {
       if(root.__wasmRoot) {
         if(sr instanceof Xom) {
           let o = sr.__wasmNode = wasm.Node.new(false);
-          o.set_root(root.__wasmRoot.ptr + 8);
         }
         else if(sr instanceof Text) {
           let o = sr.__wasmNode = wasm.Node.new(true);
-          o.set_root(root.__wasmRoot.ptr + 8);
         }
       }
     }

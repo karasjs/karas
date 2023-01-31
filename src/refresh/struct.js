@@ -2976,8 +2976,6 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
         __cacheTotal,
         __cacheFilter,
         __cacheMask,
-        // __domParent,
-        // __matrix,
       } = node;
       // 遮罩对象申请了个离屏，其第一个mask申请另外一个离屏mask2，开始聚集所有mask元素的绘制，
       // 这是一个十分特殊的逻辑，保存的index是最后一个节点的索引，OFFSCREEN_MASK2是最低优先级，

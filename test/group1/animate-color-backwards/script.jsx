@@ -19,7 +19,7 @@ let animation = t.animate([
 });
 let input = document.querySelector('input');
 let n = 0;
-animation.on(karas.Event.FRAME, (isChange) => {
+animation.on(karas.Event.FRAME, () => {
   n++;
   if(n === 1) {
     input.value += t.getComputedStyle().color;

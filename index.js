@@ -13069,7 +13069,7 @@
 
         this.__content = s;
 
-        this.__root.__addUpdate(this.__domParent, null, o$1.REFLOW, false, false, false, cb);
+        this.__root.__addUpdate(this.__domParent, null, o$1.REFLOW, false, false, false, false, cb);
       }
     }, {
       key: "remove",
@@ -13122,7 +13122,7 @@
         } // 可见在reflow逻辑做结构关系等，text视为父变更
 
 
-        root.__addUpdate(this, null, o$1.REFLOW, false, true, false, cb);
+        root.__addUpdate(this, null, o$1.REFLOW, false, true, false, false, cb);
       }
     }, {
       key: "__structure",

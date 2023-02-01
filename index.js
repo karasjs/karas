@@ -19011,7 +19011,7 @@
 
         if (isChange) {
           // 强制lv传CACHE，因为wasm情况会导致js不计算可能没有keys（缺少wasm计算的那些），而无论任何改变都会至少CACHE所以兼容
-          root.__addUpdate(target, keys, CACHE$4, false, false, false, gotoParams.optimize && currentFrame && currentFrame.optimize, this.__stopCb);
+          root.__addUpdate(target, keys, gotoParams.wasmChange ? CACHE$4 : false, false, false, false, gotoParams.optimize && currentFrame && currentFrame.optimize, this.__stopCb);
         } else {
           this.__stopCb(); // 无变化同步执行
 

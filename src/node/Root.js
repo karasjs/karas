@@ -1171,7 +1171,7 @@ class Root extends Dom {
     len = this.__ani.length; // 动画和渲染任务可能会改变自己的任务队列
     len2 = this.__task.length;
     len3 = this.__frameTask.length;
-    if(len === this.__jsAniCount && !len2 && !len3) {
+    if(!len && !len2 && !len3) {
       frame.offFrame(this);
       this.__isInFrame = false;
     }

@@ -40124,8 +40124,6 @@
 
       _this.__isInFrame = false;
       _this.__pause = false;
-      _this.__jsAniCount = 0; // 统计完全由wasm代替的动画计算数量
-
       _this.__arList = []; // parse中dom的动画解析预存到Root上，layout后执行
 
       _this.__ref = {};
@@ -41205,7 +41203,6 @@
 
 
         this.__aniChange = false;
-        var jsAniCount = 0;
 
         if (!this.__pause) {
           var wr = this.__wasmRoot;
@@ -41219,14 +41216,9 @@
           }
 
           for (var i = 0; i < len; i++) {
-            // 完全由wasm代替的会返回true标识
-            if (ani[i].__before(diff)) {
-              jsAniCount++;
-            }
+            ani[i].__before(diff);
           }
         }
-
-        this.__jsAniCount = jsAniCount;
 
         if (this.__aniChange || len2 || len3) {
           this.draw(false);
@@ -41272,7 +41264,7 @@
         len2 = this.__task.length;
         len3 = this.__frameTask.length;
 
-        if (len === this.__jsAniCount && !len2 && !len3) {
+        if (!len && !len2 && !len3) {
           frame.offFrame(this);
           this.__isInFrame = false;
         }

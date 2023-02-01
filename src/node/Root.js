@@ -691,8 +691,10 @@ class Root extends Dom {
 
   /**
    * 添加更新，分析repaint/reflow和上下影响，异步刷新
+   * sync是动画在gotoAndStop的时候，下一帧刷新由于一帧内同步执行计算标识true
+   * wasmChange比较特殊，仅在gotoAndStop的时候用到，可能变化完全在wasm中js没有keys和lv，需强制刷新
    */
-  __addUpdate(node, keys, focus, addDom, removeDom, sync, optimize, cb) {
+  __addUpdate(node, keys, focus, addDom, removeDom, sync, wasmChange, optimize, cb) {
     if(this.__isDestroyed) {
       return;
     }
@@ -758,7 +760,8 @@ class Root extends Dom {
       }
       return;
     }
-    if(res) {
+    // wasm变更可能会无keys和lv，需要强制刷新
+    if(res || wasmChange) {
       this.__frameDraw(cb);
     }
     else {

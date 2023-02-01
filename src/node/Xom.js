@@ -522,7 +522,7 @@ class Xom extends Node {
       if(item === fontFamily) {
         // 加载成功回调可能没注册信息，需要多判断一下
         if(font.hasRegister(item)) {
-          root.__addUpdate(node, null, REFLOW, false, false, false, false, null);
+          root.__addUpdate(node, null, REFLOW, false, false, false, false, false, null);
         }
         // 后面低优先级的无需再看
         return;
@@ -1526,7 +1526,7 @@ class Xom extends Node {
                 loadBgi.width = data.width;
                 loadBgi.height = data.height;
                 __cacheStyle[BACKGROUND_IMAGE] = undefined;
-                root.__addUpdate(node, null, REPAINT, false, false, false, false, null);
+                root.__addUpdate(node, null, REPAINT, false, false, false, false, false, null);
               }
             });
           }
@@ -2539,7 +2539,7 @@ class Xom extends Node {
       this.clearCache(lv < REPAINT);
     }
     if(root && !this.__isDestroyed) {
-      root.__addUpdate(this, null, lv, false, false, false, false, cb);
+      root.__addUpdate(this, null, lv, false, false, false, false, false, cb);
     }
     else if(isFunction(cb)) {
       cb(-1);
@@ -2859,7 +2859,7 @@ class Xom extends Node {
       return;
     }
     if(root) {
-      root.__addUpdate(this, keys, null, false, false, false, false, cb);
+      root.__addUpdate(this, keys, null, false, false, false, false, false, cb);
     }
   }
 
@@ -3167,7 +3167,7 @@ class Xom extends Node {
       return;
     }
     // 可见在reflow逻辑做结构关系等
-    root.__addUpdate(this, null, REFLOW, false, true, false, false, cb);
+    root.__addUpdate(this, null, REFLOW, false, true, false, false, false, cb);
   }
 
   addEventListener(type, cb) {
@@ -3338,7 +3338,7 @@ class Xom extends Node {
             p.__computedStyle[TRANSFORM_STYLE] = p.__currentStyle[TRANSFORM_STYLE];
           }
         }
-        root.__addUpdate(this, null, MASK, false, false, false, false, null);
+        root.__addUpdate(this, null, MASK, false, false, false, false, false, null);
       }
     }
   }
@@ -3362,7 +3362,7 @@ class Xom extends Node {
             p.__computedStyle[TRANSFORM_STYLE] = p.__currentStyle[TRANSFORM_STYLE];
           }
         }
-        root.__addUpdate(this, null, MASK, false, false, false, false, null);
+        root.__addUpdate(this, null, MASK, false, false, false, false, false, null);
       }
     }
   }
@@ -3383,7 +3383,7 @@ class Xom extends Node {
         else {
           this.__computedStyle[TRANSFORM_STYLE] = this.__currentStyle[TRANSFORM_STYLE];
         }
-        root.__addUpdate(this, null, REPAINT, false, false, false, null, false, null);
+        root.__addUpdate(this, null, REPAINT, false, false, false, false, null, null);
       }
     }
   }

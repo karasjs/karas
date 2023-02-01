@@ -11905,7 +11905,7 @@
   var NONE$4 = 0; //                                          0
   // cacheTotal变化需重新生成的时候
 
-  var CACHE$5 = 1; //                                         1
+  var CACHE$4 = 1; //                                         1
 
   var TRANSLATE_X$2 = 2; //                                  10
 
@@ -11949,7 +11949,7 @@
 
   var ENUM = {
     NONE: NONE$4,
-    CACHE: CACHE$5,
+    CACHE: CACHE$4,
     TRANSLATE_X: TRANSLATE_X$2,
     TRANSLATE_Y: TRANSLATE_Y$2,
     TRANSLATE_Z: TRANSLATE_Z$2,
@@ -11996,7 +11996,7 @@
       }
 
       if (k === Z_INDEX$4) {
-        return CACHE$5;
+        return CACHE$4;
       }
 
       if (k === TX$2) {
@@ -13069,7 +13069,7 @@
 
         this.__content = s;
 
-        this.__root.__addUpdate(this.__domParent, null, o$1.REFLOW, false, false, false, false, cb);
+        this.__root.__addUpdate(this.__domParent, null, o$1.REFLOW, false, false, false, false, false, cb);
       }
     }, {
       key: "remove",
@@ -13122,7 +13122,7 @@
         } // 可见在reflow逻辑做结构关系等，text视为父变更
 
 
-        root.__addUpdate(this, null, o$1.REFLOW, false, true, false, false, cb);
+        root.__addUpdate(this, null, o$1.REFLOW, false, true, false, false, false, cb);
       }
     }, {
       key: "__structure",
@@ -16662,9 +16662,9 @@
       GEOM$1 = o$2.GEOM;
   var getLevel$1 = o$1.getLevel,
       isRepaint = o$1.isRepaint,
-      NONE$3 = o$1.NONE,
-      CACHE$4 = o$1.CACHE,
-      TF$2 = o$1.TRANSFORM,
+      NONE$3 = o$1.NONE;
+      o$1.CACHE;
+      var TF$2 = o$1.TRANSFORM,
       TX$1 = o$1.TRANSLATE_X,
       TY$1 = o$1.TRANSLATE_Y,
       TZ$1 = o$1.TRANSLATE_Z,
@@ -18378,7 +18378,7 @@
 
 
           if (isChange) {
-            _root.__addUpdate(target, keys, false, false, false, false, currentFrame.optimize, null);
+            _root.__addUpdate(target, keys, false, false, false, false, false, currentFrame.optimize, null);
           }
         } // 开始时间为调用play时的帧时间
 
@@ -18620,7 +18620,7 @@
           };
 
           if (isChange) {
-            root.__addUpdate(target, keys, false, false, false, false, currentFrame && currentFrame.optimize, this.__stopCb);
+            root.__addUpdate(target, keys, false, false, false, false, false, currentFrame && currentFrame.optimize, this.__stopCb);
           } else {
             this.__stopCb();
           }
@@ -18687,7 +18687,7 @@
           };
 
           if (isChange) {
-            root.__addUpdate(target, keys, false, false, false, false, currentFrame && currentFrame.optimize, this.__stopCb);
+            root.__addUpdate(target, keys, false, false, false, false, false, currentFrame && currentFrame.optimize, this.__stopCb);
           } else {
             this.__stopCb();
           }
@@ -18812,7 +18812,7 @@
 
 
             if (isChange) {
-              root.__addUpdate(target, keys, false, false, false, false, currentFrame.optimize, this.__stopCb);
+              root.__addUpdate(target, keys, false, false, false, false, false, currentFrame.optimize, this.__stopCb);
             } else {
               this.__stopCb();
             }
@@ -18967,9 +18967,10 @@
 
           if (gotoParams) {
             this.__gotoStopCb(root, target, keys, currentFrame, gotoParams);
-          } // 普通动画有样式变更才触发真实刷新，且sync标识同步应用，和动画节奏一样
+          } // 普通动画有样式变更才触发真实刷新，且sync标识同步应用，和动画节奏一样，
+          // wasmChange无需，因为即便wasm接管，这块逻辑也在wasm中，这是动画更新没有gotoStop
           else if (keys.length) {
-            root.__addUpdate(target, keys, false, false, false, true, currentFrame && currentFrame.optimize);
+            root.__addUpdate(target, keys, false, false, false, true, false, currentFrame && currentFrame.optimize, null);
           }
         } // 动画内部除非同帧内且本帧没有任何变化，否则会一直触发，哪怕diff时间为0
         else {
@@ -19010,8 +19011,8 @@
         };
 
         if (isChange) {
-          // 强制lv传CACHE，因为wasm情况会导致js不计算可能没有keys（缺少wasm计算的那些），而无论任何改变都会至少CACHE所以兼容
-          root.__addUpdate(target, keys, gotoParams.wasmChange ? CACHE$4 : false, false, false, false, gotoParams.optimize && currentFrame && currentFrame.optimize, this.__stopCb);
+          // 因为wasm情况会导致js不计算可能没有keys（缺少wasm计算的那些），需传参标识
+          root.__addUpdate(target, keys, false, false, false, false, gotoParams.wasmChange, gotoParams.optimize && currentFrame && currentFrame.optimize, this.__stopCb);
         } else {
           this.__stopCb(); // 无变化同步执行
 
@@ -20764,7 +20765,7 @@
           if (item === fontFamily) {
             // 加载成功回调可能没注册信息，需要多判断一下
             if (o$3.hasRegister(item)) {
-              root.__addUpdate(node, null, REFLOW$3, false, false, false, false, null);
+              root.__addUpdate(node, null, REFLOW$3, false, false, false, false, false, null);
             } // 后面低优先级的无需再看
 
 
@@ -21829,7 +21830,7 @@
                     loadBgi.height = data.height;
                     __cacheStyle[BACKGROUND_IMAGE] = undefined;
 
-                    root.__addUpdate(node, null, REPAINT$3, false, false, false, false, null);
+                    root.__addUpdate(node, null, REPAINT$3, false, false, false, false, false, null);
                   }
                 });
               }
@@ -22940,7 +22941,7 @@
         }
 
         if (root && !this.__isDestroyed) {
-          root.__addUpdate(this, null, lv, false, false, false, false, cb);
+          root.__addUpdate(this, null, lv, false, false, false, false, false, cb);
         } else if (isFunction$4(cb)) {
           cb(-1);
         }
@@ -23322,7 +23323,7 @@
         }
 
         if (root) {
-          root.__addUpdate(this, keys, null, false, false, false, false, cb);
+          root.__addUpdate(this, keys, null, false, false, false, false, false, cb);
         }
       }
     }, {
@@ -23728,7 +23729,7 @@
         } // 可见在reflow逻辑做结构关系等
 
 
-        root.__addUpdate(this, null, REFLOW$3, false, true, false, false, cb);
+        root.__addUpdate(this, null, REFLOW$3, false, true, false, false, false, cb);
       }
     }, {
       key: "addEventListener",
@@ -23935,7 +23936,7 @@
               }
             }
 
-            root.__addUpdate(this, null, MASK$2, false, false, false, false, null);
+            root.__addUpdate(this, null, MASK$2, false, false, false, false, false, null);
           }
         }
       }
@@ -23962,7 +23963,7 @@
               }
             }
 
-            root.__addUpdate(this, null, MASK$2, false, false, false, false, null);
+            root.__addUpdate(this, null, MASK$2, false, false, false, false, false, null);
           }
         }
       }
@@ -23985,7 +23986,7 @@
               this.__computedStyle[TRANSFORM_STYLE$1] = this.__currentStyle[TRANSFORM_STYLE$1];
             }
 
-            root.__addUpdate(this, null, REPAINT$3, false, false, false, null, false, null);
+            root.__addUpdate(this, null, REPAINT$3, false, false, false, false, null, null);
           }
         }
       }
@@ -30238,7 +30239,7 @@
           child = this;
         }
 
-        root.__addUpdate(child, null, REFLOW$1, true, false, false, false, cb);
+        root.__addUpdate(child, null, REFLOW$1, true, false, false, false, false, cb);
       }
     }, {
       key: "prependChild",
@@ -30294,7 +30295,7 @@
           child = this;
         }
 
-        root.__addUpdate(child, null, REFLOW$1, true, false, false, false, cb);
+        root.__addUpdate(child, null, REFLOW$1, true, false, false, false, false, cb);
       }
     }, {
       key: "insertBefore",
@@ -30361,7 +30362,7 @@
           child = parent;
         }
 
-        root.__addUpdate(child, null, REFLOW$1, true, false, false, false, cb);
+        root.__addUpdate(child, null, REFLOW$1, true, false, false, false, false, cb);
       }
     }, {
       key: "insertAfter",
@@ -30421,7 +30422,7 @@
           child = parent;
         }
 
-        root.__addUpdate(child, null, REFLOW$1, true, false, false, false, cb);
+        root.__addUpdate(child, null, REFLOW$1, true, false, false, false, false, cb);
       }
     }, {
       key: "removeChild",
@@ -33139,9 +33140,9 @@
                   height = _self$__currentStyle[HEIGHT$1];
 
               if (width.u !== AUTO && height.u !== AUTO) {
-                root.__addUpdate(self, null, o$1.REPAINT, false, false, false, false, cb);
+                root.__addUpdate(self, null, o$1.REPAINT, false, false, false, false, false, cb);
               } else {
-                root.__addUpdate(self, null, o$1.REFLOW, false, false, false, false, cb);
+                root.__addUpdate(self, null, o$1.REFLOW, false, false, false, false, false, cb);
               }
             };
 
@@ -40715,11 +40716,13 @@
       }
       /**
        * 添加更新，分析repaint/reflow和上下影响，异步刷新
+       * sync是动画在gotoAndStop的时候，下一帧刷新由于一帧内同步执行计算标识true
+       * wasmChange比较特殊，仅在gotoAndStop的时候用到，可能变化完全在wasm中js没有keys和lv，需强制刷新
        */
 
     }, {
       key: "__addUpdate",
-      value: function __addUpdate(node, keys, focus, addDom, removeDom, sync, optimize, cb) {
+      value: function __addUpdate(node, keys, focus, addDom, removeDom, sync, wasmChange, optimize, cb) {
         if (this.__isDestroyed) {
           return;
         }
@@ -40782,9 +40785,10 @@
           }
 
           return;
-        }
+        } // wasm变更可能会无keys和lv，需要强制刷新
 
-        if (res) {
+
+        if (res || wasmChange) {
           this.__frameDraw(cb);
         } else {
           cb && cb();

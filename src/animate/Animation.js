@@ -1727,7 +1727,8 @@ class Animation extends Event {
       }
       // 有变化的backwards才更新，否则无需理会，不需要回调，极端情况立刻pause()回造成一次无用刷新
       if(isChange) {
-        root.__addUpdate(target, keys, false, false, false, false, currentFrame.optimize, null);
+        root.__addUpdate(target, keys, false, false, false, false, false,
+          currentFrame.optimize, null);
       }
     }
     // 开始时间为调用play时的帧时间
@@ -1918,7 +1919,8 @@ class Animation extends Event {
         }
       };
       if(isChange) {
-        root.__addUpdate(target, keys, false, false, false, false, currentFrame && currentFrame.optimize, this.__stopCb);
+        root.__addUpdate(target, keys, false, false, false, false, false,
+          currentFrame && currentFrame.optimize, this.__stopCb);
       }
       else {
         this.__stopCb();
@@ -1969,7 +1971,8 @@ class Animation extends Event {
         }
       };
       if(isChange) {
-        root.__addUpdate(target, keys, false, false, false, false, currentFrame && currentFrame.optimize, this.__stopCb);
+        root.__addUpdate(target, keys, false, false, false, false, false,
+          currentFrame && currentFrame.optimize, this.__stopCb);
       }
       else {
         this.__stopCb();
@@ -2072,7 +2075,8 @@ class Animation extends Event {
         }
         // 有变化的backwards才更新，否则无需理会，不需要回调，极端情况立刻pause()回造成一次无用刷新
         if(isChange) {
-          root.__addUpdate(target, keys, false, false, false, false, currentFrame.optimize, this.__stopCb);
+          root.__addUpdate(target, keys, false, false, false, false, false,
+            currentFrame.optimize, this.__stopCb);
         }
         else {
           this.__stopCb();
@@ -2209,9 +2213,11 @@ class Animation extends Event {
       if(gotoParams) {
         this.__gotoStopCb(root, target, keys, currentFrame, gotoParams);
       }
-      // 普通动画有样式变更才触发真实刷新，且sync标识同步应用，和动画节奏一样
+      // 普通动画有样式变更才触发真实刷新，且sync标识同步应用，和动画节奏一样，
+      // wasmChange无需，因为即便wasm接管，这块逻辑也在wasm中，这是动画更新没有gotoStop
       else if(keys.length) {
-        root.__addUpdate(target, keys, false, false, false, true, currentFrame && currentFrame.optimize);
+        root.__addUpdate(target, keys, false, false, false, true, false,
+          currentFrame && currentFrame.optimize, null);
       }
     }
     // 动画内部除非同帧内且本帧没有任何变化，否则会一直触发，哪怕diff时间为0
@@ -2243,8 +2249,9 @@ class Animation extends Event {
       }
     };
     if(isChange) {
-      // 强制lv传CACHE，因为wasm情况会导致js不计算可能没有keys（缺少wasm计算的那些），而无论任何改变都会至少CACHE所以兼容
-      root.__addUpdate(target, keys, gotoParams.wasmChange ? CACHE : false, false, false, false, gotoParams.optimize && currentFrame && currentFrame.optimize, this.__stopCb);
+      // 因为wasm情况会导致js不计算可能没有keys（缺少wasm计算的那些），需传参标识
+      root.__addUpdate(target, keys, false, false, false, false,
+        gotoParams.wasmChange, gotoParams.optimize && currentFrame && currentFrame.optimize, this.__stopCb);
     }
     else {
       this.__stopCb(); // 无变化同步执行

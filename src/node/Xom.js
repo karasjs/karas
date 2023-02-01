@@ -522,7 +522,7 @@ class Xom extends Node {
       if(item === fontFamily) {
         // 加载成功回调可能没注册信息，需要多判断一下
         if(font.hasRegister(item)) {
-          root.__addUpdate(node, null, REFLOW, false, false, false, null);
+          root.__addUpdate(node, null, REFLOW, false, false, false, false, null);
         }
         // 后面低优先级的无需再看
         return;
@@ -1039,7 +1039,7 @@ class Xom extends Node {
       __computedStyle[TRANSFORM_ORIGIN] = [__x1, __y1];
       return __cacheStyle[MATRIX] = toE(this.__matrix);
     }
-    let matrixCache = __cacheStyle[MATRIX];
+    let matrixCache = this.__matrix;
     // 优化计算scale不能为0，无法计算倍数差，rotateZ优化不能包含rotateX/rotateY/skew
     if(!isNil(optimize)) {}
     else if(matrixCache && lv < REFLOW && !(lv & TF)) {
@@ -1107,8 +1107,8 @@ class Xom extends Node {
       if(lv & RZ) {
         let v = __currentStyle[ROTATE_Z].v;
         __computedStyle[ROTATE_Z] = v;
-        v = d2r(v);
-        let sin = Math.sin(v), cos = Math.cos(v);
+        let r = d2r(v);
+        let sin = Math.sin(r), cos = Math.cos(r);
         let x = __computedStyle[SCALE_X], y = __computedStyle[SCALE_Y];
         let cx = matrixCache[0] = transform[0] = cos * x;
         let sx = matrixCache[1] = transform[1] = sin * x;
@@ -1526,7 +1526,7 @@ class Xom extends Node {
                 loadBgi.width = data.width;
                 loadBgi.height = data.height;
                 __cacheStyle[BACKGROUND_IMAGE] = undefined;
-                root.__addUpdate(node, null, REPAINT, false, false, false, null);
+                root.__addUpdate(node, null, REPAINT, false, false, false, false, null);
               }
             });
           }
@@ -2539,7 +2539,7 @@ class Xom extends Node {
       this.clearCache(lv < REPAINT);
     }
     if(root && !this.__isDestroyed) {
-      root.__addUpdate(this, null, lv, false, false, false, cb);
+      root.__addUpdate(this, null, lv, false, false, false, false, cb);
     }
     else if(isFunction(cb)) {
       cb(-1);
@@ -2859,7 +2859,7 @@ class Xom extends Node {
       return;
     }
     if(root) {
-      root.__addUpdate(this, keys, null, false, false, false, cb);
+      root.__addUpdate(this, keys, null, false, false, false, false, cb);
     }
   }
 
@@ -3167,7 +3167,7 @@ class Xom extends Node {
       return;
     }
     // 可见在reflow逻辑做结构关系等
-    root.__addUpdate(this, null, REFLOW, false, true, false, cb);
+    root.__addUpdate(this, null, REFLOW, false, true, false, false, cb);
   }
 
   addEventListener(type, cb) {
@@ -3338,7 +3338,7 @@ class Xom extends Node {
             p.__computedStyle[TRANSFORM_STYLE] = p.__currentStyle[TRANSFORM_STYLE];
           }
         }
-        root.__addUpdate(this, null, MASK, false, false, false, null);
+        root.__addUpdate(this, null, MASK, false, false, false, false, null);
       }
     }
   }
@@ -3362,7 +3362,7 @@ class Xom extends Node {
             p.__computedStyle[TRANSFORM_STYLE] = p.__currentStyle[TRANSFORM_STYLE];
           }
         }
-        root.__addUpdate(this, null, MASK, false, false, false, null);
+        root.__addUpdate(this, null, MASK, false, false, false, false, null);
       }
     }
   }
@@ -3383,7 +3383,7 @@ class Xom extends Node {
         else {
           this.__computedStyle[TRANSFORM_STYLE] = this.__currentStyle[TRANSFORM_STYLE];
         }
-        root.__addUpdate(this, null, REPAINT, false, false, false, null, null);
+        root.__addUpdate(this, null, REPAINT, false, false, false, null, false, null);
       }
     }
   }

@@ -2312,6 +2312,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
     let len = __structs.length;
     wasmOp = new Float64Array(wasm.wasm.memory.buffer, __wasmRoot.op_ptr(), len);
     wasmVt = new Float64Array(wasm.wasm.memory.buffer, __wasmRoot.vt_ptr(), len * 16);
+    // console.log(wasmVt);
   }
   let cx = width * 0.5, cy = height * 0.5;
   // 栈代替递归，存父节点的matrix/opacity，matrix为E时存null省略计算
@@ -2429,6 +2430,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       if(!__refreshLevel) {
       }
       else if(__refreshLevel < REPAINT) {
+        let hasContent = node.__hasContent;
         let mixBlendMode = __computedStyle[MIX_BLEND_MODE];
         let isMbm = (__refreshLevel & MBM) && mixBlendMode !== 'normal';
         let need = node.__cacheAsBitmap || hasMask;
@@ -2438,9 +2440,12 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
             need = true;
           }
         }
+        let isPpt;
         if(!need && (__refreshLevel & (PPT | CACHE))) {
           let __domParent = node.__domParent;
-          let isPpt = !isE(__domParent && __domParent.__perspectiveMatrix) || node.__selfPerspectiveMatrix;
+          isPpt = total && perspective
+            && (!isE(__domParent && __domParent.__perspectiveMatrix)
+              || !isE(node.__selfPerspectiveMatrix));
           if(isPpt) {
             need = true;
           }
@@ -2449,14 +2454,14 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
           hasMbm = true;
         }
         // 这里和canvas不一样，前置cacheAsBitmap条件变成或条件之一，新的ppt层级且画中画需要新的fbo
-        if(need) {
+        if(need && (hasContent || total)) {
           mergeList.push({
             i,
             lv,
             total,
             node,
             hasMask,
-            isPpt: total && perspective || node.__selfPerspectiveMatrix,
+            isPpt,
           });
         }
         // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total
@@ -2519,32 +2524,34 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         else {
           node.__limitCache = false;
         }
-        let {
-          [OVERFLOW]: overflow,
-          [FILTER]: filter,
-          [MIX_BLEND_MODE]: mixBlendMode,
-          [PERSPECTIVE]: perspective,
-        } = __computedStyle;
-        let isMbm = mixBlendMode !== 'normal';
-        let isPpt = total && perspective || !isE(node.__selfPerspectiveMatrix);
-        let isOverflow = overflow === 'hidden' && total;
-        let isFilter = filter && filter.length;
-        if(isMbm) {
-          hasMbm = true;
-        }
-        if(node.__cacheAsBitmap
-          || hasMask
-          || isFilter
-          || isOverflow
-          || isPpt) {
-          mergeList.push({
-            i,
-            lv,
-            total,
-            node,
-            hasMask,
-            isPpt,
-          });
+        if(hasContent || total) {
+          let {
+            [OVERFLOW]: overflow,
+            [FILTER]: filter,
+            [MIX_BLEND_MODE]: mixBlendMode,
+            [PERSPECTIVE]: perspective,
+          } = __computedStyle;
+          let isMbm = mixBlendMode !== 'normal';
+          let isPpt = total && perspective || !isE(node.__selfPerspectiveMatrix);
+          let isOverflow = overflow === 'hidden' && total;
+          let isFilter = filter && filter.length;
+          if(isMbm) {
+            hasMbm = true;
+          }
+          if(node.__cacheAsBitmap
+            || hasMask
+            || isFilter
+            || isOverflow
+            || isPpt) {
+            mergeList.push({
+              i,
+              lv,
+              total,
+              node,
+              hasMask,
+              isPpt,
+            });
+          }
         }
       }
       lastRefreshLevel = __refreshLevel;
@@ -2673,7 +2680,6 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         continue;
       }
       let {
-        // [OPACITY]: opacity,
         [MIX_BLEND_MODE]: mixBlendMode,
         [VISIBILITY]: visibility,
         [BACKFACE_VISIBILITY]: backfaceVisibility,
@@ -2684,14 +2690,12 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         __cacheTotal,
         __cacheFilter,
         __cacheMask,
-        // __matrix,
-        // __selfPerspectiveMatrix,
       } = node;
       let m;
       if(!wasmOp) {
         m = node.__matrix;
         let __selfPerspectiveMatrix = node.__selfPerspectiveMatrix;
-        if(__selfPerspectiveMatrix) {
+        if(!isE(__selfPerspectiveMatrix)) {
           m = multiply(__selfPerspectiveMatrix, m);
         }
         let __domParent = node.__domParent;

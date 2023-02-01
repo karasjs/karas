@@ -322,6 +322,7 @@ function toE(m) {
   m[13] = 0;
   m[14] = 0;
   m[15] = 1;
+  return m;
 }
 
 /**

@@ -100,6 +100,7 @@ const {
   getLevel,
   isRepaint,
   NONE,
+  CACHE,
   TRANSFORM: TF,
   TRANSLATE_X: TX,
   TRANSLATE_Y: TY,
@@ -1104,16 +1105,9 @@ function calFrame(prev, next, keys, target) {
   }
   // 提前计算，不包含fixed的
   prev.lv = lv;
-  // 常见的几种动画matrix计算是否可优化提前计算
+  // 常见的几种动画matrix计算是否可优化提前计算，这里无需过于精确，因为最终节点计算会判断，但明显的不可优化的要防止
   if(isRepaint(lv) && (lv & (TX | TY | TZ | RZ | SCALE))) {
-    if((lv & TF) || (
-      (lv & SX) && !computedStyle[SCALE_X]
-      || (lv & SY) && !computedStyle[SCALE_Y]
-      || (lv & SZ) && !computedStyle[SCALE_Z]
-      || (lv & RZ) && (computedStyle[ROTATE_X] || computedStyle[ROTATE_Y]
-      || computedStyle[SKEW_X] || computedStyle[SKEW_Y])
-    )) {}
-    else {
+    if(!(lv & TF)) {
       prev.optimize = true;
     }
   }
@@ -1544,7 +1538,6 @@ class Animation extends Event {
     let op = this.__options = options || {
       duration: 0,
     };
-    this.__begin = true;
     this.__playState = 'idle';
     this.__target = target;
     this.__root = target.__root;
@@ -1734,7 +1727,7 @@ class Animation extends Event {
       }
       // 有变化的backwards才更新，否则无需理会，不需要回调，极端情况立刻pause()回造成一次无用刷新
       if(isChange) {
-        root.__addUpdate(target, keys, false, false, false, false, null);
+        root.__addUpdate(target, keys, false, false, false, false, currentFrame.optimize, null);
       }
     }
     // 开始时间为调用play时的帧时间
@@ -1905,14 +1898,11 @@ class Animation extends Event {
           currentFrame = framesR[framesR.length - 1];
           style = currentFrame.style;
         }
+        this.__currentFrame = currentFrame;
       }
       else {
         style = this.__originStyle;
-        currentFrame = {
-          style,
-        };
       }
-      this.__currentFrame = currentFrame;
       let keys = calLastStyle(style, target, this.__keys);
       let isChange = !!keys.length;
       if(this.__stopCb) {
@@ -1928,7 +1918,7 @@ class Animation extends Event {
         }
       };
       if(isChange) {
-        root.__addUpdate(target, keys, false, false, false, false, this.__stopCb);
+        root.__addUpdate(target, keys, false, false, false, false, currentFrame && currentFrame.optimize, this.__stopCb);
       }
       else {
         this.__stopCb();
@@ -1959,6 +1949,7 @@ class Animation extends Event {
     if(wa) {
       wa.play_state = PLAY_STATE.IDLE;
     }
+    let currentFrame = this.__currentFrame;
     this.__currentFrame = null;
     let root = this.__root;
     if(root) {
@@ -1978,7 +1969,7 @@ class Animation extends Event {
         }
       };
       if(isChange) {
-        root.__addUpdate(target, keys, false, false, false, false, this.__stopCb);
+        root.__addUpdate(target, keys, false, false, false, false, currentFrame && currentFrame.optimize, this.__stopCb);
       }
       else {
         this.__stopCb();
@@ -2081,7 +2072,7 @@ class Animation extends Event {
         }
         // 有变化的backwards才更新，否则无需理会，不需要回调，极端情况立刻pause()回造成一次无用刷新
         if(isChange) {
-          root.__addUpdate(target, keys, false, false, false, false, this.__stopCb);
+          root.__addUpdate(target, keys, false, false, false, false, currentFrame.optimize, this.__stopCb);
         }
         else {
           this.__stopCb();
@@ -2091,11 +2082,12 @@ class Animation extends Event {
     }
     let wasmChange = false;
     if(wa) {
-      wasmChange = wa.cal_current(dur, true);
+      wasmChange = wa.goto_stop(v, dur);
     }
     this.__calCurrent(currentFrames, this.__currentFrame, v, dur, duration, {
       wasmChange,
       cb,
+      optimize: true,
     });
   }
 
@@ -2152,7 +2144,7 @@ class Animation extends Event {
   }
 
   // 有gotoCb时是来自gotoAndStop，gotoAndPlay则复用play
-  __calCurrent(currentFrames, lastFrame, currentTime, dur, duration, fromGoto) {
+  __calCurrent(currentFrames, lastFrame, currentTime, dur, duration, gotoParams) {
     let isLastCount = this.__playCount >= this.__iterations - 1, length = currentFrames.length;
     // 只有2帧可优化，否则2分查找当前帧
     let i;
@@ -2204,6 +2196,7 @@ class Animation extends Event {
       }
       else {
         keys = calLastStyle(this.__originStyle, target, this.__keys);
+        currentFrame = this.__currentFrame = null;
       }
       // 第一次进入endDelay触发后续不再，并且设置__end标识在after触发END事件
       if(!this.__isEndDelay) {
@@ -2213,12 +2206,12 @@ class Animation extends Event {
         this.__finished = true;
       }
       // gotoAndStop有参数回调特殊对待
-      if(fromGoto) {
-        this.__gotoStopCb(root, target, keys, fromGoto);
+      if(gotoParams) {
+        this.__gotoStopCb(root, target, keys, currentFrame, gotoParams);
       }
       // 普通动画有样式变更才触发真实刷新，且sync标识同步应用，和动画节奏一样
       else if(keys.length) {
-        root.__addUpdate(target, keys, false, false, false, true, null);
+        root.__addUpdate(target, keys, false, false, false, true, currentFrame && currentFrame.optimize);
       }
     }
     // 动画内部除非同帧内且本帧没有任何变化，否则会一直触发，哪怕diff时间为0
@@ -2226,8 +2219,8 @@ class Animation extends Event {
       let { trans, fixed } = Animation.calIntermediateStyle(currentFrame, percent, target, lastFrame !== currentFrame);
       let keys = trans.concat(fixed);
       // gotoAndStop有参数回调特殊对待
-      if(fromGoto) {
-        this.__gotoStopCb(root, target, keys, fromGoto);
+      if(gotoParams) {
+        this.__gotoStopCb(root, target, keys, currentFrame, gotoParams);
       }
       // 普通动画同步更新sync
       else if(keys.length) {
@@ -2236,21 +2229,22 @@ class Animation extends Event {
     }
   }
 
-  __gotoStopCb(root, target, keys, params) {
+  __gotoStopCb(root, target, keys, currentFrame, gotoParams) {
     if(this.__stopCb) {
       root.__cancelFrameDraw(this.__stopCb);
     }
-    let isChange = params.wasmChange || !!keys.length;
+    let isChange = gotoParams.wasmChange || !!keys.length;
     this.__stopCb = () => {
       if(isChange) {
         frameCb(this);
       }
-      if(isFunction(params.cb)) {
-        params.cb(isChange);
+      if(isFunction(gotoParams.cb)) {
+        gotoParams.cb(isChange);
       }
     };
     if(isChange) {
-      root.__addUpdate(target, keys, false, false, false, false, this.__stopCb);
+      // 强制lv传CACHE，因为wasm情况会导致js不计算可能没有keys（缺少wasm计算的那些），而无论任何改变都会至少CACHE所以兼容
+      root.__addUpdate(target, keys, CACHE, false, false, false, gotoParams.optimize && currentFrame && currentFrame.optimize, this.__stopCb);
     }
     else {
       this.__stopCb(); // 无变化同步执行

@@ -80,6 +80,19 @@ export class Animation {
   /**
    * @returns {number}
    */
+  get end_delay() {
+    const ret = wasm.__wbg_get_animation_end_delay(this.ptr);
+    return ret;
+  }
+  /**
+   * @param {number} arg0
+   */
+  set end_delay(arg0) {
+    wasm.__wbg_set_animation_end_delay(this.ptr, arg0);
+  }
+  /**
+   * @returns {number}
+   */
   get fill() {
     const ret = wasm.__wbg_get_animation_fill(this.ptr);
     return ret;
@@ -238,6 +251,7 @@ export class Animation {
    * @param {number} duration
    * @param {number} fps
    * @param {number} delay
+   * @param {number} end_delay
    * @param {number} fill
    * @param {number} playback_rate
    * @param {number} iterations
@@ -246,8 +260,8 @@ export class Animation {
    * @param {number} easing
    * @returns {Animation}
    */
-  static new(direction, duration, fps, delay, fill, playback_rate, iterations, area_start, area_duration, easing) {
-    const ret = wasm.animation_new(direction, duration, fps, delay, fill, playback_rate, iterations, area_start, area_duration, easing);
+  static new(direction, duration, fps, delay, end_delay, fill, playback_rate, iterations, area_start, area_duration, easing) {
+    const ret = wasm.animation_new(direction, duration, fps, delay, end_delay, fill, playback_rate, iterations, area_start, area_duration, easing);
     return Animation.__wrap(ret);
   }
   /**
@@ -302,6 +316,15 @@ export class Animation {
    */
   on_frame(diff) {
     const ret = wasm.animation_on_frame(this.ptr, diff);
+    return ret !== 0;
+  }
+  /**
+   * @param {number} v
+   * @param {number} dur
+   * @returns {boolean}
+   */
+  goto_stop(v, dur) {
+    const ret = wasm.animation_goto_stop(this.ptr, v, dur);
     return ret !== 0;
   }
 }

@@ -692,7 +692,7 @@ class Root extends Dom {
   /**
    * 添加更新，分析repaint/reflow和上下影响，异步刷新
    */
-  __addUpdate(node, keys, focus, addDom, removeDom, sync, cb) {
+  __addUpdate(node, keys, focus, addDom, removeDom, sync, optimize, cb) {
     if(this.__isDestroyed) {
       return;
     }
@@ -750,7 +750,7 @@ class Root extends Dom {
       }
     }
     let res = this.__calUpdate(node, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver,
-      addDom, removeDom, false);
+      addDom, removeDom, optimize);
     // 动画在最后一帧要finish或者cancel时，特殊调用同步计算无需刷新，不会有cb
     if(sync) {
       if(res) {
@@ -1133,7 +1133,7 @@ class Root extends Dom {
       }
       for(let i = 0; i < len; i++) {
         // 完全由wasm代替的会返回true标识
-        if(!ani[i].__before(diff)) {
+        if(ani[i].__before(diff)) {
           jsAniCount++;
         }
       }
@@ -1171,7 +1171,7 @@ class Root extends Dom {
     len = this.__ani.length; // 动画和渲染任务可能会改变自己的任务队列
     len2 = this.__task.length;
     len3 = this.__frameTask.length;
-    if(!len && !len2 && !len3) {
+    if(len === this.__jsAniCount && !len2 && !len3) {
       frame.offFrame(this);
       this.__isInFrame = false;
     }

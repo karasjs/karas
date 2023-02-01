@@ -164,6 +164,7 @@ const PLAY_STATE = {
   RUNNING: 1,
   PAUSED: 2,
   FINISHED: 3,
+  GOTO: 4, // 特殊给wasm的gotoAndStop标识，因为其逻辑处理和js不一样
 };
 
 /**
@@ -1547,8 +1548,6 @@ class Animation extends Event {
     this.__playState = 'idle';
     this.__target = target;
     this.__root = target.__root;
-    this.__isDelay = false;
-    this.__firstPlay = true;
     let duration = this.duration = op.duration;
     let ea = this.easing = op.easing;
     let fps = parseInt(op.fps) || 0;
@@ -1557,6 +1556,7 @@ class Animation extends Event {
     }
     this.fps = fps;
     this.delay = op.delay;
+    this.endDelay = op.endDelay;
     this.playbackRate = op.playbackRate;
     this.fill = op.fill;
     this.iterations = op.iterations;
@@ -1569,7 +1569,11 @@ class Animation extends Event {
     this.__fps = fps;
     this.__keys = keys;
     this.__originStyle = originStyle;
+    this.__firstPlay = true;
+    this.__begin =  true;
+    this.__end = false;
     this.__isDelay = false;
+    this.__isEndDelay = false;
     this.__playCount = 0;
     this.__currentFrames = {
       reverse: true,
@@ -1660,7 +1664,7 @@ class Animation extends Event {
           }
         }
         let wa = this.__wasmAnimation = wasm.Animation.new(DIRECTION[this.__direction] || 0, this.__duration, this.__fps,
-          this.__delay, FILLS[this.__fill] || 0, this.__playbackRate, iter,
+          this.__delay, this.__endDelay, FILLS[this.__fill] || 0, this.__playbackRate, iter,
           this.__areaStart, this.__areaDuration, easeType);
         if(easeType === EASING.EASE_CUSTOM) {
           let v = ea.match(/[\d.]+/g);
@@ -1683,7 +1687,7 @@ class Animation extends Event {
     this.__cancelTask();
     if(isFinish) {
       // gotoAndStop到一个很大的时间的话，也需要防止超过
-      this.__currentTime = this.__delay + this.__duration * this.__iterations;
+      this.__currentTime = this.__delay + this.__duration * this.__iterations + this.__endDelay;
       this.__playState = 'finished';
     }
     else {
@@ -1736,7 +1740,9 @@ class Animation extends Event {
     // 开始时间为调用play时的帧时间
     this.__startTime = frame.__now || (frame.__now = inject.now());
     this.__begin =  true;
+    this.__end = false;
     this.__isDelay = false;
+    this.__isEndDelay = false;
     // 由root统一控制，防止重复play
     let root = this.__root;
     root.__onAniFrame(this);
@@ -1745,16 +1751,15 @@ class Animation extends Event {
       wa.play_count = 0;
       wa.play_state = PLAY_STATE.RUNNING;
       wa.first_play = true;
-      wa.first_enter = true;
     }
     return this;
   }
 
   __before(diff) {
     this.__timestamp = frame.__now;
-    // 有wasm且完全被包含情况忽略js计算
+    // 有wasm且完全被包含情况忽略js计算，返回true标识
     if(this.__ignore) {
-      return;
+      return true;
     }
     let fps = this.__fps;
     let currentFrames = this.__currentFrames;
@@ -1815,9 +1820,15 @@ class Animation extends Event {
       this.__begin = false;
       this.emit(Event.BEGIN, this.__playCount);
     }
+    // end事件只触发一次，末轮进入endDelay或直接结束时
+    if(this.__end) {
+      this.__end = false;
+      this.emit(Event.END, this.__playCount - 1);
+    }
     if(this.__finished) {
       this.__clean(true);
-      this.__begin = this.__finished = this.__inFps = false;
+      this.__begin = this.__end = this.__isDelay = this.__finished
+        = this.__inFps = false;
       this.__playState = 'finished';
       this.emit(Event.FINISH, true);
     }
@@ -1866,7 +1877,7 @@ class Animation extends Event {
     }
     // 先清除所有回调任务，多次调用finish也会清除只留最后一次
     this.__clean(true);
-    this.__begin = this.__isDelay = this.__finished = this.__inFps = false;
+    this.__begin = this.__end = this.__isDelay = this.__isEndDelay = this.__finished = this.__inFps = false;
     this.__timestamp = frame.__now = frame.__now || inject.now();
     this.__playState = 'finished';
     let wa = this.__wasmAnimation;
@@ -1941,7 +1952,7 @@ class Animation extends Event {
       return this;
     }
     this.__clean(false);
-    this.__begin = this.__isDelay = this.__finished = this.__inFps = false;
+    this.__begin = this.__end = this.__isDelay =  this.__isEndDelay = this.__finished = this.__inFps = false;
     this.__timestamp = frame.__now = frame.__now || inject.now();
     this.__playState = 'idle';
     let wa = this.__wasmAnimation;
@@ -1984,6 +1995,7 @@ class Animation extends Event {
     let duration = this.__duration;
     let frames = this.__frames;
     let areaDuration = this.__areaDuration;
+    let endDelay = this.__endDelay;
     let playState = this.__playState;
     let dur = areaDuration ? Math.min(duration, areaDuration) : duration;
     if(isDestroyed || dur <= 0 || frames.length < 1) {
@@ -1991,7 +2003,7 @@ class Animation extends Event {
     }
     // 计算出时间点直接累加播放
     v = this.__goto(v, options.isFrame, options.excludeDelay);
-    if(v >= dur) {
+    if(v >= dur + endDelay) {
       if(this.__stayEnd) {
         this.finish(cb);
       }
@@ -2016,6 +2028,7 @@ class Animation extends Event {
     let duration = this.__duration;
     let frames = this.__frames;
     let areaDuration = this.__areaDuration;
+    let endDelay = this.__endDelay;
     let currentTime = this.__currentTime;
     let dur = areaDuration ? Math.min(duration, areaDuration) : duration;
     if(isDestroyed || dur <= 0 || frames.length < 1) {
@@ -2023,7 +2036,7 @@ class Animation extends Event {
     }
     let wa = this.__wasmAnimation;
     v = this.__goto(v, options.isFrame, options.excludeDelay);
-    if(v >= dur) {
+    if(v >= dur + endDelay) {
       if(this.__stayEnd) {
         this.finish(cb);
       }
@@ -2032,17 +2045,19 @@ class Animation extends Event {
       }
       return;
     }
-    this.__cancelTask();
-    this.__playState = 'paused';
-    if(wa) {
-      wa.play_state = PLAY_STATE.PAUSED;
-    }
     this.__timestamp = frame.__now = frame.__now || inject.now();
+    // 重复相同时间忽略
     if(v === currentTime) {
       if(isFunction(cb)) {
         cb(false);
       }
       return;
+    }
+    this.__cancelTask();
+    this.__playState = 'paused';
+    // wasm的特殊标识，在root的before中统一遍历节点计算中需要知道
+    if(wa) {
+      wa.play_state = PLAY_STATE.GOTO;
     }
     let root = this.__root;
     let currentFrames = this.__currentFrames;
@@ -2074,10 +2089,14 @@ class Animation extends Event {
       }
       return;
     }
+    let wasmChange = false;
     if(wa) {
-      let res = wa.cal_current(dur, true);
+      wasmChange = wa.cal_current(dur, true);
     }
-    this.__calCurrent(currentFrames, this.__currentFrame, v, dur, duration, isFunction(cb) ? cb : function() {});
+    this.__calCurrent(currentFrames, this.__currentFrame, v, dur, duration, {
+      wasmChange,
+      cb,
+    });
   }
 
   // 返回不包含delay且去除多轮的时间
@@ -2133,7 +2152,7 @@ class Animation extends Event {
   }
 
   // 有gotoCb时是来自gotoAndStop，gotoAndPlay则复用play
-  __calCurrent(currentFrames, lastFrame, currentTime, dur, duration, gotoCb) {
+  __calCurrent(currentFrames, lastFrame, currentTime, dur, duration, fromGoto) {
     let isLastCount = this.__playCount >= this.__iterations - 1, length = currentFrames.length;
     // 只有2帧可优化，否则2分查找当前帧
     let i;
@@ -2165,6 +2184,16 @@ class Animation extends Event {
       lastFrame && (lastFrame.lastPercent = -1);
       this.__currentFrame = currentFrame;
     }
+    /** 这里要考虑全几种场景：
+     * 1. 单次播放无endDelay且fill不停留（有/无差异，下同）
+     * 2. 单次播放无endDelay且fill停留
+     * 3. 单次播放有endDelay且fill不停留
+     * 4. 单次播放有endDelay且fill停留
+     * 5. 多次播放无endDelay且fill不停留（尾次/非尾次，下同）
+     * 6. 多次播放无endDelay且fill停留
+     * 7. 多次播放有endDelay且fill不停留
+     * 8. 多次播放有endDelay且fill停留
+     */
     let root = this.__root, target = this.__target;
     // 最后结束特殊处理
     if(isLastFrame) {
@@ -2176,11 +2205,16 @@ class Animation extends Event {
       else {
         keys = calLastStyle(this.__originStyle, target, this.__keys);
       }
-      this.__playCount++;
-      this.__finished = true;
+      // 第一次进入endDelay触发后续不再，并且设置__end标识在after触发END事件
+      if(!this.__isEndDelay) {
+        this.__isEndDelay = true;
+        this.__end = true;
+        this.__playCount++;
+        this.__finished = true;
+      }
       // gotoAndStop有参数回调特殊对待
-      if(gotoCb) {
-        this.__gotoStopCb(root, target, keys, gotoCb);
+      if(fromGoto) {
+        this.__gotoStopCb(root, target, keys, fromGoto);
       }
       // 普通动画有样式变更才触发真实刷新，且sync标识同步应用，和动画节奏一样
       else if(keys.length) {
@@ -2192,8 +2226,8 @@ class Animation extends Event {
       let { trans, fixed } = Animation.calIntermediateStyle(currentFrame, percent, target, lastFrame !== currentFrame);
       let keys = trans.concat(fixed);
       // gotoAndStop有参数回调特殊对待
-      if(gotoCb) {
-        this.__gotoStopCb(root, target, keys, gotoCb);
+      if(fromGoto) {
+        this.__gotoStopCb(root, target, keys, fromGoto);
       }
       // 普通动画同步更新sync
       else if(keys.length) {
@@ -2202,16 +2236,18 @@ class Animation extends Event {
     }
   }
 
-  __gotoStopCb(root, target, keys, gotoCb) {
+  __gotoStopCb(root, target, keys, params) {
     if(this.__stopCb) {
       root.__cancelFrameDraw(this.__stopCb);
     }
-    let isChange = !!keys.length;
+    let isChange = params.wasmChange || !!keys.length;
     this.__stopCb = () => {
       if(isChange) {
         frameCb(this);
       }
-      gotoCb(isChange); // 一定有，入口判断没有会变成一个空函数
+      if(isFunction(params.cb)) {
+        params.cb(isChange);
+      }
     };
     if(isChange) {
       root.__addUpdate(target, keys, false, false, false, false, this.__stopCb);
@@ -2319,6 +2355,19 @@ class Animation extends Event {
     v = Math.max(0, parseFloat(v) || 0);
     if(this.__delay !== v) {
       this.__delay = v;
+      this.__checkModify();
+    }
+    return v;
+  }
+
+  get endDelay() {
+    return this.__endDelay;
+  }
+
+  set endDelay(v) {
+    v = Math.max(0, parseFloat(v) || 0);
+    if(this.__endDelay !== v) {
+      this.__endDelay = v;
       this.__checkModify();
     }
     return v;

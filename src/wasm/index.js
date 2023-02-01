@@ -80,19 +80,6 @@ export class Animation {
   /**
    * @returns {number}
    */
-  get end_delay() {
-    const ret = wasm.__wbg_get_animation_end_delay(this.ptr);
-    return ret;
-  }
-  /**
-   * @param {number} arg0
-   */
-  set end_delay(arg0) {
-    wasm.__wbg_set_animation_end_delay(this.ptr, arg0);
-  }
-  /**
-   * @returns {number}
-   */
   get fill() {
     const ret = wasm.__wbg_get_animation_fill(this.ptr);
     return ret;
@@ -210,19 +197,6 @@ export class Animation {
   /**
    * @returns {boolean}
    */
-  get first_enter() {
-    const ret = wasm.__wbg_get_animation_first_enter(this.ptr);
-    return ret !== 0;
-  }
-  /**
-   * @param {boolean} arg0
-   */
-  set first_enter(arg0) {
-    wasm.__wbg_set_animation_first_enter(this.ptr, arg0);
-  }
-  /**
-   * @returns {boolean}
-   */
   get first_play() {
     const ret = wasm.__wbg_get_animation_first_play(this.ptr);
     return ret !== 0;
@@ -238,7 +212,7 @@ export class Animation {
    */
   get index() {
     const ret = wasm.__wbg_get_animation_index(this.ptr);
-    return ret >>> 0;
+    return ret;
   }
   /**
    * @param {number} arg0
@@ -264,7 +238,6 @@ export class Animation {
    * @param {number} duration
    * @param {number} fps
    * @param {number} delay
-   * @param {number} end_delay
    * @param {number} fill
    * @param {number} playback_rate
    * @param {number} iterations
@@ -273,8 +246,8 @@ export class Animation {
    * @param {number} easing
    * @returns {Animation}
    */
-  static new(direction, duration, fps, delay, end_delay, fill, playback_rate, iterations, area_start, area_duration, easing) {
-    const ret = wasm.animation_new(direction, duration, fps, delay, end_delay, fill, playback_rate, iterations, area_start, area_duration, easing);
+  static new(direction, duration, fps, delay, fill, playback_rate, iterations, area_start, area_duration, easing) {
+    const ret = wasm.animation_new(direction, duration, fps, delay, fill, playback_rate, iterations, area_start, area_duration, easing);
     return Animation.__wrap(ret);
   }
   /**
@@ -330,12 +303,6 @@ export class Animation {
   on_frame(diff) {
     const ret = wasm.animation_on_frame(this.ptr, diff);
     return ret !== 0;
-  }
-  /**
-   * @param {number} current_time
-   */
-  goto(current_time) {
-    wasm.__wbg_set_animation_current_time(this.ptr, current_time);
   }
 }
 /**
@@ -812,13 +779,6 @@ export class Root {
    */
   on_frame(diff) {
     const ret = wasm.root_on_frame(this.ptr, diff);
-    return ret >>> 0;
-  }
-  /**
-   * @returns {number}
-   */
-  refresh() {
-    const ret = wasm.root_refresh(this.ptr);
     return ret >>> 0;
   }
   /**

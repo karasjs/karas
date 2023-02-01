@@ -191,6 +191,7 @@ class Root extends Dom {
     this.__ani = []; // 动画异步刷新&回调
     this.__isInFrame = false;
     this.__pause = false;
+    this.__jsAniCount = 0; // 统计完全由wasm代替的动画计算数量
     this.__arList = []; // parse中dom的动画解析预存到Root上，layout后执行
     this.__ref = {};
     this.__freeze = false; // 冻住只计算不渲染
@@ -1120,6 +1121,7 @@ class Root extends Dom {
       frameTask = this.__frameTask, len3 = frameTask.length;
     // 先重置标识，动画没有触发更新，在每个__before执行，如果调用了更新则更改标识
     this.__aniChange = false;
+    let jsAniCount = 0;
     if(!this.__pause) {
       let wr = this.__wasmRoot;
       if(wr) {
@@ -1130,9 +1132,13 @@ class Root extends Dom {
         }
       }
       for(let i = 0; i < len; i++) {
-        ani[i].__before(diff);
+        // 完全由wasm代替的会返回true标识
+        if(!ani[i].__before(diff)) {
+          jsAniCount++;
+        }
       }
     }
+    this.__jsAniCount = jsAniCount;
     if(this.__aniChange || len2 || len3) {
       this.draw(false);
     }
@@ -1165,7 +1171,7 @@ class Root extends Dom {
     len = this.__ani.length; // 动画和渲染任务可能会改变自己的任务队列
     len2 = this.__task.length;
     len3 = this.__frameTask.length;
-    if(!len && !len2 && !len3) {
+    if(len === this.__jsAniCount && !len2 && !len3) {
       frame.offFrame(this);
       this.__isInFrame = false;
     }

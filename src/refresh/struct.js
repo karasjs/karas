@@ -2309,7 +2309,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
   let { __structs, width, height, __wasmRoot } = root;
   let wasmOp, wasmVt;
   if(__wasmRoot) {
-    let len = __wasmRoot.refresh();
+    let len = __structs.length;
     wasmOp = new Float64Array(wasm.wasm.memory.buffer, __wasmRoot.op_ptr(), len);
     wasmVt = new Float64Array(wasm.wasm.memory.buffer, __wasmRoot.vt_ptr(), len * 16);
   }

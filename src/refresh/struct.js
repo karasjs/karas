@@ -90,12 +90,6 @@ function getCache(a, b, c, d) {
   if(d && d.__available) {
     return d;
   }
-  // for(let i = 0, len = list.length; i < len; i++) {
-  //   let item = list[i];
-  //   if(item && item.available) {
-  //     return item;
-  //   }
-  // }
 }
 
 /**
@@ -109,7 +103,7 @@ function genBboxTotal(node, __structs, index, total, lv, isPpt) {
   node.__opacity = 1;
   // 先将局部根节点的bbox算好，可能没内容是空
   let bboxTotal;
-  if(__cache && __cache.available) {
+  if(__cache && __cache.__available) {
     bboxTotal = __cache.bbox;
   }
   else {
@@ -239,7 +233,7 @@ function mergeBbox(bbox, t) {
  */
 function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, width, height) {
   let __cacheTotal = node.__cacheTotal;
-  if(__cacheTotal && __cacheTotal.available) {
+  if(__cacheTotal && __cacheTotal.__available) {
     return __cacheTotal;
   }
   let { __x1: x1, __y1: y1, __offsetWidth, __offsetHeight } = node;
@@ -526,12 +520,12 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
   } = __computedStyle;
   let target = __cacheTotal, needGen;
   if(filter && filter.length) {
-    if(!__cacheFilter|| !__cacheFilter.available  || needGen) {
+    if(!__cacheFilter|| !__cacheFilter.__available  || needGen) {
       target = node.__cacheFilter = CanvasCache.genFilter(target, filter);
       needGen = true;
     }
   }
-  if(hasMask && (!__cacheMask || !__cacheMask.available || needGen)) {
+  if(hasMask && (!__cacheMask || !__cacheMask.__available || needGen)) {
     target = node.__cacheMask = CanvasCache.genMask(target, node, function(item, cacheMask, inverse) {
       // 和外面没cache的类似，mask生成hash记录，这里mask节点一定是个普通无cache的独立节点
       let maskStartHash = {};
@@ -791,7 +785,7 @@ function genFrameBufferWithTexture(gl, texture, width, height) {
  */
 function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
                        __structs, W, H, isPpt, pptNode, oitHash) {
-  if(__cacheTotal && __cacheTotal.available) {
+  if(__cacheTotal && __cacheTotal.__available) {
     return __cacheTotal;
   }
 
@@ -895,7 +889,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
     // 先看text，visibility会在内部判断，display会被parent判断
     if(isText) {
       let __cache = node.__cache;
-      if(__cache && __cache.available) {
+      if(__cache && __cache.__available) {
         let {
           __opacity,
           __matrixEvent,
@@ -1132,7 +1126,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
 }
 
 function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total, __structs, W, H) {
-  if(__cacheTotal && __cacheTotal.available) {
+  if(__cacheTotal && __cacheTotal.__available) {
     return __cacheTotal;
   }
 
@@ -1280,7 +1274,7 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
         } = __structs[i];
         if(isText) {
           let __cache = node.__cache;
-          if(__cache && __cache.available) {
+          if(__cache && __cache.__available) {
             let {
               __matrixEvent,
             } = node.__domParent;
@@ -1705,7 +1699,7 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
       } = __structs[i];
       if(isText) {
         let __cache = node.__cache;
-        if(__cache && __cache.available) {
+        if(__cache && __cache.__available) {
           let {
             __matrixEvent,
             __opacity,
@@ -2095,7 +2089,7 @@ function renderSvg(renderMode, ctx, root, isFirst, rlv) {
     if(__refreshLevel < REPAINT && !isText) {
       virtualDom = node.__virtualDom;
       // total可以跳过所有孩子节点省略循环
-      if(__cacheTotal && __cacheTotal.available) {
+      if(__cacheTotal && __cacheTotal.__available) {
         i += (total || 0);
         virtualDom.cache = true;
       }
@@ -2465,7 +2459,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
           });
         }
         // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total
-        if(__cacheTotal && __cacheTotal.available) {
+        if(__cacheTotal && __cacheTotal.__available) {
           i += (total || 0);
           if(__refreshLevel === NONE && hasMask) {
             i += countMaskNum(__structs, i + 1, hasMask);
@@ -2598,7 +2592,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       }
       let needGen;
       // 可能没变化，比如被遮罩节点、filter变更等
-      if(!__cacheTotal || !__cacheTotal.available) {
+      if(!__cacheTotal || !__cacheTotal.__available) {
         let res;
         if(isPpt) {
           res = genPptWebgl(renderMode, __cacheTotal, gl, root, node, i, lv, total || 0,
@@ -2617,7 +2611,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       // 即使超限，也有total结果
       let target = __cacheTotal;
       if(filter.length) {
-        if(!__cacheFilter || !__cacheFilter.available || needGen) {
+        if(!__cacheFilter || !__cacheFilter.__available || needGen) {
           let res = genFilterWebgl(renderMode, gl, node, target, filter, width, height);
           if(res) {
             target = res;
@@ -2625,7 +2619,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
           }
         }
       }
-      if(hasMask && (!__cacheMask || !__cacheMask.available || needGen)) {
+      if(hasMask && (!__cacheMask || !__cacheMask.__available || needGen)) {
         genMaskWebgl(renderMode, gl, root, node, target, width, height, i + (total || 0) + 1, lv, __structs);
       }
     }
@@ -2656,7 +2650,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
     if(isText) {
       // text特殊之处，__config部分是复用parent的
       let __cache = node.__cache;
-      if(__cache && __cache.available) {
+      if(__cache && __cache.__available) {
         let {
           __matrixEvent,
           __opacity,
@@ -2903,7 +2897,7 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
         });
       }
       // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total
-      if(__cacheTotal && __cacheTotal.available) {
+      if(__cacheTotal && __cacheTotal.__available) {
         i += (total || 0);
         if(__refreshLevel === NONE && hasMask) {
           i += countMaskNum(__structs, i + 1, hasMask);
@@ -2926,7 +2920,7 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
       let { i, lv, total, node, hasMask } = item;
       let __cacheTotal = genTotal(renderMode, ctx, root, node, i, lv, total || 0, __structs, width, height);
       if(__cacheTotal) {
-        genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width, height);
+        node.__cacheTarget = genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width, height);
       }
     });
   }

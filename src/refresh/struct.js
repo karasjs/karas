@@ -77,21 +77,6 @@ const DOM_RENDER = Dom.prototype.render;
 const IMG_RENDER = Img.prototype.render;
 const GEOM_RENDER = Geom.prototype.render;
 
-function getCache(a, b, c, d) {
-  if(a && a.__available) {
-    return a;
-  }
-  if(b && b.__available) {
-    return b;
-  }
-  if(c && c.__available) {
-    return c;
-  }
-  if(d && d.__available) {
-    return d;
-  }
-}
-
 /**
  * 生成一个节点及其子节点所包含的矩形范围盒，canvas和webgl的最大尺寸限制不一样，由外部传入
  * 如果某个子节点超限，则视为整个超限，超限返回空
@@ -1213,7 +1198,6 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
     }
     return b.lv - a.lv;
   });
-  console.log(mergeList)
   // 根节点特殊处理，如果是flat就是flat但直接子节点后续渲染仍需要透视，如果是3d就要切分
   if(!isTopFlat) {
     mergeList.push({

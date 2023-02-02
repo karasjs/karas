@@ -805,6 +805,11 @@ export class Root {
     return ret >>> 0;
   }
   /**
+   */
+  refresh() {
+    wasm.root_refresh(this.ptr);
+  }
+  /**
    * @returns {number}
    */
   rl_ptr() {

@@ -473,6 +473,10 @@ class Root extends Dom {
     if(isFirst) {
       this.__reLayout();
     }
+    let wr = this.__wasmRoot;
+    if(wr) {
+      wr.refresh();
+    }
     let rlv = this.__rlv;
     // freeze()冻住不渲染，但第一次不能生效
     if(this.props.noRender || !isFirst && this.__freeze) {

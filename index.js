@@ -16402,6 +16402,14 @@
         return ret >>> 0;
       }
       /**
+       */
+
+    }, {
+      key: "refresh",
+      value: function refresh() {
+        wasm.root_refresh(this.ptr);
+      }
+      /**
        * @returns {number}
        */
 
@@ -26511,7 +26519,9 @@
 
       options.prev = children; // wasm
 
-      if (root.__wasmRoot) {
+      var wr = root.__wasmRoot;
+
+      if (wr) {
         if (children instanceof Xom) {
           children.__wasmNode = wasm$1.Node["new"](false);
         } else if (children instanceof Text) {
@@ -26579,7 +26589,7 @@
         } // wasm
 
 
-        if (root.__wasmRoot) {
+        if (wr) {
           if (sr instanceof Xom) {
             sr.__wasmNode = wasm$1.Node["new"](false);
           } else if (sr instanceof Text) {
@@ -36253,7 +36263,6 @@
    * isPpt为webgl下有perspective的节点，需考虑透视
    */
 
-
   function genBboxTotal(node, __structs, index, total, lv, isPpt) {
     var __cache = node.__cache;
     assignMatrix(node.__matrixEvent, matrix.identity());
@@ -37634,8 +37643,7 @@
       }
 
       return b.lv - a.lv;
-    });
-    console.log(mergeList); // 根节点特殊处理，如果是flat就是flat但直接子节点后续渲染仍需要透视，如果是3d就要切分
+    }); // 根节点特殊处理，如果是flat就是flat但直接子节点后续渲染仍需要透视，如果是3d就要切分
 
     if (!isTopFlat) {
       mergeList.push({
@@ -40526,6 +40534,12 @@
           this.__reLayout();
         }
 
+        var wr = this.__wasmRoot;
+
+        if (wr) {
+          wr.refresh();
+        }
+
         var rlv = this.__rlv; // freeze()冻住不渲染，但第一次不能生效
 
         if (this.props.noRender || !isFirst && this.__freeze) {
@@ -41261,14 +41275,13 @@
             task = this.__taskClone = this.__task.splice(0),
             len2 = task.length,
             frameTask = this.__frameTask,
-            len3 = frameTask.length; // 先重置标识，动画没有触发更新，在每个__before执行，如果调用了更新则更改标识
+            len3 = frameTask.length;
 
+        var wr = this.__wasmRoot; // 先重置标识，动画没有触发更新，在每个__before执行，如果调用了更新则更改标识
 
         this.__aniChange = false;
 
         if (!this.__pause) {
-          var wr = this.__wasmRoot;
-
           if (wr) {
             var n = wr.on_frame(diff); // 有动画执行了需刷新
 
@@ -41283,6 +41296,10 @@
         }
 
         if (this.__aniChange || len2 || len3) {
+          if (wr) {
+            wr.refresh();
+          }
+
           this.draw(false);
         }
       }

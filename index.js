@@ -594,6 +594,8 @@
       this.__bbox = null;
       this.__filterBbox = null;
       this.__isDestroyed = true;
+      this.__cache = null;
+      this.__cacheTarget = null;
       this.__wasmNode = null;
     }
 
@@ -12288,7 +12290,7 @@
 
       _this.__limitCache = false;
       _this.__hasContent = false;
-      _this.__fitFontSize = 0; // 自动缩小时的字体大小
+      _this.__fitFontSize = 0; // 自动缩小时的字体大小N
 
       return _this;
     }
@@ -20546,7 +20548,7 @@
       _this.__contentBoxList = []; // inline存储内容用
 
       _this.__cacheAsBitmap = !!_this.props.cacheAsBitmap;
-      _this.__cache = _this.__cacheTotal = _this.__cacheFilter = _this.__cacheMask = _this.__cacheTarget = null;
+      _this.__cacheTotal = _this.__cacheFilter = _this.__cacheMask = null;
       _this.__layoutData = null; // 缓存上次布局x/y/w/h数据
 
       _this.__hasComputeReflow = false; // 每次布局计算缓存标，使得每次开始只computeReflow一次
@@ -23817,6 +23819,27 @@
           }
         } else if (isFunction$4(arr) && arr === cb) {
           delete this.__listener[type];
+        }
+      } // 加速，用cacheTarget指向当前可用最高优先级的cache，无则null
+
+    }, {
+      key: "__updateCache",
+      value: function __updateCache() {
+        var __cacheMask = this.__cacheMask,
+            __cacheFilter = this.__cacheFilter,
+            __cacheTotal = this.__cacheTotal,
+            __cache = this.__cache;
+
+        if (__cacheMask && __cacheMask.__available) {
+          this.__cacheTarget = __cacheMask;
+        } else if (__cacheFilter && __cacheFilter.__available) {
+          this.__cacheTarget = __cacheFilter;
+        } else if (__cacheTotal && __cacheTotal.__available) {
+          this.__cacheTarget = __cacheTotal;
+        } else if (__cache && __cache.__available) {
+          this.__cacheTarget = __cache;
+        } else {
+          this.__cacheTarget = null;
         }
       }
     }, {
@@ -36224,24 +36247,6 @@
   var DOM_RENDER = Dom.prototype.render;
   var IMG_RENDER = Img.prototype.render;
   var GEOM_RENDER = Geom.prototype.render;
-
-  function getCache(a, b, c, d) {
-    if (a && a.__available) {
-      return a;
-    }
-
-    if (b && b.__available) {
-      return b;
-    }
-
-    if (c && c.__available) {
-      return c;
-    }
-
-    if (d && d.__available) {
-      return d;
-    }
-  }
   /**
    * 生成一个节点及其子节点所包含的矩形范围盒，canvas和webgl的最大尺寸限制不一样，由外部传入
    * 如果某个子节点超限，则视为整个超限，超限返回空
@@ -36325,10 +36330,7 @@
         continue;
       }
 
-      var __cache2 = _node.__cache,
-          __cacheTotal2 = _node.__cacheTotal,
-          __cacheFilter2 = _node.__cacheFilter,
-          __cacheMask2 = _node.__cacheMask;
+      var __cache2 = _node.__cache;
       var p = _node.__domParent;
       _node.__opacity = __computedStyle2[OPACITY$1] * p.__opacity;
       var m = _node.__matrix;
@@ -36362,7 +36364,7 @@
       var _bbox = void 0; // 子元素有cacheTotal优先使用
 
 
-      var target = getCache(__cacheMask2, __cacheFilter2, __cacheTotal2, __cache2);
+      var target = _node.__cacheTarget;
 
       if (target) {
         if (target !== __cache2) {
@@ -36531,9 +36533,6 @@
           continue;
         }
 
-        var __cacheTotal2 = _node2.__cacheTotal,
-            __cacheFilter2 = _node2.__cacheFilter,
-            __cacheMask2 = _node2.__cacheMask;
         var transform = __computedStyle2[TRANSFORM$1],
             tfo = __computedStyle2[TRANSFORM_ORIGIN],
             visibility = __computedStyle2[VISIBILITY$1];
@@ -36609,7 +36608,7 @@
 
         lastMatrix = m; // 子元素有cacheTotal优先使用
 
-        var target = i > index && getCache(__cacheMask2, __cacheFilter2, __cacheTotal2, null);
+        var target = i > index && _node2.__cacheTarget;
 
         if (target) {
           i += _total2 || 0;
@@ -36839,10 +36838,6 @@
               continue;
             }
 
-            var _cacheTotal = _node3.__cacheTotal,
-                _cacheFilter = _node3.__cacheFilter,
-                _cacheMask = _node3.__cacheMask;
-
             if (maskStartHash.hasOwnProperty(i)) {
               var _maskStartHash$i = maskStartHash[i],
                   idx = _maskStartHash$i.idx,
@@ -36943,7 +36938,7 @@
             m = m || matrix.identity();
             assignMatrix(_node3.__matrixEvent, m); // 特殊渲染的matrix，局部根节点为原点考虑，本节点需inverse反向
 
-            var _target2 = getCache(_cacheMask, _cacheFilter, _cacheTotal, null);
+            var _target2 = _node3.__cacheTarget;
 
             if (_target2) {
               i += _total4 || 0;
@@ -37392,10 +37387,7 @@
                 }
               }
 
-              var _cacheTotal2 = _node5.__cacheTotal,
-                  __cacheFilter = _node5.__cacheFilter,
-                  __cacheMask = _node5.__cacheMask;
-              var target = getCache(__cacheMask, __cacheFilter, _cacheTotal2, null);
+              var target = _node5.__cacheTarget;
 
               if (target) {
                 j += _total7 || 0;
@@ -37425,12 +37417,9 @@
             gl.useProgram(gl.program);
           }
         } else {
-          var _cache = _node4.__cache,
-              _cacheTotal3 = _node4.__cacheTotal,
-              _cacheFilter2 = _node4.__cacheFilter,
-              _cacheMask2 = _node4.__cacheMask;
+          var _cache = _node4.__cache;
 
-          var _target4 = i > index ? getCache(_cacheMask2, _cacheFilter2, _cacheTotal3, _cache) : _cache;
+          var _target4 = i > index && _node4.__cacheTarget;
 
           if (_target4) {
             if (opacity > 0) {
@@ -37576,11 +37565,8 @@
           continue;
         }
 
-        var _cacheTotal4 = _node6.__cacheTotal,
-            __cacheFilter = _node6.__cacheFilter,
-            __cacheMask = _node6.__cacheMask,
-            p = _node6.__domParent;
-        var target = getCache(__cacheMask, __cacheFilter, _cacheTotal4, null); // flat变化的局部子节点，或者flat根的直接子节点，生成局部根，已生成过的不用再生成
+        var p = _node6.__domParent;
+        var target = _node6.__cacheTarget; // flat变化的局部子节点，或者flat根的直接子节点，生成局部根，已生成过的不用再生成
 
         if (_total8 && !target && (transformStyle !== p.__computedStyle[TRANSFORM_STYLE] || p === top && transformStyle === 'flat')) {
           var j = i + (_total8 || 0);
@@ -37660,13 +37646,7 @@
             planeList = [];
 
         if (_node7.__hasContent) {
-          var __cache = _node7.__cache,
-              _cacheTotal5 = _node7.__cacheTotal,
-              _cacheFilter3 = _node7.__cacheFilter,
-              _cacheMask3 = _node7.__cacheMask;
-
-          var _target5 = getCache(_cacheMask3, _cacheFilter3, _cacheTotal5, __cache);
-
+          var _target5 = _node7.__cacheTarget;
           var o = {
             index: _index,
             node: _node7,
@@ -37700,14 +37680,14 @@
               _isText2 = _structs$_i.isText;
 
           if (_isText2) {
-            var _cache2 = _node8.__cache;
+            var __cache = _node8.__cache;
 
-            if (_cache2 && _cache2.__available) {
+            if (__cache && __cache.__available) {
               var __matrixEvent = _node8.__domParent.__matrixEvent;
-              var x = _cache2.x1,
-                  y = _cache2.y1,
-                  width = _cache2.__width,
-                  height = _cache2.__height;
+              var x = __cache.x1,
+                  y = __cache.y1,
+                  width = __cache.__width,
+                  height = __cache.__height;
               var xa = x - x0,
                   ya = y - y0;
               var xb = x + width - x0,
@@ -37730,7 +37710,7 @@
               var _o = {
                 index: _i2,
                 node: _node8,
-                target: _cache2,
+                target: __cache,
                 points: [{
                   x: x1,
                   y: y1,
@@ -37777,10 +37757,7 @@
               continue;
             }
 
-            var _cache3 = _node8.__cache,
-                _cacheTotal6 = _node8.__cacheTotal,
-                _cacheFilter4 = _node8.__cacheFilter,
-                _cacheMask4 = _node8.__cacheMask,
+            var _cache2 = _node8.__cache,
                 _p5 = _node8.__domParent,
                 ppt = _node8.__selfPerspective; // 当前局部根为原点坐标系下的matrix，只求交用
 
@@ -37817,7 +37794,7 @@
               }
             }
 
-            var _target6 = getCache(_cacheMask4, _cacheFilter4, _cacheTotal6, _cache3);
+            var _target6 = _node8.__cacheTarget;
 
             if (_target6) {
               var _x3 = _target6.x1,
@@ -37869,7 +37846,7 @@
               };
               planeList.push(_o2);
 
-              if (_target6 !== _cache3) {
+              if (_target6 !== _cache2) {
                 _i2 += _total10 || 0;
 
                 if (_hasMask5) {
@@ -38277,10 +38254,7 @@
             continue;
           }
 
-          var _cache4 = _node9.__cache,
-              __cacheTotal = _node9.__cacheTotal,
-              __cacheFilter = _node9.__cacheFilter,
-              _cacheMask5 = _node9.__cacheMask; // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理
+          var _cache3 = _node9.__cache; // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理
 
           if (i === index) ; else if (_lv5 > lastLv) {
             parentMatrix = lastMatrix;
@@ -38318,9 +38292,9 @@
 
           lastMatrix = m;
           lastOpacity = parentOpacity * opacity;
-          var target = getCache(_cacheMask5, __cacheFilter, __cacheTotal, _cache4);
+          var target = _node9.__cacheTarget;
 
-          if (target && (target !== _cache4 || visibility === 'visible')) {
+          if (target && (target !== _cache3 || visibility === 'visible')) {
             m = matrix.multiply(inverse, m); // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
 
             if (backfaceVisibility === 'hidden') {
@@ -38352,7 +38326,7 @@
               matrix: m
             });
 
-            if (target !== _cache4) {
+            if (target !== _cache3) {
               i += _total11 || 0;
 
               if (hasMask) {
@@ -38362,7 +38336,7 @@
           } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
 
 
-          if (!target || target === _cache4) {
+          if (!target || target === _cache3) {
             var render = _node9.render;
 
             if (render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
@@ -39006,9 +38980,12 @@
               node.render(mode.CANVAS, __cache.ctx, __cache.dx, __cache.dy);
 
               __cache.update();
+
+              node.__cacheTarget = __cache;
             } else {
               __cache && __cache.release();
               node.__limitCache = true;
+              node.__cacheTarget = null;
             }
           }
 
@@ -39129,7 +39106,7 @@
 
           if (_hasContent) {
             var _bbox3 = node.bbox,
-                _cache5 = node.__cache,
+                _cache4 = node.__cache,
                 x1 = node.__x1,
                 y1 = node.__y1; // 单图特殊对待缓存
 
@@ -39138,46 +39115,50 @@
 
               if (loadImg.onlyImg && !loadImg.error && loadImg.source) {
                 onlyImg = true;
-                _cache5 = node.__cache = ImgWebglCache.getInstance(mode.CANVAS, gl, root.__uuid, _bbox3, loadImg, x1, y1); // 纯img按原尺寸绘制
+                _cache4 = node.__cache = ImgWebglCache.getInstance(mode.CANVAS, gl, root.__uuid, _bbox3, loadImg, x1, y1); // 纯img按原尺寸绘制
 
-                if (_cache5 && _cache5.enabled && _cache5.count === 1) {
-                  _cache5.ctx.drawImage(loadImg.source, x1 + _cache5.dx, y1 + _cache5.dy);
+                if (_cache4 && _cache4.enabled && _cache4.count === 1) {
+                  _cache4.ctx.drawImage(loadImg.source, x1 + _cache4.dx, y1 + _cache4.dy);
 
-                  _cache5.update();
+                  _cache4.update();
                 }
               }
             }
 
             if (!onlyImg) {
-              if (_cache5) {
-                _cache5.reset(_bbox3, x1, y1); // 特殊的单独img变为非纯img，需重新生成cache
+              if (_cache4) {
+                _cache4.reset(_bbox3, x1, y1); // 特殊的单独img变为非纯img，需重新生成cache
 
 
-                if (!(_cache5 instanceof CanvasCache)) {
-                  _cache5 = node.__cache = CanvasCache.getInstance(mode.CANVAS, gl, root.__uuid, _bbox3, x1, y1, null);
+                if (!(_cache4 instanceof CanvasCache)) {
+                  _cache4 = node.__cache = CanvasCache.getInstance(mode.CANVAS, gl, root.__uuid, _bbox3, x1, y1, null);
                 }
               } else {
-                _cache5 = node.__cache = CanvasCache.getInstance(mode.CANVAS, gl, root.__uuid, _bbox3, x1, y1, null);
+                _cache4 = node.__cache = CanvasCache.getInstance(mode.CANVAS, gl, root.__uuid, _bbox3, x1, y1, null);
               }
             }
 
-            if (_cache5 && _cache5.enabled) {
-              _cache5.__bbox = _bbox3;
-              _cache5.__available = true;
-              node.__cache = _cache5;
+            if (_cache4 && _cache4.enabled) {
+              _cache4.__bbox = _bbox3;
+              _cache4.__available = true;
+              node.__cache = _cache4;
 
               if (!onlyImg) {
-                node.render(mode.CANVAS, _cache5.ctx, _cache5.dx, _cache5.dy);
+                node.render(mode.CANVAS, _cache4.ctx, _cache4.dx, _cache4.dy);
 
-                _cache5.update();
+                _cache4.update();
               }
             } else {
-              _cache5 && _cache5.release();
+              _cache4 && _cache4.release();
               node.__limitCache = true;
+              node.__cacheTarget = null;
               return;
             }
+
+            node.__updateCache();
           } else {
             node.__limitCache = false;
+            node.__cacheTarget = null;
           }
 
           if (_hasContent || total) {
@@ -39239,7 +39220,7 @@
         var _filter2 = _computedStyle4[FILTER]; // 有ppt的，向上查找所有父亲index记录，可能出现重复记得提前跳出
 
         var __limitCache = _node11.__limitCache,
-            _cacheTotal7 = _node11.__cacheTotal,
+            _cacheTotal = _node11.__cacheTotal,
             __cacheFilter = _node11.__cacheFilter,
             __cacheMask = _node11.__cacheMask;
 
@@ -39249,25 +39230,25 @@
 
         var needGen = void 0; // 可能没变化，比如被遮罩节点、filter变更等
 
-        if (!_cacheTotal7 || !_cacheTotal7.__available) {
+        if (!_cacheTotal || !_cacheTotal.__available) {
           var res = void 0;
 
           if (_isPpt2) {
-            res = genPptWebgl(renderMode, _cacheTotal7, gl, root, _node11, _i9, _lv6, _total12 || 0, __structs, width, height);
+            res = genPptWebgl(renderMode, _cacheTotal, gl, root, _node11, _i9, _lv6, _total12 || 0, __structs, width, height);
           } else {
-            res = genTotalWebgl(renderMode, _cacheTotal7, gl, root, _node11, _i9, _lv6, _total12 || 0, __structs, width, height, null, null, null);
+            res = genTotalWebgl(renderMode, _cacheTotal, gl, root, _node11, _i9, _lv6, _total12 || 0, __structs, width, height, null, null, null);
           }
 
           if (!res) {
             return;
           }
 
-          _cacheTotal7 = res;
+          _cacheTotal = res;
           needGen = true;
         } // 即使超限，也有total结果
 
 
-        var target = _cacheTotal7;
+        var target = _cacheTotal;
 
         if (_filter2.length) {
           if (!__cacheFilter || !__cacheFilter.__available || needGen) {
@@ -39283,6 +39264,8 @@
         if (_hasMask6 && (!__cacheMask || !__cacheMask.__available || needGen)) {
           genMaskWebgl(renderMode, gl, root, _node11, target, width, height, _i9 + (_total12 || 0) + 1, _lv6, __structs);
         }
+
+        _node11.__updateCache();
       }
     }
     /**
@@ -39315,13 +39298,13 @@
 
       if (_isText3) {
         // text特殊之处，__config部分是复用parent的
-        var _cache6 = _node12.__cache;
+        var _cache5 = _node12.__cache;
 
-        if (_cache6 && _cache6.__available) {
+        if (_cache5 && _cache5.__available) {
           var _node12$__domParent = _node12.__domParent,
               __matrixEvent = _node12$__domParent.__matrixEvent,
               __opacity = _node12$__domParent.__opacity;
-          var p = _cache6.__page;
+          var p = _cache5.__page;
 
           if (lastPage && lastPage !== p) {
             drawTextureCache(gl, list.splice(0), cx, cy, 0, 0);
@@ -39329,7 +39312,7 @@
 
           lastPage = p;
           list.push({
-            cache: _cache6,
+            cache: _cache5,
             opacity: __opacity,
             matrix: __matrixEvent
           });
@@ -39351,10 +39334,7 @@
             visibility = _computedStyle5[VISIBILITY$1],
             backfaceVisibility = _computedStyle5[BACKFACE_VISIBILITY];
         var opacity = wasmOp ? wasmOp[_i10] : _computedStyle5[OPACITY$1];
-        var _cache7 = _node12.__cache,
-            _cacheTotal8 = _node12.__cacheTotal,
-            _cacheFilter5 = _node12.__cacheFilter,
-            _cacheMask6 = _node12.__cacheMask;
+        var _cache6 = _node12.__cache;
         var m = void 0;
 
         if (!wasmOp) {
@@ -39416,7 +39396,7 @@
         } // total和自身cache的尝试，visibility不可见时没有cache
 
 
-        var _target7 = getCache(_cacheMask6, _cacheFilter5, _cacheTotal8, _cache7);
+        var _target7 = _node12.__cacheTarget;
 
         if (_target7) {
           if (opacity > 0) {
@@ -39464,7 +39444,7 @@
             }
           }
 
-          if (_target7 !== _cache7) {
+          if (_target7 !== _cache6) {
             _i10 += _total13 || 0;
 
             if (_hasMask7) {
@@ -39474,7 +39454,7 @@
         } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
 
 
-        if ((!_target7 || _target7 === _cache7) && opacity > 0) {
+        if ((!_target7 || _target7 === _cache6) && opacity > 0) {
           var render = _node12.render;
 
           if (render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
@@ -39637,7 +39617,9 @@
         var __cacheTotal = genTotal(renderMode, ctx, root, node, i, lv, total || 0, __structs, width, height);
 
         if (__cacheTotal) {
-          node.__cacheTarget = genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width, height);
+          genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width, height);
+
+          node.__updateCache();
         }
       });
     }
@@ -39693,13 +39675,10 @@
           }
 
           continue;
-        }
-
-        var _cacheTotal9 = _node13.__cacheTotal,
-            __cacheFilter = _node13.__cacheFilter,
-            __cacheMask = _node13.__cacheMask; // 遮罩对象申请了个离屏，其第一个mask申请另外一个离屏mask2，开始聚集所有mask元素的绘制，
+        } // 遮罩对象申请了个离屏，其第一个mask申请另外一个离屏mask2，开始聚集所有mask元素的绘制，
         // 这是一个十分特殊的逻辑，保存的index是最后一个节点的索引，OFFSCREEN_MASK2是最低优先级，
         // 这样当mask本身有filter时优先自身，然后才是OFFSCREEN_MASK2
+
 
         var msh = maskStartHash[_i11];
 
@@ -39769,7 +39748,7 @@
         } // 有cache声明从而有total的可以直接绘制并跳过子节点索，total生成可能会因超限而失败
 
 
-        var target = getCache(__cacheMask, __cacheFilter, _cacheTotal9, null);
+        var target = _node13.__cacheTarget;
 
         if (target) {
           _i11 += _total14 || 0;
@@ -41072,6 +41051,11 @@
           } // 特殊的filter清除cache
           else if ((need || lv & (FT | PPT)) && node.__cacheFilter) {
             hasRelease = node.__cacheFilter.release() || hasRelease;
+          } // 更新cacheTarget有效指向
+
+
+          if (hasRelease) {
+            node.__updateCache();
           } // 向上清除cache汇总缓存信息，过程中可能会出现重复，根据refreshLevel判断，reflow已经自己清过了
 
 
@@ -41096,6 +41080,10 @@
 
               if (p.__cacheMask) {
                 hasRelease = p.__cacheMask.release() || hasRelease;
+              }
+
+              if (hasRelease) {
+                p.__updateCache();
               }
 
               p = p.__domParent;

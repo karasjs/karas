@@ -199,7 +199,7 @@ class Text extends Node {
     this.__widthHash = {}; // 存储当前字体样式key下的charWidth/textWidth
     this.__limitCache = false;
     this.__hasContent = false;
-    this.__fitFontSize = 0; // 自动缩小时的字体大小
+    this.__fitFontSize = 0; // 自动缩小时的字体大小N
   }
 
   /**

@@ -17,6 +17,8 @@ class Node {
     this.__bbox = null;
     this.__filterBbox = null;
     this.__isDestroyed = true;
+    this.__cache = null;
+    this.__cacheTarget = null;
     this.__wasmNode = null;
   }
 

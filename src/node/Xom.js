@@ -249,7 +249,7 @@ class Xom extends Node {
     this.__frameAnimateList = [];
     this.__contentBoxList = []; // inline存储内容用
     this.__cacheAsBitmap = !!this.props.cacheAsBitmap;
-    this.__cache = this.__cacheTotal = this.__cacheFilter = this.__cacheMask = this.__cacheTarget = null;
+    this.__cacheTotal = this.__cacheFilter = this.__cacheMask = null;
     this.__layoutData = null; // 缓存上次布局x/y/w/h数据
     this.__hasComputeReflow = false; // 每次布局计算缓存标，使得每次开始只computeReflow一次
     this.__parentLineBox = null; // inline时指向
@@ -3202,6 +3202,26 @@ class Xom extends Node {
     }
     else if(isFunction(arr) && arr === cb) {
       delete this.__listener[type];
+    }
+  }
+
+  // 加速，用cacheTarget指向当前可用最高优先级的cache，无则null
+  __updateCache() {
+    let { __cacheMask, __cacheFilter, __cacheTotal, __cache } = this;
+    if(__cacheMask && __cacheMask.__available) {
+      this.__cacheTarget = __cacheMask;
+    }
+    else if(__cacheFilter && __cacheFilter.__available) {
+      this.__cacheTarget = __cacheFilter;
+    }
+    else if(__cacheTotal && __cacheTotal.__available) {
+      this.__cacheTarget = __cacheTotal;
+    }
+    else if(__cache && __cache.__available) {
+      this.__cacheTarget = __cache;
+    }
+    else {
+      this.__cacheTarget = null;
     }
   }
 

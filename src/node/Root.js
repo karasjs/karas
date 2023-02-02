@@ -982,6 +982,10 @@ class Root extends Dom {
       else if((need || (lv & (FT | PPT))) && node.__cacheFilter) {
         hasRelease = node.__cacheFilter.release() || hasRelease;
       }
+      // 更新cacheTarget有效指向
+      if(hasRelease) {
+        node.__updateCache();
+      }
       // 向上清除cache汇总缓存信息，过程中可能会出现重复，根据refreshLevel判断，reflow已经自己清过了
       if(__domParent !== this.__lastUpdateP) {
         let p = __domParent;
@@ -999,6 +1003,9 @@ class Root extends Dom {
           }
           if(p.__cacheMask) {
             hasRelease = p.__cacheMask.release() || hasRelease;
+          }
+          if(hasRelease) {
+            p.__updateCache();
           }
           p = p.__domParent;
         }

@@ -37418,8 +37418,7 @@
           }
         } else {
           var _cache = _node4.__cache;
-
-          var _target4 = i > index && _node4.__cacheTarget;
+          var _target4 = _node4.__cacheTarget;
 
           if (_target4) {
             if (opacity > 0) {

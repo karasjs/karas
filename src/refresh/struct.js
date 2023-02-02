@@ -1033,7 +1033,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
         let {
           __cache,
         } = node;
-        let target = i > index && node.__cacheTarget;
+        let target = node.__cacheTarget;
         if(target) {
           if(opacity > 0) {
             // 局部的mbm和主画布一样，先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成

@@ -36610,6 +36610,10 @@
 
         var target = i > index && _node2.__cacheTarget;
 
+        if (target === _node2.__cache) {
+          target = null;
+        }
+
         if (target) {
           i += _total2 || 0;
 
@@ -36940,6 +36944,10 @@
 
             var _target2 = _node3.__cacheTarget;
 
+            if (_target2 === _node3.__cache) {
+              _target2 = null;
+            }
+
             if (_target2) {
               i += _total4 || 0;
 
@@ -36957,15 +36965,16 @@
                 ctx.globalCompositeOperation = 'source-over';
               }
 
-              var x = _target2.x,
-                  y = _target2.y,
-                  canvas = _target2.canvas,
-                  _width = _target2.width,
-                  _height = _target2.height,
-                  x2 = _target2.x1,
-                  y2 = _target2.y1,
-                  dbx2 = _target2.dbx,
-                  dby2 = _target2.dby;
+              var _target4 = _target2,
+                  x = _target4.x,
+                  y = _target4.y,
+                  canvas = _target4.canvas,
+                  _width = _target4.width,
+                  _height = _target4.height,
+                  x2 = _target4.x1,
+                  y2 = _target4.y1,
+                  dbx2 = _target4.dbx,
+                  dby2 = _target4.dby;
               var ox = tx + x2 - x1 + dbx - dbx2;
               var oy = ty + y2 - y1 + dby - dby2;
               ctx.drawImage(canvas, x, y, _width, _height, ox, oy, _width, _height);
@@ -37389,6 +37398,10 @@
 
               var target = _node5.__cacheTarget;
 
+              if (target === _node5.__cache) {
+                target = null;
+              }
+
               if (target) {
                 j += _total7 || 0;
 
@@ -37418,9 +37431,10 @@
           }
         } else {
           var _cache = _node4.__cache;
-          var _target4 = _node4.__cacheTarget;
 
-          if (_target4) {
+          var _target5 = i > index ? _node4.__cacheTarget : _cache;
+
+          if (_target5) {
             if (opacity > 0) {
               // 局部的mbm和主画布一样，先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
               if (i > index && mixBlendMode !== 'normal') {
@@ -37430,7 +37444,7 @@
 
                 gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
                 gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-                var res = genMbmWebgl(gl, texture, _target4, mixBlendMode, _node4.__opacity, m, dx, dy, cx, cy, size, size);
+                var res = genMbmWebgl(gl, texture, _target5, mixBlendMode, _node4.__opacity, m, dx, dy, cx, cy, size, size);
 
                 if (res) {
                   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
@@ -37445,7 +37459,7 @@
 
                 lastPage = null;
               } else {
-                var _p4 = _target4.__page;
+                var _p4 = _target5.__page;
 
                 if (lastPage && lastPage !== _p4) {
                   drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
@@ -37453,14 +37467,14 @@
 
                 lastPage = _p4;
                 list.push({
-                  cache: _target4,
+                  cache: _target5,
                   opacity: _node4.__opacity,
                   matrix: m
                 });
               }
             }
 
-            if (_target4 !== _cache) {
+            if (_target5 !== _cache) {
               i += _total6 || 0;
 
               if (hasMask) {
@@ -37470,7 +37484,7 @@
           } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
 
 
-          if ((!_target4 || _target4 === _cache) && opacity > 0) {
+          if ((!_target5 || _target5 === _cache) && opacity > 0) {
             var _render = _node4.render;
 
             if (_render !== DOM_RENDER && _render !== IMG_RENDER && _render !== GEOM_RENDER) {
@@ -37564,8 +37578,16 @@
           continue;
         }
 
-        var p = _node6.__domParent;
-        var target = _node6.__cacheTarget; // flat变化的局部子节点，或者flat根的直接子节点，生成局部根，已生成过的不用再生成
+        _node6.__cacheTotal;
+            _node6.__cacheFilter;
+            _node6.__cacheMask;
+            var p = _node6.__domParent;
+        var target = _node6.__cacheTarget;
+
+        if (target === _node6.__cache) {
+          target = null;
+        } // flat变化的局部子节点，或者flat根的直接子节点，生成局部根，已生成过的不用再生成
+
 
         if (_total8 && !target && (transformStyle !== p.__computedStyle[TRANSFORM_STYLE] || p === top && transformStyle === 'flat')) {
           var j = i + (_total8 || 0);
@@ -37612,7 +37634,8 @@
       }
 
       return b.lv - a.lv;
-    }); // 根节点特殊处理，如果是flat就是flat但直接子节点后续渲染仍需要透视，如果是3d就要切分
+    });
+    console.log(mergeList); // 根节点特殊处理，如果是flat就是flat但直接子节点后续渲染仍需要透视，如果是3d就要切分
 
     if (!isTopFlat) {
       mergeList.push({
@@ -37645,11 +37668,11 @@
             planeList = [];
 
         if (_node7.__hasContent) {
-          var _target5 = _node7.__cacheTarget;
+          var _target6 = _node7.__cacheTarget;
           var o = {
             index: _index,
             node: _node7,
-            target: _target5,
+            target: _target6,
             points: [{
               x: 0,
               y: 0,
@@ -37793,13 +37816,13 @@
               }
             }
 
-            var _target6 = _node8.__cacheTarget;
+            var _target7 = _node8.__cacheTarget;
 
-            if (_target6) {
-              var _x3 = _target6.x1,
-                  _y3 = _target6.y1,
-                  _width2 = _target6.__width,
-                  _height2 = _target6.__height; // 坐标计算还是以局部根为原点
+            if (_target7) {
+              var _x3 = _target7.x1,
+                  _y3 = _target7.y1,
+                  _width2 = _target7.__width,
+                  _height2 = _target7.__height; // 坐标计算还是以局部根为原点
 
               var _xa = _x3 - x0,
                   _ya = _y3 - y0;
@@ -37824,7 +37847,7 @@
               var _o2 = {
                 index: _i2,
                 node: _node8,
-                target: _target6,
+                target: _target7,
                 points: [{
                   x: _x4,
                   y: _y4,
@@ -37845,7 +37868,7 @@
               };
               planeList.push(_o2);
 
-              if (_target6 !== _cache2) {
+              if (_target7 !== _cache2) {
                 _i2 += _total10 || 0;
 
                 if (_hasMask5) {
@@ -37884,6 +37907,8 @@
 
         oitHash[_index] = oit.sortPuzzleZ(list);
       }
+
+      _node7.__updateCache();
     } // 最后一次循环绘制到局部根节点上，类似genTotalWebgl()逻辑，但要考虑ppt透视
 
 
@@ -39219,7 +39244,7 @@
         var _filter2 = _computedStyle4[FILTER]; // 有ppt的，向上查找所有父亲index记录，可能出现重复记得提前跳出
 
         var __limitCache = _node11.__limitCache,
-            _cacheTotal = _node11.__cacheTotal,
+            _cacheTotal2 = _node11.__cacheTotal,
             __cacheFilter = _node11.__cacheFilter,
             __cacheMask = _node11.__cacheMask;
 
@@ -39229,25 +39254,25 @@
 
         var needGen = void 0; // 可能没变化，比如被遮罩节点、filter变更等
 
-        if (!_cacheTotal || !_cacheTotal.__available) {
+        if (!_cacheTotal2 || !_cacheTotal2.__available) {
           var res = void 0;
 
           if (_isPpt2) {
-            res = genPptWebgl(renderMode, _cacheTotal, gl, root, _node11, _i9, _lv6, _total12 || 0, __structs, width, height);
+            res = genPptWebgl(renderMode, _cacheTotal2, gl, root, _node11, _i9, _lv6, _total12 || 0, __structs, width, height);
           } else {
-            res = genTotalWebgl(renderMode, _cacheTotal, gl, root, _node11, _i9, _lv6, _total12 || 0, __structs, width, height, null, null, null);
+            res = genTotalWebgl(renderMode, _cacheTotal2, gl, root, _node11, _i9, _lv6, _total12 || 0, __structs, width, height, null, null, null);
           }
 
           if (!res) {
             return;
           }
 
-          _cacheTotal = res;
+          _cacheTotal2 = res;
           needGen = true;
         } // 即使超限，也有total结果
 
 
-        var target = _cacheTotal;
+        var target = _cacheTotal2;
 
         if (_filter2.length) {
           if (!__cacheFilter || !__cacheFilter.__available || needGen) {
@@ -39395,9 +39420,9 @@
         } // total和自身cache的尝试，visibility不可见时没有cache
 
 
-        var _target7 = _node12.__cacheTarget;
+        var _target8 = _node12.__cacheTarget;
 
-        if (_target7) {
+        if (_target8) {
           if (opacity > 0) {
             // 有mbm则需要混合之前的纹理和新纹理到fbo上面，连续的mbm则依次交替绘制到画布或离屏fbo上
             if (_mixBlendMode2 !== 'normal') {
@@ -39410,7 +39435,7 @@
               gl.bindFramebuffer(gl.FRAMEBUFFER, null);
               gl.deleteFramebuffer(frameBuffer);
 
-              var _res10 = genMbmWebgl(gl, texture, _target7, _mixBlendMode2, opacity, m, 0, 0, cx, cy, width, height);
+              var _res10 = genMbmWebgl(gl, texture, _target8, _mixBlendMode2, opacity, m, 0, 0, cx, cy, width, height);
 
               if (_res10) {
                 gl.deleteTexture(texture);
@@ -39418,7 +39443,7 @@
                 frameBuffer = _res10.frameBuffer;
               }
             } else {
-              var _p8 = _target7.__page;
+              var _p8 = _target8.__page;
 
               if (lastPage && lastPage !== _p8) {
                 drawTextureCache(gl, list.splice(0), cx, cy, 0, 0);
@@ -39428,14 +39453,14 @@
 
               if (wasmOp) {
                 list.push({
-                  cache: _target7,
+                  cache: _target8,
                   opacity: wasmOp[_i10],
                   vertex: wasmVt,
                   index: _i10
                 });
               } else {
                 list.push({
-                  cache: _target7,
+                  cache: _target8,
                   opacity: opacity,
                   matrix: m
                 });
@@ -39443,7 +39468,7 @@
             }
           }
 
-          if (_target7 !== _cache6) {
+          if (_target8 !== _cache6) {
             _i10 += _total13 || 0;
 
             if (_hasMask7) {
@@ -39453,7 +39478,7 @@
         } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
 
 
-        if ((!_target7 || _target7 === _cache6) && opacity > 0) {
+        if ((!_target8 || _target8 === _cache6) && opacity > 0) {
           var render = _node12.render;
 
           if (render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
@@ -39686,9 +39711,9 @@
               _hasMask9 = msh.hasMask,
               offscreenMask = msh.offscreenMask;
 
-          var _target8 = inject.getOffscreenCanvas(width, height, null, 'mask2');
+          var _target9 = inject.getOffscreenCanvas(width, height, null, 'mask2');
 
-          offscreenMask.mask = _target8; // 应用mask用到
+          offscreenMask.mask = _target9; // 应用mask用到
 
           offscreenMask.isClip = _node13.__clip; // 定位到最后一个mask元素上的末尾
 
@@ -39714,10 +39739,10 @@
             offscreen: {
               ctx: ctx,
               // 保存等待OFFSCREEN_MASK2时还原
-              target: _target8
+              target: _target9
             }
           });
-          ctx = _target8.ctx;
+          ctx = _target9.ctx;
         } // 设置opacity/matrix，根节点是没有父节点的不计算继承值
 
 
@@ -39749,6 +39774,10 @@
 
         var target = _node13.__cacheTarget;
 
+        if (target === _node13.__cache) {
+          target = null;
+        }
+
         if (target) {
           _i11 += _total14 || 0;
 
@@ -39776,15 +39805,16 @@
               ctx.globalCompositeOperation = mbmName(mixBlendMode);
             }
 
-            var x = target.x,
-                y = target.y,
-                canvas = target.canvas,
-                x1 = target.x1,
-                y1 = target.y1,
-                dbx = target.dbx,
-                dby = target.dby,
-                w = target.width,
-                h = target.height;
+            var _target10 = target,
+                x = _target10.x,
+                y = _target10.y,
+                canvas = _target10.canvas,
+                x1 = _target10.x1,
+                y1 = _target10.y1,
+                dbx = _target10.dbx,
+                dby = _target10.dby,
+                w = _target10.width,
+                h = _target10.height;
             ctx.drawImage(canvas, x, y, w, h, x1 - dbx, y1 - dby, w, h); // total应用后记得设置回来
 
             ctx.globalCompositeOperation = 'source-over';

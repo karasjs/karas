@@ -393,6 +393,9 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
       lastMatrix = m;
       // 子元素有cacheTotal优先使用
       let target = i > index && node.__cacheTarget;
+      if(target === node.__cache) {
+        target = null;
+      }
       if(target) {
         i += (total || 0);
         if(hasMask) {
@@ -641,6 +644,9 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
           assignMatrix(node.__matrixEvent, m);
           // 特殊渲染的matrix，局部根节点为原点考虑，本节点需inverse反向
           let target = node.__cacheTarget;
+          if(target === node.__cache) {
+            target = null;
+          }
           if(target) {
             i += (total || 0);
             if(hasMask) {
@@ -1008,6 +1014,9 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
               }
             }
             let target = node.__cacheTarget;
+            if(target === node.__cache) {
+              target = null;
+            }
             if(target) {
               j += (total || 0);
               if(hasMask) {
@@ -1033,7 +1042,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
         let {
           __cache,
         } = node;
-        let target = node.__cacheTarget;
+        let target = i > index ? node.__cacheTarget : __cache;
         if(target) {
           if(opacity > 0) {
             // 局部的mbm和主画布一样，先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
@@ -1155,9 +1164,15 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
         continue;
       }
       let {
+        __cacheTotal,
+        __cacheFilter,
+        __cacheMask,
         __domParent: p,
       } = node;
       let target = node.__cacheTarget;
+      if(target === node.__cache) {
+        target = null;
+      }
       // flat变化的局部子节点，或者flat根的直接子节点，生成局部根，已生成过的不用再生成
       if(total && !target && (transformStyle !== p.__computedStyle[TRANSFORM_STYLE]
         || p === top && transformStyle === 'flat')) {
@@ -1198,6 +1213,7 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
     }
     return b.lv - a.lv;
   });
+  console.log(mergeList)
   // 根节点特殊处理，如果是flat就是flat但直接子节点后续渲染仍需要透视，如果是3d就要切分
   if(!isTopFlat) {
     mergeList.push({
@@ -1368,6 +1384,7 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
       // 按z排序，远的先绘制
       oitHash[index] = oit.sortPuzzleZ(list);
     }
+    node.__updateCache();
   }
   // 最后一次循环绘制到局部根节点上，类似genTotalWebgl()逻辑，但要考虑ppt透视
   return genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
@@ -2983,6 +3000,9 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
       }
       // 有cache声明从而有total的可以直接绘制并跳过子节点索，total生成可能会因超限而失败
       let target = node.__cacheTarget;
+      if(target === node.__cache) {
+        target = null;
+      }
       if(target) {
         i += (total || 0);
         if(hasMask) {

@@ -15041,7 +15041,7 @@
             list2.forEach(function (item) {
               onList.forEach(function (arr) {
                 var cb = function cb() {
-                  var time = item.timestamp;
+                  var time = frame.__now;
 
                   if (time !== _this.__lastTime[arr[0]]) {
                     _this.__lastTime[arr[0]] = time;
@@ -15223,7 +15223,7 @@
 
         this.__list.forEach(function (item) {
           var cb = function cb() {
-            var time = item.timestamp;
+            var time = frame.__now;
 
             if (time !== _this2.__lastTime[id]) {
               _this2.__lastTime[id] = time;
@@ -18527,11 +18527,11 @@
         }
 
         if (this.__finished) {
-          this.__clean(true);
-
           this.__begin = this.__end = this.__isDelay = this.__finished = this.__inFps = false;
           this.__playState = 'finished';
           this.emit(Event.FINISH, true);
+
+          this.__clean(true);
         }
       }
     }, {

@@ -1852,11 +1852,11 @@ class Animation extends Event {
       this.emit(Event.END, this.__playCount - 1);
     }
     if(this.__finished) {
-      this.__clean(true);
       this.__begin = this.__end = this.__isDelay = this.__finished
         = this.__inFps = false;
       this.__playState = 'finished';
       this.emit(Event.FINISH, true);
+      this.__clean(true);
     }
   }
 

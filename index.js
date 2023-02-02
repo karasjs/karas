@@ -16703,9 +16703,7 @@
     IDLE: 0,
     RUNNING: 1,
     PAUSED: 2,
-    FINISHED: 3,
-    GOTO: 4 // 特殊给wasm的gotoAndStop标识，因为其逻辑处理和js不一样
-
+    FINISHED: 3
   };
   /**
    * 将每帧的样式格式化，提取出offset属性并转化为时间，提取出缓动曲线easing
@@ -18027,7 +18025,7 @@
 
     if (cb) {
       self.__playCb = null;
-      cb(self.__isDelay);
+      cb(true); // 标明异步回调
     }
   }
 
@@ -18203,14 +18201,14 @@
       }.hasOwnProperty(_this.__direction) ? framesR : frames;
       var controller = op.controller;
 
-      if (controller instanceof Controller) {
+      if (controller && controller instanceof Controller) {
         controller.add(_assertThisInitialized(_this));
       } else if (controller) {
         _this.addControl();
       } // 时间戳
 
 
-      _this.__timestamp = frame.__now;
+      _this.__startTime = 0;
       return _this;
     }
 
@@ -18328,6 +18326,13 @@
           this.__playCount = this.__currentTime = 0;
           this.__playState = 'idle';
         }
+
+        var currentFrame = this.__currentFrame;
+
+        if (currentFrame) {
+          currentFrame.lastPercent = -1;
+          this.__currentFrame = null;
+        }
       }
     }, {
       key: "play",
@@ -18343,7 +18348,7 @@
 
         if (playState === 'running') {
           if (isFunction$5(cb)) {
-            cb();
+            cb(false); // 同步回调
           }
 
           return this;
@@ -18352,20 +18357,24 @@
         this.__playCb = cb;
         this.__playState = 'running'; // 每次play调用标识第一次运行，需响应play事件和回调
 
-        this.__firstPlay = true;
-        this.__playCount = 0; // gotoAndPlay时间已经计算好
+        this.__firstPlay = true; // gotoAndPlay时间已经计算好
 
-        if (this.__fromGoto) {
+        var fromGoto = this.__fromGoto;
+
+        if (fromGoto) {
           this.__fromGoto = false;
         } else {
           this.__currentTime = 0;
+          this.__playCount = 0;
         }
 
+        var currentTime = this.__currentTime;
         this.__fpsTime = 0;
 
-        this.__initCurrentFrames(0);
+        var currentFrames = this.__initCurrentFrames(this.__playCount); // fill停留在开始同步更新首帧样式，gotoPlay若不足delay亦是
 
-        if (this.__stayBegin) {
+
+        if (!fromGoto && this.__stayBegin || fromGoto && currentTime < this.__delay) {
           var currentFrame = this.__currentFrame = this.__currentFrames[0];
           var target = this.__target,
               _root = this.__root;
@@ -18380,6 +18389,34 @@
           if (isChange) {
             _root.__addUpdate(target, keys, false, false, false, false, false, currentFrame.optimize, null);
           }
+        } // 非首帧，gotoPlay要同步执行更新样式
+        else if (fromGoto) {
+          var areaDuration = this.__areaDuration;
+          var dur = areaDuration ? Math.min(duration, areaDuration) : duration; // 只有2帧可优化，否则2分查找当前帧
+
+          var i,
+              length = currentFrames.length;
+
+          if (length === 2) {
+            i = currentTime < dur ? 0 : 1;
+          } else {
+            i = Animation.binarySearch(0, length - 1, currentTime, currentFrames);
+          }
+
+          var _currentFrame = currentFrames[i]; // 一定不会是最后一帧
+
+          var percent;
+
+          if (length === 2) {
+            percent = currentTime / duration; // 不能是dur，按照原本计算
+          } else {
+            var time = _currentFrame.time;
+            var total = currentFrames[i + 1].time - time;
+            percent = (currentTime - time) / total;
+          } // 强制认为不是同一帧防止不执行
+
+
+          Animation.calIntermediateStyle(_currentFrame, percent, this.__target, true);
         } // 开始时间为调用play时的帧时间
 
 
@@ -18387,27 +18424,26 @@
         this.__begin = true;
         this.__end = false;
         this.__isDelay = false;
-        this.__isEndDelay = false; // 由root统一控制，防止重复play
+        this.__isEndDelay = false;
+        var wa = this.__wasmAnimation;
+
+        if (wa && !fromGoto) {
+          wa.play_count = 0;
+          wa.play_state = PLAY_STATE.RUNNING;
+          wa.first_play = true;
+        } // 由root统一控制，防止重复play
+
 
         var root = this.__root;
 
         root.__onAniFrame(this);
-
-        var wa = this.__wasmAnimation;
-
-        if (wa) {
-          wa.play_count = 0;
-          wa.play_state = PLAY_STATE.RUNNING;
-          wa.first_play = true;
-        }
 
         return this;
       }
     }, {
       key: "__before",
       value: function __before(diff) {
-        this.__timestamp = frame.__now; // 有wasm且完全被包含情况忽略js计算，返回true标识
-
+        // 有wasm且完全被包含情况忽略js计算，返回true标识
         if (this.__ignore) {
           return true;
         }
@@ -18560,7 +18596,6 @@
         this.__clean(true);
 
         this.__begin = this.__end = this.__isDelay = this.__isEndDelay = this.__finished = this.__inFps = false;
-        this.__timestamp = frame.__now = frame.__now || inject.now();
         this.__playState = 'finished';
         var wa = this.__wasmAnimation;
 
@@ -18653,7 +18688,6 @@
         this.__clean(false);
 
         this.__begin = this.__end = this.__isDelay = this.__isEndDelay = this.__finished = this.__inFps = false;
-        this.__timestamp = frame.__now = frame.__now || inject.now();
         this.__playState = 'idle';
         var wa = this.__wasmAnimation;
 
@@ -18706,7 +18740,7 @@
         var frames = this.__frames;
         var areaDuration = this.__areaDuration;
         var endDelay = this.__endDelay;
-        var playState = this.__playState;
+        var currentTime = this.__currentTime;
         var dur = areaDuration ? Math.min(duration, areaDuration) : duration;
 
         if (isDestroyed || dur <= 0 || frames.length < 1) {
@@ -18724,13 +18758,22 @@
           }
 
           return;
-        } // 防止重复动画
+        } // 重复相同时间忽略
 
 
-        if (playState === 'running') {
-          this.__root.__offAniFrame(this);
+        if (v === currentTime && this.__playState === 'running') {
+          if (isFunction$5(cb)) {
+            cb(false);
+          }
+
+          return;
         }
 
+        if (this.__playState === 'running') {
+          this.__cancelTask();
+        }
+
+        this.__playState = 'idle';
         this.__fromGoto = true;
         return this.play(cb);
       }
@@ -18754,7 +18797,6 @@
           return this;
         }
 
-        var wa = this.__wasmAnimation;
         v = this.__goto(v, options.isFrame, options.excludeDelay);
 
         if (v >= dur + endDelay) {
@@ -18765,9 +18807,8 @@
           }
 
           return;
-        }
+        } // 重复相同时间忽略
 
-        this.__timestamp = frame.__now = frame.__now || inject.now(); // 重复相同时间忽略
 
         if (v === currentTime) {
           if (isFunction$5(cb)) {
@@ -18777,12 +18818,17 @@
           return;
         }
 
-        this.__cancelTask();
+        this.__startTime = frame.__now = frame.__now || inject.now();
 
-        this.__playState = 'paused'; // wasm的特殊标识，在root的before中统一遍历节点计算中需要知道
+        if (this.__playState === 'running') {
+          this.__cancelTask();
+        }
+
+        this.__playState = 'paused';
+        var wa = this.__wasmAnimation; // wasm的特殊标识，在root的before中统一遍历节点计算中需要知道
 
         if (wa) {
-          wa.play_state = PLAY_STATE.GOTO;
+          wa.play_state = PLAY_STATE.PAUSED;
         }
 
         var root = this.__root;
@@ -18797,25 +18843,28 @@
           if (isFunction$5(cb)) {
             cb(isChange);
           }
-        };
-
-        if (v < 0) {
-          if (this.__stayBegin) {
-            var currentFrame = this.__currentFrame = currentFrames[0];
-            var target = this.__target;
-            var keys = calLastStyle(currentFrame.style, target, this.__keys);
-            isChange = !!keys.length;
-
-            if (this.__stopCb) {
-              root.__cancelFrameDraw(this.__stopCb);
-            } // 有变化的backwards才更新，否则无需理会，不需要回调，极端情况立刻pause()回造成一次无用刷新
+        }; // 没超过delay，都停留在首帧，不考虑fill
 
 
-            if (isChange) {
-              root.__addUpdate(target, keys, false, false, false, false, false, currentFrame.optimize, this.__stopCb);
-            } else {
-              this.__stopCb();
-            }
+        if (v <= 0) {
+          var currentFrame = this.__currentFrame = currentFrames[0];
+          var target = this.__target;
+          var keys = calLastStyle(currentFrame.style, target, this.__keys);
+          isChange = !!keys.length;
+
+          if (this.__stopCb) {
+            root.__cancelFrameDraw(this.__stopCb);
+          } // 有变化的backwards才更新，否则无需理会，不需要回调，极端情况立刻pause()回造成一次无用刷新
+
+
+          if (isChange) {
+            root.__addUpdate(target, keys, false, false, false, false, false, currentFrame.optimize, this.__stopCb);
+          } else {
+            this.__stopCb();
+          }
+
+          if (wa) {
+            wa.goto_stop(0, dur);
           }
 
           return;
@@ -18840,8 +18889,8 @@
         var iterations = this.__iterations;
         var duration = this.__duration;
         var areaDuration = this.__areaDuration;
-        var dur = areaDuration ? Math.min(duration, areaDuration) : duration;
-        this.__playState = 'paused';
+        var dur = areaDuration ? Math.min(duration, areaDuration) : duration; // this.__playState = 'paused';
+
         var wa = this.__wasmAnimation;
 
         if (isNaN(v) || v < 0) {
@@ -18860,7 +18909,7 @@
         this.__currentTime = v;
 
         if (wa) {
-          wa.next_time = v;
+          wa.current_time = v;
         }
 
         v -= this.__delay - this.__areaStart; // 超过时间长度需要累加次数，这里可以超过iterations，因为设定也许会非常大
@@ -18868,6 +18917,10 @@
         var playCount = Math.min(iterations - 1, Math.floor(v / dur));
         v -= dur * playCount;
         this.__playCount = playCount;
+
+        if (wa) {
+          wa.play_count = v;
+        }
 
         this.__initCurrentFrames(playCount);
 
@@ -18909,8 +18962,9 @@
           i = currentTime < dur ? 0 : 1;
         } else {
           i = Animation.binarySearch(0, length - 1, currentTime, currentFrames);
-        } // 最后一帧结束动画，仅最后一轮才会进入
+        }
 
+        var currentFrame = currentFrames[i]; // 最后一帧结束动画，仅最后一轮才会进入
 
         var isLastFrame = isLastCount && i === length - 1;
         var percent = 0;
@@ -18919,12 +18973,11 @@
         else if (length === 2) {
           percent = currentTime / duration; // 不能是dur，按照原本计算
         } else {
-          var time = currentFrames[i].time;
+          var time = currentFrame.time;
           var total = currentFrames[i + 1].time - time;
           percent = (currentTime - time) / total;
         }
 
-        var currentFrame = currentFrames[i];
         var notSameFrame = lastFrame !== currentFrame; // 对比前后两帧是否为同一关键帧，不是则清除之前关键帧上的percent标识为-1，这样可以识别跳帧和本轮第一次进入此帧
 
         if (notSameFrame) {
@@ -18974,7 +19027,7 @@
           }
         } // 动画内部除非同帧内且本帧没有任何变化，否则会一直触发，哪怕diff时间为0
         else {
-          var _Animation$calInterme = Animation.calIntermediateStyle(currentFrame, percent, target, lastFrame !== currentFrame),
+          var _Animation$calInterme = Animation.calIntermediateStyle(currentFrame, percent, target, notSameFrame),
               trans = _Animation$calInterme.trans,
               fixed = _Animation$calInterme.fixed;
 
@@ -19014,7 +19067,7 @@
           // 因为wasm情况会导致js不计算可能没有keys（缺少wasm计算的那些），需传参标识
           root.__addUpdate(target, keys, false, false, false, false, gotoParams.wasmChange, gotoParams.optimize && currentFrame && currentFrame.optimize, this.__stopCb);
         } else {
-          this.__stopCb(); // 无变化同步执行
+          this.__stopCb(isChange); // 无变化同步执行
 
         }
       }
@@ -19306,11 +19359,6 @@
         }
 
         return v;
-      }
-    }, {
-      key: "timestamp",
-      get: function get() {
-        return this.__timestamp;
       }
     }, {
       key: "pending",
@@ -19685,7 +19733,7 @@
         } // 同一关键帧同一percent可以不刷新，比如diff为0时，或者steps情况，离开会清空
 
 
-        if (frame.lastPercent === percent) {
+        if (!notSameFrame && frame.lastPercent === percent) {
           return {
             trans: [],
             fixed: []

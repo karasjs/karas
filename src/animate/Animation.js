@@ -1860,7 +1860,9 @@ class Animation extends Event {
     if(wa) {
       wa.play_state = PLAY_STATE.PAUSED;
     }
-    this.__cancelTask();
+    // 不能清空stopCb
+    this.__root.__offAniFrame(this);
+    this.__playCb = null;
     this.emit(Event.PAUSE);
     return this;
   }
@@ -2001,6 +2003,7 @@ class Animation extends Event {
     }
     // 计算出时间点直接累加播放
     v = this.__goto(v, options.isFrame, options.excludeDelay);
+    // 已经结束提前跳出
     if(v >= dur + endDelay) {
       if(this.__stayEnd) {
         this.finish(cb);
@@ -2010,7 +2013,7 @@ class Animation extends Event {
       }
       return;
     }
-    // 重复相同时间忽略
+    // 重复相同时间，且正在播放中，且
     if(v === currentTime && this.__playState === 'running') {
       if(isFunction(cb)) {
         cb(false);
@@ -2022,6 +2025,15 @@ class Animation extends Event {
     }
     this.__playState = 'idle';
     this.__fromGoto = true;
+    let wa = this.__wasmAnimation;
+    let wasmChange = false;
+    if(wa) {
+      wasmChange = wa.goto_stop(v, dur);
+    }
+    this.__calCurrent(this.__currentFrames, this.__currentFrame, v, dur, duration, {
+      wasmChange,
+      cb,
+    });
     return this.play(cb);
   }
 
@@ -2040,6 +2052,7 @@ class Animation extends Event {
       return this;
     }
     v = this.__goto(v, options.isFrame, options.excludeDelay);
+    // 已经结束提前跳出
     if(v >= dur + endDelay) {
       if(this.__stayEnd) {
         this.finish(cb);
@@ -2049,6 +2062,9 @@ class Animation extends Event {
       }
       return;
     }
+    if(this.__playState === 'running') {
+      this.__cancelTask();
+    }
     // 重复相同时间忽略
     if(v === currentTime) {
       if(isFunction(cb)) {
@@ -2057,9 +2073,6 @@ class Animation extends Event {
       return;
     }
     this.__startTime = frame.__now = frame.__now || inject.now();
-    if(this.__playState === 'running') {
-      this.__cancelTask();
-    }
     this.__playState = 'paused';
     let wa = this.__wasmAnimation;
     // wasm的特殊标识，在root的before中统一遍历节点计算中需要知道
@@ -2068,17 +2081,17 @@ class Animation extends Event {
     }
     let root = this.__root;
     let currentFrames = this.__currentFrames;
-    let isChange;
-    this.__stopCb = () => {
-      if(isChange) {
-        frameCb(this);
-      }
-      if(isFunction(cb)) {
-        cb(isChange);
-      }
-    };
     // 没超过delay，都停留在首帧，不考虑fill
     if(v <= 0) {
+      let isChange;
+      this.__stopCb = () => {
+        if(isChange) {
+          frameCb(this);
+        }
+        if(isFunction(cb)) {
+          cb(isChange);
+        }
+      };
       let currentFrame = currentFrames[0];
       let target = this.__target;
       let keys = calLastStyle(currentFrame.style, target, this.__keys);
@@ -2105,7 +2118,6 @@ class Animation extends Event {
     this.__calCurrent(currentFrames, this.__currentFrame, v, dur, duration, {
       wasmChange,
       cb,
-      optimize: true,
     });
   }
 
@@ -2115,7 +2127,6 @@ class Animation extends Event {
     let duration = this.__duration;
     let areaDuration = this.__areaDuration;
     let dur = areaDuration ? Math.min(duration, areaDuration) : duration;
-    // this.__playState = 'paused';
     let wa = this.__wasmAnimation;
     if(isNaN(v) || v < 0) {
       throw new Error('Param of gotoAnd(Play/Stop) is illegal: ' + v);
@@ -2132,12 +2143,15 @@ class Animation extends Event {
       wa.current_time = v;
     }
     v -= this.__delay - this.__areaStart;
+    if(v < 0) {
+      v = 0;
+    }
     // 超过时间长度需要累加次数，这里可以超过iterations，因为设定也许会非常大
     let playCount = Math.min(iterations - 1, Math.floor(v / dur));
     v -= dur * playCount;
     this.__playCount = playCount;
     if(wa) {
-      wa.play_count = v;
+      wa.play_count = playCount;
     }
     this.__initCurrentFrames(playCount);
     return v;

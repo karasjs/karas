@@ -18526,10 +18526,12 @@
 
         if (wa) {
           wa.play_state = PLAY_STATE.PAUSED;
-        }
+        } // 不能清空stopCb
 
-        this.__cancelTask();
 
+        this.__root.__offAniFrame(this);
+
+        this.__playCb = null;
         this.emit(Event.PAUSE);
         return this;
       }
@@ -18708,7 +18710,7 @@
         } // 计算出时间点直接累加播放
 
 
-        v = this.__goto(v, options.isFrame, options.excludeDelay);
+        v = this.__goto(v, options.isFrame, options.excludeDelay); // 已经结束提前跳出
 
         if (v >= dur + endDelay) {
           if (this.__stayEnd) {
@@ -18718,7 +18720,7 @@
           }
 
           return;
-        } // 重复相同时间忽略
+        } // 重复相同时间，且正在播放中，且
 
 
         if (v === currentTime && this.__playState === 'running') {
@@ -18735,6 +18737,18 @@
 
         this.__playState = 'idle';
         this.__fromGoto = true;
+        var wa = this.__wasmAnimation;
+        var wasmChange = false;
+
+        if (wa) {
+          wasmChange = wa.goto_stop(v, dur);
+        }
+
+        this.__calCurrent(this.__currentFrames, this.__currentFrame, v, dur, duration, {
+          wasmChange: wasmChange,
+          cb: cb
+        });
+
         return this.play(cb);
       }
     }, {
@@ -18757,7 +18771,7 @@
           return this;
         }
 
-        v = this.__goto(v, options.isFrame, options.excludeDelay);
+        v = this.__goto(v, options.isFrame, options.excludeDelay); // 已经结束提前跳出
 
         if (v >= dur + endDelay) {
           if (this.__stayEnd) {
@@ -18767,6 +18781,10 @@
           }
 
           return;
+        }
+
+        if (this.__playState === 'running') {
+          this.__cancelTask();
         } // 重复相同时间忽略
 
 
@@ -18779,11 +18797,6 @@
         }
 
         this.__startTime = frame.__now = frame.__now || inject.now();
-
-        if (this.__playState === 'running') {
-          this.__cancelTask();
-        }
-
         this.__playState = 'paused';
         var wa = this.__wasmAnimation; // wasm的特殊标识，在root的before中统一遍历节点计算中需要知道
 
@@ -18792,21 +18805,21 @@
         }
 
         var root = this.__root;
-        var currentFrames = this.__currentFrames;
-        var isChange;
-
-        this.__stopCb = function () {
-          if (isChange) {
-            frameCb(_this4);
-          }
-
-          if (isFunction$5(cb)) {
-            cb(isChange);
-          }
-        }; // 没超过delay，都停留在首帧，不考虑fill
-
+        var currentFrames = this.__currentFrames; // 没超过delay，都停留在首帧，不考虑fill
 
         if (v <= 0) {
+          var isChange;
+
+          this.__stopCb = function () {
+            if (isChange) {
+              frameCb(_this4);
+            }
+
+            if (isFunction$5(cb)) {
+              cb(isChange);
+            }
+          };
+
           var currentFrame = currentFrames[0];
           var target = this.__target;
           var keys = calLastStyle(currentFrame.style, target, this.__keys);
@@ -18838,8 +18851,7 @@
 
         this.__calCurrent(currentFrames, this.__currentFrame, v, dur, duration, {
           wasmChange: wasmChange,
-          cb: cb,
-          optimize: true
+          cb: cb
         });
       } // 返回不包含delay且去除多轮的时间
 
@@ -18849,8 +18861,7 @@
         var iterations = this.__iterations;
         var duration = this.__duration;
         var areaDuration = this.__areaDuration;
-        var dur = areaDuration ? Math.min(duration, areaDuration) : duration; // this.__playState = 'paused';
-
+        var dur = areaDuration ? Math.min(duration, areaDuration) : duration;
         var wa = this.__wasmAnimation;
 
         if (isNaN(v) || v < 0) {
@@ -18872,14 +18883,19 @@
           wa.current_time = v;
         }
 
-        v -= this.__delay - this.__areaStart; // 超过时间长度需要累加次数，这里可以超过iterations，因为设定也许会非常大
+        v -= this.__delay - this.__areaStart;
+
+        if (v < 0) {
+          v = 0;
+        } // 超过时间长度需要累加次数，这里可以超过iterations，因为设定也许会非常大
+
 
         var playCount = Math.min(iterations - 1, Math.floor(v / dur));
         v -= dur * playCount;
         this.__playCount = playCount;
 
         if (wa) {
-          wa.play_count = v;
+          wa.play_count = playCount;
         }
 
         this.__initCurrentFrames(playCount);

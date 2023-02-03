@@ -1435,7 +1435,7 @@
   var isObject$1 = isType('Object');
   var isString$2 = isType('String');
   var isFunction$b = isType('Function');
-  var isNumber$1 = isType('Number');
+  var isNumber$2 = isType('Number');
   var isBoolean = isType('Boolean');
   var isDate = isType('Date');
   var hasOwn = {}.hasOwnProperty;
@@ -1969,7 +1969,7 @@
     isObject: isObject$1,
     isString: isString$2,
     isFunction: isFunction$b,
-    isNumber: isNumber$1,
+    isNumber: isNumber$2,
     isBoolean: isBoolean,
     isDate: isDate,
     isNil: isNil$h,
@@ -8883,7 +8883,7 @@
       equalArr$1 = util.equalArr,
       equal = util.equal,
       replaceRgba2Hex = util.replaceRgba2Hex;
-  var isGeom$2 = o$2.isGeom,
+  var isGeom$1 = o$2.isGeom,
       GEOM$2 = o$2.GEOM,
       GEOM_KEY_SET = o$2.GEOM_KEY_SET;
   var VALID_STRING_VALUE = reset.VALID_STRING_VALUE;
@@ -10712,7 +10712,7 @@
     } // multi都是纯值数组，equalArr本身即递归，非multi根据类型判断
 
 
-    if (isGeom$2(target.tagName, k) && (target.isMulti || Array.isArray(a) && Array.isArray(b))) {
+    if (isGeom$1(target.tagName, k) && (target.isMulti || Array.isArray(a) && Array.isArray(b))) {
       return equal(a, b);
     }
 
@@ -16641,28 +16641,16 @@
       calUnit = o$4.calUnit;
   var isNil$b = util.isNil,
       isFunction$5 = util.isFunction,
-      isNumber = util.isNumber,
+      isNumber$1 = util.isNumber,
       isObject = util.isObject,
       clone$1 = util.clone,
       equalArr = util.equalArr;
   var linear = easing.linear;
   var cloneStyle = css.cloneStyle,
       equalStyle$1 = css.equalStyle;
-  var isGeom$1 = o$2.isGeom,
-      GEOM$1 = o$2.GEOM;
-  var getLevel$1 = o$1.getLevel;
-      o$1.isRepaint;
-      var NONE$3 = o$1.NONE;
-      o$1.CACHE;
-      o$1.TRANSFORM;
-      o$1.TRANSLATE_X;
-      o$1.TRANSLATE_Y;
-      o$1.TRANSLATE_Z;
-      o$1.ROTATE_Z;
-      o$1.SCALE_X;
-      o$1.SCALE_Y;
-      o$1.SCALE_Z;
-      o$1.SCALE;
+  var GEOM$1 = o$2.GEOM;
+  var getLevel$1 = o$1.getLevel,
+      NONE$3 = o$1.NONE;
   var isColorKey = key.isColorKey,
       isExpandKey = key.isExpandKey,
       isLengthKey = key.isLengthKey,
@@ -17593,7 +17581,7 @@
    */
 
 
-  function calFrame(prev, next, keys, target) {
+  function calFrame(prev, next, keys, target, isGeom) {
     var hasTp,
         allInFn = true;
 
@@ -17673,6 +17661,7 @@
 
     prev.lv = lv;
     prev.allInFn = allInFn;
+    prev.isGeom = isGeom;
     return next;
   }
 
@@ -17961,11 +17950,10 @@
     for (var i = 0, len = keys.length; i < len; i++) {
       var k = keys[i],
           v = style[k];
+      var isGeom = GEOM$1.hasOwnProperty(k);
 
-      var _isGeom = GEOM$1.hasOwnProperty(k);
-
-      if (!equalStyle$1(k, v, _isGeom ? currentProps[k] : currentStyle[k], target)) {
-        if (_isGeom) {
+      if (!equalStyle$1(k, v, isGeom ? currentProps[k] : currentStyle[k], target)) {
+        if (isGeom) {
           currentProps[k] = v;
         } else {
           currentStyle[k] = v;
@@ -18132,9 +18120,10 @@
         list = [];
       }
 
-      if (isNumber(options)) {
+      if (isNumber$1(options)) {
         _this.__options = {
-          duration: options
+          duration: options,
+          fill: 'forwards'
         };
         options = _this.__options;
       }
@@ -18164,7 +18153,7 @@
 
       _this.areaDuration = op.areaDuration;
 
-      var _this$__init = _this.__init(list, duration, ea, target),
+      var _this$__init = _this.__init(list, duration, ea, target, op.isGeom),
           frames = _this$__init.frames,
           framesR = _this$__init.framesR,
           keys = _this$__init.keys,
@@ -18201,7 +18190,7 @@
 
     _createClass(Animation, [{
       key: "__init",
-      value: function __init(list, duration, ea, target) {
+      value: function __init(list, duration, ea, target, isGeom) {
         if (list.length < 1) {
           return {
             frames: [],
@@ -18223,7 +18212,7 @@
             __currentProps = target.__currentProps;
         var originStyle = {};
         keys.forEach(function (k) {
-          if (isGeom$1(target.tagName, k)) {
+          if (isGeom && o$2.isGeom(target.tagName, k)) {
             originStyle[k] = __currentProps[k];
           }
 
@@ -18231,13 +18220,13 @@
         });
         originStyle = cloneStyle(originStyle, keys); // 再计算两帧之间的变化，存入transition/fixed属性
 
-        Animation.calTransition(frames, keys, target); // 反向存储帧的倒排结果
+        Animation.calTransition(frames, keys, target, isGeom); // 反向存储帧的倒排结果
 
         framesR.forEach(function (item, i) {
           item.time = duration - item.time;
           item.index = i;
         });
-        Animation.calTransition(framesR, keys, target); // wasm优化和matrix有关的，提取出来交给rust处理
+        Animation.calTransition(framesR, keys, target, isGeom); // wasm优化和matrix有关的，提取出来交给rust处理
 
         var wn = target.__wasmNode,
             wList = [],
@@ -18374,7 +18363,7 @@
 
 
           if (isChange) {
-            _root.__addUpdate(target, keys, false, false, false, false, false, currentFrame.optimize, null);
+            _root.__addUpdate(target, keys, false, false, false, false, false, null);
           }
         } // 非首帧，gotoPlay要同步执行更新样式
         else if (fromGoto) {
@@ -18596,28 +18585,12 @@
           var target = this.__target;
           var style; // 是否停留在最后一帧
 
-          var currentFrame;
-
           if (this.__stayEnd) {
-            var framesR = this.__framesR;
-            var direction = this.__direction;
-            var iterations = this.__iterations;
+            var currentFrames = this.__initCurrentFrames(this.__playCount);
 
-            if ('reverse'.indexOf(direction) > -1) {
-              var _ref = [framesR, frames];
-              frames = _ref[0];
-              framesR = _ref[1];
-            }
+            var _currentFrame2 = this.__currentFrame = currentFrames[currentFrames.length - 1];
 
-            if (iterations === Infinity || iterations % 2) {
-              currentFrame = frames[frames.length - 1];
-              style = currentFrame.style;
-            } else {
-              currentFrame = framesR[framesR.length - 1];
-              style = currentFrame.style;
-            }
-
-            this.__currentFrame = currentFrame;
+            style = _currentFrame2.style;
           } else {
             style = this.__originStyle;
           }
@@ -18642,7 +18615,7 @@
           };
 
           if (isChange) {
-            root.__addUpdate(target, keys, false, false, false, false, false, currentFrame && currentFrame.optimize, this.__stopCb);
+            root.__addUpdate(target, keys, false, false, false, false, false, this.__stopCb);
           } else {
             this.__stopCb();
           }
@@ -18834,7 +18807,7 @@
 
 
         if (v <= 0) {
-          var currentFrame = this.__currentFrame = currentFrames[0];
+          var currentFrame = currentFrames[0];
           var target = this.__target;
           var keys = calLastStyle(currentFrame.style, target, this.__keys);
           isChange = !!keys.length;
@@ -19666,13 +19639,14 @@
     }, {
       key: "calTransition",
       value: function calTransition(frames, keys, target) {
+        var isGeom = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
         var prev = frames[0];
         prev.clone = cloneStyle(prev.style, keys);
 
         for (var _i21 = 1, _len13 = frames.length; _i21 < _len13; _i21++) {
           var next = frames[_i21];
           next.clone = cloneStyle(next.style, keys);
-          prev = calFrame(prev, next, keys, target);
+          prev = calFrame(prev, next, keys, target, isGeom);
         }
       }
     }, {
@@ -19863,10 +19837,9 @@
 
             for (var _i24 = 0, _len16 = f.length; _i24 < _len16; _i24++) {
               var _k6 = f[_i24];
+              var isGeom = frame.isGeom && GEOM$1.hasOwnProperty(_k6);
 
-              var _isGeom2 = GEOM$1.hasOwnProperty(_k6);
-
-              if (!equalStyle$1(_k6, style[_k6], _isGeom2 ? currentProps[_k6] : currentStyle[_k6], target)) {
+              if (!equalStyle$1(_k6, style[_k6], isGeom ? currentProps[_k6] : currentStyle[_k6], target)) {
                 if (GEOM$1.hasOwnProperty(_k6)) {
                   currentProps[_k6] = style[_k6];
                 } else {
@@ -24929,6 +24902,7 @@
       GRADIENT = o$4.GRADIENT;
   var int2rgba = util.int2rgba,
       isNil$9 = util.isNil,
+      isNumber = util.isNumber,
       joinArr = util.joinArr;
   var canvasPolygon$2 = painter.canvasPolygon,
       svgPolygon$1 = painter.svgPolygon;
@@ -25792,6 +25766,22 @@
       key: "__isRealInline",
       value: function __isRealInline() {
         return false;
+      }
+    }, {
+      key: "animate",
+      value: function animate(list) {
+        var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+        if (isNumber(options)) {
+          options = {
+            duration: options,
+            isGeom: true
+          };
+        } else {
+          options.isGeom = true;
+        }
+
+        return _get(_getPrototypeOf(Geom.prototype), "animate", this).call(this, list, options);
       }
     }, {
       key: "isMulti",
@@ -40045,19 +40035,6 @@
       OPACITY = _enums$STYLE_KEY.OPACITY,
       MIX_BLEND_MODE = _enums$STYLE_KEY.MIX_BLEND_MODE,
       FONT_SIZE = _enums$STYLE_KEY.FONT_SIZE;
-      _enums$STYLE_KEY.TRANSLATE_X;
-      _enums$STYLE_KEY.TRANSLATE_Y;
-      _enums$STYLE_KEY.TRANSLATE_Z;
-      _enums$STYLE_KEY.ROTATE_X;
-      _enums$STYLE_KEY.ROTATE_Y;
-      _enums$STYLE_KEY.ROTATE_Z;
-      _enums$STYLE_KEY.ROTATE_3D;
-      _enums$STYLE_KEY.SCALE_X;
-      _enums$STYLE_KEY.SCALE_Y;
-      _enums$STYLE_KEY.SCALE_Z;
-      _enums$STYLE_KEY.SKEW_X;
-      _enums$STYLE_KEY.SKEW_Y;
-      _enums$STYLE_KEY.TRANSFORM_ORIGIN;
   var isNil$8 = util.isNil,
       isFunction$1 = util.isFunction;
   var PX = o$4.PX,
@@ -40881,7 +40858,7 @@
         for (var i = 0; i < len; i++) {
           var k = trans[i];
 
-          if (!frame.allInFn && node instanceof Geom && isGeom(node.tagName, k)) {
+          if (frame.isGeom && node instanceof Geom && isGeom(node.tagName, k)) {
             cacheProps[k] = undefined;
           } else {
             // repaint置空，如果reflow会重新生成空的

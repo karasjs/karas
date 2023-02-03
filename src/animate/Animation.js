@@ -95,21 +95,10 @@ const { AUTO, PX, PERCENT, INHERIT, RGBA, STRING, NUMBER, REM, VW, VH, VMAX, VMI
 const { isNil, isFunction, isNumber, isObject, clone, equalArr } = util;
 const { linear } = easing;
 const { cloneStyle, equalStyle } = css;
-const { isGeom, GEOM } = change;
+const { GEOM } = change;
 const {
   getLevel,
-  isRepaint,
   NONE,
-  CACHE,
-  TRANSFORM: TF,
-  TRANSLATE_X: TX,
-  TRANSLATE_Y: TY,
-  TRANSLATE_Z: TZ,
-  ROTATE_Z: RZ,
-  SCALE_X: SX,
-  SCALE_Y: SY,
-  SCALE_Z: SZ,
-  SCALE,
 } = level;
 
 const {
@@ -1038,7 +1027,7 @@ function calDiffGradient(p, n, target) {
  * 计算两帧之间不相同的变化，存入transition，相同的忽略
  * 同时不变化的key也得存入fixed
  */
-function calFrame(prev, next, keys, target) {
+function calFrame(prev, next, keys, target, isGeom) {
   let hasTp, allInFn = true;
   for(let i = 0, len = keys.length; i < len; i++) {
     let k = keys[i];
@@ -1108,6 +1097,7 @@ function calFrame(prev, next, keys, target) {
   // 提前计算，不包含fixed的
   prev.lv = lv;
   prev.allInFn = allInFn;
+  prev.isGeom = isGeom;
   return next;
 }
 
@@ -1529,6 +1519,7 @@ class Animation extends Event {
     if(isNumber(options)) {
       this.__options = {
         duration: options,
+        fill: 'forwards',
       };
       options = this.__options;
     }
@@ -1553,7 +1544,7 @@ class Animation extends Event {
     this.direction = op.direction;
     this.areaStart = op.areaStart; // ae中的功能，播放中间一段动画，为0忽略
     this.areaDuration = op.areaDuration;
-    let { frames, framesR, keys, originStyle } = this.__init(list, duration, ea, target);
+    let { frames, framesR, keys, originStyle } = this.__init(list, duration, ea, target, op.isGeom);
     this.__frames = frames;
     this.__framesR = framesR;
     this.__fps = fps;
@@ -1581,7 +1572,7 @@ class Animation extends Event {
     this.__startTime = 0;
   }
 
-  __init(list, duration, ea, target) {
+  __init(list, duration, ea, target, isGeom) {
     if(list.length < 1) {
       return { frames: [], framesR: [], keys: [], originStyle: {} };
     }
@@ -1596,20 +1587,20 @@ class Animation extends Event {
     let { __currentStyle, __currentProps } = target;
     let originStyle = {};
     keys.forEach(k => {
-      if(isGeom(target.tagName, k)) {
+      if(isGeom && change.isGeom(target.tagName, k)) {
         originStyle[k] = __currentProps[k];
       }
       originStyle[k] = __currentStyle[k];
     });
     originStyle = cloneStyle(originStyle, keys);
     // 再计算两帧之间的变化，存入transition/fixed属性
-    Animation.calTransition(frames, keys, target);
+    Animation.calTransition(frames, keys, target, isGeom);
     // 反向存储帧的倒排结果
     framesR.forEach((item, i) => {
       item.time = duration - item.time;
       item.index = i;
     });
-    Animation.calTransition(framesR, keys, target);
+    Animation.calTransition(framesR, keys, target, isGeom);
     // wasm优化和matrix有关的，提取出来交给rust处理
     let wn = target.__wasmNode, wList = [], wHash = {};
     if(wn) {
@@ -1732,8 +1723,7 @@ class Animation extends Event {
       }
       // 有变化的backwards才更新，否则无需理会，不需要回调，极端情况立刻pause()回造成一次无用刷新
       if(isChange) {
-        root.__addUpdate(target, keys, false, false, false, false, false,
-          currentFrame.optimize, null);
+        root.__addUpdate(target, keys, false, false, false, false, false, null);
       }
     }
     // 非首帧，gotoPlay要同步执行更新样式
@@ -1914,21 +1904,9 @@ class Animation extends Event {
       // 是否停留在最后一帧
       let currentFrame;
       if(this.__stayEnd) {
-        let framesR = this.__framesR;
-        let direction = this.__direction;
-        let iterations = this.__iterations;
-        if('reverse'.indexOf(direction) > -1) {
-          [frames, framesR] = [framesR, frames];
-        }
-        if(iterations === Infinity || iterations % 2) {
-          currentFrame = frames[frames.length - 1];
-          style = currentFrame.style;
-        }
-        else {
-          currentFrame = framesR[framesR.length - 1];
-          style = currentFrame.style;
-        }
-        this.__currentFrame = currentFrame;
+        let currentFrames = this.__initCurrentFrames(this.__playCount);
+        let currentFrame = this.__currentFrame = currentFrames[currentFrames.length - 1];
+        style = currentFrame.style;
       }
       else {
         style = this.__originStyle;
@@ -1948,8 +1926,7 @@ class Animation extends Event {
         }
       };
       if(isChange) {
-        root.__addUpdate(target, keys, false, false, false, false, false,
-          currentFrame && currentFrame.optimize, this.__stopCb);
+        root.__addUpdate(target, keys, false, false, false, false, false, this.__stopCb);
       }
       else {
         this.__stopCb();
@@ -2102,7 +2079,7 @@ class Animation extends Event {
     };
     // 没超过delay，都停留在首帧，不考虑fill
     if(v <= 0) {
-      let currentFrame = this.__currentFrame = currentFrames[0];
+      let currentFrame = currentFrames[0];
       let target = this.__target;
       let keys = calLastStyle(currentFrame.style, target, this.__keys);
       isChange = !!keys.length;
@@ -2795,13 +2772,13 @@ class Animation extends Event {
     });
   }
 
-  static calTransition(frames, keys, target) {
+  static calTransition(frames, keys, target, isGeom = false) {
     let prev = frames[0];
     prev.clone = cloneStyle(prev.style, keys);
     for(let i = 1, len = frames.length; i < len; i++) {
       let next = frames[i];
       next.clone = cloneStyle(next.style, keys);
-      prev = calFrame(prev, next, keys, target);
+      prev = calFrame(prev, next, keys, target, isGeom);
     }
   }
 
@@ -2959,7 +2936,7 @@ class Animation extends Event {
         let f = frame.fixed;
         for(let i = 0, len = f.length; i < len; i++) {
           let k = f[i];
-          let isGeom = GEOM.hasOwnProperty(k);
+          let isGeom = frame.isGeom && GEOM.hasOwnProperty(k);
           if(!equalStyle(k, style[k], isGeom ? currentProps[k] : currentStyle[k], target)) {
             if(GEOM.hasOwnProperty(k)) {
               currentProps[k] = style[k];

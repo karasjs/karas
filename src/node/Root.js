@@ -74,19 +74,6 @@ const {
     OPACITY,
     MIX_BLEND_MODE,
     FONT_SIZE,
-    TRANSLATE_X,
-    TRANSLATE_Y,
-    TRANSLATE_Z,
-    ROTATE_X,
-    ROTATE_Y,
-    ROTATE_Z,
-    ROTATE_3D,
-    SCALE_X,
-    SCALE_Y,
-    SCALE_Z,
-    SKEW_X,
-    SKEW_Y,
-    TRANSFORM_ORIGIN,
   },
 } = enums;
 const { isNil, isFunction } = util;
@@ -792,7 +779,7 @@ class Root extends Dom {
     let len = trans.length;
     for(let i = 0; i < len; i++) {
       let k = trans[i];
-      if(!frame.allInFn && node instanceof Geom && isGeom(node.tagName, k)) {
+      if(frame.isGeom && node instanceof Geom && isGeom(node.tagName, k)) {
         cacheProps[k] = undefined;
       }
       else {

@@ -15635,6 +15635,7 @@
         wasm.__wbg_set_animation_percent(this.ptr, arg0);
       }
       /**
+       * @param {number} node
        * @param {number} direction
        * @param {number} duration
        * @param {number} fps
@@ -15742,8 +15743,8 @@
       }
     }, {
       key: "new",
-      value: function _new(direction, duration, fps, delay, end_delay, fill, playback_rate, iterations, area_start, area_duration, easing) {
-        var ret = wasm.animation_new(direction, duration, fps, delay, end_delay, fill, playback_rate, iterations, area_start, area_duration, easing);
+      value: function _new(node, direction, duration, fps, delay, end_delay, fill, playback_rate, iterations, area_start, area_duration, easing) {
+        var ret = wasm.animation_new(node, direction, duration, fps, delay, end_delay, fill, playback_rate, iterations, area_start, area_duration, easing);
         return Animation.__wrap(ret);
       }
     }]);
@@ -18263,7 +18264,7 @@
               }
             }
 
-            var wa = this.__wasmAnimation = wasm$1.Animation["new"](DIRECTION[this.__direction] || 0, this.__duration, this.__fps, this.__delay, this.__endDelay, FILLS[this.__fill] || 0, this.__playbackRate, iter, this.__areaStart, this.__areaDuration, easeType);
+            var wa = this.__wasmAnimation = wasm$1.Animation["new"](target.__wasmNode.ptr, DIRECTION[this.__direction] || 0, this.__duration, this.__fps, this.__delay, this.__endDelay, FILLS[this.__fill] || 0, this.__playbackRate, iter, this.__areaStart, this.__areaDuration, easeType);
 
             if (easeType === EASING.EASE_CUSTOM) {
               var v = ea.match(/[\d.]+/g);
@@ -18743,7 +18744,7 @@
         var wasmChange = false;
 
         if (wa) {
-          wasmChange = wa.goto_stop(v, dur);
+          wasmChange = wa.goto_stop(this.__currentTime, dur);
         }
 
         this.__calCurrent(this.__currentFrames, this.__currentFrame, v, dur, duration, {
@@ -18798,16 +18799,11 @@
 
         this.__startTime = frame.__now = frame.__now || inject.now();
         this.__playState = 'paused';
-        var wa = this.__wasmAnimation; // wasm的特殊标识，在root的before中统一遍历节点计算中需要知道
-
-        if (wa) {
-          wa.play_state = PLAY_STATE.PAUSED;
-        }
-
+        var wa = this.__wasmAnimation;
         var wasmChange = false;
 
         if (wa) {
-          wasmChange = wa.goto_stop(v, dur);
+          wasmChange = wa.goto_stop(this.__currentTime, dur);
         }
 
         this.__calCurrent(this.__currentFrames, this.__currentFrame, v, dur, duration, {
@@ -18823,7 +18819,6 @@
         var duration = this.__duration;
         var areaDuration = this.__areaDuration;
         var dur = areaDuration ? Math.min(duration, areaDuration) : duration;
-        var wa = this.__wasmAnimation;
 
         if (isNaN(v) || v < 0) {
           throw new Error('Param of gotoAnd(Play/Stop) is illegal: ' + v);
@@ -18839,11 +18834,6 @@
 
 
         this.__currentTime = v;
-
-        if (wa) {
-          wa.current_time = v;
-        }
-
         v -= this.__delay - this.__areaStart;
 
         if (v < 0) {
@@ -18854,10 +18844,6 @@
         var playCount = Math.min(iterations - 1, Math.floor(v / dur));
         v -= dur * playCount;
         this.__playCount = playCount;
-
-        if (wa) {
-          wa.play_count = playCount;
-        }
 
         this.__initCurrentFrames(playCount);
 

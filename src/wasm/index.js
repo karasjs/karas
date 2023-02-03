@@ -247,6 +247,7 @@ export class Animation {
     wasm.__wbg_set_animation_percent(this.ptr, arg0);
   }
   /**
+   * @param {number} node
    * @param {number} direction
    * @param {number} duration
    * @param {number} fps
@@ -260,8 +261,8 @@ export class Animation {
    * @param {number} easing
    * @returns {Animation}
    */
-  static new(direction, duration, fps, delay, end_delay, fill, playback_rate, iterations, area_start, area_duration, easing) {
-    const ret = wasm.animation_new(direction, duration, fps, delay, end_delay, fill, playback_rate, iterations, area_start, area_duration, easing);
+  static new(node, direction, duration, fps, delay, end_delay, fill, playback_rate, iterations, area_start, area_duration, easing) {
+    const ret = wasm.animation_new(node, direction, duration, fps, delay, end_delay, fill, playback_rate, iterations, area_start, area_duration, easing);
     return Animation.__wrap(ret);
   }
   /**

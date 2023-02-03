@@ -1644,7 +1644,7 @@ class Animation extends Event {
             easeType = EASING.EASE_CUSTOM;
           }
         }
-        let wa = this.__wasmAnimation = wasm.Animation.new(DIRECTION[this.__direction] || 0, this.__duration, this.__fps,
+        let wa = this.__wasmAnimation = wasm.Animation.new(target.__wasmNode.ptr, DIRECTION[this.__direction] || 0, this.__duration, this.__fps,
           this.__delay, this.__endDelay, FILLS[this.__fill] || 0, this.__playbackRate, iter,
           this.__areaStart, this.__areaDuration, easeType);
         if(easeType === EASING.EASE_CUSTOM) {
@@ -2030,7 +2030,7 @@ class Animation extends Event {
     let wa = this.__wasmAnimation;
     let wasmChange = false;
     if(wa) {
-      wasmChange = wa.goto_stop(v, dur);
+      wasmChange = wa.goto_stop(this.__currentTime, dur);
     }
     this.__calCurrent(this.__currentFrames, this.__currentFrame, v, dur, duration, {
       wasmChange,
@@ -2077,13 +2077,9 @@ class Animation extends Event {
     this.__startTime = frame.__now = frame.__now || inject.now();
     this.__playState = 'paused';
     let wa = this.__wasmAnimation;
-    // wasm的特殊标识，在root的before中统一遍历节点计算中需要知道
-    if(wa) {
-      wa.play_state = PLAY_STATE.PAUSED;
-    }
     let wasmChange = false;
     if(wa) {
-      wasmChange = wa.goto_stop(v, dur);
+      wasmChange = wa.goto_stop(this.__currentTime, dur);
     }
     this.__calCurrent(this.__currentFrames, this.__currentFrame, v, dur, duration, {
       wasmChange,
@@ -2097,7 +2093,6 @@ class Animation extends Event {
     let duration = this.__duration;
     let areaDuration = this.__areaDuration;
     let dur = areaDuration ? Math.min(duration, areaDuration) : duration;
-    let wa = this.__wasmAnimation;
     if(isNaN(v) || v < 0) {
       throw new Error('Param of gotoAnd(Play/Stop) is illegal: ' + v);
     }
@@ -2109,9 +2104,6 @@ class Animation extends Event {
     }
     // 在时间范围内设置好时间，复用play直接跳到播放点
     this.__currentTime = v;
-    if(wa) {
-      wa.current_time = v;
-    }
     v -= this.__delay - this.__areaStart;
     if(v < 0) {
       v = 0;
@@ -2120,9 +2112,6 @@ class Animation extends Event {
     let playCount = Math.min(iterations - 1, Math.floor(v / dur));
     v -= dur * playCount;
     this.__playCount = playCount;
-    if(wa) {
-      wa.play_count = playCount;
-    }
     this.__initCurrentFrames(playCount);
     return v;
   }

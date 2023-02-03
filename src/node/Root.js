@@ -697,7 +697,7 @@ class Root extends Dom {
    * sync是动画在gotoAndStop的时候，下一帧刷新由于一帧内同步执行计算标识true
    * wasmChange比较特殊，仅在gotoAndStop的时候用到，可能变化完全在wasm中js没有keys和lv，需强制刷新
    */
-  __addUpdate(node, keys, focus, addDom, removeDom, sync, wasmChange, optimize, cb) {
+  __addUpdate(node, keys, focus, addDom, removeDom, sync, wasmChange, cb) {
     if(this.__isDestroyed) {
       return;
     }
@@ -754,8 +754,8 @@ class Root extends Dom {
         }
       }
     }
-    let res = this.__calUpdate(node, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver,
-      addDom, removeDom, optimize);
+    let res = this.__calUpdate(node, computedStyle, cacheStyle, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver,
+      addDom, removeDom);
     // 动画在最后一帧要finish或者cancel时，特殊调用同步计算无需刷新，不会有cb
     if(sync) {
       if(res) {
@@ -780,7 +780,7 @@ class Root extends Dom {
     let {
       __computedStyle: computedStyle,
       __cacheStyle: cacheStyle,
-      __cacheProps,
+      __cacheProps: cacheProps,
     } = node;
     let hasZ, hasVisibility, hasColor, hasDisplay, hasTsColor, hasTsWidth, hasTsOver;
     hasColor = frame.hasColor;
@@ -792,8 +792,8 @@ class Root extends Dom {
     let len = trans.length;
     for(let i = 0; i < len; i++) {
       let k = trans[i];
-      if(node instanceof Geom && isGeom(node.tagName, k)) {
-        __cacheProps[k] = undefined;
+      if(!frame.allInFn && node instanceof Geom && isGeom(node.tagName, k)) {
+        cacheProps[k] = undefined;
       }
       else {
         // repaint置空，如果reflow会重新生成空的
@@ -803,12 +803,14 @@ class Root extends Dom {
           && ['relative', 'absolute'].indexOf(computedStyle[POSITION]) === -1) {
           ignoreTRBL = true;
         }
+        // 特殊处理，z变化也只对非flow生效
         else if(k === Z_INDEX) {
           hasZ = node !== this && ['relative', 'absolute'].indexOf(computedStyle[POSITION]) > -1;
         }
       }
     }
-    for(let i = 0, len = fixed.length; i < len; i++) {
+    let fLen = fixed.length;
+    for(let i = 0, len = fLen; i < len; i++) {
       let k = fixed[i];
       lv |= getLevel(k);
       // 特殊的2个，影响是否需要刷新生效
@@ -820,21 +822,19 @@ class Root extends Dom {
       }
     }
     // 无效的变化
-    if(ignoreTRBL && len === 1 && !fixed.length) {
+    if(ignoreTRBL && len === 1 && !fLen) {
       return;
     }
     // 设置有动画造成了更新
     this.__aniChange = true;
-    this.__calUpdate(node, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver,
-      false, false, frame.optimize);
+    this.__calUpdate(node, computedStyle, cacheStyle, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver,
+      false, false);
   }
 
-  __calUpdate(node, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver,
-              addDom, removeDom, optimize) {
+  __calUpdate(node, computedStyle, cacheStyle, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver,
+              addDom, removeDom) {
     let {
-      __computedStyle: computedStyle,
       __currentStyle: currentStyle,
-      __cacheStyle: cacheStyle,
       __mask,
       __domParent,
     } = node;
@@ -863,7 +863,7 @@ class Root extends Dom {
       }
     }
     // 大部分动画都是repaint初始化已经知道
-    let isRf = optimize ? false : isReflow(lv);
+    let isRf = isReflow(lv);
     if(isRf) {
       let top = reflow.checkTop(this, node, addDom, removeDom);
       if(top === this) {
@@ -901,7 +901,7 @@ class Root extends Dom {
         if(lv & TRANSFORM_ALL) {
           // 特殊的ppt需清空cacheTotal
           let o = node.__selfPerspectiveMatrix;
-          node.__calMatrix(lv, currentStyle, computedStyle, cacheStyle, optimize);
+          node.__calMatrix(lv, currentStyle, computedStyle, cacheStyle);
           let n = node.__selfPerspectiveMatrix;
           if(!util.equalArr(o, n)) {
             need = true;
@@ -1038,24 +1038,6 @@ class Root extends Dom {
     return true;
   }
 
-  // 异步进行root刷新操作，多次调用缓存结果，刷新成功后回调
-  // __frameDraw(cb) {
-  //   this.__onFrame(null);
-  //   this.__task.push(cb);
-  // }
-  //
-  // __cancelFrameDraw(cb) {
-  //   let task = this.__task;
-  //   let i = task.indexOf(cb);
-  //   if(i > -1) {
-  //     task.splice(i, 1);
-  //     if(!task.length && !this.__ani.length) {
-  //       frame.offFrame(this);
-  //       this.__isInFrame = false;
-  //     }
-  //   }
-  // }
-
   // 所有动画由Root代理，方便控制pause，主动更新时参数传null复用，
   // 注意逻辑耦合，任意动画/主动更新第一次触发时，需把ani和task的队列填充，以防重复onFrame调用
   __frameDraw(cb) {
@@ -1144,7 +1126,7 @@ class Root extends Dom {
         }
       }
       for(let i = 0; i < len; i++) {
-        ani[i].__before(diff)
+        ani[i].__before(diff);
       }
     }
     if(this.__aniChange || len2 || len3) {

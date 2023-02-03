@@ -29,7 +29,7 @@ class Frame {
 
   __init() {
     let self = this;
-    let { task, rootTask } = self;
+    let { task } = self;
     inject.cancelAnimationFrame(self.id);
     let last = self.__now = inject.now();
     function cb() {
@@ -50,17 +50,8 @@ class Frame {
         let len1 = clone.length;
         // 普通的before/after，动画计算在before，所有回调在after
         traversalBefore(clone, len1, diff);
-        // Root的before，包含draw()，如果有wasm，在draw之前计算
-        // let list = rootTask.splice(0);
-        // let len2 = list.length;
-        // traversalBefore(list, len2, diff);
-        // for(let i = 0, len = list.length; i < len; i++) {
-        //   let item = list[i];
-        //   item && item(diff);
-        // }
         // 刷新成功后调用after，确保图像生成
         traversalAfter(clone, len1, diff);
-        // traversalAfter(list, len2, diff);
         // 还有则继续，没有则停止节省性能
         if(task.length) {
           cb();
@@ -149,20 +140,12 @@ class Frame {
     }
   }
 
-  addRootTask(root) {
-    this.__rootTask.push(root);
-  }
-
   get task() {
     return this.__task;
   }
 
   get roots() {
     return this.__roots;
-  }
-
-  get rootTask() {
-    return this.__rootTask;
   }
 }
 

@@ -1039,7 +1039,7 @@ function calDiffGradient(p, n, target) {
  * 同时不变化的key也得存入fixed
  */
 function calFrame(prev, next, keys, target) {
-  let hasTp;
+  let hasTp, allInFn = true;
   for(let i = 0, len = keys.length; i < len; i++) {
     let k = keys[i];
     let ts = calDiff(prev, next, k, target);
@@ -1053,12 +1053,16 @@ function calFrame(prev, next, keys, target) {
       if(fn) {
         ts.fn = fn;
       }
+      else {
+        allInFn = false;
+      }
       prev.transition.push(ts);
       prev.trans.push(k);
     }
     // 无法形成连续计算的或者不变的记录下来
     else if(k !== TRANSLATE_PATH) {
       prev.fixed.push(k);
+      allInFn = false;
     }
   }
   // translatePath需特殊处理translate，防止被覆盖
@@ -1082,7 +1086,6 @@ function calFrame(prev, next, keys, target) {
   }
   // 特殊优化，加速通知Root的更新
   let lv = NONE;
-  let computedStyle = target.__computedStyle;
   let trans = prev.trans;
   // 此帧过程中一定变化的，预先计算lv加速，一些影响继承的标识后续特殊处理
   for(let i = 0, len = trans.length; i < len; i++) {
@@ -1100,16 +1103,11 @@ function calFrame(prev, next, keys, target) {
     else if(k === TEXT_STROKE_OVER) {
       prev.hasTsOver = true;
     }
-    // display和visibility固定在fixed里这里不出现
+    // display和visibility固定在fixed里这里不出现，zIndex需要考虑abs等这里也不处理
   }
   // 提前计算，不包含fixed的
   prev.lv = lv;
-  // 常见的几种动画matrix计算是否可优化提前计算，这里无需过于精确，因为最终节点计算会判断，但明显的不可优化的要防止
-  if(isRepaint(lv) && (lv & (TX | TY | TZ | RZ | SCALE))) {
-    if(!(lv & TF)) {
-      prev.optimize = true;
-    }
-  }
+  prev.allInFn = allInFn;
   return next;
 }
 
@@ -1725,7 +1723,7 @@ class Animation extends Event {
     let currentFrames = this.__initCurrentFrames(this.__playCount);
     // fill停留在开始同步更新首帧样式，gotoPlay若不足delay亦是
     if(!fromGoto && this.__stayBegin || fromGoto && currentTime < this.__delay) {
-      let currentFrame = this.__currentFrame = this.__currentFrames[0];
+      let currentFrame = this.__currentFrame = currentFrames[0];
       let target = this.__target, root = this.__root;
       let keys = calLastStyle(currentFrame.style, target, this.__keys);
       let isChange = !!keys.length;
@@ -2001,8 +1999,7 @@ class Animation extends Event {
         }
       };
       if(isChange) {
-        root.__addUpdate(target, keys, false, false, false, false, false,
-          currentFrame && currentFrame.optimize, this.__stopCb);
+        root.__addUpdate(target, keys, false, false, false, false, false, this.__stopCb);
       }
       else {
         this.__stopCb();
@@ -2114,8 +2111,7 @@ class Animation extends Event {
       }
       // 有变化的backwards才更新，否则无需理会，不需要回调，极端情况立刻pause()回造成一次无用刷新
       if(isChange) {
-        root.__addUpdate(target, keys, false, false, false, false, false,
-          currentFrame.optimize, this.__stopCb);
+        root.__addUpdate(target, keys, false, false, false, false, false, this.__stopCb);
       }
       else {
         this.__stopCb();
@@ -2260,20 +2256,19 @@ class Animation extends Event {
       // 普通动画有样式变更才触发真实刷新，且sync标识同步应用，和动画节奏一样，
       // wasmChange无需，因为即便wasm接管，这块逻辑也在wasm中，这是动画更新没有gotoStop
       else if(keys.length) {
-        root.__addUpdate(target, keys, false, false, false, true, false,
-          currentFrame && currentFrame.optimize, null);
+        root.__addUpdate(target, keys, false, false, false, true, false, null);
       }
     }
     // 动画内部除非同帧内且本帧没有任何变化，否则会一直触发，哪怕diff时间为0
     else {
       let { trans, fixed } = Animation.calIntermediateStyle(currentFrame, percent, target, notSameFrame);
-      let keys = trans.concat(fixed);
       // gotoAndStop有参数回调特殊对待
       if(gotoParams) {
+        let keys = trans.concat(fixed);
         this.__gotoStopCb(root, target, keys, currentFrame, gotoParams);
       }
       // 普通动画同步更新sync
-      else if(keys.length) {
+      else if(trans.length || fixed.length) {
         root.__addAniUpdate(target, trans, fixed, currentFrame);
       }
     }
@@ -2295,7 +2290,7 @@ class Animation extends Event {
     if(isChange) {
       // 因为wasm情况会导致js不计算可能没有keys（缺少wasm计算的那些），需传参标识
       root.__addUpdate(target, keys, false, false, false, false,
-        gotoParams.wasmChange, gotoParams.optimize && currentFrame && currentFrame.optimize, this.__stopCb);
+        gotoParams.wasmChange, this.__stopCb);
     }
     else {
       this.__stopCb(isChange); // 无变化同步执行
@@ -2841,125 +2836,139 @@ class Animation extends Event {
     let style = frame.style;
     let transition = frame.transition;
     let timingFunction = frame.timingFunction;
+    let allInFn = frame.allInFn;
     if(timingFunction && timingFunction !== linear) {
       percent = timingFunction(percent);
     }
-    // 同一关键帧同一percent可以不刷新，比如diff为0时，或者steps情况，离开会清空
+    // 同一关键帧同一percent可以不刷新，比如diff为0时，或者steps情况，离开会清空，notSameFrame判断防止pause更新在0的情况
     if(!notSameFrame && frame.lastPercent === percent) {
       return { trans: [], fixed: [] };
     }
     frame.lastPercent = percent;
     let currentStyle = target.__currentStyle, trans = frame.trans, fixed = [];
-    let currentProps = target.__currentProps;
-    for(let i = 0, len = transition.length; i < len; i++) {
-      let item = transition[i];
-      let k = item.k, v = item.v, st = item.st, cl = item.cl, fn = item.fn;
-      if(fn) {
+    // 特殊性能优化，for拆开v8会提升不少
+    if(allInFn) {
+      for(let i = 0, len = transition.length; i < len; i++) {
+        let item = transition[i];
+        let k = item.k, v = item.v, st = item.st, cl = item.cl, fn = item.fn;
         // 可能updateStyle()甚至手动修改了currentStyle，需要重新赋值
-        if(st !== currentStyle[k]) {
+        if(currentStyle[k] !== st) {
           currentStyle[k] = st;
         }
         fn(k, v, percent, st, cl, frame, currentStyle);
       }
-      else if(GEOM.hasOwnProperty(k)) {
-        let tagName = target.tagName;
-        if(GEOM[k][tagName] && isFunction(GEOM[k][tagName].calIncrease)) {
-          let fn = GEOM[k][tagName].calIncrease;
-          if(target.isMulti) {
-            st = st.map((item, i) => {
-              return fn(item, v[i], percent);
-            });
+    }
+    else {
+      let currentProps = target.__currentProps;
+      for(let i = 0, len = transition.length; i < len; i++) {
+        let item = transition[i];
+        let k = item.k, v = item.v, st = item.st, cl = item.cl, fn = item.fn;
+        if(fn) {
+          if(currentStyle[k] !== st) {
+            currentStyle[k] = st;
           }
-          else {
-            st = fn(st, v, percent);
-          }
+          fn(k, v, percent, st, cl, frame, currentStyle);
         }
-        else if(target.isMulti) {
-          if(k === 'points' || k === 'controls') {
-            for(let i = 0, len = Math.min(st.length, v.length); i < len; i++) {
-              let o = st[i];
-              let n = v[i];
-              let cli = cl[i];
-              if(!isNil(o) && !isNil(n)) {
-                for(let j = 0, len2 = Math.min(o.length, n.length); j < len2; j++) {
-                  let o2 = o[j];
-                  let n2 = n[j];
-                  if(!isNil(o2) && !isNil(n2)) {
-                    for(let k = 0, len3 = Math.min(o2.length, n2.length); k < len3; k++) {
-                      if(!isNil(o2[k]) && !isNil(n2[k])) {
-                        o2[k] = cli[j][k] + n2[k] * percent;
+        else if(GEOM.hasOwnProperty(k)) {
+          let tagName = target.tagName;
+          if(GEOM[k][tagName] && isFunction(GEOM[k][tagName].calIncrease)) {
+            let fn = GEOM[k][tagName].calIncrease;
+            if(target.isMulti) {
+              st = st.map((item, i) => {
+                return fn(item, v[i], percent);
+              });
+            }
+            else {
+              st = fn(st, v, percent);
+            }
+          }
+          else if(target.isMulti) {
+            if(k === 'points' || k === 'controls') {
+              for(let i = 0, len = Math.min(st.length, v.length); i < len; i++) {
+                let o = st[i];
+                let n = v[i];
+                let cli = cl[i];
+                if(!isNil(o) && !isNil(n)) {
+                  for(let j = 0, len2 = Math.min(o.length, n.length); j < len2; j++) {
+                    let o2 = o[j];
+                    let n2 = n[j];
+                    if(!isNil(o2) && !isNil(n2)) {
+                      for(let k = 0, len3 = Math.min(o2.length, n2.length); k < len3; k++) {
+                        if(!isNil(o2[k]) && !isNil(n2[k])) {
+                          o2[k] = cli[j][k] + n2[k] * percent;
+                        }
                       }
                     }
                   }
                 }
               }
             }
-          }
-          else if(k === 'controlA' || k === 'controlB') {
-            v.forEach((item, i) => {
-              let st2 = st[i];
-              if(!isNil(item[0]) && !isNil(st2[0])) {
-                st2[0] = cl[i][0] + item[0] * percent;
-              }
-              if(!isNil(item[1]) && !isNil(st2[1])) {
-                st2[1] = cl[i][1] + item[1] * percent;
-              }
-            });
+            else if(k === 'controlA' || k === 'controlB') {
+              v.forEach((item, i) => {
+                let st2 = st[i];
+                if(!isNil(item[0]) && !isNil(st2[0])) {
+                  st2[0] = cl[i][0] + item[0] * percent;
+                }
+                if(!isNil(item[1]) && !isNil(st2[1])) {
+                  st2[1] = cl[i][1] + item[1] * percent;
+                }
+              });
+            }
+            else {
+              v.forEach((item, i) => {
+                if(!isNil(item) && !isNil(st[i])) {
+                  st[i] = cl[i] + item * percent;
+                }
+              });
+            }
           }
           else {
-            v.forEach((item, i) => {
-              if(!isNil(item) && !isNil(st[i])) {
-                st[i] = cl[i] + item * percent;
-              }
-            });
-          }
-        }
-        else {
-          if(k === 'points' || k === 'controls') {
-            for(let i = 0, len = Math.min(st.length, v.length); i < len; i++) {
-              let o = st[i];
-              let n = v[i];
-              if(!isNil(o) && !isNil(n)) {
-                for(let j = 0, len2 = Math.min(o.length, n.length); j < len2; j++) {
-                  if(!isNil(o[j]) && !isNil(n[j])) {
-                    o[j] = cl[i][j] + n[j] * percent;
+            if(k === 'points' || k === 'controls') {
+              for(let i = 0, len = Math.min(st.length, v.length); i < len; i++) {
+                let o = st[i];
+                let n = v[i];
+                if(!isNil(o) && !isNil(n)) {
+                  for(let j = 0, len2 = Math.min(o.length, n.length); j < len2; j++) {
+                    if(!isNil(o[j]) && !isNil(n[j])) {
+                      o[j] = cl[i][j] + n[j] * percent;
+                    }
                   }
                 }
               }
             }
-          }
-          else if(k === 'controlA' || k === 'controlB') {
-            if(!isNil(st[0]) && !isNil(v[0])) {
-              st[0] = cl[0] + v[0] * percent;
+            else if(k === 'controlA' || k === 'controlB') {
+              if(!isNil(st[0]) && !isNil(v[0])) {
+                st[0] = cl[0] + v[0] * percent;
+              }
+              if(!isNil(st[1]) && !isNil(v[1])) {
+                st[1] = cl[1] + v[1] * percent;
+              }
             }
-            if(!isNil(st[1]) && !isNil(v[1])) {
-              st[1] = cl[1] + v[1] * percent;
+            else {
+              if(!isNil(st) && !isNil(v)) {
+                st = cl + v * percent;
+              }
             }
           }
-          else {
-            if(!isNil(st) && !isNil(v)) {
-              st = cl + v * percent;
-            }
-          }
+          currentProps[k] = st;
         }
-        currentProps[k] = st;
       }
-    }
-    // string等的直接量，在不同帧之间可能存在变化，同帧变化后不再改变引用，因此前提是发生帧变化
-    // 再检查是否和当前相等，防止跳到一个不变化的帧上，而前一帧有变化的情况，大部分都是无变化
-    if(notSameFrame) {
-      let f = frame.fixed;
-      for(let i = 0, len = f.length; i < len; i++) {
-        let k = f[i];
-        let isGeom = GEOM.hasOwnProperty(k);
-        if(!equalStyle(k, style[k], isGeom ? currentProps[k] : currentStyle[k], target)) {
-          if(GEOM.hasOwnProperty(k)) {
-            currentProps[k] = style[k];
+      // string等的直接量，在不同帧之间可能存在变化，同帧变化后不再改变引用，因此前提是发生帧变化
+      // 再检查是否和当前相等，防止跳到一个不变化的帧上，而前一帧有变化的情况，大部分都是无变化
+      if(notSameFrame) {
+        let f = frame.fixed;
+        for(let i = 0, len = f.length; i < len; i++) {
+          let k = f[i];
+          let isGeom = GEOM.hasOwnProperty(k);
+          if(!equalStyle(k, style[k], isGeom ? currentProps[k] : currentStyle[k], target)) {
+            if(GEOM.hasOwnProperty(k)) {
+              currentProps[k] = style[k];
+            }
+            else {
+              currentStyle[k] = style[k];
+            }
+            fixed.push(k);
           }
-          else {
-            currentStyle[k] = style[k];
-          }
-          fixed.push(k);
         }
       }
     }

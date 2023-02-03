@@ -11882,9 +11882,9 @@
   }(Node$1);
 
   var _enums$STYLE_KEY$e = enums.STYLE_KEY,
-      TX$2 = _enums$STYLE_KEY$e.TRANSLATE_X,
-      TY$2 = _enums$STYLE_KEY$e.TRANSLATE_Y,
-      TZ$2 = _enums$STYLE_KEY$e.TRANSLATE_Z,
+      TX$1 = _enums$STYLE_KEY$e.TRANSLATE_X,
+      TY$1 = _enums$STYLE_KEY$e.TRANSLATE_Y,
+      TZ$1 = _enums$STYLE_KEY$e.TRANSLATE_Z,
       OP$2 = _enums$STYLE_KEY$e.OPACITY,
       FT$2 = _enums$STYLE_KEY$e.FILTER,
       PPT$2 = _enums$STYLE_KEY$e.PERSPECTIVE,
@@ -11895,14 +11895,14 @@
       SZ$1 = _enums$STYLE_KEY$e.SCALE_Z,
       ROTATE_X$2 = _enums$STYLE_KEY$e.ROTATE_X,
       ROTATE_Y$2 = _enums$STYLE_KEY$e.ROTATE_Y,
-      RZ$2 = _enums$STYLE_KEY$e.ROTATE_Z,
+      RZ$1 = _enums$STYLE_KEY$e.ROTATE_Z,
       ROTATE_3D$2 = _enums$STYLE_KEY$e.ROTATE_3D,
       SKEW_X$2 = _enums$STYLE_KEY$e.SKEW_X,
       SKEW_Y$2 = _enums$STYLE_KEY$e.SKEW_Y,
-      TF$3 = _enums$STYLE_KEY$e.TRANSFORM,
+      TF$2 = _enums$STYLE_KEY$e.TRANSFORM,
       TRANSFORM_ORIGIN$4 = _enums$STYLE_KEY$e.TRANSFORM_ORIGIN;
   var isIgnore = o$2.isIgnore,
-      isRepaint$1 = o$2.isRepaint; // 低位表示<repaint级别
+      isRepaint = o$2.isRepaint; // 低位表示<repaint级别
 
   var NONE$4 = 0; //                                          0
   // cacheTotal变化需重新生成的时候
@@ -11925,7 +11925,7 @@
 
   var SCALE_Z$2 = 128; //                              10000000
 
-  var SCALE$2 = 224; //                                11100000
+  var SCALE$1 = 224; //                                11100000
 
   var TRANSFORM$5 = 256; //                           100000000
 
@@ -11960,7 +11960,7 @@
     SCALE_X: SCALE_X$3,
     SCALE_Y: SCALE_Y$3,
     SCALE_Z: SCALE_Z$2,
-    SCALE: SCALE$2,
+    SCALE: SCALE$1,
     TRANSFORM: TRANSFORM$5,
     TRANSFORM_ALL: TRANSFORM_ALL$4,
     OPACITY: OPACITY$5,
@@ -11974,7 +11974,7 @@
   };
 
   function isTransforms(k) {
-    return k === ROTATE_X$2 || k === ROTATE_Y$2 || k === ROTATE_3D$2 || k === SKEW_X$2 || k === SKEW_Y$2 || k === TF$3 || k === TRANSFORM_ORIGIN$4;
+    return k === ROTATE_X$2 || k === ROTATE_Y$2 || k === ROTATE_3D$2 || k === SKEW_X$2 || k === SKEW_Y$2 || k === TF$2 || k === TRANSFORM_ORIGIN$4;
   }
 
   var o$1 = Object.assign({
@@ -12001,19 +12001,19 @@
         return CACHE$4;
       }
 
-      if (k === TX$2) {
+      if (k === TX$1) {
         return TRANSLATE_X$2;
       }
 
-      if (k === TY$2) {
+      if (k === TY$1) {
         return TRANSLATE_Y$2;
       }
 
-      if (k === TZ$2) {
+      if (k === TZ$1) {
         return TRANSLATE_Z$2;
       }
 
-      if (k === RZ$2) {
+      if (k === RZ$1) {
         return ROTATE_Z$2;
       }
 
@@ -12045,7 +12045,7 @@
         return TRANSFORM$5;
       }
 
-      if (isRepaint$1(k)) {
+      if (isRepaint(k)) {
         return REPAINT$4;
       }
 
@@ -13071,7 +13071,7 @@
 
         this.__content = s;
 
-        this.__root.__addUpdate(this.__domParent, null, o$1.REFLOW, false, false, false, false, false, cb);
+        this.__root.__addUpdate(this.__domParent, null, o$1.REFLOW, false, false, false, false, cb);
       }
     }, {
       key: "remove",
@@ -13124,7 +13124,7 @@
         } // 可见在reflow逻辑做结构关系等，text视为父变更
 
 
-        root.__addUpdate(this, null, o$1.REFLOW, false, true, false, false, false, cb);
+        root.__addUpdate(this, null, o$1.REFLOW, false, true, false, false, cb);
       }
     }, {
       key: "__structure",
@@ -14611,7 +14611,6 @@
       value: function __init() {
         var self = this;
         var task = self.task;
-            self.rootTask;
         inject.cancelAnimationFrame(self.id);
         var last = self.__now = inject.now();
 
@@ -14634,18 +14633,9 @@
             var clone = task.slice(0);
             var len1 = clone.length; // 普通的before/after，动画计算在before，所有回调在after
 
-            traversalBefore(clone, len1, diff); // Root的before，包含draw()，如果有wasm，在draw之前计算
-            // let list = rootTask.splice(0);
-            // let len2 = list.length;
-            // traversalBefore(list, len2, diff);
-            // for(let i = 0, len = list.length; i < len; i++) {
-            //   let item = list[i];
-            //   item && item(diff);
-            // }
-            // 刷新成功后调用after，确保图像生成
+            traversalBefore(clone, len1, diff); // 刷新成功后调用after，确保图像生成
 
-            traversalAfter(clone, len1, diff); // traversalAfter(list, len2, diff);
-            // 还有则继续，没有则停止节省性能
+            traversalAfter(clone, len1, diff); // 还有则继续，没有则停止节省性能
 
             if (task.length) {
               cb();
@@ -14756,11 +14746,6 @@
         }
       }
     }, {
-      key: "addRootTask",
-      value: function addRootTask(root) {
-        this.__rootTask.push(root);
-      }
-    }, {
       key: "task",
       get: function get() {
         return this.__task;
@@ -14769,11 +14754,6 @@
       key: "roots",
       get: function get() {
         return this.__roots;
-      }
-    }, {
-      key: "rootTask",
-      get: function get() {
-        return this.__rootTask;
       }
     }]);
 
@@ -16670,19 +16650,19 @@
       equalStyle$1 = css.equalStyle;
   var isGeom$1 = o$2.isGeom,
       GEOM$1 = o$2.GEOM;
-  var getLevel$1 = o$1.getLevel,
-      isRepaint = o$1.isRepaint,
-      NONE$3 = o$1.NONE;
+  var getLevel$1 = o$1.getLevel;
+      o$1.isRepaint;
+      var NONE$3 = o$1.NONE;
       o$1.CACHE;
-      var TF$2 = o$1.TRANSFORM,
-      TX$1 = o$1.TRANSLATE_X,
-      TY$1 = o$1.TRANSLATE_Y,
-      TZ$1 = o$1.TRANSLATE_Z,
-      RZ$1 = o$1.ROTATE_Z;
+      o$1.TRANSFORM;
+      o$1.TRANSLATE_X;
+      o$1.TRANSLATE_Y;
+      o$1.TRANSLATE_Z;
+      o$1.ROTATE_Z;
       o$1.SCALE_X;
       o$1.SCALE_Y;
       o$1.SCALE_Z;
-      var SCALE$1 = o$1.SCALE;
+      o$1.SCALE;
   var isColorKey = key.isColorKey,
       isExpandKey = key.isExpandKey,
       isLengthKey = key.isLengthKey,
@@ -17614,7 +17594,8 @@
 
 
   function calFrame(prev, next, keys, target) {
-    var hasTp;
+    var hasTp,
+        allInFn = true;
 
     for (var i = 0, len = keys.length; i < len; i++) {
       var k = keys[i];
@@ -17629,6 +17610,8 @@
 
         if (fn) {
           ts.fn = fn;
+        } else {
+          allInFn = false;
         }
 
         prev.transition.push(ts);
@@ -17636,6 +17619,7 @@
       } // 无法形成连续计算的或者不变的记录下来
       else if (k !== TRANSLATE_PATH) {
         prev.fixed.push(k);
+        allInFn = false;
       }
     } // translatePath需特殊处理translate，防止被覆盖
 
@@ -17668,7 +17652,6 @@
 
 
     var lv = NONE$3;
-    target.__computedStyle;
     var trans = prev.trans; // 此帧过程中一定变化的，预先计算lv加速，一些影响继承的标识后续特殊处理
 
     for (var _i17 = 0, _len8 = trans.length; _i17 < _len8; _i17++) {
@@ -17683,19 +17666,13 @@
         prev.hasTsWidth = true;
       } else if (_k5 === TEXT_STROKE_OVER$2) {
         prev.hasTsOver = true;
-      } // display和visibility固定在fixed里这里不出现
+      } // display和visibility固定在fixed里这里不出现，zIndex需要考虑abs等这里也不处理
 
     } // 提前计算，不包含fixed的
 
 
-    prev.lv = lv; // 常见的几种动画matrix计算是否可优化提前计算，这里无需过于精确，因为最终节点计算会判断，但明显的不可优化的要防止
-
-    if (isRepaint(lv) && lv & (TX$1 | TY$1 | TZ$1 | RZ$1 | SCALE$1)) {
-      if (!(lv & TF$2)) {
-        prev.optimize = true;
-      }
-    }
-
+    prev.lv = lv;
+    prev.allInFn = allInFn;
     return next;
   }
 
@@ -18385,7 +18362,7 @@
 
 
         if (!fromGoto && this.__stayBegin || fromGoto && currentTime < this.__delay) {
-          var currentFrame = this.__currentFrame = this.__currentFrames[0];
+          var currentFrame = this.__currentFrame = currentFrames[0];
           var target = this.__target,
               _root = this.__root;
           var keys = calLastStyle(currentFrame.style, target, this.__keys);
@@ -18705,7 +18682,7 @@
           wa.play_state = PLAY_STATE.IDLE;
         }
 
-        var currentFrame = this.__currentFrame;
+        this.__currentFrame;
         this.__currentFrame = null;
         var root = this.__root;
 
@@ -18731,7 +18708,7 @@
           };
 
           if (isChange) {
-            root.__addUpdate(target, keys, false, false, false, false, false, currentFrame && currentFrame.optimize, this.__stopCb);
+            root.__addUpdate(target, keys, false, false, false, false, false, this.__stopCb);
           } else {
             this.__stopCb();
           }
@@ -18868,7 +18845,7 @@
 
 
           if (isChange) {
-            root.__addUpdate(target, keys, false, false, false, false, false, currentFrame.optimize, this.__stopCb);
+            root.__addUpdate(target, keys, false, false, false, false, false, this.__stopCb);
           } else {
             this.__stopCb();
           }
@@ -19033,21 +19010,21 @@
           } // 普通动画有样式变更才触发真实刷新，且sync标识同步应用，和动画节奏一样，
           // wasmChange无需，因为即便wasm接管，这块逻辑也在wasm中，这是动画更新没有gotoStop
           else if (keys.length) {
-            root.__addUpdate(target, keys, false, false, false, true, false, currentFrame && currentFrame.optimize, null);
+            root.__addUpdate(target, keys, false, false, false, true, false, null);
           }
         } // 动画内部除非同帧内且本帧没有任何变化，否则会一直触发，哪怕diff时间为0
         else {
           var _Animation$calInterme = Animation.calIntermediateStyle(currentFrame, percent, target, notSameFrame),
               trans = _Animation$calInterme.trans,
-              fixed = _Animation$calInterme.fixed;
-
-          var _keys = trans.concat(fixed); // gotoAndStop有参数回调特殊对待
+              fixed = _Animation$calInterme.fixed; // gotoAndStop有参数回调特殊对待
 
 
           if (gotoParams) {
+            var _keys = trans.concat(fixed);
+
             this.__gotoStopCb(root, target, _keys, currentFrame, gotoParams);
           } // 普通动画同步更新sync
-          else if (_keys.length) {
+          else if (trans.length || fixed.length) {
             root.__addAniUpdate(target, trans, fixed, currentFrame);
           }
         }
@@ -19075,7 +19052,7 @@
 
         if (isChange) {
           // 因为wasm情况会导致js不计算可能没有keys（缺少wasm计算的那些），需传参标识
-          root.__addUpdate(target, keys, false, false, false, false, gotoParams.wasmChange, gotoParams.optimize && currentFrame && currentFrame.optimize, this.__stopCb);
+          root.__addUpdate(target, keys, false, false, false, false, gotoParams.wasmChange, this.__stopCb);
         } else {
           this.__stopCb(isChange); // 无变化同步执行
 
@@ -19737,10 +19714,11 @@
         var style = frame.style;
         var transition = frame.transition;
         var timingFunction = frame.timingFunction;
+        var allInFn = frame.allInFn;
 
         if (timingFunction && timingFunction !== linear) {
           percent = timingFunction(percent);
-        } // 同一关键帧同一percent可以不刷新，比如diff为0时，或者steps情况，离开会清空
+        } // 同一关键帧同一percent可以不刷新，比如diff为0时，或者steps情况，离开会清空，notSameFrame判断防止pause更新在0的情况
 
 
         if (!notSameFrame && frame.lastPercent === percent) {
@@ -19753,133 +19731,150 @@
         frame.lastPercent = percent;
         var currentStyle = target.__currentStyle,
             trans = frame.trans,
-            fixed = [];
-        var currentProps = target.__currentProps;
+            fixed = []; // 特殊性能优化，for拆开v8会提升不少
 
-        var _loop2 = function _loop2(_i22, _len14) {
-          var item = transition[_i22];
-          var k = item.k,
-              v = item.v,
-              st = item.st,
-              cl = item.cl,
-              fn = item.fn;
+        if (allInFn) {
+          for (var _i22 = 0, _len14 = transition.length; _i22 < _len14; _i22++) {
+            var item = transition[_i22];
+            var k = item.k,
+                v = item.v,
+                st = item.st,
+                cl = item.cl,
+                fn = item.fn; // 可能updateStyle()甚至手动修改了currentStyle，需要重新赋值
 
-          if (fn) {
-            // 可能updateStyle()甚至手动修改了currentStyle，需要重新赋值
-            if (st !== currentStyle[k]) {
+            if (currentStyle[k] !== st) {
               currentStyle[k] = st;
             }
 
             fn(k, v, percent, st, cl, frame, currentStyle);
-          } else if (GEOM$1.hasOwnProperty(k)) {
-            var tagName = target.tagName;
+          }
+        } else {
+          var currentProps = target.__currentProps;
 
-            if (GEOM$1[k][tagName] && isFunction$5(GEOM$1[k][tagName].calIncrease)) {
-              var _fn = GEOM$1[k][tagName].calIncrease;
+          var _loop2 = function _loop2(_i23, _len15) {
+            var item = transition[_i23];
+            var k = item.k,
+                v = item.v,
+                st = item.st,
+                cl = item.cl,
+                fn = item.fn;
 
-              if (target.isMulti) {
-                st = st.map(function (item, i) {
-                  return _fn(item, v[i], percent);
-                });
-              } else {
-                st = _fn(st, v, percent);
+            if (fn) {
+              if (currentStyle[k] !== st) {
+                currentStyle[k] = st;
               }
-            } else if (target.isMulti) {
-              if (k === 'points' || k === 'controls') {
-                for (var _i24 = 0, _len16 = Math.min(st.length, v.length); _i24 < _len16; _i24++) {
-                  var o = st[_i24];
-                  var n = v[_i24];
-                  var cli = cl[_i24];
 
-                  if (!isNil$b(o) && !isNil$b(n)) {
-                    for (var j = 0, len2 = Math.min(o.length, n.length); j < len2; j++) {
-                      var o2 = o[j];
-                      var n2 = n[j];
+              fn(k, v, percent, st, cl, frame, currentStyle);
+            } else if (GEOM$1.hasOwnProperty(k)) {
+              var tagName = target.tagName;
 
-                      if (!isNil$b(o2) && !isNil$b(n2)) {
-                        for (var _k6 = 0, len3 = Math.min(o2.length, n2.length); _k6 < len3; _k6++) {
-                          if (!isNil$b(o2[_k6]) && !isNil$b(n2[_k6])) {
-                            o2[_k6] = cli[j][_k6] + n2[_k6] * percent;
+              if (GEOM$1[k][tagName] && isFunction$5(GEOM$1[k][tagName].calIncrease)) {
+                var _fn = GEOM$1[k][tagName].calIncrease;
+
+                if (target.isMulti) {
+                  st = st.map(function (item, i) {
+                    return _fn(item, v[i], percent);
+                  });
+                } else {
+                  st = _fn(st, v, percent);
+                }
+              } else if (target.isMulti) {
+                if (k === 'points' || k === 'controls') {
+                  for (var _i25 = 0, _len17 = Math.min(st.length, v.length); _i25 < _len17; _i25++) {
+                    var o = st[_i25];
+                    var n = v[_i25];
+                    var cli = cl[_i25];
+
+                    if (!isNil$b(o) && !isNil$b(n)) {
+                      for (var j = 0, len2 = Math.min(o.length, n.length); j < len2; j++) {
+                        var o2 = o[j];
+                        var n2 = n[j];
+
+                        if (!isNil$b(o2) && !isNil$b(n2)) {
+                          for (var _k7 = 0, len3 = Math.min(o2.length, n2.length); _k7 < len3; _k7++) {
+                            if (!isNil$b(o2[_k7]) && !isNil$b(n2[_k7])) {
+                              o2[_k7] = cli[j][_k7] + n2[_k7] * percent;
+                            }
                           }
                         }
                       }
                     }
                   }
+                } else if (k === 'controlA' || k === 'controlB') {
+                  v.forEach(function (item, i) {
+                    var st2 = st[i];
+
+                    if (!isNil$b(item[0]) && !isNil$b(st2[0])) {
+                      st2[0] = cl[i][0] + item[0] * percent;
+                    }
+
+                    if (!isNil$b(item[1]) && !isNil$b(st2[1])) {
+                      st2[1] = cl[i][1] + item[1] * percent;
+                    }
+                  });
+                } else {
+                  v.forEach(function (item, i) {
+                    if (!isNil$b(item) && !isNil$b(st[i])) {
+                      st[i] = cl[i] + item * percent;
+                    }
+                  });
                 }
-              } else if (k === 'controlA' || k === 'controlB') {
-                v.forEach(function (item, i) {
-                  var st2 = st[i];
-
-                  if (!isNil$b(item[0]) && !isNil$b(st2[0])) {
-                    st2[0] = cl[i][0] + item[0] * percent;
-                  }
-
-                  if (!isNil$b(item[1]) && !isNil$b(st2[1])) {
-                    st2[1] = cl[i][1] + item[1] * percent;
-                  }
-                });
               } else {
-                v.forEach(function (item, i) {
-                  if (!isNil$b(item) && !isNil$b(st[i])) {
-                    st[i] = cl[i] + item * percent;
-                  }
-                });
-              }
-            } else {
-              if (k === 'points' || k === 'controls') {
-                for (var _i25 = 0, _len17 = Math.min(st.length, v.length); _i25 < _len17; _i25++) {
-                  var _o = st[_i25];
-                  var _n = v[_i25];
+                if (k === 'points' || k === 'controls') {
+                  for (var _i26 = 0, _len18 = Math.min(st.length, v.length); _i26 < _len18; _i26++) {
+                    var _o = st[_i26];
+                    var _n = v[_i26];
 
-                  if (!isNil$b(_o) && !isNil$b(_n)) {
-                    for (var _j6 = 0, _len18 = Math.min(_o.length, _n.length); _j6 < _len18; _j6++) {
-                      if (!isNil$b(_o[_j6]) && !isNil$b(_n[_j6])) {
-                        _o[_j6] = cl[_i25][_j6] + _n[_j6] * percent;
+                    if (!isNil$b(_o) && !isNil$b(_n)) {
+                      for (var _j6 = 0, _len19 = Math.min(_o.length, _n.length); _j6 < _len19; _j6++) {
+                        if (!isNil$b(_o[_j6]) && !isNil$b(_n[_j6])) {
+                          _o[_j6] = cl[_i26][_j6] + _n[_j6] * percent;
+                        }
                       }
                     }
                   }
-                }
-              } else if (k === 'controlA' || k === 'controlB') {
-                if (!isNil$b(st[0]) && !isNil$b(v[0])) {
-                  st[0] = cl[0] + v[0] * percent;
-                }
+                } else if (k === 'controlA' || k === 'controlB') {
+                  if (!isNil$b(st[0]) && !isNil$b(v[0])) {
+                    st[0] = cl[0] + v[0] * percent;
+                  }
 
-                if (!isNil$b(st[1]) && !isNil$b(v[1])) {
-                  st[1] = cl[1] + v[1] * percent;
-                }
-              } else {
-                if (!isNil$b(st) && !isNil$b(v)) {
-                  st = cl + v * percent;
+                  if (!isNil$b(st[1]) && !isNil$b(v[1])) {
+                    st[1] = cl[1] + v[1] * percent;
+                  }
+                } else {
+                  if (!isNil$b(st) && !isNil$b(v)) {
+                    st = cl + v * percent;
+                  }
                 }
               }
+
+              currentProps[k] = st;
             }
+          };
 
-            currentProps[k] = st;
-          }
-        };
-
-        for (var _i22 = 0, _len14 = transition.length; _i22 < _len14; _i22++) {
-          _loop2(_i22);
-        } // string等的直接量，在不同帧之间可能存在变化，同帧变化后不再改变引用，因此前提是发生帧变化
-        // 再检查是否和当前相等，防止跳到一个不变化的帧上，而前一帧有变化的情况，大部分都是无变化
+          for (var _i23 = 0, _len15 = transition.length; _i23 < _len15; _i23++) {
+            _loop2(_i23, _len15);
+          } // string等的直接量，在不同帧之间可能存在变化，同帧变化后不再改变引用，因此前提是发生帧变化
+          // 再检查是否和当前相等，防止跳到一个不变化的帧上，而前一帧有变化的情况，大部分都是无变化
 
 
-        if (notSameFrame) {
-          var f = frame.fixed;
+          if (notSameFrame) {
+            var f = frame.fixed;
 
-          for (var _i23 = 0, _len15 = f.length; _i23 < _len15; _i23++) {
-            var k = f[_i23];
+            for (var _i24 = 0, _len16 = f.length; _i24 < _len16; _i24++) {
+              var _k6 = f[_i24];
 
-            var _isGeom2 = GEOM$1.hasOwnProperty(k);
+              var _isGeom2 = GEOM$1.hasOwnProperty(_k6);
 
-            if (!equalStyle$1(k, style[k], _isGeom2 ? currentProps[k] : currentStyle[k], target)) {
-              if (GEOM$1.hasOwnProperty(k)) {
-                currentProps[k] = style[k];
-              } else {
-                currentStyle[k] = style[k];
+              if (!equalStyle$1(_k6, style[_k6], _isGeom2 ? currentProps[_k6] : currentStyle[_k6], target)) {
+                if (GEOM$1.hasOwnProperty(_k6)) {
+                  currentProps[_k6] = style[_k6];
+                } else {
+                  currentStyle[_k6] = style[_k6];
+                }
+
+                fixed.push(_k6);
               }
-
-              fixed.push(k);
             }
           }
         }
@@ -20823,7 +20818,7 @@
           if (item === fontFamily) {
             // 加载成功回调可能没注册信息，需要多判断一下
             if (o$3.hasRegister(item)) {
-              root.__addUpdate(node, null, REFLOW$3, false, false, false, false, false, null);
+              root.__addUpdate(node, null, REFLOW$3, false, false, false, false, null);
             } // 后面低优先级的无需再看
 
 
@@ -21362,7 +21357,7 @@
       }
     }, {
       key: "__calMatrix",
-      value: function __calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle, optimize) {
+      value: function __calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle) {
         var _this4 = this;
 
         var __x1 = this.__x1,
@@ -21375,12 +21370,13 @@
           return __cacheStyle[MATRIX$1] = toE(this.__matrix);
         }
 
+        var optimize = true;
         var matrixCache = this.__matrix; // 优化计算scale不能为0，无法计算倍数差，rotateZ优化不能包含rotateX/rotateY/skew
 
-        if (!isNil$a(optimize)) ; else if (matrixCache && lv < REFLOW$3 && !(lv & TF$1)) {
-          if (lv & SX && !__computedStyle[SCALE_X] || lv & SY && !__computedStyle[SCALE_Y] || lv & SZ && !__computedStyle[SCALE_Z] || lv & RZ && (__computedStyle[ROTATE_X] || __computedStyle[ROTATE_Y] || __computedStyle[SKEW_X] || __computedStyle[SKEW_Y])) ; else {
-            optimize = true;
-          }
+        if (lv >= REPAINT$3 || lv & TF$1) {
+          optimize = false;
+        } else if (lv & SX && !__computedStyle[SCALE_X] || lv & SY && !__computedStyle[SCALE_Y] || lv & SZ && !__computedStyle[SCALE_Z] || lv & RZ && (__computedStyle[ROTATE_X] || __computedStyle[ROTATE_Y] || __computedStyle[SKEW_X] || __computedStyle[SKEW_Y])) {
+          optimize = false;
         } // translate/scale变化特殊优化，d/h/l不能有值，否则不能这样直接简化运算，因为这里不包含perspective，所以一定没有
 
 
@@ -21462,7 +21458,8 @@
           if (lv & SCALE) {
             if (lv & SX) {
               if (!__computedStyle[SCALE_X]) {
-                return this.__calMatrix(REFLOW$3, __currentStyle, __computedStyle, __cacheStyle, false);
+                console.log(1);
+                return this.__calMatrix(REPAINT$3, __currentStyle, __computedStyle, __cacheStyle, false);
               }
 
               var _v4 = __currentStyle[SCALE_X].v;
@@ -21480,7 +21477,8 @@
 
             if (lv & SY) {
               if (!__computedStyle[SCALE_Y]) {
-                return this.__calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle, false);
+                console.log(2);
+                return this.__calMatrix(REPAINT$3, __currentStyle, __computedStyle, __cacheStyle, false);
               }
 
               var _v5 = __currentStyle[SCALE_Y].v;
@@ -21498,7 +21496,8 @@
 
             if (lv & SZ) {
               if (!__computedStyle[SCALE_Z]) {
-                return this.__calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle, false);
+                console.log(3);
+                return this.__calMatrix(REPAINT$3, __currentStyle, __computedStyle, __cacheStyle, false);
               }
 
               var _v6 = __currentStyle[SCALE_Z].v;
@@ -21888,7 +21887,7 @@
                     loadBgi.height = data.height;
                     __cacheStyle[BACKGROUND_IMAGE] = undefined;
 
-                    root.__addUpdate(node, null, REPAINT$3, false, false, false, false, false, null);
+                    root.__addUpdate(node, null, REPAINT$3, false, false, false, false, null);
                   }
                 });
               }
@@ -22999,7 +22998,7 @@
         }
 
         if (root && !this.__isDestroyed) {
-          root.__addUpdate(this, null, lv, false, false, false, false, false, cb);
+          root.__addUpdate(this, null, lv, false, false, false, false, cb);
         } else if (isFunction$4(cb)) {
           cb(-1);
         }
@@ -23384,7 +23383,7 @@
         }
 
         if (root) {
-          root.__addUpdate(this, keys, null, false, false, false, false, false, cb);
+          root.__addUpdate(this, keys, null, false, false, false, false, cb);
         }
       }
     }, {
@@ -23790,7 +23789,7 @@
         } // 可见在reflow逻辑做结构关系等
 
 
-        root.__addUpdate(this, null, REFLOW$3, false, true, false, false, false, cb);
+        root.__addUpdate(this, null, REFLOW$3, false, true, false, false, cb);
       }
     }, {
       key: "addEventListener",
@@ -24018,7 +24017,7 @@
               }
             }
 
-            root.__addUpdate(this, null, MASK$2, false, false, false, false, false, null);
+            root.__addUpdate(this, null, MASK$2, false, false, false, false, null);
           }
         }
       }
@@ -24045,7 +24044,7 @@
               }
             }
 
-            root.__addUpdate(this, null, MASK$2, false, false, false, false, false, null);
+            root.__addUpdate(this, null, MASK$2, false, false, false, false, null);
           }
         }
       }
@@ -24068,7 +24067,7 @@
               this.__computedStyle[TRANSFORM_STYLE$1] = this.__currentStyle[TRANSFORM_STYLE$1];
             }
 
-            root.__addUpdate(this, null, REPAINT$3, false, false, false, false, null, null);
+            root.__addUpdate(this, null, REPAINT$3, false, false, false, false, null);
           }
         }
       }
@@ -30323,7 +30322,7 @@
           child = this;
         }
 
-        root.__addUpdate(child, null, REFLOW$1, true, false, false, false, false, cb);
+        root.__addUpdate(child, null, REFLOW$1, true, false, false, false, cb);
       }
     }, {
       key: "prependChild",
@@ -30379,7 +30378,7 @@
           child = this;
         }
 
-        root.__addUpdate(child, null, REFLOW$1, true, false, false, false, false, cb);
+        root.__addUpdate(child, null, REFLOW$1, true, false, false, false, cb);
       }
     }, {
       key: "insertBefore",
@@ -30446,7 +30445,7 @@
           child = parent;
         }
 
-        root.__addUpdate(child, null, REFLOW$1, true, false, false, false, false, cb);
+        root.__addUpdate(child, null, REFLOW$1, true, false, false, false, cb);
       }
     }, {
       key: "insertAfter",
@@ -30506,7 +30505,7 @@
           child = parent;
         }
 
-        root.__addUpdate(child, null, REFLOW$1, true, false, false, false, false, cb);
+        root.__addUpdate(child, null, REFLOW$1, true, false, false, false, cb);
       }
     }, {
       key: "removeChild",
@@ -33224,9 +33223,9 @@
                   height = _self$__currentStyle[HEIGHT$1];
 
               if (width.u !== AUTO && height.u !== AUTO) {
-                root.__addUpdate(self, null, o$1.REPAINT, false, false, false, false, false, cb);
+                root.__addUpdate(self, null, o$1.REPAINT, false, false, false, false, cb);
               } else {
-                root.__addUpdate(self, null, o$1.REFLOW, false, false, false, false, false, cb);
+                root.__addUpdate(self, null, o$1.REFLOW, false, false, false, false, cb);
               }
             };
 
@@ -40787,7 +40786,7 @@
 
     }, {
       key: "__addUpdate",
-      value: function __addUpdate(node, keys, focus, addDom, removeDom, sync, wasmChange, optimize, cb) {
+      value: function __addUpdate(node, keys, focus, addDom, removeDom, sync, wasmChange, cb) {
         if (this.__isDestroyed) {
           return;
         }
@@ -40841,7 +40840,7 @@
           }
         }
 
-        var res = this.__calUpdate(node, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver, addDom, removeDom, optimize); // 动画在最后一帧要finish或者cancel时，特殊调用同步计算无需刷新，不会有cb
+        var res = this.__calUpdate(node, computedStyle, cacheStyle, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver, addDom, removeDom); // 动画在最后一帧要finish或者cancel时，特殊调用同步计算无需刷新，不会有cb
 
 
         if (sync) {
@@ -40869,7 +40868,7 @@
 
         var computedStyle = node.__computedStyle,
             cacheStyle = node.__cacheStyle,
-            __cacheProps = node.__cacheProps;
+            cacheProps = node.__cacheProps;
         var hasZ, hasVisibility, hasColor, hasDisplay, hasTsColor, hasTsWidth, hasTsOver;
         hasColor = frame.hasColor;
         hasTsColor = frame.hasTsColor;
@@ -40882,21 +40881,24 @@
         for (var i = 0; i < len; i++) {
           var k = trans[i];
 
-          if (node instanceof Geom && isGeom(node.tagName, k)) {
-            __cacheProps[k] = undefined;
+          if (!frame.allInFn && node instanceof Geom && isGeom(node.tagName, k)) {
+            cacheProps[k] = undefined;
           } else {
             // repaint置空，如果reflow会重新生成空的
             cacheStyle[k] = undefined; // TRBL变化只对relative/absolute起作用，其它忽视，如果position也变化会重新布局生效
 
             if ((k === TOP || k === RIGHT || k === BOTTOM || k === LEFT) && ['relative', 'absolute'].indexOf(computedStyle[POSITION]) === -1) {
               ignoreTRBL = true;
-            } else if (k === Z_INDEX) {
+            } // 特殊处理，z变化也只对非flow生效
+            else if (k === Z_INDEX) {
               hasZ = node !== this && ['relative', 'absolute'].indexOf(computedStyle[POSITION]) > -1;
             }
           }
         }
 
-        for (var _i2 = 0, _len = fixed.length; _i2 < _len; _i2++) {
+        var fLen = fixed.length;
+
+        for (var _i2 = 0, _len = fLen; _i2 < _len; _i2++) {
           var _k = fixed[_i2];
           lv |= getLevel(_k); // 特殊的2个，影响是否需要刷新生效
 
@@ -40908,21 +40910,19 @@
         } // 无效的变化
 
 
-        if (ignoreTRBL && len === 1 && !fixed.length) {
+        if (ignoreTRBL && len === 1 && !fLen) {
           return;
         } // 设置有动画造成了更新
 
 
         this.__aniChange = true;
 
-        this.__calUpdate(node, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver, false, false, frame.optimize);
+        this.__calUpdate(node, computedStyle, cacheStyle, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver, false, false);
       }
     }, {
       key: "__calUpdate",
-      value: function __calUpdate(node, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver, addDom, removeDom, optimize) {
-        var computedStyle = node.__computedStyle,
-            currentStyle = node.__currentStyle,
-            cacheStyle = node.__cacheStyle,
+      value: function __calUpdate(node, computedStyle, cacheStyle, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver, addDom, removeDom) {
+        var currentStyle = node.__currentStyle,
             __mask = node.__mask,
             __domParent = node.__domParent; // 没有变化或none无需刷新
 
@@ -40957,7 +40957,7 @@
         } // 大部分动画都是repaint初始化已经知道
 
 
-        var isRf = optimize ? false : isReflow(lv);
+        var isRf = isReflow(lv);
 
         if (isRf) {
           var top = reflow.checkTop(this, node, addDom, removeDom);
@@ -41004,7 +41004,7 @@
               // 特殊的ppt需清空cacheTotal
               var o = node.__selfPerspectiveMatrix;
 
-              node.__calMatrix(lv, currentStyle, computedStyle, cacheStyle, optimize);
+              node.__calMatrix(lv, currentStyle, computedStyle, cacheStyle);
 
               var n = node.__selfPerspectiveMatrix;
 
@@ -41159,24 +41159,7 @@
         }
 
         return true;
-      } // 异步进行root刷新操作，多次调用缓存结果，刷新成功后回调
-      // __frameDraw(cb) {
-      //   this.__onFrame(null);
-      //   this.__task.push(cb);
-      // }
-      //
-      // __cancelFrameDraw(cb) {
-      //   let task = this.__task;
-      //   let i = task.indexOf(cb);
-      //   if(i > -1) {
-      //     task.splice(i, 1);
-      //     if(!task.length && !this.__ani.length) {
-      //       frame.offFrame(this);
-      //       this.__isInFrame = false;
-      //     }
-      //   }
-      // }
-      // 所有动画由Root代理，方便控制pause，主动更新时参数传null复用，
+      } // 所有动画由Root代理，方便控制pause，主动更新时参数传null复用，
       // 注意逻辑耦合，任意动画/主动更新第一次触发时，需把ani和task的队列填充，以防重复onFrame调用
 
     }, {
@@ -41275,13 +41258,14 @@
             task = this.__taskClone = this.__task.splice(0),
             len2 = task.length,
             frameTask = this.__frameTask,
-            len3 = frameTask.length;
+            len3 = frameTask.length; // 先重置标识，动画没有触发更新，在每个__before执行，如果调用了更新则更改标识
 
-        var wr = this.__wasmRoot; // 先重置标识，动画没有触发更新，在每个__before执行，如果调用了更新则更改标识
 
         this.__aniChange = false;
 
         if (!this.__pause) {
+          var wr = this.__wasmRoot;
+
           if (wr) {
             var n = wr.on_frame(diff); // 有动画执行了需刷新
 
@@ -41296,10 +41280,6 @@
         }
 
         if (this.__aniChange || len2 || len3) {
-          if (wr) {
-            wr.refresh();
-          }
-
           this.draw(false);
         }
       }

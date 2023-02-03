@@ -522,7 +522,7 @@ class Xom extends Node {
       if(item === fontFamily) {
         // 加载成功回调可能没注册信息，需要多判断一下
         if(font.hasRegister(item)) {
-          root.__addUpdate(node, null, REFLOW, false, false, false, false, false, null);
+          root.__addUpdate(node, null, REFLOW, false, false, false, false, null);
         }
         // 后面低优先级的无需再看
         return;
@@ -1028,7 +1028,7 @@ class Xom extends Node {
     }
   }
 
-  __calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle, optimize) {
+  __calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle) {
     let {
       __x1,
       __y1,
@@ -1039,19 +1039,18 @@ class Xom extends Node {
       __computedStyle[TRANSFORM_ORIGIN] = [__x1, __y1];
       return __cacheStyle[MATRIX] = toE(this.__matrix);
     }
+    let optimize = true;
     let matrixCache = this.__matrix;
     // 优化计算scale不能为0，无法计算倍数差，rotateZ优化不能包含rotateX/rotateY/skew
-    if(!isNil(optimize)) {}
-    else if(matrixCache && lv < REFLOW && !(lv & TF)) {
-      if((lv & SX) && !__computedStyle[SCALE_X]
-        || (lv & SY) && !__computedStyle[SCALE_Y]
-        || (lv & SZ) && !__computedStyle[SCALE_Z]
-        || (lv & RZ) && (__computedStyle[ROTATE_X] || __computedStyle[ROTATE_Y]
-          || __computedStyle[SKEW_X] || __computedStyle[SKEW_Y])) {
-      }
-      else {
-        optimize = true;
-      }
+    if(lv >= REPAINT || lv & TF) {
+      optimize = false;
+    }
+    else if((lv & SX) && !__computedStyle[SCALE_X]
+      || (lv & SY) && !__computedStyle[SCALE_Y]
+      || (lv & SZ) && !__computedStyle[SCALE_Z]
+      || (lv & RZ) && (__computedStyle[ROTATE_X] || __computedStyle[ROTATE_Y]
+        || __computedStyle[SKEW_X] || __computedStyle[SKEW_Y])) {
+      optimize = false;
     }
     // translate/scale变化特殊优化，d/h/l不能有值，否则不能这样直接简化运算，因为这里不包含perspective，所以一定没有
     if(optimize && matrixCache) {
@@ -1122,8 +1121,8 @@ class Xom extends Node {
       }
       if(lv & SCALE) {
         if(lv & SX) {
-          if(!__computedStyle[SCALE_X]) {
-            return this.__calMatrix(REFLOW, __currentStyle, __computedStyle, __cacheStyle, false);
+          if(!__computedStyle[SCALE_X]) {console.log(1)
+            return this.__calMatrix(REPAINT, __currentStyle, __computedStyle, __cacheStyle, false);
           }
           let v = __currentStyle[SCALE_X].v;
           let x = v / __computedStyle[SCALE_X];
@@ -1136,8 +1135,8 @@ class Xom extends Node {
           matrixCache[2] *= x;
         }
         if(lv & SY) {
-          if(!__computedStyle[SCALE_Y]) {
-            return this.__calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle, false);
+          if(!__computedStyle[SCALE_Y]) {console.log(2)
+            return this.__calMatrix(REPAINT, __currentStyle, __computedStyle, __cacheStyle, false);
           }
           let v = __currentStyle[SCALE_Y].v;
           let y = v / __computedStyle[SCALE_Y];
@@ -1150,8 +1149,8 @@ class Xom extends Node {
           matrixCache[6] *= y;
         }
         if(lv & SZ) {
-          if(!__computedStyle[SCALE_Z]) {
-            return this.__calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle, false);
+          if(!__computedStyle[SCALE_Z]) {console.log(3)
+            return this.__calMatrix(REPAINT, __currentStyle, __computedStyle, __cacheStyle, false);
           }
           let v = __currentStyle[SCALE_Z].v;
           let z = v / __computedStyle[SCALE_Z];
@@ -1526,7 +1525,7 @@ class Xom extends Node {
                 loadBgi.width = data.width;
                 loadBgi.height = data.height;
                 __cacheStyle[BACKGROUND_IMAGE] = undefined;
-                root.__addUpdate(node, null, REPAINT, false, false, false, false, false, null);
+                root.__addUpdate(node, null, REPAINT, false, false, false, false, null);
               }
             });
           }
@@ -2539,7 +2538,7 @@ class Xom extends Node {
       this.clearCache(lv < REPAINT);
     }
     if(root && !this.__isDestroyed) {
-      root.__addUpdate(this, null, lv, false, false, false, false, false, cb);
+      root.__addUpdate(this, null, lv, false, false, false, false, cb);
     }
     else if(isFunction(cb)) {
       cb(-1);
@@ -2862,7 +2861,7 @@ class Xom extends Node {
       return;
     }
     if(root) {
-      root.__addUpdate(this, keys, null, false, false, false, false, false, cb);
+      root.__addUpdate(this, keys, null, false, false, false, false, cb);
     }
   }
 
@@ -3170,7 +3169,7 @@ class Xom extends Node {
       return;
     }
     // 可见在reflow逻辑做结构关系等
-    root.__addUpdate(this, null, REFLOW, false, true, false, false, false, cb);
+    root.__addUpdate(this, null, REFLOW, false, true, false, false, cb);
   }
 
   addEventListener(type, cb) {
@@ -3361,7 +3360,7 @@ class Xom extends Node {
             p.__computedStyle[TRANSFORM_STYLE] = p.__currentStyle[TRANSFORM_STYLE];
           }
         }
-        root.__addUpdate(this, null, MASK, false, false, false, false, false, null);
+        root.__addUpdate(this, null, MASK, false, false, false, false, null);
       }
     }
   }
@@ -3385,7 +3384,7 @@ class Xom extends Node {
             p.__computedStyle[TRANSFORM_STYLE] = p.__currentStyle[TRANSFORM_STYLE];
           }
         }
-        root.__addUpdate(this, null, MASK, false, false, false, false, false, null);
+        root.__addUpdate(this, null, MASK, false, false, false, false, null);
       }
     }
   }
@@ -3406,7 +3405,7 @@ class Xom extends Node {
         else {
           this.__computedStyle[TRANSFORM_STYLE] = this.__currentStyle[TRANSFORM_STYLE];
         }
-        root.__addUpdate(this, null, REPAINT, false, false, false, false, null, null);
+        root.__addUpdate(this, null, REPAINT, false, false, false, false, null);
       }
     }
   }

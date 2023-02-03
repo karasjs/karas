@@ -18519,19 +18519,21 @@
 
         if (isDestroyed || duration <= 0 || pending) {
           return this;
+        } // 不能清空stopCb
+
+
+        if (this.__playState === 'running') {
+          this.__root.__offAniFrame(this);
         }
 
+        this.__playCb = null;
         this.__playState = 'paused';
         var wa = this.__wasmAnimation;
 
         if (wa) {
           wa.play_state = PLAY_STATE.PAUSED;
-        } // 不能清空stopCb
+        }
 
-
-        this.__root.__offAniFrame(this);
-
-        this.__playCb = null;
         this.emit(Event.PAUSE);
         return this;
       }
@@ -18707,6 +18709,15 @@
 
         if (isDestroyed || dur <= 0 || frames.length < 1) {
           return this;
+        } // 重复相同时间，且正在播放中，且
+
+
+        if (v === currentTime && this.__playState === 'running') {
+          if (isFunction$5(cb)) {
+            cb(false);
+          }
+
+          return;
         } // 计算出时间点直接累加播放
 
 
@@ -18717,15 +18728,6 @@
             this.finish(cb);
           } else {
             this.cancel(cb);
-          }
-
-          return;
-        } // 重复相同时间，且正在播放中，且
-
-
-        if (v === currentTime && this.__playState === 'running') {
-          if (isFunction$5(cb)) {
-            cb(false);
           }
 
           return;
@@ -18754,8 +18756,6 @@
     }, {
       key: "gotoAndStop",
       value: function gotoAndStop(v, options, cb) {
-        var _this4 = this;
-
         var t = gotoOverload(this, options, cb);
         options = t.options;
         cb = t.cb;
@@ -18769,6 +18769,15 @@
 
         if (isDestroyed || dur <= 0 || frames.length < 1) {
           return this;
+        } // 重复相同时间忽略
+
+
+        if (v === currentTime) {
+          if (isFunction$5(cb)) {
+            cb(false);
+          }
+
+          return;
         }
 
         v = this.__goto(v, options.isFrame, options.excludeDelay); // 已经结束提前跳出
@@ -18785,15 +18794,6 @@
 
         if (this.__playState === 'running') {
           this.__cancelTask();
-        } // 重复相同时间忽略
-
-
-        if (v === currentTime) {
-          if (isFunction$5(cb)) {
-            cb(false);
-          }
-
-          return;
         }
 
         this.__startTime = frame.__now = frame.__now || inject.now();
@@ -18804,52 +18804,13 @@
           wa.play_state = PLAY_STATE.PAUSED;
         }
 
-        var root = this.__root;
-        var currentFrames = this.__currentFrames; // 没超过delay，都停留在首帧，不考虑fill
-
-        if (v <= 0) {
-          var isChange;
-
-          this.__stopCb = function () {
-            if (isChange) {
-              frameCb(_this4);
-            }
-
-            if (isFunction$5(cb)) {
-              cb(isChange);
-            }
-          };
-
-          var currentFrame = currentFrames[0];
-          var target = this.__target;
-          var keys = calLastStyle(currentFrame.style, target, this.__keys);
-          isChange = !!keys.length;
-
-          if (this.__stopCb) {
-            root.__cancelFrameDraw(this.__stopCb);
-          } // 有变化的backwards才更新，否则无需理会，不需要回调，极端情况立刻pause()回造成一次无用刷新
-
-
-          if (isChange) {
-            root.__addUpdate(target, keys, false, false, false, false, false, this.__stopCb);
-          } else {
-            this.__stopCb();
-          }
-
-          if (wa) {
-            wa.goto_stop(0, dur);
-          }
-
-          return;
-        }
-
         var wasmChange = false;
 
         if (wa) {
           wasmChange = wa.goto_stop(v, dur);
         }
 
-        this.__calCurrent(currentFrames, this.__currentFrame, v, dur, duration, {
+        this.__calCurrent(this.__currentFrames, this.__currentFrame, v, dur, duration, {
           wasmChange: wasmChange,
           cb: cb
         });
@@ -19021,7 +18982,7 @@
     }, {
       key: "__gotoStopCb",
       value: function __gotoStopCb(root, target, keys, currentFrame, gotoParams) {
-        var _this5 = this;
+        var _this4 = this;
 
         if (this.__stopCb) {
           root.__cancelFrameDraw(this.__stopCb);
@@ -19031,7 +18992,7 @@
 
         this.__stopCb = function () {
           if (isChange) {
-            frameCb(_this5);
+            frameCb(_this4);
           }
 
           if (isFunction$5(gotoParams.cb)) {

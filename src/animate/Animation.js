@@ -1855,14 +1855,16 @@ class Animation extends Event {
     if(isDestroyed || duration <= 0 || pending) {
       return this;
     }
+    // 不能清空stopCb
+    if(this.__playState === 'running') {
+      this.__root.__offAniFrame(this);
+    }
+    this.__playCb = null;
     this.__playState = 'paused';
     let wa = this.__wasmAnimation;
     if(wa) {
       wa.play_state = PLAY_STATE.PAUSED;
     }
-    // 不能清空stopCb
-    this.__root.__offAniFrame(this);
-    this.__playCb = null;
     this.emit(Event.PAUSE);
     return this;
   }
@@ -2001,6 +2003,13 @@ class Animation extends Event {
     if(isDestroyed || dur <= 0 || frames.length < 1) {
       return this;
     }
+    // 重复相同时间，且正在播放中，且
+    if(v === currentTime && this.__playState === 'running') {
+      if(isFunction(cb)) {
+        cb(false);
+      }
+      return;
+    }
     // 计算出时间点直接累加播放
     v = this.__goto(v, options.isFrame, options.excludeDelay);
     // 已经结束提前跳出
@@ -2010,13 +2019,6 @@ class Animation extends Event {
       }
       else {
         this.cancel(cb);
-      }
-      return;
-    }
-    // 重复相同时间，且正在播放中，且
-    if(v === currentTime && this.__playState === 'running') {
-      if(isFunction(cb)) {
-        cb(false);
       }
       return;
     }
@@ -2051,6 +2053,13 @@ class Animation extends Event {
     if(isDestroyed || dur <= 0 || frames.length < 1) {
       return this;
     }
+    // 重复相同时间忽略
+    if(v === currentTime) {
+      if(isFunction(cb)) {
+        cb(false);
+      }
+      return;
+    }
     v = this.__goto(v, options.isFrame, options.excludeDelay);
     // 已经结束提前跳出
     if(v >= dur + endDelay) {
@@ -2065,13 +2074,6 @@ class Animation extends Event {
     if(this.__playState === 'running') {
       this.__cancelTask();
     }
-    // 重复相同时间忽略
-    if(v === currentTime) {
-      if(isFunction(cb)) {
-        cb(false);
-      }
-      return;
-    }
     this.__startTime = frame.__now = frame.__now || inject.now();
     this.__playState = 'paused';
     let wa = this.__wasmAnimation;
@@ -2079,43 +2081,11 @@ class Animation extends Event {
     if(wa) {
       wa.play_state = PLAY_STATE.PAUSED;
     }
-    let root = this.__root;
-    let currentFrames = this.__currentFrames;
-    // 没超过delay，都停留在首帧，不考虑fill
-    if(v <= 0) {
-      let isChange;
-      this.__stopCb = () => {
-        if(isChange) {
-          frameCb(this);
-        }
-        if(isFunction(cb)) {
-          cb(isChange);
-        }
-      };
-      let currentFrame = currentFrames[0];
-      let target = this.__target;
-      let keys = calLastStyle(currentFrame.style, target, this.__keys);
-      isChange = !!keys.length;
-      if(this.__stopCb) {
-        root.__cancelFrameDraw(this.__stopCb);
-      }
-      // 有变化的backwards才更新，否则无需理会，不需要回调，极端情况立刻pause()回造成一次无用刷新
-      if(isChange) {
-        root.__addUpdate(target, keys, false, false, false, false, false, this.__stopCb);
-      }
-      else {
-        this.__stopCb();
-      }
-      if(wa) {
-        wa.goto_stop(0, dur);
-      }
-      return;
-    }
     let wasmChange = false;
     if(wa) {
       wasmChange = wa.goto_stop(v, dur);
     }
-    this.__calCurrent(currentFrames, this.__currentFrame, v, dur, duration, {
+    this.__calCurrent(this.__currentFrames, this.__currentFrame, v, dur, duration, {
       wasmChange,
       cb,
     });

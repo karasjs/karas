@@ -1140,10 +1140,10 @@ class Root extends Dom {
         item && item(diff);
       }
     }
-    // frameDraw不受pause影响，即主动更新样式之类非动画/帧动画
+    // frameDraw不受pause影响，即主动更新样式之类非动画/帧动画，参数true标明异步
     for(let i = 0; i < len2; i++) {
       let item = task[i];
-      item && item(diff);
+      item && item(true);
     }
     len = this.__ani.length; // 动画和渲染任务可能会改变自己的任务队列
     len2 = this.__task.length;

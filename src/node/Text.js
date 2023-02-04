@@ -814,7 +814,7 @@ class Text extends Node {
     if(s === this.__content || this.__isDestroyed) {
       this.__content = s;
       if(isFunction(cb)) {
-        cb();
+        cb(false);
       }
       return;
     }
@@ -849,7 +849,7 @@ class Text extends Node {
     }
     if(this.__isDestroyed) {
       if(isFunction(cb)) {
-        cb();
+        cb(false);
       }
       return;
     }
@@ -858,7 +858,7 @@ class Text extends Node {
     if(this.computedStyle[DISPLAY] === 'none') {
       this.__destroy();
       if(isFunction(cb)) {
-        cb();
+        cb(false);
       }
       return;
     }

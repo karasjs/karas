@@ -536,7 +536,7 @@ class Img extends Dom {
         });
       }
       if(isFunction(cb)) {
-        cb();
+        cb(false);
       }
       return;
     }

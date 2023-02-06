@@ -1418,7 +1418,7 @@ function frameCb(self) {
   }
 }
 
-function wasmFrame(wa, wList, wHash, frames, isReverse) {
+function wasmFrame(wa, wHash, frames, isReverse) {
   for(let i = 0, len = frames.length; i < len; i++) {
     let { style, transition, trans, wasmTrans, time, easing } = frames[i];
     let eType = EASING.DEFAULT, x1 = 0, y1 = 0, x2 = 1, y2 = 1;
@@ -1653,8 +1653,8 @@ class Animation extends Event {
             wa.set_bezier(parseFloat(v[0]), parseFloat(v[1]), parseFloat(v[2]), parseFloat(v[3]));
           }
         }
-        wasmFrame(wa, wList, wHash, frames, false);
-        wasmFrame(wa, wList, wHash, framesR, true);
+        wasmFrame(wa, wHash, frames, false);
+        wasmFrame(wa, wHash, framesR, true);
         // 没有其他的则全部交由wasm
         if(wList.length === keys.length) {
           this.__ignore = true;

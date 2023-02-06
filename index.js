@@ -13055,7 +13055,7 @@
           this.__content = s;
 
           if (isFunction$a(cb)) {
-            cb();
+            cb(false);
           }
 
           return;
@@ -13104,7 +13104,7 @@
 
         if (this.__isDestroyed) {
           if (isFunction$a(cb)) {
-            cb();
+            cb(false);
           }
 
           return;
@@ -13117,7 +13117,7 @@
           this.__destroy();
 
           if (isFunction$a(cb)) {
-            cb();
+            cb(false);
           }
 
           return;
@@ -18005,7 +18005,7 @@
     }
   }
 
-  function wasmFrame(wa, wList, wHash, frames, isReverse) {
+  function wasmFrame(wa, wHash, frames, isReverse) {
     for (var i = 0, len = frames.length; i < len; i++) {
       var _frames$i = frames[i],
           style = _frames$i.style,
@@ -18274,8 +18274,8 @@
               }
             }
 
-            wasmFrame(wa, wList, wHash, frames, false);
-            wasmFrame(wa, wList, wHash, framesR, true); // 没有其他的则全部交由wasm
+            wasmFrame(wa, wHash, frames, false);
+            wasmFrame(wa, wHash, framesR, true); // 没有其他的则全部交由wasm
 
             if (wList.length === keys.length) {
               this.__ignore = true;
@@ -21058,13 +21058,20 @@
 
         this.__calStyle(o$1.REFLOW, currentStyle, computedStyle, cacheStyle);
 
-        this.__calPerspective(currentStyle, computedStyle, cacheStyle);
+        this.__calPerspective(currentStyle, computedStyle, cacheStyle); // 每次reflow重新传matrix到wasm
 
+
+        this.__wasmStyle(currentStyle);
+      } // 传递matrix相关样式到wasm中计算
+
+    }, {
+      key: "__wasmStyle",
+      value: function __wasmStyle(currentStyle) {
         var wn = this.__wasmNode;
 
         if (wn) {
-          var crs = this.__currentStyle;
-          wn.set_style(this.__x1, this.__y1, this.__offsetWidth, this.__offsetHeight, crs[TRANSLATE_X].v, crs[TRANSLATE_Y].v, crs[TRANSLATE_Z].v, crs[ROTATE_X].v, crs[ROTATE_Y].v, crs[ROTATE_Z].v, crs[ROTATE_3D][0], crs[ROTATE_3D][1], crs[ROTATE_3D][2], crs[ROTATE_3D][3].v, crs[SCALE_X].v, crs[SCALE_Y].v, crs[SCALE_Z].v, crs[SKEW_X].v, crs[SKEW_Y].v, crs[OPACITY$3], crs[TRANSFORM_ORIGIN$2][0].v, crs[TRANSFORM_ORIGIN$2][1].v, crs[TRANSLATE_X].u, crs[TRANSLATE_Y].u, crs[TRANSLATE_Z].u, crs[TRANSFORM_ORIGIN$2][0].u, crs[TRANSFORM_ORIGIN$2][1].u);
+          currentStyle = currentStyle || this.__currentStyle;
+          wn.set_style(this.__x1, this.__y1, this.__offsetWidth, this.__offsetHeight, currentStyle[TRANSLATE_X].v, currentStyle[TRANSLATE_Y].v, currentStyle[TRANSLATE_Z].v, currentStyle[ROTATE_X].v, currentStyle[ROTATE_Y].v, currentStyle[ROTATE_Z].v, currentStyle[ROTATE_3D][0], currentStyle[ROTATE_3D][1], currentStyle[ROTATE_3D][2], currentStyle[ROTATE_3D][3].v, currentStyle[SCALE_X].v, currentStyle[SCALE_Y].v, currentStyle[SCALE_Z].v, currentStyle[SKEW_X].v, currentStyle[SKEW_Y].v, currentStyle[OPACITY$3], currentStyle[TRANSFORM_ORIGIN$2][0].v, currentStyle[TRANSFORM_ORIGIN$2][1].v, currentStyle[TRANSLATE_X].u, currentStyle[TRANSLATE_Y].u, currentStyle[TRANSLATE_Z].u, currentStyle[TRANSFORM_ORIGIN$2][0].u, currentStyle[TRANSFORM_ORIGIN$2][1].u);
         }
       }
     }, {
@@ -23286,37 +23293,39 @@
     }, {
       key: "updateFormatStyle",
       value: function updateFormatStyle(style, cb) {
-        var _this10 = this;
-
         var root = this.__root,
             currentStyle = this.__currentStyle,
             currentProps = this.__currentProps;
         var keys = [];
-        Object.keys(style).forEach(function (i) {
-          var isGeom = GEOM.hasOwnProperty(i);
+            this.__wasmNode;
 
-          if (!isGeom) {
-            i = parseInt(i);
-          }
+        for (var k in style) {
+          if (style.hasOwnProperty(k)) {
+            var isGeom = GEOM.hasOwnProperty(k);
 
-          if (!equalStyle(i, isGeom ? currentProps[i] : currentStyle[i], style[i], _this10)) {
-            if (isGeom) {
-              currentProps[i] = style[i];
-            } else {
-              currentStyle[i] = style[i];
+            if (!isGeom) {
+              k = parseInt(k);
             }
 
-            keys.push(i);
+            if (!equalStyle(k, isGeom ? currentProps[k] : currentStyle[k], style[k], this)) {
+              if (isGeom) {
+                currentProps[k] = style[k];
+              } else {
+                currentStyle[k] = style[k];
+              }
+
+              keys.push(k);
+            }
           }
-        });
+        }
 
         if (!keys.length || this.__isDestroyed) {
           if (isFunction$4(cb)) {
-            cb();
+            cb(false);
           }
 
           return;
-        }
+        } // 主动更新包含matrix部分需通知wasm更新
 
         if (root) {
           root.__addUpdate(this, keys, null, false, false, false, false, cb);
@@ -23705,7 +23714,7 @@
 
         if (this.__isDestroyed) {
           if (isFunction$4(cb)) {
-            cb();
+            cb(false);
           }
 
           return;
@@ -23718,7 +23727,7 @@
           this.__destroy();
 
           if (isFunction$4(cb)) {
-            cb();
+            cb(false);
           }
 
           return;
@@ -33248,7 +33257,7 @@
           }
 
           if (isFunction$2(cb)) {
-            cb();
+            cb(false);
           }
 
           return;
@@ -40789,13 +40798,13 @@
           }
 
           return;
-        } // wasm变更可能会无keys和lv，需要强制刷新
+        } // wasm动画变更可能会无keys和lv，需要强制刷新
 
 
         if (res || wasmChange) {
           this.__frameDraw(cb);
         } else {
-          cb && cb();
+          cb && cb(false);
         }
       }
     }, {
@@ -41250,12 +41259,12 @@
             var item = frameTask[_i3];
             item && item(diff);
           }
-        } // frameDraw不受pause影响，即主动更新样式之类非动画/帧动画
+        } // frameDraw不受pause影响，即主动更新样式之类非动画/帧动画，参数true标明异步
 
 
         for (var _i4 = 0; _i4 < len2; _i4++) {
           var _item = task[_i4];
-          _item && _item(diff);
+          _item && _item(true);
         }
 
         len = this.__ani.length; // 动画和渲染任务可能会改变自己的任务队列

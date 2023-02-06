@@ -750,12 +750,12 @@ class Root extends Dom {
       }
       return;
     }
-    // wasm变更可能会无keys和lv，需要强制刷新
+    // wasm动画变更可能会无keys和lv，需要强制刷新
     if(res || wasmChange) {
       this.__frameDraw(cb);
     }
     else {
-      cb && cb();
+      cb && cb(false);
     }
   }
 

@@ -785,18 +785,24 @@ class Xom extends Node {
     let cacheStyle = this.__cacheStyle;
     this.__calStyle(level.REFLOW, currentStyle, computedStyle, cacheStyle);
     this.__calPerspective(currentStyle, computedStyle, cacheStyle);
+    // 每次reflow重新传matrix到wasm
+    this.__wasmStyle(currentStyle);
+  }
+
+  // 传递matrix相关样式到wasm中计算
+  __wasmStyle(currentStyle) {
     let wn = this.__wasmNode;
     if(wn) {
-      let crs = this.__currentStyle;
+      currentStyle = currentStyle || this.__currentStyle;
       wn.set_style(this.__x1, this.__y1, this.__offsetWidth, this.__offsetHeight,
-        crs[TRANSLATE_X].v, crs[TRANSLATE_Y].v, crs[TRANSLATE_Z].v,
-        crs[ROTATE_X].v, crs[ROTATE_Y].v, crs[ROTATE_Z].v,
-        crs[ROTATE_3D][0], crs[ROTATE_3D][1], crs[ROTATE_3D][2], crs[ROTATE_3D][3].v,
-        crs[SCALE_X].v, crs[SCALE_Y].v, crs[SCALE_Z].v,
-        crs[SKEW_X].v, crs[SKEW_Y].v, crs[OPACITY],
-        crs[TRANSFORM_ORIGIN][0].v, crs[TRANSFORM_ORIGIN][1].v,
-        crs[TRANSLATE_X].u, crs[TRANSLATE_Y].u, crs[TRANSLATE_Z].u,
-        crs[TRANSFORM_ORIGIN][0].u, crs[TRANSFORM_ORIGIN][1].u);
+        currentStyle[TRANSLATE_X].v, currentStyle[TRANSLATE_Y].v, currentStyle[TRANSLATE_Z].v,
+        currentStyle[ROTATE_X].v, currentStyle[ROTATE_Y].v, currentStyle[ROTATE_Z].v,
+        currentStyle[ROTATE_3D][0], currentStyle[ROTATE_3D][1], currentStyle[ROTATE_3D][2], currentStyle[ROTATE_3D][3].v,
+        currentStyle[SCALE_X].v, currentStyle[SCALE_Y].v, currentStyle[SCALE_Z].v,
+        currentStyle[SKEW_X].v, currentStyle[SKEW_Y].v, currentStyle[OPACITY],
+        currentStyle[TRANSFORM_ORIGIN][0].v, currentStyle[TRANSFORM_ORIGIN][1].v,
+        currentStyle[TRANSLATE_X].u, currentStyle[TRANSLATE_Y].u, currentStyle[TRANSLATE_Z].u,
+        currentStyle[TRANSFORM_ORIGIN][0].u, currentStyle[TRANSFORM_ORIGIN][1].u);
     }
   }
 
@@ -2838,28 +2844,47 @@ class Xom extends Node {
   // 传入格式化好key/value的样式
   updateFormatStyle(style, cb) {
     let root = this.__root, currentStyle = this.__currentStyle, currentProps = this.__currentProps;
-    let keys = [];
-    Object.keys(style).forEach(i => {
-      let isGeom = GEOM.hasOwnProperty(i);
-      if(!isGeom) {
-        i = parseInt(i);
-      }
-      if(!equalStyle(i, isGeom ? currentProps[i] : currentStyle[i], style[i], this)) {
-        if(isGeom) {
-          currentProps[i] = style[i];
+    let keys = [], wList = [], wn = this.__wasmNode;
+    for(let k in style) {
+      if(style.hasOwnProperty(k)) {
+        let isGeom = GEOM.hasOwnProperty(k);
+        if(!isGeom) {
+          k = parseInt(k);
         }
-        else {
-          currentStyle[i] = style[i];
+        if(!equalStyle(k, isGeom ? currentProps[k] : currentStyle[k], style[k], this)) {
+          if(isGeom) {
+            currentProps[k] = style[k];
+          }
+          else {
+            currentStyle[k] = style[k];
+            if(wn && (k === TRANSLATE_X
+              || k === TRANSLATE_Y
+              || k === TRANSLATE_Z
+              || k === ROTATE_X
+              || k === ROTATE_Y
+              || k === ROTATE_Z
+              || k === SKEW_X
+              || k === SKEW_Y
+              || k === SCALE_X
+              || k === SCALE_X
+              || k === SCALE_Y
+              || k === SCALE_Z
+              || k === TRANSFORM_ORIGIN)) {
+              wList.push(k);
+            }
+          }
+          keys.push(k);
         }
-        keys.push(i);
       }
-    });
+    }
     if(!keys.length || this.__isDestroyed) {
       if(isFunction(cb)) {
         cb(false);
       }
       return;
     }
+    // 主动更新包含matrix部分需通知wasm更新
+    if(wList.length) {}
     if(root) {
       root.__addUpdate(this, keys, null, false, false, false, false, cb);
     }

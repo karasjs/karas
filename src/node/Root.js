@@ -877,7 +877,10 @@ class Root extends Dom {
         if(node.__cache) {
           hasRelease = node.__cache.release() || hasRelease;
         }
-        node.__layoutStyle(lv);
+        node.__calStyle(lv, currentStyle, computedStyle, cacheStyle);
+        node.__calPerspective(currentStyle, computedStyle, cacheStyle);
+        // calStyle中matrix部分有wasm会不计算，这里让wasm计算
+        node.__wasmStyle(currentStyle);
       }
       // < REPAINT特殊的优化computedStyle计算
       else {

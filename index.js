@@ -21051,12 +21051,12 @@
       }
     }, {
       key: "__layoutStyle",
-      value: function __layoutStyle(lv) {
+      value: function __layoutStyle() {
         var currentStyle = this.__currentStyle;
         var computedStyle = this.__computedStyle;
         var cacheStyle = this.__cacheStyle;
 
-        this.__calStyle(lv || REFLOW$3, currentStyle, computedStyle, cacheStyle);
+        this.__calStyle(REFLOW$3, currentStyle, computedStyle, cacheStyle);
 
         this.__calPerspective(currentStyle, computedStyle, cacheStyle); // 每次reflow重新传matrix到wasm
 
@@ -21744,7 +21744,11 @@
 
 
         if (isNil$a(__cacheStyle[MATRIX$1]) || lv & TRANSFORM_ALL$3) {
-          this.__calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle, false);
+          var wn = this.__wasmNode;
+
+          if (!wn) {
+            this.__calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle, false);
+          }
         }
 
         if (isNil$a(__cacheStyle[BACKGROUND_POSITION_X])) {
@@ -40936,7 +40940,12 @@
               hasRelease = node.__cache.release() || hasRelease;
             }
 
-            node.__layoutStyle(lv);
+            node.__calStyle(lv, currentStyle, computedStyle, cacheStyle);
+
+            node.__calPerspective(currentStyle, computedStyle, cacheStyle); // calStyle中matrix部分有wasm会不计算，这里让wasm计算
+
+
+            node.__wasmStyle(currentStyle);
           } // < REPAINT特殊的优化computedStyle计算
           else {
             if (lv & PPT) {

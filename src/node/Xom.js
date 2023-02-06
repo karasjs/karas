@@ -779,11 +779,11 @@ class Xom extends Node {
     return lineClampCount;
   }
 
-  __layoutStyle(lv) {
+  __layoutStyle() {
     let currentStyle = this.__currentStyle;
     let computedStyle = this.__computedStyle;
     let cacheStyle = this.__cacheStyle;
-    this.__calStyle(lv || REFLOW, currentStyle, computedStyle, cacheStyle);
+    this.__calStyle(REFLOW, currentStyle, computedStyle, cacheStyle);
     this.__calPerspective(currentStyle, computedStyle, cacheStyle);
     // 每次reflow重新传matrix到wasm
     this.__wasmStyle(currentStyle);
@@ -1453,7 +1453,10 @@ class Xom extends Node {
     }
     // 特殊的判断，MATRIX不存在于样式key中，所有的transform共用一个
     if(isNil(__cacheStyle[MATRIX]) || (lv & TRANSFORM_ALL)) {
-      this.__calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle, false);
+      let wn = this.__wasmNode;
+      if(!wn) {
+        this.__calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle, false);
+      }
     }
     if(isNil(__cacheStyle[BACKGROUND_POSITION_X])) {
       __cacheStyle[BACKGROUND_POSITION_X] = true;

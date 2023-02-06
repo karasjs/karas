@@ -292,7 +292,7 @@ class Root extends Dom {
     dom = getDom(dom);
     this.__isDestroyed = false;
     this.__initProps();
-    let tagName = this.tagName;
+    let tagName = this.__tagName;
     let domName = ROOT_DOM_NAME[tagName];
     // OffscreenCanvas兼容，包含worker的
     if(typeof window !== 'undefined' && window.OffscreenCanvas && (dom instanceof window.OffscreenCanvas)
@@ -703,7 +703,7 @@ class Root extends Dom {
     if(keys) {
       for(let i = 0, len = keys.length; i < len; i++) {
         let k = keys[i];
-        if(node instanceof Geom && isGeom(node.tagName, k)) {
+        if(node instanceof Geom && isGeom(node.__tagName, k)) {
           lv |= REPAINT;
           __cacheProps[k] = undefined;
         }
@@ -779,7 +779,7 @@ class Root extends Dom {
     let len = trans.length;
     for(let i = 0; i < len; i++) {
       let k = trans[i];
-      if(frame.isGeom && node instanceof Geom && isGeom(node.tagName, k)) {
+      if(frame.isGeom && node instanceof Geom && isGeom(node.__tagName, k)) {
         cacheProps[k] = undefined;
       }
       else {
@@ -877,21 +877,26 @@ class Root extends Dom {
         if(node.__cache) {
           hasRelease = node.__cache.release() || hasRelease;
         }
-        node.__calStyle(lv, currentStyle, computedStyle, cacheStyle);
-        node.__calPerspective(currentStyle, computedStyle, cacheStyle);
+        node.__layoutStyle(lv);
       }
       // < REPAINT特殊的优化computedStyle计算
       else {
         if(lv & PPT) {
           node.__calPerspective(currentStyle, computedStyle, cacheStyle);
         }
+        // 特殊的ppt需清空cacheTotal
         if(lv & TRANSFORM_ALL) {
-          // 特殊的ppt需清空cacheTotal
-          let o = node.__selfPerspectiveMatrix;
-          node.__calMatrix(lv, currentStyle, computedStyle, cacheStyle);
-          let n = node.__selfPerspectiveMatrix;
-          if(!util.equalArr(o, n)) {
-            need = true;
+          let wn = node.__wasmNode;
+          if(wn) {
+            node.__wasmStyle(currentStyle);
+          }
+          else {
+            let o = node.__selfPerspectiveMatrix;
+            node.__calMatrix(lv, currentStyle, computedStyle, cacheStyle);
+            let n = node.__selfPerspectiveMatrix;
+            if(!need && !util.equalArr(o, n)) {
+              need = true;
+            }
           }
         }
         if(lv & OP) {

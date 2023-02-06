@@ -21051,12 +21051,12 @@
       }
     }, {
       key: "__layoutStyle",
-      value: function __layoutStyle() {
+      value: function __layoutStyle(lv) {
         var currentStyle = this.__currentStyle;
         var computedStyle = this.__computedStyle;
         var cacheStyle = this.__cacheStyle;
 
-        this.__calStyle(o$1.REFLOW, currentStyle, computedStyle, cacheStyle);
+        this.__calStyle(lv || REFLOW$3, currentStyle, computedStyle, cacheStyle);
 
         this.__calPerspective(currentStyle, computedStyle, cacheStyle); // 每次reflow重新传matrix到wasm
 
@@ -21401,7 +21401,6 @@
           if (lv & SCALE) {
             if (lv & SX) {
               if (!__computedStyle[SCALE_X]) {
-                console.log(1);
                 return this.__calMatrix(REPAINT$3, __currentStyle, __computedStyle, __cacheStyle, false);
               }
 
@@ -21420,7 +21419,6 @@
 
             if (lv & SY) {
               if (!__computedStyle[SCALE_Y]) {
-                console.log(2);
                 return this.__calMatrix(REPAINT$3, __currentStyle, __computedStyle, __cacheStyle, false);
               }
 
@@ -21439,7 +21437,6 @@
 
             if (lv & SZ) {
               if (!__computedStyle[SCALE_Z]) {
-                console.log(3);
                 return this.__calMatrix(REPAINT$3, __currentStyle, __computedStyle, __cacheStyle, false);
               }
 
@@ -23297,7 +23294,6 @@
             currentStyle = this.__currentStyle,
             currentProps = this.__currentProps;
         var keys = [];
-            this.__wasmNode;
 
         for (var k in style) {
           if (style.hasOwnProperty(k)) {
@@ -23325,7 +23321,7 @@
           }
 
           return;
-        } // 主动更新包含matrix部分需通知wasm更新
+        }
 
         if (root) {
           root.__addUpdate(this, keys, null, false, false, false, false, cb);
@@ -23462,7 +23458,7 @@
           if (lv >= REFLOW$3) {
             this.__cacheStyle = [];
 
-            this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
+            this.__layoutStyle(lv);
           }
 
           if (this.__bbox) {
@@ -23502,7 +23498,7 @@
           if (lv >= REFLOW$3) {
             this.__cacheStyle = [];
 
-            this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
+            this.__layoutStyle(lv);
           }
 
           if (this.__bbox) {
@@ -23558,7 +23554,7 @@
           if (lv >= REFLOW$3) {
             this.__cacheStyle = [];
 
-            this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
+            this.__layoutStyle(lv);
           }
         }
 
@@ -23590,7 +23586,7 @@
           if (lv >= REFLOW$3) {
             this.__cacheStyle = [];
 
-            this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
+            this.__layoutStyle(lv);
           }
         }
 
@@ -40286,7 +40282,7 @@
 
         this.__initProps();
 
-        var tagName = this.tagName;
+        var tagName = this.__tagName;
         var domName = ROOT_DOM_NAME[tagName]; // OffscreenCanvas兼容，包含worker的
 
         if (typeof window !== 'undefined' && window.OffscreenCanvas && dom instanceof window.OffscreenCanvas || typeof self !== 'undefined' && self.OffscreenCanvas && dom instanceof self.OffscreenCanvas) {
@@ -40756,7 +40752,7 @@
           for (var i = 0, len = keys.length; i < len; i++) {
             var k = keys[i];
 
-            if (node instanceof Geom && isGeom(node.tagName, k)) {
+            if (node instanceof Geom && isGeom(node.__tagName, k)) {
               lv |= REPAINT;
               __cacheProps[k] = undefined;
             } else {
@@ -40830,7 +40826,7 @@
         for (var i = 0; i < len; i++) {
           var k = trans[i];
 
-          if (frame.isGeom && node instanceof Geom && isGeom(node.tagName, k)) {
+          if (frame.isGeom && node instanceof Geom && isGeom(node.__tagName, k)) {
             cacheProps[k] = undefined;
           } else {
             // repaint置空，如果reflow会重新生成空的
@@ -40940,25 +40936,29 @@
               hasRelease = node.__cache.release() || hasRelease;
             }
 
-            node.__calStyle(lv, currentStyle, computedStyle, cacheStyle);
-
-            node.__calPerspective(currentStyle, computedStyle, cacheStyle);
+            node.__layoutStyle(lv);
           } // < REPAINT特殊的优化computedStyle计算
           else {
             if (lv & PPT) {
               node.__calPerspective(currentStyle, computedStyle, cacheStyle);
-            }
+            } // 特殊的ppt需清空cacheTotal
+
 
             if (lv & TRANSFORM_ALL) {
-              // 特殊的ppt需清空cacheTotal
-              var o = node.__selfPerspectiveMatrix;
+              var wn = node.__wasmNode;
 
-              node.__calMatrix(lv, currentStyle, computedStyle, cacheStyle);
+              if (wn) {
+                node.__wasmStyle(currentStyle);
+              } else {
+                var o = node.__selfPerspectiveMatrix;
 
-              var n = node.__selfPerspectiveMatrix;
+                node.__calMatrix(lv, currentStyle, computedStyle, cacheStyle);
 
-              if (!util.equalArr(o, n)) {
-                need = true;
+                var n = node.__selfPerspectiveMatrix;
+
+                if (!need && !util.equalArr(o, n)) {
+                  need = true;
+                }
               }
             }
 

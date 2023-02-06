@@ -779,11 +779,11 @@ class Xom extends Node {
     return lineClampCount;
   }
 
-  __layoutStyle() {
+  __layoutStyle(lv) {
     let currentStyle = this.__currentStyle;
     let computedStyle = this.__computedStyle;
     let cacheStyle = this.__cacheStyle;
-    this.__calStyle(level.REFLOW, currentStyle, computedStyle, cacheStyle);
+    this.__calStyle(lv || REFLOW, currentStyle, computedStyle, cacheStyle);
     this.__calPerspective(currentStyle, computedStyle, cacheStyle);
     // 每次reflow重新传matrix到wasm
     this.__wasmStyle(currentStyle);
@@ -1127,7 +1127,7 @@ class Xom extends Node {
       }
       if(lv & SCALE) {
         if(lv & SX) {
-          if(!__computedStyle[SCALE_X]) {console.log(1)
+          if(!__computedStyle[SCALE_X]) {
             return this.__calMatrix(REPAINT, __currentStyle, __computedStyle, __cacheStyle, false);
           }
           let v = __currentStyle[SCALE_X].v;
@@ -1141,7 +1141,7 @@ class Xom extends Node {
           matrixCache[2] *= x;
         }
         if(lv & SY) {
-          if(!__computedStyle[SCALE_Y]) {console.log(2)
+          if(!__computedStyle[SCALE_Y]) {
             return this.__calMatrix(REPAINT, __currentStyle, __computedStyle, __cacheStyle, false);
           }
           let v = __currentStyle[SCALE_Y].v;
@@ -1155,7 +1155,7 @@ class Xom extends Node {
           matrixCache[6] *= y;
         }
         if(lv & SZ) {
-          if(!__computedStyle[SCALE_Z]) {console.log(3)
+          if(!__computedStyle[SCALE_Z]) {
             return this.__calMatrix(REPAINT, __currentStyle, __computedStyle, __cacheStyle, false);
           }
           let v = __currentStyle[SCALE_Z].v;
@@ -2844,7 +2844,7 @@ class Xom extends Node {
   // 传入格式化好key/value的样式
   updateFormatStyle(style, cb) {
     let root = this.__root, currentStyle = this.__currentStyle, currentProps = this.__currentProps;
-    let keys = [], wList = [], wn = this.__wasmNode;
+    let keys = [];
     for(let k in style) {
       if(style.hasOwnProperty(k)) {
         let isGeom = GEOM.hasOwnProperty(k);
@@ -2857,21 +2857,6 @@ class Xom extends Node {
           }
           else {
             currentStyle[k] = style[k];
-            if(wn && (k === TRANSLATE_X
-              || k === TRANSLATE_Y
-              || k === TRANSLATE_Z
-              || k === ROTATE_X
-              || k === ROTATE_Y
-              || k === ROTATE_Z
-              || k === SKEW_X
-              || k === SKEW_Y
-              || k === SCALE_X
-              || k === SCALE_X
-              || k === SCALE_Y
-              || k === SCALE_Z
-              || k === TRANSFORM_ORIGIN)) {
-              wList.push(k);
-            }
           }
           keys.push(k);
         }
@@ -2883,8 +2868,6 @@ class Xom extends Node {
       }
       return;
     }
-    // 主动更新包含matrix部分需通知wasm更新
-    if(wList.length) {}
     if(root) {
       root.__addUpdate(this, keys, null, false, false, false, false, cb);
     }
@@ -2985,7 +2968,7 @@ class Xom extends Node {
       this.__refreshLevel |= lv;
       if(lv >= REFLOW) {
         this.__cacheStyle = [];
-        this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
+        this.__layoutStyle(lv);
       }
       if(this.__bbox) {
         this.__bbox[0] += diff;
@@ -3016,7 +2999,7 @@ class Xom extends Node {
       this.__refreshLevel |= lv;
       if(lv >= REFLOW) {
         this.__cacheStyle = [];
-        this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
+        this.__layoutStyle(lv);
       }
       if(this.__bbox) {
         this.__bbox[1] += diff;
@@ -3060,7 +3043,7 @@ class Xom extends Node {
       this.__refreshLevel |= lv;
       if(lv >= REFLOW) {
         this.__cacheStyle = [];
-        this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
+        this.__layoutStyle(lv);
       }
     }
     this.clearCache();
@@ -3085,7 +3068,7 @@ class Xom extends Node {
       this.__refreshLevel |= lv;
       if(lv >= REFLOW) {
         this.__cacheStyle = [];
-        this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
+        this.__layoutStyle(lv);
       }
     }
     this.clearCache();

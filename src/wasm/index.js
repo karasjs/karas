@@ -584,6 +584,15 @@ export class Node {
     wasm.node_set_style(this.ptr, x, y, offset_width, offset_height, cs0, cs1, cs2, cs3, cs4, cs5, cs6, cs7, cs8, cs9, cs10, cs11, cs12, cs13, cs14, cs15, cs16, cs17, cu0, cu1, cu2, cu16, cu17);
   }
   /**
+   * @param {number} x
+   * @param {number} y
+   * @param {number} offset_width
+   * @param {number} offset_height
+   */
+  set_txt(x, y, offset_width, offset_height) {
+    wasm.node_set_txt(this.ptr, x, y, offset_width, offset_height);
+  }
+  /**
    * @param {number} xa
    * @param {number} ya
    * @param {number} xb
@@ -669,6 +678,19 @@ export class Node {
   on_frame(diff) {
     const ret = wasm.node_on_frame(this.ptr, diff);
     return ret >>> 0;
+  }
+  /**
+   * @param {Animation} ani
+   */
+  cal_trans(ani) {
+    _assertClass(ani, Animation);
+    wasm.node_cal_trans(this.ptr, ani.ptr);
+  }
+  /**
+   * @param {number} rl
+   */
+  cal_matrix(rl) {
+    wasm.node_cal_matrix(this.ptr, rl);
   }
 }
 /**

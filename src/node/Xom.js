@@ -261,14 +261,8 @@ class Xom extends Node {
     if(this.__hasMask) {
       res.hasMask = this.__hasMask;
     }
-    let wn = this.__wasmNode;
-    if(wn) {
-      wn.lv = lv;
-    }
     return res;
   }
-
-  // __modifyStruct() {}
 
   // 设置margin/padding的实际值，layout时执行，inline的垂直方向仍然计算值，但在布局时被忽略
   __mp(currentStyle, computedStyle, w) {

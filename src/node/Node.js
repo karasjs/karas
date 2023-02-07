@@ -23,11 +23,16 @@ class Node {
   }
 
   __structure(lv, j) {
-    return this.__struct = {
+    this.__struct = {
       node: this,
       childIndex: j,
       lv,
     };
+    let wn = this.__wasmNode;
+    if(wn) {
+      wn.lv = lv;
+    }
+    return this.__struct;
   }
 
   __offsetX(diff) {

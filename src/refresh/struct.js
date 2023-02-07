@@ -2631,7 +2631,12 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
           drawTextureCache(gl, list.splice(0), cx, cy, 0, 0);
         }
         lastPage = p;
-        list.push({ cache: __cache, opacity: __opacity, matrix: __matrixEvent });
+        if(wasmOp) {
+          list.push({ cache: __cache, opacity: wasmOp[i], vertex: wasmVt, index: i });
+        }
+        else {
+          list.push({ cache: __cache, opacity: __opacity, matrix: __matrixEvent });
+        }
       }
     }
     else {

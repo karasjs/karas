@@ -740,9 +740,8 @@ class Dom extends Xom {
   __layoutStyle() {
     super.__layoutStyle();
     this.flowChildren.forEach(child => {
-      if(!(child instanceof Text)) {
-        child.__layoutStyle();
-      }
+      // 文本不需要，但wasm情况要传入一些信息
+      child.__layoutStyle();
     });
   }
 

@@ -602,11 +602,18 @@
     _createClass(Node, [{
       key: "__structure",
       value: function __structure(lv, j) {
-        return this.__struct = {
+        this.__struct = {
           node: this,
           childIndex: j,
           lv: lv
         };
+        var wn = this.__wasmNode;
+
+        if (wn) {
+          wn.lv = lv;
+        }
+
+        return this.__struct;
       }
     }, {
       key: "__offsetX",
@@ -13135,6 +13142,15 @@
         return o;
       }
     }, {
+      key: "__layoutStyle",
+      value: function __layoutStyle() {
+        var wn = this.__wasmNode;
+
+        if (wn) {
+          wn.set_txt(this.__x1, this.__y1, this.__width, this.__height);
+        }
+      }
+    }, {
       key: "content",
       get: function get() {
         return this.__content;
@@ -16081,6 +16097,18 @@
         wasm.node_set_style(this.ptr, x, y, offset_width, offset_height, cs0, cs1, cs2, cs3, cs4, cs5, cs6, cs7, cs8, cs9, cs10, cs11, cs12, cs13, cs14, cs15, cs16, cs17, cu0, cu1, cu2, cu16, cu17);
       }
       /**
+       * @param {number} x
+       * @param {number} y
+       * @param {number} offset_width
+       * @param {number} offset_height
+       */
+
+    }, {
+      key: "set_txt",
+      value: function set_txt(x, y, offset_width, offset_height) {
+        wasm.node_set_txt(this.ptr, x, y, offset_width, offset_height);
+      }
+      /**
        * @param {number} xa
        * @param {number} ya
        * @param {number} xb
@@ -16191,6 +16219,26 @@
       value: function on_frame(diff) {
         var ret = wasm.node_on_frame(this.ptr, diff);
         return ret >>> 0;
+      }
+      /**
+       * @param {Animation} ani
+       */
+
+    }, {
+      key: "cal_trans",
+      value: function cal_trans(ani) {
+        _assertClass(ani, Animation$1);
+
+        wasm.node_cal_trans(this.ptr, ani.ptr);
+      }
+      /**
+       * @param {number} rl
+       */
+
+    }, {
+      key: "cal_matrix",
+      value: function cal_matrix(rl) {
+        wasm.node_cal_matrix(this.ptr, rl);
       }
     }], [{
       key: "__wrap",
@@ -20508,15 +20556,8 @@
           res.hasMask = this.__hasMask;
         }
 
-        var wn = this.__wasmNode;
-
-        if (wn) {
-          wn.lv = lv;
-        }
-
         return res;
-      } // __modifyStruct() {}
-      // 设置margin/padding的实际值，layout时执行，inline的垂直方向仍然计算值，但在布局时被忽略
+      } // 设置margin/padding的实际值，layout时执行，inline的垂直方向仍然计算值，但在布局时被忽略
 
     }, {
       key: "__mp",
@@ -27414,9 +27455,8 @@
         _get(_getPrototypeOf(Dom.prototype), "__layoutStyle", this).call(this);
 
         this.flowChildren.forEach(function (child) {
-          if (!(child instanceof Text)) {
-            child.__layoutStyle();
-          }
+          // 文本不需要，但wasm情况要传入一些信息
+          child.__layoutStyle();
         });
       }
     }, {
@@ -39304,11 +39344,21 @@
           }
 
           lastPage = p;
-          list.push({
-            cache: _cache5,
-            opacity: __opacity,
-            matrix: __matrixEvent
-          });
+
+          if (wasmOp) {
+            list.push({
+              cache: _cache5,
+              opacity: wasmOp[_i10],
+              vertex: wasmVt,
+              index: _i10
+            });
+          } else {
+            list.push({
+              cache: _cache5,
+              opacity: __opacity,
+              matrix: __matrixEvent
+            });
+          }
         }
       } else {
         var _computedStyle5 = _node12.__computedStyle; // none跳过这棵子树，判断下最后一个节点的离屏应用即可

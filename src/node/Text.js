@@ -872,6 +872,13 @@ class Text extends Node {
     return o;
   }
 
+  __layoutStyle() {
+    let wn = this.__wasmNode;
+    if(wn) {
+      wn.set_txt(this.__x1, this.__y1, this.__width, this.__height);
+    }
+  }
+
   get content() {
     return this.__content;
   }

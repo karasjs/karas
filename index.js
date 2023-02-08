@@ -36435,6 +36435,12 @@
 
     if (!bboxTotal) {
       return;
+    }
+
+    var wn = node.__wasmNode;
+
+    if (wn) {
+      wn.set_bbox(bboxTotal[0], bboxTotal[1], bboxTotal[2], bboxTotal[3]);
     } // img节点特殊对待，如果只包含图片内容本身，多个相同引用可复用图片
 
 
@@ -37183,6 +37189,12 @@
       }
 
       return;
+    }
+
+    var wn = node.__wasmNode;
+
+    if (wn) {
+      wn.set_bbox(bboxTotal[0], bboxTotal[1], bboxTotal[2], bboxTotal[3]);
     }
 
     __cacheTotal.__available = true;

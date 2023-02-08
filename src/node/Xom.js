@@ -14,7 +14,6 @@ import util from '../util/util';
 import inject from '../util/inject';
 import painter from '../util/painter';
 import Animation from '../animate/Animation';
-import frame from '../animate/frame';
 import mx from '../math/matrix';
 import geom from '../math/geom';
 import mode from '../refresh/mode';
@@ -24,6 +23,7 @@ import font from '../style/font';
 import bs from '../style/bs';
 import mbm from '../style/mbm';
 import reset from '../style/reset';
+import wasm from '../wasm';
 
 const { svgPolygon } = painter;
 const { CANVAS, SVG, WEBGL } = mode;
@@ -3285,21 +3285,27 @@ class Xom extends Node {
   }
 
   get opacity() {
+    let wn = this.__wasmNode;
+    if(wn) {
+      return wn.get_op();
+    }
     return this.__opacity;
   }
 
   get matrix() {
+    let wn = this.__wasmNode;
+    if(wn) {
+      return new Float64Array(wasm.wasm.memory.buffer, wn.m_ptr(), 16);
+    }
     return this.__matrix;
   }
 
   get matrixEvent() {
-    let __domParent = this.__domParent, matrix = this.__matrix;
-    while(__domParent) {
-      matrix = mx.multiply(__domParent.__perspectiveMatrix, matrix);
-      matrix = mx.multiply(__domParent.__matrix, matrix);
-      __domParent = __domParent.__domParent;
+    let wn = this.__wasmNode;
+    if(wn) {
+      return new Float64Array(wasm.wasm.memory.buffer, wn.me_ptr(), 16);
     }
-    return matrix;
+    return this.__matrixEvent;
   }
 
   get perspectiveMatrix() {

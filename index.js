@@ -23904,11 +23904,19 @@
     }, {
       key: "opacity",
       get: function get() {
+        var wn = this.__wasmNode;
+
+        if (wn) {
+          return wn.get_op();
+        }
+
         return this.__opacity;
       }
     }, {
       key: "matrix",
       get: function get() {
+        this.__wasmNode;
+
         return this.__matrix;
       }
     }, {

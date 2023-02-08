@@ -7,8 +7,6 @@ const CANVAS = {};
 const SUPPORT_OFFSCREEN_CANVAS = typeof OffscreenCanvas === 'function' && OffscreenCanvas.prototype.getContext;
 
 function offscreenCanvas(key, width, height, message) {
-  width = Math.ceil(width);
-  height = Math.ceil(height);
   let o;
   if(!key) {
     o = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');

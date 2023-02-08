@@ -2020,8 +2020,6 @@
   var SUPPORT_OFFSCREEN_CANVAS = typeof OffscreenCanvas === 'function' && OffscreenCanvas.prototype.getContext;
 
   function offscreenCanvas(key, width, height, message) {
-    width = Math.ceil(width);
-    height = Math.ceil(height);
     var o;
 
     if (!key) {
@@ -30791,9 +30789,9 @@
     }], [{
       key: "getInstance",
       value: function getInstance(renderMode, ctx, rootId, bbox, x1, y1, cacheKlass, pageKlass, excludePage) {
-        var w = bbox[2] - bbox[0];
-        var h = bbox[3] - bbox[1];
-        var n = Math.max(Math.ceil(w), Math.ceil(h));
+        var w = Math.ceil(bbox[2] - bbox[0]);
+        var h = Math.ceil(bbox[3] - bbox[1]);
+        var n = Math.max(w, h);
 
         if (n <= 0) {
           return;
@@ -36201,9 +36199,9 @@
     }], [{
       key: "getInstance",
       value: function getInstance(renderMode, ctx, rootId, bbox, loadImg, x1, y1) {
-        var w = bbox[2] - bbox[0];
-        var h = bbox[3] - bbox[1];
-        var n = Math.max(Math.ceil(w), Math.ceil(h));
+        var w = Math.ceil(bbox[2] - bbox[0]);
+        var h = Math.ceil(bbox[3] - bbox[1]);
+        var n = Math.max(w, h);
 
         if (n <= 0) {
           return;

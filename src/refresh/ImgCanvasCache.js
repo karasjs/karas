@@ -94,9 +94,9 @@ class ImgCanvasCache extends CanvasCache {
   get size() {}
 
   static getInstance(renderMode, ctx, rootId, bbox, loadImg, x1, y1) {
-    let w = bbox[2] - bbox[0];
-    let h = bbox[3] - bbox[1];
-    let n = Math.max(Math.ceil(w), Math.ceil(h));
+    let w = Math.ceil(bbox[2] - bbox[0]);
+    let h = Math.ceil(bbox[3] - bbox[1]);
+    let n = Math.max(w, h);
     if(n <= 0) {
       return;
     }

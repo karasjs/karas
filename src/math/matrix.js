@@ -271,6 +271,42 @@ function calPoint(point, m) {
   return point;
 }
 
+function calPointWasm(point, m, i) {
+  if(m && !isE(m)) {
+    let { x, y, z, w } = point;
+    z = z || 0;
+    if(w === undefined || w === null) {
+      w = 1;
+    }
+    let a1 = m[i], b1 = m[i + 1], c1 = m[i + 2], d1 = m[i + 3];
+    let a2 = m[i + 4], b2 = m[i + 5], c2 = m[i + 6], d2 = m[i + 7];
+    let a3 = m[i + 8], b3 = m[i + 9], c3 = m[i + 10], d3 = m[i + 11];
+    let a4 = m[i + 12], b4 = m[i + 13], c4 = m[i + 14], d4 = m[i + 15];
+    let o = {
+      x: ((a1 === 1) ? x : (x * a1)) + (a2 ? (y * a2) : 0) + ((w === 1) ? a4 : a4 * w),
+      y: ((b1 === 1) ? x : (x * b1)) + (b2 ? (y * b2) : 0) + ((w === 1) ? b4 : b4 * w),
+      z: 0,
+      w,
+    };
+    if(d1 || d2 || d3) {
+      o.w = x * d1 + y * d2 + z * d3 + d4 * w;
+    }
+    else if(d4 !== 1) {
+      o.w *= d4;
+    }
+    if(z) {
+      o.x += z * a3;
+      o.y += z * b3;
+      o.z = x * c1 + y * c2 + c4 + z * c3;
+    }
+    else if(c1 || c2 || c4) {
+      o.z = x * c1 + y * c2 + c4;
+    }
+    return o;
+  }
+  return point;
+}
+
 /**
  * 初等行变换求3*3特定css的matrix方阵，一维6长度
  * https://blog.csdn.net/iloveas2014/article/details/82930946
@@ -442,6 +478,32 @@ function calRectPoint(xa, ya, xb, yb, matrix) {
   return { x1, y1, z1, w1, x2, y2, z2, w2, x3, y3, z3, w3, x4, y4, z4, w4 };
 }
 
+function calRectPointWasm(xa, ya, xb, yb, matrix, index) {
+  let i = index * 16;
+  let { x: x1, y: y1, z: z1, w: w1 } = calPointWasm({ x: xa, y: ya, z: 0, w: 1 }, matrix, i);
+  let { x: x3, y: y3, z: z3, w: w3 } = calPointWasm({ x: xb, y: yb, z: 0, w: 1 }, matrix, i);
+  let x2, y2, z2, w2, x4, y4, z4, w4;
+  // 无旋转的时候可以少算2个点
+  if(w1 === 1 && w3 === 1
+    && (!matrix || !matrix.length
+      || !matrix[i + 1] && !matrix[i + 2] && !matrix[i + 4] && !matrix[i + 6] && !matrix[i + 7] && !matrix[i + 8])) {
+    x2 = x3;
+    y2 = y1;
+    z2 = z3;
+    x4 = x1;
+    y4 = y3;
+    z2 = z4 = z1;
+    w2 = w4 = 1;
+  }
+  else {
+    let t = calPointWasm({ x: xb, y: ya, z: 0, w: 1 }, matrix, i);
+    x2 = t.x; y2 = t.y; z2 = t.z; w2 = t.w;
+    t = calPointWasm({ x: xa, y: yb, z: 0, w: 1 }, matrix, i);
+    x4 = t.x; y4 = t.y; z4 = t.z; w4 = t.w;
+  }
+  return { x1, y1, z1, w1, x2, y2, z2, w2, x3, y3, z3, w3, x4, y4, z4, w4 };
+}
+
 function assignMatrix(t, v) {
   if(t && v) {
     t[0] = v[0];
@@ -484,6 +546,7 @@ export default {
   multiplyPerspective,
   calPoint,
   calRectPoint,
+  calRectPointWasm,
   point2d,
   inverse,
   isE,

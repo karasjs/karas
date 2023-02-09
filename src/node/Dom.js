@@ -3226,10 +3226,10 @@ class Dom extends Xom {
       return;
     }
     // __cacheTotal可提前判断是否在bbox范围内，svg没有bbox防止进入判断
-    if(__cacheTotal && __cacheTotal.available && __cacheTotal.bbox) {
+    if(__cacheTotal && __cacheTotal.__available && __cacheTotal.bbox) {
       // 不是E的话，因为缓存缘故影响cache的子元素，先左乘可能的父matrix（嵌套cache），再赋值给pm递归传下去
-      if(!isE(this.__matrix)) {
-        pm = multiply(pm, this.__matrix);
+      if(!isE(this.matrix)) {
+        pm = multiply(pm, this.matrix);
         assignMatrix(this.__matrixEvent, pm);
       }
       else if(this.__perspectiveMatrix) {
@@ -3247,7 +3247,7 @@ class Dom extends Xom {
     }
     // 递归传下来的pm如果有说明是cache的子元素且需要重新计算matrix
     else if(!isE(pm)) {
-      assignMatrix(this.__matrixEvent, mx.multiply(pm, this.__matrix));
+      assignMatrix(this.__matrixEvent, mx.multiply(pm, this.matrix));
     }
     // 找到对应的callback
     let { event: { type } } = e;

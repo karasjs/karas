@@ -1376,7 +1376,8 @@ class Xom extends Node {
             }
           }
         }
-        __computedStyle[TRANSFORM] = matrix || mx.identity();
+        __computedStyle[TRANSFORM] = __computedStyle[TRANSFORM] || mx.identity();
+        assignMatrix(__computedStyle[TRANSFORM], matrix);
       }
       let m = __computedStyle[TRANSFORM];
       let tfo = __computedStyle[TRANSFORM_ORIGIN];

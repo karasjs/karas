@@ -1171,6 +1171,61 @@
 
     return point;
   }
+
+  function calPointWasm(point, m, i) {
+    if (m && !isE$5(m)) {
+      var x = point.x,
+          y = point.y,
+          z = point.z,
+          w = point.w;
+      z = z || 0;
+
+      if (w === undefined || w === null) {
+        w = 1;
+      }
+
+      var a1 = m[i],
+          b1 = m[i + 1],
+          c1 = m[i + 2],
+          d1 = m[i + 3];
+      var a2 = m[i + 4],
+          b2 = m[i + 5],
+          c2 = m[i + 6],
+          d2 = m[i + 7];
+      var a3 = m[i + 8],
+          b3 = m[i + 9],
+          c3 = m[i + 10],
+          d3 = m[i + 11];
+      var a4 = m[i + 12],
+          b4 = m[i + 13],
+          c4 = m[i + 14],
+          d4 = m[i + 15];
+      var o = {
+        x: (a1 === 1 ? x : x * a1) + (a2 ? y * a2 : 0) + (w === 1 ? a4 : a4 * w),
+        y: (b1 === 1 ? x : x * b1) + (b2 ? y * b2 : 0) + (w === 1 ? b4 : b4 * w),
+        z: 0,
+        w: w
+      };
+
+      if (d1 || d2 || d3) {
+        o.w = x * d1 + y * d2 + z * d3 + d4 * w;
+      } else if (d4 !== 1) {
+        o.w *= d4;
+      }
+
+      if (z) {
+        o.x += z * a3;
+        o.y += z * b3;
+        o.z = x * c1 + y * c2 + c4 + z * c3;
+      } else if (c1 || c2 || c4) {
+        o.z = x * c1 + y * c2 + c4;
+      }
+
+      return o;
+    }
+
+    return point;
+  }
   /**
    * 初等行变换求3*3特定css的matrix方阵，一维6长度
    * https://blog.csdn.net/iloveas2014/article/details/82930946
@@ -1380,6 +1435,84 @@
     };
   }
 
+  function calRectPointWasm$1(xa, ya, xb, yb, matrix, index) {
+    var i = index * 16;
+
+    var _calPointWasm = calPointWasm({
+      x: xa,
+      y: ya,
+      z: 0,
+      w: 1
+    }, matrix, i),
+        x1 = _calPointWasm.x,
+        y1 = _calPointWasm.y,
+        z1 = _calPointWasm.z,
+        w1 = _calPointWasm.w;
+
+    var _calPointWasm2 = calPointWasm({
+      x: xb,
+      y: yb,
+      z: 0,
+      w: 1
+    }, matrix, i),
+        x3 = _calPointWasm2.x,
+        y3 = _calPointWasm2.y,
+        z3 = _calPointWasm2.z,
+        w3 = _calPointWasm2.w;
+
+    var x2, y2, z2, w2, x4, y4, z4, w4; // 无旋转的时候可以少算2个点
+
+    if (w1 === 1 && w3 === 1 && (!matrix || !matrix.length || !matrix[i + 1] && !matrix[i + 2] && !matrix[i + 4] && !matrix[i + 6] && !matrix[i + 7] && !matrix[i + 8])) {
+      x2 = x3;
+      y2 = y1;
+      z2 = z3;
+      x4 = x1;
+      y4 = y3;
+      z2 = z4 = z1;
+      w2 = w4 = 1;
+    } else {
+      var t = calPointWasm({
+        x: xb,
+        y: ya,
+        z: 0,
+        w: 1
+      }, matrix, i);
+      x2 = t.x;
+      y2 = t.y;
+      z2 = t.z;
+      w2 = t.w;
+      t = calPointWasm({
+        x: xa,
+        y: yb,
+        z: 0,
+        w: 1
+      }, matrix, i);
+      x4 = t.x;
+      y4 = t.y;
+      z4 = t.z;
+      w4 = t.w;
+    }
+
+    return {
+      x1: x1,
+      y1: y1,
+      z1: z1,
+      w1: w1,
+      x2: x2,
+      y2: y2,
+      z2: z2,
+      w2: w2,
+      x3: x3,
+      y3: y3,
+      z3: z3,
+      w3: w3,
+      x4: x4,
+      y4: y4,
+      z4: z4,
+      w4: w4
+    };
+  }
+
   function assignMatrix$3(t, v) {
     if (t && v) {
       t[0] = v[0];
@@ -1423,6 +1556,7 @@
     multiplyPerspective: multiplyPerspective$1,
     calPoint: calPoint$2,
     calRectPoint: calRectPoint$2,
+    calRectPointWasm: calRectPointWasm$1,
     point2d: point2d$1,
     inverse: inverse$1,
     isE: isE$5,
@@ -15990,24 +16124,6 @@
        */
 
     }, {
-      key: "total",
-      get: function get() {
-        var ret = wasm.__wbg_get_node_total(this.ptr);
-
-        return ret >>> 0;
-      }
-      /**
-       * @param {number} arg0
-       */
-      ,
-      set: function set(arg0) {
-        wasm.__wbg_set_node_total(this.ptr, arg0);
-      }
-      /**
-       * @returns {number}
-       */
-
-    }, {
       key: "opacity",
       get: function get() {
         var ret = wasm.__wbg_get_node_opacity(this.ptr);
@@ -16109,18 +16225,6 @@
         wasm.node_set_txt(this.ptr, x, y, offset_width, offset_height);
       }
       /**
-       * @param {number} xa
-       * @param {number} ya
-       * @param {number} xb
-       * @param {number} yb
-       */
-
-    }, {
-      key: "set_bbox",
-      value: function set_bbox(xa, ya, xb, yb) {
-        wasm.node_set_bbox(this.ptr, xa, ya, xb, yb);
-      }
-      /**
        * @param {number} a
        * @param {number} b
        * @param {number} c
@@ -16145,28 +16249,24 @@
         wasm.node_set_transform(this.ptr, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p);
       }
       /**
-       * @param {number} a
-       * @param {number} b
-       * @param {number} c
-       * @param {number} d
-       * @param {number} e
-       * @param {number} f
-       * @param {number} g
-       * @param {number} h
-       * @param {number} i
-       * @param {number} j
-       * @param {number} k
-       * @param {number} l
-       * @param {number} m
-       * @param {number} n
-       * @param {number} o
-       * @param {number} p
+       * @returns {number}
        */
 
     }, {
-      key: "set_matrix",
-      value: function set_matrix(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p) {
-        wasm.node_set_matrix(this.ptr, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p);
+      key: "computed_style",
+      value: function computed_style() {
+        var ret = wasm.node_computed_style(this.ptr);
+        return ret;
+      }
+      /**
+       * @returns {number}
+       */
+
+    }, {
+      key: "transform_ptr",
+      value: function transform_ptr() {
+        var ret = wasm.node_transform_ptr(this.ptr);
+        return ret;
       }
       /**
        * @returns {number}
@@ -16195,7 +16295,8 @@
     }, {
       key: "get_op",
       value: function get_op() {
-        var ret = wasm.node_get_op(this.ptr);
+        var ret = wasm.__wbg_get_node_opacity(this.ptr);
+
         return ret;
       }
       /**
@@ -21715,7 +21816,8 @@
               }
             }
 
-            __computedStyle[TRANSFORM$3] = matrix$1 || matrix.identity();
+            __computedStyle[TRANSFORM$3] = __computedStyle[TRANSFORM$3] || matrix.identity();
+            assignMatrix$2(__computedStyle[TRANSFORM$3], matrix$1);
           }
 
           var m = __computedStyle[TRANSFORM$3];
@@ -30222,10 +30324,10 @@
         } // __cacheTotal可提前判断是否在bbox范围内，svg没有bbox防止进入判断
 
 
-        if (__cacheTotal && __cacheTotal.available && __cacheTotal.bbox) {
+        if (__cacheTotal && __cacheTotal.__available && __cacheTotal.bbox) {
           // 不是E的话，因为缓存缘故影响cache的子元素，先左乘可能的父matrix（嵌套cache），再赋值给pm递归传下去
-          if (!isE$2(this.__matrix)) {
-            pm = multiply$1(pm, this.__matrix);
+          if (!isE$2(this.matrix)) {
+            pm = multiply$1(pm, this.matrix);
             assignMatrix$1(this.__matrixEvent, pm);
           } else if (this.__perspectiveMatrix) {
             pm = this.__perspectiveMatrix;
@@ -30238,7 +30340,7 @@
           }
         } // 递归传下来的pm如果有说明是cache的子元素且需要重新计算matrix
         else if (!isE$2(pm)) {
-          assignMatrix$1(this.__matrixEvent, matrix.multiply(pm, this.__matrix));
+          assignMatrix$1(this.__matrixEvent, matrix.multiply(pm, this.matrix));
         } // 找到对应的callback
 
 
@@ -31120,6 +31222,7 @@
   }();
 
   var calRectPoint$1 = matrix.calRectPoint,
+      calRectPointWasm = matrix.calRectPointWasm,
       calPoint = matrix.calPoint;
   /**
    * 初始化 shader
@@ -31325,8 +31428,8 @@
           cache = _list$i.cache,
           opacity = _list$i.opacity,
           matrix = _list$i.matrix,
-          vertex = _list$i.vertex,
-          index = _list$i.index;
+          index = _list$i.index,
+          wasm = _list$i.wasm;
       var width = cache.__tw,
           height = cache.__th,
           tx1 = cache.__tx1,
@@ -31361,79 +31464,57 @@
           x4 = void 0,
           y4 = void 0,
           z4 = void 0,
-          w4 = void 0; // wasm中计算好的顶点
+          w4 = void 0; // wasm中的matrix和普通js取的方式不一样
 
-      if (vertex) {
-        var _j = index * 16;
+      var bx = bbox[0],
+          by = bbox[1];
+      var xa = bx + dx,
+          ya = by + height + dy;
+      var xb = bx + width + dx,
+          yb = by + dy;
+      var t = wasm ? calRectPointWasm(xa, ya, xb, yb, matrix, index) : calRectPoint$1(xa, ya, xb, yb, matrix);
+      x1 = t.x1;
+      y1 = t.y1;
+      z1 = t.z1;
+      w1 = t.w1;
+      x2 = t.x2;
+      y2 = t.y2;
+      z2 = t.z2;
+      w2 = t.w2;
+      x3 = t.x3;
+      y3 = t.y3;
+      z3 = t.z3;
+      w3 = t.w3;
+      x4 = t.x4;
+      y4 = t.y4;
+      z4 = t.z4;
+      w4 = t.w4; // console.warn(x1,y1,z1,w1,',',x2,y2,z2,w2,',',x3,y3,z3,w3,',',x4,y4,z4,w4);
+      // z范围取所有、对角线最大值，只有当非0有值时才求
 
-        x1 = vertex[_j];
-        y1 = vertex[_j + 1];
-        z1 = vertex[_j + 2];
-        w1 = vertex[_j + 3];
-        x2 = vertex[_j + 4];
-        y2 = vertex[_j + 5];
-        z2 = vertex[_j + 6];
-        w2 = vertex[_j + 7];
-        x3 = vertex[_j + 8];
-        y3 = vertex[_j + 9];
-        z3 = vertex[_j + 10];
-        w3 = vertex[_j + 11];
-        x4 = vertex[_j + 12];
-        y4 = vertex[_j + 13];
-        z4 = vertex[_j + 14];
-        w4 = vertex[_j + 15];
-      } else {
-        var bx = bbox[0],
-            by = bbox[1];
-        var xa = bx + dx,
-            ya = by + height + dy;
-        var xb = bx + width + dx,
-            yb = by + dy;
-        var t = calRectPoint$1(xa, ya, xb, yb, matrix);
-        x1 = t.x1;
-        y1 = t.y1;
-        z1 = t.z1;
-        w1 = t.w1;
-        x2 = t.x2;
-        y2 = t.y2;
-        z2 = t.z2;
-        w2 = t.w2;
-        x3 = t.x3;
-        y3 = t.y3;
-        z3 = t.z3;
-        w3 = t.w3;
-        x4 = t.x4;
-        y4 = t.y4;
-        z4 = t.z4;
-        w4 = t.w4; // console.warn(x1,y1,z1,w1,',',x2,y2,z2,w2,',',x3,y3,z3,w3,',',x4,y4,z4,w4);
-        // z范围取所有、对角线最大值，只有当非0有值时才求
+      var z = Math.max(Math.abs(z1), Math.abs(z2));
+      z = Math.max(z, Math.abs(z3));
+      z = Math.max(z, Math.abs(z4));
 
-        var z = Math.max(Math.abs(z1), Math.abs(z2));
-        z = Math.max(z, Math.abs(z3));
-        z = Math.max(z, Math.abs(z4));
+      if (z) {
+        z = Math.max(z, Math.sqrt(cx * cx + cy * cy));
+      }
 
-        if (z) {
-          z = Math.max(z, Math.sqrt(cx * cx + cy * cy));
-        }
-
-        t = convertCoords2Gl(x1, y1, z1, w1, cx, cy, z);
-        x1 = t.x;
-        y1 = t.y;
-        z1 = t.z;
-        t = convertCoords2Gl(x2, y2, z2, w2, cx, cy, z);
-        x2 = t.x;
-        y2 = t.y;
-        z2 = t.z;
-        t = convertCoords2Gl(x3, y3, z3, w3, cx, cy, z);
-        x3 = t.x;
-        y3 = t.y;
-        z3 = t.z;
-        t = convertCoords2Gl(x4, y4, z4, w4, cx, cy, z);
-        x4 = t.x;
-        y4 = t.y;
-        z4 = t.z;
-      } // console.log(x1,y1,z1,w1,',',x2,y2,z2,w2,',',x3,y3,z3,w3,',',x4,y4,z4,w4);
-
+      t = convertCoords2Gl(x1, y1, z1, w1, cx, cy, z);
+      x1 = t.x;
+      y1 = t.y;
+      z1 = t.z;
+      t = convertCoords2Gl(x2, y2, z2, w2, cx, cy, z);
+      x2 = t.x;
+      y2 = t.y;
+      z2 = t.z;
+      t = convertCoords2Gl(x3, y3, z3, w3, cx, cy, z);
+      x3 = t.x;
+      y3 = t.y;
+      z3 = t.z;
+      t = convertCoords2Gl(x4, y4, z4, w4, cx, cy, z);
+      x4 = t.x;
+      y4 = t.y;
+      z4 = t.z; // console.log(x1,y1,z1,w1,',',x2,y2,z2,w2,',',x3,y3,z3,w3,',',x4,y4,z4,w4);
 
       var j = i * 24;
       vtPoint[j] = x1;
@@ -36298,7 +36379,7 @@
     }
 
     if (node.__selfPerspective) {
-      var bbox = transformBbox(bboxTotal, multiply(pm, node.__matrix), 0, 0);
+      var bbox = transformBbox(bboxTotal, multiply(pm, node.matrix), 0, 0);
       mergeBbox(bboxTotal, bbox);
     }
 
@@ -36352,8 +36433,9 @@
 
       var __cache2 = _node.__cache;
       var p = _node.__domParent;
-      _node.__opacity = __computedStyle2[OPACITY$1] * p.__opacity;
-      var m = _node.__matrix;
+      _node.__opacity = __computedStyle2[OPACITY$1] * p.__opacity; // 由于wasm的存在，使用getter取，没有wasm时不影响，有时获取到wasm计算的节点结果，因为私有__matrix为空
+
+      var m = _node.matrix;
 
       if (p !== top) {
         m = multiply(p.__matrixEvent, m);
@@ -36445,12 +36527,6 @@
 
     if (!bboxTotal) {
       return;
-    }
-
-    var wn = node.__wasmNode;
-
-    if (wn) {
-      wn.set_bbox(bboxTotal[0], bboxTotal[1], bboxTotal[2], bboxTotal[3]);
     } // img节点特殊对待，如果只包含图片内容本身，多个相同引用可复用图片
 
 
@@ -36541,9 +36617,9 @@
           ctxTotal = applyOffscreen(ctxTotal, oh, width, height, false);
         }
       } else {
-        var __computedStyle2 = _node2.__computedStyle; // none跳过这棵子树，判断下最后一个节点的离屏应用即可
+        var __computedStyle = _node2.__computedStyle; // none跳过这棵子树，判断下最后一个节点的离屏应用即可
 
-        if (__computedStyle2[DISPLAY$1] === 'none') {
+        if (__computedStyle[DISPLAY$1] === 'none') {
           i += _total2 || 0;
 
           if (hasMask) {
@@ -36559,9 +36635,7 @@
           continue;
         }
 
-        var transform = __computedStyle2[TRANSFORM$1],
-            tfo = __computedStyle2[TRANSFORM_ORIGIN],
-            visibility = __computedStyle2[VISIBILITY$1];
+        var visibility = __computedStyle[VISIBILITY$1];
         var mh = maskStartHash[i];
 
         if (mh) {
@@ -36620,7 +36694,21 @@
         } // 不变是同级兄弟，无需特殊处理 else {}
 
 
-        lastLv = _lv; // 特殊渲染的matrix，局部根节点为原点考虑，当需要计算时（不为E）再计算
+        lastLv = _lv; // wasm取transform不同的方式
+
+        var transform = void 0,
+            tfo = void 0,
+            wn = _node2.__wasmNode;
+
+        if (wn) {
+          transform = new Float64Array(wasm$1.wasm.memory.buffer, wn.transform_ptr(), 16);
+          var cs = new Float64Array(wasm$1.wasm.memory.buffer, wn.transform_ptr(), 18);
+          tfo = [cs[16], cs[17]];
+        } else {
+          transform = __computedStyle[TRANSFORM$1];
+          tfo = __computedStyle[TRANSFORM_ORIGIN];
+        } // 特殊渲染的matrix，局部根节点为原点考虑，当需要计算时（不为E）再计算
+
 
         var m = void 0;
 
@@ -36656,7 +36744,7 @@
               ctxTotal.setTransform(1, 0, 0, 1, 0, 0);
             }
 
-            var mixBlendMode = __computedStyle2[MIX_BLEND_MODE$1];
+            var mixBlendMode = __computedStyle[MIX_BLEND_MODE$1];
 
             if (mixBlendMode !== 'normal') {
               ctxTotal.globalCompositeOperation = mbmName(mixBlendMode);
@@ -36677,7 +36765,7 @@
               offscreenFilter = void 0,
               offscreenOverflow = void 0;
 
-          var _offscreen = i > index && _node2.__calOffscreen(ctxTotal, __computedStyle2);
+          var _offscreen = i > index && _node2.__calOffscreen(ctxTotal, __computedStyle);
 
           if (_offscreen) {
             ctxTotal = _offscreen.ctx;
@@ -37201,12 +37289,6 @@
       return;
     }
 
-    var wn = node.__wasmNode;
-
-    if (wn) {
-      wn.set_bbox(bboxTotal[0], bboxTotal[1], bboxTotal[2], bboxTotal[3]);
-    }
-
     __cacheTotal.__available = true;
     node.__cacheTotal = __cacheTotal;
     cx = w * 0.5;
@@ -37299,10 +37381,10 @@
           }
         }
 
-        var visibility = __computedStyle[VISIBILITY$1],
-            transform = __computedStyle[TRANSFORM$1],
-            tfo = __computedStyle[TRANSFORM_ORIGIN],
-            mixBlendMode = __computedStyle[MIX_BLEND_MODE$1],
+        var visibility = __computedStyle[VISIBILITY$1];
+            __computedStyle[TRANSFORM$1];
+            __computedStyle[TRANSFORM_ORIGIN];
+            var mixBlendMode = __computedStyle[MIX_BLEND_MODE$1],
             backfaceVisibility = __computedStyle[BACKFACE_VISIBILITY];
 
         if (visibility === 'hidden' && !_total6) {
@@ -37320,12 +37402,26 @@
         var m = void 0;
 
         if (i > index) {
-          if (!isE(transform)) {
-            m = transform$1.calMatrixByOrigin(transform, tfo[0] + _node4.__x1 + dx, tfo[1] + _node4.__y1 + dy);
+          // wasm取transform不同的方式
+          var _transform = void 0,
+              _tfo = void 0,
+              wn = _node4.__wasmNode;
+
+          if (wn) {
+            _transform = new Float64Array(wasm$1.wasm.memory.buffer, wn.transform_ptr(), 16);
+            var cs = new Float64Array(wasm$1.wasm.memory.buffer, wn.transform_ptr(), 18);
+            _tfo = [cs[16], cs[17]];
+          } else {
+            _transform = __computedStyle[TRANSFORM$1];
+            _tfo = __computedStyle[TRANSFORM_ORIGIN];
+          }
+
+          if (!isE(_transform)) {
+            m = transform$1.calMatrixByOrigin(_transform, _tfo[0] + _node4.__x1 + dx, _tfo[1] + _node4.__y1 + dy);
           }
 
           if (ppt2) {
-            var t = transform$1.calPerspectiveMatrix(ppt2, tfo[0] + _node4.__x1 + dx, tfo[1] + _node4.__y1 + dy);
+            var t = transform$1.calPerspectiveMatrix(ppt2, _tfo[0] + _node4.__x1 + dx, _tfo[1] + _node4.__y1 + dy);
             m = multiply(t, m);
           }
 
@@ -37339,7 +37435,7 @@
           assignMatrix(_node4.__matrixEvent, m); // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
 
           if (backfaceVisibility === 'hidden') {
-            var _m = _node4.__matrix,
+            var _m = _node4.matrix,
                 x = _m[5] < 0 && _m[10] < 0,
                 y = _m[0] < 0 && _m[10] < 0;
 
@@ -37383,8 +37479,8 @@
               }
 
               var _visibility = _computedStyle2[VISIBILITY$1],
-                  _transform = _computedStyle2[TRANSFORM$1],
-                  _tfo = _computedStyle2[TRANSFORM_ORIGIN],
+                  _transform2 = _computedStyle2[TRANSFORM$1],
+                  _tfo2 = _computedStyle2[TRANSFORM_ORIGIN],
                   _backfaceVisibility = _computedStyle2[BACKFACE_VISIBILITY];
 
               if (_visibility === 'hidden' && !_total7) {
@@ -37399,8 +37495,8 @@
 
               var _m2 = void 0;
 
-              if (!isE(_transform)) {
-                _m2 = transform$1.calMatrixByOrigin(_transform, _tfo[0] + _node5.__x1 + dx, _tfo[1] + _node5.__y1 + dy);
+              if (!isE(_transform2)) {
+                _m2 = transform$1.calMatrixByOrigin(_transform2, _tfo2[0] + _node5.__x1 + dx, _tfo2[1] + _node5.__y1 + dy);
               }
 
               if (_p3 !== top) {
@@ -37413,7 +37509,7 @@
               assignMatrix(_node5.__matrixEvent, _m2); // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
 
               if (_backfaceVisibility === 'hidden') {
-                var _m3 = _node5.__matrix,
+                var _m3 = _node5.matrix,
                     _x = _m3[5] < 0 && _m3[10] < 0,
                     _y = _m3[0] < 0 && _m3[10] < 0;
 
@@ -37610,10 +37706,7 @@
           continue;
         }
 
-        _node6.__cacheTotal;
-            _node6.__cacheFilter;
-            _node6.__cacheMask;
-            var p = _node6.__domParent;
+        var p = _node6.__domParent;
         var target = _node6.__cacheTarget;
 
         if (target === _node6.__cache) {
@@ -37832,7 +37925,7 @@
             assignMatrix(_node8.__matrixEvent, m); // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
 
             if (backfaceVisibility === 'hidden') {
-              var _m4 = _node8.__matrix,
+              var _m4 = _node8.matrix,
                   _x2 = _m4[5] < 0 && _m4[10] < 0,
                   _y2 = _m4[0] < 0 && _m4[10] < 0;
 
@@ -38297,8 +38390,8 @@
 
           var opacity = computedStyle[OPACITY$1],
               visibility = computedStyle[VISIBILITY$1],
-              _transform2 = computedStyle[TRANSFORM$1],
-              _tfo2 = computedStyle[TRANSFORM_ORIGIN],
+              _transform3 = computedStyle[TRANSFORM$1],
+              _tfo3 = computedStyle[TRANSFORM_ORIGIN],
               backfaceVisibility = computedStyle[BACKFACE_VISIBILITY];
 
           if (visibility === 'hidden' && !_total11) {
@@ -38335,10 +38428,10 @@
 
           var m = void 0;
 
-          if (isE(_transform2)) {
+          if (isE(_transform3)) {
             m = matrix.identity();
           } else {
-            m = transform$1.calMatrixByOrigin(_transform2, _tfo2[0] + dbx + _node9.__x1 - x1, _tfo2[1] + dby + _node9.__y1 - y1);
+            m = transform$1.calMatrixByOrigin(_transform3, _tfo3[0] + dbx + _node9.__x1 - x1, _tfo3[1] + dby + _node9.__y1 - y1);
           }
 
           if (!isE(parentMatrix)) {
@@ -38353,7 +38446,7 @@
             m = matrix.multiply(inverse, m); // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
 
             if (backfaceVisibility === 'hidden') {
-              var _m5 = _node9.__matrix,
+              var _m5 = _node9.matrix,
                   x = _m5[5] < 0 && _m5[10] < 0,
                   y = _m5[0] < 0 && _m5[10] < 0;
 
@@ -38972,12 +39065,13 @@
         width = root.width,
         height = root.height,
         __wasmRoot = root.__wasmRoot;
-    var wasmOp, wasmVt;
+    var wasmOp, wasmMe;
 
     if (__wasmRoot) {
       var len = __structs.length;
       wasmOp = new Float64Array(wasm$1.wasm.memory.buffer, __wasmRoot.op_ptr(), len);
-      wasmVt = new Float64Array(wasm$1.wasm.memory.buffer, __wasmRoot.vt_ptr(), len * 16);
+      new Float64Array(wasm$1.wasm.memory.buffer, __wasmRoot.vt_ptr(), len * 16);
+      wasmMe = new Float64Array(wasm$1.wasm.memory.buffer, __wasmRoot.me_ptr(), len * 16);
     }
 
     var cx = width * 0.5,
@@ -39275,7 +39369,7 @@
         var _filter2 = _computedStyle4[FILTER]; // 有ppt的，向上查找所有父亲index记录，可能出现重复记得提前跳出
 
         var __limitCache = _node11.__limitCache,
-            _cacheTotal2 = _node11.__cacheTotal,
+            _cacheTotal = _node11.__cacheTotal,
             __cacheFilter = _node11.__cacheFilter,
             __cacheMask = _node11.__cacheMask;
 
@@ -39285,25 +39379,25 @@
 
         var needGen = void 0; // 可能没变化，比如被遮罩节点、filter变更等
 
-        if (!_cacheTotal2 || !_cacheTotal2.__available) {
+        if (!_cacheTotal || !_cacheTotal.__available) {
           var res = void 0;
 
           if (_isPpt2) {
-            res = genPptWebgl(renderMode, _cacheTotal2, gl, root, _node11, _i9, _lv6, _total12 || 0, __structs, width, height);
+            res = genPptWebgl(renderMode, _cacheTotal, gl, root, _node11, _i9, _lv6, _total12 || 0, __structs, width, height);
           } else {
-            res = genTotalWebgl(renderMode, _cacheTotal2, gl, root, _node11, _i9, _lv6, _total12 || 0, __structs, width, height, null, null, null);
+            res = genTotalWebgl(renderMode, _cacheTotal, gl, root, _node11, _i9, _lv6, _total12 || 0, __structs, width, height, null, null, null);
           }
 
           if (!res) {
             return;
           }
 
-          _cacheTotal2 = res;
+          _cacheTotal = res;
           needGen = true;
         } // 即使超限，也有total结果
 
 
-        var target = _cacheTotal2;
+        var target = _cacheTotal;
 
         if (_filter2.length) {
           if (!__cacheFilter || !__cacheFilter.__available || needGen) {
@@ -39371,8 +39465,9 @@
             list.push({
               cache: _cache5,
               opacity: wasmOp[_i10],
-              vertex: wasmVt,
-              index: _i10
+              matrix: wasmMe,
+              index: _i10,
+              wasm: true
             });
           } else {
             list.push({
@@ -39445,7 +39540,7 @@
 
 
         if (backfaceVisibility === 'hidden') {
-          var _m6 = _node12.__matrix,
+          var _m6 = _node12.matrix,
               _x8 = _m6[5] < 0 && _m6[10] < 0,
               _y8 = _m6[0] < 0 && _m6[10] < 0;
 
@@ -39496,8 +39591,9 @@
                 list.push({
                   cache: _target8,
                   opacity: wasmOp[_i10],
-                  vertex: wasmVt,
-                  index: _i10
+                  matrix: wasmMe,
+                  index: _i10,
+                  wasm: true
                 });
               } else {
                 list.push({
@@ -39819,12 +39915,6 @@
         }
 
         if (target) {
-          _i11 += _total14 || 0;
-
-          if (_hasMask8) {
-            _i11 += countMaskNum(__structs, _i11 + 1, _hasMask8);
-          }
-
           if (lastOpacity !== opacity) {
             ctx.globalAlpha = opacity;
             lastOpacity = opacity;
@@ -39858,6 +39948,12 @@
             ctx.drawImage(canvas, x, y, w, h, x1 - dbx, y1 - dby, w, h); // total应用后记得设置回来
 
             ctx.globalCompositeOperation = 'source-over';
+          }
+
+          _i11 += _total14 || 0;
+
+          if (_hasMask8) {
+            _i11 += countMaskNum(__structs, _i11 + 1, _hasMask8);
           } // 父超限但子有total的时候，i此时已经增加到了末尾，也需要检查
 
 

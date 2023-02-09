@@ -102,7 +102,7 @@ function genBboxTotal(node, __structs, index, total, lv, isPpt) {
     pm = node.__perspectiveMatrix || node.__selfPerspectiveMatrix;
   }
   if(node.__selfPerspective) {
-    let bbox = transformBbox(bboxTotal, multiply(pm, node.__matrix), 0, 0);
+    let bbox = transformBbox(bboxTotal, multiply(pm, node.matrix), 0, 0);
     mergeBbox(bboxTotal, bbox);
   }
   let top = node;
@@ -150,7 +150,8 @@ function genBboxTotal(node, __structs, index, total, lv, isPpt) {
     } = node;
     let p = node.__domParent;
     node.__opacity = __computedStyle2[OPACITY] * p.__opacity;
-    let m = node.__matrix;
+    // 由于wasm的存在，使用getter取，没有wasm时不影响，有时获取到wasm计算的节点结果，因为私有__matrix为空
+    let m = node.matrix;
     if(p !== top) {
       m = multiply(p.__matrixEvent, m);
     }
@@ -221,10 +222,6 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
   let bboxTotal = genBboxTotal(node, __structs, index, total, lv, false);
   if(!bboxTotal) {
     return;
-  }
-  let wn = node.__wasmNode;
-  if(wn) {
-    wn.set_bbox(bboxTotal[0], bboxTotal[1], bboxTotal[2], bboxTotal[3]);
   }
 
   // img节点特殊对待，如果只包含图片内容本身，多个相同引用可复用图片
@@ -314,9 +311,9 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
       }
     }
     else {
-      let __computedStyle2 = node.__computedStyle;
+      let __computedStyle = node.__computedStyle;
       // none跳过这棵子树，判断下最后一个节点的离屏应用即可
-      if(__computedStyle2[DISPLAY] === 'none') {
+      if(__computedStyle[DISPLAY] === 'none') {
         i += (total || 0);
         if(hasMask) {
           i += countMaskNum(__structs, i + 1, hasMask);
@@ -328,10 +325,10 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
         continue;
       }
       let {
-        [TRANSFORM]: transform,
-        [TRANSFORM_ORIGIN]: tfo,
+        // [TRANSFORM]: transform,
+        // [TRANSFORM_ORIGIN]: tfo,
         [VISIBILITY]: visibility,
-      } = __computedStyle2;
+      } = __computedStyle;
       let mh = maskStartHash[i];
       if(mh) {
         let { idx, hasMask, offscreenMask } = mh;
@@ -370,6 +367,17 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
       }
       // 不变是同级兄弟，无需特殊处理 else {}
       lastLv = lv;
+      // wasm取transform不同的方式
+      let transform, tfo, wn = node.__wasmNode;
+      if(wn) {
+        transform = new Float64Array(wasm.wasm.memory.buffer, wn.transform_ptr(), 16);
+        let cs = new Float64Array(wasm.wasm.memory.buffer, wn.transform_ptr(), 18);
+        tfo = [cs[16], cs[17]];
+      }
+      else {
+        transform = __computedStyle[TRANSFORM];
+        tfo = __computedStyle[TRANSFORM_ORIGIN];
+      }
       // 特殊渲染的matrix，局部根节点为原点考虑，当需要计算时（不为E）再计算
       let m;
       if(i !== index && (!isE(parentMatrix) || !isE(transform))) {
@@ -397,7 +405,7 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
           else {
             ctxTotal.setTransform(1, 0, 0, 1, 0, 0);
           }
-          let mixBlendMode = __computedStyle2[MIX_BLEND_MODE];
+          let mixBlendMode = __computedStyle[MIX_BLEND_MODE];
           if(mixBlendMode !== 'normal') {
             ctxTotal.globalCompositeOperation = mbmName(mixBlendMode);
           }
@@ -411,7 +419,7 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
       }
       else {
         let offscreenBlend, offscreenMask, offscreenFilter, offscreenOverflow;
-        let offscreen = i > index && node.__calOffscreen(ctxTotal, __computedStyle2);
+        let offscreen = i > index && node.__calOffscreen(ctxTotal, __computedStyle);
         if(offscreen) {
           ctxTotal = offscreen.ctx;
           offscreenBlend = offscreen.offscreenBlend;
@@ -806,10 +814,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
     }
     return;
   }
-  let wn = node.__wasmNode;
-  if(wn) {
-    wn.set_bbox(bboxTotal[0], bboxTotal[1], bboxTotal[2], bboxTotal[3]);
-  }
+
   __cacheTotal.__available = true;
   node.__cacheTotal = __cacheTotal;
   cx = w * 0.5;
@@ -920,6 +925,17 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
       // 特殊渲染的matrix，局部根节点为原点考虑，和bbox以节点自身主画布参考系不同
       let m;
       if(i > index) {
+        // wasm取transform不同的方式
+        let transform, tfo, wn = node.__wasmNode;
+        if(wn) {
+          transform = new Float64Array(wasm.wasm.memory.buffer, wn.transform_ptr(), 16);
+          let cs = new Float64Array(wasm.wasm.memory.buffer, wn.transform_ptr(), 18);
+          tfo = [cs[16], cs[17]];
+        }
+        else {
+          transform = __computedStyle[TRANSFORM];
+          tfo = __computedStyle[TRANSFORM_ORIGIN];
+        }
         if(!isE(transform)) {
           m = tf.calMatrixByOrigin(transform, tfo[0] + node.__x1 + dx, tfo[1] + node.__y1 + dy);
         }
@@ -937,7 +953,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
         assignMatrix(node.__matrixEvent, m);
         // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
         if(backfaceVisibility === 'hidden') {
-          let m = node.__matrix, x = m[5] < 0 && m[10] < 0, y = m[0] < 0 && m[10] < 0;
+          let m = node.matrix, x = m[5] < 0 && m[10] < 0, y = m[0] < 0 && m[10] < 0;
           if(x || y) {
             i += total || 0;
             if(hasMask) {
@@ -996,7 +1012,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
             assignMatrix(node.__matrixEvent, m);
             // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
             if(backfaceVisibility === 'hidden') {
-              let m = node.__matrix, x = m[5] < 0 && m[10] < 0, y = m[0] < 0 && m[10] < 0;
+              let m = node.matrix, x = m[5] < 0 && m[10] < 0, y = m[0] < 0 && m[10] < 0;
               if(x || y) {
                 i += total || 0;
                 if(hasMask) {
@@ -1156,9 +1172,6 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
         continue;
       }
       let {
-        __cacheTotal,
-        __cacheFilter,
-        __cacheMask,
         __domParent: p,
       } = node;
       let target = node.__cacheTarget;
@@ -1314,7 +1327,7 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
           assignMatrix(node.__matrixEvent, m);
           // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
           if(backfaceVisibility === 'hidden') {
-            let m = node.__matrix, x = m[5] < 0 && m[10] < 0, y = m[0] < 0 && m[10] < 0;
+            let m = node.matrix, x = m[5] < 0 && m[10] < 0, y = m[0] < 0 && m[10] < 0;
             if(x || y) {
               i += total || 0;
               if(hasMask) {
@@ -1753,7 +1766,7 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
           m = mx.multiply(inverse, m);
           // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
           if(backfaceVisibility === 'hidden') {
-            let m = node.__matrix, x = m[5] < 0 && m[10] < 0, y = m[0] < 0 && m[10] < 0;
+            let m = node.matrix, x = m[5] < 0 && m[10] < 0, y = m[0] < 0 && m[10] < 0;
             if(x || y) {
               i += total || 0;
               if(hasMask) {
@@ -2273,11 +2286,12 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
     Page.init(gl.getParameter(gl.MAX_TEXTURE_SIZE), true);
   }
   let { __structs, width, height, __wasmRoot } = root;
-  let wasmOp, wasmVt;
+  let wasmOp, wasmVt, wasmMe;
   if(__wasmRoot) {
     let len = __structs.length;
     wasmOp = new Float64Array(wasm.wasm.memory.buffer, __wasmRoot.op_ptr(), len);
     wasmVt = new Float64Array(wasm.wasm.memory.buffer, __wasmRoot.vt_ptr(), len * 16);
+    wasmMe = new Float64Array(wasm.wasm.memory.buffer, __wasmRoot.me_ptr(), len * 16);
   }
   let cx = width * 0.5, cy = height * 0.5;
   // 栈代替递归，存父节点的matrix/opacity，matrix为E时存null省略计算
@@ -2638,7 +2652,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         }
         lastPage = p;
         if(wasmOp) {
-          list.push({ cache: __cache, opacity: wasmOp[i], vertex: wasmVt, index: i });
+          list.push({ cache: __cache, opacity: wasmOp[i], matrix: wasmMe, index: i, wasm: true });
         }
         else {
           list.push({ cache: __cache, opacity: __opacity, matrix: __matrixEvent });
@@ -2696,7 +2710,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       }
       // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
       if(backfaceVisibility === 'hidden') {
-        let m = node.__matrix, x = m[5] < 0 && m[10] < 0, y = m[0] < 0 && m[10] < 0;
+        let m = node.matrix, x = m[5] < 0 && m[10] < 0, y = m[0] < 0 && m[10] < 0;
         if(x || y) {
           i += total || 0;
           if(hasMask) {
@@ -2732,7 +2746,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
             }
             lastPage = p;
             if(wasmOp) {
-              list.push({ cache: target, opacity: wasmOp[i], vertex: wasmVt, index: i });
+              list.push({ cache: target, opacity: wasmOp[i], matrix: wasmMe, index: i, wasm: true });
             }
             else {
               list.push({ cache: target, opacity, matrix: m });
@@ -2999,10 +3013,6 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
         target = null;
       }
       if(target) {
-        i += (total || 0);
-        if(hasMask) {
-          i += countMaskNum(__structs, i + 1, hasMask);
-        }
         if(lastOpacity !== opacity) {
           ctx.globalAlpha = opacity;
           lastOpacity = opacity;
@@ -3023,6 +3033,10 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
           ctx.drawImage(canvas, x, y, w, h, x1 - dbx, y1 - dby, w, h);
           // total应用后记得设置回来
           ctx.globalCompositeOperation = 'source-over';
+        }
+        i += (total || 0);
+        if(hasMask) {
+          i += countMaskNum(__structs, i + 1, hasMask);
         }
         // 父超限但子有total的时候，i此时已经增加到了末尾，也需要检查
         let oh = offscreenHash[i];

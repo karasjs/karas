@@ -497,19 +497,6 @@ export class Node {
   /**
    * @returns {number}
    */
-  get total() {
-    const ret = wasm.__wbg_get_node_total(this.ptr);
-    return ret >>> 0;
-  }
-  /**
-   * @param {number} arg0
-   */
-  set total(arg0) {
-    wasm.__wbg_set_node_total(this.ptr, arg0);
-  }
-  /**
-   * @returns {number}
-   */
   get opacity() {
     const ret = wasm.__wbg_get_node_opacity(this.ptr);
     return ret;
@@ -593,15 +580,6 @@ export class Node {
     wasm.node_set_txt(this.ptr, x, y, offset_width, offset_height);
   }
   /**
-   * @param {number} xa
-   * @param {number} ya
-   * @param {number} xb
-   * @param {number} yb
-   */
-  set_bbox(xa, ya, xb, yb) {
-    wasm.node_set_bbox(this.ptr, xa, ya, xb, yb);
-  }
-  /**
    * @param {number} a
    * @param {number} b
    * @param {number} c
@@ -623,25 +601,18 @@ export class Node {
     wasm.node_set_transform(this.ptr, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p);
   }
   /**
-   * @param {number} a
-   * @param {number} b
-   * @param {number} c
-   * @param {number} d
-   * @param {number} e
-   * @param {number} f
-   * @param {number} g
-   * @param {number} h
-   * @param {number} i
-   * @param {number} j
-   * @param {number} k
-   * @param {number} l
-   * @param {number} m
-   * @param {number} n
-   * @param {number} o
-   * @param {number} p
+   * @returns {number}
    */
-  set_matrix(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p) {
-    wasm.node_set_matrix(this.ptr, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p);
+  computed_style() {
+    const ret = wasm.node_computed_style(this.ptr);
+    return ret;
+  }
+  /**
+   * @returns {number}
+   */
+  transform_ptr() {
+    const ret = wasm.node_transform_ptr(this.ptr);
+    return ret;
   }
   /**
    * @returns {number}
@@ -661,7 +632,7 @@ export class Node {
    * @returns {number}
    */
   get_op() {
-    const ret = wasm.node_get_op(this.ptr);
+    const ret = wasm.__wbg_get_node_opacity(this.ptr);
     return ret;
   }
   /**

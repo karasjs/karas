@@ -3,6 +3,7 @@ import Node from './Node';
 import Text from './Text';
 import Component from './Component';
 import util from '../util/util';
+import wasm from '../wasm/index';
 
 /**
  * 打平children，多维嵌套的数组变成一维
@@ -57,6 +58,17 @@ function relation(root, host, parent, children, options = {}) {
       children.__prev = options.prev;
     }
     options.prev = children;
+    // wasm
+    let wr = root.__wasmRoot;
+    if(wr) {
+      if(children instanceof Xom) {
+        children.__wasmNode = wasm.Node.new(false);
+      }
+      else if(children instanceof Text) {
+        children.__wasmNode = wasm.Node.new(true);
+      }
+    }
+    // ref
     if(!(children instanceof Text)) {
       let ref = children.props.ref;
       if(util.isString(ref) && ref || util.isNumber(ref)) {
@@ -106,6 +118,15 @@ function relation(root, host, parent, children, options = {}) {
       children.__init();
       if(sr instanceof Xom && sr.__children) {
         relation(root, children, sr, sr.__children, {});
+      }
+      // wasm
+      if(wr) {
+        if(sr instanceof Xom) {
+          sr.__wasmNode = wasm.Node.new(false);
+        }
+        else if(sr instanceof Text) {
+          sr.__wasmNode = wasm.Node.new(true);
+        }
       }
     }
   }

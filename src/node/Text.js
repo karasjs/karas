@@ -199,7 +199,7 @@ class Text extends Node {
     this.__widthHash = {}; // 存储当前字体样式key下的charWidth/textWidth
     this.__limitCache = false;
     this.__hasContent = false;
-    this.__fitFontSize = 0; // 自动缩小时的字体大小
+    this.__fitFontSize = 0; // 自动缩小时的字体大小N
   }
 
   /**
@@ -814,7 +814,7 @@ class Text extends Node {
     if(s === this.__content || this.__isDestroyed) {
       this.__content = s;
       if(isFunction(cb)) {
-        cb();
+        cb(false);
       }
       return;
     }
@@ -826,7 +826,7 @@ class Text extends Node {
       s = s.toString();
     }
     this.__content = s;
-    this.__root.__addUpdate(this.__domParent, null, level.REFLOW, null, null, null, cb);
+    this.__root.__addUpdate(this.__domParent, null, level.REFLOW, false, false, false, false, cb);
   }
 
   remove(cb) {
@@ -849,7 +849,7 @@ class Text extends Node {
     }
     if(this.__isDestroyed) {
       if(isFunction(cb)) {
-        cb();
+        cb(false);
       }
       return;
     }
@@ -858,12 +858,25 @@ class Text extends Node {
     if(this.computedStyle[DISPLAY] === 'none') {
       this.__destroy();
       if(isFunction(cb)) {
-        cb();
+        cb(false);
       }
       return;
     }
     // 可见在reflow逻辑做结构关系等，text视为父变更
-    root.__addUpdate(this, null, level.REFLOW, null, true, null, cb);
+    root.__addUpdate(this, null, level.REFLOW, false, true, false, false, cb);
+  }
+
+  __structure(lv, j) {
+    let o = super.__structure(lv, j);
+    o.isText = true;
+    return o;
+  }
+
+  __layoutStyle() {
+    let wn = this.__wasmNode;
+    if(wn) {
+      wn.set_txt(this.__x1, this.__y1, this.__width, this.__height);
+    }
   }
 
   get content() {

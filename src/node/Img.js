@@ -472,10 +472,10 @@ class Img extends Dom {
         function reload() {
           let { __currentStyle: { [WIDTH]: width, [HEIGHT]: height } } = self;
           if(width.u !== AUTO && height.u !== AUTO) {
-            root.__addUpdate(self, null, level.REPAINT, null, null, null, cb);
+            root.__addUpdate(self, null, level.REPAINT, false, false, false, false, cb);
           }
           else {
-            root.__addUpdate(self, null, level.REFLOW, null, null, null, cb);
+            root.__addUpdate(self, null, level.REFLOW, false, false, false, false, cb);
           }
         }
         if(data.success) {
@@ -536,7 +536,7 @@ class Img extends Dom {
         });
       }
       if(isFunction(cb)) {
-        cb();
+        cb(false);
       }
       return;
     }

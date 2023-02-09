@@ -19,16 +19,19 @@ let animation = t.animate([
 });
 let animation2 = t.animate([
   {
+    top: 100,
+    left: 100,
+  },
+  {
     top: 200,
     left: 200,
   }
 ], {
   fill: 'forwards',
-  duration: 2,
-  endDelay: 166.66666666666666,
+  duration: 20,
 });
 let input = document.querySelector('input');
 animation.gotoAndStop(10);
 animation2.gotoAndStop(10, () => {
-  input.value += t.getComputedStyle().left + ',' + t.getComputedStyle().top;
+  input.value = t.getComputedStyle().left + ',' + t.getComputedStyle().top;
 });

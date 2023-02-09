@@ -36,8 +36,9 @@ let o = karas.parse({
               [1, 1],
               [0.5, 1],
             ],
-            "var-points.3.0": {
-              id: 'x'
+            vars: {
+              id: 'x',
+              member: ['points', 3, 0]
             }
           }
         ],

@@ -13,14 +13,15 @@ let animation = t.animate([
     backgroundSize: '100px 200px',
   }
 ], {
-  duration: 200,
+  duration: 100,
   fill: 'forwards',
 });
 let input = document.querySelector('input');
 let n = 0;
 animation.on(karas.Event.FRAME, () => {
-  if(n++ === 0) {
-    input.value = t.getComputedStyle().backgroundSize[0];
+  if(n++ === 1) {
+    let backgroundSize = t.getComputedStyle().backgroundSize[0];
+    input.value = backgroundSize[0] > 10 && backgroundSize[0] < 100;
   }
 });
 animation.on(karas.Event.FINISH, () => {

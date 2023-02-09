@@ -1,40 +1,9 @@
-import abbr from './abbr';
 import inject from '../util/inject';
 import util from '../util/util';
 import Node from '../node/Node';
 import Component from '../node/Component';
 
 let { isNil, isFunction, isPrimitive, clone, extend } = util;
-let { abbrCssProperty, abbrAnimateOption, abbrAnimate } = abbr;
-
-/**
- * 还原缩写到全称，涉及样式和动画属性，已过时
- * @param target 还原的对象
- * @param hash 缩写映射
- */
-function abbr2full(target, hash) {
-  // 也许节点没写样式
-  if(target) {
-    Object.keys(target).forEach(k => {
-      // var-attr格式特殊考虑，仅映射attr部分，var-还要保留
-      if(k.indexOf('var-') === 0) {
-        let k2 = k.slice(4);
-        if(hash.hasOwnProperty(k2)) {
-          let fk = hash[k2];
-          target['var-' + fk] = target[k];
-          // delete target[k];
-        }
-      }
-      // 普通样式缩写还原
-      else if(hash.hasOwnProperty(k)) {
-        let fk = hash[k];
-        target[fk] = target[k];
-        // 删除以免二次解析
-        delete target[k];
-      }
-    });
-  }
-}
 
 /**
  * 链接json中的某个child到library文件，
@@ -55,12 +24,6 @@ function linkLibrary(child, libraryItem) {
   if(libraryItem.library) {
     child.library = libraryItem.library;
   }
-  // library的var-也要继承过来，本身的var-优先级更高，目前只有children会出现优先级情况
-  Object.keys(libraryItem).forEach(k => {
-    if(k.indexOf('var-') === 0 && !child.hasOwnProperty(k)) {
-      child[k] = libraryItem[k];
-    }
-  });
   // 删除以免二次解析
   delete child.libraryId;
   let init = child.init;
@@ -100,21 +63,25 @@ function initLibrary(item, hash) {
 // 有library的json一级初始化library供链接前，可以替换library里的内容
 function replaceLibraryVars(json, hash, vars) {
   // 新版同级vars语法，增加可以修改library子元素中递归子属性
-  if(json.hasOwnProperty('vars')) {
+  if(json && json.hasOwnProperty('vars')) {
     let slot = json.vars;
-    delete json.vars;
     if(!Array.isArray(slot)) {
       slot = [slot];
     }
-    slot.forEach(item => {
-      let { id, member } = item;
+    let hasChanged;
+    for(let i = 0, len = slot.length; i < len; i++) {
+      let { id, member } = slot[i];
       if(!Array.isArray(member)) {
         member = [member];
       }
       // library.xxx，需要>=2的长度，开头必须是library
-      if(Array.isArray(member) && member.length > 1 && vars && vars.hasOwnProperty(id)) {
-        if(member[0] === 'library') {
+      if(Array.isArray(member) && member[0] === 'library') {
+        slot.splice(i--, 1);
+        len--;
+        hasChanged = true;
+        if(vars && vars.hasOwnProperty(id)) {
           let target = hash;
+          outer:
           for(let i = 1, len = member.length; i < len; i++) {
             let k = member[i];
             // 最后一个属性可以为空
@@ -143,124 +110,63 @@ function replaceLibraryVars(json, hash, vars) {
             }
             else {
               inject.error('Library slot miss ' + k);
-              return;
+              break outer;
             }
           }
         }
       }
-    });
-  }
-  // 兼容老版var-，只支持一级library元素
-  else {
-    Object.keys(json).forEach(k => {
-      if(k.indexOf('var-library.') === 0) {
-        let v = json[k];
-        delete json[k];
-        if(!v || !vars) {
-          return;
-        }
-        let k2 = k.slice(12);
-        // 有id且变量里面传入了替换的值
-        if(k2 && v.id && vars.hasOwnProperty(v.id)) {
-          let value = vars[v.id];
-          if(isFunction(value)) {
-            value = value(v);
-          }
-          // library对象也要加上id，与正常的library保持一致
-          hash[k2] = Object.assign({ id: k2 }, value);
-        }
-      }
-    });
+    }
+    if(!slot.length) {
+      delete json.vars;
+    }
+    else if(hasChanged) {
+      json.vars = slot;
+    }
   }
 }
 
 function replaceVars(json, vars) {
-  if(json) {
-    // 新版vars语法
-    if(json.hasOwnProperty('vars')) {
-      let slot = json.vars;
-      delete json.vars;
-      if(!Array.isArray(slot)) {
-        slot = [slot];
-      }
-      if(Array.isArray(slot)) {
-        slot.forEach(item => {
-          let { id, member } = item;
-          if(!Array.isArray(member)) {
-            member = [member];
-          }
-          // 排除特殊的library
-          if(Array.isArray(member) && member.length && member[0] !== 'library' && vars && vars.hasOwnProperty(id)) {
-            let target = json;
-            for(let i = 0, len = member.length; i < len; i++) {
-              let k = member[i];
-              // 最后一个属性可以为空
-              if(target.hasOwnProperty(k) || i === len - 1) {
-                // 最后一个member表达式替换
-                if(i === len - 1) {
-                  let v = vars[id];
-                  // undefined和null意义不同
-                  if(v === undefined) {
-                    return;
-                  }
-                  // 支持函数模式和值模式
-                  if(isFunction(v)) {
-                    v = v(target[k]);
-                  }
-                  target[k] = v;
-                }
-                else {
-                  target = target[k];
-                }
-              }
-              else {
-                inject.error('Slot miss ' + k);
-                return;
-              }
-            }
-          }
-        });
-      }
+  // 新版vars语法
+  if(json && json.hasOwnProperty('vars')) {
+    let slot = json.vars;
+    delete json.vars;
+    if(!Array.isArray(slot)) {
+      slot = [slot];
     }
-    else {
-      Object.keys(json).forEach(k => {
-        if(k.indexOf('var-') === 0) {
-          let v = json[k];
-          delete json[k];
-          if(!v || !vars) {
-            return;
-          }
-          let k2 = k.slice(4);
-          // 有id且变量里面传入了替换的值，值可为null，因为某些情况下空为自动
-          if(k2 && v.id && vars.hasOwnProperty(v.id)) {
-            let value = vars[v.id];
-            // undefined和null意义不同
-            if(value === undefined) {
-              return;
-            }
-            let target = json;
-            // 如果有.则特殊处理子属性
-            if(k2.indexOf('.') > -1) {
-              let list = k2.split('.');
-              let len = list.length;
-              for(let i = 0; i < len - 1; i++) {
-                k2 = list[i];
-                // 避免异常
-                if(target[k2]) {
-                  target = target[k2];
-                }
-                else {
-                  inject.warn('parseJson vars is not exist: ' + v.id + ', ' + k + ', ' + list.slice(0, i).join('.'));
+    if(Array.isArray(slot)) {
+      slot.forEach(item => {
+        let { id, member } = item;
+        if(!Array.isArray(member)) {
+          member = [member];
+        }
+        // 排除特殊的library
+        if(Array.isArray(member) && member.length && member[0] !== 'library' && vars && vars.hasOwnProperty(id)) {
+          let target = json;
+          for(let i = 0, len = member.length; i < len; i++) {
+            let k = member[i];
+            // 最后一个属性可以为空
+            if(target.hasOwnProperty(k) || i === len - 1) {
+              // 最后一个member表达式替换
+              if(i === len - 1) {
+                let v = vars[id];
+                // undefined和null意义不同
+                if(v === undefined) {
                   return;
                 }
+                // 支持函数模式和值模式
+                if(isFunction(v)) {
+                  v = v(target[k]);
+                }
+                target[k] = v;
               }
-              k2 = list[len - 1];
+              else {
+                target = target[k];
+              }
             }
-            // 支持函数模式和值模式
-            if(isFunction(value)) {
-              value = value(v);
+            else {
+              inject.error('Slot miss ' + k);
+              return;
             }
-            target[k2] = value;
           }
         }
       });
@@ -326,7 +232,6 @@ function apply(json, opt, hash) {
         style.fontFamily = fonts[i];
       }
     }
-    (opt.abbr !== false) && abbr2full(style, abbrCssProperty);
     // 先替换style的
     replaceVars(style, opt.vars);
   }
@@ -340,17 +245,14 @@ function apply(json, opt, hash) {
       animate = [animate];
     }
     animate.forEach(item => {
-      (opt.abbr !== false) && abbr2full(item, abbrAnimate);
       let { value, options } = item;
       // 忽略空动画
       if(Array.isArray(value) && value.length) {
         value.forEach(item => {
-          (opt.abbr !== false) && abbr2full(item, abbrCssProperty);
           replaceVars(item, opt.vars);
         });
       }
       if(options) {
-        (opt.abbr !== false) && abbr2full(options, abbrAnimateOption);
         replaceVars(options, opt.vars);
         replaceAnimateOptions(options, opt);
       }
@@ -361,13 +263,6 @@ function apply(json, opt, hash) {
 
 // 将library、vars应用于json，转换json为一个普通的原始json数据
 export default function(json, options = {}) {
-  // json中定义无abbr
-  if(json.abbr === false) {
-    options.abbr = false;
-  }
-  if(options.abbr !== false) {
-    inject.warn('Abbr in json is deprecated');
-  }
   // 特殊单例声明无需clone加速解析
   if(!options.singleton && !json.singleton) {
     json = util.clone(json);

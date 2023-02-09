@@ -13,8 +13,8 @@ karas.parse(
           {
             "style":
               {
-                "d": "flex",
-                "jc": "center"
+                "display": "flex",
+                "justifyContent": "center"
               }
           },
         "children": [
@@ -24,9 +24,9 @@ karas.parse(
               {
                 "style":
                   {
-                    "bc": "#F00",
-                    "jc": "center",
-                    "as": "center",
+                    "backgroundColor": "#F00",
+                    "justifyContent": "center",
+                    "alignSelf": "center",
                   }
               },
             "children": [
@@ -36,8 +36,8 @@ karas.parse(
                   {
                     "style":
                       {
-                        "w": 49,
-                        "h": 44.711999999999996,
+                        "width": 49,
+                        "height": 44.711999999999996,
                         "margin": "9.936 0 9.936 0"
                       },
                     "src": ""
@@ -49,11 +49,11 @@ karas.parse(
                   {
                     "style":
                       {
-                        "ml": 13.248,
-                        "d": "inline-block",
-                        "ai": "center",
-                        "fz": 40,
-                        "c": "rgba(179, 146, 116, 1)"
+                        "marginLeft": 13.248,
+                        "display": "inline-block",
+                        "alignItems": "center",
+                        "fontSize": 40,
+                        "color": "rgba(179, 146, 116, 1)"
                       }
                   },
                 "children": ["8"]

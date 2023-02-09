@@ -134,9 +134,10 @@ let easing = {
       let timingFunction;
       if(/^\s*(?:cubic-bezier\s*)?\(\s*[\d.]+\s*,\s*[-\d.]+\s*,\s*[\d.]+\s*,\s*[-\d.]+\s*\)\s*$/i.test(v)) {
         v = v.match(/[\d.]+/g);
-        timingFunction = bezier(v[0], v[1], v[2], v[3]);
+        timingFunction = bezier(parseFloat(v[0]), parseFloat(v[1]), parseFloat(v[2]), parseFloat(v[3]));
       }
-      else if(v !== 'getEasing') {
+      // 防御一下
+      else if(v !== 'getEasing' && v !== 'cubicBezier') {
         timingFunction = this[v];
       }
       return timingFunction;

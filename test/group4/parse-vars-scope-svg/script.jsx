@@ -6,9 +6,10 @@ let o = karas.parse({
       tagName: 'span',
       props: {
         style: {
-          'var-color': {
+          vars: {
             id: 'red',
-          },
+            member: 'color'
+          }
         },
       },
       children: [123],
@@ -17,9 +18,10 @@ let o = karas.parse({
       tagName: 'div',
       props: {
         style: {
-          'var-color': {
+          vars: {
             id: 'red',
-          },
+            member: 'color'
+          }
         },
       },
       children: [456],

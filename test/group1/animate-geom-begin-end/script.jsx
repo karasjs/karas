@@ -21,8 +21,8 @@ let animation = t.animate([
 let input = document.querySelector('input');
 let n = 0;
 animation.on(karas.Event.FRAME, () => {
-  if(n++ === 0) {
-    input.value = t.begin + ',' + t.end;
+  if(n++ === 1) {
+    input.value = t.begin > 0 && + t.end < 180;
   }
 });
 animation.on(karas.Event.FINISH, () => {

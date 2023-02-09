@@ -4,8 +4,8 @@ let json = {
     {
       "style":
         {
-          "w": 360,
-          "h": 360
+          "width": 360,
+          "height": 360
         }
     },
   "children": [
@@ -16,11 +16,11 @@ let json = {
           ref: 'img',
           "style":
             {
-              "zi": -4,
-              "sx": 0.25,
-              "sy": 0.25,
-              "l": 244,
-              "t": 0
+              "zIndex": -4,
+              "scaleX": 0.25,
+              "scaleY": 0.25,
+              "left": 244,
+              "ttop": 0
             }
         },
       "libraryId": 3
@@ -46,16 +46,16 @@ let json = {
             {
               "style":
                 {
-                  "w": 1,
-                  "h": 1,
-                  "s": "rgb(255, 255, 255, 1)",
-                  "f": "rgb(255, 0, 0, 0.1)",
-                  "p": "absolute",
-                  "sw": 20,
+                  "width": 1,
+                  "height": 1,
+                  "stroke": "rgb(255, 255, 255, 1)",
+                  "fill": "rgb(255, 0, 0, 0.1)",
+                  "position": "absolute",
+                  "strokeWidth": 20,
                   "strokeLineJoin": "round",
                   "strokeMiterLimit": 4,
-                  "l": 0,
-                  "t": 0,
+                  "left": 0,
+                  "top": 0,
                 },
               "points": [
                 [-75.7963, -164.868],
@@ -146,12 +146,12 @@ let json = {
         {
           "style":
             {
-              "p": "absolute",
-              "zi": -8,
-              "w": 250,
-              "h": 250,
-              "l": 149.5,
-              "t": 166.8
+              "position": "absolute",
+              "zIndex": -8,
+              "width": 250,
+              "height": 250,
+              "left": 149.5,
+              "top": 166.8
             }
         },
       "tagName": "div"
@@ -165,9 +165,9 @@ let json = {
           "src": "data:image/png;base64,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",
           "style":
             {
-              "p": "absolute",
-              "w": 208,
-              "h": 208,
+              "position": "absolute",
+              "width": 208,
+              "height": 208,
             }
         },
       "tagName": "img",
@@ -184,7 +184,7 @@ let o = karas.render(
   </webgl>,
   '#test'
 );
-o.on('refresh', function() {
+o.once('refresh', function() {
   o.ref.img.updateStyle({
     translateY: 100
   }, function() {

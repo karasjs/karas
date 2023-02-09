@@ -15,13 +15,15 @@ let animation = t.animate([
     backgroundImage: ['url(../../image.png)'],
   },
   {
-    backgroundImage: ['url(../../image.png)'],
+    backgroundImage: ['url(../../logo.png)'],
   }
 ], {
-  duration: 200,
+  duration: 100,
   fill: 'forwards',
 });
 animation.on(karas.Event.FINISH, () => {
-  let input = document.querySelector('input');
-  input.value = JSON.stringify(o.virtualDom);
+  o.on('refresh', function() {
+    let input = document.querySelector('input');
+    input.value = JSON.stringify(o.virtualDom);
+  });
 });

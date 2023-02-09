@@ -16,7 +16,7 @@ let o = karas.parse({
           }
         ],
         options: {
-          duration: 200,
+          duration: 30,
           fill: 'both',
         }
       }

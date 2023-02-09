@@ -7,13 +7,13 @@ let o = karas.render(
       width: 100,
       height: 30,
     }}>
-        <span style={{
-          display: 'block',
-          width: '100%',
-          height: '100%',
-          background:'url(../../image.png) noRepeat 0 0',
-          backgroundSize: '100% auto',
-        }}/>
+      <span style={{
+        display: 'block',
+        width: '100%',
+        height: '100%',
+        background:'url(../../image.png) noRepeat 0 0',
+        backgroundSize: '100% auto',
+      }}/>
     </div>
     <span ref="d2" style={{
       position: 'absolute',
@@ -27,7 +27,7 @@ let o = karas.render(
   </svg>,
   '#test'
 );
-o.on('refresh', function() {
+o.once('refresh', function() {
   o.ref.d2.updateStyle({
     opacity: 0.5,
   }, function() {

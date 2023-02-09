@@ -5,9 +5,10 @@ let json = {
     props: {
       style: {
         color: '#999',
-        'var-color': {
+        vars: {
           id: 'red',
-        },
+          member: ['color']
+        }
       },
     },
     children: [123],

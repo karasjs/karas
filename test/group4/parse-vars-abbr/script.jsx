@@ -11,12 +11,13 @@ let o = karas.parse({
       animate: {
         value: [
           {
-            tx: 0,
+            translateX: 0,
           },
           {
-            tx: 100,
-            "var-tx": {
-              id: 'aaa'
+            translateX: 100,
+            vars: {
+              id: 'aaa',
+              member: ['translateX']
             }
           }
         ],

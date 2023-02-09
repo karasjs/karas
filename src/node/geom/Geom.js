@@ -35,7 +35,7 @@ const {
   },
 } = enums;
 const { AUTO, PX, PERCENT, REM, VW, VH, VMAX, VMIN, RGBA, GRADIENT } = unit;
-const { int2rgba, isNil, joinArr } = util;
+const { int2rgba, isNil, isNumber, joinArr } = util;
 const { canvasPolygon, svgPolygon } = painter;
 
 const REGISTER = {};
@@ -783,6 +783,19 @@ class Geom extends Xom {
 
   __isRealInline() {
     return false;
+  }
+
+  animate(list, options = {}) {
+    if(isNumber(options)) {
+      options = {
+        duration: options,
+        isGeom: true,
+      };
+    }
+    else {
+      options.isGeom = true;
+    }
+    return super.animate(list, options);
   }
 
   get isMulti() {

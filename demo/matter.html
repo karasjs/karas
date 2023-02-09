@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=0"/>
+  <title>matter</title>
+  <link href="style.css" media="all" rel="stylesheet"/>
+  <style>
+    html, body, #test, canvas {
+      display:block;
+      margin:0;
+      width:100%;
+      height:100%;
+    }
+    #test, canvas{
+      max-width:375px;
+      max-height:667px;
+    }
+  </style>
+</head>
+<body>
+<div id="test"></div>
+<pre><code class="brush:csx"></code></pre>
+<script type="text/jsx">
+  karas.debug = 1;
+  const W = 750, H = 1336;
+
+  let root = karas.render(
+    <canvas width={W} height={H}>
+      <$line style={{
+        position: 'absolute',
+        left: 0,
+        bottom: 30,
+        width: '100%',
+        stroke: '#000',
+      }}/>
+    </canvas>,
+    '#test'
+  );
+
+  let ballList = [];
+
+  // module aliases
+  var Engine = Matter.Engine,
+    Render = Matter.Render,
+    Runner = Matter.Runner,
+    Bodies = Matter.Bodies,
+    Events = Matter.Events,
+    Composite = Matter.Composite;
+
+  // create an engine
+  var engine = Engine.create();
+
+  // create a renderer
+  // var render = Render.create({
+  //   element: document.querySelector('#test'),
+  //   engine: engine,
+  //   options: {
+  //     width: W,
+  //     height: H,
+  //   },
+  // });
+
+  // create two boxes and a ground
+  var ground = Bodies.rectangle(W * 0.5, H - 20, W, 20, { isStatic: true });
+  var top = Bodies.rectangle(W * 0.5, -20, W, 20, { isStatic: true });
+  var left = Bodies.rectangle(-8, H * 0.5, 20, H, { isStatic: true });
+  var right = Bodies.rectangle(W + 8, H * 0.5, 20, H, { isStatic: true });
+  // add all of the bodies to the world
+  Composite.add(engine.world, [ground, top, left, right]);
+
+  // run the renderer
+  // Render.run(render);
+
+  // create runner
+  var runner = Runner.create();
+
+  // run the engine
+
+  // Runner.run(runner, engine);
+
+  Events.on(engine, 'collisionStart', function(event) {
+    var pairs = event.pairs;
+
+    // change object colours to show those starting a collision
+    for (var i = 0; i < pairs.length; i++) {
+      var pair = pairs[i];
+      var { bodyA, bodyB } = pair;
+      if(bodyA.id > 4 && bodyB.id > 4 && bodyA.gameType === bodyB.gameType && !bodyA.hasDeleted && !bodyB.hasDeleted) {
+        bodyA.hasDeleted = bodyB.hasDeleted = true;
+        let t = ++bodyA.gameType, type = BALL_TYPES[t];
+        let ball = Bodies.circle(bodyA.position.x, bodyA.position.y, type.radius, { mass: type.mass, restitution: 0.2 });
+        ball.gameType = t;
+        ballList.push(ball);
+        let j = ballList.indexOf(bodyA);
+        if(j > -1) {
+          ballList.splice(j, 1);
+        }
+        j = ballList.indexOf(bodyB);
+        if(j > -1) {
+          ballList.splice(j, 1);
+        }
+        Composite.add(engine.world, ball);
+        Composite.remove(engine.world, pair.bodyA);
+        Composite.remove(engine.world, pair.bodyB);
+        bodyA.karas.children[0].updateStyle({
+          width: type.radius << 1,
+          height: type.radius << 1,
+          fill: type.color,
+        });
+        bodyA.karas.children[1].children[0].content = type.text;
+        ball.karas = bodyA.karas;
+        bodyB.karas.remove();
+      }
+    }
+  });
+
+  const BALL_TYPES = [
+    {
+      radius: 20,
+      mass: 2,
+      color: '#F00',
+      text: '2',
+    },
+    {
+      radius: 30,
+      mass: 3,
+      color: '#0F0',
+      text: '4',
+    },
+    {
+      radius: 40,
+      mass: 4,
+      color: '#00F',
+      text: '8',
+    },
+    {
+      radius: 45,
+      mass: 5,
+      color: '#FF0',
+      text: '16',
+    },
+    {
+      radius: 50,
+      mass: 6,
+      color: '#F0F',
+      text: '32',
+    },
+    {
+      radius: 55,
+      mass: 7,
+      color: '#0FF',
+      text: '64',
+    },
+    {
+      radius: 60,
+      mass: 8,
+      color: '#FFF',
+      text: '128',
+    },
+    {
+      radius: 65,
+      mass: 9,
+      color: '#ccc',
+      text: '256',
+    },
+    {
+      radius: 70,
+      mass: 10,
+      color: '#666',
+      text: '512',
+    },
+    {
+      radius: 75,
+      mass: 11,
+      color: '#000',
+      text: '1024',
+    },
+  ];
+
+  let count = 200;
+  karas.animate.frame.onFrame(diff => {
+    // 更新每个球的位置
+    Runner.tick(runner, engine, diff);
+    for(let i = 0, len = ballList.length; i < len; i++) {
+      let ball = ballList[i], position = ball.position;
+      ball.karas.updateStyle({
+        translateX: position.x,
+        translateY: position.y,
+      });
+    }
+    count += diff;
+    // 每1s出个球
+    if(count < 200) {
+      return;
+    }
+    count -= 200;
+    let first = BALL_TYPES[0];
+    let x = first.radius + Math.random() * (W - first.radius);
+    let y = first.radius;
+    let ball = Bodies.circle(x, y, first.radius, { mass: first.mass, restitution: 0.2 });
+    ball.gameType = 0;
+    ballList.push(ball);
+    Composite.add(engine.world, ball);
+    let show = <div style={{
+      position: 'absolute',
+      left: 0,
+      top: 0,
+      translateX: x,
+      translateY: y,
+    }}>
+      <$circle style={{
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        width: first.radius << 1,
+        height: first.radius << 1,
+        translateX: '-50%',
+        translateY: '-50%',
+        fill: first.color,
+      }}/>
+      <span style={{
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        padding: '0 10',
+        translateX: '-50%',
+        translateY: '-50%',
+        fontSize: 24,
+        textStroke: '#FFF',
+        textStrokeWidth: 3,
+        whiteSpace: 'nowrap',
+      }}>{first.text}</span>
+    </div>;
+    ball.karas = show;
+    root.appendChild(show);
+  });
+</script>
+<script src="sea.js"></script>
+<script src="homunculus.js"></script>
+<script src="yurine.js"></script>
+<script src="https://gw.alipayobjects.com/os/lib/karas/0.85.14/index.min.js"></script>
+<script src="https://gw.alipayobjects.com/os/lib/matter-js/0.18.0/build/matter.min.js"></script>
+<script>
+  seajs.config({
+    alias: {},
+    map: [function(url) {
+    }]
+  });
+  define('fs', {});
+  seajs.use(['jssc'], function(jssc) {
+    var code = document.querySelector('pre code');
+    var jsx = document.querySelector('script[type="text/jsx"]');
+    var source = jsx.textContent || jsx.text;
+    source = source.trim().replace(/\n[ ]{2}/g, '\n');
+    var text = document.createTextNode(source);
+    code.appendChild(text);
+    jssc.exec();
+    var head = document.head || document.getElementsByTagName('head')[0];
+    var jsx = document.querySelectorAll('script');
+    for(var i = 0, len = jsx.length; i < len; i++) {
+      var node = jsx[i];
+      if(node.getAttribute('type') === 'text/jsx' && !node.getAttribute('yurine')) {
+        node.setAttribute('yurine', 1);
+        var code = node.textContent || node.text;
+        if(!code) {
+          continue;
+        }
+        code = yurine.parse(code);
+        var script = document.createElement('script');
+        script.async = true;
+        script.text = code;
+        head.appendChild(script);
+      }
+    }
+  });
+</script>
+</body>
+</html>

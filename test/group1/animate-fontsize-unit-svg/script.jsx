@@ -32,9 +32,8 @@ t2.animate([
 let n = 0;
 let input = document.querySelector('input');
 animation.on('frame', () => {
-  n++;
-  if(n === 1) {
-    input.value = t.getComputedStyle().fontSize + ',' + t2.getComputedStyle().fontSize;
+  if(n++ === 1) {
+    input.value = t.getComputedStyle().fontSize < 100 && t2.getComputedStyle().fontSize > 16;
   }
 });
 animation.on('finish', () => {

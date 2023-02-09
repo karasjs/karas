@@ -14,7 +14,7 @@ let animation = t.animate([
     flexBasis: '10%',
   }
 ], {
-  duration: 200,
+  duration: 100,
   fill: 'forwards',
 });
 let t2 = o.ref.t2;
@@ -26,14 +26,16 @@ t2.animate([
     flexBasis: 10,
   }
 ], {
-  duration: 200,
+  duration: 100,
   fill: 'forwards',
 });
 let n = 0;
 let input = document.querySelector('input');
 animation.on('frame', () => {
-  if(n++ === 0) {
-    input.value = t.getComputedStyle().flexBasis + ',' + t2.getComputedStyle().flexBasis;
+  if(n++ === 1) {
+    let flexBasis = t.getComputedStyle().flexBasis;
+    let flexBasis2 = t2.getComputedStyle().flexBasis;
+    input.value = flexBasis > 10 && flexBasis < 36 && flexBasis2 < 36 && flexBasis2 > 10;
   }
 });
 animation.on('finish', () => {

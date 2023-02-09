@@ -15,8 +15,9 @@ let o = karas.parse({
           },
           {
             translateX: 100,
-            "var-translateX": {
-              id: 'aaa'
+            vars: {
+              id: 'aaa',
+              member: ['translateX']
             }
           }
         ],

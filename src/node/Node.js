@@ -17,14 +17,22 @@ class Node {
     this.__bbox = null;
     this.__filterBbox = null;
     this.__isDestroyed = true;
+    this.__cache = null;
+    this.__cacheTarget = null;
+    this.__wasmNode = null;
   }
 
   __structure(lv, j) {
-    return this.__struct = {
+    this.__struct = {
       node: this,
       childIndex: j,
       lv,
     };
+    let wn = this.__wasmNode;
+    if(wn) {
+      wn.lv = lv;
+    }
+    return this.__struct;
   }
 
   __offsetX(diff) {

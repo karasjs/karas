@@ -13,14 +13,17 @@ let animation = t.animate([
     backgroundPosition: '20 30',
   }
 ], {
-  duration: 200,
+  duration: 100,
   fill: 'forwards',
 });
 let input = document.querySelector('input');
 let n = 0;
 animation.on(karas.Event.FRAME, () => {
-  if(n++ === 0) {
-    input.value += t.getComputedStyle().backgroundPositionX + ' ' + t.getComputedStyle().backgroundPositionY;
+  if(n++ === 1) {
+    let backgroundPositionX = t.getComputedStyle().backgroundPositionX;
+    let backgroundPositionY = t.getComputedStyle().backgroundPositionY;
+    input.value = backgroundPositionX > 0 && backgroundPositionX < 20
+      && backgroundPositionY > 0 && backgroundPositionY < 20;
   }
 });
 animation.on(karas.Event.FINISH, () => {

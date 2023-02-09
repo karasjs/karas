@@ -12,8 +12,9 @@ let o = karas.parse({
       props: {
         style: {
           color: '#999',
-          'var-color': {
+          vars: {
             id: 'red',
+            member: 'color',
           },
         },
       },
@@ -28,8 +29,9 @@ let o = karas.parse({
         props: {
           style: {
             color: '#999',
-            'var-color': {
+            vars: {
               id: 'blue',
+              member: 'color',
             },
           },
         },
@@ -39,8 +41,9 @@ let o = karas.parse({
       props: {
         style: {
           color: '#999',
-          'var-color': {
+          vars: {
             id: 'red',
+            member: 'color',
           },
         },
       },
@@ -55,8 +58,9 @@ let o = karas.parse({
         props: {
           style: {
             color: '#999',
-            'var-color': {
+            vars: {
               id: 'green',
+              member: 'color',
             },
           },
         },
@@ -75,8 +79,9 @@ let o = karas.parse({
         props: {
           style: {
             color: '#999',
-            'var-color': {
+            vars: {
               id: 'blue',
+              member: 'color',
             },
           },
         },

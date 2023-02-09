@@ -13,14 +13,14 @@ let animation = t.animate([
     borderLeftWidth: 10,
   }
 ], {
-  duration: 200,
+  duration: 100,
   fill: 'forwards',
 });
 let input = document.querySelector('input');
 let n = 0;
 animation.on(karas.Event.FRAME, () => {
-  if(n++ === 0) {
-    input.value = t.getComputedStyle().borderLeftWidth;
+  if(n++ === 1) {
+    input.value = t.getComputedStyle().borderLeftWidth > 1;
   }
 });
 animation.on(karas.Event.FINISH, () => {

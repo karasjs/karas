@@ -48,6 +48,6 @@ a1.gotoAndStop(100);
 a2.gotoAndStop(200);
 a3.gotoAndStop(200);
 let input = document.querySelector('input');
-o.on('refresh', () => {
+o.once('refresh', () => {
   input.value = document.querySelector('svg').innerHTML;
 });

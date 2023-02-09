@@ -280,29 +280,6 @@ class Dom extends Xom {
     return arr;
   }
 
-  __modifyStruct() {
-    let struct = this.__struct;
-    let total = struct.total || 0;
-    let root = this.__root, __structs = root.__structs;
-    // 新生成了struct，引用也变了
-    let nss = this.__structure(struct.lv, struct.childIndex);
-    let i = __structs.indexOf(struct);
-    root.__structs.splice(i, total + 1, ...nss);
-    let d = 0;
-    if(this !== root) {
-      struct = this.__struct;
-      d = (struct.total || 0) - total;
-      if(d) {
-        let p = this.__domParent;
-        while(p) {
-          p.__struct.total = p.__struct.total || 0;
-          p.__struct.total += d;
-          p = p.__domParent;
-        }
-      }
-    }
-  }
-
   __insertStruct(child, childIndex) {
     let struct = this.__struct;
     let cs = child.__structure(struct.lv + 1, childIndex);
@@ -318,14 +295,22 @@ class Dom extends Xom {
     else {
       i = structs.indexOf(struct) + 1;
     }
-    let total;
+    let total, wr = root.__wasmRoot;
     if(Array.isArray(cs)) {
       structs.splice(i, 0, ...cs);
       total = (cs[0].total || 0) + 1;
+      if(wr) {
+        for(let j = cs.length - 1; j >= 0; j--) {
+          wr.insert_node(i, cs[j].node.__wasmNode.ptr);
+        }
+      }
     }
     else {
       structs.splice(i, 0, cs);
       total = (cs.total || 0) + 1;
+      if(wr) {
+        wr.insert_node(i, cs.node.__wasmNode.ptr);
+      }
     }
     // 调整后面children的childIndex，+1
     i++;
@@ -354,6 +339,12 @@ class Dom extends Xom {
     let root = this.__root, structs = root.__structs;
     let i = structs.indexOf(cs);
     structs.splice(i, total);
+    let wr = root.__wasmRoot;
+    if(wr) {
+      for(let j = i + total; j >= i; j--) {
+        wr.remove_node(j);
+      }
+    }
     // zIndexChildren后面的childIndex偏移
     let zIndexChildren = this.__zIndexChildren;
     for(let i = childIndex + 1, len = zIndexChildren.length; i < len; i++) {
@@ -377,7 +368,8 @@ class Dom extends Xom {
    * 因为zIndex/abs/add的变化造成的更新，只需重排这一段顺序即可
    */
   __updateStruct() {
-    let structs = this.__root.__structs;
+    let root = this.__root;
+    let structs = root.__structs;
     let struct = this.__struct;
     let total = struct.total || 0;
     let index = structs.indexOf(struct);
@@ -392,7 +384,7 @@ class Dom extends Xom {
       cs.childIndex = i; // 仅后面排序用
     });
     // 按之前的structs划分为相同数量的若干段进行排序
-    let source = [], arr = [], count = 0;
+    let source = [], count = 0;
     for(let i = index + 1; i <= index + total; i++) {
       let cs = structs[i];
       let o = {
@@ -415,6 +407,12 @@ class Dom extends Xom {
         list = list.concat(item.list);
       });
       structs.splice(index + 1, total, ...list);
+      let wr = root.__wasmRoot;
+      if(wr) {
+        for(let i = index + 1; i <= index + total; i++) {
+          wr.set_node(structs[i].node, i);
+        }
+      }
     }
   }
 
@@ -732,6 +730,7 @@ class Dom extends Xom {
   }
 
   // flow的layout包裹方法，布局后递归计算computedStyle，abs节点在__layoutAbs中做
+  // 布局完成后才能计算相关样式，因为需要布局确定尺寸，很多样式有百分比或继承
   __layout(data, isAbs, isColumn, isRow) {
     super.__layout(data, isAbs, isColumn, isRow);
     this.__layoutStyle();
@@ -741,9 +740,8 @@ class Dom extends Xom {
   __layoutStyle() {
     super.__layoutStyle();
     this.flowChildren.forEach(child => {
-      if(!(child instanceof Text)) {
-        child.__layoutStyle();
-      }
+      // 文本不需要，但wasm情况要传入一些信息
+      child.__layoutStyle();
     });
   }
 
@@ -3176,8 +3174,8 @@ class Dom extends Xom {
         }
       }
     });
-    // 根节点自己特殊执行，不在layout统一
-    this.__execAr();
+    // parse的abs根节点自己特殊执行，不在layout统一
+    this.__animateRecords && this.__root.__addAr(this);
   }
 
   render(renderMode, ctx, dx, dy) {
@@ -3228,10 +3226,10 @@ class Dom extends Xom {
       return;
     }
     // __cacheTotal可提前判断是否在bbox范围内，svg没有bbox防止进入判断
-    if(__cacheTotal && __cacheTotal.available && __cacheTotal.bbox) {
+    if(__cacheTotal && __cacheTotal.__available && __cacheTotal.bbox) {
       // 不是E的话，因为缓存缘故影响cache的子元素，先左乘可能的父matrix（嵌套cache），再赋值给pm递归传下去
-      if(!isE(this.__matrix)) {
-        pm = multiply(pm, this.__matrix);
+      if(!isE(this.matrix)) {
+        pm = multiply(pm, this.matrix);
         assignMatrix(this.__matrixEvent, pm);
       }
       else if(this.__perspectiveMatrix) {
@@ -3249,7 +3247,7 @@ class Dom extends Xom {
     }
     // 递归传下来的pm如果有说明是cache的子元素且需要重新计算matrix
     else if(!isE(pm)) {
-      assignMatrix(this.__matrixEvent, mx.multiply(pm, this.__matrix));
+      assignMatrix(this.__matrixEvent, mx.multiply(pm, this.matrix));
     }
     // 找到对应的callback
     let { event: { type } } = e;
@@ -3310,7 +3308,7 @@ class Dom extends Xom {
       return;
     }
     // 在dom中则整体设置关系和struct，不可见提前跳出
-    builder.relation(root, host, this, child, {});
+    builder.relation(root, host || root, this, child, {});
     this.__insertStruct(child, zIndexChildren.indexOf(child));
     // 可能为component，不能用__currentStyle
     if(child.currentStyle[DISPLAY] === 'none' || this.__computedStyle[DISPLAY] === 'none') {
@@ -3324,7 +3322,7 @@ class Dom extends Xom {
     if(child instanceof Text) {
       child = this;
     }
-    root.__addUpdate(child, null, REFLOW, true, null, null, cb);
+    root.__addUpdate(child, null, REFLOW, true, false, false, false, cb);
   }
 
   prependChild(child, cb) {
@@ -3365,7 +3363,7 @@ class Dom extends Xom {
     if(child instanceof Text) {
       child = this;
     }
-    root.__addUpdate(child, null, REFLOW, true, null, null, cb);
+    root.__addUpdate(child, null, REFLOW, true, false, false, false, cb);
   }
 
   insertBefore(child, cb) {
@@ -3417,7 +3415,7 @@ class Dom extends Xom {
     if(child instanceof Text) {
       child = parent;
     }
-    root.__addUpdate(child, null, REFLOW, true, null, null, cb);
+    root.__addUpdate(child, null, REFLOW, true, false, false, false, cb);
   }
 
   insertAfter(child, cb) {
@@ -3464,7 +3462,7 @@ class Dom extends Xom {
     if(child instanceof Text) {
       child = parent;
     }
-    root.__addUpdate(child, null, REFLOW, true, null, null, cb);
+    root.__addUpdate(child, null, REFLOW, true, false, false, false, cb);
   }
 
   removeChild(target, cb) {

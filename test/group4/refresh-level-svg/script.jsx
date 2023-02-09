@@ -4,7 +4,7 @@ let root = karas.render(
   </svg>,
   '#test'
 );
-root.on('refresh', function(lv) {
+root.once('refresh', function(lv) {
   let input = document.querySelector('#base64');
   input.value = lv;
 });

@@ -1,4 +1,5 @@
 import util from '../util/util';
+import frame from './frame';
 
 const { isFunction, isNil } = util;
 
@@ -59,6 +60,7 @@ class Controller {
           }
           options.autoPlay = false;
           let o = target.animate(value, options);
+          o.__isControlled = true;
           this.add(o, list);
         });
       });
@@ -71,7 +73,7 @@ class Controller {
         list2.forEach(item => {
           onList.forEach(arr => {
             let cb = () => {
-              let time = item.timestamp;
+              let time = frame.__now;
               if(time !== this.__lastTime[arr[0]]) {
                 this.__lastTime[arr[0]] = time;
                 arr[1] && arr[1]();
@@ -213,7 +215,7 @@ class Controller {
   __on(id, handle) {
     this.__list.forEach(item => {
       let cb = () => {
-        let time = item.timestamp;
+        let time = frame.__now;
         if(time !== this.__lastTime[id]) {
           this.__lastTime[id] = time;
           handle && handle();
@@ -246,7 +248,10 @@ class Controller {
   }
 
   __set(key, value) {
-    this.list.forEach(item => {
+    this.__list.forEach(item => {
+      item[key] = value;
+    });
+    this.__list2.forEach(item => {
       item[key] = value;
     });
   }

@@ -2,7 +2,6 @@ import CanvasCache from './CanvasCache';
 import offscreen from './offscreen';
 import mode from './mode';
 import Page from './Page';
-import Text from '../node/Text';
 import Dom from '../node/Dom';
 import Img from '../node/Img';
 import Geom from '../node/geom/Geom';
@@ -23,6 +22,7 @@ import vertexBlur from '../gl/filter/blur.vert';
 import fragmentBlur from '../gl/filter/blur.frag';
 import ImgCanvasCache from './ImgCanvasCache';
 import ImgWebglCache from '../gl/ImgWebglCache';
+import wasm from '../wasm/index';
 
 const {
   OFFSCREEN_OVERFLOW,
@@ -76,15 +76,6 @@ const DOM_RENDER = Dom.prototype.render;
 const IMG_RENDER = Img.prototype.render;
 const GEOM_RENDER = Geom.prototype.render;
 
-function getCache(list) {
-  for(let i = 0, len = list.length; i < len; i++) {
-    let item = list[i];
-    if(item && item.available) {
-      return item;
-    }
-  }
-}
-
 /**
  * 生成一个节点及其子节点所包含的矩形范围盒，canvas和webgl的最大尺寸限制不一样，由外部传入
  * 如果某个子节点超限，则视为整个超限，超限返回空
@@ -96,7 +87,7 @@ function genBboxTotal(node, __structs, index, total, lv, isPpt) {
   node.__opacity = 1;
   // 先将局部根节点的bbox算好，可能没内容是空
   let bboxTotal;
-  if(__cache && __cache.available) {
+  if(__cache && __cache.__available) {
     bboxTotal = __cache.bbox;
   }
   else {
@@ -111,7 +102,7 @@ function genBboxTotal(node, __structs, index, total, lv, isPpt) {
     pm = node.__perspectiveMatrix || node.__selfPerspectiveMatrix;
   }
   if(node.__selfPerspective) {
-    let bbox = transformBbox(bboxTotal, multiply(pm, node.__matrix), 0, 0);
+    let bbox = transformBbox(bboxTotal, multiply(pm, node.matrix), 0, 0);
     mergeBbox(bboxTotal, bbox);
   }
   let top = node;
@@ -120,8 +111,9 @@ function genBboxTotal(node, __structs, index, total, lv, isPpt) {
       node,
       total,
       hasMask,
+      isText,
     } = __structs[i];
-    if(node instanceof Text) {
+    if(isText) {
       if(node.__limitCache) {
         inject.warn('Bbox of Text(' + index + ')' + ' is oversize'
           + node.offsetWidth + ', ' + node.offsetHeight);
@@ -155,13 +147,11 @@ function genBboxTotal(node, __structs, index, total, lv, isPpt) {
     }
     let {
       __cache: __cache2,
-      __cacheTotal: __cacheTotal2,
-      __cacheFilter: __cacheFilter2,
-      __cacheMask: __cacheMask2,
     } = node;
     let p = node.__domParent;
     node.__opacity = __computedStyle2[OPACITY] * p.__opacity;
-    let m = node.__matrix;
+    // 由于wasm的存在，使用getter取，没有wasm时不影响，有时获取到wasm计算的节点结果，因为私有__matrix为空
+    let m = node.matrix;
     if(p !== top) {
       m = multiply(p.__matrixEvent, m);
     }
@@ -183,7 +173,7 @@ function genBboxTotal(node, __structs, index, total, lv, isPpt) {
     }
     let bbox;
     // 子元素有cacheTotal优先使用
-    let target = getCache([__cacheMask2, __cacheFilter2, __cacheTotal2, __cache2]);
+    let target = node.__cacheTarget;
     if(target) {
       if(target !== __cache2) {
         i += (total || 0);
@@ -225,7 +215,7 @@ function mergeBbox(bbox, t) {
  */
 function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, width, height) {
   let __cacheTotal = node.__cacheTotal;
-  if(__cacheTotal && __cacheTotal.available) {
+  if(__cacheTotal && __cacheTotal.__available) {
     return __cacheTotal;
   }
   let { __x1: x1, __y1: y1, __offsetWidth, __offsetHeight } = node;
@@ -310,9 +300,10 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
       lv,
       total,
       hasMask,
+      isText,
     } = __structs[i];
     // 排除Text
-    if(node instanceof Text) {
+    if(isText) {
       node.render(renderMode, ctxTotal, dx, dy);
       let oh = offscreenHash[i];
       if(oh) {
@@ -320,9 +311,9 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
       }
     }
     else {
-      let __computedStyle2 = node.__computedStyle;
+      let __computedStyle = node.__computedStyle;
       // none跳过这棵子树，判断下最后一个节点的离屏应用即可
-      if(__computedStyle2[DISPLAY] === 'none') {
+      if(__computedStyle[DISPLAY] === 'none') {
         i += (total || 0);
         if(hasMask) {
           i += countMaskNum(__structs, i + 1, hasMask);
@@ -334,15 +325,10 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
         continue;
       }
       let {
-        __cacheTotal: __cacheTotal2,
-        __cacheFilter: __cacheFilter2,
-        __cacheMask: __cacheMask2,
-      } = node;
-      let {
-        [TRANSFORM]: transform,
-        [TRANSFORM_ORIGIN]: tfo,
+        // [TRANSFORM]: transform,
+        // [TRANSFORM_ORIGIN]: tfo,
         [VISIBILITY]: visibility,
-      } = __computedStyle2;
+      } = __computedStyle;
       let mh = maskStartHash[i];
       if(mh) {
         let { idx, hasMask, offscreenMask } = mh;
@@ -381,6 +367,17 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
       }
       // 不变是同级兄弟，无需特殊处理 else {}
       lastLv = lv;
+      // wasm取transform不同的方式
+      let transform, tfo, wn = node.__wasmNode;
+      if(wn) {
+        transform = new Float64Array(wasm.wasm.memory.buffer, wn.transform_ptr(), 16);
+        let cs = new Float64Array(wasm.wasm.memory.buffer, wn.transform_ptr(), 18);
+        tfo = [cs[16], cs[17]];
+      }
+      else {
+        transform = __computedStyle[TRANSFORM];
+        tfo = __computedStyle[TRANSFORM_ORIGIN];
+      }
       // 特殊渲染的matrix，局部根节点为原点考虑，当需要计算时（不为E）再计算
       let m;
       if(i !== index && (!isE(parentMatrix) || !isE(transform))) {
@@ -391,7 +388,10 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
       }
       lastMatrix = m;
       // 子元素有cacheTotal优先使用
-      let target = i > index && getCache([__cacheMask2, __cacheFilter2, __cacheTotal2]);
+      let target = i > index && node.__cacheTarget;
+      if(target === node.__cache) {
+        target = null;
+      }
       if(target) {
         i += (total || 0);
         if(hasMask) {
@@ -405,7 +405,7 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
           else {
             ctxTotal.setTransform(1, 0, 0, 1, 0, 0);
           }
-          let mixBlendMode = __computedStyle2[MIX_BLEND_MODE];
+          let mixBlendMode = __computedStyle[MIX_BLEND_MODE];
           if(mixBlendMode !== 'normal') {
             ctxTotal.globalCompositeOperation = mbmName(mixBlendMode);
           }
@@ -419,7 +419,7 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
       }
       else {
         let offscreenBlend, offscreenMask, offscreenFilter, offscreenOverflow;
-        let offscreen = i > index && node.__calOffscreen(ctxTotal, __computedStyle2);
+        let offscreen = i > index && node.__calOffscreen(ctxTotal, __computedStyle);
         if(offscreen) {
           ctxTotal = offscreen.ctx;
           offscreenBlend = offscreen.offscreenBlend;
@@ -511,12 +511,12 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
   } = __computedStyle;
   let target = __cacheTotal, needGen;
   if(filter && filter.length) {
-    if(!__cacheFilter|| !__cacheFilter.available  || needGen) {
+    if(!__cacheFilter|| !__cacheFilter.__available  || needGen) {
       target = node.__cacheFilter = CanvasCache.genFilter(target, filter);
       needGen = true;
     }
   }
-  if(hasMask && (!__cacheMask || !__cacheMask.available || needGen)) {
+  if(hasMask && (!__cacheMask || !__cacheMask.__available || needGen)) {
     target = node.__cacheMask = CanvasCache.genMask(target, node, function(item, cacheMask, inverse) {
       // 和外面没cache的类似，mask生成hash记录，这里mask节点一定是个普通无cache的独立节点
       let maskStartHash = {};
@@ -541,9 +541,10 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
           lv,
           total,
           hasMask,
+          isText,
         } = __structs[i];
         // 排除Text
-        if(node instanceof Text) {
+        if(isText) {
           node.render(renderMode, ctx, dx, dy);
           if(offscreenHash.hasOwnProperty(i)) {
             ctx = applyOffscreen(ctx, offscreenHash[i], width, height, false);
@@ -562,11 +563,6 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
             }
             continue;
           }
-          let {
-            __cacheTotal,
-            __cacheFilter,
-            __cacheMask,
-          } = node;
           if(maskStartHash.hasOwnProperty(i)) {
             let { idx, hasMask, offscreenMask } = maskStartHash[i];
             let target = inject.getOffscreenCanvas(width, height, null, 'mask2');
@@ -643,7 +639,10 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
           m = m || mx.identity();
           assignMatrix(node.__matrixEvent, m);
           // 特殊渲染的matrix，局部根节点为原点考虑，本节点需inverse反向
-          let target = getCache([__cacheMask, __cacheFilter, __cacheTotal]);
+          let target = node.__cacheTarget;
+          if(target === node.__cache) {
+            target = null;
+          }
           if(target) {
             i += (total || 0);
             if(hasMask) {
@@ -775,7 +774,7 @@ function genFrameBufferWithTexture(gl, texture, width, height) {
  */
 function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
                        __structs, W, H, isPpt, pptNode, oitHash) {
-  if(__cacheTotal && __cacheTotal.available) {
+  if(__cacheTotal && __cacheTotal.__available) {
     return __cacheTotal;
   }
 
@@ -815,6 +814,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
     }
     return;
   }
+
   __cacheTotal.__available = true;
   node.__cacheTotal = __cacheTotal;
   cx = w * 0.5;
@@ -874,11 +874,12 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
       node,
       total,
       hasMask,
+      isText,
     } = __structs[i];
     // 先看text，visibility会在内部判断，display会被parent判断
-    if(node instanceof Text) {
+    if(isText) {
       let __cache = node.__cache;
-      if(__cache && __cache.available) {
+      if(__cache && __cache.__available) {
         let {
           __opacity,
           __matrixEvent,
@@ -924,6 +925,17 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
       // 特殊渲染的matrix，局部根节点为原点考虑，和bbox以节点自身主画布参考系不同
       let m;
       if(i > index) {
+        // wasm取transform不同的方式
+        let transform, tfo, wn = node.__wasmNode;
+        if(wn) {
+          transform = new Float64Array(wasm.wasm.memory.buffer, wn.transform_ptr(), 16);
+          let cs = new Float64Array(wasm.wasm.memory.buffer, wn.transform_ptr(), 18);
+          tfo = [cs[16], cs[17]];
+        }
+        else {
+          transform = __computedStyle[TRANSFORM];
+          tfo = __computedStyle[TRANSFORM_ORIGIN];
+        }
         if(!isE(transform)) {
           m = tf.calMatrixByOrigin(transform, tfo[0] + node.__x1 + dx, tfo[1] + node.__y1 + dy);
         }
@@ -941,7 +953,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
         assignMatrix(node.__matrixEvent, m);
         // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
         if(backfaceVisibility === 'hidden') {
-          let m = node.__matrix, x = m[5] < 0 && m[10] < 0, y = m[0] < 0 && m[10] < 0;
+          let m = node.matrix, x = m[5] < 0 && m[10] < 0, y = m[0] < 0 && m[10] < 0;
           if(x || y) {
             i += total || 0;
             if(hasMask) {
@@ -962,8 +974,9 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
             node,
             total,
             hasMask,
+            isText,
           } = __structs[j];
-          if(!(node instanceof Text)) {
+          if(!isText) {
             let __computedStyle = node.__computedStyle;
             if(__computedStyle[DISPLAY] === 'none' || node.__mask) {
               j += (total || 0);
@@ -999,7 +1012,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
             assignMatrix(node.__matrixEvent, m);
             // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
             if(backfaceVisibility === 'hidden') {
-              let m = node.__matrix, x = m[5] < 0 && m[10] < 0, y = m[0] < 0 && m[10] < 0;
+              let m = node.matrix, x = m[5] < 0 && m[10] < 0, y = m[0] < 0 && m[10] < 0;
               if(x || y) {
                 i += total || 0;
                 if(hasMask) {
@@ -1008,12 +1021,10 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
                 continue;
               }
             }
-            let {
-              __cacheTotal,
-              __cacheFilter,
-              __cacheMask,
-            } = node;
-            let target = getCache([__cacheMask, __cacheFilter, __cacheTotal]);
+            let target = node.__cacheTarget;
+            if(target === node.__cache) {
+              target = null;
+            }
             if(target) {
               j += (total || 0);
               if(hasMask) {
@@ -1038,11 +1049,8 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
       else {
         let {
           __cache,
-          __cacheTotal,
-          __cacheFilter,
-          __cacheMask,
         } = node;
-        let target = i > index ? getCache([__cacheMask, __cacheFilter, __cacheTotal, __cache]) : __cache;
+        let target = i > index ? node.__cacheTarget : __cache;
         if(target) {
           if(opacity > 0) {
             // 局部的mbm和主画布一样，先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
@@ -1114,7 +1122,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
 }
 
 function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total, __structs, W, H) {
-  if(__cacheTotal && __cacheTotal.available) {
+  if(__cacheTotal && __cacheTotal.__available) {
     return __cacheTotal;
   }
 
@@ -1128,8 +1136,9 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
       node,
       total,
       hasMask,
+      isText,
     } = __structs[i];
-    if(node instanceof Text) {
+    if(isText) {
       let mh = mergeHash[i];
       if(mh) {
         isFlat = mh.isFlat;
@@ -1163,12 +1172,12 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
         continue;
       }
       let {
-        __cacheTotal,
-        __cacheFilter,
-        __cacheMask,
         __domParent: p,
       } = node;
-      let target = getCache([__cacheMask, __cacheFilter, __cacheTotal]);
+      let target = node.__cacheTarget;
+      if(target === node.__cache) {
+        target = null;
+      }
       // flat变化的局部子节点，或者flat根的直接子节点，生成局部根，已生成过的不用再生成
       if(total && !target && (transformStyle !== p.__computedStyle[TRANSFORM_STYLE]
         || p === top && transformStyle === 'flat')) {
@@ -1232,13 +1241,7 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
     else {
       let top = node, x0 = node.__x1, y0 = node.__y1, planeList = [];
       if(node.__hasContent) {
-        let {
-          __cache,
-          __cacheTotal,
-          __cacheFilter,
-          __cacheMask,
-        } = node;
-        let target = getCache([__cacheMask, __cacheFilter, __cacheTotal, __cache]);
+        let target = node.__cacheTarget;
         let o = {
           index,
           node,
@@ -1257,10 +1260,11 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
           node,
           total,
           hasMask,
+          isText,
         } = __structs[i];
-        if(node instanceof Text) {
+        if(isText) {
           let __cache = node.__cache;
-          if(__cache && __cache.available) {
+          if(__cache && __cache.__available) {
             let {
               __matrixEvent,
             } = node.__domParent;
@@ -1305,9 +1309,6 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
           }
           let {
             __cache,
-            __cacheTotal,
-            __cacheFilter,
-            __cacheMask,
             __domParent: p,
             __selfPerspective: ppt,
           } = node;
@@ -1326,7 +1327,7 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
           assignMatrix(node.__matrixEvent, m);
           // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
           if(backfaceVisibility === 'hidden') {
-            let m = node.__matrix, x = m[5] < 0 && m[10] < 0, y = m[0] < 0 && m[10] < 0;
+            let m = node.matrix, x = m[5] < 0 && m[10] < 0, y = m[0] < 0 && m[10] < 0;
             if(x || y) {
               i += total || 0;
               if(hasMask) {
@@ -1335,7 +1336,7 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
               continue;
             }
           }
-          let target = getCache([__cacheMask, __cacheFilter, __cacheTotal, __cache]);
+          let target = node.__cacheTarget;
           if(target) {
             let { x1: x, y1: y, __width: width, __height: height } = target;
             // 坐标计算还是以局部根为原点
@@ -1387,6 +1388,7 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
       // 按z排序，远的先绘制
       oitHash[index] = oit.sortPuzzleZ(list);
     }
+    node.__updateCache();
   }
   // 最后一次循环绘制到局部根节点上，类似genTotalWebgl()逻辑，但要考虑ppt透视
   return genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
@@ -1681,10 +1683,11 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
         lv,
         total,
         hasMask,
+        isText,
       } = __structs[i];
-      if(node instanceof Text) {
+      if(isText) {
         let __cache = node.__cache;
-        if(__cache && __cache.available) {
+        if(__cache && __cache.__available) {
           let {
             __matrixEvent,
             __opacity,
@@ -1723,9 +1726,6 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
         }
         let {
           __cache,
-          __cacheTotal,
-          __cacheFilter,
-          __cacheMask,
         } = node;
         // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理
         if(i === index) {}
@@ -1761,12 +1761,12 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
         }
         lastMatrix = m;
         lastOpacity = parentOpacity * opacity;
-        let target = getCache([__cacheMask, __cacheFilter, __cacheTotal, __cache]);
+        let target = node.__cacheTarget;
         if(target && (target !== __cache || visibility === 'visible')) {
           m = mx.multiply(inverse, m);
           // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
           if(backfaceVisibility === 'hidden') {
-            let m = node.__matrix, x = m[5] < 0 && m[10] < 0, y = m[0] < 0 && m[10] < 0;
+            let m = node.matrix, x = m[5] < 0 && m[10] < 0, y = m[0] < 0 && m[10] < 0;
             if(x || y) {
               i += total || 0;
               if(hasMask) {
@@ -1978,6 +1978,7 @@ function renderSvg(renderMode, ctx, root, isFirst, rlv) {
         node,
         total,
         hasMask,
+        isText,
       } = __structs[i];
       let __cacheDefs = node.__cacheDefs;
       let __refreshLevel = node.__refreshLevel;
@@ -2001,7 +2002,7 @@ function renderSvg(renderMode, ctx, root, isFirst, rlv) {
           }
         }
         // 去除特殊的filter，普通节点或不影响的mask在<REPAINT下defs的其它都可缓存
-        else if(!(node instanceof Text)) {
+        else if(!isText) {
           __cacheDefs.forEach(item => {
             ctx.addCache(item);
           });
@@ -2024,9 +2025,10 @@ function renderSvg(renderMode, ctx, root, isFirst, rlv) {
       lv,
       total,
       hasMask,
+      isText,
     } = __structs[i];
     let computedStyle, __refreshLevel, __cacheDefs, __cacheTotal;
-    if(node instanceof Text) {
+    if(isText) {
       computedStyle = node.computedStyle;
       __refreshLevel = lastRefreshLv;
     }
@@ -2069,15 +2071,15 @@ function renderSvg(renderMode, ctx, root, isFirst, rlv) {
     lastLv = lv;
     let virtualDom;
     // svg小刷新等级时直接修改vd，这样Geom不再感知
-    if(__refreshLevel < REPAINT && !(node instanceof Text)) {
+    if(__refreshLevel < REPAINT && !isText) {
       virtualDom = node.__virtualDom;
       // total可以跳过所有孩子节点省略循环
-      if(__cacheTotal && __cacheTotal.available) {
+      if(__cacheTotal && __cacheTotal.__available) {
         i += (total || 0);
         virtualDom.cache = true;
       }
       else {
-        __cacheTotal && (__cacheTotal.available = true);
+        __cacheTotal && (__cacheTotal.__available = true);
         virtualDom = node.__virtualDom = util.extend({}, virtualDom);
         // dom要清除children缓存，geom和img无需
         if(node instanceof Dom && !(node instanceof Img)) {
@@ -2139,7 +2141,7 @@ function renderSvg(renderMode, ctx, root, isFirst, rlv) {
     }
     else {
       // >=REPAINT会调用render，重新生成defsCache，text没有这个东西
-      if(!(node instanceof Text)) {
+      if(!isText) {
         node.__cacheDefs.splice(0);
         let matrix = node.__matrix;
         if(parentMatrix) {
@@ -2150,16 +2152,19 @@ function renderSvg(renderMode, ctx, root, isFirst, rlv) {
       node.render(renderMode, ctx, 0, 0);
       virtualDom = node.__virtualDom;
       // svg mock，每次都生成，每个节点都是局部根，更新时自底向上清除
-      if(!(node instanceof Text)) {
-        node.__cacheTotal = node.__cacheTotal || {
-          available: true,
+      if(!isText) {
+        let o = node.__cacheTotal = node.__cacheTotal || {
+          __available: true,
+          get available() {
+            return this.__available;
+          },
           release() {
-            this.available = false;
+            this.__available = false;
             delete virtualDom.cache;
           },
           __offsetY() {},
         };
-        node.__cacheTotal.available = true;
+        o.__available = true;
       }
       // 渲染后更新取值
       display = computedStyle[DISPLAY];
@@ -2280,7 +2285,14 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
   if(isFirst) {
     Page.init(gl.getParameter(gl.MAX_TEXTURE_SIZE), true);
   }
-  let { __structs, width, height } = root;
+  let { __structs, width, height, __wasmRoot } = root;
+  let wasmOp, wasmVt, wasmMe;
+  if(__wasmRoot) {
+    let len = __structs.length;
+    wasmOp = new Float64Array(wasm.wasm.memory.buffer, __wasmRoot.op_ptr(), len);
+    wasmVt = new Float64Array(wasm.wasm.memory.buffer, __wasmRoot.vt_ptr(), len * 16);
+    wasmMe = new Float64Array(wasm.wasm.memory.buffer, __wasmRoot.me_ptr(), len * 16);
+  }
   let cx = width * 0.5, cy = height * 0.5;
   // 栈代替递归，存父节点的matrix/opacity，matrix为E时存null省略计算
   let lastRefreshLevel = NONE;
@@ -2310,10 +2322,11 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         lv,
         total,
         hasMask,
+        isText,
       } = __structs[i];
       node.__index = i; // 生成total需要
       // Text特殊处理，webgl中先渲染为bitmap，再作为贴图绘制，缓存交由text内部判断，直接调用渲染纹理方法
-      if(node instanceof Text) {
+      if(isText) {
         if(lastRefreshLevel >= REPAINT) {
           let bbox = node.bbox, x = node.__x, y = node.__y;
           let __cache = node.__cache;
@@ -2329,10 +2342,12 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
             node.__cache = __cache;
             node.render(mode.CANVAS, __cache.ctx, __cache.dx, __cache.dy);
             __cache.update();
+            node.__cacheTarget = __cache;
           }
           else {
             __cache && __cache.release();
             node.__limitCache = true;
+            node.__cacheTarget = null;
           }
         }
         continue;
@@ -2396,6 +2411,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       if(!__refreshLevel) {
       }
       else if(__refreshLevel < REPAINT) {
+        let hasContent = node.__hasContent;
         let mixBlendMode = __computedStyle[MIX_BLEND_MODE];
         let isMbm = (__refreshLevel & MBM) && mixBlendMode !== 'normal';
         let need = node.__cacheAsBitmap || hasMask;
@@ -2405,9 +2421,12 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
             need = true;
           }
         }
+        let isPpt;
         if(!need && (__refreshLevel & (PPT | CACHE))) {
           let __domParent = node.__domParent;
-          let isPpt = !isE(__domParent && __domParent.__perspectiveMatrix) || node.__selfPerspectiveMatrix;
+          isPpt = total && perspective
+            && (!isE(__domParent && __domParent.__perspectiveMatrix)
+              || !isE(node.__selfPerspectiveMatrix));
           if(isPpt) {
             need = true;
           }
@@ -2416,18 +2435,18 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
           hasMbm = true;
         }
         // 这里和canvas不一样，前置cacheAsBitmap条件变成或条件之一，新的ppt层级且画中画需要新的fbo
-        if(need) {
+        if(need && (hasContent || total)) {
           mergeList.push({
             i,
             lv,
             total,
             node,
             hasMask,
-            isPpt: total && perspective || node.__selfPerspectiveMatrix,
+            isPpt,
           });
         }
         // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total
-        if(__cacheTotal && __cacheTotal.available) {
+        if(__cacheTotal && __cacheTotal.__available) {
           i += (total || 0);
           if(__refreshLevel === NONE && hasMask) {
             i += countMaskNum(__structs, i + 1, hasMask);
@@ -2480,38 +2499,43 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
           else {
             __cache && __cache.release();
             node.__limitCache = true;
+            node.__cacheTarget = null;
             return;
           }
+          node.__updateCache();
         }
         else {
           node.__limitCache = false;
+          node.__cacheTarget = null;
         }
-        let {
-          [OVERFLOW]: overflow,
-          [FILTER]: filter,
-          [MIX_BLEND_MODE]: mixBlendMode,
-          [PERSPECTIVE]: perspective,
-        } = __computedStyle;
-        let isMbm = mixBlendMode !== 'normal';
-        let isPpt = total && perspective || !isE(node.__selfPerspectiveMatrix);
-        let isOverflow = overflow === 'hidden' && total;
-        let isFilter = filter && filter.length;
-        if(isMbm) {
-          hasMbm = true;
-        }
-        if(node.__cacheAsBitmap
-          || hasMask
-          || isFilter
-          || isOverflow
-          || isPpt) {
-          mergeList.push({
-            i,
-            lv,
-            total,
-            node,
-            hasMask,
-            isPpt,
-          });
+        if(hasContent || total) {
+          let {
+            [OVERFLOW]: overflow,
+            [FILTER]: filter,
+            [MIX_BLEND_MODE]: mixBlendMode,
+            [PERSPECTIVE]: perspective,
+          } = __computedStyle;
+          let isMbm = mixBlendMode !== 'normal';
+          let isPpt = total && perspective || !isE(node.__selfPerspectiveMatrix);
+          let isOverflow = overflow === 'hidden' && total;
+          let isFilter = filter && filter.length;
+          if(isMbm) {
+            hasMbm = true;
+          }
+          if(node.__cacheAsBitmap
+            || hasMask
+            || isFilter
+            || isOverflow
+            || isPpt) {
+            mergeList.push({
+              i,
+              lv,
+              total,
+              node,
+              hasMask,
+              isPpt,
+            });
+          }
         }
       }
       lastRefreshLevel = __refreshLevel;
@@ -2558,7 +2582,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       }
       let needGen;
       // 可能没变化，比如被遮罩节点、filter变更等
-      if(!__cacheTotal || !__cacheTotal.available) {
+      if(!__cacheTotal || !__cacheTotal.__available) {
         let res;
         if(isPpt) {
           res = genPptWebgl(renderMode, __cacheTotal, gl, root, node, i, lv, total || 0,
@@ -2577,7 +2601,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       // 即使超限，也有total结果
       let target = __cacheTotal;
       if(filter.length) {
-        if(!__cacheFilter || !__cacheFilter.available || needGen) {
+        if(!__cacheFilter || !__cacheFilter.__available || needGen) {
           let res = genFilterWebgl(renderMode, gl, node, target, filter, width, height);
           if(res) {
             target = res;
@@ -2585,9 +2609,10 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
           }
         }
       }
-      if(hasMask && (!__cacheMask || !__cacheMask.available || needGen)) {
+      if(hasMask && (!__cacheMask || !__cacheMask.__available || needGen)) {
         genMaskWebgl(renderMode, gl, root, node, target, width, height, i + (total || 0) + 1, lv, __structs);
       }
+      node.__updateCache();
     }
   }
   /**
@@ -2610,12 +2635,13 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       node,
       total,
       hasMask,
+      isText,
     } = __structs[i];
     // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
-    if(node instanceof Text) {
+    if(isText) {
       // text特殊之处，__config部分是复用parent的
       let __cache = node.__cache;
-      if(__cache && __cache.available) {
+      if(__cache && __cache.__available) {
         let {
           __matrixEvent,
           __opacity,
@@ -2625,7 +2651,12 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
           drawTextureCache(gl, list.splice(0), cx, cy, 0, 0);
         }
         lastPage = p;
-        list.push({ cache: __cache, opacity: __opacity, matrix: __matrixEvent });
+        if(wasmOp) {
+          list.push({ cache: __cache, opacity: wasmOp[i], matrix: wasmMe, index: i, wasm: true });
+        }
+        else {
+          list.push({ cache: __cache, opacity: __opacity, matrix: __matrixEvent });
+        }
       }
     }
     else {
@@ -2639,39 +2670,38 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         continue;
       }
       let {
-        [OPACITY]: opacity,
         [MIX_BLEND_MODE]: mixBlendMode,
         [VISIBILITY]: visibility,
         [BACKFACE_VISIBILITY]: backfaceVisibility,
       } = __computedStyle;
+      let opacity = wasmOp ? wasmOp[i] : __computedStyle[OPACITY];
       let {
         __cache,
-        __cacheTotal,
-        __cacheFilter,
-        __cacheMask,
-        __domParent,
-        __matrix,
-        __selfPerspectiveMatrix,
       } = node;
-      let m = __matrix;
-      if(__selfPerspectiveMatrix) {
-        m = multiply(__selfPerspectiveMatrix, m);
+      let m;
+      if(!wasmOp) {
+        m = node.__matrix;
+        let __selfPerspectiveMatrix = node.__selfPerspectiveMatrix;
+        if(!isE(__selfPerspectiveMatrix)) {
+          m = multiply(__selfPerspectiveMatrix, m);
+        }
+        let __domParent = node.__domParent;
+        if(__domParent) {
+          let op = __domParent.__opacity;
+          if(op !== 1) {
+            opacity *= __domParent.__opacity;
+          }
+          let pm = __domParent.__perspectiveMatrix, me = __domParent.__matrixEvent;
+          if(pm && pm.length) {
+            m = multiply(pm, m);
+          }
+          if(me && me.length) {
+            m = multiply(me, m);
+          }
+        }
+        node.__opacity = opacity;
+        assignMatrix(node.__matrixEvent, m);
       }
-      if(__domParent) {
-        let op = __domParent.__opacity;
-        if(op !== 1) {
-          opacity *= __domParent.__opacity;
-        }
-        let pm = __domParent.__perspectiveMatrix, me = __domParent.__matrixEvent;
-        if(pm && pm.length) {
-          m = multiply(pm, m);
-        }
-        if(me && me.length) {
-          m = multiply(me, m);
-        }
-      }
-      node.__opacity = opacity;
-      assignMatrix(node.__matrixEvent, m);
       if(visibility === 'hidden' && !total) {
         if(hasMask) {
           i += countMaskNum(__structs, i + 1, hasMask);
@@ -2680,7 +2710,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
       }
       // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
       if(backfaceVisibility === 'hidden') {
-        let m = __matrix, x = m[5] < 0 && m[10] < 0, y = m[0] < 0 && m[10] < 0;
+        let m = node.matrix, x = m[5] < 0 && m[10] < 0, y = m[0] < 0 && m[10] < 0;
         if(x || y) {
           i += total || 0;
           if(hasMask) {
@@ -2690,7 +2720,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
         }
       }
       // total和自身cache的尝试，visibility不可见时没有cache
-      let target = getCache([__cacheMask, __cacheFilter, __cacheTotal, __cache]);
+      let target = node.__cacheTarget;
       if(target) {
         if(opacity > 0) {
           // 有mbm则需要混合之前的纹理和新纹理到fbo上面，连续的mbm则依次交替绘制到画布或离屏fbo上
@@ -2715,7 +2745,12 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
               drawTextureCache(gl, list.splice(0), cx, cy, 0, 0);
             }
             lastPage = p;
-            list.push({ cache: target, opacity, matrix: m });
+            if(wasmOp) {
+              list.push({ cache: target, opacity: wasmOp[i], matrix: wasmMe, index: i, wasm: true });
+            }
+            else {
+              list.push({ cache: target, opacity, matrix: m });
+            }
           }
         }
         if(target !== __cache) {
@@ -2793,7 +2828,13 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
 }
 
 function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
-  let { __structs, width, height } = root;
+  let { __structs, width, height, __wasmRoot } = root;
+  let wasmOp, wasmMe;
+  if(__wasmRoot) {
+    let len = __structs.length;
+    wasmOp = new Float64Array(wasm.wasm.memory.buffer, __wasmRoot.op_ptr(), len);
+    wasmMe = new Float64Array(wasm.wasm.memory.buffer, __wasmRoot.me_ptr(), len * 16);
+  }
   let mergeList = [];
   /**
    * 先一遍先序遍历收集cacheAsBitmap的节点，说明这棵子树需要缓存，可能出现嵌套，深层级优先、后面优先
@@ -2807,9 +2848,10 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
         lv,
         total,
         hasMask,
+        isText,
       } = __structs[i];
       // 排除Text，要么根节点直接绘制，要么被局部根节点汇总，自身并不缓存（fillText比位图更快）
-      if(node instanceof Text) {
+      if(isText) {
         continue;
       }
       let __computedStyle = node.__computedStyle;
@@ -2848,7 +2890,7 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
         });
       }
       // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total
-      if(__cacheTotal && __cacheTotal.available) {
+      if(__cacheTotal && __cacheTotal.__available) {
         i += (total || 0);
         if(__refreshLevel === NONE && hasMask) {
           i += countMaskNum(__structs, i + 1, hasMask);
@@ -2872,6 +2914,7 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
       let __cacheTotal = genTotal(renderMode, ctx, root, node, i, lv, total || 0, __structs, width, height);
       if(__cacheTotal) {
         genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width, height);
+        node.__updateCache();
       }
     });
   }
@@ -2895,9 +2938,10 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
       lv,
       total,
       hasMask,
+      isText,
     } = __structs[i];
     // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
-    if(node instanceof Text) {
+    if(isText) {
       node.render(renderMode, ctx, 0, 0);
       let oh = offscreenHash[i];
       if(oh) {
@@ -2920,13 +2964,6 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
         }
         continue;
       }
-      let {
-        __cacheTotal,
-        __cacheFilter,
-        __cacheMask,
-        __domParent,
-        __matrix,
-      } = node;
       // 遮罩对象申请了个离屏，其第一个mask申请另外一个离屏mask2，开始聚集所有mask元素的绘制，
       // 这是一个十分特殊的逻辑，保存的index是最后一个节点的索引，OFFSCREEN_MASK2是最低优先级，
       // 这样当mask本身有filter时优先自身，然后才是OFFSCREEN_MASK2
@@ -2952,33 +2989,42 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
         ctx = target.ctx;
       }
       // 设置opacity/matrix，根节点是没有父节点的不计算继承值
-      let opacity = __computedStyle[OPACITY];
-      let m = __matrix;
-      if(__domParent) {
-        let op = __domParent.__opacity;
-        if(op !== 1) {
-          opacity *= __domParent.__opacity;
+      let opacity = wasmOp ? wasmOp[i] : __computedStyle[OPACITY];
+      let m;
+      if(!wasmOp) {
+        m = node.__matrix;
+        let __domParent = node.__domParent;
+        if(__domParent) {
+          let op = __domParent.__opacity;
+          if(op !== 1) {
+            opacity *= __domParent.__opacity;
+          }
+          let me = __domParent.__matrixEvent;
+          if(me && me.length) {
+            m = multiply(me, m);
+          }
         }
-        let me = __domParent.__matrixEvent;
-        if(me && me.length) {
-          m = multiply(me, m);
-        }
+        node.__opacity = opacity;
+        assignMatrix(node.__matrixEvent, m);
       }
-      node.__opacity = opacity;
-      assignMatrix(node.__matrixEvent, m);
       // 有cache声明从而有total的可以直接绘制并跳过子节点索，total生成可能会因超限而失败
-      let target = getCache([__cacheMask, __cacheFilter, __cacheTotal]);
+      let target = node.__cacheTarget;
+      if(target === node.__cache) {
+        target = null;
+      }
       if(target) {
-        i += (total || 0);
-        if(hasMask) {
-          i += countMaskNum(__structs, i + 1, hasMask);
-        }
         if(lastOpacity !== opacity) {
           ctx.globalAlpha = opacity;
           lastOpacity = opacity;
         }
         if(opacity > 0) {
-          ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+          if(wasmOp) {
+            let idx = i * 16;
+            ctx.setTransform(wasmMe[idx], wasmMe[idx + 1], wasmMe[idx + 4], wasmMe[idx + 5], wasmMe[idx + 12], wasmMe[idx + 13]);
+          }
+          else {
+            ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+          }
           let mixBlendMode = __computedStyle[MIX_BLEND_MODE];
           if(mixBlendMode !== 'normal') {
             ctx.globalCompositeOperation = mbmName(mixBlendMode);
@@ -2987,6 +3033,10 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
           ctx.drawImage(canvas, x, y, w, h, x1 - dbx, y1 - dby, w, h);
           // total应用后记得设置回来
           ctx.globalCompositeOperation = 'source-over';
+        }
+        i += (total || 0);
+        if(hasMask) {
+          i += countMaskNum(__structs, i + 1, hasMask);
         }
         // 父超限但子有total的时候，i此时已经增加到了末尾，也需要检查
         let oh = offscreenHash[i];
@@ -3013,7 +3063,13 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
           lastOpacity = opacity;
         }
         if(opacity > 0) {
-          ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+          if(wasmOp) {
+            let idx = i * 16;
+            ctx.setTransform(wasmMe[idx], wasmMe[idx + 1], wasmMe[idx + 4], wasmMe[idx + 5], wasmMe[idx + 12], wasmMe[idx + 13]);
+          }
+          else {
+            ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+          }
           node.render(renderMode, ctx, 0, 0);
         }
         // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反

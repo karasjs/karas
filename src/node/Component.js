@@ -274,7 +274,7 @@ Object.keys(change.GEOM).concat([
   'getComputedStyle',
   'clearCache',
   '__structure',
-  '__modifyStruct',
+  // '__modifyStruct',
   '__updateStruct',
   'flowChildren',
   'absChildren',

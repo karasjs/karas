@@ -90,7 +90,7 @@ class TextBox {
       [LINE_HEIGHT]: lineHeight,
     } = computedStyle;
     let i = 0, length = content.length;
-    if(renderMode === CANVAS || renderMode === WEBGL) {
+    if(renderMode === CANVAS) {
       let me = dom.matrixEvent, list;
       let dev1 = 0, dev2 = 0;
       if(isUpright) {

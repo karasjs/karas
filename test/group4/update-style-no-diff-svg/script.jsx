@@ -10,7 +10,7 @@ let o = karas.render(
   '#test'
 );
 let input = document.querySelector('#base64');
-o.on('refresh', function() {
+o.once('refresh', function() {
   input.value += 1;
 });
 o.children[0].updateStyle({

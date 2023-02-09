@@ -15,12 +15,14 @@ let animation = t.animate([
 ], {
   duration: 200,
 });
+let input = document.querySelector('input');
 let n = 0;
 animation.on(karas.Event.FRAME, () => {
   n++;
 });
 animation.on(karas.Event.FINISH, () => {
-  let input = document.querySelector('input');
   input.value = t.getComputedStyle().color + '/' + n;
 });
-animation.finish();
+animation.finish(function(isChange) {
+  input.value += '/' + isChange;
+});

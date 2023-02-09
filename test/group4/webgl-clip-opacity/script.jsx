@@ -7,15 +7,15 @@ let o = karas.render(
             "tagName": "$rect",
             "props": {
               "style": {
-                "p": "absolute",
-                "w": 250,
-                "h": 250,
-                "f": [
+                "position": "absolute",
+                "width": 250,
+                "height": 250,
+                "fill": [
                   "rgba(0,0,0,1)"
                 ],
-                "sw": 0,
-                "l": 0,
-                "t": 0
+                "strokeWidth": 0,
+                "left": 0,
+                "top": 0
               },
             },
           },
@@ -23,11 +23,11 @@ let o = karas.render(
             "tagName": "div",
             "props": {
               "style": {
-                "p": "absolute",
-                "w": 99,
-                "h": 99,
-                "l": 49.5,
-                "t": 129.5,
+                "position": "absolute",
+                "width": 99,
+                "height": 99,
+                "left": 49.5,
+                "top": 129.5,
                 background: '#F00',
                 opacity: 0.5,
               }
@@ -37,13 +37,13 @@ let o = karas.render(
             "tagName": "$rect",
             "props": {
               "style": {
-                "p": "absolute",
-                "v": "visible",
-                "w": 196.22,
-                "h": 111.25,
-                "f": "rgb(238,224,0,1)",
-                "l": 0,
-                "t": 70,
+                "position": "absolute",
+                "visibility": "visible",
+                "width": 196.22,
+                "height": 111.25,
+                "fill": "rgb(238,224,0,1)",
+                "left": 0,
+                "top": 70,
                 opacity: 0.3,
               },
               "clip": true,

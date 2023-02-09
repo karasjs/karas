@@ -19,5 +19,5 @@ let animation = t.animate([
 let input = document.querySelector('input');
 animation.gotoAndStop(100);
 animation.on(karas.Event.FRAME, () => {
-  input.value += t.getComputedStyle().display;
+  input.value = t.getComputedStyle().display;
 });

@@ -30,8 +30,8 @@ let animation2 = t.animate([
 let input = document.querySelector('input');
 let n = 0;
 animation2.on(karas.Event.FRAME, () => {
-  if(n++ === 0) {
-    input.value = t.getComputedStyle().width;
+  if(n++ === 1) {
+    input.value = t.getComputedStyle().width > 100;
   }
 });
 animation2.on(karas.Event.FINISH, () => {

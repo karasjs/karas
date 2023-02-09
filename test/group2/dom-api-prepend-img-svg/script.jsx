@@ -6,7 +6,7 @@ let root = karas.render(
 );
 let img = <img src="../../image.png"/>;
 root.prependChild(img, function() {
-  root.on('refresh', function() {
+  root.once('refresh', function() {
     let input = document.querySelector('input');
     input.value = document.querySelector('svg').innerHTML;
   });

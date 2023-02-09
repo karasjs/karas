@@ -21,6 +21,6 @@ let o = karas.render(
   '#test'
 );
 let input = document.querySelector('input');
-o.on('refresh', function() {
+o.once('refresh', function() {
   input.value = document.querySelector('svg').innerHTML;
 });

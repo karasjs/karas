@@ -1,6 +1,6 @@
 import mx from '../math/matrix';
 
-const { calRectPoint, calPoint } = mx;
+const { calRectPoint, calRectPointWasm, calPoint } = mx;
 
 /**
  * 初始化 shader
@@ -179,7 +179,7 @@ function drawTextureCache(gl, list, cx, cy, dx, dy) {
     vtOpacity = lastVtOpacity = new Float32Array(length * 6);
   }
   for(let i = 0; i < length; i++) {
-    let { cache, opacity, matrix } = list[i];
+    let { cache, opacity, matrix, index, wasm } = list[i];
     let { __tw: width, __th: height,
       __tx1: tx1, __ty1: ty1, __tx2: tx2, __ty2: ty2,
       __page: page, __bbox: bbox } = cache;
@@ -191,10 +191,28 @@ function drawTextureCache(gl, list, cx, cy, dx, dy) {
       bindTexture(gl, page.texture, 0);
     }
     // 计算顶点坐标和纹理坐标，转换[0,1]对应关系
+    let x1, y1, z1, w1, x2, y2, z2, w2, x3, y3, z3, w3, x4, y4, z4, w4;
+    // wasm中的matrix和普通js取的方式不一样
     let bx = bbox[0], by = bbox[1];
     let xa = bx + dx, ya = by + height + dy;
     let xb = bx + width + dx, yb = by + dy;
-    let { x1, y1, z1, w1, x2, y2, z2, w2, x3, y3, z3, w3, x4, y4, z4, w4 } = calRectPoint(xa, ya, xb, yb, matrix);
+    let t = wasm ? calRectPointWasm(xa, ya, xb, yb, matrix, index) : calRectPoint(xa, ya, xb, yb, matrix);
+    x1 = t.x1;
+    y1 = t.y1;
+    z1 = t.z1;
+    w1 = t.w1;
+    x2 = t.x2;
+    y2 = t.y2;
+    z2 = t.z2;
+    w2 = t.w2;
+    x3 = t.x3;
+    y3 = t.y3;
+    z3 = t.z3;
+    w3 = t.w3;
+    x4 = t.x4;
+    y4 = t.y4;
+    z4 = t.z4;
+    w4 = t.w4;
     // console.warn(x1,y1,z1,w1,',',x2,y2,z2,w2,',',x3,y3,z3,w3,',',x4,y4,z4,w4);
     // z范围取所有、对角线最大值，只有当非0有值时才求
     let z = Math.max(Math.abs(z1), Math.abs(z2));
@@ -203,7 +221,7 @@ function drawTextureCache(gl, list, cx, cy, dx, dy) {
     if(z) {
       z = Math.max(z, Math.sqrt(cx * cx + cy * cy));
     }
-    let t = convertCoords2Gl(x1, y1, z1, w1, cx, cy, z);
+    t = convertCoords2Gl(x1, y1, z1, w1, cx, cy, z);
     x1 = t.x; y1 = t.y; z1 = t.z;
     t = convertCoords2Gl(x2, y2, z2, w2, cx, cy, z);
     x2 = t.x; y2 = t.y; z2 = t.z;

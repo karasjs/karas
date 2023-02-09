@@ -18,10 +18,11 @@ let animation = t.animate([
 });
 let input = document.querySelector('input');
 let n = 0;
-animation.gotoAndPlay(200);
+animation.gotoAndPlay(100);
 animation.on(karas.Event.FRAME, () => {
   if(n++ === 0) {
-    input.value = t.getComputedStyle().height;
+    let height = t.getComputedStyle().height;
+    input.value = height >= 150 && height < 200;
   }
 });
 animation.on(karas.Event.FINISH, () => {

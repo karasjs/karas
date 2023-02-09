@@ -27,7 +27,11 @@ let root = karas.parse({
 });
 root.animateController.playbackRate = 1000;
 root.animateController.play();
+
+let count = 0;
 root.on('refresh', function() {
-  let input = document.querySelector('input');
-  input.value = root.ref.div.getComputedStyle('translateX').translateX;
+  if(count++ < 2) {
+    let input = document.querySelector('input');
+    input.value = root.ref.div.getComputedStyle('translateX').translateX;
+  }
 })

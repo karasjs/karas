@@ -28,6 +28,11 @@ console.log(karas.version);
 karas.debug = true;
 ```
 
+### wasm
+* **类型** `Object`
+* **说明**  
+wasm功能相关，详见[wasm](#wasm)。
+
 <a name="render"></a>
 ### render
 * **类型** `Function`
@@ -948,6 +953,11 @@ console.log(root);
 * **类型** `boolean`
 * **说明**  
 当使用webgl节点时，可手动指定是否是webgl2上下文。不指定或不支持则自动判断降级为webgl。
+
+#### wasm
+* **类型** `boolean`
+* **说明**  
+是否启用wasm功能，默认开启，但需要提前加载好wasm库。可以手动设置假值来关闭它。
 
 ### 类方法method
 
@@ -3716,3 +3726,40 @@ karas.render(
 );
 ```
 上述代码`outer click`也会响应，且文字是红色。
+
+<a name="wasm"></a>
+## wasm
+* **类型** `Object`
+* **说明**  
+WebAssembly功能相关，能够提升性能。需要手动调用异步加载wasm库，成功后自动判断是否支持启用。
+* **示例**
+```jsx
+karas.wasm.init('karas_bg.wasm', function() {
+  let root = karas.render(
+    <canvas>Hello Wasm!</canvas>,
+    '#selector'
+  );
+});
+```
+
+### 属性
+
+#### init
+* **类型** `async Function`
+* **参数**
+  * url `string`
+  * cb `Function`
+* **说明**  
+加载wasm库，成功回调。
+
+#### wasm
+* **类型** `Object`
+* **说明**  
+wasm实例。
+* **示例**
+```jsx
+karas.wasm.init('karas_bg.wasm', function(wasm) {
+  console.log(wasm); // 有则支持，没有则不支持。
+  console.log(karsa.wasm.wasm); // 有则支持，没有则不支持。
+});
+```

@@ -3,65 +3,67 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=0"/>
-  <title>benchmark</title>
+  <title>benchmark-wasm</title>
   <link href="style.css" media="all" rel="stylesheet"/>
 </head>
 <body>
-<div class="pre">1000个包含文字和背景色的节点的动画性能，canvas模式且开启cacheAsBitmap缓存。</div>
+<div class="pre">5000个包含文字和背景色的节点的动画性能，wasm+webgl模式且开启cacheAsBitmap缓存。</div>
 <div id="div"></div>
 <div id="fps"></div>
 <pre><code class="brush:csx"></code></pre>
 <script type="text/jsx">
   let list = [];
-  for(let i = 0; i < 1000; i++) {
+  for(let i = 0; i < 5000; i++) {
     list.push(i);
   }
-  let root = karas.render(
-    <canvas width={360} height={360}>
-      {
-        list.map(i => {
-          let background = `rgb(${Math.floor(Math.random() * 255)},${Math.floor(Math.random() * 255)},${Math.floor(Math.random() * 255)})`;
-          return <div ref={i}
-                      cacheAsBitmap={1}
-                      style={{
-                        position: 'absolute',
-                        left: '50%',
-                        top: '50%',
-                        background,
-                      }}>{i}</div>;
-        })
-      }
-    </canvas>,
-    '#div'
-  );
-  list.forEach(i => {
-    let node = root.ref[i];
-    node.animate([
-      {},
-      {
-        translateX: -180 + Math.random() * 360,
-        translateY: -180 + Math.random() * 360,
-        rotateZ: Math.random() * 360,
-        scale: 1 + Math.random(),
-      }
-    ], {
-      duration: 500 + Math.random() * 500,
-      direction: 'alternate',
-      iterations: Infinity,
-    });
-  });
-  let fps = document.querySelector('#fps');
-  let arr = [];
-  karas.animate.frame.onFrame(function(diff) {
-    arr.push(diff);
-    if(arr.length > 5) {
-      arr.shift();
-      let n = 0;
-      arr.forEach(i => {
-        n += i;
+  karas.wasm.init('../karas_bg.wasm', function() {
+    let root = karas.render(
+      <webgl width={360} height={360}>
+        {
+          list.map(i => {
+            let background = `rgb(${Math.floor(Math.random() * 255)},${Math.floor(Math.random() * 255)},${Math.floor(Math.random() * 255)})`;
+            return <div ref={i}
+                        cacheAsBitmap={1}
+                        style={{
+                          position: 'absolute',
+                          left: '50%',
+                          top: '50%',
+                          background,
+                        }}>{i}</div>;
+          })
+        }
+      </webgl>,
+      '#div'
+    );
+    list.forEach(i => {
+      let node = root.ref[i];
+      node.animate([
+        {},
+        {
+          translateX: -180 + Math.random() * 360,
+          translateY: -180 + Math.random() * 360,
+          rotateZ: Math.random() * 360,
+          scale: 1 + Math.random(),
+        }
+      ], {
+        duration: 500 + Math.random() * 500,
+        direction: 'alternate',
+        iterations: Infinity,
       });
-      fps.innerHTML = Math.round(1000 / (n / 5));
-    }
+    });
+    let fps = document.querySelector('#fps');
+    let arr = [];
+    karas.animate.frame.onFrame(function(diff) {
+      arr.push(diff);
+      if(arr.length > 5) {
+        arr.shift();
+        let n = 0;
+        arr.forEach(i => {
+          n += i;
+        });
+        fps.innerHTML = Math.round(1000 / (n / 5));
+      }
+    });
   });
 </script>
 <script src="sea.js"></script>

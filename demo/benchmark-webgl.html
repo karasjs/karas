@@ -3,21 +3,21 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=0"/>
-  <title>benchmark</title>
+  <title>benchmark-webgl</title>
   <link href="style.css" media="all" rel="stylesheet"/>
 </head>
 <body>
-<div class="pre">1000个包含文字和背景色的节点的动画性能，canvas模式且开启cacheAsBitmap缓存。</div>
+<div class="pre">2000个包含文字和背景色的节点的动画性能，webgl模式且开启cacheAsBitmap缓存。</div>
 <div id="div"></div>
 <div id="fps"></div>
 <pre><code class="brush:csx"></code></pre>
 <script type="text/jsx">
   let list = [];
-  for(let i = 0; i < 1000; i++) {
+  for(let i = 0; i < 2000; i++) {
     list.push(i);
   }
   let root = karas.render(
-    <canvas width={360} height={360}>
+    <webgl width={360} height={360}>
       {
         list.map(i => {
           let background = `rgb(${Math.floor(Math.random() * 255)},${Math.floor(Math.random() * 255)},${Math.floor(Math.random() * 255)})`;
@@ -31,7 +31,7 @@
                       }}>{i}</div>;
         })
       }
-    </canvas>,
+    </webgl>,
     '#div'
   );
   list.forEach(i => {

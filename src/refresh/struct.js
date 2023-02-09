@@ -325,8 +325,6 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
         continue;
       }
       let {
-        // [TRANSFORM]: transform,
-        // [TRANSFORM_ORIGIN]: tfo,
         [VISIBILITY]: visibility,
       } = __computedStyle;
       let mh = maskStartHash[i];
@@ -371,7 +369,7 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
       let transform, tfo, wn = node.__wasmNode;
       if(wn) {
         transform = new Float64Array(wasm.wasm.memory.buffer, wn.transform_ptr(), 16);
-        let cs = new Float64Array(wasm.wasm.memory.buffer, wn.transform_ptr(), 18);
+        let cs = new Float64Array(wasm.wasm.memory.buffer, wn.computed_style_ptr(), 18);
         tfo = [cs[16], cs[17]];
       }
       else {
@@ -606,10 +604,18 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
           lastLv = lv;
           // 计算临时的matrix，先以此节点为局部根节点原点，后面考虑逆矩阵
           let {
-            [TRANSFORM]: transform,
-            [TRANSFORM_ORIGIN]: tfo,
             [OPACITY]: opacity, // 和genTotal不同，局部根节点opacity生效不为1
           } = __computedStyle;
+          let transform, tfo, wn = node.__wasmNode;
+          if(wn) {
+            transform = new Float64Array(wasm.wasm.memory.buffer, wn.transform_ptr(), 16);
+            let cs = new Float64Array(wasm.wasm.memory.buffer, wn.computed_style_ptr(), 18);
+            tfo = [cs[16], cs[17]];
+          }
+          else {
+            transform = node.__computedStyle[TRANSFORM];
+            tfo = node.__computedStyle[TRANSFORM_ORIGIN];
+          }
           if(i !== index) {
             opacity *= parentOpacity;
           }
@@ -833,9 +839,14 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
       pm = tf.calPerspectiveMatrix(perspective, x1 + dx + perspectiveOrigin[0], y1 + dy + perspectiveOrigin[1]);
     }
     else {
-      let {
-        [TRANSFORM_ORIGIN]: perspectiveOrigin,
-      } = pptNode.__computedStyle;
+      let perspectiveOrigin, wn = pptNode.__wasmNode;
+      if(wn) {
+        let cs = new Float64Array(wasm.wasm.memory.buffer, wn.computed_style_ptr(), 18);
+        perspectiveOrigin = [cs[16], cs[17]];
+      }
+      else {
+        perspectiveOrigin = pptNode.__computedStyle[TRANSFORM_ORIGIN];
+      }
       pm = tf.calPerspectiveMatrix(pptNode.__selfPerspective, x1 + dx + perspectiveOrigin[0], y1 + dy + perspectiveOrigin[1]);
     }
   }
@@ -882,14 +893,14 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
       if(__cache && __cache.__available) {
         let {
           __opacity,
-          __matrixEvent,
+          matrixEvent,
         } = node.__domParent;
         let p = __cache.__page;
         if(lastPage && lastPage !== p) {
           drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
         }
         lastPage = p;
-        list.push({ cache: __cache, opacity: __opacity, matrix: __matrixEvent });
+        list.push({ cache: __cache, opacity: __opacity, matrix: matrixEvent });
       }
     }
     // 再看total缓存/cache，都没有的是无内容的Xom节点
@@ -906,8 +917,6 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
       }
       let {
         [VISIBILITY]: visibility,
-        [TRANSFORM]: transform,
-        [TRANSFORM_ORIGIN]: tfo,
         [MIX_BLEND_MODE]: mixBlendMode,
         [BACKFACE_VISIBILITY]: backfaceVisibility,
       } = __computedStyle;
@@ -929,7 +938,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
         let transform, tfo, wn = node.__wasmNode;
         if(wn) {
           transform = new Float64Array(wasm.wasm.memory.buffer, wn.transform_ptr(), 16);
-          let cs = new Float64Array(wasm.wasm.memory.buffer, wn.transform_ptr(), 18);
+          let cs = new Float64Array(wasm.wasm.memory.buffer, wn.computed_style_ptr(), 18);
           tfo = [cs[16], cs[17]];
         }
         else {
@@ -987,8 +996,6 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
             }
             let {
               [VISIBILITY]: visibility,
-              [TRANSFORM]: transform,
-              [TRANSFORM_ORIGIN]: tfo,
               [BACKFACE_VISIBILITY]: backfaceVisibility,
             } = __computedStyle;
             if(visibility === 'hidden' && !total) {
@@ -998,6 +1005,16 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
               continue;
             }
             let p = node.__domParent;
+            let transform, tfo, wn = node.__wasmNode;
+            if(wn) {
+              transform = new Float64Array(wasm.wasm.memory.buffer, wn.transform_ptr(), 16);
+              let cs = new Float64Array(wasm.wasm.memory.buffer, wn.computed_style_ptr(), 18);
+              tfo = [cs[16], cs[17]];
+            }
+            else {
+              transform = __computedStyle[TRANSFORM];
+              tfo = __computedStyle[TRANSFORM_ORIGIN];
+            }
             let m;
             if(!isE(transform)) {
               m = tf.calMatrixByOrigin(transform, tfo[0] + node.__x1  + dx, tfo[1] + node.__y1 + dy);
@@ -1297,8 +1314,6 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
           }
           let {
             [VISIBILITY]: visibility,
-            [TRANSFORM]: transform,
-            [TRANSFORM_ORIGIN]: tfo,
             [BACKFACE_VISIBILITY]: backfaceVisibility,
           } = __computedStyle;
           if(visibility === 'hidden' && !total) {
@@ -1306,6 +1321,17 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
               i += countMaskNum(__structs, i + 1, hasMask);
             }
             continue;
+          }
+          // wasm取transform不同的方式
+          let transform, tfo, wn = node.__wasmNode;
+          if(wn) {
+            transform = new Float64Array(wasm.wasm.memory.buffer, wn.transform_ptr(), 16);
+            let cs = new Float64Array(wasm.wasm.memory.buffer, wn.computed_style_ptr(), 18);
+            tfo = [cs[16], cs[17]];
+          }
+          else {
+            transform = __computedStyle[TRANSFORM];
+            tfo = __computedStyle[TRANSFORM_ORIGIN];
           }
           let {
             __cache,
@@ -1646,10 +1672,16 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
   __cacheMask.__available = true;
   node.__cacheMask = __cacheMask;
   // 先求得被遮罩的matrix，用作inverse给mask计算，以被遮罩左上角为原点
-  let {
-    [TRANSFORM]: transform,
-    [TRANSFORM_ORIGIN]: tfo,
-  } = node.__computedStyle;
+  let transform, tfo, wn = node.__wasmNode;
+  if(wn) {
+    transform = new Float64Array(wasm.wasm.memory.buffer, wn.transform_ptr(), 16);
+    let cs = new Float64Array(wasm.wasm.memory.buffer, wn.computed_style_ptr(), 18);
+    tfo = [cs[16], cs[17]];
+  }
+  else {
+    transform = node.__computedStyle[TRANSFORM];
+    tfo = node.__computedStyle[TRANSFORM_ORIGIN];
+  }
   let inverse;
   if(isE(transform)) {
     inverse = mx.identity();
@@ -1714,8 +1746,6 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
         let {
           [OPACITY]: opacity,
           [VISIBILITY]: visibility,
-          [TRANSFORM]: transform,
-          [TRANSFORM_ORIGIN]: tfo,
           [BACKFACE_VISIBILITY]: backfaceVisibility,
         } = computedStyle;
         if(visibility === 'hidden' && !total) {
@@ -1748,6 +1778,16 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
         }
         // 不变是同级兄弟，无需特殊处理 else {}
         lastLv = lv;
+        let transform, tfo, wn = node.__wasmNode;
+        if(wn) {
+          transform = new Float64Array(wasm.wasm.memory.buffer, wn.transform_ptr(), 16);
+          let cs = new Float64Array(wasm.wasm.memory.buffer, wn.computed_style_ptr(), 18);
+          tfo = [cs[16], cs[17]];
+        }
+        else {
+          transform = computedStyle[TRANSFORM];
+          tfo = computedStyle[TRANSFORM_ORIGIN];
+        }
         // 不考虑mbm
         let m;
         if(isE(transform)) {

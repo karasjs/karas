@@ -603,8 +603,8 @@ export class Node {
   /**
    * @returns {number}
    */
-  computed_style() {
-    const ret = wasm.node_computed_style(this.ptr);
+  computed_style_ptr() {
+    const ret = wasm.node_computed_style_ptr(this.ptr);
     return ret;
   }
   /**

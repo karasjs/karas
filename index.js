@@ -16253,9 +16253,9 @@
        */
 
     }, {
-      key: "computed_style",
-      value: function computed_style() {
-        var ret = wasm.node_computed_style(this.ptr);
+      key: "computed_style_ptr",
+      value: function computed_style_ptr() {
+        var ret = wasm.node_computed_style_ptr(this.ptr);
         return ret;
       }
       /**
@@ -32555,9 +32555,19 @@
       value: function genMask(target, node, callback) {
         var cacheMask = genSingle(target, 'mask1');
         var list = [];
-        var _node$__computedStyle = node.__computedStyle,
-            transform = _node$__computedStyle[TRANSFORM$2],
-            tfo = _node$__computedStyle[TRANSFORM_ORIGIN$1];
+        var transform,
+            tfo,
+            wn = node.__wasmNode;
+
+        if (wn) {
+          transform = new Float64Array(wasm$1.wasm.memory.buffer, wn.transform_ptr(), 16);
+          var cs = new Float64Array(wasm$1.wasm.memory.buffer, wn.computed_style_ptr(), 18);
+          tfo = [cs[16], cs[17]];
+        } else {
+          transform = node.__computedStyle[TRANSFORM$2];
+          tfo = node.__computedStyle[TRANSFORM_ORIGIN$1];
+        }
+
         var next = node.next;
         var isClip = next.__clip;
 
@@ -36702,7 +36712,7 @@
 
         if (wn) {
           transform = new Float64Array(wasm$1.wasm.memory.buffer, wn.transform_ptr(), 16);
-          var cs = new Float64Array(wasm$1.wasm.memory.buffer, wn.transform_ptr(), 18);
+          var cs = new Float64Array(wasm$1.wasm.memory.buffer, wn.computed_style_ptr(), 18);
           tfo = [cs[16], cs[17]];
         } else {
           transform = __computedStyle[TRANSFORM$1];
@@ -37019,9 +37029,19 @@
 
             lastLv = _lv2; // 计算临时的matrix，先以此节点为局部根节点原点，后面考虑逆矩阵
 
-            var transform = _computedStyle[TRANSFORM$1],
-                tfo = _computedStyle[TRANSFORM_ORIGIN],
-                opacity = _computedStyle[OPACITY$1];
+            var opacity = _computedStyle[OPACITY$1];
+            var transform = void 0,
+                tfo = void 0,
+                wn = _node3.__wasmNode;
+
+            if (wn) {
+              transform = new Float64Array(wasm$1.wasm.memory.buffer, wn.transform_ptr(), 16);
+              var cs = new Float64Array(wasm$1.wasm.memory.buffer, wn.computed_style_ptr(), 18);
+              tfo = [cs[16], cs[17]];
+            } else {
+              transform = _node3.__computedStyle[TRANSFORM$1];
+              tfo = _node3.__computedStyle[TRANSFORM_ORIGIN];
+            }
 
             if (i !== index) {
               opacity *= parentOpacity;
@@ -37305,7 +37325,16 @@
             perspectiveOrigin = _pptNode$__computedSt[PERSPECTIVE_ORIGIN];
         pm = transform$1.calPerspectiveMatrix(perspective, x1 + dx + perspectiveOrigin[0], y1 + dy + perspectiveOrigin[1]);
       } else {
-        var _perspectiveOrigin = pptNode.__computedStyle[TRANSFORM_ORIGIN];
+        var _perspectiveOrigin,
+            wn = pptNode.__wasmNode;
+
+        if (wn) {
+          var cs = new Float64Array(wasm$1.wasm.memory.buffer, wn.computed_style_ptr(), 18);
+          _perspectiveOrigin = [cs[16], cs[17]];
+        } else {
+          _perspectiveOrigin = pptNode.__computedStyle[TRANSFORM_ORIGIN];
+        }
+
         pm = transform$1.calPerspectiveMatrix(pptNode.__selfPerspective, x1 + dx + _perspectiveOrigin[0], y1 + dy + _perspectiveOrigin[1]);
       }
     }
@@ -37351,7 +37380,7 @@
         if (__cache && __cache.__available) {
           var _node4$__domParent = _node4.__domParent,
               __opacity = _node4$__domParent.__opacity,
-              __matrixEvent = _node4$__domParent.__matrixEvent;
+              matrixEvent = _node4$__domParent.matrixEvent;
           var p = __cache.__page;
 
           if (lastPage && lastPage !== p) {
@@ -37362,7 +37391,7 @@
           list.push({
             cache: __cache,
             opacity: __opacity,
-            matrix: __matrixEvent
+            matrix: matrixEvent
           });
         }
       } // 再看total缓存/cache，都没有的是无内容的Xom节点
@@ -37381,10 +37410,8 @@
           }
         }
 
-        var visibility = __computedStyle[VISIBILITY$1];
-            __computedStyle[TRANSFORM$1];
-            __computedStyle[TRANSFORM_ORIGIN];
-            var mixBlendMode = __computedStyle[MIX_BLEND_MODE$1],
+        var visibility = __computedStyle[VISIBILITY$1],
+            mixBlendMode = __computedStyle[MIX_BLEND_MODE$1],
             backfaceVisibility = __computedStyle[BACKFACE_VISIBILITY];
 
         if (visibility === 'hidden' && !_total6) {
@@ -37403,25 +37430,27 @@
 
         if (i > index) {
           // wasm取transform不同的方式
-          var _transform = void 0,
-              _tfo = void 0,
-              wn = _node4.__wasmNode;
+          var transform = void 0,
+              tfo = void 0,
+              _wn = _node4.__wasmNode;
 
-          if (wn) {
-            _transform = new Float64Array(wasm$1.wasm.memory.buffer, wn.transform_ptr(), 16);
-            var cs = new Float64Array(wasm$1.wasm.memory.buffer, wn.transform_ptr(), 18);
-            _tfo = [cs[16], cs[17]];
+          if (_wn) {
+            transform = new Float64Array(wasm$1.wasm.memory.buffer, _wn.transform_ptr(), 16);
+
+            var _cs = new Float64Array(wasm$1.wasm.memory.buffer, _wn.computed_style_ptr(), 18);
+
+            tfo = [_cs[16], _cs[17]];
           } else {
-            _transform = __computedStyle[TRANSFORM$1];
-            _tfo = __computedStyle[TRANSFORM_ORIGIN];
+            transform = __computedStyle[TRANSFORM$1];
+            tfo = __computedStyle[TRANSFORM_ORIGIN];
           }
 
-          if (!isE(_transform)) {
-            m = transform$1.calMatrixByOrigin(_transform, _tfo[0] + _node4.__x1 + dx, _tfo[1] + _node4.__y1 + dy);
+          if (!isE(transform)) {
+            m = transform$1.calMatrixByOrigin(transform, tfo[0] + _node4.__x1 + dx, tfo[1] + _node4.__y1 + dy);
           }
 
           if (ppt2) {
-            var t = transform$1.calPerspectiveMatrix(ppt2, _tfo[0] + _node4.__x1 + dx, _tfo[1] + _node4.__y1 + dy);
+            var t = transform$1.calPerspectiveMatrix(ppt2, tfo[0] + _node4.__x1 + dx, tfo[1] + _node4.__y1 + dy);
             m = multiply(t, m);
           }
 
@@ -37479,8 +37508,6 @@
               }
 
               var _visibility = _computedStyle2[VISIBILITY$1],
-                  _transform2 = _computedStyle2[TRANSFORM$1],
-                  _tfo2 = _computedStyle2[TRANSFORM_ORIGIN],
                   _backfaceVisibility = _computedStyle2[BACKFACE_VISIBILITY];
 
               if (_visibility === 'hidden' && !_total7) {
@@ -37493,10 +37520,25 @@
 
               var _p3 = _node5.__domParent;
 
+              var _transform = void 0,
+                  _tfo = void 0,
+                  _wn2 = _node5.__wasmNode;
+
+              if (_wn2) {
+                _transform = new Float64Array(wasm$1.wasm.memory.buffer, _wn2.transform_ptr(), 16);
+
+                var _cs2 = new Float64Array(wasm$1.wasm.memory.buffer, _wn2.computed_style_ptr(), 18);
+
+                _tfo = [_cs2[16], _cs2[17]];
+              } else {
+                _transform = _computedStyle2[TRANSFORM$1];
+                _tfo = _computedStyle2[TRANSFORM_ORIGIN];
+              }
+
               var _m2 = void 0;
 
-              if (!isE(_transform2)) {
-                _m2 = transform$1.calMatrixByOrigin(_transform2, _tfo2[0] + _node5.__x1 + dx, _tfo2[1] + _node5.__y1 + dy);
+              if (!isE(_transform)) {
+                _m2 = transform$1.calMatrixByOrigin(_transform, _tfo[0] + _node5.__x1 + dx, _tfo[1] + _node5.__y1 + dy);
               }
 
               if (_p3 !== top) {
@@ -37891,8 +37933,6 @@
             }
 
             var _visibility2 = _computedStyle3[VISIBILITY$1],
-                transform = _computedStyle3[TRANSFORM$1],
-                tfo = _computedStyle3[TRANSFORM_ORIGIN],
                 backfaceVisibility = _computedStyle3[BACKFACE_VISIBILITY];
 
             if (_visibility2 === 'hidden' && !_total10) {
@@ -37901,6 +37941,20 @@
               }
 
               continue;
+            } // wasm取transform不同的方式
+
+
+            var transform = void 0,
+                tfo = void 0,
+                wn = _node8.__wasmNode;
+
+            if (wn) {
+              transform = new Float64Array(wasm$1.wasm.memory.buffer, wn.transform_ptr(), 16);
+              var cs = new Float64Array(wasm$1.wasm.memory.buffer, wn.computed_style_ptr(), 18);
+              tfo = [cs[16], cs[17]];
+            } else {
+              transform = _computedStyle3[TRANSFORM$1];
+              tfo = _computedStyle3[TRANSFORM_ORIGIN];
             }
 
             var _cache2 = _node8.__cache,
@@ -38310,9 +38364,19 @@
     __cacheMask.__available = true;
     node.__cacheMask = __cacheMask; // 先求得被遮罩的matrix，用作inverse给mask计算，以被遮罩左上角为原点
 
-    var _node$__computedStyle = node.__computedStyle,
-        transform = _node$__computedStyle[TRANSFORM$1],
-        tfo = _node$__computedStyle[TRANSFORM_ORIGIN];
+    var transform,
+        tfo,
+        wn = node.__wasmNode;
+
+    if (wn) {
+      transform = new Float64Array(wasm$1.wasm.memory.buffer, wn.transform_ptr(), 16);
+      var cs = new Float64Array(wasm$1.wasm.memory.buffer, wn.computed_style_ptr(), 18);
+      tfo = [cs[16], cs[17]];
+    } else {
+      transform = node.__computedStyle[TRANSFORM$1];
+      tfo = node.__computedStyle[TRANSFORM_ORIGIN];
+    }
+
     var inverse;
 
     if (isE(transform)) {
@@ -38390,8 +38454,6 @@
 
           var opacity = computedStyle[OPACITY$1],
               visibility = computedStyle[VISIBILITY$1],
-              _transform3 = computedStyle[TRANSFORM$1],
-              _tfo3 = computedStyle[TRANSFORM_ORIGIN],
               backfaceVisibility = computedStyle[BACKFACE_VISIBILITY];
 
           if (visibility === 'hidden' && !_total11) {
@@ -38424,14 +38486,30 @@
           } // 不变是同级兄弟，无需特殊处理 else {}
 
 
-          lastLv = _lv5; // 不考虑mbm
+          lastLv = _lv5;
+
+          var _transform2 = void 0,
+              _tfo2 = void 0,
+              _wn3 = _node9.__wasmNode;
+
+          if (_wn3) {
+            _transform2 = new Float64Array(wasm$1.wasm.memory.buffer, _wn3.transform_ptr(), 16);
+
+            var _cs3 = new Float64Array(wasm$1.wasm.memory.buffer, _wn3.computed_style_ptr(), 18);
+
+            _tfo2 = [_cs3[16], _cs3[17]];
+          } else {
+            _transform2 = computedStyle[TRANSFORM$1];
+            _tfo2 = computedStyle[TRANSFORM_ORIGIN];
+          } // 不考虑mbm
+
 
           var m = void 0;
 
-          if (isE(_transform3)) {
+          if (isE(_transform2)) {
             m = matrix.identity();
           } else {
-            m = transform$1.calMatrixByOrigin(_transform3, _tfo3[0] + dbx + _node9.__x1 - x1, _tfo3[1] + dby + _node9.__y1 - y1);
+            m = transform$1.calMatrixByOrigin(_transform2, _tfo2[0] + dbx + _node9.__x1 - x1, _tfo2[1] + dby + _node9.__y1 - y1);
           }
 
           if (!isE(parentMatrix)) {

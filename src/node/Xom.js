@@ -23,7 +23,7 @@ import font from '../style/font';
 import bs from '../style/bs';
 import mbm from '../style/mbm';
 import reset from '../style/reset';
-import wasm from '../wasm';
+import wasm from '../wasm/index';
 
 const { svgPolygon } = painter;
 const { CANVAS, SVG, WEBGL } = mode;
@@ -1210,6 +1210,7 @@ class Xom extends Node {
         toE(spm);
         // transform相对于自身
         if(ct && ct.length) {
+          inject.warn('CSS transform is deprecated');
           let first = ct[0];
           // 特殊处理，抽取出来transform的ppt，视为tfo原点的透视
           if(first.k === PERSPECTIVE) {

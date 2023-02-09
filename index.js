@@ -21522,6 +21522,7 @@
             toE(spm); // transform相对于自身
 
             if (ct && ct.length) {
+              inject.warn('CSS transform is deprecated');
               var first = ct[0]; // 特殊处理，抽取出来transform的ppt，视为tfo原点的透视
 
               if (first.k === PERSPECTIVE$1) {
@@ -23915,23 +23916,24 @@
     }, {
       key: "matrix",
       get: function get() {
-        this.__wasmNode;
+        var wn = this.__wasmNode;
+
+        if (wn) {
+          return new Float64Array(wasm$1.wasm.memory.buffer, wn.m_ptr(), 16);
+        }
 
         return this.__matrix;
       }
     }, {
       key: "matrixEvent",
       get: function get() {
-        var __domParent = this.__domParent,
-            matrix$1 = this.__matrix;
+        var wn = this.__wasmNode;
 
-        while (__domParent) {
-          matrix$1 = matrix.multiply(__domParent.__perspectiveMatrix, matrix$1);
-          matrix$1 = matrix.multiply(__domParent.__matrix, matrix$1);
-          __domParent = __domParent.__domParent;
+        if (wn) {
+          return new Float64Array(wasm$1.wasm.memory.buffer, wn.me_ptr(), 16);
         }
 
-        return matrix$1;
+        return this.__matrixEvent;
       }
     }, {
       key: "perspectiveMatrix",
@@ -38975,7 +38977,7 @@
     if (__wasmRoot) {
       var len = __structs.length;
       wasmOp = new Float64Array(wasm$1.wasm.memory.buffer, __wasmRoot.op_ptr(), len);
-      wasmVt = new Float64Array(wasm$1.wasm.memory.buffer, __wasmRoot.vt_ptr(), len * 16); // console.log(wasmVt);
+      wasmVt = new Float64Array(wasm$1.wasm.memory.buffer, __wasmRoot.vt_ptr(), len * 16);
     }
 
     var cx = width * 0.5,
@@ -39578,13 +39580,12 @@
         width = root.width,
         height = root.height,
         __wasmRoot = root.__wasmRoot;
-    var wasmMe, wasmOp;
+    var wasmOp, wasmMe;
 
     if (__wasmRoot) {
-      var len = __wasmRoot.refresh();
-
-      wasmMe = new Float32Array(wasm$1.wasm.memory.buffer, __wasmRoot.me_ptr(), len * 16);
-      wasmOp = new Float32Array(wasm$1.wasm.memory.buffer, __wasmRoot.op_ptr(), len);
+      var len = __structs.length;
+      wasmOp = new Float64Array(wasm$1.wasm.memory.buffer, __wasmRoot.op_ptr(), len);
+      wasmMe = new Float64Array(wasm$1.wasm.memory.buffer, __wasmRoot.me_ptr(), len * 16);
     }
 
     var mergeList = [];
@@ -39892,8 +39893,7 @@
 
           if (opacity > 0) {
             if (wasmOp) {
-              var _idx2 = _i11 * 16; // console.log(i, idx, me[idx], me[idx + 1], me[idx + 4], me[idx + 5], me[idx + 12], me[idx + 13])
-
+              var _idx2 = _i11 * 16;
 
               ctx.setTransform(wasmMe[_idx2], wasmMe[_idx2 + 1], wasmMe[_idx2 + 4], wasmMe[_idx2 + 5], wasmMe[_idx2 + 12], wasmMe[_idx2 + 13]);
             } else {

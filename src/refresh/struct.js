@@ -2,7 +2,6 @@ import CanvasCache from './CanvasCache';
 import offscreen from './offscreen';
 import mode from './mode';
 import Page from './Page';
-import Text from '../node/Text';
 import Dom from '../node/Dom';
 import Img from '../node/Img';
 import Geom from '../node/geom/Geom';
@@ -2279,7 +2278,6 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
     let len = __structs.length;
     wasmOp = new Float64Array(wasm.wasm.memory.buffer, __wasmRoot.op_ptr(), len);
     wasmVt = new Float64Array(wasm.wasm.memory.buffer, __wasmRoot.vt_ptr(), len * 16);
-    // console.log(wasmVt);
   }
   let cx = width * 0.5, cy = height * 0.5;
   // 栈代替递归，存父节点的matrix/opacity，matrix为E时存null省略计算
@@ -2817,11 +2815,11 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
 
 function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
   let { __structs, width, height, __wasmRoot } = root;
-  let wasmMe, wasmOp;
+  let wasmOp, wasmMe;
   if(__wasmRoot) {
-    let len = __wasmRoot.refresh();
-    wasmMe = new Float32Array(wasm.wasm.memory.buffer, __wasmRoot.me_ptr(), len * 16);
-    wasmOp = new Float32Array(wasm.wasm.memory.buffer, __wasmRoot.op_ptr(), len);
+    let len = __structs.length;
+    wasmOp = new Float64Array(wasm.wasm.memory.buffer, __wasmRoot.op_ptr(), len);
+    wasmMe = new Float64Array(wasm.wasm.memory.buffer, __wasmRoot.me_ptr(), len * 16);
   }
   let mergeList = [];
   /**
@@ -3053,7 +3051,6 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
         if(opacity > 0) {
           if(wasmOp) {
             let idx = i * 16;
-            // console.log(i, idx, me[idx], me[idx + 1], me[idx + 4], me[idx + 5], me[idx + 12], me[idx + 13])
             ctx.setTransform(wasmMe[idx], wasmMe[idx + 1], wasmMe[idx + 4], wasmMe[idx + 5], wasmMe[idx + 12], wasmMe[idx + 13]);
           }
           else {

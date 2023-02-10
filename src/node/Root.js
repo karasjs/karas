@@ -187,7 +187,7 @@ class Root extends Dom {
     this.__rlv = REBUILD; // 每次刷新最大lv
     this.__lastUpdateP = null; // 每帧addUpdate都会向上检查，很多时候同级无需继续，第一次检查暂存parent对象
     // 开启wasm后，默认使用，除非显示取消
-    if(wasm.wasm && (props.wasm === undefined || props.wasm)) {
+    if(wasm.instance && (props.wasm === undefined || props.wasm)) {
       this.__wasmRoot = wasm.Root.new();
       this.__wasmNode = wasm.Node.new(false);
     }

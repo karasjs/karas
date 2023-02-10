@@ -596,11 +596,18 @@ var Node$1 = /*#__PURE__*/function () {
   _createClass(Node, [{
     key: "__structure",
     value: function __structure(lv, j) {
-      return this.__struct = {
+      this.__struct = {
         node: this,
         childIndex: j,
         lv: lv
       };
+      var wn = this.__wasmNode;
+
+      if (wn) {
+        wn.lv = lv;
+      }
+
+      return this.__struct;
     }
   }, {
     key: "__offsetX",
@@ -1158,6 +1165,61 @@ function calPoint$2(point, m) {
 
   return point;
 }
+
+function calPointWasm(point, m, i) {
+  if (m && !isE$5(m)) {
+    var x = point.x,
+        y = point.y,
+        z = point.z,
+        w = point.w;
+    z = z || 0;
+
+    if (w === undefined || w === null) {
+      w = 1;
+    }
+
+    var a1 = m[i],
+        b1 = m[i + 1],
+        c1 = m[i + 2],
+        d1 = m[i + 3];
+    var a2 = m[i + 4],
+        b2 = m[i + 5],
+        c2 = m[i + 6],
+        d2 = m[i + 7];
+    var a3 = m[i + 8],
+        b3 = m[i + 9],
+        c3 = m[i + 10],
+        d3 = m[i + 11];
+    var a4 = m[i + 12],
+        b4 = m[i + 13],
+        c4 = m[i + 14],
+        d4 = m[i + 15];
+    var o = {
+      x: (a1 === 1 ? x : x * a1) + (a2 ? y * a2 : 0) + (w === 1 ? a4 : a4 * w),
+      y: (b1 === 1 ? x : x * b1) + (b2 ? y * b2 : 0) + (w === 1 ? b4 : b4 * w),
+      z: 0,
+      w: w
+    };
+
+    if (d1 || d2 || d3) {
+      o.w = x * d1 + y * d2 + z * d3 + d4 * w;
+    } else if (d4 !== 1) {
+      o.w *= d4;
+    }
+
+    if (z) {
+      o.x += z * a3;
+      o.y += z * b3;
+      o.z = x * c1 + y * c2 + c4 + z * c3;
+    } else if (c1 || c2 || c4) {
+      o.z = x * c1 + y * c2 + c4;
+    }
+
+    return o;
+  }
+
+  return point;
+}
 /**
  * 初等行变换求3*3特定css的matrix方阵，一维6长度
  * https://blog.csdn.net/iloveas2014/article/details/82930946
@@ -1367,6 +1429,84 @@ function calRectPoint$2(xa, ya, xb, yb, matrix) {
   };
 }
 
+function calRectPointWasm$1(xa, ya, xb, yb, matrix, index) {
+  var i = index * 16;
+
+  var _calPointWasm = calPointWasm({
+    x: xa,
+    y: ya,
+    z: 0,
+    w: 1
+  }, matrix, i),
+      x1 = _calPointWasm.x,
+      y1 = _calPointWasm.y,
+      z1 = _calPointWasm.z,
+      w1 = _calPointWasm.w;
+
+  var _calPointWasm2 = calPointWasm({
+    x: xb,
+    y: yb,
+    z: 0,
+    w: 1
+  }, matrix, i),
+      x3 = _calPointWasm2.x,
+      y3 = _calPointWasm2.y,
+      z3 = _calPointWasm2.z,
+      w3 = _calPointWasm2.w;
+
+  var x2, y2, z2, w2, x4, y4, z4, w4; // 无旋转的时候可以少算2个点
+
+  if (w1 === 1 && w3 === 1 && (!matrix || !matrix.length || !matrix[i + 1] && !matrix[i + 2] && !matrix[i + 4] && !matrix[i + 6] && !matrix[i + 7] && !matrix[i + 8])) {
+    x2 = x3;
+    y2 = y1;
+    z2 = z3;
+    x4 = x1;
+    y4 = y3;
+    z2 = z4 = z1;
+    w2 = w4 = 1;
+  } else {
+    var t = calPointWasm({
+      x: xb,
+      y: ya,
+      z: 0,
+      w: 1
+    }, matrix, i);
+    x2 = t.x;
+    y2 = t.y;
+    z2 = t.z;
+    w2 = t.w;
+    t = calPointWasm({
+      x: xa,
+      y: yb,
+      z: 0,
+      w: 1
+    }, matrix, i);
+    x4 = t.x;
+    y4 = t.y;
+    z4 = t.z;
+    w4 = t.w;
+  }
+
+  return {
+    x1: x1,
+    y1: y1,
+    z1: z1,
+    w1: w1,
+    x2: x2,
+    y2: y2,
+    z2: z2,
+    w2: w2,
+    x3: x3,
+    y3: y3,
+    z3: z3,
+    w3: w3,
+    x4: x4,
+    y4: y4,
+    z4: z4,
+    w4: w4
+  };
+}
+
 function assignMatrix$3(t, v) {
   if (t && v) {
     t[0] = v[0];
@@ -1410,6 +1550,7 @@ var matrix = {
   multiplyPerspective: multiplyPerspective$1,
   calPoint: calPoint$2,
   calRectPoint: calRectPoint$2,
+  calRectPointWasm: calRectPointWasm$1,
   point2d: point2d$1,
   inverse: inverse$1,
   isE: isE$5,
@@ -1429,7 +1570,7 @@ function isType(type) {
 var isObject$1 = isType('Object');
 var isString$2 = isType('String');
 var isFunction$b = isType('Function');
-var isNumber$1 = isType('Number');
+var isNumber$2 = isType('Number');
 var isBoolean = isType('Boolean');
 var isDate = isType('Date');
 var hasOwn = {}.hasOwnProperty;
@@ -1963,7 +2104,7 @@ var util = {
   isObject: isObject$1,
   isString: isString$2,
   isFunction: isFunction$b,
-  isNumber: isNumber$1,
+  isNumber: isNumber$2,
   isBoolean: isBoolean,
   isDate: isDate,
   isNil: isNil$h,
@@ -8877,7 +9018,7 @@ var isNil$e = util.isNil,
     equalArr$1 = util.equalArr,
     equal = util.equal,
     replaceRgba2Hex = util.replaceRgba2Hex;
-var isGeom$2 = o$2.isGeom,
+var isGeom$1 = o$2.isGeom,
     GEOM$2 = o$2.GEOM,
     GEOM_KEY_SET = o$2.GEOM_KEY_SET;
 var VALID_STRING_VALUE = reset.VALID_STRING_VALUE;
@@ -10706,7 +10847,7 @@ function equalStyle$2(k, a, b, target) {
   } // multi都是纯值数组，equalArr本身即递归，非multi根据类型判断
 
 
-  if (isGeom$2(target.tagName, k) && (target.isMulti || Array.isArray(a) && Array.isArray(b))) {
+  if (isGeom$1(target.tagName, k) && (target.isMulti || Array.isArray(a) && Array.isArray(b))) {
     return equal(a, b);
   }
 
@@ -11876,9 +12017,9 @@ var Ellipsis = /*#__PURE__*/function (_Node) {
 }(Node$1);
 
 var _enums$STYLE_KEY$e = enums.STYLE_KEY,
-    TX$2 = _enums$STYLE_KEY$e.TRANSLATE_X,
-    TY$2 = _enums$STYLE_KEY$e.TRANSLATE_Y,
-    TZ$2 = _enums$STYLE_KEY$e.TRANSLATE_Z,
+    TX$1 = _enums$STYLE_KEY$e.TRANSLATE_X,
+    TY$1 = _enums$STYLE_KEY$e.TRANSLATE_Y,
+    TZ$1 = _enums$STYLE_KEY$e.TRANSLATE_Z,
     OP$2 = _enums$STYLE_KEY$e.OPACITY,
     FT$2 = _enums$STYLE_KEY$e.FILTER,
     PPT$2 = _enums$STYLE_KEY$e.PERSPECTIVE,
@@ -11889,14 +12030,14 @@ var _enums$STYLE_KEY$e = enums.STYLE_KEY,
     SZ$1 = _enums$STYLE_KEY$e.SCALE_Z,
     ROTATE_X$2 = _enums$STYLE_KEY$e.ROTATE_X,
     ROTATE_Y$2 = _enums$STYLE_KEY$e.ROTATE_Y,
-    RZ$2 = _enums$STYLE_KEY$e.ROTATE_Z,
+    RZ$1 = _enums$STYLE_KEY$e.ROTATE_Z,
     ROTATE_3D$2 = _enums$STYLE_KEY$e.ROTATE_3D,
     SKEW_X$2 = _enums$STYLE_KEY$e.SKEW_X,
     SKEW_Y$2 = _enums$STYLE_KEY$e.SKEW_Y,
-    TF$3 = _enums$STYLE_KEY$e.TRANSFORM,
+    TF$2 = _enums$STYLE_KEY$e.TRANSFORM,
     TRANSFORM_ORIGIN$4 = _enums$STYLE_KEY$e.TRANSFORM_ORIGIN;
 var isIgnore = o$2.isIgnore,
-    isRepaint$1 = o$2.isRepaint; // 低位表示<repaint级别
+    isRepaint = o$2.isRepaint; // 低位表示<repaint级别
 
 var NONE$4 = 0; //                                          0
 // cacheTotal变化需重新生成的时候
@@ -11919,7 +12060,7 @@ var SCALE_Y$3 = 64; //                                1000000
 
 var SCALE_Z$2 = 128; //                              10000000
 
-var SCALE$2 = 224; //                                11100000
+var SCALE$1 = 224; //                                11100000
 
 var TRANSFORM$5 = 256; //                           100000000
 
@@ -11954,7 +12095,7 @@ var ENUM = {
   SCALE_X: SCALE_X$3,
   SCALE_Y: SCALE_Y$3,
   SCALE_Z: SCALE_Z$2,
-  SCALE: SCALE$2,
+  SCALE: SCALE$1,
   TRANSFORM: TRANSFORM$5,
   TRANSFORM_ALL: TRANSFORM_ALL$4,
   OPACITY: OPACITY$5,
@@ -11968,7 +12109,7 @@ var ENUM = {
 };
 
 function isTransforms(k) {
-  return k === ROTATE_X$2 || k === ROTATE_Y$2 || k === ROTATE_3D$2 || k === SKEW_X$2 || k === SKEW_Y$2 || k === TF$3 || k === TRANSFORM_ORIGIN$4;
+  return k === ROTATE_X$2 || k === ROTATE_Y$2 || k === ROTATE_3D$2 || k === SKEW_X$2 || k === SKEW_Y$2 || k === TF$2 || k === TRANSFORM_ORIGIN$4;
 }
 
 var o$1 = Object.assign({
@@ -11995,19 +12136,19 @@ var o$1 = Object.assign({
       return CACHE$4;
     }
 
-    if (k === TX$2) {
+    if (k === TX$1) {
       return TRANSLATE_X$2;
     }
 
-    if (k === TY$2) {
+    if (k === TY$1) {
       return TRANSLATE_Y$2;
     }
 
-    if (k === TZ$2) {
+    if (k === TZ$1) {
       return TRANSLATE_Z$2;
     }
 
-    if (k === RZ$2) {
+    if (k === RZ$1) {
       return ROTATE_Z$2;
     }
 
@@ -12039,7 +12180,7 @@ var o$1 = Object.assign({
       return TRANSFORM$5;
     }
 
-    if (isRepaint$1(k)) {
+    if (isRepaint(k)) {
       return REPAINT$4;
     }
 
@@ -13049,7 +13190,7 @@ var Text = /*#__PURE__*/function (_Node) {
         this.__content = s;
 
         if (isFunction$a(cb)) {
-          cb();
+          cb(false);
         }
 
         return;
@@ -13065,7 +13206,7 @@ var Text = /*#__PURE__*/function (_Node) {
 
       this.__content = s;
 
-      this.__root.__addUpdate(this.__domParent, null, o$1.REFLOW, false, false, false, false, false, cb);
+      this.__root.__addUpdate(this.__domParent, null, o$1.REFLOW, false, false, false, false, cb);
     }
   }, {
     key: "remove",
@@ -13098,7 +13239,7 @@ var Text = /*#__PURE__*/function (_Node) {
 
       if (this.__isDestroyed) {
         if (isFunction$a(cb)) {
-          cb();
+          cb(false);
         }
 
         return;
@@ -13111,14 +13252,14 @@ var Text = /*#__PURE__*/function (_Node) {
         this.__destroy();
 
         if (isFunction$a(cb)) {
-          cb();
+          cb(false);
         }
 
         return;
       } // 可见在reflow逻辑做结构关系等，text视为父变更
 
 
-      root.__addUpdate(this, null, o$1.REFLOW, false, true, false, false, false, cb);
+      root.__addUpdate(this, null, o$1.REFLOW, false, true, false, false, cb);
     }
   }, {
     key: "__structure",
@@ -13127,6 +13268,15 @@ var Text = /*#__PURE__*/function (_Node) {
 
       o.isText = true;
       return o;
+    }
+  }, {
+    key: "__layoutStyle",
+    value: function __layoutStyle() {
+      var wn = this.__wasmNode;
+
+      if (wn) {
+        wn.set_txt(this.__x1, this.__y1, this.__width, this.__height);
+      }
     }
   }, {
     key: "content",
@@ -14605,7 +14755,6 @@ var Frame = /*#__PURE__*/function () {
     value: function __init() {
       var self = this;
       var task = self.task;
-          self.rootTask;
       inject.cancelAnimationFrame(self.id);
       var last = self.__now = inject.now();
 
@@ -14628,18 +14777,9 @@ var Frame = /*#__PURE__*/function () {
           var clone = task.slice(0);
           var len1 = clone.length; // 普通的before/after，动画计算在before，所有回调在after
 
-          traversalBefore(clone, len1, diff); // Root的before，包含draw()，如果有wasm，在draw之前计算
-          // let list = rootTask.splice(0);
-          // let len2 = list.length;
-          // traversalBefore(list, len2, diff);
-          // for(let i = 0, len = list.length; i < len; i++) {
-          //   let item = list[i];
-          //   item && item(diff);
-          // }
-          // 刷新成功后调用after，确保图像生成
+          traversalBefore(clone, len1, diff); // 刷新成功后调用after，确保图像生成
 
-          traversalAfter(clone, len1, diff); // traversalAfter(list, len2, diff);
-          // 还有则继续，没有则停止节省性能
+          traversalAfter(clone, len1, diff); // 还有则继续，没有则停止节省性能
 
           if (task.length) {
             cb();
@@ -14750,11 +14890,6 @@ var Frame = /*#__PURE__*/function () {
       }
     }
   }, {
-    key: "addRootTask",
-    value: function addRootTask(root) {
-      this.__rootTask.push(root);
-    }
-  }, {
     key: "task",
     get: function get() {
       return this.__task;
@@ -14763,11 +14898,6 @@ var Frame = /*#__PURE__*/function () {
     key: "roots",
     get: function get() {
       return this.__roots;
-    }
-  }, {
-    key: "rootTask",
-    get: function get() {
-      return this.__rootTask;
     }
   }]);
 
@@ -15649,6 +15779,7 @@ var Animation$1 = /*#__PURE__*/function () {
       wasm.__wbg_set_animation_percent(this.ptr, arg0);
     }
     /**
+     * @param {number} node
      * @param {number} direction
      * @param {number} duration
      * @param {number} fps
@@ -15756,8 +15887,8 @@ var Animation$1 = /*#__PURE__*/function () {
     }
   }, {
     key: "new",
-    value: function _new(direction, duration, fps, delay, end_delay, fill, playback_rate, iterations, area_start, area_duration, easing) {
-      var ret = wasm.animation_new(direction, duration, fps, delay, end_delay, fill, playback_rate, iterations, area_start, area_duration, easing);
+    value: function _new(node, direction, duration, fps, delay, end_delay, fill, playback_rate, iterations, area_start, area_duration, easing) {
+      var ret = wasm.animation_new(node, direction, duration, fps, delay, end_delay, fill, playback_rate, iterations, area_start, area_duration, easing);
       return Animation.__wrap(ret);
     }
   }]);
@@ -15987,24 +16118,6 @@ var Node = /*#__PURE__*/function () {
      */
 
   }, {
-    key: "total",
-    get: function get() {
-      var ret = wasm.__wbg_get_node_total(this.ptr);
-
-      return ret >>> 0;
-    }
-    /**
-     * @param {number} arg0
-     */
-    ,
-    set: function set(arg0) {
-      wasm.__wbg_set_node_total(this.ptr, arg0);
-    }
-    /**
-     * @returns {number}
-     */
-
-  }, {
     key: "opacity",
     get: function get() {
       var ret = wasm.__wbg_get_node_opacity(this.ptr);
@@ -16094,16 +16207,16 @@ var Node = /*#__PURE__*/function () {
       wasm.node_set_style(this.ptr, x, y, offset_width, offset_height, cs0, cs1, cs2, cs3, cs4, cs5, cs6, cs7, cs8, cs9, cs10, cs11, cs12, cs13, cs14, cs15, cs16, cs17, cu0, cu1, cu2, cu16, cu17);
     }
     /**
-     * @param {number} xa
-     * @param {number} ya
-     * @param {number} xb
-     * @param {number} yb
+     * @param {number} x
+     * @param {number} y
+     * @param {number} offset_width
+     * @param {number} offset_height
      */
 
   }, {
-    key: "set_bbox",
-    value: function set_bbox(xa, ya, xb, yb) {
-      wasm.node_set_bbox(this.ptr, xa, ya, xb, yb);
+    key: "set_txt",
+    value: function set_txt(x, y, offset_width, offset_height) {
+      wasm.node_set_txt(this.ptr, x, y, offset_width, offset_height);
     }
     /**
      * @param {number} a
@@ -16130,28 +16243,24 @@ var Node = /*#__PURE__*/function () {
       wasm.node_set_transform(this.ptr, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p);
     }
     /**
-     * @param {number} a
-     * @param {number} b
-     * @param {number} c
-     * @param {number} d
-     * @param {number} e
-     * @param {number} f
-     * @param {number} g
-     * @param {number} h
-     * @param {number} i
-     * @param {number} j
-     * @param {number} k
-     * @param {number} l
-     * @param {number} m
-     * @param {number} n
-     * @param {number} o
-     * @param {number} p
+     * @returns {number}
      */
 
   }, {
-    key: "set_matrix",
-    value: function set_matrix(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p) {
-      wasm.node_set_matrix(this.ptr, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p);
+    key: "computed_style_ptr",
+    value: function computed_style_ptr() {
+      var ret = wasm.node_computed_style_ptr(this.ptr);
+      return ret;
+    }
+    /**
+     * @returns {number}
+     */
+
+  }, {
+    key: "transform_ptr",
+    value: function transform_ptr() {
+      var ret = wasm.node_transform_ptr(this.ptr);
+      return ret;
     }
     /**
      * @returns {number}
@@ -16180,7 +16289,8 @@ var Node = /*#__PURE__*/function () {
   }, {
     key: "get_op",
     value: function get_op() {
-      var ret = wasm.node_get_op(this.ptr);
+      var ret = wasm.__wbg_get_node_opacity(this.ptr);
+
       return ret;
     }
     /**
@@ -16204,6 +16314,26 @@ var Node = /*#__PURE__*/function () {
     value: function on_frame(diff) {
       var ret = wasm.node_on_frame(this.ptr, diff);
       return ret >>> 0;
+    }
+    /**
+     * @param {Animation} ani
+     */
+
+  }, {
+    key: "cal_trans",
+    value: function cal_trans(ani) {
+      _assertClass(ani, Animation$1);
+
+      wasm.node_cal_trans(this.ptr, ani.ptr);
+    }
+    /**
+     * @param {number} rl
+     */
+
+  }, {
+    key: "cal_matrix",
+    value: function cal_matrix(rl) {
+      wasm.node_cal_matrix(this.ptr, rl);
     }
   }], [{
     key: "__wrap",
@@ -16556,7 +16686,7 @@ var wasm$1 = {
     }))();
   },
 
-  get wasm() {
+  get instance() {
     return wasm;
   },
 
@@ -16655,28 +16785,16 @@ var AUTO$5 = o$4.AUTO,
     calUnit = o$4.calUnit;
 var isNil$b = util.isNil,
     isFunction$5 = util.isFunction,
-    isNumber = util.isNumber,
+    isNumber$1 = util.isNumber,
     isObject = util.isObject,
     clone$1 = util.clone,
     equalArr = util.equalArr;
 var linear = easing.linear;
 var cloneStyle = css.cloneStyle,
     equalStyle$1 = css.equalStyle;
-var isGeom$1 = o$2.isGeom,
-    GEOM$1 = o$2.GEOM;
+var GEOM$1 = o$2.GEOM;
 var getLevel$1 = o$1.getLevel,
-    isRepaint = o$1.isRepaint,
     NONE$3 = o$1.NONE;
-    o$1.CACHE;
-    var TF$2 = o$1.TRANSFORM,
-    TX$1 = o$1.TRANSLATE_X,
-    TY$1 = o$1.TRANSLATE_Y,
-    TZ$1 = o$1.TRANSLATE_Z,
-    RZ$1 = o$1.ROTATE_Z;
-    o$1.SCALE_X;
-    o$1.SCALE_Y;
-    o$1.SCALE_Z;
-    var SCALE$1 = o$1.SCALE;
 var isColorKey = key.isColorKey,
     isExpandKey = key.isExpandKey,
     isLengthKey = key.isLengthKey,
@@ -17607,8 +17725,9 @@ function calDiffGradient(p, n, target) {
  */
 
 
-function calFrame(prev, next, keys, target) {
-  var hasTp;
+function calFrame(prev, next, keys, target, isGeom) {
+  var hasTp,
+      allInFn = true;
 
   for (var i = 0, len = keys.length; i < len; i++) {
     var k = keys[i];
@@ -17623,6 +17742,8 @@ function calFrame(prev, next, keys, target) {
 
       if (fn) {
         ts.fn = fn;
+      } else {
+        allInFn = false;
       }
 
       prev.transition.push(ts);
@@ -17630,6 +17751,7 @@ function calFrame(prev, next, keys, target) {
     } // 无法形成连续计算的或者不变的记录下来
     else if (k !== TRANSLATE_PATH) {
       prev.fixed.push(k);
+      allInFn = false;
     }
   } // translatePath需特殊处理translate，防止被覆盖
 
@@ -17662,7 +17784,6 @@ function calFrame(prev, next, keys, target) {
 
 
   var lv = NONE$3;
-  target.__computedStyle;
   var trans = prev.trans; // 此帧过程中一定变化的，预先计算lv加速，一些影响继承的标识后续特殊处理
 
   for (var _i17 = 0, _len8 = trans.length; _i17 < _len8; _i17++) {
@@ -17677,19 +17798,14 @@ function calFrame(prev, next, keys, target) {
       prev.hasTsWidth = true;
     } else if (_k5 === TEXT_STROKE_OVER$2) {
       prev.hasTsOver = true;
-    } // display和visibility固定在fixed里这里不出现
+    } // display和visibility固定在fixed里这里不出现，zIndex需要考虑abs等这里也不处理
 
   } // 提前计算，不包含fixed的
 
 
-  prev.lv = lv; // 常见的几种动画matrix计算是否可优化提前计算，这里无需过于精确，因为最终节点计算会判断，但明显的不可优化的要防止
-
-  if (isRepaint(lv) && lv & (TX$1 | TY$1 | TZ$1 | RZ$1 | SCALE$1)) {
-    if (!(lv & TF$2)) {
-      prev.optimize = true;
-    }
-  }
-
+  prev.lv = lv;
+  prev.allInFn = allInFn;
+  prev.isGeom = isGeom;
   return next;
 }
 
@@ -17978,11 +18094,10 @@ function calLastStyle(style, target, keys) {
   for (var i = 0, len = keys.length; i < len; i++) {
     var k = keys[i],
         v = style[k];
+    var isGeom = GEOM$1.hasOwnProperty(k);
 
-    var _isGeom = GEOM$1.hasOwnProperty(k);
-
-    if (!equalStyle$1(k, v, _isGeom ? currentProps[k] : currentStyle[k], target)) {
-      if (_isGeom) {
+    if (!equalStyle$1(k, v, isGeom ? currentProps[k] : currentStyle[k], target)) {
+      if (isGeom) {
         currentProps[k] = v;
       } else {
         currentStyle[k] = v;
@@ -18033,7 +18148,7 @@ function frameCb(self) {
   }
 }
 
-function wasmFrame(wa, wList, wHash, frames, isReverse) {
+function wasmFrame(wa, wHash, frames, isReverse) {
   for (var i = 0, len = frames.length; i < len; i++) {
     var _frames$i = frames[i],
         style = _frames$i.style,
@@ -18149,9 +18264,10 @@ var Animation = /*#__PURE__*/function (_Event) {
       list = [];
     }
 
-    if (isNumber(options)) {
+    if (isNumber$1(options)) {
       _this.__options = {
-        duration: options
+        duration: options,
+        fill: 'forwards'
       };
       options = _this.__options;
     }
@@ -18181,7 +18297,7 @@ var Animation = /*#__PURE__*/function (_Event) {
 
     _this.areaDuration = op.areaDuration;
 
-    var _this$__init = _this.__init(list, duration, ea, target),
+    var _this$__init = _this.__init(list, duration, ea, target, op.isGeom),
         frames = _this$__init.frames,
         framesR = _this$__init.framesR,
         keys = _this$__init.keys,
@@ -18218,7 +18334,7 @@ var Animation = /*#__PURE__*/function (_Event) {
 
   _createClass(Animation, [{
     key: "__init",
-    value: function __init(list, duration, ea, target) {
+    value: function __init(list, duration, ea, target, isGeom) {
       if (list.length < 1) {
         return {
           frames: [],
@@ -18240,7 +18356,7 @@ var Animation = /*#__PURE__*/function (_Event) {
           __currentProps = target.__currentProps;
       var originStyle = {};
       keys.forEach(function (k) {
-        if (isGeom$1(target.tagName, k)) {
+        if (isGeom && o$2.isGeom(target.tagName, k)) {
           originStyle[k] = __currentProps[k];
         }
 
@@ -18248,13 +18364,13 @@ var Animation = /*#__PURE__*/function (_Event) {
       });
       originStyle = cloneStyle(originStyle, keys); // 再计算两帧之间的变化，存入transition/fixed属性
 
-      Animation.calTransition(frames, keys, target); // 反向存储帧的倒排结果
+      Animation.calTransition(frames, keys, target, isGeom); // 反向存储帧的倒排结果
 
       framesR.forEach(function (item, i) {
         item.time = duration - item.time;
         item.index = i;
       });
-      Animation.calTransition(framesR, keys, target); // wasm优化和matrix有关的，提取出来交给rust处理
+      Animation.calTransition(framesR, keys, target, isGeom); // wasm优化和matrix有关的，提取出来交给rust处理
 
       var wn = target.__wasmNode,
           wList = [],
@@ -18291,7 +18407,7 @@ var Animation = /*#__PURE__*/function (_Event) {
             }
           }
 
-          var wa = this.__wasmAnimation = wasm$1.Animation["new"](DIRECTION[this.__direction] || 0, this.__duration, this.__fps, this.__delay, this.__endDelay, FILLS[this.__fill] || 0, this.__playbackRate, iter, this.__areaStart, this.__areaDuration, easeType);
+          var wa = this.__wasmAnimation = wasm$1.Animation["new"](target.__wasmNode.ptr, DIRECTION[this.__direction] || 0, this.__duration, this.__fps, this.__delay, this.__endDelay, FILLS[this.__fill] || 0, this.__playbackRate, iter, this.__areaStart, this.__areaDuration, easeType);
 
           if (easeType === EASING.EASE_CUSTOM) {
             var v = ea.match(/[\d.]+/g);
@@ -18301,8 +18417,8 @@ var Animation = /*#__PURE__*/function (_Event) {
             }
           }
 
-          wasmFrame(wa, wList, wHash, frames, false);
-          wasmFrame(wa, wList, wHash, framesR, true); // 没有其他的则全部交由wasm
+          wasmFrame(wa, wHash, frames, false);
+          wasmFrame(wa, wHash, framesR, true); // 没有其他的则全部交由wasm
 
           if (wList.length === keys.length) {
             this.__ignore = true;
@@ -18379,7 +18495,7 @@ var Animation = /*#__PURE__*/function (_Event) {
 
 
       if (!fromGoto && this.__stayBegin || fromGoto && currentTime < this.__delay) {
-        var currentFrame = this.__currentFrame = this.__currentFrames[0];
+        var currentFrame = this.__currentFrame = currentFrames[0];
         var target = this.__target,
             _root = this.__root;
         var keys = calLastStyle(currentFrame.style, target, this.__keys);
@@ -18391,7 +18507,7 @@ var Animation = /*#__PURE__*/function (_Event) {
 
 
         if (isChange) {
-          _root.__addUpdate(target, keys, false, false, false, false, false, currentFrame.optimize, null);
+          _root.__addUpdate(target, keys, false, false, false, false, false, null);
         }
       } // 非首帧，gotoPlay要同步执行更新样式
       else if (fromGoto) {
@@ -18547,16 +18663,20 @@ var Animation = /*#__PURE__*/function (_Event) {
 
       if (isDestroyed || duration <= 0 || pending) {
         return this;
+      } // 不能清空stopCb
+
+
+      if (this.__playState === 'running') {
+        this.__root.__offAniFrame(this);
       }
 
+      this.__playCb = null;
       this.__playState = 'paused';
       var wa = this.__wasmAnimation;
 
       if (wa) {
         wa.play_state = PLAY_STATE.PAUSED;
       }
-
-      this.__cancelTask();
 
       this.emit(Event.PAUSE);
       return this;
@@ -18613,28 +18733,12 @@ var Animation = /*#__PURE__*/function (_Event) {
         var target = this.__target;
         var style; // 是否停留在最后一帧
 
-        var currentFrame;
-
         if (this.__stayEnd) {
-          var framesR = this.__framesR;
-          var direction = this.__direction;
-          var iterations = this.__iterations;
+          var currentFrames = this.__initCurrentFrames(this.__playCount);
 
-          if ('reverse'.indexOf(direction) > -1) {
-            var _ref = [framesR, frames];
-            frames = _ref[0];
-            framesR = _ref[1];
-          }
+          var _currentFrame2 = this.__currentFrame = currentFrames[currentFrames.length - 1];
 
-          if (iterations === Infinity || iterations % 2) {
-            currentFrame = frames[frames.length - 1];
-            style = currentFrame.style;
-          } else {
-            currentFrame = framesR[framesR.length - 1];
-            style = currentFrame.style;
-          }
-
-          this.__currentFrame = currentFrame;
+          style = _currentFrame2.style;
         } else {
           style = this.__originStyle;
         }
@@ -18659,7 +18763,7 @@ var Animation = /*#__PURE__*/function (_Event) {
         };
 
         if (isChange) {
-          root.__addUpdate(target, keys, false, false, false, false, false, currentFrame && currentFrame.optimize, this.__stopCb);
+          root.__addUpdate(target, keys, false, false, false, false, false, this.__stopCb);
         } else {
           this.__stopCb();
         }
@@ -18699,7 +18803,7 @@ var Animation = /*#__PURE__*/function (_Event) {
         wa.play_state = PLAY_STATE.IDLE;
       }
 
-      var currentFrame = this.__currentFrame;
+      this.__currentFrame;
       this.__currentFrame = null;
       var root = this.__root;
 
@@ -18725,7 +18829,7 @@ var Animation = /*#__PURE__*/function (_Event) {
         };
 
         if (isChange) {
-          root.__addUpdate(target, keys, false, false, false, false, false, currentFrame && currentFrame.optimize, this.__stopCb);
+          root.__addUpdate(target, keys, false, false, false, false, false, this.__stopCb);
         } else {
           this.__stopCb();
         }
@@ -18749,25 +18853,25 @@ var Animation = /*#__PURE__*/function (_Event) {
 
       if (isDestroyed || dur <= 0 || frames.length < 1) {
         return this;
+      } // 重复相同时间，且正在播放中，且
+
+
+      if (v === currentTime && this.__playState === 'running') {
+        if (isFunction$5(cb)) {
+          cb(false);
+        }
+
+        return;
       } // 计算出时间点直接累加播放
 
 
-      v = this.__goto(v, options.isFrame, options.excludeDelay);
+      v = this.__goto(v, options.isFrame, options.excludeDelay); // 已经结束提前跳出
 
       if (v >= dur + endDelay) {
         if (this.__stayEnd) {
           this.finish(cb);
         } else {
           this.cancel(cb);
-        }
-
-        return;
-      } // 重复相同时间忽略
-
-
-      if (v === currentTime && this.__playState === 'running') {
-        if (isFunction$5(cb)) {
-          cb(false);
         }
 
         return;
@@ -18779,13 +18883,23 @@ var Animation = /*#__PURE__*/function (_Event) {
 
       this.__playState = 'idle';
       this.__fromGoto = true;
+      var wa = this.__wasmAnimation;
+      var wasmChange = false;
+
+      if (wa) {
+        wasmChange = wa.goto_stop(this.__currentTime, dur);
+      }
+
+      this.__calCurrent(this.__currentFrames, this.__currentFrame, v, dur, duration, {
+        wasmChange: wasmChange,
+        cb: cb
+      });
+
       return this.play(cb);
     }
   }, {
     key: "gotoAndStop",
     value: function gotoAndStop(v, options, cb) {
-      var _this4 = this;
-
       var t = gotoOverload(this, options, cb);
       options = t.options;
       cb = t.cb;
@@ -18799,18 +18913,6 @@ var Animation = /*#__PURE__*/function (_Event) {
 
       if (isDestroyed || dur <= 0 || frames.length < 1) {
         return this;
-      }
-
-      v = this.__goto(v, options.isFrame, options.excludeDelay);
-
-      if (v >= dur + endDelay) {
-        if (this.__stayEnd) {
-          this.finish(cb);
-        } else {
-          this.cancel(cb);
-        }
-
-        return;
       } // 重复相同时间忽略
 
 
@@ -18822,68 +18924,34 @@ var Animation = /*#__PURE__*/function (_Event) {
         return;
       }
 
-      this.__startTime = frame.__now = frame.__now || inject.now();
+      v = this.__goto(v, options.isFrame, options.excludeDelay); // 已经结束提前跳出
 
-      if (this.__playState === 'running') {
-        this.__cancelTask();
-      }
-
-      this.__playState = 'paused';
-      var wa = this.__wasmAnimation; // wasm的特殊标识，在root的before中统一遍历节点计算中需要知道
-
-      if (wa) {
-        wa.play_state = PLAY_STATE.PAUSED;
-      }
-
-      var root = this.__root;
-      var currentFrames = this.__currentFrames;
-      var isChange;
-
-      this.__stopCb = function () {
-        if (isChange) {
-          frameCb(_this4);
-        }
-
-        if (isFunction$5(cb)) {
-          cb(isChange);
-        }
-      }; // 没超过delay，都停留在首帧，不考虑fill
-
-
-      if (v <= 0) {
-        var currentFrame = this.__currentFrame = currentFrames[0];
-        var target = this.__target;
-        var keys = calLastStyle(currentFrame.style, target, this.__keys);
-        isChange = !!keys.length;
-
-        if (this.__stopCb) {
-          root.__cancelFrameDraw(this.__stopCb);
-        } // 有变化的backwards才更新，否则无需理会，不需要回调，极端情况立刻pause()回造成一次无用刷新
-
-
-        if (isChange) {
-          root.__addUpdate(target, keys, false, false, false, false, false, currentFrame.optimize, this.__stopCb);
+      if (v >= dur + endDelay) {
+        if (this.__stayEnd) {
+          this.finish(cb);
         } else {
-          this.__stopCb();
-        }
-
-        if (wa) {
-          wa.goto_stop(0, dur);
+          this.cancel(cb);
         }
 
         return;
       }
 
+      if (this.__playState === 'running') {
+        this.__cancelTask();
+      }
+
+      this.__startTime = frame.__now = frame.__now || inject.now();
+      this.__playState = 'paused';
+      var wa = this.__wasmAnimation;
       var wasmChange = false;
 
       if (wa) {
-        wasmChange = wa.goto_stop(v, dur);
+        wasmChange = wa.goto_stop(this.__currentTime, dur);
       }
 
-      this.__calCurrent(currentFrames, this.__currentFrame, v, dur, duration, {
+      this.__calCurrent(this.__currentFrames, this.__currentFrame, v, dur, duration, {
         wasmChange: wasmChange,
-        cb: cb,
-        optimize: true
+        cb: cb
       });
     } // 返回不包含delay且去除多轮的时间
 
@@ -18893,9 +18961,7 @@ var Animation = /*#__PURE__*/function (_Event) {
       var iterations = this.__iterations;
       var duration = this.__duration;
       var areaDuration = this.__areaDuration;
-      var dur = areaDuration ? Math.min(duration, areaDuration) : duration; // this.__playState = 'paused';
-
-      var wa = this.__wasmAnimation;
+      var dur = areaDuration ? Math.min(duration, areaDuration) : duration;
 
       if (isNaN(v) || v < 0) {
         throw new Error('Param of gotoAnd(Play/Stop) is illegal: ' + v);
@@ -18911,20 +18977,16 @@ var Animation = /*#__PURE__*/function (_Event) {
 
 
       this.__currentTime = v;
+      v -= this.__delay - this.__areaStart;
 
-      if (wa) {
-        wa.current_time = v;
-      }
+      if (v < 0) {
+        v = 0;
+      } // 超过时间长度需要累加次数，这里可以超过iterations，因为设定也许会非常大
 
-      v -= this.__delay - this.__areaStart; // 超过时间长度需要累加次数，这里可以超过iterations，因为设定也许会非常大
 
       var playCount = Math.min(iterations - 1, Math.floor(v / dur));
       v -= dur * playCount;
       this.__playCount = playCount;
-
-      if (wa) {
-        wa.play_count = v;
-      }
 
       this.__initCurrentFrames(playCount);
 
@@ -19027,21 +19089,21 @@ var Animation = /*#__PURE__*/function (_Event) {
         } // 普通动画有样式变更才触发真实刷新，且sync标识同步应用，和动画节奏一样，
         // wasmChange无需，因为即便wasm接管，这块逻辑也在wasm中，这是动画更新没有gotoStop
         else if (keys.length) {
-          root.__addUpdate(target, keys, false, false, false, true, false, currentFrame && currentFrame.optimize, null);
+          root.__addUpdate(target, keys, false, false, false, true, false, null);
         }
       } // 动画内部除非同帧内且本帧没有任何变化，否则会一直触发，哪怕diff时间为0
       else {
         var _Animation$calInterme = Animation.calIntermediateStyle(currentFrame, percent, target, notSameFrame),
             trans = _Animation$calInterme.trans,
-            fixed = _Animation$calInterme.fixed;
-
-        var _keys = trans.concat(fixed); // gotoAndStop有参数回调特殊对待
+            fixed = _Animation$calInterme.fixed; // gotoAndStop有参数回调特殊对待
 
 
         if (gotoParams) {
+          var _keys = trans.concat(fixed);
+
           this.__gotoStopCb(root, target, _keys, currentFrame, gotoParams);
         } // 普通动画同步更新sync
-        else if (_keys.length) {
+        else if (trans.length || fixed.length) {
           root.__addAniUpdate(target, trans, fixed, currentFrame);
         }
       }
@@ -19049,7 +19111,7 @@ var Animation = /*#__PURE__*/function (_Event) {
   }, {
     key: "__gotoStopCb",
     value: function __gotoStopCb(root, target, keys, currentFrame, gotoParams) {
-      var _this5 = this;
+      var _this4 = this;
 
       if (this.__stopCb) {
         root.__cancelFrameDraw(this.__stopCb);
@@ -19059,7 +19121,7 @@ var Animation = /*#__PURE__*/function (_Event) {
 
       this.__stopCb = function () {
         if (isChange) {
-          frameCb(_this5);
+          frameCb(_this4);
         }
 
         if (isFunction$5(gotoParams.cb)) {
@@ -19069,7 +19131,7 @@ var Animation = /*#__PURE__*/function (_Event) {
 
       if (isChange) {
         // 因为wasm情况会导致js不计算可能没有keys（缺少wasm计算的那些），需传参标识
-        root.__addUpdate(target, keys, false, false, false, false, gotoParams.wasmChange, gotoParams.optimize && currentFrame && currentFrame.optimize, this.__stopCb);
+        root.__addUpdate(target, keys, false, false, false, false, gotoParams.wasmChange, this.__stopCb);
       } else {
         this.__stopCb(isChange); // 无变化同步执行
 
@@ -19683,13 +19745,14 @@ var Animation = /*#__PURE__*/function (_Event) {
   }, {
     key: "calTransition",
     value: function calTransition(frames, keys, target) {
+      var isGeom = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
       var prev = frames[0];
       prev.clone = cloneStyle(prev.style, keys);
 
       for (var _i21 = 1, _len13 = frames.length; _i21 < _len13; _i21++) {
         var next = frames[_i21];
         next.clone = cloneStyle(next.style, keys);
-        prev = calFrame(prev, next, keys, target);
+        prev = calFrame(prev, next, keys, target, isGeom);
       }
     }
   }, {
@@ -19731,10 +19794,11 @@ var Animation = /*#__PURE__*/function (_Event) {
       var style = frame.style;
       var transition = frame.transition;
       var timingFunction = frame.timingFunction;
+      var allInFn = frame.allInFn;
 
       if (timingFunction && timingFunction !== linear) {
         percent = timingFunction(percent);
-      } // 同一关键帧同一percent可以不刷新，比如diff为0时，或者steps情况，离开会清空
+      } // 同一关键帧同一percent可以不刷新，比如diff为0时，或者steps情况，离开会清空，notSameFrame判断防止pause更新在0的情况
 
 
       if (!notSameFrame && frame.lastPercent === percent) {
@@ -19747,133 +19811,149 @@ var Animation = /*#__PURE__*/function (_Event) {
       frame.lastPercent = percent;
       var currentStyle = target.__currentStyle,
           trans = frame.trans,
-          fixed = [];
-      var currentProps = target.__currentProps;
+          fixed = []; // 特殊性能优化，for拆开v8会提升不少
 
-      var _loop2 = function _loop2(_i22, _len14) {
-        var item = transition[_i22];
-        var k = item.k,
-            v = item.v,
-            st = item.st,
-            cl = item.cl,
-            fn = item.fn;
+      if (allInFn) {
+        for (var _i22 = 0, _len14 = transition.length; _i22 < _len14; _i22++) {
+          var item = transition[_i22];
+          var k = item.k,
+              v = item.v,
+              st = item.st,
+              cl = item.cl,
+              fn = item.fn; // 可能updateStyle()甚至手动修改了currentStyle，需要重新赋值
 
-        if (fn) {
-          // 可能updateStyle()甚至手动修改了currentStyle，需要重新赋值
-          if (st !== currentStyle[k]) {
+          if (currentStyle[k] !== st) {
             currentStyle[k] = st;
           }
 
           fn(k, v, percent, st, cl, frame, currentStyle);
-        } else if (GEOM$1.hasOwnProperty(k)) {
-          var tagName = target.tagName;
+        }
+      } else {
+        var currentProps = target.__currentProps;
 
-          if (GEOM$1[k][tagName] && isFunction$5(GEOM$1[k][tagName].calIncrease)) {
-            var _fn = GEOM$1[k][tagName].calIncrease;
+        var _loop2 = function _loop2(_i23, _len15) {
+          var item = transition[_i23];
+          var k = item.k,
+              v = item.v,
+              st = item.st,
+              cl = item.cl,
+              fn = item.fn;
 
-            if (target.isMulti) {
-              st = st.map(function (item, i) {
-                return _fn(item, v[i], percent);
-              });
-            } else {
-              st = _fn(st, v, percent);
+          if (fn) {
+            if (currentStyle[k] !== st) {
+              currentStyle[k] = st;
             }
-          } else if (target.isMulti) {
-            if (k === 'points' || k === 'controls') {
-              for (var _i24 = 0, _len16 = Math.min(st.length, v.length); _i24 < _len16; _i24++) {
-                var o = st[_i24];
-                var n = v[_i24];
-                var cli = cl[_i24];
 
-                if (!isNil$b(o) && !isNil$b(n)) {
-                  for (var j = 0, len2 = Math.min(o.length, n.length); j < len2; j++) {
-                    var o2 = o[j];
-                    var n2 = n[j];
+            fn(k, v, percent, st, cl, frame, currentStyle);
+          } else if (GEOM$1.hasOwnProperty(k)) {
+            var tagName = target.tagName;
 
-                    if (!isNil$b(o2) && !isNil$b(n2)) {
-                      for (var _k6 = 0, len3 = Math.min(o2.length, n2.length); _k6 < len3; _k6++) {
-                        if (!isNil$b(o2[_k6]) && !isNil$b(n2[_k6])) {
-                          o2[_k6] = cli[j][_k6] + n2[_k6] * percent;
+            if (GEOM$1[k][tagName] && isFunction$5(GEOM$1[k][tagName].calIncrease)) {
+              var _fn = GEOM$1[k][tagName].calIncrease;
+
+              if (target.isMulti) {
+                st = st.map(function (item, i) {
+                  return _fn(item, v[i], percent);
+                });
+              } else {
+                st = _fn(st, v, percent);
+              }
+            } else if (target.isMulti) {
+              if (k === 'points' || k === 'controls') {
+                for (var _i25 = 0, _len17 = Math.min(st.length, v.length); _i25 < _len17; _i25++) {
+                  var o = st[_i25];
+                  var n = v[_i25];
+                  var cli = cl[_i25];
+
+                  if (!isNil$b(o) && !isNil$b(n)) {
+                    for (var j = 0, len2 = Math.min(o.length, n.length); j < len2; j++) {
+                      var o2 = o[j];
+                      var n2 = n[j];
+
+                      if (!isNil$b(o2) && !isNil$b(n2)) {
+                        for (var _k7 = 0, len3 = Math.min(o2.length, n2.length); _k7 < len3; _k7++) {
+                          if (!isNil$b(o2[_k7]) && !isNil$b(n2[_k7])) {
+                            o2[_k7] = cli[j][_k7] + n2[_k7] * percent;
+                          }
                         }
                       }
                     }
                   }
                 }
+              } else if (k === 'controlA' || k === 'controlB') {
+                v.forEach(function (item, i) {
+                  var st2 = st[i];
+
+                  if (!isNil$b(item[0]) && !isNil$b(st2[0])) {
+                    st2[0] = cl[i][0] + item[0] * percent;
+                  }
+
+                  if (!isNil$b(item[1]) && !isNil$b(st2[1])) {
+                    st2[1] = cl[i][1] + item[1] * percent;
+                  }
+                });
+              } else {
+                v.forEach(function (item, i) {
+                  if (!isNil$b(item) && !isNil$b(st[i])) {
+                    st[i] = cl[i] + item * percent;
+                  }
+                });
               }
-            } else if (k === 'controlA' || k === 'controlB') {
-              v.forEach(function (item, i) {
-                var st2 = st[i];
-
-                if (!isNil$b(item[0]) && !isNil$b(st2[0])) {
-                  st2[0] = cl[i][0] + item[0] * percent;
-                }
-
-                if (!isNil$b(item[1]) && !isNil$b(st2[1])) {
-                  st2[1] = cl[i][1] + item[1] * percent;
-                }
-              });
             } else {
-              v.forEach(function (item, i) {
-                if (!isNil$b(item) && !isNil$b(st[i])) {
-                  st[i] = cl[i] + item * percent;
-                }
-              });
-            }
-          } else {
-            if (k === 'points' || k === 'controls') {
-              for (var _i25 = 0, _len17 = Math.min(st.length, v.length); _i25 < _len17; _i25++) {
-                var _o = st[_i25];
-                var _n = v[_i25];
+              if (k === 'points' || k === 'controls') {
+                for (var _i26 = 0, _len18 = Math.min(st.length, v.length); _i26 < _len18; _i26++) {
+                  var _o = st[_i26];
+                  var _n = v[_i26];
 
-                if (!isNil$b(_o) && !isNil$b(_n)) {
-                  for (var _j6 = 0, _len18 = Math.min(_o.length, _n.length); _j6 < _len18; _j6++) {
-                    if (!isNil$b(_o[_j6]) && !isNil$b(_n[_j6])) {
-                      _o[_j6] = cl[_i25][_j6] + _n[_j6] * percent;
+                  if (!isNil$b(_o) && !isNil$b(_n)) {
+                    for (var _j6 = 0, _len19 = Math.min(_o.length, _n.length); _j6 < _len19; _j6++) {
+                      if (!isNil$b(_o[_j6]) && !isNil$b(_n[_j6])) {
+                        _o[_j6] = cl[_i26][_j6] + _n[_j6] * percent;
+                      }
                     }
                   }
                 }
-              }
-            } else if (k === 'controlA' || k === 'controlB') {
-              if (!isNil$b(st[0]) && !isNil$b(v[0])) {
-                st[0] = cl[0] + v[0] * percent;
-              }
+              } else if (k === 'controlA' || k === 'controlB') {
+                if (!isNil$b(st[0]) && !isNil$b(v[0])) {
+                  st[0] = cl[0] + v[0] * percent;
+                }
 
-              if (!isNil$b(st[1]) && !isNil$b(v[1])) {
-                st[1] = cl[1] + v[1] * percent;
-              }
-            } else {
-              if (!isNil$b(st) && !isNil$b(v)) {
-                st = cl + v * percent;
+                if (!isNil$b(st[1]) && !isNil$b(v[1])) {
+                  st[1] = cl[1] + v[1] * percent;
+                }
+              } else {
+                if (!isNil$b(st) && !isNil$b(v)) {
+                  st = cl + v * percent;
+                }
               }
             }
+
+            currentProps[k] = st;
           }
+        };
 
-          currentProps[k] = st;
-        }
-      };
-
-      for (var _i22 = 0, _len14 = transition.length; _i22 < _len14; _i22++) {
-        _loop2(_i22);
-      } // string等的直接量，在不同帧之间可能存在变化，同帧变化后不再改变引用，因此前提是发生帧变化
-      // 再检查是否和当前相等，防止跳到一个不变化的帧上，而前一帧有变化的情况，大部分都是无变化
+        for (var _i23 = 0, _len15 = transition.length; _i23 < _len15; _i23++) {
+          _loop2(_i23, _len15);
+        } // string等的直接量，在不同帧之间可能存在变化，同帧变化后不再改变引用，因此前提是发生帧变化
+        // 再检查是否和当前相等，防止跳到一个不变化的帧上，而前一帧有变化的情况，大部分都是无变化
 
 
-      if (notSameFrame) {
-        var f = frame.fixed;
+        if (notSameFrame) {
+          var f = frame.fixed;
 
-        for (var _i23 = 0, _len15 = f.length; _i23 < _len15; _i23++) {
-          var k = f[_i23];
+          for (var _i24 = 0, _len16 = f.length; _i24 < _len16; _i24++) {
+            var _k6 = f[_i24];
+            var isGeom = frame.isGeom && GEOM$1.hasOwnProperty(_k6);
 
-          var _isGeom2 = GEOM$1.hasOwnProperty(k);
+            if (!equalStyle$1(_k6, style[_k6], isGeom ? currentProps[_k6] : currentStyle[_k6], target)) {
+              if (GEOM$1.hasOwnProperty(_k6)) {
+                currentProps[_k6] = style[_k6];
+              } else {
+                currentStyle[_k6] = style[_k6];
+              }
 
-          if (!equalStyle$1(k, style[k], _isGeom2 ? currentProps[k] : currentStyle[k], target)) {
-            if (GEOM$1.hasOwnProperty(k)) {
-              currentProps[k] = style[k];
-            } else {
-              currentStyle[k] = style[k];
+              fixed.push(_k6);
             }
-
-            fixed.push(k);
           }
         }
       }
@@ -20571,15 +20651,8 @@ var Xom = /*#__PURE__*/function (_Node) {
         res.hasMask = this.__hasMask;
       }
 
-      var wn = this.__wasmNode;
-
-      if (wn) {
-        wn.lv = lv;
-      }
-
       return res;
-    } // __modifyStruct() {}
-    // 设置margin/padding的实际值，layout时执行，inline的垂直方向仍然计算值，但在布局时被忽略
+    } // 设置margin/padding的实际值，layout时执行，inline的垂直方向仍然计算值，但在布局时被忽略
 
   }, {
     key: "__mp",
@@ -20817,7 +20890,7 @@ var Xom = /*#__PURE__*/function (_Node) {
         if (item === fontFamily) {
           // 加载成功回调可能没注册信息，需要多判断一下
           if (o$3.hasRegister(item)) {
-            root.__addUpdate(node, null, REFLOW$3, false, false, false, false, false, null);
+            root.__addUpdate(node, null, REFLOW$3, false, false, false, false, null);
           } // 后面低优先级的无需再看
 
 
@@ -21119,15 +21192,22 @@ var Xom = /*#__PURE__*/function (_Node) {
       var computedStyle = this.__computedStyle;
       var cacheStyle = this.__cacheStyle;
 
-      this.__calStyle(o$1.REFLOW, currentStyle, computedStyle, cacheStyle);
+      this.__calStyle(REFLOW$3, currentStyle, computedStyle, cacheStyle);
 
-      this.__calPerspective(currentStyle, computedStyle, cacheStyle);
+      this.__calPerspective(currentStyle, computedStyle, cacheStyle); // 每次reflow重新传matrix到wasm
 
+
+      this.__wasmStyle(currentStyle);
+    } // 传递matrix相关样式到wasm中计算
+
+  }, {
+    key: "__wasmStyle",
+    value: function __wasmStyle(currentStyle) {
       var wn = this.__wasmNode;
 
       if (wn) {
-        var crs = this.__currentStyle;
-        wn.set_style(this.__x1, this.__y1, this.__offsetWidth, this.__offsetHeight, crs[TRANSLATE_X].v, crs[TRANSLATE_Y].v, crs[TRANSLATE_Z].v, crs[ROTATE_X].v, crs[ROTATE_Y].v, crs[ROTATE_Z].v, crs[ROTATE_3D][0], crs[ROTATE_3D][1], crs[ROTATE_3D][2], crs[ROTATE_3D][3].v, crs[SCALE_X].v, crs[SCALE_Y].v, crs[SCALE_Z].v, crs[SKEW_X].v, crs[SKEW_Y].v, crs[OPACITY$3], crs[TRANSFORM_ORIGIN$2][0].v, crs[TRANSFORM_ORIGIN$2][1].v, crs[TRANSLATE_X].u, crs[TRANSLATE_Y].u, crs[TRANSLATE_Z].u, crs[TRANSFORM_ORIGIN$2][0].u, crs[TRANSFORM_ORIGIN$2][1].u);
+        currentStyle = currentStyle || this.__currentStyle;
+        wn.set_style(this.__x1, this.__y1, this.__offsetWidth, this.__offsetHeight, currentStyle[TRANSLATE_X].v, currentStyle[TRANSLATE_Y].v, currentStyle[TRANSLATE_Z].v, currentStyle[ROTATE_X].v, currentStyle[ROTATE_Y].v, currentStyle[ROTATE_Z].v, currentStyle[ROTATE_3D][0], currentStyle[ROTATE_3D][1], currentStyle[ROTATE_3D][2], currentStyle[ROTATE_3D][3].v, currentStyle[SCALE_X].v, currentStyle[SCALE_Y].v, currentStyle[SCALE_Z].v, currentStyle[SKEW_X].v, currentStyle[SKEW_Y].v, currentStyle[OPACITY$3], currentStyle[TRANSFORM_ORIGIN$2][0].v, currentStyle[TRANSFORM_ORIGIN$2][1].v, currentStyle[TRANSLATE_X].u, currentStyle[TRANSLATE_Y].u, currentStyle[TRANSLATE_Z].u, currentStyle[TRANSFORM_ORIGIN$2][0].u, currentStyle[TRANSFORM_ORIGIN$2][1].u);
       }
     }
   }, {
@@ -21356,7 +21436,7 @@ var Xom = /*#__PURE__*/function (_Node) {
     }
   }, {
     key: "__calMatrix",
-    value: function __calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle, optimize) {
+    value: function __calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle) {
       var _this4 = this;
 
       var __x1 = this.__x1,
@@ -21369,12 +21449,13 @@ var Xom = /*#__PURE__*/function (_Node) {
         return __cacheStyle[MATRIX$1] = toE(this.__matrix);
       }
 
+      var optimize = true;
       var matrixCache = this.__matrix; // 优化计算scale不能为0，无法计算倍数差，rotateZ优化不能包含rotateX/rotateY/skew
 
-      if (!isNil$a(optimize)) ; else if (matrixCache && lv < REFLOW$3 && !(lv & TF$1)) {
-        if (lv & SX && !__computedStyle[SCALE_X] || lv & SY && !__computedStyle[SCALE_Y] || lv & SZ && !__computedStyle[SCALE_Z] || lv & RZ && (__computedStyle[ROTATE_X] || __computedStyle[ROTATE_Y] || __computedStyle[SKEW_X] || __computedStyle[SKEW_Y])) ; else {
-          optimize = true;
-        }
+      if (lv >= REPAINT$3 || lv & TF$1) {
+        optimize = false;
+      } else if (lv & SX && !__computedStyle[SCALE_X] || lv & SY && !__computedStyle[SCALE_Y] || lv & SZ && !__computedStyle[SCALE_Z] || lv & RZ && (__computedStyle[ROTATE_X] || __computedStyle[ROTATE_Y] || __computedStyle[SKEW_X] || __computedStyle[SKEW_Y])) {
+        optimize = false;
       } // translate/scale变化特殊优化，d/h/l不能有值，否则不能这样直接简化运算，因为这里不包含perspective，所以一定没有
 
 
@@ -21456,7 +21537,7 @@ var Xom = /*#__PURE__*/function (_Node) {
         if (lv & SCALE) {
           if (lv & SX) {
             if (!__computedStyle[SCALE_X]) {
-              return this.__calMatrix(REFLOW$3, __currentStyle, __computedStyle, __cacheStyle, false);
+              return this.__calMatrix(REPAINT$3, __currentStyle, __computedStyle, __cacheStyle, false);
             }
 
             var _v4 = __currentStyle[SCALE_X].v;
@@ -21474,7 +21555,7 @@ var Xom = /*#__PURE__*/function (_Node) {
 
           if (lv & SY) {
             if (!__computedStyle[SCALE_Y]) {
-              return this.__calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle, false);
+              return this.__calMatrix(REPAINT$3, __currentStyle, __computedStyle, __cacheStyle, false);
             }
 
             var _v5 = __currentStyle[SCALE_Y].v;
@@ -21492,7 +21573,7 @@ var Xom = /*#__PURE__*/function (_Node) {
 
           if (lv & SZ) {
             if (!__computedStyle[SCALE_Z]) {
-              return this.__calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle, false);
+              return this.__calMatrix(REPAINT$3, __currentStyle, __computedStyle, __cacheStyle, false);
             }
 
             var _v6 = __currentStyle[SCALE_Z].v;
@@ -21536,6 +21617,7 @@ var Xom = /*#__PURE__*/function (_Node) {
           toE(spm); // transform相对于自身
 
           if (ct && ct.length) {
+            inject.warn('CSS transform is deprecated');
             var first = ct[0]; // 特殊处理，抽取出来transform的ppt，视为tfo原点的透视
 
             if (first.k === PERSPECTIVE$1) {
@@ -21728,7 +21810,8 @@ var Xom = /*#__PURE__*/function (_Node) {
             }
           }
 
-          __computedStyle[TRANSFORM$3] = matrix$1 || matrix.identity();
+          __computedStyle[TRANSFORM$3] = __computedStyle[TRANSFORM$3] || matrix.identity();
+          assignMatrix$2(__computedStyle[TRANSFORM$3], matrix$1);
         }
 
         var m = __computedStyle[TRANSFORM$3];
@@ -21799,7 +21882,11 @@ var Xom = /*#__PURE__*/function (_Node) {
 
 
       if (isNil$a(__cacheStyle[MATRIX$1]) || lv & TRANSFORM_ALL$3) {
-        this.__calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle, false);
+        var wn = this.__wasmNode;
+
+        if (!wn) {
+          this.__calMatrix(lv, __currentStyle, __computedStyle, __cacheStyle, false);
+        }
       }
 
       if (isNil$a(__cacheStyle[BACKGROUND_POSITION_X])) {
@@ -21882,7 +21969,7 @@ var Xom = /*#__PURE__*/function (_Node) {
                   loadBgi.height = data.height;
                   __cacheStyle[BACKGROUND_IMAGE] = undefined;
 
-                  root.__addUpdate(node, null, REPAINT$3, false, false, false, false, false, null);
+                  root.__addUpdate(node, null, REPAINT$3, false, false, false, false, null);
                 }
               });
             }
@@ -22993,7 +23080,7 @@ var Xom = /*#__PURE__*/function (_Node) {
       }
 
       if (root && !this.__isDestroyed) {
-        root.__addUpdate(this, null, lv, false, false, false, false, false, cb);
+        root.__addUpdate(this, null, lv, false, false, false, false, cb);
       } else if (isFunction$4(cb)) {
         cb(-1);
       }
@@ -23345,40 +23432,41 @@ var Xom = /*#__PURE__*/function (_Node) {
   }, {
     key: "updateFormatStyle",
     value: function updateFormatStyle(style, cb) {
-      var _this10 = this;
-
       var root = this.__root,
           currentStyle = this.__currentStyle,
           currentProps = this.__currentProps;
       var keys = [];
-      Object.keys(style).forEach(function (i) {
-        var isGeom = GEOM.hasOwnProperty(i);
 
-        if (!isGeom) {
-          i = parseInt(i);
-        }
+      for (var k in style) {
+        if (style.hasOwnProperty(k)) {
+          var isGeom = GEOM.hasOwnProperty(k);
 
-        if (!equalStyle(i, isGeom ? currentProps[i] : currentStyle[i], style[i], _this10)) {
-          if (isGeom) {
-            currentProps[i] = style[i];
-          } else {
-            currentStyle[i] = style[i];
+          if (!isGeom) {
+            k = parseInt(k);
           }
 
-          keys.push(i);
+          if (!equalStyle(k, isGeom ? currentProps[k] : currentStyle[k], style[k], this)) {
+            if (isGeom) {
+              currentProps[k] = style[k];
+            } else {
+              currentStyle[k] = style[k];
+            }
+
+            keys.push(k);
+          }
         }
-      });
+      }
 
       if (!keys.length || this.__isDestroyed) {
         if (isFunction$4(cb)) {
-          cb();
+          cb(false);
         }
 
         return;
       }
 
       if (root) {
-        root.__addUpdate(this, keys, null, false, false, false, false, false, cb);
+        root.__addUpdate(this, keys, null, false, false, false, false, cb);
       }
     }
   }, {
@@ -23512,7 +23600,7 @@ var Xom = /*#__PURE__*/function (_Node) {
         if (lv >= REFLOW$3) {
           this.__cacheStyle = [];
 
-          this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
+          this.__layoutStyle(lv);
         }
 
         if (this.__bbox) {
@@ -23552,7 +23640,7 @@ var Xom = /*#__PURE__*/function (_Node) {
         if (lv >= REFLOW$3) {
           this.__cacheStyle = [];
 
-          this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
+          this.__layoutStyle(lv);
         }
 
         if (this.__bbox) {
@@ -23608,7 +23696,7 @@ var Xom = /*#__PURE__*/function (_Node) {
         if (lv >= REFLOW$3) {
           this.__cacheStyle = [];
 
-          this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
+          this.__layoutStyle(lv);
         }
       }
 
@@ -23640,7 +23728,7 @@ var Xom = /*#__PURE__*/function (_Node) {
         if (lv >= REFLOW$3) {
           this.__cacheStyle = [];
 
-          this.__calStyle(lv, this.__currentStyle, this.__computedStyle, this.__cacheStyle);
+          this.__layoutStyle(lv);
         }
       }
 
@@ -23764,7 +23852,7 @@ var Xom = /*#__PURE__*/function (_Node) {
 
       if (this.__isDestroyed) {
         if (isFunction$4(cb)) {
-          cb();
+          cb(false);
         }
 
         return;
@@ -23777,14 +23865,14 @@ var Xom = /*#__PURE__*/function (_Node) {
         this.__destroy();
 
         if (isFunction$4(cb)) {
-          cb();
+          cb(false);
         }
 
         return;
       } // 可见在reflow逻辑做结构关系等
 
 
-      root.__addUpdate(this, null, REFLOW$3, false, true, false, false, false, cb);
+      root.__addUpdate(this, null, REFLOW$3, false, true, false, false, cb);
     }
   }, {
     key: "addEventListener",
@@ -23913,26 +24001,35 @@ var Xom = /*#__PURE__*/function (_Node) {
   }, {
     key: "opacity",
     get: function get() {
+      var wn = this.__wasmNode;
+
+      if (wn) {
+        return wn.get_op();
+      }
+
       return this.__opacity;
     }
   }, {
     key: "matrix",
     get: function get() {
+      var wn = this.__wasmNode;
+
+      if (wn) {
+        return new Float64Array(wasm$1.instance.memory.buffer, wn.m_ptr(), 16);
+      }
+
       return this.__matrix;
     }
   }, {
     key: "matrixEvent",
     get: function get() {
-      var __domParent = this.__domParent,
-          matrix$1 = this.__matrix;
+      var wn = this.__wasmNode;
 
-      while (__domParent) {
-        matrix$1 = matrix.multiply(__domParent.__perspectiveMatrix, matrix$1);
-        matrix$1 = matrix.multiply(__domParent.__matrix, matrix$1);
-        __domParent = __domParent.__domParent;
+      if (wn) {
+        return new Float64Array(wasm$1.instance.memory.buffer, wn.me_ptr(), 16);
       }
 
-      return matrix$1;
+      return this.__matrixEvent;
     }
   }, {
     key: "perspectiveMatrix",
@@ -24012,7 +24109,7 @@ var Xom = /*#__PURE__*/function (_Node) {
             }
           }
 
-          root.__addUpdate(this, null, MASK$2, false, false, false, false, false, null);
+          root.__addUpdate(this, null, MASK$2, false, false, false, false, null);
         }
       }
     }
@@ -24039,7 +24136,7 @@ var Xom = /*#__PURE__*/function (_Node) {
             }
           }
 
-          root.__addUpdate(this, null, MASK$2, false, false, false, false, false, null);
+          root.__addUpdate(this, null, MASK$2, false, false, false, false, null);
         }
       }
     }
@@ -24062,7 +24159,7 @@ var Xom = /*#__PURE__*/function (_Node) {
             this.__computedStyle[TRANSFORM_STYLE$1] = this.__currentStyle[TRANSFORM_STYLE$1];
           }
 
-          root.__addUpdate(this, null, REPAINT$3, false, false, false, false, null, null);
+          root.__addUpdate(this, null, REPAINT$3, false, false, false, false, null);
         }
       }
     }
@@ -24924,6 +25021,7 @@ var AUTO$3 = o$4.AUTO,
     GRADIENT = o$4.GRADIENT;
 var int2rgba = util.int2rgba,
     isNil$9 = util.isNil,
+    isNumber = util.isNumber,
     joinArr = util.joinArr;
 var canvasPolygon$2 = painter.canvasPolygon,
     svgPolygon$1 = painter.svgPolygon;
@@ -25787,6 +25885,22 @@ var Geom = /*#__PURE__*/function (_Xom) {
     key: "__isRealInline",
     value: function __isRealInline() {
       return false;
+    }
+  }, {
+    key: "animate",
+    value: function animate(list) {
+      var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+      if (isNumber(options)) {
+        options = {
+          duration: options,
+          isGeom: true
+        };
+      } else {
+        options.isGeom = true;
+      }
+
+      return _get(_getPrototypeOf(Geom.prototype), "animate", this).call(this, list, options);
     }
   }, {
     key: "isMulti",
@@ -27447,9 +27561,8 @@ var Dom = /*#__PURE__*/function (_Xom) {
       _get(_getPrototypeOf(Dom.prototype), "__layoutStyle", this).call(this);
 
       this.flowChildren.forEach(function (child) {
-        if (!(child instanceof Text)) {
-          child.__layoutStyle();
-        }
+        // 文本不需要，但wasm情况要传入一些信息
+        child.__layoutStyle();
       });
     }
   }, {
@@ -30205,10 +30318,10 @@ var Dom = /*#__PURE__*/function (_Xom) {
       } // __cacheTotal可提前判断是否在bbox范围内，svg没有bbox防止进入判断
 
 
-      if (__cacheTotal && __cacheTotal.available && __cacheTotal.bbox) {
+      if (__cacheTotal && __cacheTotal.__available && __cacheTotal.bbox) {
         // 不是E的话，因为缓存缘故影响cache的子元素，先左乘可能的父matrix（嵌套cache），再赋值给pm递归传下去
-        if (!isE$2(this.__matrix)) {
-          pm = multiply$1(pm, this.__matrix);
+        if (!isE$2(this.matrix)) {
+          pm = multiply$1(pm, this.matrix);
           assignMatrix$1(this.__matrixEvent, pm);
         } else if (this.__perspectiveMatrix) {
           pm = this.__perspectiveMatrix;
@@ -30221,7 +30334,7 @@ var Dom = /*#__PURE__*/function (_Xom) {
         }
       } // 递归传下来的pm如果有说明是cache的子元素且需要重新计算matrix
       else if (!isE$2(pm)) {
-        assignMatrix$1(this.__matrixEvent, matrix.multiply(pm, this.__matrix));
+        assignMatrix$1(this.__matrixEvent, matrix.multiply(pm, this.matrix));
       } // 找到对应的callback
 
 
@@ -30317,7 +30430,7 @@ var Dom = /*#__PURE__*/function (_Xom) {
         child = this;
       }
 
-      root.__addUpdate(child, null, REFLOW$1, true, false, false, false, false, cb);
+      root.__addUpdate(child, null, REFLOW$1, true, false, false, false, cb);
     }
   }, {
     key: "prependChild",
@@ -30373,7 +30486,7 @@ var Dom = /*#__PURE__*/function (_Xom) {
         child = this;
       }
 
-      root.__addUpdate(child, null, REFLOW$1, true, false, false, false, false, cb);
+      root.__addUpdate(child, null, REFLOW$1, true, false, false, false, cb);
     }
   }, {
     key: "insertBefore",
@@ -30440,7 +30553,7 @@ var Dom = /*#__PURE__*/function (_Xom) {
         child = parent;
       }
 
-      root.__addUpdate(child, null, REFLOW$1, true, false, false, false, false, cb);
+      root.__addUpdate(child, null, REFLOW$1, true, false, false, false, cb);
     }
   }, {
     key: "insertAfter",
@@ -30500,7 +30613,7 @@ var Dom = /*#__PURE__*/function (_Xom) {
         child = parent;
       }
 
-      root.__addUpdate(child, null, REFLOW$1, true, false, false, false, false, cb);
+      root.__addUpdate(child, null, REFLOW$1, true, false, false, false, cb);
     }
   }, {
     key: "removeChild",
@@ -31103,6 +31216,7 @@ var Page = /*#__PURE__*/function () {
 }();
 
 var calRectPoint$1 = matrix.calRectPoint,
+    calRectPointWasm = matrix.calRectPointWasm,
     calPoint = matrix.calPoint;
 /**
  * 初始化 shader
@@ -31308,8 +31422,8 @@ function drawTextureCache$1(gl, list, cx, cy, dx, dy) {
         cache = _list$i.cache,
         opacity = _list$i.opacity,
         matrix = _list$i.matrix,
-        vertex = _list$i.vertex,
-        index = _list$i.index;
+        index = _list$i.index,
+        wasm = _list$i.wasm;
     var width = cache.__tw,
         height = cache.__th,
         tx1 = cache.__tx1,
@@ -31344,79 +31458,57 @@ function drawTextureCache$1(gl, list, cx, cy, dx, dy) {
         x4 = void 0,
         y4 = void 0,
         z4 = void 0,
-        w4 = void 0; // wasm中计算好的顶点
+        w4 = void 0; // wasm中的matrix和普通js取的方式不一样
 
-    if (vertex) {
-      var _j = index * 16;
+    var bx = bbox[0],
+        by = bbox[1];
+    var xa = bx + dx,
+        ya = by + height + dy;
+    var xb = bx + width + dx,
+        yb = by + dy;
+    var t = wasm ? calRectPointWasm(xa, ya, xb, yb, matrix, index) : calRectPoint$1(xa, ya, xb, yb, matrix);
+    x1 = t.x1;
+    y1 = t.y1;
+    z1 = t.z1;
+    w1 = t.w1;
+    x2 = t.x2;
+    y2 = t.y2;
+    z2 = t.z2;
+    w2 = t.w2;
+    x3 = t.x3;
+    y3 = t.y3;
+    z3 = t.z3;
+    w3 = t.w3;
+    x4 = t.x4;
+    y4 = t.y4;
+    z4 = t.z4;
+    w4 = t.w4; // console.warn(x1,y1,z1,w1,',',x2,y2,z2,w2,',',x3,y3,z3,w3,',',x4,y4,z4,w4);
+    // z范围取所有、对角线最大值，只有当非0有值时才求
 
-      x1 = vertex[_j];
-      y1 = vertex[_j + 1];
-      z1 = vertex[_j + 2];
-      w1 = vertex[_j + 3];
-      x2 = vertex[_j + 4];
-      y2 = vertex[_j + 5];
-      z2 = vertex[_j + 6];
-      w2 = vertex[_j + 7];
-      x3 = vertex[_j + 8];
-      y3 = vertex[_j + 9];
-      z3 = vertex[_j + 10];
-      w3 = vertex[_j + 11];
-      x4 = vertex[_j + 12];
-      y4 = vertex[_j + 13];
-      z4 = vertex[_j + 14];
-      w4 = vertex[_j + 15];
-    } else {
-      var bx = bbox[0],
-          by = bbox[1];
-      var xa = bx + dx,
-          ya = by + height + dy;
-      var xb = bx + width + dx,
-          yb = by + dy;
-      var t = calRectPoint$1(xa, ya, xb, yb, matrix);
-      x1 = t.x1;
-      y1 = t.y1;
-      z1 = t.z1;
-      w1 = t.w1;
-      x2 = t.x2;
-      y2 = t.y2;
-      z2 = t.z2;
-      w2 = t.w2;
-      x3 = t.x3;
-      y3 = t.y3;
-      z3 = t.z3;
-      w3 = t.w3;
-      x4 = t.x4;
-      y4 = t.y4;
-      z4 = t.z4;
-      w4 = t.w4; // console.warn(x1,y1,z1,w1,',',x2,y2,z2,w2,',',x3,y3,z3,w3,',',x4,y4,z4,w4);
-      // z范围取所有、对角线最大值，只有当非0有值时才求
+    var z = Math.max(Math.abs(z1), Math.abs(z2));
+    z = Math.max(z, Math.abs(z3));
+    z = Math.max(z, Math.abs(z4));
 
-      var z = Math.max(Math.abs(z1), Math.abs(z2));
-      z = Math.max(z, Math.abs(z3));
-      z = Math.max(z, Math.abs(z4));
+    if (z) {
+      z = Math.max(z, Math.sqrt(cx * cx + cy * cy));
+    }
 
-      if (z) {
-        z = Math.max(z, Math.sqrt(cx * cx + cy * cy));
-      }
-
-      t = convertCoords2Gl(x1, y1, z1, w1, cx, cy, z);
-      x1 = t.x;
-      y1 = t.y;
-      z1 = t.z;
-      t = convertCoords2Gl(x2, y2, z2, w2, cx, cy, z);
-      x2 = t.x;
-      y2 = t.y;
-      z2 = t.z;
-      t = convertCoords2Gl(x3, y3, z3, w3, cx, cy, z);
-      x3 = t.x;
-      y3 = t.y;
-      z3 = t.z;
-      t = convertCoords2Gl(x4, y4, z4, w4, cx, cy, z);
-      x4 = t.x;
-      y4 = t.y;
-      z4 = t.z;
-    } // console.log(x1,y1,z1,w1,',',x2,y2,z2,w2,',',x3,y3,z3,w3,',',x4,y4,z4,w4);
-
+    t = convertCoords2Gl(x1, y1, z1, w1, cx, cy, z);
+    x1 = t.x;
+    y1 = t.y;
+    z1 = t.z;
+    t = convertCoords2Gl(x2, y2, z2, w2, cx, cy, z);
+    x2 = t.x;
+    y2 = t.y;
+    z2 = t.z;
+    t = convertCoords2Gl(x3, y3, z3, w3, cx, cy, z);
+    x3 = t.x;
+    y3 = t.y;
+    z3 = t.z;
+    t = convertCoords2Gl(x4, y4, z4, w4, cx, cy, z);
+    x4 = t.x;
+    y4 = t.y;
+    z4 = t.z; // console.log(x1,y1,z1,w1,',',x2,y2,z2,w2,',',x3,y3,z3,w3,',',x4,y4,z4,w4);
 
     var j = i * 24;
     vtPoint[j] = x1;
@@ -32457,9 +32549,19 @@ var CanvasCache = /*#__PURE__*/function (_Cache) {
     value: function genMask(target, node, callback) {
       var cacheMask = genSingle(target, 'mask1');
       var list = [];
-      var _node$__computedStyle = node.__computedStyle,
-          transform = _node$__computedStyle[TRANSFORM$2],
-          tfo = _node$__computedStyle[TRANSFORM_ORIGIN$1];
+      var transform,
+          tfo,
+          wn = node.__wasmNode;
+
+      if (wn) {
+        transform = new Float64Array(wasm$1.instance.memory.buffer, wn.transform_ptr(), 16);
+        var cs = new Float64Array(wasm$1.instance.memory.buffer, wn.computed_style_ptr(), 18);
+        tfo = [cs[16], cs[17]];
+      } else {
+        transform = node.__computedStyle[TRANSFORM$2];
+        tfo = node.__computedStyle[TRANSFORM_ORIGIN$1];
+      }
+
       var next = node.next;
       var isClip = next.__clip;
 
@@ -33218,9 +33320,9 @@ var Img = /*#__PURE__*/function (_Dom) {
                 height = _self$__currentStyle[HEIGHT$1];
 
             if (width.u !== AUTO && height.u !== AUTO) {
-              root.__addUpdate(self, null, o$1.REPAINT, false, false, false, false, false, cb);
+              root.__addUpdate(self, null, o$1.REPAINT, false, false, false, false, cb);
             } else {
-              root.__addUpdate(self, null, o$1.REFLOW, false, false, false, false, false, cb);
+              root.__addUpdate(self, null, o$1.REFLOW, false, false, false, false, cb);
             }
           };
 
@@ -33290,7 +33392,7 @@ var Img = /*#__PURE__*/function (_Dom) {
         }
 
         if (isFunction$2(cb)) {
-          cb();
+          cb(false);
         }
 
         return;
@@ -36281,7 +36383,7 @@ function genBboxTotal(node, __structs, index, total, lv, isPpt) {
   }
 
   if (node.__selfPerspective) {
-    var bbox = transformBbox(bboxTotal, multiply(pm, node.__matrix), 0, 0);
+    var bbox = transformBbox(bboxTotal, multiply(pm, node.matrix), 0, 0);
     mergeBbox(bboxTotal, bbox);
   }
 
@@ -36335,8 +36437,9 @@ function genBboxTotal(node, __structs, index, total, lv, isPpt) {
 
     var __cache2 = _node.__cache;
     var p = _node.__domParent;
-    _node.__opacity = __computedStyle2[OPACITY$1] * p.__opacity;
-    var m = _node.__matrix;
+    _node.__opacity = __computedStyle2[OPACITY$1] * p.__opacity; // 由于wasm的存在，使用getter取，没有wasm时不影响，有时获取到wasm计算的节点结果，因为私有__matrix为空
+
+    var m = _node.matrix;
 
     if (p !== top) {
       m = multiply(p.__matrixEvent, m);
@@ -36518,9 +36621,9 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
         ctxTotal = applyOffscreen(ctxTotal, oh, width, height, false);
       }
     } else {
-      var __computedStyle2 = _node2.__computedStyle; // none跳过这棵子树，判断下最后一个节点的离屏应用即可
+      var __computedStyle = _node2.__computedStyle; // none跳过这棵子树，判断下最后一个节点的离屏应用即可
 
-      if (__computedStyle2[DISPLAY$1] === 'none') {
+      if (__computedStyle[DISPLAY$1] === 'none') {
         i += _total2 || 0;
 
         if (hasMask) {
@@ -36536,9 +36639,7 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
         continue;
       }
 
-      var transform = __computedStyle2[TRANSFORM$1],
-          tfo = __computedStyle2[TRANSFORM_ORIGIN],
-          visibility = __computedStyle2[VISIBILITY$1];
+      var visibility = __computedStyle[VISIBILITY$1];
       var mh = maskStartHash[i];
 
       if (mh) {
@@ -36597,7 +36698,21 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
       } // 不变是同级兄弟，无需特殊处理 else {}
 
 
-      lastLv = _lv; // 特殊渲染的matrix，局部根节点为原点考虑，当需要计算时（不为E）再计算
+      lastLv = _lv; // wasm取transform不同的方式
+
+      var transform = void 0,
+          tfo = void 0,
+          wn = _node2.__wasmNode;
+
+      if (wn) {
+        transform = new Float64Array(wasm$1.instance.memory.buffer, wn.transform_ptr(), 16);
+        var cs = new Float64Array(wasm$1.instance.memory.buffer, wn.computed_style_ptr(), 18);
+        tfo = [cs[16], cs[17]];
+      } else {
+        transform = __computedStyle[TRANSFORM$1];
+        tfo = __computedStyle[TRANSFORM_ORIGIN];
+      } // 特殊渲染的matrix，局部根节点为原点考虑，当需要计算时（不为E）再计算
+
 
       var m = void 0;
 
@@ -36633,7 +36748,7 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
             ctxTotal.setTransform(1, 0, 0, 1, 0, 0);
           }
 
-          var mixBlendMode = __computedStyle2[MIX_BLEND_MODE$1];
+          var mixBlendMode = __computedStyle[MIX_BLEND_MODE$1];
 
           if (mixBlendMode !== 'normal') {
             ctxTotal.globalCompositeOperation = mbmName(mixBlendMode);
@@ -36654,7 +36769,7 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
             offscreenFilter = void 0,
             offscreenOverflow = void 0;
 
-        var _offscreen = i > index && _node2.__calOffscreen(ctxTotal, __computedStyle2);
+        var _offscreen = i > index && _node2.__calOffscreen(ctxTotal, __computedStyle);
 
         if (_offscreen) {
           ctxTotal = _offscreen.ctx;
@@ -36908,9 +37023,19 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
 
           lastLv = _lv2; // 计算临时的matrix，先以此节点为局部根节点原点，后面考虑逆矩阵
 
-          var transform = _computedStyle[TRANSFORM$1],
-              tfo = _computedStyle[TRANSFORM_ORIGIN],
-              opacity = _computedStyle[OPACITY$1];
+          var opacity = _computedStyle[OPACITY$1];
+          var transform = void 0,
+              tfo = void 0,
+              wn = _node3.__wasmNode;
+
+          if (wn) {
+            transform = new Float64Array(wasm$1.instance.memory.buffer, wn.transform_ptr(), 16);
+            var cs = new Float64Array(wasm$1.instance.memory.buffer, wn.computed_style_ptr(), 18);
+            tfo = [cs[16], cs[17]];
+          } else {
+            transform = _node3.__computedStyle[TRANSFORM$1];
+            tfo = _node3.__computedStyle[TRANSFORM_ORIGIN];
+          }
 
           if (i !== index) {
             opacity *= parentOpacity;
@@ -37194,7 +37319,16 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
           perspectiveOrigin = _pptNode$__computedSt[PERSPECTIVE_ORIGIN];
       pm = transform$1.calPerspectiveMatrix(perspective, x1 + dx + perspectiveOrigin[0], y1 + dy + perspectiveOrigin[1]);
     } else {
-      var _perspectiveOrigin = pptNode.__computedStyle[TRANSFORM_ORIGIN];
+      var _perspectiveOrigin,
+          wn = pptNode.__wasmNode;
+
+      if (wn) {
+        var cs = new Float64Array(wasm$1.instance.memory.buffer, wn.computed_style_ptr(), 18);
+        _perspectiveOrigin = [cs[16], cs[17]];
+      } else {
+        _perspectiveOrigin = pptNode.__computedStyle[TRANSFORM_ORIGIN];
+      }
+
       pm = transform$1.calPerspectiveMatrix(pptNode.__selfPerspective, x1 + dx + _perspectiveOrigin[0], y1 + dy + _perspectiveOrigin[1]);
     }
   }
@@ -37240,7 +37374,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
       if (__cache && __cache.__available) {
         var _node4$__domParent = _node4.__domParent,
             __opacity = _node4$__domParent.__opacity,
-            __matrixEvent = _node4$__domParent.__matrixEvent;
+            matrixEvent = _node4$__domParent.matrixEvent;
         var p = __cache.__page;
 
         if (lastPage && lastPage !== p) {
@@ -37251,7 +37385,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
         list.push({
           cache: __cache,
           opacity: __opacity,
-          matrix: __matrixEvent
+          matrix: matrixEvent
         });
       }
     } // 再看total缓存/cache，都没有的是无内容的Xom节点
@@ -37271,8 +37405,6 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
       }
 
       var visibility = __computedStyle[VISIBILITY$1],
-          transform = __computedStyle[TRANSFORM$1],
-          tfo = __computedStyle[TRANSFORM_ORIGIN],
           mixBlendMode = __computedStyle[MIX_BLEND_MODE$1],
           backfaceVisibility = __computedStyle[BACKFACE_VISIBILITY];
 
@@ -37291,6 +37423,22 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
       var m = void 0;
 
       if (i > index) {
+        // wasm取transform不同的方式
+        var transform = void 0,
+            tfo = void 0,
+            _wn = _node4.__wasmNode;
+
+        if (_wn) {
+          transform = new Float64Array(wasm$1.instance.memory.buffer, _wn.transform_ptr(), 16);
+
+          var _cs = new Float64Array(wasm$1.instance.memory.buffer, _wn.computed_style_ptr(), 18);
+
+          tfo = [_cs[16], _cs[17]];
+        } else {
+          transform = __computedStyle[TRANSFORM$1];
+          tfo = __computedStyle[TRANSFORM_ORIGIN];
+        }
+
         if (!isE(transform)) {
           m = transform$1.calMatrixByOrigin(transform, tfo[0] + _node4.__x1 + dx, tfo[1] + _node4.__y1 + dy);
         }
@@ -37310,7 +37458,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
         assignMatrix(_node4.__matrixEvent, m); // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
 
         if (backfaceVisibility === 'hidden') {
-          var _m = _node4.__matrix,
+          var _m = _node4.matrix,
               x = _m[5] < 0 && _m[10] < 0,
               y = _m[0] < 0 && _m[10] < 0;
 
@@ -37354,8 +37502,6 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
             }
 
             var _visibility = _computedStyle2[VISIBILITY$1],
-                _transform = _computedStyle2[TRANSFORM$1],
-                _tfo = _computedStyle2[TRANSFORM_ORIGIN],
                 _backfaceVisibility = _computedStyle2[BACKFACE_VISIBILITY];
 
             if (_visibility === 'hidden' && !_total7) {
@@ -37367,6 +37513,21 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
             }
 
             var _p3 = _node5.__domParent;
+
+            var _transform = void 0,
+                _tfo = void 0,
+                _wn2 = _node5.__wasmNode;
+
+            if (_wn2) {
+              _transform = new Float64Array(wasm$1.instance.memory.buffer, _wn2.transform_ptr(), 16);
+
+              var _cs2 = new Float64Array(wasm$1.instance.memory.buffer, _wn2.computed_style_ptr(), 18);
+
+              _tfo = [_cs2[16], _cs2[17]];
+            } else {
+              _transform = _computedStyle2[TRANSFORM$1];
+              _tfo = _computedStyle2[TRANSFORM_ORIGIN];
+            }
 
             var _m2 = void 0;
 
@@ -37384,7 +37545,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
             assignMatrix(_node5.__matrixEvent, _m2); // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
 
             if (_backfaceVisibility === 'hidden') {
-              var _m3 = _node5.__matrix,
+              var _m3 = _node5.matrix,
                   _x = _m3[5] < 0 && _m3[10] < 0,
                   _y = _m3[0] < 0 && _m3[10] < 0;
 
@@ -37581,10 +37742,7 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
         continue;
       }
 
-      _node6.__cacheTotal;
-          _node6.__cacheFilter;
-          _node6.__cacheMask;
-          var p = _node6.__domParent;
+      var p = _node6.__domParent;
       var target = _node6.__cacheTarget;
 
       if (target === _node6.__cache) {
@@ -37769,8 +37927,6 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
           }
 
           var _visibility2 = _computedStyle3[VISIBILITY$1],
-              transform = _computedStyle3[TRANSFORM$1],
-              tfo = _computedStyle3[TRANSFORM_ORIGIN],
               backfaceVisibility = _computedStyle3[BACKFACE_VISIBILITY];
 
           if (_visibility2 === 'hidden' && !_total10) {
@@ -37779,6 +37935,20 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
             }
 
             continue;
+          } // wasm取transform不同的方式
+
+
+          var transform = void 0,
+              tfo = void 0,
+              wn = _node8.__wasmNode;
+
+          if (wn) {
+            transform = new Float64Array(wasm$1.instance.memory.buffer, wn.transform_ptr(), 16);
+            var cs = new Float64Array(wasm$1.instance.memory.buffer, wn.computed_style_ptr(), 18);
+            tfo = [cs[16], cs[17]];
+          } else {
+            transform = _computedStyle3[TRANSFORM$1];
+            tfo = _computedStyle3[TRANSFORM_ORIGIN];
           }
 
           var _cache2 = _node8.__cache,
@@ -37803,7 +37973,7 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
           assignMatrix(_node8.__matrixEvent, m); // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
 
           if (backfaceVisibility === 'hidden') {
-            var _m4 = _node8.__matrix,
+            var _m4 = _node8.matrix,
                 _x2 = _m4[5] < 0 && _m4[10] < 0,
                 _y2 = _m4[0] < 0 && _m4[10] < 0;
 
@@ -38188,9 +38358,19 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
   __cacheMask.__available = true;
   node.__cacheMask = __cacheMask; // 先求得被遮罩的matrix，用作inverse给mask计算，以被遮罩左上角为原点
 
-  var _node$__computedStyle = node.__computedStyle,
-      transform = _node$__computedStyle[TRANSFORM$1],
-      tfo = _node$__computedStyle[TRANSFORM_ORIGIN];
+  var transform,
+      tfo,
+      wn = node.__wasmNode;
+
+  if (wn) {
+    transform = new Float64Array(wasm$1.instance.memory.buffer, wn.transform_ptr(), 16);
+    var cs = new Float64Array(wasm$1.instance.memory.buffer, wn.computed_style_ptr(), 18);
+    tfo = [cs[16], cs[17]];
+  } else {
+    transform = node.__computedStyle[TRANSFORM$1];
+    tfo = node.__computedStyle[TRANSFORM_ORIGIN];
+  }
+
   var inverse;
 
   if (isE(transform)) {
@@ -38268,8 +38448,6 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
 
         var opacity = computedStyle[OPACITY$1],
             visibility = computedStyle[VISIBILITY$1],
-            _transform2 = computedStyle[TRANSFORM$1],
-            _tfo2 = computedStyle[TRANSFORM_ORIGIN],
             backfaceVisibility = computedStyle[BACKFACE_VISIBILITY];
 
         if (visibility === 'hidden' && !_total11) {
@@ -38302,7 +38480,23 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
         } // 不变是同级兄弟，无需特殊处理 else {}
 
 
-        lastLv = _lv5; // 不考虑mbm
+        lastLv = _lv5;
+
+        var _transform2 = void 0,
+            _tfo2 = void 0,
+            _wn3 = _node9.__wasmNode;
+
+        if (_wn3) {
+          _transform2 = new Float64Array(wasm$1.instance.memory.buffer, _wn3.transform_ptr(), 16);
+
+          var _cs3 = new Float64Array(wasm$1.instance.memory.buffer, _wn3.computed_style_ptr(), 18);
+
+          _tfo2 = [_cs3[16], _cs3[17]];
+        } else {
+          _transform2 = computedStyle[TRANSFORM$1];
+          _tfo2 = computedStyle[TRANSFORM_ORIGIN];
+        } // 不考虑mbm
+
 
         var m = void 0;
 
@@ -38324,7 +38518,7 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
           m = matrix.multiply(inverse, m); // 后面不可见，只有rotateX和rotateY翻转导致的0/5/10位的cos值为负，同时转2次抵消10位是正
 
           if (backfaceVisibility === 'hidden') {
-            var _m5 = _node9.__matrix,
+            var _m5 = _node9.matrix,
                 x = _m5[5] < 0 && _m5[10] < 0,
                 y = _m5[0] < 0 && _m5[10] < 0;
 
@@ -38943,12 +39137,13 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
       width = root.width,
       height = root.height,
       __wasmRoot = root.__wasmRoot;
-  var wasmOp, wasmVt;
+  var wasmOp, wasmMe;
 
   if (__wasmRoot) {
     var len = __structs.length;
-    wasmOp = new Float64Array(wasm$1.wasm.memory.buffer, __wasmRoot.op_ptr(), len);
-    wasmVt = new Float64Array(wasm$1.wasm.memory.buffer, __wasmRoot.vt_ptr(), len * 16); // console.log(wasmVt);
+    wasmOp = new Float64Array(wasm$1.instance.memory.buffer, __wasmRoot.op_ptr(), len);
+    new Float64Array(wasm$1.instance.memory.buffer, __wasmRoot.vt_ptr(), len * 16);
+    wasmMe = new Float64Array(wasm$1.instance.memory.buffer, __wasmRoot.me_ptr(), len * 16);
   }
 
   var cx = width * 0.5,
@@ -39246,7 +39441,7 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
       var _filter2 = _computedStyle4[FILTER]; // 有ppt的，向上查找所有父亲index记录，可能出现重复记得提前跳出
 
       var __limitCache = _node11.__limitCache,
-          _cacheTotal2 = _node11.__cacheTotal,
+          _cacheTotal = _node11.__cacheTotal,
           __cacheFilter = _node11.__cacheFilter,
           __cacheMask = _node11.__cacheMask;
 
@@ -39256,25 +39451,25 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
 
       var needGen = void 0; // 可能没变化，比如被遮罩节点、filter变更等
 
-      if (!_cacheTotal2 || !_cacheTotal2.__available) {
+      if (!_cacheTotal || !_cacheTotal.__available) {
         var res = void 0;
 
         if (_isPpt2) {
-          res = genPptWebgl(renderMode, _cacheTotal2, gl, root, _node11, _i9, _lv6, _total12 || 0, __structs, width, height);
+          res = genPptWebgl(renderMode, _cacheTotal, gl, root, _node11, _i9, _lv6, _total12 || 0, __structs, width, height);
         } else {
-          res = genTotalWebgl(renderMode, _cacheTotal2, gl, root, _node11, _i9, _lv6, _total12 || 0, __structs, width, height, null, null, null);
+          res = genTotalWebgl(renderMode, _cacheTotal, gl, root, _node11, _i9, _lv6, _total12 || 0, __structs, width, height, null, null, null);
         }
 
         if (!res) {
           return;
         }
 
-        _cacheTotal2 = res;
+        _cacheTotal = res;
         needGen = true;
       } // 即使超限，也有total结果
 
 
-      var target = _cacheTotal2;
+      var target = _cacheTotal;
 
       if (_filter2.length) {
         if (!__cacheFilter || !__cacheFilter.__available || needGen) {
@@ -39337,11 +39532,22 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
         }
 
         lastPage = p;
-        list.push({
-          cache: _cache5,
-          opacity: __opacity,
-          matrix: __matrixEvent
-        });
+
+        if (wasmOp) {
+          list.push({
+            cache: _cache5,
+            opacity: wasmOp[_i10],
+            matrix: wasmMe,
+            index: _i10,
+            wasm: true
+          });
+        } else {
+          list.push({
+            cache: _cache5,
+            opacity: __opacity,
+            matrix: __matrixEvent
+          });
+        }
       }
     } else {
       var _computedStyle5 = _node12.__computedStyle; // none跳过这棵子树，判断下最后一个节点的离屏应用即可
@@ -39406,7 +39612,7 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
 
 
       if (backfaceVisibility === 'hidden') {
-        var _m6 = _node12.__matrix,
+        var _m6 = _node12.matrix,
             _x8 = _m6[5] < 0 && _m6[10] < 0,
             _y8 = _m6[0] < 0 && _m6[10] < 0;
 
@@ -39457,8 +39663,9 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
               list.push({
                 cache: _target8,
                 opacity: wasmOp[_i10],
-                vertex: wasmVt,
-                index: _i10
+                matrix: wasmMe,
+                index: _i10,
+                wasm: true
               });
             } else {
               list.push({
@@ -39541,13 +39748,12 @@ function renderCanvas$1(renderMode, ctx, root, isFirst, rlv) {
       width = root.width,
       height = root.height,
       __wasmRoot = root.__wasmRoot;
-  var wasmMe, wasmOp;
+  var wasmOp, wasmMe;
 
   if (__wasmRoot) {
-    var len = __wasmRoot.refresh();
-
-    wasmMe = new Float32Array(wasm$1.wasm.memory.buffer, __wasmRoot.me_ptr(), len * 16);
-    wasmOp = new Float32Array(wasm$1.wasm.memory.buffer, __wasmRoot.op_ptr(), len);
+    var len = __structs.length;
+    wasmOp = new Float64Array(wasm$1.instance.memory.buffer, __wasmRoot.op_ptr(), len);
+    wasmMe = new Float64Array(wasm$1.instance.memory.buffer, __wasmRoot.me_ptr(), len * 16);
   }
 
   var mergeList = [];
@@ -39781,12 +39987,6 @@ function renderCanvas$1(renderMode, ctx, root, isFirst, rlv) {
       }
 
       if (target) {
-        _i11 += _total14 || 0;
-
-        if (_hasMask8) {
-          _i11 += countMaskNum(__structs, _i11 + 1, _hasMask8);
-        }
-
         if (lastOpacity !== opacity) {
           ctx.globalAlpha = opacity;
           lastOpacity = opacity;
@@ -39820,6 +40020,12 @@ function renderCanvas$1(renderMode, ctx, root, isFirst, rlv) {
           ctx.drawImage(canvas, x, y, w, h, x1 - dbx, y1 - dby, w, h); // total应用后记得设置回来
 
           ctx.globalCompositeOperation = 'source-over';
+        }
+
+        _i11 += _total14 || 0;
+
+        if (_hasMask8) {
+          _i11 += countMaskNum(__structs, _i11 + 1, _hasMask8);
         } // 父超限但子有total的时候，i此时已经增加到了末尾，也需要检查
 
 
@@ -39855,8 +40061,7 @@ function renderCanvas$1(renderMode, ctx, root, isFirst, rlv) {
 
         if (opacity > 0) {
           if (wasmOp) {
-            var _idx2 = _i11 * 16; // console.log(i, idx, me[idx], me[idx + 1], me[idx + 4], me[idx + 5], me[idx + 12], me[idx + 13])
-
+            var _idx2 = _i11 * 16;
 
             ctx.setTransform(wasmMe[_idx2], wasmMe[_idx2 + 1], wasmMe[_idx2 + 4], wasmMe[_idx2 + 5], wasmMe[_idx2 + 12], wasmMe[_idx2 + 13]);
           } else {
@@ -40040,19 +40245,6 @@ var _enums$STYLE_KEY = enums.STYLE_KEY,
     OPACITY = _enums$STYLE_KEY.OPACITY,
     MIX_BLEND_MODE = _enums$STYLE_KEY.MIX_BLEND_MODE,
     FONT_SIZE = _enums$STYLE_KEY.FONT_SIZE;
-    _enums$STYLE_KEY.TRANSLATE_X;
-    _enums$STYLE_KEY.TRANSLATE_Y;
-    _enums$STYLE_KEY.TRANSLATE_Z;
-    _enums$STYLE_KEY.ROTATE_X;
-    _enums$STYLE_KEY.ROTATE_Y;
-    _enums$STYLE_KEY.ROTATE_Z;
-    _enums$STYLE_KEY.ROTATE_3D;
-    _enums$STYLE_KEY.SCALE_X;
-    _enums$STYLE_KEY.SCALE_Y;
-    _enums$STYLE_KEY.SCALE_Z;
-    _enums$STYLE_KEY.SKEW_X;
-    _enums$STYLE_KEY.SKEW_Y;
-    _enums$STYLE_KEY.TRANSFORM_ORIGIN;
 var isNil$8 = util.isNil,
     isFunction$1 = util.isFunction;
 var PX = o$4.PX,
@@ -40192,7 +40384,7 @@ var Root = /*#__PURE__*/function (_Dom) {
     _this.__lastUpdateP = null; // 每帧addUpdate都会向上检查，很多时候同级无需继续，第一次检查暂存parent对象
     // 开启wasm后，默认使用，除非显示取消
 
-    if (wasm$1.wasm && (props.wasm === undefined || props.wasm)) {
+    if (wasm$1.instance && (props.wasm === undefined || props.wasm)) {
       _this.__wasmRoot = wasm$1.Root["new"]();
       _this.__wasmNode = wasm$1.Node["new"](false);
     } else {
@@ -40332,7 +40524,7 @@ var Root = /*#__PURE__*/function (_Dom) {
 
       this.__initProps();
 
-      var tagName = this.tagName;
+      var tagName = this.__tagName;
       var domName = ROOT_DOM_NAME[tagName]; // OffscreenCanvas兼容，包含worker的
 
       if (typeof window !== 'undefined' && window.OffscreenCanvas && dom instanceof window.OffscreenCanvas || typeof self !== 'undefined' && self.OffscreenCanvas && dom instanceof self.OffscreenCanvas) {
@@ -40781,7 +40973,7 @@ var Root = /*#__PURE__*/function (_Dom) {
 
   }, {
     key: "__addUpdate",
-    value: function __addUpdate(node, keys, focus, addDom, removeDom, sync, wasmChange, optimize, cb) {
+    value: function __addUpdate(node, keys, focus, addDom, removeDom, sync, wasmChange, cb) {
       if (this.__isDestroyed) {
         return;
       }
@@ -40802,7 +40994,7 @@ var Root = /*#__PURE__*/function (_Dom) {
         for (var i = 0, len = keys.length; i < len; i++) {
           var k = keys[i];
 
-          if (node instanceof Geom && isGeom(node.tagName, k)) {
+          if (node instanceof Geom && isGeom(node.__tagName, k)) {
             lv |= REPAINT;
             __cacheProps[k] = undefined;
           } else {
@@ -40835,7 +41027,7 @@ var Root = /*#__PURE__*/function (_Dom) {
         }
       }
 
-      var res = this.__calUpdate(node, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver, addDom, removeDom, optimize); // 动画在最后一帧要finish或者cancel时，特殊调用同步计算无需刷新，不会有cb
+      var res = this.__calUpdate(node, computedStyle, cacheStyle, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver, addDom, removeDom); // 动画在最后一帧要finish或者cancel时，特殊调用同步计算无需刷新，不会有cb
 
 
       if (sync) {
@@ -40844,13 +41036,13 @@ var Root = /*#__PURE__*/function (_Dom) {
         }
 
         return;
-      } // wasm变更可能会无keys和lv，需要强制刷新
+      } // wasm动画变更可能会无keys和lv，需要强制刷新
 
 
       if (res || wasmChange) {
         this.__frameDraw(cb);
       } else {
-        cb && cb();
+        cb && cb(false);
       }
     }
   }, {
@@ -40863,7 +41055,7 @@ var Root = /*#__PURE__*/function (_Dom) {
 
       var computedStyle = node.__computedStyle,
           cacheStyle = node.__cacheStyle,
-          __cacheProps = node.__cacheProps;
+          cacheProps = node.__cacheProps;
       var hasZ, hasVisibility, hasColor, hasDisplay, hasTsColor, hasTsWidth, hasTsOver;
       hasColor = frame.hasColor;
       hasTsColor = frame.hasTsColor;
@@ -40876,21 +41068,24 @@ var Root = /*#__PURE__*/function (_Dom) {
       for (var i = 0; i < len; i++) {
         var k = trans[i];
 
-        if (node instanceof Geom && isGeom(node.tagName, k)) {
-          __cacheProps[k] = undefined;
+        if (frame.isGeom && node instanceof Geom && isGeom(node.__tagName, k)) {
+          cacheProps[k] = undefined;
         } else {
           // repaint置空，如果reflow会重新生成空的
           cacheStyle[k] = undefined; // TRBL变化只对relative/absolute起作用，其它忽视，如果position也变化会重新布局生效
 
           if ((k === TOP || k === RIGHT || k === BOTTOM || k === LEFT) && ['relative', 'absolute'].indexOf(computedStyle[POSITION]) === -1) {
             ignoreTRBL = true;
-          } else if (k === Z_INDEX) {
+          } // 特殊处理，z变化也只对非flow生效
+          else if (k === Z_INDEX) {
             hasZ = node !== this && ['relative', 'absolute'].indexOf(computedStyle[POSITION]) > -1;
           }
         }
       }
 
-      for (var _i2 = 0, _len = fixed.length; _i2 < _len; _i2++) {
+      var fLen = fixed.length;
+
+      for (var _i2 = 0, _len = fLen; _i2 < _len; _i2++) {
         var _k = fixed[_i2];
         lv |= getLevel(_k); // 特殊的2个，影响是否需要刷新生效
 
@@ -40902,21 +41097,19 @@ var Root = /*#__PURE__*/function (_Dom) {
       } // 无效的变化
 
 
-      if (ignoreTRBL && len === 1 && !fixed.length) {
+      if (ignoreTRBL && len === 1 && !fLen) {
         return;
       } // 设置有动画造成了更新
 
 
       this.__aniChange = true;
 
-      this.__calUpdate(node, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver, false, false, frame.optimize);
+      this.__calUpdate(node, computedStyle, cacheStyle, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver, false, false);
     }
   }, {
     key: "__calUpdate",
-    value: function __calUpdate(node, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver, addDom, removeDom, optimize) {
-      var computedStyle = node.__computedStyle,
-          currentStyle = node.__currentStyle,
-          cacheStyle = node.__cacheStyle,
+    value: function __calUpdate(node, computedStyle, cacheStyle, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver, addDom, removeDom) {
+      var currentStyle = node.__currentStyle,
           __mask = node.__mask,
           __domParent = node.__domParent; // 没有变化或none无需刷新
 
@@ -40951,7 +41144,7 @@ var Root = /*#__PURE__*/function (_Dom) {
       } // 大部分动画都是repaint初始化已经知道
 
 
-      var isRf = optimize ? false : isReflow(lv);
+      var isRf = isReflow(lv);
 
       if (isRf) {
         var top = reflow.checkTop(this, node, addDom, removeDom);
@@ -40987,23 +41180,32 @@ var Root = /*#__PURE__*/function (_Dom) {
 
           node.__calStyle(lv, currentStyle, computedStyle, cacheStyle);
 
-          node.__calPerspective(currentStyle, computedStyle, cacheStyle);
+          node.__calPerspective(currentStyle, computedStyle, cacheStyle); // calStyle中matrix部分有wasm会不计算，这里让wasm计算
+
+
+          node.__wasmStyle(currentStyle);
         } // < REPAINT特殊的优化computedStyle计算
         else {
           if (lv & PPT) {
             node.__calPerspective(currentStyle, computedStyle, cacheStyle);
-          }
+          } // 特殊的ppt需清空cacheTotal
+
 
           if (lv & TRANSFORM_ALL) {
-            // 特殊的ppt需清空cacheTotal
-            var o = node.__selfPerspectiveMatrix;
+            var wn = node.__wasmNode;
 
-            node.__calMatrix(lv, currentStyle, computedStyle, cacheStyle, optimize);
+            if (wn) {
+              node.__wasmStyle(currentStyle);
+            } else {
+              var o = node.__selfPerspectiveMatrix;
 
-            var n = node.__selfPerspectiveMatrix;
+              node.__calMatrix(lv, currentStyle, computedStyle, cacheStyle);
 
-            if (!util.equalArr(o, n)) {
-              need = true;
+              var n = node.__selfPerspectiveMatrix;
+
+              if (!need && !util.equalArr(o, n)) {
+                need = true;
+              }
             }
           }
 
@@ -41153,24 +41355,7 @@ var Root = /*#__PURE__*/function (_Dom) {
       }
 
       return true;
-    } // 异步进行root刷新操作，多次调用缓存结果，刷新成功后回调
-    // __frameDraw(cb) {
-    //   this.__onFrame(null);
-    //   this.__task.push(cb);
-    // }
-    //
-    // __cancelFrameDraw(cb) {
-    //   let task = this.__task;
-    //   let i = task.indexOf(cb);
-    //   if(i > -1) {
-    //     task.splice(i, 1);
-    //     if(!task.length && !this.__ani.length) {
-    //       frame.offFrame(this);
-    //       this.__isInFrame = false;
-    //     }
-    //   }
-    // }
-    // 所有动画由Root代理，方便控制pause，主动更新时参数传null复用，
+    } // 所有动画由Root代理，方便控制pause，主动更新时参数传null复用，
     // 注意逻辑耦合，任意动画/主动更新第一次触发时，需把ani和task的队列填充，以防重复onFrame调用
 
   }, {
@@ -41321,12 +41506,12 @@ var Root = /*#__PURE__*/function (_Dom) {
           var item = frameTask[_i3];
           item && item(diff);
         }
-      } // frameDraw不受pause影响，即主动更新样式之类非动画/帧动画
+      } // frameDraw不受pause影响，即主动更新样式之类非动画/帧动画，参数true标明异步
 
 
       for (var _i4 = 0; _i4 < len2; _i4++) {
         var _item = task[_i4];
-        _item && _item(diff);
+        _item && _item(true);
       }
 
       len = this.__ani.length; // 动画和渲染任务可能会改变自己的任务队列

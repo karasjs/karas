@@ -3752,14 +3752,14 @@ karas.wasm.init('karas_bg.wasm', function() {
 * **说明**  
 加载wasm库，成功回调。
 
-#### wasm
+#### instance
 * **类型** `Object`
 * **说明**  
 wasm实例。
 * **示例**
 ```jsx
-karas.wasm.init('karas_bg.wasm', function(wasm) {
-  console.log(wasm); // 有则支持，没有则不支持。
-  console.log(karsa.wasm.wasm); // 有则支持，没有则不支持。
+karas.wasm.init('karas_bg.wasm', function(instance) {
+  console.log(instance); // 有则支持，没有则不支持。
+  console.log(karsa.wasm.instance); // 有则支持，没有则不支持。
 });
 ```

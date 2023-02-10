@@ -85,8 +85,8 @@ class CanvasCache extends Cache {
     let list = [];
     let transform, tfo, wn = node.__wasmNode;
     if(wn) {
-      transform = new Float64Array(wasm.wasm.memory.buffer, wn.transform_ptr(), 16);
-      let cs = new Float64Array(wasm.wasm.memory.buffer, wn.computed_style_ptr(), 18);
+      transform = new Float64Array(wasm.instance.memory.buffer, wn.transform_ptr(), 16);
+      let cs = new Float64Array(wasm.instance.memory.buffer, wn.computed_style_ptr(), 18);
       tfo = [cs[16], cs[17]];
     }
     else {

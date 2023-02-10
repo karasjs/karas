@@ -872,7 +872,7 @@ export default {
     }
     return wasm;
   },
-  get wasm() {
+  get instance() {
     return wasm;
   },
   Node,

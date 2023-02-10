@@ -368,8 +368,8 @@ function genTotal(renderMode, ctx, root, node, index, lv, total, __structs, widt
       // wasm取transform不同的方式
       let transform, tfo, wn = node.__wasmNode;
       if(wn) {
-        transform = new Float64Array(wasm.wasm.memory.buffer, wn.transform_ptr(), 16);
-        let cs = new Float64Array(wasm.wasm.memory.buffer, wn.computed_style_ptr(), 18);
+        transform = new Float64Array(wasm.instance.memory.buffer, wn.transform_ptr(), 16);
+        let cs = new Float64Array(wasm.instance.memory.buffer, wn.computed_style_ptr(), 18);
         tfo = [cs[16], cs[17]];
       }
       else {
@@ -608,8 +608,8 @@ function genTotalOther(renderMode, __structs, __cacheTotal, node, hasMask, width
           } = __computedStyle;
           let transform, tfo, wn = node.__wasmNode;
           if(wn) {
-            transform = new Float64Array(wasm.wasm.memory.buffer, wn.transform_ptr(), 16);
-            let cs = new Float64Array(wasm.wasm.memory.buffer, wn.computed_style_ptr(), 18);
+            transform = new Float64Array(wasm.instance.memory.buffer, wn.transform_ptr(), 16);
+            let cs = new Float64Array(wasm.instance.memory.buffer, wn.computed_style_ptr(), 18);
             tfo = [cs[16], cs[17]];
           }
           else {
@@ -841,7 +841,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
     else {
       let perspectiveOrigin, wn = pptNode.__wasmNode;
       if(wn) {
-        let cs = new Float64Array(wasm.wasm.memory.buffer, wn.computed_style_ptr(), 18);
+        let cs = new Float64Array(wasm.instance.memory.buffer, wn.computed_style_ptr(), 18);
         perspectiveOrigin = [cs[16], cs[17]];
       }
       else {
@@ -937,8 +937,8 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
         // wasm取transform不同的方式
         let transform, tfo, wn = node.__wasmNode;
         if(wn) {
-          transform = new Float64Array(wasm.wasm.memory.buffer, wn.transform_ptr(), 16);
-          let cs = new Float64Array(wasm.wasm.memory.buffer, wn.computed_style_ptr(), 18);
+          transform = new Float64Array(wasm.instance.memory.buffer, wn.transform_ptr(), 16);
+          let cs = new Float64Array(wasm.instance.memory.buffer, wn.computed_style_ptr(), 18);
           tfo = [cs[16], cs[17]];
         }
         else {
@@ -1007,8 +1007,8 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
             let p = node.__domParent;
             let transform, tfo, wn = node.__wasmNode;
             if(wn) {
-              transform = new Float64Array(wasm.wasm.memory.buffer, wn.transform_ptr(), 16);
-              let cs = new Float64Array(wasm.wasm.memory.buffer, wn.computed_style_ptr(), 18);
+              transform = new Float64Array(wasm.instance.memory.buffer, wn.transform_ptr(), 16);
+              let cs = new Float64Array(wasm.instance.memory.buffer, wn.computed_style_ptr(), 18);
               tfo = [cs[16], cs[17]];
             }
             else {
@@ -1325,8 +1325,8 @@ function genPptWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, total,
           // wasm取transform不同的方式
           let transform, tfo, wn = node.__wasmNode;
           if(wn) {
-            transform = new Float64Array(wasm.wasm.memory.buffer, wn.transform_ptr(), 16);
-            let cs = new Float64Array(wasm.wasm.memory.buffer, wn.computed_style_ptr(), 18);
+            transform = new Float64Array(wasm.instance.memory.buffer, wn.transform_ptr(), 16);
+            let cs = new Float64Array(wasm.instance.memory.buffer, wn.computed_style_ptr(), 18);
             tfo = [cs[16], cs[17]];
           }
           else {
@@ -1674,8 +1674,8 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
   // 先求得被遮罩的matrix，用作inverse给mask计算，以被遮罩左上角为原点
   let transform, tfo, wn = node.__wasmNode;
   if(wn) {
-    transform = new Float64Array(wasm.wasm.memory.buffer, wn.transform_ptr(), 16);
-    let cs = new Float64Array(wasm.wasm.memory.buffer, wn.computed_style_ptr(), 18);
+    transform = new Float64Array(wasm.instance.memory.buffer, wn.transform_ptr(), 16);
+    let cs = new Float64Array(wasm.instance.memory.buffer, wn.computed_style_ptr(), 18);
     tfo = [cs[16], cs[17]];
   }
   else {
@@ -1780,8 +1780,8 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
         lastLv = lv;
         let transform, tfo, wn = node.__wasmNode;
         if(wn) {
-          transform = new Float64Array(wasm.wasm.memory.buffer, wn.transform_ptr(), 16);
-          let cs = new Float64Array(wasm.wasm.memory.buffer, wn.computed_style_ptr(), 18);
+          transform = new Float64Array(wasm.instance.memory.buffer, wn.transform_ptr(), 16);
+          let cs = new Float64Array(wasm.instance.memory.buffer, wn.computed_style_ptr(), 18);
           tfo = [cs[16], cs[17]];
         }
         else {
@@ -2329,9 +2329,9 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
   let wasmOp, wasmVt, wasmMe;
   if(__wasmRoot) {
     let len = __structs.length;
-    wasmOp = new Float64Array(wasm.wasm.memory.buffer, __wasmRoot.op_ptr(), len);
-    wasmVt = new Float64Array(wasm.wasm.memory.buffer, __wasmRoot.vt_ptr(), len * 16);
-    wasmMe = new Float64Array(wasm.wasm.memory.buffer, __wasmRoot.me_ptr(), len * 16);
+    wasmOp = new Float64Array(wasm.instance.memory.buffer, __wasmRoot.op_ptr(), len);
+    wasmVt = new Float64Array(wasm.instance.memory.buffer, __wasmRoot.vt_ptr(), len * 16);
+    wasmMe = new Float64Array(wasm.instance.memory.buffer, __wasmRoot.me_ptr(), len * 16);
   }
   let cx = width * 0.5, cy = height * 0.5;
   // 栈代替递归，存父节点的matrix/opacity，matrix为E时存null省略计算
@@ -2872,8 +2872,8 @@ function renderCanvas(renderMode, ctx, root, isFirst, rlv) {
   let wasmOp, wasmMe;
   if(__wasmRoot) {
     let len = __structs.length;
-    wasmOp = new Float64Array(wasm.wasm.memory.buffer, __wasmRoot.op_ptr(), len);
-    wasmMe = new Float64Array(wasm.wasm.memory.buffer, __wasmRoot.me_ptr(), len * 16);
+    wasmOp = new Float64Array(wasm.instance.memory.buffer, __wasmRoot.op_ptr(), len);
+    wasmMe = new Float64Array(wasm.instance.memory.buffer, __wasmRoot.me_ptr(), len * 16);
   }
   let mergeList = [];
   /**

@@ -3297,7 +3297,7 @@ class Xom extends Node {
   get matrix() {
     let wn = this.__wasmNode;
     if(wn) {
-      return new Float64Array(wasm.wasm.memory.buffer, wn.m_ptr(), 16);
+      return new Float64Array(wasm.instance.memory.buffer, wn.m_ptr(), 16);
     }
     return this.__matrix;
   }
@@ -3305,7 +3305,7 @@ class Xom extends Node {
   get matrixEvent() {
     let wn = this.__wasmNode;
     if(wn) {
-      return new Float64Array(wasm.wasm.memory.buffer, wn.me_ptr(), 16);
+      return new Float64Array(wasm.instance.memory.buffer, wn.me_ptr(), 16);
     }
     return this.__matrixEvent;
   }

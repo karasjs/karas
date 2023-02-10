@@ -16692,7 +16692,7 @@
       }))();
     },
 
-    get wasm() {
+    get instance() {
       return wasm;
     },
 
@@ -24021,7 +24021,7 @@
         var wn = this.__wasmNode;
 
         if (wn) {
-          return new Float64Array(wasm$1.wasm.memory.buffer, wn.m_ptr(), 16);
+          return new Float64Array(wasm$1.instance.memory.buffer, wn.m_ptr(), 16);
         }
 
         return this.__matrix;
@@ -24032,7 +24032,7 @@
         var wn = this.__wasmNode;
 
         if (wn) {
-          return new Float64Array(wasm$1.wasm.memory.buffer, wn.me_ptr(), 16);
+          return new Float64Array(wasm$1.instance.memory.buffer, wn.me_ptr(), 16);
         }
 
         return this.__matrixEvent;
@@ -32560,8 +32560,8 @@
             wn = node.__wasmNode;
 
         if (wn) {
-          transform = new Float64Array(wasm$1.wasm.memory.buffer, wn.transform_ptr(), 16);
-          var cs = new Float64Array(wasm$1.wasm.memory.buffer, wn.computed_style_ptr(), 18);
+          transform = new Float64Array(wasm$1.instance.memory.buffer, wn.transform_ptr(), 16);
+          var cs = new Float64Array(wasm$1.instance.memory.buffer, wn.computed_style_ptr(), 18);
           tfo = [cs[16], cs[17]];
         } else {
           transform = node.__computedStyle[TRANSFORM$2];
@@ -36711,8 +36711,8 @@
             wn = _node2.__wasmNode;
 
         if (wn) {
-          transform = new Float64Array(wasm$1.wasm.memory.buffer, wn.transform_ptr(), 16);
-          var cs = new Float64Array(wasm$1.wasm.memory.buffer, wn.computed_style_ptr(), 18);
+          transform = new Float64Array(wasm$1.instance.memory.buffer, wn.transform_ptr(), 16);
+          var cs = new Float64Array(wasm$1.instance.memory.buffer, wn.computed_style_ptr(), 18);
           tfo = [cs[16], cs[17]];
         } else {
           transform = __computedStyle[TRANSFORM$1];
@@ -37035,8 +37035,8 @@
                 wn = _node3.__wasmNode;
 
             if (wn) {
-              transform = new Float64Array(wasm$1.wasm.memory.buffer, wn.transform_ptr(), 16);
-              var cs = new Float64Array(wasm$1.wasm.memory.buffer, wn.computed_style_ptr(), 18);
+              transform = new Float64Array(wasm$1.instance.memory.buffer, wn.transform_ptr(), 16);
+              var cs = new Float64Array(wasm$1.instance.memory.buffer, wn.computed_style_ptr(), 18);
               tfo = [cs[16], cs[17]];
             } else {
               transform = _node3.__computedStyle[TRANSFORM$1];
@@ -37329,7 +37329,7 @@
             wn = pptNode.__wasmNode;
 
         if (wn) {
-          var cs = new Float64Array(wasm$1.wasm.memory.buffer, wn.computed_style_ptr(), 18);
+          var cs = new Float64Array(wasm$1.instance.memory.buffer, wn.computed_style_ptr(), 18);
           _perspectiveOrigin = [cs[16], cs[17]];
         } else {
           _perspectiveOrigin = pptNode.__computedStyle[TRANSFORM_ORIGIN];
@@ -37435,9 +37435,9 @@
               _wn = _node4.__wasmNode;
 
           if (_wn) {
-            transform = new Float64Array(wasm$1.wasm.memory.buffer, _wn.transform_ptr(), 16);
+            transform = new Float64Array(wasm$1.instance.memory.buffer, _wn.transform_ptr(), 16);
 
-            var _cs = new Float64Array(wasm$1.wasm.memory.buffer, _wn.computed_style_ptr(), 18);
+            var _cs = new Float64Array(wasm$1.instance.memory.buffer, _wn.computed_style_ptr(), 18);
 
             tfo = [_cs[16], _cs[17]];
           } else {
@@ -37525,9 +37525,9 @@
                   _wn2 = _node5.__wasmNode;
 
               if (_wn2) {
-                _transform = new Float64Array(wasm$1.wasm.memory.buffer, _wn2.transform_ptr(), 16);
+                _transform = new Float64Array(wasm$1.instance.memory.buffer, _wn2.transform_ptr(), 16);
 
-                var _cs2 = new Float64Array(wasm$1.wasm.memory.buffer, _wn2.computed_style_ptr(), 18);
+                var _cs2 = new Float64Array(wasm$1.instance.memory.buffer, _wn2.computed_style_ptr(), 18);
 
                 _tfo = [_cs2[16], _cs2[17]];
               } else {
@@ -37949,8 +37949,8 @@
                 wn = _node8.__wasmNode;
 
             if (wn) {
-              transform = new Float64Array(wasm$1.wasm.memory.buffer, wn.transform_ptr(), 16);
-              var cs = new Float64Array(wasm$1.wasm.memory.buffer, wn.computed_style_ptr(), 18);
+              transform = new Float64Array(wasm$1.instance.memory.buffer, wn.transform_ptr(), 16);
+              var cs = new Float64Array(wasm$1.instance.memory.buffer, wn.computed_style_ptr(), 18);
               tfo = [cs[16], cs[17]];
             } else {
               transform = _computedStyle3[TRANSFORM$1];
@@ -38369,8 +38369,8 @@
         wn = node.__wasmNode;
 
     if (wn) {
-      transform = new Float64Array(wasm$1.wasm.memory.buffer, wn.transform_ptr(), 16);
-      var cs = new Float64Array(wasm$1.wasm.memory.buffer, wn.computed_style_ptr(), 18);
+      transform = new Float64Array(wasm$1.instance.memory.buffer, wn.transform_ptr(), 16);
+      var cs = new Float64Array(wasm$1.instance.memory.buffer, wn.computed_style_ptr(), 18);
       tfo = [cs[16], cs[17]];
     } else {
       transform = node.__computedStyle[TRANSFORM$1];
@@ -38493,9 +38493,9 @@
               _wn3 = _node9.__wasmNode;
 
           if (_wn3) {
-            _transform2 = new Float64Array(wasm$1.wasm.memory.buffer, _wn3.transform_ptr(), 16);
+            _transform2 = new Float64Array(wasm$1.instance.memory.buffer, _wn3.transform_ptr(), 16);
 
-            var _cs3 = new Float64Array(wasm$1.wasm.memory.buffer, _wn3.computed_style_ptr(), 18);
+            var _cs3 = new Float64Array(wasm$1.instance.memory.buffer, _wn3.computed_style_ptr(), 18);
 
             _tfo2 = [_cs3[16], _cs3[17]];
           } else {
@@ -39147,9 +39147,9 @@
 
     if (__wasmRoot) {
       var len = __structs.length;
-      wasmOp = new Float64Array(wasm$1.wasm.memory.buffer, __wasmRoot.op_ptr(), len);
-      new Float64Array(wasm$1.wasm.memory.buffer, __wasmRoot.vt_ptr(), len * 16);
-      wasmMe = new Float64Array(wasm$1.wasm.memory.buffer, __wasmRoot.me_ptr(), len * 16);
+      wasmOp = new Float64Array(wasm$1.instance.memory.buffer, __wasmRoot.op_ptr(), len);
+      new Float64Array(wasm$1.instance.memory.buffer, __wasmRoot.vt_ptr(), len * 16);
+      wasmMe = new Float64Array(wasm$1.instance.memory.buffer, __wasmRoot.me_ptr(), len * 16);
     }
 
     var cx = width * 0.5,
@@ -39758,8 +39758,8 @@
 
     if (__wasmRoot) {
       var len = __structs.length;
-      wasmOp = new Float64Array(wasm$1.wasm.memory.buffer, __wasmRoot.op_ptr(), len);
-      wasmMe = new Float64Array(wasm$1.wasm.memory.buffer, __wasmRoot.me_ptr(), len * 16);
+      wasmOp = new Float64Array(wasm$1.instance.memory.buffer, __wasmRoot.op_ptr(), len);
+      wasmMe = new Float64Array(wasm$1.instance.memory.buffer, __wasmRoot.me_ptr(), len * 16);
     }
 
     var mergeList = [];
@@ -40390,7 +40390,7 @@
       _this.__lastUpdateP = null; // 每帧addUpdate都会向上检查，很多时候同级无需继续，第一次检查暂存parent对象
       // 开启wasm后，默认使用，除非显示取消
 
-      if (wasm$1.wasm && (props.wasm === undefined || props.wasm)) {
+      if (wasm$1.instance && (props.wasm === undefined || props.wasm)) {
         _this.__wasmRoot = wasm$1.Root["new"]();
         _this.__wasmNode = wasm$1.Node["new"](false);
       } else {

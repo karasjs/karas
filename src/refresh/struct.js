@@ -2656,7 +2656,7 @@ function renderWebgl(renderMode, gl, root, isFirst, rlv) {
     }
   }
   // 非首次，没有cache变更重新生成的，可以直接用上次的缓存渲染列表
-  else if(!isFirst && rlv < REPAINT && !(rlv & (CACHE | FT | PPT | MASK))) {
+  else if(wasmOp && !isFirst && rlv < REPAINT && !(rlv & (CACHE | FT | PPT | MASK))) {
     for(let i = 0, len = lastList.length; i < len; i++) {
       drawTextureCache(gl, lastList[i], cx, cy, 0, 0, wasmOp, wasmMe);
     }

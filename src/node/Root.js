@@ -1187,7 +1187,7 @@ class Root extends Dom {
       let wr = this.__wasmRoot;
       // wasm的动画计算顺序要放在前面，因为其他动画可能包含REPAINT/REFLOW之类的变更，涵盖wasm的transform/opacity
       if(wr) {
-        let n = wr.on_frame(diff);
+        let n = wr.before(diff);
         // 有动画执行了需刷新
         if(n) {
           this.__aniChange = true;

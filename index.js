@@ -39581,7 +39581,7 @@
         _node11.__updateCache();
       }
     } // 非首次，没有cache变更重新生成的，可以直接用上次的缓存渲染列表
-    else if (!isFirst && rlv < REPAINT$1 && !(rlv & (CACHE$1 | FT$1 | PPT$1 | MASK$1))) {
+    else if (wasmOp && !isFirst && rlv < REPAINT$1 && !(rlv & (CACHE$1 | FT$1 | PPT$1 | MASK$1))) {
       for (var _i10 = 0, _len12 = lastList.length; _i10 < _len12; _i10++) {
         drawTextureCache(gl, lastList[_i10], cx, cy, 0, 0, wasmOp, wasmMe);
       }
@@ -41660,7 +41660,7 @@
           var wr = this.__wasmRoot; // wasm的动画计算顺序要放在前面，因为其他动画可能包含REPAINT/REFLOW之类的变更，涵盖wasm的transform/opacity
 
           if (wr) {
-            var n = wr.on_frame(diff); // 有动画执行了需刷新
+            var n = wr.before(diff); // 有动画执行了需刷新
 
             if (n) {
               this.__aniChange = true;

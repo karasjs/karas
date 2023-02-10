@@ -1760,9 +1760,7 @@ class Animation extends Event {
     this.__isEndDelay = false;
     let wa = this.__wasmAnimation;
     if(wa && !fromGoto) {
-      wa.play_count = 0;
-      wa.play_state = PLAY_STATE.RUNNING;
-      wa.first_play = true;
+      wa.play();
     }
     // 由root统一控制，防止重复play
     let root = this.__root;

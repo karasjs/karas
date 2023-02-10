@@ -15749,6 +15749,42 @@
         wasm.__wbg_set_animation_first_play(this.ptr, arg0);
       }
       /**
+       * @returns {boolean}
+       */
+
+    }, {
+      key: "is_end_delay",
+      get: function get() {
+        var ret = wasm.__wbg_get_animation_is_end_delay(this.ptr);
+
+        return ret !== 0;
+      }
+      /**
+       * @param {boolean} arg0
+       */
+      ,
+      set: function set(arg0) {
+        wasm.__wbg_set_animation_is_end_delay(this.ptr, arg0);
+      }
+      /**
+       * @returns {boolean}
+       */
+
+    }, {
+      key: "end",
+      get: function get() {
+        var ret = wasm.__wbg_get_animation_end(this.ptr);
+
+        return ret !== 0;
+      }
+      /**
+       * @param {boolean} arg0
+       */
+      ,
+      set: function set(arg0) {
+        wasm.__wbg_set_animation_end(this.ptr, arg0);
+      }
+      /**
        * @returns {number}
        */
 
@@ -15841,6 +15877,14 @@
         wasm.animation_add_item(this.ptr, is_reverse, k, v, u, d);
       }
       /**
+       */
+
+    }, {
+      key: "play",
+      value: function play() {
+        wasm.animation_play(this.ptr);
+      }
+      /**
        * @param {number} play_count
        */
 
@@ -15851,14 +15895,13 @@
       }
       /**
        * @param {number} dur
-       * @param {boolean} from_goto
        * @returns {boolean}
        */
 
     }, {
       key: "cal_current",
-      value: function cal_current(dur, from_goto) {
-        var ret = wasm.animation_cal_current(this.ptr, dur, from_goto);
+      value: function cal_current(dur) {
+        var ret = wasm.animation_cal_current(this.ptr, dur);
         return ret !== 0;
       }
       /**
@@ -15867,9 +15910,19 @@
        */
 
     }, {
-      key: "on_frame",
-      value: function on_frame(diff) {
-        var ret = wasm.animation_on_frame(this.ptr, diff);
+      key: "before",
+      value: function before(diff) {
+        var ret = wasm.animation_before(this.ptr, diff);
+        return ret !== 0;
+      }
+      /**
+       * @returns {boolean}
+       */
+
+    }, {
+      key: "after",
+      value: function after() {
+        var ret = wasm.animation_after(this.ptr);
         return ret !== 0;
       }
       /**
@@ -16316,9 +16369,19 @@
        */
 
     }, {
-      key: "on_frame",
-      value: function on_frame(diff) {
-        var ret = wasm.node_on_frame(this.ptr, diff);
+      key: "before",
+      value: function before(diff) {
+        var ret = wasm.node_before(this.ptr, diff);
+        return ret >>> 0;
+      }
+      /**
+       * @returns {number}
+       */
+
+    }, {
+      key: "after",
+      value: function after() {
+        var ret = wasm.node_after(this.ptr);
         return ret >>> 0;
       }
       /**
@@ -16526,9 +16589,19 @@
        */
 
     }, {
-      key: "on_frame",
-      value: function on_frame(diff) {
-        var ret = wasm.root_on_frame(this.ptr, diff);
+      key: "before",
+      value: function before(diff) {
+        var ret = wasm.root_before(this.ptr, diff);
+        return ret >>> 0;
+      }
+      /**
+       * @returns {number}
+       */
+
+    }, {
+      key: "after",
+      value: function after() {
+        var ret = wasm.root_after(this.ptr);
         return ret >>> 0;
       }
       /**
@@ -18553,9 +18626,7 @@
         var wa = this.__wasmAnimation;
 
         if (wa && !fromGoto) {
-          wa.play_count = 0;
-          wa.play_state = PLAY_STATE.RUNNING;
-          wa.first_play = true;
+          wa.play();
         } // 由root统一控制，防止重复play
 
 
@@ -39510,7 +39581,7 @@
         _node11.__updateCache();
       }
     } // 非首次，没有cache变更重新生成的，可以直接用上次的缓存渲染列表
-    else if (!isFirst) {
+    else if (!isFirst && rlv < REPAINT$1 && !(rlv & (CACHE$1 | FT$1 | PPT$1 | MASK$1))) {
       for (var _i10 = 0, _len12 = lastList.length; _i10 < _len12; _i10++) {
         drawTextureCache(gl, lastList[_i10], cx, cy, 0, 0, wasmOp, wasmMe);
       }

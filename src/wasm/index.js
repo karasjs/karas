@@ -221,6 +221,32 @@ export class Animation {
     wasm.__wbg_set_animation_first_play(this.ptr, arg0);
   }
   /**
+   * @returns {boolean}
+   */
+  get is_end_delay() {
+    const ret = wasm.__wbg_get_animation_is_end_delay(this.ptr);
+    return ret !== 0;
+  }
+  /**
+   * @param {boolean} arg0
+   */
+  set is_end_delay(arg0) {
+    wasm.__wbg_set_animation_is_end_delay(this.ptr, arg0);
+  }
+  /**
+   * @returns {boolean}
+   */
+  get end() {
+    const ret = wasm.__wbg_get_animation_end(this.ptr);
+    return ret !== 0;
+  }
+  /**
+   * @param {boolean} arg0
+   */
+  set end(arg0) {
+    wasm.__wbg_set_animation_end(this.ptr, arg0);
+  }
+  /**
    * @returns {number}
    */
   get index() {
@@ -297,6 +323,11 @@ export class Animation {
     wasm.animation_add_item(this.ptr, is_reverse, k, v, u, d);
   }
   /**
+   */
+  play() {
+    wasm.animation_play(this.ptr);
+  }
+  /**
    * @param {number} play_count
    */
   init_current_frames(play_count) {
@@ -304,19 +335,25 @@ export class Animation {
   }
   /**
    * @param {number} dur
-   * @param {boolean} from_goto
    * @returns {boolean}
    */
-  cal_current(dur, from_goto) {
-    const ret = wasm.animation_cal_current(this.ptr, dur, from_goto);
+  cal_current(dur) {
+    const ret = wasm.animation_cal_current(this.ptr, dur);
     return ret !== 0;
   }
   /**
    * @param {number} diff
    * @returns {boolean}
    */
-  on_frame(diff) {
-    const ret = wasm.animation_on_frame(this.ptr, diff);
+  before(diff) {
+    const ret = wasm.animation_before(this.ptr, diff);
+    return ret !== 0;
+  }
+  /**
+   * @returns {boolean}
+   */
+  after() {
+    const ret = wasm.animation_after(this.ptr);
     return ret !== 0;
   }
   /**
@@ -646,8 +683,15 @@ export class Node {
    * @param {number} diff
    * @returns {number}
    */
-  on_frame(diff) {
-    const ret = wasm.node_on_frame(this.ptr, diff);
+  before(diff) {
+    const ret = wasm.node_before(this.ptr, diff);
+    return ret >>> 0;
+  }
+  /**
+   * @returns {number}
+   */
+  after() {
+    const ret = wasm.node_after(this.ptr);
     return ret >>> 0;
   }
   /**
@@ -794,8 +838,15 @@ export class Root {
    * @param {number} diff
    * @returns {number}
    */
-  on_frame(diff) {
-    const ret = wasm.root_on_frame(this.ptr, diff);
+  before(diff) {
+    const ret = wasm.root_before(this.ptr, diff);
+    return ret >>> 0;
+  }
+  /**
+   * @returns {number}
+   */
+  after() {
+    const ret = wasm.root_after(this.ptr);
     return ret >>> 0;
   }
   /**

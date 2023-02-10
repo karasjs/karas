@@ -15743,6 +15743,42 @@ var Animation$1 = /*#__PURE__*/function () {
       wasm.__wbg_set_animation_first_play(this.ptr, arg0);
     }
     /**
+     * @returns {boolean}
+     */
+
+  }, {
+    key: "is_end_delay",
+    get: function get() {
+      var ret = wasm.__wbg_get_animation_is_end_delay(this.ptr);
+
+      return ret !== 0;
+    }
+    /**
+     * @param {boolean} arg0
+     */
+    ,
+    set: function set(arg0) {
+      wasm.__wbg_set_animation_is_end_delay(this.ptr, arg0);
+    }
+    /**
+     * @returns {boolean}
+     */
+
+  }, {
+    key: "end",
+    get: function get() {
+      var ret = wasm.__wbg_get_animation_end(this.ptr);
+
+      return ret !== 0;
+    }
+    /**
+     * @param {boolean} arg0
+     */
+    ,
+    set: function set(arg0) {
+      wasm.__wbg_set_animation_end(this.ptr, arg0);
+    }
+    /**
      * @returns {number}
      */
 
@@ -15835,6 +15871,14 @@ var Animation$1 = /*#__PURE__*/function () {
       wasm.animation_add_item(this.ptr, is_reverse, k, v, u, d);
     }
     /**
+     */
+
+  }, {
+    key: "play",
+    value: function play() {
+      wasm.animation_play(this.ptr);
+    }
+    /**
      * @param {number} play_count
      */
 
@@ -15845,14 +15889,13 @@ var Animation$1 = /*#__PURE__*/function () {
     }
     /**
      * @param {number} dur
-     * @param {boolean} from_goto
      * @returns {boolean}
      */
 
   }, {
     key: "cal_current",
-    value: function cal_current(dur, from_goto) {
-      var ret = wasm.animation_cal_current(this.ptr, dur, from_goto);
+    value: function cal_current(dur) {
+      var ret = wasm.animation_cal_current(this.ptr, dur);
       return ret !== 0;
     }
     /**
@@ -15861,9 +15904,19 @@ var Animation$1 = /*#__PURE__*/function () {
      */
 
   }, {
-    key: "on_frame",
-    value: function on_frame(diff) {
-      var ret = wasm.animation_on_frame(this.ptr, diff);
+    key: "before",
+    value: function before(diff) {
+      var ret = wasm.animation_before(this.ptr, diff);
+      return ret !== 0;
+    }
+    /**
+     * @returns {boolean}
+     */
+
+  }, {
+    key: "after",
+    value: function after() {
+      var ret = wasm.animation_after(this.ptr);
       return ret !== 0;
     }
     /**
@@ -16310,9 +16363,19 @@ var Node = /*#__PURE__*/function () {
      */
 
   }, {
-    key: "on_frame",
-    value: function on_frame(diff) {
-      var ret = wasm.node_on_frame(this.ptr, diff);
+    key: "before",
+    value: function before(diff) {
+      var ret = wasm.node_before(this.ptr, diff);
+      return ret >>> 0;
+    }
+    /**
+     * @returns {number}
+     */
+
+  }, {
+    key: "after",
+    value: function after() {
+      var ret = wasm.node_after(this.ptr);
       return ret >>> 0;
     }
     /**
@@ -16520,9 +16583,19 @@ var Root$1 = /*#__PURE__*/function () {
      */
 
   }, {
-    key: "on_frame",
-    value: function on_frame(diff) {
-      var ret = wasm.root_on_frame(this.ptr, diff);
+    key: "before",
+    value: function before(diff) {
+      var ret = wasm.root_before(this.ptr, diff);
+      return ret >>> 0;
+    }
+    /**
+     * @returns {number}
+     */
+
+  }, {
+    key: "after",
+    value: function after() {
+      var ret = wasm.root_after(this.ptr);
       return ret >>> 0;
     }
     /**
@@ -16794,7 +16867,6 @@ var cloneStyle = css.cloneStyle,
 var GEOM$1 = o$2.GEOM;
 var getLevel$1 = o$1.getLevel,
     NONE$3 = o$1.NONE;
-    o$1.TRANSFORM_ALL;
 var isColorKey = key.isColorKey,
     isExpandKey = key.isExpandKey,
     isLengthKey = key.isLengthKey,
@@ -18486,6 +18558,8 @@ var Animation = /*#__PURE__*/function (_Event) {
       } else {
         this.__currentTime = 0;
         this.__playCount = 0;
+        this.__end = false;
+        this.__isEndDelay = false;
       }
 
       var currentTime = this.__currentTime;
@@ -18548,9 +18622,7 @@ var Animation = /*#__PURE__*/function (_Event) {
       var wa = this.__wasmAnimation;
 
       if (wa && !fromGoto) {
-        wa.play_count = 0;
-        wa.play_state = PLAY_STATE.RUNNING;
-        wa.first_play = true;
+        wa.play();
       } // 由root统一控制，防止重复play
 
 
@@ -19069,15 +19141,23 @@ var Animation = /*#__PURE__*/function (_Event) {
         var keys; // 是否停留在最后一帧
 
         if (this.__stayEnd) {
-          keys = calLastStyle(currentFrame.style, target, this.__keys);
+          // 第一次进入endDelay触发后续不再，并且设置__end标识在after触发END事件
+          if (!this.__isEndDelay) {
+            this.__isEndDelay = true;
+            this.__end = true;
+            keys = calLastStyle(currentFrame.style, target, this.__keys);
+          } else {
+            keys = [];
+          } // 有可能刚进endDelay（只有1ms很短）就超过直接finish了，所以只用时间对比
+
+
+          if (currentTime >= dur + this.__endDelay) {
+            this.__playCount++;
+            this.__finished = true;
+          }
         } else {
           keys = calLastStyle(this.__originStyle, target, this.__keys);
           currentFrame = this.__currentFrame = null;
-        } // 第一次进入endDelay触发后续不再，并且设置__end标识在after触发END事件
-
-
-        if (!this.__isEndDelay) {
-          this.__isEndDelay = true;
           this.__end = true;
           this.__playCount++;
           this.__finished = true;
@@ -31432,6 +31512,7 @@ function drawTextureCache$1(gl, list, cx, cy, dx, dy, wasmOp, wasmMe) {
         ty2 = cache.__ty2,
         page = cache.__page,
         bbox = cache.__bbox;
+    console.log(cache.__page, wasm);
 
     if (!i) {
       // canvas需要生成texture，texture则强制不会进来
@@ -37385,7 +37466,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
         var p = __cache.__page;
 
         if (lastPage && lastPage !== p) {
-          drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+          drawTextureCache(gl, list.splice(0), cx, cy, dx, dy, null, null);
         }
 
         lastPage = p;
@@ -37485,7 +37566,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
       var _oit = oitHash && oitHash[i];
 
       if (_oit) {
-        drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+        drawTextureCache(gl, list.splice(0), cx, cy, dx, dy, null, null);
         lastPage = null; // 只求子节点的matrix即可
 
         for (var j = i + 1, _len = i + (_total6 || 0) + 1; j < _len; j++) {
@@ -37593,7 +37674,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
         var render = _node4.render;
 
         if (render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
-          drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+          drawTextureCache(gl, list.splice(0), cx, cy, dx, dy, null, null);
           lastPage = null;
 
           _node4.render(renderMode, gl, dx, dy);
@@ -37610,7 +37691,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
             // 局部的mbm和主画布一样，先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
             if (i > index && mixBlendMode !== 'normal') {
               if (list.length) {
-                drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+                drawTextureCache(gl, list.splice(0), cx, cy, dx, dy, null, null);
               }
 
               gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
@@ -37633,7 +37714,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
               var _p4 = _target5.__page;
 
               if (lastPage && lastPage !== _p4) {
-                drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+                drawTextureCache(gl, list.splice(0), cx, cy, dx, dy, null, null);
               }
 
               lastPage = _p4;
@@ -37659,7 +37740,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
           var _render = _node4.render;
 
           if (_render !== DOM_RENDER && _render !== IMG_RENDER && _render !== GEOM_RENDER) {
-            drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+            drawTextureCache(gl, list.splice(0), cx, cy, dx, dy, null, null);
             lastPage = null;
 
             _node4.render(renderMode, gl, dx, dy);
@@ -37672,7 +37753,7 @@ function genTotalWebgl(renderMode, __cacheTotal, gl, root, node, index, lv, tota
   } // 删除fbo恢复
 
 
-  drawTextureCache(gl, list, cx, cy, dx, dy);
+  drawTextureCache(gl, list, cx, cy, dx, dy, null, null);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0); // 汇入集合
 
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, page.texture, 0);
@@ -38429,7 +38510,7 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
           var p = __cache.__page;
 
           if (lastPage && lastPage !== p) {
-            drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+            drawTextureCache(gl, list.splice(0), cx, cy, dx, dy, null, null);
           }
 
           lastPage = p;
@@ -38543,7 +38624,7 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
           var _p7 = target.__page;
 
           if (lastPage && lastPage !== _p7) {
-            drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+            drawTextureCache(gl, list.splice(0), cx, cy, dx, dy, null, null);
           }
 
           lastPage = _p7;
@@ -38567,7 +38648,7 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
           var render = _node9.render;
 
           if (render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
-            drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+            drawTextureCache(gl, list.splice(0), cx, cy, dx, dy, null, null);
             lastPage = null;
 
             _node9.render(renderMode, gl, dx, dy);
@@ -38582,7 +38663,7 @@ function genMaskWebgl(renderMode, gl, root, node, cache, W, H, i, lv, __structs)
   } // 绘制到fbo的纹理对象上并删除fbo恢复
 
 
-  drawTextureCache(gl, list, cx, cy, dx, dy);
+  drawTextureCache(gl, list, cx, cy, dx, dy, null, null);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteFramebuffer(frameBuffer);
@@ -38708,7 +38789,7 @@ function genMbmWebgl(gl, texture, cache, mbm, opacity, matrix, dx, dy, cx, cy, w
     cache: cache,
     opacity: opacity,
     matrix: matrix
-  }], cx, cy, dx, dy);
+  }], cx, cy, dx, dy, null, null);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteFramebuffer(frameBuffer); // 获取对应的mbm程序
@@ -39135,8 +39216,6 @@ function renderSvg$1(renderMode, ctx, root, isFirst, rlv) {
   }
 }
 
-var lastList = [];
-
 function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
   if (isFirst) {
     Page.init(gl.getParameter(gl.MAX_TEXTURE_SIZE), true);
@@ -39498,14 +39577,9 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
     }
   } // 非首次，没有cache变更重新生成的，可以直接用上次的缓存渲染列表
   else if (!isFirst) {
-    for (var _i10 = 0, _len12 = lastList.length; _i10 < _len12; _i10++) {
-      drawTextureCache(gl, lastList[_i10], cx, cy, 0, 0, wasmOp, wasmMe);
-    }
 
     return;
   }
-
-  lastList.splice(0);
   /**
    * 最后先序遍历一次应用__cacheTotal即可，没有的用__cache，以及剩下的超尺寸的和Text
    * 由于mixBlendMode的存在，需先申请个fbo纹理，所有绘制默认向该纹理绘制，最后fbo纹理再进入主画布
@@ -39545,7 +39619,6 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
 
         if (lastPage && lastPage !== p) {
           var o = list.splice(0);
-          lastList.push(o);
           drawTextureCache(gl, o, cx, cy, 0, 0, wasmOp, wasmMe);
         }
 
@@ -39652,8 +39725,6 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
           if (_mixBlendMode2 !== 'normal') {
             if (list.length) {
               var _o5 = list.splice(0);
-
-              lastList.push(_o5);
               drawTextureCache(gl, _o5, cx, cy, 0, 0, wasmOp, wasmMe);
               lastPage = null;
             }
@@ -39674,8 +39745,6 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
 
             if (lastPage && lastPage !== _p8) {
               var _o6 = list.splice(0);
-
-              lastList.push(_o6);
               drawTextureCache(gl, _o6, cx, cy, 0, 0, wasmOp, wasmMe);
             }
 
@@ -39712,8 +39781,6 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
 
         if (render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
           var _o7 = list.splice(0);
-
-          lastList.push(_o7);
           drawTextureCache(gl, _o7, cx, cy, 0, 0, wasmOp, wasmMe);
           lastPage = null;
 
@@ -39724,8 +39791,6 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
       }
     }
   }
-
-  lastList.push(list);
   drawTextureCache(gl, list, cx, cy, 0, 0, wasmOp, wasmMe); // 有mbm时将汇总的fbo绘入主画布，否则本身就是到主画布无需多余操作
 
   if (hasMbm) {

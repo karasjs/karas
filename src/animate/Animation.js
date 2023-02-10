@@ -88,7 +88,6 @@ const {
     BORDER_LEFT_COLOR,
     BORDER_RIGHT_COLOR,
     BORDER_TOP_COLOR,
-    POSITION,
   },
 } = enums;
 const { AUTO, PX, PERCENT, INHERIT, RGBA, STRING, NUMBER, REM, VW, VH, VMAX, VMIN, GRADIENT, calUnit } = unit;
@@ -1618,7 +1617,8 @@ class Animation extends Event {
           || k === SCALE_X
           || k === SCALE_Y
           || k === SCALE_Z
-          || k === TRANSFORM_ORIGIN) {
+          || k === TRANSFORM_ORIGIN
+          || k === OPACITY) {
           wList.push(k);
           wHash[k] = true;
         }
@@ -1771,7 +1771,7 @@ class Animation extends Event {
   }
 
   __before(diff) {
-    // 有wasm且完全被包含情况忽略js计算，返回true标识
+    // 有wasm且完全被包含情况忽略js计算，返回true标识，即便不完全包含，其它的引发的刷新逻辑也包含matrix+opacity
     if(this.__ignore) {
       return true;
     }
@@ -2186,15 +2186,24 @@ class Animation extends Event {
       let keys;
       // 是否停留在最后一帧
       if(this.__stayEnd) {
-        keys = calLastStyle(currentFrame.style, target, this.__keys);
+        // 第一次进入endDelay触发后续不再，并且设置__end标识在after触发END事件
+        if(!this.__isEndDelay) {
+          this.__isEndDelay = true;
+          this.__end = true;
+          keys = calLastStyle(currentFrame.style, target, this.__keys);
+        }
+        else {
+          keys = [];
+        }
+        // 有可能刚进endDelay（只有1ms很短）就超过直接finish了，所以只用时间对比
+        if(currentTime >= dur + this.__endDelay) {
+          this.__playCount++;
+          this.__finished = true;
+        }
       }
       else {
         keys = calLastStyle(this.__originStyle, target, this.__keys);
         currentFrame = this.__currentFrame = null;
-      }
-      // 第一次进入endDelay触发后续不再，并且设置__end标识在after触发END事件
-      if(!this.__isEndDelay) {
-        this.__isEndDelay = true;
         this.__end = true;
         this.__playCount++;
         this.__finished = true;

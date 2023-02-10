@@ -154,7 +154,7 @@ let lastVtPoint, lastVtTex, lastVtOpacity;
  * 将所有dom的矩形顶点（经过transform变换后的）、贴图坐标、透明度存入3个buffer中，
  * 然后相同纹理单元的形成一批，设置uniform的纹理单元号进行绘制，如此循环
  */
-function drawTextureCache(gl, list, cx, cy, dx, dy) {
+function drawTextureCache(gl, list, cx, cy, dx, dy, wasmOp, wasmMe) {
   let length = list.length;
   if(!length) {
     return;
@@ -179,7 +179,9 @@ function drawTextureCache(gl, list, cx, cy, dx, dy) {
     vtOpacity = lastVtOpacity = new Float32Array(length * 6);
   }
   for(let i = 0; i < length; i++) {
-    let { cache, opacity, matrix, index, wasm } = list[i];
+    let item = list[i];
+    let { cache, index, wasm } = item;
+    let opacity, matrix;
     let { __tw: width, __th: height,
       __tx1: tx1, __ty1: ty1, __tx2: tx2, __ty2: ty2,
       __page: page, __bbox: bbox } = cache;
@@ -190,13 +192,20 @@ function drawTextureCache(gl, list, cx, cy, dx, dy) {
       }
       bindTexture(gl, page.texture, 0);
     }
+    if(wasm) {
+      opacity = wasmOp[index];
+    }
+    else {
+      opacity = item.opacity;
+      matrix = item.matrix;
+    }
     // 计算顶点坐标和纹理坐标，转换[0,1]对应关系
     let x1, y1, z1, w1, x2, y2, z2, w2, x3, y3, z3, w3, x4, y4, z4, w4;
     // wasm中的matrix和普通js取的方式不一样
     let bx = bbox[0], by = bbox[1];
     let xa = bx + dx, ya = by + height + dy;
     let xb = bx + width + dx, yb = by + dy;
-    let t = wasm ? calRectPointWasm(xa, ya, xb, yb, matrix, index) : calRectPoint(xa, ya, xb, yb, matrix);
+    let t = wasm ? calRectPointWasm(xa, ya, xb, yb, wasmMe, index) : calRectPoint(xa, ya, xb, yb, matrix);
     x1 = t.x1;
     y1 = t.y1;
     z1 = t.z1;

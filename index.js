@@ -16774,7 +16774,6 @@
       BORDER_LEFT_COLOR$1 = _enums$STYLE_KEY$9.BORDER_LEFT_COLOR,
       BORDER_RIGHT_COLOR$1 = _enums$STYLE_KEY$9.BORDER_RIGHT_COLOR,
       BORDER_TOP_COLOR$1 = _enums$STYLE_KEY$9.BORDER_TOP_COLOR;
-      _enums$STYLE_KEY$9.POSITION;
   var AUTO$5 = o$4.AUTO,
       PX$6 = o$4.PX,
       PERCENT$5 = o$4.PERCENT,
@@ -18386,7 +18385,7 @@
           for (var i = 0, len = keys.length; i < len; i++) {
             var k = keys[i];
 
-            if (k === TRANSLATE_X$1 || k === TRANSLATE_Y$1 || k === TRANSLATE_Z$1 || k === ROTATE_X$1 || k === ROTATE_Y$1 || k === ROTATE_Z$1 || k === SKEW_X$1 || k === SKEW_Y$1 || k === SCALE_X$1 || k === SCALE_X$1 || k === SCALE_Y$1 || k === SCALE_Z$1 || k === TRANSFORM_ORIGIN$3) {
+            if (k === TRANSLATE_X$1 || k === TRANSLATE_Y$1 || k === TRANSLATE_Z$1 || k === ROTATE_X$1 || k === ROTATE_Y$1 || k === ROTATE_Z$1 || k === SKEW_X$1 || k === SKEW_Y$1 || k === SCALE_X$1 || k === SCALE_X$1 || k === SCALE_Y$1 || k === SCALE_Z$1 || k === TRANSFORM_ORIGIN$3 || k === OPACITY$4) {
               wList.push(k);
               wHash[k] = true;
             }
@@ -18569,7 +18568,7 @@
     }, {
       key: "__before",
       value: function __before(diff) {
-        // 有wasm且完全被包含情况忽略js计算，返回true标识
+        // 有wasm且完全被包含情况忽略js计算，返回true标识，即便不完全包含，其它的引发的刷新逻辑也包含matrix+opacity
         if (this.__ignore) {
           return true;
         }
@@ -19075,15 +19074,23 @@
           var keys; // 是否停留在最后一帧
 
           if (this.__stayEnd) {
-            keys = calLastStyle(currentFrame.style, target, this.__keys);
+            // 第一次进入endDelay触发后续不再，并且设置__end标识在after触发END事件
+            if (!this.__isEndDelay) {
+              this.__isEndDelay = true;
+              this.__end = true;
+              keys = calLastStyle(currentFrame.style, target, this.__keys);
+            } else {
+              keys = [];
+            } // 有可能刚进endDelay（只有1ms很短）就超过直接finish了，所以只用时间对比
+
+
+            if (currentTime >= dur + this.__endDelay) {
+              this.__playCount++;
+              this.__finished = true;
+            }
           } else {
             keys = calLastStyle(this.__originStyle, target, this.__keys);
             currentFrame = this.__currentFrame = null;
-          } // 第一次进入endDelay触发后续不再，并且设置__end标识在after触发END事件
-
-
-          if (!this.__isEndDelay) {
-            this.__isEndDelay = true;
             this.__end = true;
             this.__playCount++;
             this.__finished = true;
@@ -31396,7 +31403,7 @@
    * 然后相同纹理单元的形成一批，设置uniform的纹理单元号进行绘制，如此循环
    */
 
-  function drawTextureCache$1(gl, list, cx, cy, dx, dy) {
+  function drawTextureCache$1(gl, list, cx, cy, dx, dy, wasmOp, wasmMe) {
     var length = list.length;
 
     if (!length) {
@@ -31424,12 +31431,12 @@
     }
 
     for (var i = 0; i < length; i++) {
-      var _list$i = list[i],
-          cache = _list$i.cache,
-          opacity = _list$i.opacity,
-          matrix = _list$i.matrix,
-          index = _list$i.index,
-          wasm = _list$i.wasm;
+      var item = list[i];
+      var cache = item.cache,
+          index = item.index,
+          wasm = item.wasm;
+      var opacity = void 0,
+          matrix = void 0;
       var width = cache.__tw,
           height = cache.__th,
           tx1 = cache.__tx1,
@@ -31446,6 +31453,13 @@
         }
 
         bindTexture$1(gl, page.texture, 0);
+      }
+
+      if (wasm) {
+        opacity = wasmOp[index];
+      } else {
+        opacity = item.opacity;
+        matrix = item.matrix;
       } // 计算顶点坐标和纹理坐标，转换[0,1]对应关系
 
 
@@ -31472,7 +31486,7 @@
           ya = by + height + dy;
       var xb = bx + width + dx,
           yb = by + dy;
-      var t = wasm ? calRectPointWasm(xa, ya, xb, yb, matrix, index) : calRectPoint$1(xa, ya, xb, yb, matrix);
+      var t = wasm ? calRectPointWasm(xa, ya, xb, yb, wasmMe, index) : calRectPoint$1(xa, ya, xb, yb, matrix);
       x1 = t.x1;
       y1 = t.y1;
       z1 = t.z1;
@@ -32135,11 +32149,11 @@
     var u_texture = gl.getUniformLocation(gl.program, 'u_texture'); // 循环所有顺序拼图/平面
 
     for (var i = 0, len = list.length; i < len; i++) {
-      var _list$i2 = list[i],
-          isPuzzle = _list$i2.isPuzzle,
-          node = _list$i2.node,
-          target = _list$i2.target,
-          points = _list$i2.points;
+      var _list$i = list[i],
+          isPuzzle = _list$i.isPuzzle,
+          node = _list$i.node,
+          target = _list$i.target,
+          points = _list$i.points;
       var width = target.__width,
           height = target.__height,
           tx1 = target.__tx1,
@@ -37384,7 +37398,7 @@
           var p = __cache.__page;
 
           if (lastPage && lastPage !== p) {
-            drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+            drawTextureCache(gl, list.splice(0), cx, cy, dx, dy, null, null);
           }
 
           lastPage = p;
@@ -37484,7 +37498,7 @@
         var _oit = oitHash && oitHash[i];
 
         if (_oit) {
-          drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+          drawTextureCache(gl, list.splice(0), cx, cy, dx, dy, null, null);
           lastPage = null; // 只求子节点的matrix即可
 
           for (var j = i + 1, _len = i + (_total6 || 0) + 1; j < _len; j++) {
@@ -37592,7 +37606,7 @@
           var render = _node4.render;
 
           if (render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
-            drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+            drawTextureCache(gl, list.splice(0), cx, cy, dx, dy, null, null);
             lastPage = null;
 
             _node4.render(renderMode, gl, dx, dy);
@@ -37609,7 +37623,7 @@
               // 局部的mbm和主画布一样，先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
               if (i > index && mixBlendMode !== 'normal') {
                 if (list.length) {
-                  drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+                  drawTextureCache(gl, list.splice(0), cx, cy, dx, dy, null, null);
                 }
 
                 gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
@@ -37632,7 +37646,7 @@
                 var _p4 = _target5.__page;
 
                 if (lastPage && lastPage !== _p4) {
-                  drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+                  drawTextureCache(gl, list.splice(0), cx, cy, dx, dy, null, null);
                 }
 
                 lastPage = _p4;
@@ -37658,7 +37672,7 @@
             var _render = _node4.render;
 
             if (_render !== DOM_RENDER && _render !== IMG_RENDER && _render !== GEOM_RENDER) {
-              drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+              drawTextureCache(gl, list.splice(0), cx, cy, dx, dy, null, null);
               lastPage = null;
 
               _node4.render(renderMode, gl, dx, dy);
@@ -37671,7 +37685,7 @@
     } // 删除fbo恢复
 
 
-    drawTextureCache(gl, list, cx, cy, dx, dy);
+    drawTextureCache(gl, list, cx, cy, dx, dy, null, null);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0); // 汇入集合
 
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, page.texture, 0);
@@ -38428,7 +38442,7 @@
             var p = __cache.__page;
 
             if (lastPage && lastPage !== p) {
-              drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+              drawTextureCache(gl, list.splice(0), cx, cy, dx, dy, null, null);
             }
 
             lastPage = p;
@@ -38542,7 +38556,7 @@
             var _p7 = target.__page;
 
             if (lastPage && lastPage !== _p7) {
-              drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+              drawTextureCache(gl, list.splice(0), cx, cy, dx, dy, null, null);
             }
 
             lastPage = _p7;
@@ -38566,7 +38580,7 @@
             var render = _node9.render;
 
             if (render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
-              drawTextureCache(gl, list.splice(0), cx, cy, dx, dy);
+              drawTextureCache(gl, list.splice(0), cx, cy, dx, dy, null, null);
               lastPage = null;
 
               _node9.render(renderMode, gl, dx, dy);
@@ -38581,7 +38595,7 @@
     } // 绘制到fbo的纹理对象上并删除fbo恢复
 
 
-    drawTextureCache(gl, list, cx, cy, dx, dy);
+    drawTextureCache(gl, list, cx, cy, dx, dy, null, null);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.deleteFramebuffer(frameBuffer);
@@ -38707,7 +38721,7 @@
       cache: cache,
       opacity: opacity,
       matrix: matrix
-    }], cx, cy, dx, dy);
+    }], cx, cy, dx, dy, null, null);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.deleteFramebuffer(frameBuffer); // 获取对应的mbm程序
@@ -39134,6 +39148,8 @@
     }
   }
 
+  var lastList = [];
+
   function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
     if (isFirst) {
       Page.init(gl.getParameter(gl.MAX_TEXTURE_SIZE), true);
@@ -39148,7 +39164,6 @@
     if (__wasmRoot) {
       var len = __structs.length;
       wasmOp = new Float64Array(wasm$1.instance.memory.buffer, __wasmRoot.op_ptr(), len);
-      new Float64Array(wasm$1.instance.memory.buffer, __wasmRoot.vt_ptr(), len * 16);
       wasmMe = new Float64Array(wasm$1.instance.memory.buffer, __wasmRoot.me_ptr(), len * 16);
     }
 
@@ -39494,14 +39509,22 @@
 
         _node11.__updateCache();
       }
+    } // 非首次，没有cache变更重新生成的，可以直接用上次的缓存渲染列表
+    else if (!isFirst) {
+      for (var _i10 = 0, _len12 = lastList.length; _i10 < _len12; _i10++) {
+        drawTextureCache(gl, lastList[_i10], cx, cy, 0, 0, wasmOp, wasmMe);
+      }
+
+      return;
     }
+
+    lastList.splice(0);
     /**
      * 最后先序遍历一次应用__cacheTotal即可，没有的用__cache，以及剩下的超尺寸的和Text
      * 由于mixBlendMode的存在，需先申请个fbo纹理，所有绘制默认向该纹理绘制，最后fbo纹理再进入主画布
      * 前面循环时有记录是否出现mbm，只有出现才申请，否则不浪费直接输出到主画布
      * 超尺寸的不绘制并给出警告，实现会扰乱逻辑且很少会出现这种情况
      */
-
 
     var frameBuffer, texture;
 
@@ -39516,8 +39539,8 @@
     var lastPage,
         list = [];
 
-    for (var _i10 = 0, _len12 = __structs.length; _i10 < _len12; _i10++) {
-      var _structs$_i3 = __structs[_i10],
+    for (var _i11 = 0, _len13 = __structs.length; _i11 < _len13; _i11++) {
+      var _structs$_i3 = __structs[_i11],
           _node12 = _structs$_i3.node,
           _total13 = _structs$_i3.total,
           _hasMask7 = _structs$_i3.hasMask,
@@ -39534,7 +39557,9 @@
           var p = _cache5.__page;
 
           if (lastPage && lastPage !== p) {
-            drawTextureCache(gl, list.splice(0), cx, cy, 0, 0);
+            var o = list.splice(0);
+            lastList.push(o);
+            drawTextureCache(gl, o, cx, cy, 0, 0, wasmOp, wasmMe);
           }
 
           lastPage = p;
@@ -39542,9 +39567,7 @@
           if (wasmOp) {
             list.push({
               cache: _cache5,
-              opacity: wasmOp[_i10],
-              matrix: wasmMe,
-              index: _i10,
+              index: _i11,
               wasm: true
             });
           } else {
@@ -39559,10 +39582,10 @@
         var _computedStyle5 = _node12.__computedStyle; // none跳过这棵子树，判断下最后一个节点的离屏应用即可
 
         if (_computedStyle5[DISPLAY$1] === 'none') {
-          _i10 += _total13 || 0;
+          _i11 += _total13 || 0;
 
           if (_hasMask7) {
-            _i10 += countMaskNum(__structs, _i10 + 1, _hasMask7);
+            _i11 += countMaskNum(__structs, _i11 + 1, _hasMask7);
           }
 
           continue;
@@ -39571,7 +39594,7 @@
         var _mixBlendMode2 = _computedStyle5[MIX_BLEND_MODE$1],
             visibility = _computedStyle5[VISIBILITY$1],
             backfaceVisibility = _computedStyle5[BACKFACE_VISIBILITY];
-        var opacity = wasmOp ? wasmOp[_i10] : _computedStyle5[OPACITY$1];
+        var opacity = wasmOp ? wasmOp[_i11] : _computedStyle5[OPACITY$1];
         var _cache6 = _node12.__cache;
         var m = void 0;
 
@@ -39610,7 +39633,7 @@
 
         if (visibility === 'hidden' && !_total13) {
           if (_hasMask7) {
-            _i10 += countMaskNum(__structs, _i10 + 1, _hasMask7);
+            _i11 += countMaskNum(__structs, _i11 + 1, _hasMask7);
           }
 
           continue;
@@ -39623,10 +39646,10 @@
               _y8 = _m6[0] < 0 && _m6[10] < 0;
 
           if (_x8 || _y8) {
-            _i10 += _total13 || 0;
+            _i11 += _total13 || 0;
 
             if (_hasMask7) {
-              _i10 += countMaskNum(__structs, _i10 + 1, _hasMask7);
+              _i11 += countMaskNum(__structs, _i11 + 1, _hasMask7);
             }
 
             continue;
@@ -39641,7 +39664,10 @@
             // 有mbm则需要混合之前的纹理和新纹理到fbo上面，连续的mbm则依次交替绘制到画布或离屏fbo上
             if (_mixBlendMode2 !== 'normal') {
               if (list.length) {
-                drawTextureCache(gl, list.splice(0), cx, cy, 0, 0);
+                var _o5 = list.splice(0);
+
+                lastList.push(_o5);
+                drawTextureCache(gl, _o5, cx, cy, 0, 0, wasmOp, wasmMe);
                 lastPage = null;
               }
 
@@ -39660,7 +39686,10 @@
               var _p8 = _target8.__page;
 
               if (lastPage && lastPage !== _p8) {
-                drawTextureCache(gl, list.splice(0), cx, cy, 0, 0);
+                var _o6 = list.splice(0);
+
+                lastList.push(_o6);
+                drawTextureCache(gl, _o6, cx, cy, 0, 0, wasmOp, wasmMe);
               }
 
               lastPage = _p8;
@@ -39668,9 +39697,7 @@
               if (wasmOp) {
                 list.push({
                   cache: _target8,
-                  opacity: wasmOp[_i10],
-                  matrix: wasmMe,
-                  index: _i10,
+                  index: _i11,
                   wasm: true
                 });
               } else {
@@ -39684,10 +39711,10 @@
           }
 
           if (_target8 !== _cache6) {
-            _i10 += _total13 || 0;
+            _i11 += _total13 || 0;
 
             if (_hasMask7) {
-              _i10 += countMaskNum(__structs, _i10 + 1, _hasMask7);
+              _i11 += countMaskNum(__structs, _i11 + 1, _hasMask7);
             }
           }
         } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
@@ -39697,7 +39724,10 @@
           var render = _node12.render;
 
           if (render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
-            drawTextureCache(gl, list.splice(0), cx, cy, 0, 0);
+            var _o7 = list.splice(0);
+
+            lastList.push(_o7);
+            drawTextureCache(gl, _o7, cx, cy, 0, 0, wasmOp, wasmMe);
             lastPage = null;
 
             _node12.render(renderMode, gl, 0, 0);
@@ -39708,7 +39738,8 @@
       }
     }
 
-    drawTextureCache(gl, list, cx, cy, 0, 0); // 有mbm时将汇总的fbo绘入主画布，否则本身就是到主画布无需多余操作
+    lastList.push(list);
+    drawTextureCache(gl, list, cx, cy, 0, 0, wasmOp, wasmMe); // 有mbm时将汇总的fbo绘入主画布，否则本身就是到主画布无需多余操作
 
     if (hasMbm) {
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
@@ -39770,7 +39801,7 @@
      */
 
     if (isFirst || rlv >= REPAINT$1 || rlv & (CACHE$1 | FT$1 | MASK$1)) {
-      for (var i = 0, _len13 = __structs.length; i < _len13; i++) {
+      for (var i = 0, _len14 = __structs.length; i < _len14; i++) {
         var _structs$i9 = __structs[i],
             node = _structs$i9.node,
             lv = _structs$i9.lv,
@@ -39878,8 +39909,8 @@
     var offscreenHash = [];
     var lastOpacity = -1;
 
-    for (var _i11 = 0, _len14 = __structs.length; _i11 < _len14; _i11++) {
-      var _structs$_i4 = __structs[_i11],
+    for (var _i12 = 0, _len15 = __structs.length; _i12 < _len15; _i12++) {
+      var _structs$_i4 = __structs[_i12],
           _node13 = _structs$_i4.node,
           _lv7 = _structs$_i4.lv,
           _total14 = _structs$_i4.total,
@@ -39889,7 +39920,7 @@
       if (_isText4) {
         _node13.render(renderMode, ctx, 0, 0);
 
-        var oh = offscreenHash[_i11];
+        var oh = offscreenHash[_i12];
 
         if (oh) {
           ctx = applyOffscreen(ctx, oh, width, height, false);
@@ -39899,13 +39930,13 @@
         var _computedStyle6 = _node13.__computedStyle; // none跳过这棵子树，判断下最后一个节点的离屏应用即可
 
         if (_computedStyle6[DISPLAY$1] === 'none') {
-          _i11 += _total14 || 0;
+          _i12 += _total14 || 0;
 
           if (_hasMask8) {
-            _i11 += countMaskNum(__structs, _i11 + 1, _hasMask8);
+            _i12 += countMaskNum(__structs, _i12 + 1, _hasMask8);
           }
 
-          var _oh4 = offscreenHash[_i11];
+          var _oh4 = offscreenHash[_i12];
 
           if (_oh4) {
             ctx = applyOffscreen(ctx, _oh4, width, height, true);
@@ -39918,7 +39949,7 @@
         // 这样当mask本身有filter时优先自身，然后才是OFFSCREEN_MASK2
 
 
-        var msh = maskStartHash[_i11];
+        var msh = maskStartHash[_i12];
 
         if (msh) {
           var idx = msh.idx,
@@ -39931,7 +39962,7 @@
 
           offscreenMask.isClip = _node13.__clip; // 定位到最后一个mask元素上的末尾
 
-          var j = _i11 + (_total14 || 0) + 1;
+          var j = _i12 + (_total14 || 0) + 1;
 
           while (--_hasMask9) {
             var _total15 = __structs[j].total;
@@ -39960,7 +39991,7 @@
         } // 设置opacity/matrix，根节点是没有父节点的不计算继承值
 
 
-        var opacity = wasmOp ? wasmOp[_i11] : _computedStyle6[OPACITY$1];
+        var opacity = wasmOp ? wasmOp[_i12] : _computedStyle6[OPACITY$1];
         var m = void 0;
 
         if (!wasmOp) {
@@ -40000,7 +40031,7 @@
 
           if (opacity > 0) {
             if (wasmOp) {
-              var _idx = _i11 * 16;
+              var _idx = _i12 * 16;
 
               ctx.setTransform(wasmMe[_idx], wasmMe[_idx + 1], wasmMe[_idx + 4], wasmMe[_idx + 5], wasmMe[_idx + 12], wasmMe[_idx + 13]);
             } else {
@@ -40028,14 +40059,14 @@
             ctx.globalCompositeOperation = 'source-over';
           }
 
-          _i11 += _total14 || 0;
+          _i12 += _total14 || 0;
 
           if (_hasMask8) {
-            _i11 += countMaskNum(__structs, _i11 + 1, _hasMask8);
+            _i12 += countMaskNum(__structs, _i12 + 1, _hasMask8);
           } // 父超限但子有total的时候，i此时已经增加到了末尾，也需要检查
 
 
-          var _oh5 = offscreenHash[_i11];
+          var _oh5 = offscreenHash[_i12];
 
           if (_oh5) {
             ctx = applyOffscreen(ctx, _oh5, width, height, false);
@@ -40067,7 +40098,7 @@
 
           if (opacity > 0) {
             if (wasmOp) {
-              var _idx2 = _i11 * 16;
+              var _idx2 = _i12 * 16;
 
               ctx.setTransform(wasmMe[_idx2], wasmMe[_idx2 + 1], wasmMe[_idx2 + 4], wasmMe[_idx2 + 5], wasmMe[_idx2 + 12], wasmMe[_idx2 + 13]);
             } else {
@@ -40079,7 +40110,7 @@
 
 
           if (offscreenBlend) {
-            var _j10 = _i11 + (_total14 || 0);
+            var _j10 = _i12 + (_total14 || 0);
 
             if (_hasMask8) {
               _j10 += countMaskNum(__structs, _j10 + 1, _hasMask8);
@@ -40088,7 +40119,7 @@
             var _list7 = offscreenHash[_j10] = offscreenHash[_j10] || [];
 
             _list7.push({
-              idx: _i11,
+              idx: _i12,
               lv: _lv7,
               type: OFFSCREEN_BLEND,
               offscreen: offscreenBlend
@@ -40098,10 +40129,10 @@
 
 
           if (_offscreenMask3) {
-            var _j11 = _i11 + (_total14 || 0);
+            var _j11 = _i12 + (_total14 || 0);
 
             maskStartHash[_j11 + 1] = {
-              idx: _i11,
+              idx: _i12,
               hasMask: _hasMask8,
               offscreenMask: _offscreenMask3
             };
@@ -40109,7 +40140,7 @@
 
 
           if (offscreenFilter) {
-            var _j12 = _i11 + (_total14 || 0);
+            var _j12 = _i12 + (_total14 || 0);
 
             if (_hasMask8) {
               _j12 += countMaskNum(__structs, _j12 + 1, _hasMask8);
@@ -40118,7 +40149,7 @@
             var _list8 = offscreenHash[_j12] = offscreenHash[_j12] || [];
 
             _list8.push({
-              idx: _i11,
+              idx: _i12,
               lv: _lv7,
               type: OFFSCREEN_FILTER,
               offscreen: offscreenFilter
@@ -40127,7 +40158,7 @@
 
 
           if (offscreenOverflow) {
-            var _j13 = _i11 + (_total14 || 0);
+            var _j13 = _i12 + (_total14 || 0);
 
             if (_hasMask8) {
               _j13 += countMaskNum(__structs, _j13 + 1, _hasMask8);
@@ -40136,7 +40167,7 @@
             var _list9 = offscreenHash[_j13] = offscreenHash[_j13] || [];
 
             _list9.push({
-              idx: _i11,
+              idx: _i12,
               lv: _lv7,
               type: OFFSCREEN_OVERFLOW,
               offscreen: offscreenOverflow
@@ -40145,7 +40176,7 @@
           // 由于mask特殊索引影响，所有离屏都在最后一个mask索引判断，此时mask本身优先结算，以index序大到小判断
 
 
-          var _oh6 = offscreenHash[_i11];
+          var _oh6 = offscreenHash[_i12];
 
           if (_oh6) {
             ctx = applyOffscreen(ctx, _oh6, width, height, false);
@@ -41111,6 +41142,94 @@
         this.__aniChange = true;
 
         this.__calUpdate(node, computedStyle, cacheStyle, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver, false, false);
+      } // wasm的动画更新外部不知道改了啥（性能），其内部倒是知道，这里检查mask和向上清空cache影响
+
+    }, {
+      key: "__addWasmAniUpdate",
+      value: function __addWasmAniUpdate(node) {
+        var computedStyle = node.__computedStyle,
+            __mask = node.__mask,
+            __hasMask = node.__hasMask,
+            __domParent = node.__domParent; // 没有变化或none无需刷新
+
+        if (computedStyle[DISPLAY] === 'none') {
+          return false;
+        } // mask需清除遮罩对象的缓存
+
+
+        var hasRelease;
+
+        if (__mask) {
+          var prev = node.__prev;
+
+          while (prev && prev.__mask) {
+            prev = prev.__prev;
+          }
+
+          if (prev && (prev instanceof Xom || prev instanceof Component && prev.shadowRoot instanceof Xom)) {
+            prev.__refreshLevel |= CACHE | MASK;
+            prev.__struct.hasMask = prev.__hasMask = __mask;
+
+            if (prev.__cacheMask) {
+              hasRelease = prev.__cacheMask.release() || hasRelease;
+            }
+          }
+        } // mask无论如何都要清除，除非是opacity/ppt，这里因为wasm只考虑opacity
+
+
+        if (__hasMask) {
+          var lv = node.__wasmNode.refresh_level;
+
+          if (lv ^ OP) {
+            if (node.__cacheMask) {
+              hasRelease = node.__cacheMask.release() || hasRelease;
+            }
+
+            if (node.__cacheFilter) {
+              hasRelease = node.__cacheFilter.release() || hasRelease;
+            }
+          }
+        } // 除了清空cache，Root的rlv需要标识向上情况，这样webgl的渲染不会使用老的队列缓存
+
+
+        if (hasRelease) {
+          node.__updateCache();
+        }
+
+        if (__domParent !== this.__lastUpdateP) {
+          var p = __domParent;
+          this.__lastUpdateP = p; // 同层级避免重复进入查找，每次draw()重设
+
+          while (p) {
+            if (p.__refreshLevel & (CACHE | REPAINT | REFLOW)) {
+              break;
+            }
+
+            p.__refreshLevel |= CACHE;
+
+            if (p.__cacheTotal) {
+              hasRelease = p.__cacheTotal.release() || hasRelease;
+            }
+
+            if (p.__cacheFilter) {
+              hasRelease = p.__cacheFilter.release() || hasRelease;
+            }
+
+            if (p.__cacheMask) {
+              hasRelease = p.__cacheMask.release() || hasRelease;
+            }
+
+            if (hasRelease) {
+              p.__updateCache();
+            }
+
+            p = p.__domParent;
+          }
+        }
+
+        if (hasRelease) {
+          this.__rlv |= CACHE;
+        }
       }
     }, {
       key: "__calUpdate",
@@ -41194,29 +41313,30 @@
           else {
             if (lv & PPT) {
               node.__calPerspective(currentStyle, computedStyle, cacheStyle);
-            } // 特殊的ppt需清空cacheTotal
+            }
 
-
-            if (lv & TRANSFORM_ALL) {
+            if (lv & TRANSFORM_ALL || lv & OP) {
               var wn = node.__wasmNode;
 
               if (wn) {
                 node.__wasmStyle(currentStyle);
               } else {
-                var o = node.__selfPerspectiveMatrix;
+                if (lv & TRANSFORM_ALL) {
+                  var o = node.__selfPerspectiveMatrix;
 
-                node.__calMatrix(lv, currentStyle, computedStyle, cacheStyle);
+                  node.__calMatrix(lv, currentStyle, computedStyle, cacheStyle);
 
-                var n = node.__selfPerspectiveMatrix;
+                  var n = node.__selfPerspectiveMatrix;
 
-                if (!need && !util.equalArr(o, n)) {
-                  need = true;
+                  if (!need && !util.equalArr(o, n)) {
+                    need = true;
+                  }
+                }
+
+                if (lv & OP) {
+                  computedStyle[OPACITY] = currentStyle[OPACITY];
                 }
               }
-            }
-
-            if (lv & OP) {
-              computedStyle[OPACITY] = currentStyle[OPACITY];
             }
 
             if (lv & FT) {
@@ -41280,7 +41400,7 @@
             if (node.__cacheTotal) {
               hasRelease = node.__cacheTotal.release() || hasRelease;
             }
-          } // mask无论如何都要清除，除非是opacity
+          } // mask无论如何都要清除，除非是opacity/ppt，其它变化需要重新生成
 
 
           if (node.__hasMask) {
@@ -41466,7 +41586,7 @@
         this.__aniChange = false;
 
         if (!this.__pause) {
-          var wr = this.__wasmRoot;
+          var wr = this.__wasmRoot; // wasm的动画计算顺序要放在前面，因为其他动画可能包含REPAINT/REFLOW之类的变更，涵盖wasm的transform/opacity
 
           if (wr) {
             var n = wr.on_frame(diff); // 有动画执行了需刷新
@@ -41477,7 +41597,14 @@
           }
 
           for (var i = 0; i < len; i++) {
-            ani[i].__before(diff);
+            var a = ani[i];
+
+            var r = a.__before(diff); // 返回true说明完全被wasm动画代理，非true则是其它，更新逻辑会包含wasm的
+
+
+            if (r) {
+              this.__addWasmAniUpdate(a.__target);
+            }
           }
         }
 

@@ -818,6 +818,77 @@ class Root extends Dom {
       false, false);
   }
 
+  // wasm的动画更新外部不知道改了啥（性能），其内部倒是知道，这里检查mask和向上清空cache影响
+  __addWasmAniUpdate(node) {
+    let {
+      __computedStyle: computedStyle,
+      __mask,
+      __hasMask,
+      __domParent,
+    } = node;
+    // 没有变化或none无需刷新
+    if(computedStyle[DISPLAY] === 'none') {
+      return false;
+    }
+    // mask需清除遮罩对象的缓存
+    let hasRelease;
+    if(__mask) {
+      let prev = node.__prev;
+      while(prev && (prev.__mask)) {
+        prev = prev.__prev;
+      }
+      if(prev && (prev instanceof Xom || prev instanceof Component && prev.shadowRoot instanceof Xom)) {
+        prev.__refreshLevel |= CACHE | MASK;
+        prev.__struct.hasMask = prev.__hasMask = __mask;
+        if(prev.__cacheMask) {
+          hasRelease = prev.__cacheMask.release() || hasRelease;
+        }
+      }
+    }
+    // mask无论如何都要清除，除非是opacity/ppt，这里因为wasm只考虑opacity
+    if(__hasMask) {
+      let lv = node.__wasmNode.refresh_level;
+      if(lv ^ OP) {
+        if(node.__cacheMask) {
+          hasRelease = node.__cacheMask.release() || hasRelease;
+        }
+        if(node.__cacheFilter) {
+          hasRelease = node.__cacheFilter.release() || hasRelease;
+        }
+      }
+    }
+    // 除了清空cache，Root的rlv需要标识向上情况，这样webgl的渲染不会使用老的队列缓存
+    if(hasRelease) {
+      node.__updateCache();
+    }
+    if(__domParent !== this.__lastUpdateP) {
+      let p = __domParent;
+      this.__lastUpdateP = p; // 同层级避免重复进入查找，每次draw()重设
+      while(p) {
+        if(p.__refreshLevel & (CACHE | REPAINT | REFLOW)) {
+          break;
+        }
+        p.__refreshLevel |= CACHE;
+        if(p.__cacheTotal) {
+          hasRelease = p.__cacheTotal.release() || hasRelease;
+        }
+        if(p.__cacheFilter) {
+          hasRelease = p.__cacheFilter.release() || hasRelease;
+        }
+        if(p.__cacheMask) {
+          hasRelease = p.__cacheMask.release() || hasRelease;
+        }
+        if(hasRelease) {
+          p.__updateCache();
+        }
+        p = p.__domParent;
+      }
+    }
+    if(hasRelease) {
+      this.__rlv |= CACHE;
+    }
+  }
+
   __calUpdate(node, computedStyle, cacheStyle, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver,
               addDom, removeDom) {
     let {
@@ -887,23 +958,24 @@ class Root extends Dom {
         if(lv & PPT) {
           node.__calPerspective(currentStyle, computedStyle, cacheStyle);
         }
-        // 特殊的ppt需清空cacheTotal
-        if(lv & TRANSFORM_ALL) {
+        if(lv & TRANSFORM_ALL || lv & OP) {
           let wn = node.__wasmNode;
           if(wn) {
             node.__wasmStyle(currentStyle);
           }
           else {
-            let o = node.__selfPerspectiveMatrix;
-            node.__calMatrix(lv, currentStyle, computedStyle, cacheStyle);
-            let n = node.__selfPerspectiveMatrix;
-            if(!need && !util.equalArr(o, n)) {
-              need = true;
+            if(lv & TRANSFORM_ALL) {
+              let o = node.__selfPerspectiveMatrix;
+              node.__calMatrix(lv, currentStyle, computedStyle, cacheStyle);
+              let n = node.__selfPerspectiveMatrix;
+              if(!need && !util.equalArr(o, n)) {
+                need = true;
+              }
+            }
+            if(lv & OP) {
+              computedStyle[OPACITY] = currentStyle[OPACITY];
             }
           }
-        }
-        if(lv & OP) {
-          computedStyle[OPACITY] = currentStyle[OPACITY];
         }
         if(lv & FT) {
           node.__calFilter(currentStyle, computedStyle, cacheStyle);
@@ -966,7 +1038,7 @@ class Root extends Dom {
           hasRelease = node.__cacheTotal.release() || hasRelease;
         }
       }
-      // mask无论如何都要清除，除非是opacity
+      // mask无论如何都要清除，除非是opacity/ppt，其它变化需要重新生成
       if(node.__hasMask) {
         if(need || (lv ^ OP) || (lv & PPT)) {
           if(node.__cacheMask) {
@@ -1113,6 +1185,7 @@ class Root extends Dom {
     this.__aniChange = false;
     if(!this.__pause) {
       let wr = this.__wasmRoot;
+      // wasm的动画计算顺序要放在前面，因为其他动画可能包含REPAINT/REFLOW之类的变更，涵盖wasm的transform/opacity
       if(wr) {
         let n = wr.on_frame(diff);
         // 有动画执行了需刷新
@@ -1121,7 +1194,12 @@ class Root extends Dom {
         }
       }
       for(let i = 0; i < len; i++) {
-        ani[i].__before(diff);
+        let a = ani[i];
+        let r = a.__before(diff);
+        // 返回true说明完全被wasm动画代理，非true则是其它，更新逻辑会包含wasm的
+        if(r) {
+          this.__addWasmAniUpdate(a.__target);
+        }
       }
     }
     if(this.__aniChange || len2 || len3) {

@@ -18541,24 +18541,7 @@
 
           if (wList.length) {
             var iter = this.__iterations === Infinity ? 0 : this.__iterations;
-
-            var _tf = getEasing(ea),
-                easeType = EASING.LINEAR;
-
-            if (_tf && ea !== easing.linear) {
-              if (_tf === easing.easeIn) {
-                easeType = EASING.EASE_IN;
-              } else if (_tf === easing.easeOut) {
-                easeType = EASING.EASE_OUT;
-              } else if (_tf === easing.ease) {
-                easeType = EASING.EASE;
-              } else if (_tf === easing.easeInOut) {
-                easeType = EASING.EASE_IN_OUT;
-              } else {
-                easeType = EASING.EASE_CUSTOM;
-              }
-            }
-
+            var easeType = getEaseType(ea);
             var wa = this.__wasmAnimation = wasm$1.Animation["new"](target.__wasmNode.ptr, DIRECTION[this.__direction] || 0, this.__duration, this.__fps, this.__delay, this.__endDelay, FILLS[this.__fill] || 0, this.__playbackRate, iter, this.__areaStart, this.__areaDuration, easeType);
 
             if (easeType === EASING.EASE_CUSTOM) {
@@ -19410,6 +19393,12 @@
           this.__checkModify();
         }
 
+        var wn = this.__wasmAnimation;
+
+        if (wn) {
+          wn.duration = v;
+        }
+
         return v;
       }
     }, {
@@ -19424,6 +19413,12 @@
           this.__delay = v;
 
           this.__checkModify();
+        }
+
+        var wn = this.__wasmAnimation;
+
+        if (wn) {
+          wn.delay = v;
         }
 
         return v;
@@ -19442,6 +19437,12 @@
           this.__checkModify();
         }
 
+        var wn = this.__wasmAnimation;
+
+        if (wn) {
+          wn.end_delay = v;
+        }
+
         return v;
       }
     }, {
@@ -19458,6 +19459,12 @@
           }
 
           this.__fps = v;
+        }
+
+        var wn = this.__wasmAnimation;
+
+        if (wn) {
+          wn.fps = v;
         }
 
         return v;
@@ -19481,6 +19488,12 @@
           if (isNaN(v) || v < 0) {
             v = 1;
           }
+        }
+
+        var wn = this.__wasmAnimation;
+
+        if (wn) {
+          wn.iterations = v === Infinity ? 0 : v;
         }
 
         if (this.__iterations !== v) {
@@ -19511,6 +19524,12 @@
           forwards: true,
           both: true
         }.hasOwnProperty(v);
+        var wn = this.__wasmAnimation;
+
+        if (wn) {
+          wn.fill = FILLS[v] || 0;
+        }
+
         return v;
       }
     }, {
@@ -19520,6 +19539,11 @@
       },
       set: function set(v) {
         v = v || 'normal';
+        var wn = this.__wasmAnimation;
+
+        if (wn) {
+          wn.direction = DIRECTION[v] || 0;
+        }
 
         if (this.__direction !== v) {
           this.__direction = v;
@@ -19551,6 +19575,12 @@
           v = 1;
         }
 
+        var wn = this.__wasmAnimation;
+
+        if (wn) {
+          wn.playback_rate = v;
+        }
+
         if (this.__playbackRate !== v) {
           this.__playbackRate = v;
         }
@@ -19563,6 +19593,20 @@
         return this.__easing;
       },
       set: function set(v) {
+        var wa = this.__wasmAnimation;
+
+        if (wa) {
+          var easeType = getEaseType(v);
+
+          if (easeType === EASING.EASE_CUSTOM) {
+            v = v.match(/[\d.]+/g);
+
+            if (v.length === 4) {
+              wa.set_bezier(parseFloat(v[0]), parseFloat(v[1]), parseFloat(v[2]), parseFloat(v[3]));
+            }
+          }
+        }
+
         this.__easing = v;
       }
     }, {
@@ -19577,6 +19621,11 @@
       },
       set: function set(v) {
         v = Math.max(0, parseFloat(v) || 0);
+        var wn = this.__wasmAnimation;
+
+        if (wn) {
+          wn.current_time = v;
+        }
 
         if (this.__currentTime !== v) {
           this.__currentTime = v;
@@ -19606,6 +19655,11 @@
       },
       set: function set(v) {
         v = Math.max(0, parseInt(v) || 0);
+        var wn = this.__wasmAnimation;
+
+        if (wn) {
+          wn.play_count = v;
+        }
 
         if (this.__playCount !== v) {
           this.__playCount = v;
@@ -19620,6 +19674,11 @@
       },
       set: function set(v) {
         v = Math.max(0, parseInt(v) || 0);
+        var wn = this.__wasmAnimation;
+
+        if (wn) {
+          wn.area_start = v;
+        }
 
         if (this.__areaStart !== v) {
           this.__areaStart = v;
@@ -19634,6 +19693,11 @@
       },
       set: function set(v) {
         v = Math.max(0, parseInt(v) || 0);
+        var wn = this.__wasmAnimation;
+
+        if (wn) {
+          wn.area_duration = v;
+        }
 
         if (this.__areaDuration !== v) {
           this.__areaDuration = v;
@@ -20125,6 +20189,27 @@
 
     return Animation;
   }(Event);
+
+  function getEaseType(ea) {
+    var tf = getEasing(ea),
+        easeType = EASING.LINEAR;
+
+    if (tf && tf !== easing.linear) {
+      if (tf === easing.easeIn) {
+        easeType = EASING.EASE_IN;
+      } else if (tf === easing.easeOut) {
+        easeType = EASING.EASE_OUT;
+      } else if (tf === easing.ease) {
+        easeType = EASING.EASE;
+      } else if (tf === easing.easeInOut) {
+        easeType = EASING.EASE_IN_OUT;
+      } else {
+        easeType = EASING.EASE_CUSTOM;
+      }
+    }
+
+    return easeType;
+  }
 
   var int2rgba$2 = util.int2rgba;
   var canvasPolygon$3 = painter.canvasPolygon,
@@ -23605,9 +23690,8 @@
             if (isGeom) {
               if (!equalStyle(k, currentProps[k], v, this)) {
                 currentProps[k] = v;
+                keys.push(k);
               }
-
-              keys.push(k);
             } else {
               k = parseInt(k);
 

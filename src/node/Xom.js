@@ -2853,8 +2853,8 @@ class Xom extends Node {
         if(isGeom) {
           if(!equalStyle(k, currentProps[k], v, this)) {
             currentProps[k] = v;
+            keys.push(k);
           }
-          keys.push(k);
         }
         else {
           k = parseInt(k);

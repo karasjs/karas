@@ -1571,24 +1571,7 @@ class Animation extends Event {
       // 有相关的才交给wasm，并移除js中transition计算
       if(wList.length) {
         let iter = this.__iterations === Infinity ? 0 : this.__iterations;
-        let tf = getEasing(ea), easeType = EASING.LINEAR;
-        if(tf && ea !== easing.linear) {
-          if(tf === easing.easeIn) {
-            easeType = EASING.EASE_IN;
-          }
-          else if(tf === easing.easeOut) {
-            easeType = EASING.EASE_OUT;
-          }
-          else if(tf === easing.ease) {
-            easeType = EASING.EASE;
-          }
-          else if(tf === easing.easeInOut) {
-            easeType = EASING.EASE_IN_OUT;
-          }
-          else {
-            easeType = EASING.EASE_CUSTOM;
-          }
-        }
+        let easeType = getEaseType(ea);
         let wa = this.__wasmAnimation = wasm.Animation.new(target.__wasmNode.ptr, DIRECTION[this.__direction] || 0, this.__duration, this.__fps,
           this.__delay, this.__endDelay, FILLS[this.__fill] || 0, this.__playbackRate, iter,
           this.__areaStart, this.__areaDuration, easeType);
@@ -2285,6 +2268,10 @@ class Animation extends Event {
       this.__duration = v;
       this.__checkModify();
     }
+    let wn = this.__wasmAnimation;
+    if(wn) {
+      wn.duration = v;
+    }
     return v;
   }
 
@@ -2298,6 +2285,10 @@ class Animation extends Event {
       this.__delay = v;
       this.__checkModify();
     }
+    let wn = this.__wasmAnimation;
+    if(wn) {
+      wn.delay = v;
+    }
     return v;
   }
 
@@ -2310,6 +2301,10 @@ class Animation extends Event {
     if(this.__endDelay !== v) {
       this.__endDelay = v;
       this.__checkModify();
+    }
+    let wn = this.__wasmAnimation;
+    if(wn) {
+      wn.end_delay = v;
     }
     return v;
   }
@@ -2325,6 +2320,10 @@ class Animation extends Event {
         v = 60;
       }
       this.__fps = v;
+    }
+    let wn = this.__wasmAnimation;
+    if(wn) {
+      wn.fps = v;
     }
     return v;
   }
@@ -2346,6 +2345,10 @@ class Animation extends Event {
       if(isNaN(v) || v < 0) {
         v = 1;
       }
+    }
+    let wn = this.__wasmAnimation;
+    if(wn) {
+      wn.iterations = v === Infinity ? 0 : v;
     }
     if(this.__iterations !== v) {
       this.__iterations = v;
@@ -2371,6 +2374,10 @@ class Animation extends Event {
       forwards: true,
       both: true,
     }.hasOwnProperty(v);
+    let wn = this.__wasmAnimation;
+    if(wn) {
+      wn.fill = FILLS[v] || 0;
+    }
     return v;
   }
 
@@ -2380,6 +2387,10 @@ class Animation extends Event {
 
   set direction(v) {
     v = v || 'normal';
+    let wn = this.__wasmAnimation;
+    if(wn) {
+      wn.direction = DIRECTION[v] || 0;
+    }
     if(this.__direction !== v) {
       this.__direction = v;
       this.__checkModify();
@@ -2404,6 +2415,10 @@ class Animation extends Event {
     if(v <= 0) {
       v = 1;
     }
+    let wn = this.__wasmAnimation;
+    if(wn) {
+      wn.playback_rate = v;
+    }
     if(this.__playbackRate !== v) {
       this.__playbackRate = v;
     }
@@ -2415,6 +2430,16 @@ class Animation extends Event {
   }
 
   set easing(v) {
+    let wa = this.__wasmAnimation;
+    if(wa) {
+      let easeType = getEaseType(v);
+      if(easeType === EASING.EASE_CUSTOM) {
+        v = v.match(/[\d.]+/g);
+        if(v.length === 4) {
+          wa.set_bezier(parseFloat(v[0]), parseFloat(v[1]), parseFloat(v[2]), parseFloat(v[3]));
+        }
+      }
+    }
     this.__easing = v;
   }
 
@@ -2428,6 +2453,10 @@ class Animation extends Event {
 
   set currentTime(v) {
     v = Math.max(0, parseFloat(v) || 0);
+    let wn = this.__wasmAnimation;
+    if(wn) {
+      wn.current_time = v;
+    }
     if(this.__currentTime !== v) {
       this.__currentTime = v;
     }
@@ -2452,6 +2481,10 @@ class Animation extends Event {
 
   set playCount(v) {
     v = Math.max(0, parseInt(v) || 0);
+    let wn = this.__wasmAnimation;
+    if(wn) {
+      wn.play_count = v;
+    }
     if(this.__playCount !== v) {
       this.__playCount = v;
     }
@@ -2464,6 +2497,10 @@ class Animation extends Event {
 
   set areaStart(v) {
     v = Math.max(0, parseInt(v) || 0);
+    let wn = this.__wasmAnimation;
+    if(wn) {
+      wn.area_start = v;
+    }
     if(this.__areaStart !== v) {
       this.__areaStart = v;
     }
@@ -2476,6 +2513,10 @@ class Animation extends Event {
 
   set areaDuration(v) {
     v = Math.max(0, parseInt(v) || 0);
+    let wn = this.__wasmAnimation;
+    if(wn) {
+      wn.area_duration = v;
+    }
     if(this.__areaDuration !== v) {
       this.__areaDuration = v;
     }
@@ -2875,6 +2916,28 @@ class Animation extends Event {
     }
     return { trans, fixed };
   }
+}
+
+function getEaseType(ea) {
+  let tf = getEasing(ea), easeType = EASING.LINEAR;
+  if(tf && tf !== easing.linear) {
+    if(tf === easing.easeIn) {
+      easeType = EASING.EASE_IN;
+    }
+    else if(tf === easing.easeOut) {
+      easeType = EASING.EASE_OUT;
+    }
+    else if(tf === easing.ease) {
+      easeType = EASING.EASE;
+    }
+    else if(tf === easing.easeInOut) {
+      easeType = EASING.EASE_IN_OUT;
+    }
+    else {
+      easeType = EASING.EASE_CUSTOM;
+    }
+  }
+  return easeType;
 }
 
 export default Animation;

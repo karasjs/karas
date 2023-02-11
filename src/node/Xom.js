@@ -131,6 +131,7 @@ const {
     BOX_SIZING,
     FONT_SIZE_SHRINK,
   },
+  WASM_STYLE_KEY,
 } = enums;
 const { AUTO, PX, PERCENT, INHERIT, NUMBER, RGBA, STRING, REM, VW, VH, VMAX, VMIN, DEG, GRADIENT } = unit;
 const { int2rgba, rgba2int, joinArr, isNil, isFunction } = util;
@@ -3099,15 +3100,75 @@ class Xom extends Node {
     else {
       keys = Object.keys(computedStyle);
     }
+    let wn = this.__wasmNode, wasmCps;
     keys.forEach(k => {
       if(GEOM.hasOwnProperty(k)) {
         res[k] = computedStyle[k];
       }
       else {
-        res[STYLE_RV_KEY[k]] = computedStyle[k];
+        if(wn && (k === TRANSLATE_X
+          || k === TRANSLATE_Y
+          || k === TRANSLATE_Z
+          || k === ROTATE_X
+          || k === ROTATE_Y
+          || k === ROTATE_Z
+          || k === SCALE_X
+          || k === SCALE_Y
+          || k === SKEW_X
+          || k === SKEW_Y
+          || k === OPACITY
+          || k === TRANSFORM_ORIGIN)) {
+          if(!wasmCps) {
+            wasmCps = new Float64Array(wasm.instance.memory.buffer, wn.computed_style_ptr(), 18);
+          }
+          if(k === TRANSFORM_ORIGIN) {
+            let k2 = WASM_STYLE_KEY[k];
+            res[STYLE_RV_KEY[k]] = [wasmCps[k2], wasmCps[k2 + 1]];
+          }
+          else {
+            res[STYLE_RV_KEY[k]] = wasmCps[WASM_STYLE_KEY[k]];
+          }
+        }
+        else {
+          res[STYLE_RV_KEY[k]] = computedStyle[k];
+        }
       }
     });
     return res;
+  }
+
+  getStyle(k) {
+    if(!k || !util.isString(k) || abbr.hasOwnProperty(k)) {
+      throw new Error('Param must be a single style key');
+    }
+    let computedStyle = this.__computedStyle;
+    if(GEOM.hasOwnProperty(k)) {
+      return computedStyle[k];
+    }
+    let k2 = STYLE_KEY[style2Upper(k)];
+    let wn = this.__wasmNode;
+    if(wn && (k2 === TRANSLATE_X
+      || k2 === TRANSLATE_Y
+      || k2 === TRANSLATE_Z
+      || k2 === ROTATE_X
+      || k2 === ROTATE_Y
+      || k2 === ROTATE_Z
+      || k2 === SCALE_X
+      || k2 === SCALE_Y
+      || k2 === SKEW_X
+      || k2 === SKEW_Y
+      || k2 === OPACITY
+      || k2 === TRANSFORM_ORIGIN)) {
+      let wasmCps = new Float64Array(wasm.instance.memory.buffer, wn.computed_style_ptr(), 18);
+      if(k === TRANSFORM_ORIGIN) {
+        k2 = WASM_STYLE_KEY[k2];
+        return [wasmCps[k2], wasmCps[k2 + 1]];
+      }
+      else {
+        return wasmCps[WASM_STYLE_KEY[k2]];
+      }
+    }
+    return computedStyle[k2];
   }
 
   getBoundingClientRect(includeBbox) {

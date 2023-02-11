@@ -221,6 +221,19 @@ export class Animation {
     wasm.__wbg_set_animation_first_play(this.ptr, arg0);
   }
   /**
+   * @returns {boolean}
+   */
+  get finished() {
+    const ret = wasm.__wbg_get_animation_finished(this.ptr);
+    return ret !== 0;
+  }
+  /**
+   * @param {boolean} arg0
+   */
+  set finished(arg0) {
+    wasm.__wbg_set_animation_finished(this.ptr, arg0);
+  }
+  /**
    * @returns {number}
    */
   get index() {
@@ -713,6 +726,14 @@ export class Node {
   equal_style(k, v, u) {
     const ret = wasm.node_equal_style(this.ptr, k, v, u);
     return ret !== 0;
+  }
+  /**
+   * @param {number} k
+   * @param {number} v
+   * @param {number} u
+   */
+  update_style(k, v, u) {
+    wasm.node_update_style(this.ptr, k, v, u);
   }
 }
 /**

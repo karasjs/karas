@@ -737,7 +737,7 @@
   var AUTO$8 = 0;
   var PX$b = 1;
   var PERCENT$a = 2;
-  var NUMBER$6 = 3;
+  var NUMBER$7 = 3;
   var INHERIT$5 = 4;
   var DEG$5 = 5;
   var STRING$3 = 6;
@@ -753,7 +753,7 @@
     AUTO: AUTO$8,
     PX: PX$b,
     PERCENT: PERCENT$a,
-    NUMBER: NUMBER$6,
+    NUMBER: NUMBER$7,
     INHERIT: INHERIT$5,
     DEG: DEG$5,
     STRING: STRING$3,
@@ -834,7 +834,7 @@
 
       return {
         v: n,
-        u: NUMBER$6
+        u: NUMBER$7
       };
     }
   };
@@ -4007,6 +4007,8 @@
     getPerpendicularVector3: getPerpendicularVector3
   };
 
+  var _WASM_STYLE_KEY;
+
   var STYLE_KEY$4 = {
     POSITION: 0,
     DISPLAY: 1,
@@ -4156,13 +4158,32 @@
     STYLE_RV_KEY$1[k2] = l;
     STYLE_V_KEY[l] = k2;
   });
-  var WASM_STYLE = {
-    TRANSLATE_X: 0,
-    TRANSLATE_Y: 1,
-    TRANSLATE_Z: 2,
-    ROTATE_Z: 3,
-    SCALE_X: 4,
-    SCALE_Y: 5
+  var WASM_STYLE_KEY$3 = (_WASM_STYLE_KEY = {}, _defineProperty(_WASM_STYLE_KEY, STYLE_KEY$4.TRANSLATE_X, 0), _defineProperty(_WASM_STYLE_KEY, STYLE_KEY$4.TRANSLATE_Y, 1), _defineProperty(_WASM_STYLE_KEY, STYLE_KEY$4.TRANSLATE_Z, 2), _defineProperty(_WASM_STYLE_KEY, STYLE_KEY$4.ROTATE_X, 3), _defineProperty(_WASM_STYLE_KEY, STYLE_KEY$4.ROTATE_Y, 4), _defineProperty(_WASM_STYLE_KEY, STYLE_KEY$4.ROTATE_Z, 5), _defineProperty(_WASM_STYLE_KEY, STYLE_KEY$4.ROTATE_3D, 6), _defineProperty(_WASM_STYLE_KEY, STYLE_KEY$4.SCALE_X, 10), _defineProperty(_WASM_STYLE_KEY, STYLE_KEY$4.SCALE_Y, 11), _defineProperty(_WASM_STYLE_KEY, STYLE_KEY$4.SCALE_Z, 12), _defineProperty(_WASM_STYLE_KEY, STYLE_KEY$4.SKEW_X, 13), _defineProperty(_WASM_STYLE_KEY, STYLE_KEY$4.SKEW_Y, 14), _defineProperty(_WASM_STYLE_KEY, STYLE_KEY$4.OPACITY, 15), _defineProperty(_WASM_STYLE_KEY, STYLE_KEY$4.TRANSFORM_ORIGIN, 16), _WASM_STYLE_KEY);
+  var DIRECTION$1 = {
+    reverse: 1,
+    alternate: 2,
+    'alternate-reverse': 3,
+    alternateReverse: 3
+  };
+  var FILLS$1 = {
+    forwards: 1,
+    backwards: 2,
+    both: 3
+  };
+  var EASING$1 = {
+    DEFAULT: 0,
+    LINEAR: 1,
+    EASE_IN: 2,
+    EASE_OUT: 3,
+    EASE: 4,
+    EASE_IN_OUT: 5,
+    EASE_CUSTOM: 6
+  };
+  var PLAY_STATE$1 = {
+    IDLE: 0,
+    RUNNING: 1,
+    PAUSED: 2,
+    FINISHED: 3
   };
   var enums = {
     STYLE_KEY: STYLE_KEY$4,
@@ -4176,7 +4197,11 @@
     style2Lower: style2Lower,
     style2Upper: style2Upper$2,
     ELLIPSIS: '…',
-    WASM_STYLE: WASM_STYLE
+    WASM_STYLE_KEY: WASM_STYLE_KEY$3,
+    DIRECTION: DIRECTION$1,
+    FILLS: FILLS$1,
+    EASING: EASING$1,
+    PLAY_STATE: PLAY_STATE$1
   };
 
   var H$1 = 4 * (Math.sqrt(2) - 1) / 3;
@@ -7563,7 +7588,7 @@
   var PX$9 = o$4.PX,
       PERCENT$8 = o$4.PERCENT,
       DEG$4 = o$4.DEG,
-      NUMBER$5 = o$4.NUMBER,
+      NUMBER$6 = o$4.NUMBER,
       REM$8 = o$4.REM,
       VW$8 = o$4.VW,
       VH$8 = o$4.VH,
@@ -7607,7 +7632,7 @@
     if (/^[-+]?[\d.]/.test(data)) {
       var v = calUnit$2(data);
 
-      if ([NUMBER$5, DEG$4].indexOf(v.u) > -1) {
+      if ([NUMBER$6, DEG$4].indexOf(v.u) > -1) {
         v.v = PX$9;
       }
 
@@ -8114,7 +8139,7 @@
         if (percent) {
           var _v = calUnit$2(percent[0]);
 
-          if ([NUMBER$5, DEG$4].indexOf(_v.u) > -1) {
+          if ([NUMBER$6, DEG$4].indexOf(_v.u) > -1) {
             _v.v = PX$9;
           }
 
@@ -9006,7 +9031,7 @@
   var AUTO$7 = o$4.AUTO,
       PX$8 = o$4.PX,
       PERCENT$7 = o$4.PERCENT,
-      NUMBER$4 = o$4.NUMBER,
+      NUMBER$5 = o$4.NUMBER,
       INHERIT$3 = o$4.INHERIT,
       DEG$3 = o$4.DEG,
       RGBA$3 = o$4.RGBA,
@@ -9061,17 +9086,17 @@
 
   function compatibleTransform(k, arr) {
     if (k === SCALE_X$5 || k === SCALE_Y$5 || k === SCALE_Z$4) {
-      arr.u = NUMBER$4;
+      arr.u = NUMBER$5;
     } else if (k === TRANSLATE_X$4 || k === TRANSLATE_Y$4 || k === TRANSLATE_Z$4) {
-      if (arr.u === NUMBER$4) {
+      if (arr.u === NUMBER$5) {
         arr.u = PX$8;
       }
     } else if (k === PERSPECTIVE$5) {
-      if ([NUMBER$4, PERCENT$7, DEG$3].indexOf(arr.u) > -1) {
+      if ([NUMBER$5, PERCENT$7, DEG$3].indexOf(arr.u) > -1) {
         arr.u = PX$8;
       }
     } else {
-      if (arr.u === NUMBER$4) {
+      if (arr.u === NUMBER$5) {
         arr.u = DEG$3;
       }
     }
@@ -9313,7 +9338,7 @@
           if (/^[-+]?[\d.]/.test(item)) {
             var v = calUnit$1(item);
 
-            if ([NUMBER$4, DEG$3].indexOf(v.u) > -1) {
+            if ([NUMBER$5, DEG$3].indexOf(v.u) > -1) {
               v.u = PX$8;
             }
 
@@ -9369,7 +9394,7 @@
             if (/^[-+]?[\d.]/.test(_item)) {
               var n = calUnit$1(_item);
 
-              if ([NUMBER$4, DEG$3].indexOf(n.u) > -1) {
+              if ([NUMBER$5, DEG$3].indexOf(n.u) > -1) {
                 n.u = PX$8;
               }
 
@@ -9428,7 +9453,7 @@
           if (/^[-+]?[\d.]/.test(item)) {
             var n = calUnit$1(item);
 
-            if ([NUMBER$4, DEG$3].indexOf(n.u) > -1) {
+            if ([NUMBER$5, DEG$3].indexOf(n.u) > -1) {
               n.u = PX$8;
             }
 
@@ -9637,7 +9662,7 @@
             if (/^[-+]?[\d.]/.test(item)) {
               var n = calUnit$1(item);
 
-              if ([NUMBER$4, DEG$3].indexOf(n.u) > -1) {
+              if ([NUMBER$5, DEG$3].indexOf(n.u) > -1) {
                 n.u = PX$8;
               }
 
@@ -9751,7 +9776,7 @@
       } else {
         v = calUnit$1(v || 0); // 无单位视为px
 
-        if ([NUMBER$4, DEG$3].indexOf(v.u) > -1) {
+        if ([NUMBER$5, DEG$3].indexOf(v.u) > -1) {
           v.u = PX$8;
         }
       }
@@ -9786,7 +9811,7 @@
         var v = res[FLEX_BASIS$4] = calUnit$1(temp);
         v.v = Math.max(v.v, 0); // 无单位视为px
 
-        if ([NUMBER$4, DEG$3].indexOf(v.u) > -1) {
+        if ([NUMBER$5, DEG$3].indexOf(v.u) > -1) {
           v.u = PX$8;
         }
       } else {
@@ -9859,7 +9884,7 @@
             u: INHERIT$3
           };
         } else {
-          if ([NUMBER$4, DEG$3, EM].indexOf(_v.u) > -1) {
+          if ([NUMBER$5, DEG$3, EM].indexOf(_v.u) > -1) {
             _v.v = parseInt(_v.v); // 防止小数
 
             _v.u = PX$8;
@@ -9882,7 +9907,7 @@
           u: PX$8
         };
       } else {
-        if ([NUMBER$4, DEG$3, EM].indexOf(_v2.u) > -1) {
+        if ([NUMBER$5, DEG$3, EM].indexOf(_v2.u) > -1) {
           _v2.v = parseInt(_v2.v); // 防止小数
 
           _v2.u = PX$8;
@@ -9908,7 +9933,7 @@
             u: INHERIT$3
           };
         } else {
-          if ([NUMBER$4, DEG$3, PERCENT$7].indexOf(_v3.u) > -1) {
+          if ([NUMBER$5, DEG$3, PERCENT$7].indexOf(_v3.u) > -1) {
             _v3.u = PX$8;
           }
 
@@ -9944,17 +9969,17 @@
       if (/bold/i.test(temp)) {
         res[FONT_WEIGHT$6] = {
           v: 700,
-          u: NUMBER$4
+          u: NUMBER$5
         };
       } else if (/normal/i.test(temp)) {
         res[FONT_WEIGHT$6] = {
           v: 400,
-          u: NUMBER$4
+          u: NUMBER$5
         };
       } else if (/lighter/i.test(temp)) {
         res[FONT_WEIGHT$6] = {
           v: 200,
-          u: NUMBER$4
+          u: NUMBER$5
         };
       } else if (/inherit/i.test(temp)) {
         res[FONT_WEIGHT$6] = {
@@ -9963,7 +9988,7 @@
       } else {
         res[FONT_WEIGHT$6] = {
           v: Math.max(0, parseInt(temp)) || 400,
-          u: NUMBER$4
+          u: NUMBER$5
         };
       }
     }
@@ -10069,7 +10094,7 @@
         var _v8 = calUnit$1(temp);
 
         if ([DEG$3].indexOf(_v8.u) > -1) {
-          _v8.u = NUMBER$4;
+          _v8.u = NUMBER$5;
         }
 
         res[LINE_HEIGHT$7] = _v8;
@@ -10083,7 +10108,7 @@
         } else {
           res[LINE_HEIGHT$7] = {
             v: n,
-            u: NUMBER$4
+            u: NUMBER$5
           };
         }
       }
@@ -10104,7 +10129,7 @@
       } else if (/^[-+]?[\d.]/.test(temp)) {
         var _v9 = calUnit$1(temp);
 
-        if ([NUMBER$4, DEG$3].indexOf(_v9.u) > -1) {
+        if ([NUMBER$5, DEG$3].indexOf(_v9.u) > -1) {
           _v9.u = PX$8;
         }
 
@@ -10180,7 +10205,7 @@
       res[STROKE_WIDTH$8] = temp.map(function (item) {
         var v = calUnit$1(item);
 
-        if ([NUMBER$4, DEG$3].indexOf(v.u) > -1) {
+        if ([NUMBER$5, DEG$3].indexOf(v.u) > -1) {
           v.u = PX$8;
         }
 
@@ -10265,7 +10290,7 @@
                   if (item2) {
                     var _v11 = calUnit$1(item2);
 
-                    if ([NUMBER$4, DEG$3].indexOf(_v11.u) > -1) {
+                    if ([NUMBER$5, DEG$3].indexOf(_v11.u) > -1) {
                       _v11.u = PX$8;
                     } // x/y可以负，blur和spread不行
 
@@ -10307,7 +10332,7 @@
                     return;
                   }
 
-                  if (_v12.u === NUMBER$4) {
+                  if (_v12.u === NUMBER$5) {
                     _v12.u = PX$8;
                   }
 
@@ -10317,7 +10342,7 @@
                     v: _v12
                   });
                 } else if (k === 'hue-rotate' || k === 'huerotate') {
-                  if ([NUMBER$4, DEG$3].indexOf(_v12.u) === -1) {
+                  if ([NUMBER$5, DEG$3].indexOf(_v12.u) === -1) {
                     return;
                   }
 
@@ -10327,7 +10352,7 @@
                     v: _v12
                   });
                 } else if (k === 'saturate' || k === 'brightness' || k === 'grayscale' || k === 'contrast' || k === 'sepia' || k === 'invert') {
-                  if ([NUMBER$4, PERCENT$7].indexOf(_v12.u) === -1) {
+                  if ([NUMBER$5, PERCENT$7].indexOf(_v12.u) === -1) {
                     return;
                   }
 
@@ -10409,7 +10434,7 @@
               if (item2) {
                 var _v15 = calUnit$1(item2);
 
-                if ([NUMBER$4, DEG$3].indexOf(_v15.u) > -1) {
+                if ([NUMBER$5, DEG$3].indexOf(_v15.u) > -1) {
                   _v15.u = PX$8;
                 } // x/y可以负，blur和spread不行
 
@@ -10579,7 +10604,7 @@
   function calRelative$1(currentStyle, k, v, parent, isWidth) {
     if (v.u === AUTO$7) {
       v = 0;
-    } else if ([PX$8, NUMBER$4].indexOf(v.u) > -1) {
+    } else if ([PX$8, NUMBER$5].indexOf(v.u) > -1) {
       v = v.v;
     } else if (v.u === PERCENT$7) {
       if (isWidth) {
@@ -14243,7 +14268,7 @@
   var _enums$STYLE_KEY$b = enums.STYLE_KEY,
       SCALE_X$2 = _enums$STYLE_KEY$b.SCALE_X,
       SCALE_Y$2 = _enums$STYLE_KEY$b.SCALE_Y;
-  var NUMBER$3 = o$4.NUMBER;
+  var NUMBER$4 = o$4.NUMBER;
 
   function matrixResize(imgWidth, imgHeight, targetWidth, targetHeight, x, y, w, h) {
     if (imgWidth === targetWidth && imgHeight === targetHeight) {
@@ -14254,13 +14279,13 @@
       k: SCALE_X$2,
       v: {
         v: targetWidth / imgWidth,
-        u: NUMBER$3
+        u: NUMBER$4
       }
     }, {
       k: SCALE_Y$2,
       v: {
         v: targetHeight / imgHeight,
-        u: NUMBER$3
+        u: NUMBER$4
       }
     }];
     return transform$1.calMatrixWithOrigin(list, x, y, w, h);
@@ -15749,6 +15774,24 @@
         wasm.__wbg_set_animation_first_play(this.ptr, arg0);
       }
       /**
+       * @returns {boolean}
+       */
+
+    }, {
+      key: "finished",
+      get: function get() {
+        var ret = wasm.__wbg_get_animation_finished(this.ptr);
+
+        return ret !== 0;
+      }
+      /**
+       * @param {boolean} arg0
+       */
+      ,
+      set: function set(arg0) {
+        wasm.__wbg_set_animation_finished(this.ptr, arg0);
+      }
+      /**
        * @returns {number}
        */
 
@@ -16412,6 +16455,17 @@
         var ret = wasm.node_equal_style(this.ptr, k, v, u);
         return ret !== 0;
       }
+      /**
+       * @param {number} k
+       * @param {number} v
+       * @param {number} u
+       */
+
+    }, {
+      key: "update_style",
+      value: function update_style(k, v, u) {
+        wasm.node_update_style(this.ptr, k, v, u);
+      }
     }], [{
       key: "__wrap",
       value: function __wrap(ptr) {
@@ -16801,7 +16855,6 @@
     Animation: Animation$1
   };
 
-  var _WASM_STYLE_KEY;
   var _enums$STYLE_KEY$9 = enums.STYLE_KEY,
       FILTER$3 = _enums$STYLE_KEY$9.FILTER,
       TRANSFORM_ORIGIN$3 = _enums$STYLE_KEY$9.TRANSFORM_ORIGIN,
@@ -16873,14 +16926,19 @@
       BORDER_BOTTOM_COLOR$1 = _enums$STYLE_KEY$9.BORDER_BOTTOM_COLOR,
       BORDER_LEFT_COLOR$1 = _enums$STYLE_KEY$9.BORDER_LEFT_COLOR,
       BORDER_RIGHT_COLOR$1 = _enums$STYLE_KEY$9.BORDER_RIGHT_COLOR,
-      BORDER_TOP_COLOR$1 = _enums$STYLE_KEY$9.BORDER_TOP_COLOR;
+      BORDER_TOP_COLOR$1 = _enums$STYLE_KEY$9.BORDER_TOP_COLOR,
+      WASM_STYLE_KEY$2 = enums.WASM_STYLE_KEY,
+      DIRECTION = enums.DIRECTION,
+      FILLS = enums.FILLS,
+      EASING = enums.EASING,
+      PLAY_STATE = enums.PLAY_STATE;
   var AUTO$5 = o$4.AUTO,
       PX$6 = o$4.PX,
       PERCENT$5 = o$4.PERCENT,
       INHERIT$2 = o$4.INHERIT,
       RGBA$2 = o$4.RGBA,
       STRING$1 = o$4.STRING,
-      NUMBER$2 = o$4.NUMBER,
+      NUMBER$3 = o$4.NUMBER,
       REM$5 = o$4.REM,
       VW$5 = o$4.VW,
       VH$5 = o$4.VH,
@@ -16905,33 +16963,6 @@
       isLengthKey = key.isLengthKey,
       isGradientKey = key.isGradientKey,
       isRadiusKey = key.isRadiusKey;
-  var DIRECTION = {
-    reverse: 1,
-    alternate: 2,
-    'alternate-reverse': 3,
-    alternateReverse: 3
-  };
-  var FILLS = {
-    forwards: 1,
-    backwards: 2,
-    both: 3
-  };
-  var EASING = {
-    DEFAULT: 0,
-    LINEAR: 1,
-    EASE_IN: 2,
-    EASE_OUT: 3,
-    EASE: 4,
-    EASE_IN_OUT: 5,
-    EASE_CUSTOM: 6
-  };
-  var WASM_STYLE_KEY = (_WASM_STYLE_KEY = {}, _defineProperty(_WASM_STYLE_KEY, TRANSLATE_X$1, 0), _defineProperty(_WASM_STYLE_KEY, TRANSLATE_Y$1, 1), _defineProperty(_WASM_STYLE_KEY, TRANSLATE_Z$1, 2), _defineProperty(_WASM_STYLE_KEY, ROTATE_X$1, 3), _defineProperty(_WASM_STYLE_KEY, ROTATE_Y$1, 4), _defineProperty(_WASM_STYLE_KEY, ROTATE_Z$1, 5), _defineProperty(_WASM_STYLE_KEY, ROTATE_3D$1, 6), _defineProperty(_WASM_STYLE_KEY, SCALE_X$1, 10), _defineProperty(_WASM_STYLE_KEY, SCALE_Y$1, 11), _defineProperty(_WASM_STYLE_KEY, SCALE_Z$1, 12), _defineProperty(_WASM_STYLE_KEY, SKEW_X$1, 13), _defineProperty(_WASM_STYLE_KEY, SKEW_Y$1, 14), _defineProperty(_WASM_STYLE_KEY, OPACITY$4, 15), _defineProperty(_WASM_STYLE_KEY, TRANSFORM_ORIGIN$3, 16), _WASM_STYLE_KEY);
-  var PLAY_STATE = {
-    IDLE: 0,
-    RUNNING: 1,
-    PAUSED: 2,
-    FINISHED: 3
-  };
   /**
    * 将每帧的样式格式化，提取出offset属性并转化为时间，提取出缓动曲线easing
    * 加好空数组transition/keys，后续计算两帧之间变化时存入
@@ -16956,7 +16987,7 @@
       style[TRANSLATE_PATH] = translatePath.map(function (item) {
         var v = calUnit(item);
 
-        if (v.u === NUMBER$2) {
+        if (v.u === NUMBER$3) {
           v.u = PX$6;
         }
 
@@ -18307,7 +18338,7 @@
 
         if (wHash.hasOwnProperty(k)) {
           var o = style[k];
-          var n = WASM_STYLE_KEY[k];
+          var n = WASM_STYLE_KEY$2[k];
           var diff = item.v; // 相关记录提取出来存到wasm记录上标识
 
           transition.splice(j, 1);
@@ -19841,7 +19872,7 @@
               } else if (k === FONT_WEIGHT$2) {
                 style[k] = {
                   v: computedStyle[k],
-                  u: NUMBER$2
+                  u: NUMBER$3
                 };
               } else if (k === FONT_STYLE$1 || k === FONT_FAMILY$2 || k === TEXT_ALIGN$2 || k === TEXT_STROKE_OVER$2) {
                 style[k] = {
@@ -20578,12 +20609,13 @@
       TRANSFORM_STYLE$1 = _enums$STYLE_KEY$8.TRANSFORM_STYLE,
       BACKFACE_VISIBILITY$1 = _enums$STYLE_KEY$8.BACKFACE_VISIBILITY,
       BOX_SIZING = _enums$STYLE_KEY$8.BOX_SIZING,
-      FONT_SIZE_SHRINK = _enums$STYLE_KEY$8.FONT_SIZE_SHRINK;
+      FONT_SIZE_SHRINK = _enums$STYLE_KEY$8.FONT_SIZE_SHRINK,
+      WASM_STYLE_KEY$1 = enums.WASM_STYLE_KEY;
   var AUTO$4 = o$4.AUTO,
       PX$5 = o$4.PX,
       PERCENT$4 = o$4.PERCENT,
       INHERIT$1 = o$4.INHERIT,
-      NUMBER$1 = o$4.NUMBER,
+      NUMBER$2 = o$4.NUMBER,
       RGBA$1 = o$4.RGBA,
       STRING = o$4.STRING,
       REM$4 = o$4.REM,
@@ -20912,14 +20944,14 @@
             if ([AUTO$4, INHERIT$1].indexOf(ph.u) > -1) {
               computedStyle[LINE_HEIGHT$2] = calNormalLineHeight(computedStyle);
             } // 数字继承
-            else if (ph.u === NUMBER$1) {
+            else if (ph.u === NUMBER$2) {
               computedStyle[LINE_HEIGHT$2] = Math.max(ph.v, 0) * fontSize;
             } // 单位继承
             else {
               computedStyle[LINE_HEIGHT$2] = parentComputedStyle[LINE_HEIGHT$2];
             }
           }
-        } else if (lineHeight.u === NUMBER$1) {
+        } else if (lineHeight.u === NUMBER$2) {
           computedStyle[LINE_HEIGHT$2] = Math.max(lineHeight.v, 0) * fontSize || calNormalLineHeight(computedStyle);
         } // 防止为0
         else {
@@ -22367,7 +22399,7 @@
             };
           } else {
             // 部分%单位的滤镜强制使用数字
-            if (v.u === DEG || v.u === NUMBER$1 || v.u === PERCENT$4) {
+            if (v.u === DEG || v.u === NUMBER$2 || v.u === PERCENT$4) {
               v = v.v;
             } else {
               v = _this7.__calSize(v, _this7.root.width, true);
@@ -23874,14 +23906,58 @@
           keys = Object.keys(computedStyle);
         }
 
+        var wn = this.__wasmNode,
+            wasmCps;
         keys.forEach(function (k) {
           if (GEOM.hasOwnProperty(k)) {
             res[k] = computedStyle[k];
           } else {
-            res[STYLE_RV_KEY[k]] = computedStyle[k];
+            if (wn && (k === TRANSLATE_X || k === TRANSLATE_Y || k === TRANSLATE_Z || k === ROTATE_X || k === ROTATE_Y || k === ROTATE_Z || k === SCALE_X || k === SCALE_Y || k === SKEW_X || k === SKEW_Y || k === OPACITY$3 || k === TRANSFORM_ORIGIN$2)) {
+              if (!wasmCps) {
+                wasmCps = new Float64Array(wasm$1.instance.memory.buffer, wn.computed_style_ptr(), 18);
+              }
+
+              if (k === TRANSFORM_ORIGIN$2) {
+                var k2 = WASM_STYLE_KEY$1[k];
+                res[STYLE_RV_KEY[k]] = [wasmCps[k2], wasmCps[k2 + 1]];
+              } else {
+                res[STYLE_RV_KEY[k]] = wasmCps[WASM_STYLE_KEY$1[k]];
+              }
+            } else {
+              res[STYLE_RV_KEY[k]] = computedStyle[k];
+            }
           }
         });
         return res;
+      }
+    }, {
+      key: "getStyle",
+      value: function getStyle(k) {
+        if (!k || !util.isString(k) || abbr.hasOwnProperty(k)) {
+          throw new Error('Param must be a single style key');
+        }
+
+        var computedStyle = this.__computedStyle;
+
+        if (GEOM.hasOwnProperty(k)) {
+          return computedStyle[k];
+        }
+
+        var k2 = STYLE_KEY[style2Upper(k)];
+        var wn = this.__wasmNode;
+
+        if (wn && (k2 === TRANSLATE_X || k2 === TRANSLATE_Y || k2 === TRANSLATE_Z || k2 === ROTATE_X || k2 === ROTATE_Y || k2 === ROTATE_Z || k2 === SCALE_X || k2 === SCALE_Y || k2 === SKEW_X || k2 === SKEW_Y || k2 === OPACITY$3 || k2 === TRANSFORM_ORIGIN$2)) {
+          var wasmCps = new Float64Array(wasm$1.instance.memory.buffer, wn.computed_style_ptr(), 18);
+
+          if (k === TRANSFORM_ORIGIN$2) {
+            k2 = WASM_STYLE_KEY$1[k2];
+            return [wasmCps[k2], wasmCps[k2 + 1]];
+          } else {
+            return wasmCps[WASM_STYLE_KEY$1[k2]];
+          }
+        }
+
+        return computedStyle[k2];
       }
     }, {
       key: "getBoundingClientRect",
@@ -31066,7 +31142,7 @@
    */
   var UNIT = 16;
   var MAX = 2048;
-  var NUMBER = 128;
+  var NUMBER$1 = 128;
   var HASH$2 = {};
   var uuid$1 = 0;
   var _init = false;
@@ -31230,7 +31306,7 @@
         }
 
         var m = MAX,
-            n = NUMBER; // 限制使用2048，部分机型大尺寸会卡或者黑屏，webgl甚至不渲染，超过的 TODO:
+            n = NUMBER$1; // 限制使用2048，部分机型大尺寸会卡或者黑屏，webgl甚至不渲染，超过的 TODO:
         // if(size < 2048 && MAX === 8192) {
         //   m = 2048;
         //   n = Math.ceil(m / UNIT);
@@ -31296,12 +31372,12 @@
         }
 
         MAX = n;
-        NUMBER = Math.ceil(MAX / UNIT);
+        NUMBER$1 = Math.ceil(MAX / UNIT);
       }
     }, {
       key: "NUMBER",
       get: function get() {
-        return NUMBER;
+        return NUMBER$1;
       }
     }, {
       key: "genUuid",
@@ -40379,11 +40455,13 @@
       TRANSFORM = _enums$STYLE_KEY.TRANSFORM,
       OPACITY = _enums$STYLE_KEY.OPACITY,
       MIX_BLEND_MODE = _enums$STYLE_KEY.MIX_BLEND_MODE,
-      FONT_SIZE = _enums$STYLE_KEY.FONT_SIZE;
+      FONT_SIZE = _enums$STYLE_KEY.FONT_SIZE,
+      WASM_STYLE_KEY = enums.WASM_STYLE_KEY;
   var isNil$8 = util.isNil,
       isFunction$1 = util.isFunction;
   var PX = o$4.PX,
-      INHERIT = o$4.INHERIT;
+      INHERIT = o$4.INHERIT,
+      NUMBER = o$4.NUMBER;
   var getLevel = o$1.getLevel,
       isReflow = o$1.isReflow,
       NONE = o$1.NONE,
@@ -41403,10 +41481,7 @@
 
             node.__calStyle(lv, currentStyle, computedStyle, cacheStyle);
 
-            node.__calPerspective(currentStyle, computedStyle, cacheStyle); // calStyle中matrix部分有wasm会不计算，这里让wasm计算
-
-
-            node.__wasmStyle(currentStyle);
+            node.__calPerspective(currentStyle, computedStyle, cacheStyle);
           } // < REPAINT特殊的优化computedStyle计算
           else {
             if (lv & PPT) {
@@ -41417,7 +41492,14 @@
               var wn = node.__wasmNode;
 
               if (wn) {
-                node.__wasmStyle(currentStyle);
+                if (lv & TRANSFORM_ALL) {
+                  wn.cal_matrix(lv);
+                }
+
+                if (lv & OP) {
+                  // 硬编码，wasm那边定义的15
+                  wn.update_style(WASM_STYLE_KEY[OPACITY], currentStyle[OPACITY], NUMBER);
+                }
               } else {
                 if (lv & TRANSFORM_ALL) {
                   var o = node.__selfPerspectiveMatrix;

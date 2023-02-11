@@ -143,13 +143,51 @@ Object.keys(STYLE_KEY).forEach(k => {
   STYLE_V_KEY[l] = k2;
 });
 
-const WASM_STYLE = {
-  TRANSLATE_X: 0,
-  TRANSLATE_Y: 1,
-  TRANSLATE_Z: 2,
-  ROTATE_Z: 3,
-  SCALE_X: 4,
-  SCALE_Y: 5,
+const WASM_STYLE_KEY = {
+  [STYLE_KEY.TRANSLATE_X]: 0,
+  [STYLE_KEY.TRANSLATE_Y]: 1,
+  [STYLE_KEY.TRANSLATE_Z]: 2,
+  [STYLE_KEY.ROTATE_X]: 3,
+  [STYLE_KEY.ROTATE_Y]: 4,
+  [STYLE_KEY.ROTATE_Z]: 5,
+  [STYLE_KEY.ROTATE_3D]: 6,
+  [STYLE_KEY.SCALE_X]: 10,
+  [STYLE_KEY.SCALE_Y]: 11,
+  [STYLE_KEY.SCALE_Z]: 12,
+  [STYLE_KEY.SKEW_X]: 13,
+  [STYLE_KEY.SKEW_Y]: 14,
+  [STYLE_KEY.OPACITY]: 15,
+  [STYLE_KEY.TRANSFORM_ORIGIN]: 16,
+};
+
+const DIRECTION = {
+  reverse: 1,
+  alternate: 2,
+  'alternate-reverse': 3,
+  alternateReverse: 3,
+};
+
+const FILLS = {
+  forwards: 1,
+  backwards: 2,
+  both: 3,
+};
+
+const EASING = {
+  DEFAULT: 0,
+  LINEAR: 1,
+  EASE_IN: 2,
+  EASE_OUT: 3,
+  EASE: 4,
+  EASE_IN_OUT: 5,
+  EASE_CUSTOM: 6,
+};
+
+const PLAY_STATE = {
+  IDLE: 0,
+  RUNNING: 1,
+  PAUSED: 2,
+  FINISHED: 3,
 };
 
 export default {
@@ -160,5 +198,9 @@ export default {
   style2Lower,
   style2Upper,
   ELLIPSIS: '…',
-  WASM_STYLE,
+  WASM_STYLE_KEY,
+  DIRECTION,
+  FILLS,
+  EASING,
+  PLAY_STATE,
 };

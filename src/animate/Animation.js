@@ -89,6 +89,11 @@ const {
     BORDER_RIGHT_COLOR,
     BORDER_TOP_COLOR,
   },
+  WASM_STYLE_KEY,
+  DIRECTION,
+  FILLS,
+  EASING,
+  PLAY_STATE,
 } = enums;
 const { AUTO, PX, PERCENT, INHERIT, RGBA, STRING, NUMBER, REM, VW, VH, VMAX, VMIN, GRADIENT, calUnit } = unit;
 const { isNil, isFunction, isNumber, isObject, clone, equalArr } = util;
@@ -107,53 +112,6 @@ const {
   isGradientKey,
   isRadiusKey,
 } = key;
-
-const DIRECTION = {
-  reverse: 1,
-  alternate: 2,
-  'alternate-reverse': 3,
-  alternateReverse: 3,
-};
-
-const FILLS = {
-  forwards: 1,
-  backwards: 2,
-  both: 3,
-};
-
-const EASING = {
-  DEFAULT: 0,
-  LINEAR: 1,
-  EASE_IN: 2,
-  EASE_OUT: 3,
-  EASE: 4,
-  EASE_IN_OUT: 5,
-  EASE_CUSTOM: 6,
-};
-
-const WASM_STYLE_KEY = {
-  [TRANSLATE_X]: 0,
-  [TRANSLATE_Y]: 1,
-  [TRANSLATE_Z]: 2,
-  [ROTATE_X]: 3,
-  [ROTATE_Y]: 4,
-  [ROTATE_Z]: 5,
-  [ROTATE_3D]: 6,
-  [SCALE_X]: 10,
-  [SCALE_Y]: 11,
-  [SCALE_Z]: 12,
-  [SKEW_X]: 13,
-  [SKEW_Y]: 14,
-  [OPACITY]: 15,
-  [TRANSFORM_ORIGIN]: 16,
-};
-
-const PLAY_STATE = {
-  IDLE: 0,
-  RUNNING: 1,
-  PAUSED: 2,
-  FINISHED: 3,
-};
 
 /**
  * 将每帧的样式格式化，提取出offset属性并转化为时间，提取出缓动曲线easing

@@ -75,9 +75,10 @@ const {
     MIX_BLEND_MODE,
     FONT_SIZE,
   },
+  WASM_STYLE_KEY,
 } = enums;
 const { isNil, isFunction } = util;
-const { PX, INHERIT } = unit;
+const { PX, INHERIT, NUMBER } = unit;
 const {
   getLevel,
   isReflow,
@@ -950,8 +951,6 @@ class Root extends Dom {
         }
         node.__calStyle(lv, currentStyle, computedStyle, cacheStyle);
         node.__calPerspective(currentStyle, computedStyle, cacheStyle);
-        // calStyle中matrix部分有wasm会不计算，这里让wasm计算
-        node.__wasmStyle(currentStyle);
       }
       // < REPAINT特殊的优化computedStyle计算
       else {
@@ -961,7 +960,13 @@ class Root extends Dom {
         if(lv & TRANSFORM_ALL || lv & OP) {
           let wn = node.__wasmNode;
           if(wn) {
-            node.__wasmStyle(currentStyle);
+            if(lv & TRANSFORM_ALL) {
+              wn.cal_matrix(lv);
+            }
+            if(lv & OP) {
+              // 硬编码，wasm那边定义的15
+              wn.update_style(WASM_STYLE_KEY[OPACITY], currentStyle[OPACITY], NUMBER);
+            }
           }
           else {
             if(lv & TRANSFORM_ALL) {

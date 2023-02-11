@@ -921,6 +921,13 @@ class Root extends Dom {
         }
       }
     }
+    // wasm的特殊更新，不管lv多少只要有transform和op都得计算
+    if(lv & TRANSFORM_ALL) {
+      let wn = node.__wasmNode;
+      if(lv & TRANSFORM_ALL) {
+        wn.cal_matrix(lv & TRANSFORM_ALL);
+      }
+    }
     // 大部分动画都是repaint初始化已经知道
     let isRf = isReflow(lv);
     if(isRf) {
@@ -960,13 +967,7 @@ class Root extends Dom {
         if(lv & TRANSFORM_ALL || lv & OP) {
           let wn = node.__wasmNode;
           if(wn) {
-            if(lv & TRANSFORM_ALL) {
-              wn.cal_matrix(lv);
-            }
-            if(lv & OP) {
-              // 硬编码，wasm那边定义的15
-              wn.update_style(WASM_STYLE_KEY[OPACITY], currentStyle[OPACITY], NUMBER);
-            }
+            // 上面做过了不重复
           }
           else {
             if(lv & TRANSFORM_ALL) {

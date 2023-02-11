@@ -2845,20 +2845,47 @@ class Xom extends Node {
   updateFormatStyle(style, cb) {
     let root = this.__root, currentStyle = this.__currentStyle, currentProps = this.__currentProps;
     let keys = [];
+    let wn = this.__wasmNode;
     for(let k in style) {
       if(style.hasOwnProperty(k)) {
         let isGeom = GEOM.hasOwnProperty(k);
-        if(!isGeom) {
-          k = parseInt(k);
-        }
-        if(!equalStyle(k, isGeom ? currentProps[k] : currentStyle[k], style[k], this)) {
-          if(isGeom) {
-            currentProps[k] = style[k];
-          }
-          else {
-            currentStyle[k] = style[k];
+        let v = style[k];
+        if(isGeom) {
+          if(!equalStyle(k, currentProps[k], v, this)) {
+            currentProps[k] = v;
           }
           keys.push(k);
+        }
+        else {
+          k = parseInt(k);
+          if(wn && wasm.isWasmStyle(k)) {
+            let k2 = WASM_STYLE_KEY[k];
+            if(k === TRANSFORM_ORIGIN) {
+              let res;
+              if(!wn.equal_style(k2, v[0].v, v[0].u)) {
+                wn.update_style(k2, v[0].v, v[0].u);
+                res = true;
+              }
+              k2++;
+              if(!wn.equal_style(k2, v[1].v, v[1].u)) {
+                wn.update_style(k2, v[1].v, v[1].u);
+                res = true;
+              }
+              if(res) {
+                keys.push(k);
+              }
+            }
+            else {
+              if(!wn.equal_style(k2, v.v, v.u)) {
+                wn.update_style(k2, v.v, v.u);
+                keys.push(k);
+              }
+            }
+          }
+          else if(!equalStyle(k, currentStyle[k], v, this)) {
+            currentStyle[k] = v;
+            keys.push(k);
+          }
         }
       }
     }
@@ -3106,18 +3133,7 @@ class Xom extends Node {
         res[k] = computedStyle[k];
       }
       else {
-        if(wn && (k === TRANSLATE_X
-          || k === TRANSLATE_Y
-          || k === TRANSLATE_Z
-          || k === ROTATE_X
-          || k === ROTATE_Y
-          || k === ROTATE_Z
-          || k === SCALE_X
-          || k === SCALE_Y
-          || k === SKEW_X
-          || k === SKEW_Y
-          || k === OPACITY
-          || k === TRANSFORM_ORIGIN)) {
+        if(wn && wasm.isWasmStyle(k)) {
           if(!wasmCps) {
             wasmCps = new Float64Array(wasm.instance.memory.buffer, wn.computed_style_ptr(), 18);
           }
@@ -3147,18 +3163,7 @@ class Xom extends Node {
     }
     let k2 = STYLE_KEY[style2Upper(k)];
     let wn = this.__wasmNode;
-    if(wn && (k2 === TRANSLATE_X
-      || k2 === TRANSLATE_Y
-      || k2 === TRANSLATE_Z
-      || k2 === ROTATE_X
-      || k2 === ROTATE_Y
-      || k2 === ROTATE_Z
-      || k2 === SCALE_X
-      || k2 === SCALE_Y
-      || k2 === SKEW_X
-      || k2 === SKEW_Y
-      || k2 === OPACITY
-      || k2 === TRANSFORM_ORIGIN)) {
+    if(wn && wasm.isWasmStyle(k2)) {
       let wasmCps = new Float64Array(wasm.instance.memory.buffer, wn.computed_style_ptr(), 18);
       if(k === TRANSFORM_ORIGIN) {
         k2 = WASM_STYLE_KEY[k2];

@@ -1,5 +1,23 @@
 import inject from '../util/inject';
 import util from '../util/util';
+import enums from '../util/enums';
+
+const {
+  STYLE_KEY: {
+    TRANSLATE_X,
+    TRANSLATE_Y,
+    TRANSLATE_Z,
+    SCALE_X,
+    SCALE_Y,
+    ROTATE_X,
+    ROTATE_Y,
+    ROTATE_Z,
+    SKEW_X,
+    SKEW_Y,
+    TRANSFORM_ORIGIN,
+    OPACITY,
+  },
+} = enums;
 
 let wasm;
 let cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: true });
@@ -970,4 +988,18 @@ export default {
   Node,
   Root,
   Animation,
+  isWasmStyle(k) {
+    return k === TRANSLATE_X
+      || k === TRANSLATE_Y
+      || k === TRANSLATE_Z
+      || k === ROTATE_X
+      || k === ROTATE_Y
+      || k === ROTATE_Z
+      || k === SCALE_X
+      || k === SCALE_Y
+      || k === SKEW_X
+      || k === SKEW_Y
+      || k === OPACITY
+      || k === TRANSFORM_ORIGIN;
+  },
 };

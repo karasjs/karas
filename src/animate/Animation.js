@@ -1563,20 +1563,7 @@ class Animation extends Event {
     if(wn) {
       for(let i = 0, len = keys.length; i <len; i++) {
         let k = keys[i];
-        if(k === TRANSLATE_X
-          || k === TRANSLATE_Y
-          || k === TRANSLATE_Z
-          || k === ROTATE_X
-          || k === ROTATE_Y
-          || k === ROTATE_Z
-          || k === SKEW_X
-          || k === SKEW_Y
-          || k === SCALE_X
-          || k === SCALE_X
-          || k === SCALE_Y
-          || k === SCALE_Z
-          || k === TRANSFORM_ORIGIN
-          || k === OPACITY) {
+        if(wasm.isWasmStyle(k)) {
           wList.push(k);
           wHash[k] = true;
         }

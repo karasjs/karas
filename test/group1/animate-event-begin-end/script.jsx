@@ -14,16 +14,27 @@ let animation = t.animate([
   }
 ], {
   duration: 200,
+  endDelay: 200,
   fill: 'forwards',
   iterations: 2,
 });
 let input = document.querySelector('input');
+let isEnd, count = 0;
+animation.on('frame', () => {
+  if(isEnd) {
+    count++;
+  }
+});
 animation.on('begin', () => {
   input.value += '/begin';
 });
 animation.on('end', () => {
+  isEnd = true;
   input.value += '/end';
 });
 animation.on(karas.Event.FINISH, () => {
-  input.value += '/fin';
+  if(isEnd) {
+    isEnd = false;
+  }
+  input.value += '/' + (count > 2) + '/fin';
 });

@@ -221,32 +221,6 @@ export class Animation {
     wasm.__wbg_set_animation_first_play(this.ptr, arg0);
   }
   /**
-   * @returns {boolean}
-   */
-  get is_end_delay() {
-    const ret = wasm.__wbg_get_animation_is_end_delay(this.ptr);
-    return ret !== 0;
-  }
-  /**
-   * @param {boolean} arg0
-   */
-  set is_end_delay(arg0) {
-    wasm.__wbg_set_animation_is_end_delay(this.ptr, arg0);
-  }
-  /**
-   * @returns {boolean}
-   */
-  get end() {
-    const ret = wasm.__wbg_get_animation_end(this.ptr);
-    return ret !== 0;
-  }
-  /**
-   * @param {boolean} arg0
-   */
-  set end(arg0) {
-    wasm.__wbg_set_animation_end(this.ptr, arg0);
-  }
-  /**
    * @returns {number}
    */
   get index() {
@@ -387,6 +361,19 @@ export class Node {
   free() {
     const ptr = this.__destroy_into_raw();
     wasm.__wbg_node_free(ptr);
+  }
+  /**
+   * @returns {number}
+   */
+  get root() {
+    const ret = wasm.__wbg_get_node_root(this.ptr);
+    return ret;
+  }
+  /**
+   * @param {number} arg0
+   */
+  set root(arg0) {
+    wasm.__wbg_set_node_root(this.ptr, arg0);
   }
   /**
    * @returns {boolean}
@@ -556,7 +543,7 @@ export class Node {
    * @param {number} root
    */
   set_root(root) {
-    wasm.node_set_root(this.ptr, root);
+    wasm.__wbg_set_node_root(this.ptr, root);
   }
   /**
    * @param {number} animation
@@ -707,6 +694,26 @@ export class Node {
   cal_matrix(rl) {
     wasm.node_cal_matrix(this.ptr, rl);
   }
+  /**
+   * @param {number} v
+   * @param {number} u
+   * @param {number} parent
+   * @returns {number}
+   */
+  cal_size(v, u, parent) {
+    const ret = wasm.node_cal_size(this.ptr, v, u, parent);
+    return ret;
+  }
+  /**
+   * @param {number} k
+   * @param {number} v
+   * @param {number} u
+   * @returns {boolean}
+   */
+  equal_style(k, v, u) {
+    const ret = wasm.node_equal_style(this.ptr, k, v, u);
+    return ret !== 0;
+  }
 }
 /**
  */
@@ -850,6 +857,12 @@ export class Root {
     return ret >>> 0;
   }
   /**
+   * @param {number} n
+   */
+  add_am_state(n) {
+    wasm.root_add_am_state(this.ptr, n);
+  }
+  /**
    */
   refresh() {
     wasm.root_refresh(this.ptr);
@@ -880,6 +893,13 @@ export class Root {
    */
   vt_ptr() {
     const ret = wasm.root_vt_ptr(this.ptr);
+    return ret;
+  }
+  /**
+   * @returns {number}
+   */
+  am_states_ptr() {
+    const ret = wasm.root_am_states_ptr(this.ptr);
     return ret;
   }
 }

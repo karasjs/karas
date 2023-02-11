@@ -15749,42 +15749,6 @@
         wasm.__wbg_set_animation_first_play(this.ptr, arg0);
       }
       /**
-       * @returns {boolean}
-       */
-
-    }, {
-      key: "is_end_delay",
-      get: function get() {
-        var ret = wasm.__wbg_get_animation_is_end_delay(this.ptr);
-
-        return ret !== 0;
-      }
-      /**
-       * @param {boolean} arg0
-       */
-      ,
-      set: function set(arg0) {
-        wasm.__wbg_set_animation_is_end_delay(this.ptr, arg0);
-      }
-      /**
-       * @returns {boolean}
-       */
-
-    }, {
-      key: "end",
-      get: function get() {
-        var ret = wasm.__wbg_get_animation_end(this.ptr);
-
-        return ret !== 0;
-      }
-      /**
-       * @param {boolean} arg0
-       */
-      ,
-      set: function set(arg0) {
-        wasm.__wbg_set_animation_end(this.ptr, arg0);
-      }
-      /**
        * @returns {number}
        */
 
@@ -15973,6 +15937,24 @@
         var ptr = this.__destroy_into_raw();
 
         wasm.__wbg_node_free(ptr);
+      }
+      /**
+       * @returns {number}
+       */
+
+    }, {
+      key: "root",
+      get: function get() {
+        var ret = wasm.__wbg_get_node_root(this.ptr);
+
+        return ret;
+      }
+      /**
+       * @param {number} arg0
+       */
+      ,
+      set: function set(arg0) {
+        wasm.__wbg_set_node_root(this.ptr, arg0);
       }
       /**
        * @returns {boolean}
@@ -16202,7 +16184,7 @@
        * @param {number} root
        */
       function set_root(root) {
-        wasm.node_set_root(this.ptr, root);
+        wasm.__wbg_set_node_root(this.ptr, root);
       }
       /**
        * @param {number} animation
@@ -16403,6 +16385,32 @@
       key: "cal_matrix",
       value: function cal_matrix(rl) {
         wasm.node_cal_matrix(this.ptr, rl);
+      }
+      /**
+       * @param {number} v
+       * @param {number} u
+       * @param {number} parent
+       * @returns {number}
+       */
+
+    }, {
+      key: "cal_size",
+      value: function cal_size(v, u, parent) {
+        var ret = wasm.node_cal_size(this.ptr, v, u, parent);
+        return ret;
+      }
+      /**
+       * @param {number} k
+       * @param {number} v
+       * @param {number} u
+       * @returns {boolean}
+       */
+
+    }, {
+      key: "equal_style",
+      value: function equal_style(k, v, u) {
+        var ret = wasm.node_equal_style(this.ptr, k, v, u);
+        return ret !== 0;
       }
     }], [{
       key: "__wrap",
@@ -16605,6 +16613,15 @@
         return ret >>> 0;
       }
       /**
+       * @param {number} n
+       */
+
+    }, {
+      key: "add_am_state",
+      value: function add_am_state(n) {
+        wasm.root_add_am_state(this.ptr, n);
+      }
+      /**
        */
 
     }, {
@@ -16650,6 +16667,16 @@
       key: "vt_ptr",
       value: function vt_ptr() {
         var ret = wasm.root_vt_ptr(this.ptr);
+        return ret;
+      }
+      /**
+       * @returns {number}
+       */
+
+    }, {
+      key: "am_states_ptr",
+      value: function am_states_ptr() {
+        var ret = wasm.root_am_states_ptr(this.ptr);
         return ret;
       }
     }], [{
@@ -18723,7 +18750,7 @@
         }
 
         if (this.__finished) {
-          this.__begin = this.__end = this.__isDelay = this.__finished = this.__inFps = false;
+          this.__begin = this.__end = this.__isDelay = this.__isEndDelay = this.__finished = false;
           this.__playState = 'finished';
           this.emit(Event.FINISH, true);
 
@@ -41702,19 +41729,47 @@
         var pause = this.__pause;
 
         if (!pause) {
-          for (var i = 0; i < len; i++) {
-            ani[i].__after(diff);
+          // wasm的animation执行还是先，同时要注意动画finish状态要拿到
+          var wr = this.__wasmRoot;
+
+          if (wr) {
+            var n = wr.after(); // 有n个长度的动画，取共享内存的状态，数量一定和before对得上
+
+            if (n) {
+              var states = new Uint8Array(wasm$1.instance.memory.buffer, wr.am_states_ptr(), n);
+
+              for (var i = 0, _len2 = states.length; i < _len2; i++) {
+                var s = states[i],
+                    a = ani[i]; // 0是fps中忽略，1是普通frame事件，2是begin，4是end，8是finish
+
+                if (s & 2) {
+                  a.__begin = true;
+                }
+
+                if (s & 4) {
+                  a.__end = true;
+                }
+
+                if (s & 8) {
+                  a.__finished = true;
+                }
+              }
+            }
           }
 
-          for (var _i3 = 0; _i3 < len3; _i3++) {
-            var item = frameTask[_i3];
+          for (var _i3 = 0; _i3 < len; _i3++) {
+            ani[_i3].__after(diff);
+          }
+
+          for (var _i4 = 0; _i4 < len3; _i4++) {
+            var item = frameTask[_i4];
             item && item(diff);
           }
         } // frameDraw不受pause影响，即主动更新样式之类非动画/帧动画，参数true标明异步
 
 
-        for (var _i4 = 0; _i4 < len2; _i4++) {
-          var _item = task[_i4];
+        for (var _i5 = 0; _i5 < len2; _i5++) {
+          var _item = task[_i5];
           _item && _item(true);
         }
 

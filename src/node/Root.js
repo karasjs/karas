@@ -1218,6 +1218,28 @@ class Root extends Dom {
     // 动画用同一帧内的pause判断，ani的after可能会改变队列（比如结束），需要先制作副本
     let pause = this.__pause;
     if(!pause) {
+      // wasm的animation执行还是先，同时要注意动画finish状态要拿到
+      let wr = this.__wasmRoot;
+      if(wr) {
+        let n = wr.after();
+        // 有n个长度的动画，取共享内存的状态，数量一定和before对得上
+        if(n) {
+          let states = new Uint8Array(wasm.instance.memory.buffer, wr.am_states_ptr(), n);
+          for(let i = 0, len = states.length; i < len; i++) {
+            let s = states[i], a = ani[i];
+            // 0是fps中忽略，1是普通frame事件，2是begin，4是end，8是finish
+            if(s & 2) {
+              a.__begin = true;
+            }
+            if(s & 4) {
+              a.__end = true;
+            }
+            if(s & 8) {
+              a.__finished = true;
+            }
+          }
+        }
+      }
       for(let i = 0; i < len; i++) {
         ani[i].__after(diff);
       }

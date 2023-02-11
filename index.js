@@ -41494,7 +41494,7 @@
         if (lv & TRANSFORM_ALL) {
           var wn = node.__wasmNode;
 
-          if (lv & TRANSFORM_ALL) {
+          if (wn) {
             wn.cal_matrix(lv & TRANSFORM_ALL);
           }
         } // 大部分动画都是repaint初始化已经知道
@@ -41857,18 +41857,33 @@
         var pause = this.__pause;
 
         if (!pause) {
-          // wasm的animation执行还是先，同时要注意动画finish状态要拿到
           var wr = this.__wasmRoot;
+          /**
+           * 有wasm需要特殊对待，首先要保证动画的执行顺序，主体仍然是每个动画依次执行after，和before的顺序对应，
+           * 但wasm存在的话不可能一个个去执行，通信消耗过大，所以是先执行所有的wasm动画，计算transform和opacity，
+           * 然后是每个普通js动画执行after。
+           * 普通的动画中如果完全被wasm替代计算了，会有ignore标识，before不再执行，
+           * 但after需要执行且需要wasm那边的数据，比如是否begin、end、finish的状态。
+           * 多个动画可能会出现混合状态，即有的有wasm有的没有，有的被wasm完全替代有的没有，
+           * 这时候wasm动画数量和顺序和普通js动画对应不上，获取数据需注意，在普通js动画中有变量可以识别是否有wasm动画，
+           * 以此为手段，在遍历普通js动画中，可以增加偏移量来解决获取对应wasm动画索引的问题。
+           */
 
           if (wr) {
-            var n = wr.after(); // 有n个长度的动画，取共享内存的状态，数量一定和before对得上
+            var n = wr.after();
+            var states; // 有n个长度的动画，取共享内存的状态，数量一定和before对得上
 
             if (n) {
-              var states = new Uint8Array(wasm$1.instance.memory.buffer, wr.am_states_ptr(), n);
+              states = new Uint8Array(wasm$1.instance.memory.buffer, wr.am_states_ptr(), n);
+            }
 
-              for (var i = 0, _len2 = states.length; i < _len2; i++) {
-                var s = states[i],
-                    a = ani[i]; // 0是fps中忽略，1是普通frame事件，2是begin，4是end，8是finish
+            var offset = 0; // 偏移计数器
+
+            for (var i = 0; i < len; i++) {
+              var a = ani[i];
+
+              if (a.__wasmAnimation) {
+                var s = states[i - offset]; // 0是fps中忽略，1是普通frame事件，2是begin，4是end，8是finish
 
                 if (s & 2) {
                   a.__begin = true;
@@ -41881,12 +41896,18 @@
                 if (s & 8) {
                   a.__finished = true;
                 }
+              } // 普通js动画无wasm也就是共享数据中不占队列，除了执行外要标识偏移++，如果下一个动画有wasm的话，索引要保持正确
+              else {
+                offset++;
               }
-            }
-          }
 
-          for (var _i3 = 0; _i3 < len; _i3++) {
-            ani[_i3].__after(diff);
+              a.__after();
+            }
+          } // 没有wasm普通遍历执行动画列表
+          else {
+            for (var _i3 = 0; _i3 < len; _i3++) {
+              ani[_i3].__after();
+            }
           }
 
           for (var _i4 = 0; _i4 < len3; _i4++) {

@@ -17092,8 +17092,6 @@
       // 变化的k
       fixed: [],
       // 不变的k
-      wasmTrans: [],
-      // 特殊的几个wasm优化计算的k
       lastPercent: -1
     };
   }
@@ -18332,6 +18330,10 @@
           if (!wn.equal_set_style(n, v[0].v, v[0].u) || !wn.equal_set_style(n, v[1].v, v[1].u)) {
             res.push(k);
           }
+        } else if (k === ROTATE_3D$1) {
+          if (!wn.equal_set_style(n, v[0].v, v[0].u) || !wn.equal_set_style(n, v[1].v, v[1].u) || !wn.equal_set_style(n, v[2].v, v[2].u)) {
+            res.push(k);
+          }
         } else {
           if (!wn.equal_set_style(n, v.v, v.u)) {
             res.push(k);
@@ -18386,13 +18388,12 @@
     }
   }
 
-  function wasmFrame(wa, wHash, frames, isReverse) {
+  function wasmFrame(wa, wList, wHash, frames, isReverse) {
     for (var i = 0, len = frames.length; i < len; i++) {
       var _frames$i = frames[i],
           style = _frames$i.style,
           transition = _frames$i.transition,
           trans = _frames$i.trans,
-          wasmTrans = _frames$i.wasmTrans,
           time = _frames$i.time,
           _easing = _frames$i.easing;
       var eType = EASING.DEFAULT,
@@ -18432,30 +18433,56 @@
         }
       }
 
-      wa.add_frame(isReverse, time, eType, x1, y1, x2, y2);
+      wa.add_frame(isReverse, time, eType, x1, y1, x2, y2); // 除了最后一帧，都有transition
 
-      for (var j = 0, _len9 = transition.length; j < _len9; j++) {
-        var item = transition[j],
-            k = item.k;
+      if (i < len - 1) {
+        for (var j = 0, _len9 = transition.length; j < _len9; j++) {
+          var item = transition[j],
+              k = item.k;
 
-        if (wHash.hasOwnProperty(k)) {
-          var o = style[k];
-          var n = WASM_STYLE_KEY$1[k];
-          var diff = item.v; // 相关记录提取出来存到wasm记录上标识
+          if (wHash.hasOwnProperty(k)) {
+            var o = style[k];
+            var n = WASM_STYLE_KEY$1[k];
+            var diff = item.v; // 相关记录提取出来存到wasm记录上标识
 
-          transition.splice(j, 1);
-          trans.splice(j, 1);
-          wasmTrans.push(k); // transformOrigin和rotate3d是复合型对应多条，其它简单型
+            transition.splice(j, 1);
+            trans.splice(j, 1); // transformOrigin和rotate3d是复合型对应多条，其它简单型
 
-          if (k === TRANSFORM_ORIGIN$3) {
-            wa.add_item(isReverse, n, o[0].v, o[0].u, diff[0]);
-            wa.add_item(isReverse, n + 1, o[1].v, o[1].u, diff[1]);
-          } else if (k === ROTATE_3D$1) ; else {
-            wa.add_item(isReverse, n, o.v, o.u, diff);
+            if (k === TRANSFORM_ORIGIN$3) {
+              wa.add_item(isReverse, n, o[0].v, o[0].u, diff[0]);
+              wa.add_item(isReverse, n + 1, o[1].v, o[1].u, diff[1]);
+            } else if (k === ROTATE_3D$1) {
+              wa.add_item(isReverse, n, o[0].v, o[0].u, diff[0]);
+              wa.add_item(isReverse, n + 1, o[1].v, o[1].u, diff[1]);
+              wa.add_item(isReverse, n + 1, o[2].v, o[2].u, diff[2]);
+            } else {
+              wa.add_item(isReverse, n, o.v, o.u, diff);
+            }
+
+            j--;
+            _len9--;
           }
+        }
+      } // 最后一帧特殊处理，将样式存入，diff都设置0即可
+      else {
+        for (var _j6 = 0, _len10 = wList.length; _j6 < _len10; _j6++) {
+          var _k6 = wList[_j6];
 
-          j--;
-          _len9--;
+          if (style.hasOwnProperty(_k6)) {
+            var _o = style[_k6];
+            var _n = WASM_STYLE_KEY$1[_k6];
+
+            if (_k6 === TRANSFORM_ORIGIN$3) {
+              wa.add_item(isReverse, _n, _o[0].v, _o[0].u, 0);
+              wa.add_item(isReverse, _n + 1, _o[1].v, _o[1].u, 0);
+            } else if (_k6 === ROTATE_3D$1) {
+              wa.add_item(isReverse, _n, _o[0].v, _o[0].u, 0);
+              wa.add_item(isReverse, _n + 1, _o[1].v, _o[1].u, 0);
+              wa.add_item(isReverse, _n + 1, _o[2].v, _o[2].u, 0);
+            } else {
+              wa.add_item(isReverse, _n, _o.v, _o.u, 0);
+            }
+          }
         }
       }
     }
@@ -18638,17 +18665,21 @@
               }
             }
 
-            wasmFrame(wa, wHash, frames, false);
-            wasmFrame(wa, wHash, framesR, true); // originStyle也需要wasm保存下来等结束还原用
+            wasmFrame(wa, wList, wHash, frames, false);
+            wasmFrame(wa, wList, wHash, framesR, true); // originStyle也需要wasm保存下来等结束还原用
 
-            for (var _i18 = 0, _len10 = wList.length; _i18 < _len10; _i18++) {
-              var _k6 = wList[_i18],
-                  n = WASM_STYLE_KEY$1[_k6],
-                  _v20 = __currentStyle[_k6];
+            for (var _i18 = 0, _len11 = wList.length; _i18 < _len11; _i18++) {
+              var _k7 = wList[_i18],
+                  n = WASM_STYLE_KEY$1[_k7],
+                  _v20 = __currentStyle[_k7];
 
-              if (_k6 === TRANSFORM_ORIGIN$3) {
+              if (_k7 === TRANSFORM_ORIGIN$3) {
                 wa.add_origin(n, _v20[0].v, _v20[0].u);
                 wa.add_origin(n + 1, _v20[1].v, _v20[1].u);
+              } else if (_k7 === ROTATE_3D$1) {
+                wa.add_origin(n, _v20[0].v, _v20[0].u);
+                wa.add_origin(n + 1, _v20[1].v, _v20[1].u);
+                wa.add_origin(n + 2, _v20[2].v, _v20[2].u);
               } else {
                 wa.add_origin(n, _v20.v, _v20.u);
               }
@@ -19825,7 +19856,7 @@
         // 过滤时间非法的，过滤后续offset<=前面的
         var offset = -1;
 
-        var _loop = function _loop(_i19, _len11) {
+        var _loop = function _loop(_i19, _len12) {
           var current = list[_i19];
 
           if (current.hasOwnProperty('offset')) {
@@ -19836,17 +19867,17 @@
             if (isNaN(current.offset) || current.offset < 0 || current.offset > 1) {
               list.splice(_i19, 1);
               _i19--;
-              _len11--;
+              _len12--;
               i = _i19;
-              len = _len11;
+              len = _len12;
               return "continue";
             } // <=前面的
             else if (current.offset <= offset) {
               list.splice(_i19, 1);
               _i19--;
-              _len11--;
+              _len12--;
               i = _i19;
-              len = _len11;
+              len = _len12;
               return "continue";
             }
           } // 缩写处理
@@ -19864,7 +19895,7 @@
             }
           });
           i = _i19;
-          len = _len11;
+          len = _len12;
         };
 
         for (var i = 0, len = list.length; i < len; i++) {
@@ -19917,14 +19948,14 @@
         } // 计算没有设置offset的帧
 
 
-        for (var _i20 = 1, _len12 = list.length; _i20 < _len12; _i20++) {
+        for (var _i20 = 1, _len13 = list.length; _i20 < _len13; _i20++) {
           var start = list[_i20]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
 
           if (!start.hasOwnProperty('offset')) {
             var end = void 0;
             var j = _i20 + 1;
 
-            for (; j < _len12; j++) {
+            for (; j < _len13; j++) {
               end = list[j];
 
               if (end.hasOwnProperty('offset')) {
@@ -19947,7 +19978,7 @@
 
         var frames = [];
 
-        for (var _i21 = 0, _len13 = list.length; _i21 < _len13; _i21++) {
+        for (var _i21 = 0, _len14 = list.length; _i21 < _len14; _i21++) {
           var o = framing(list[_i21], duration, easing);
           o.index = _i21;
           frames[_i21] = o;
@@ -20069,7 +20100,7 @@
         var prev = frames[0];
         prev.clone = cloneStyle(prev.style, keys);
 
-        for (var _i22 = 1, _len14 = frames.length; _i22 < _len14; _i22++) {
+        for (var _i22 = 1, _len15 = frames.length; _i22 < _len15; _i22++) {
           var next = frames[_i22];
           next.clone = cloneStyle(next.style, keys);
           prev = calFrame(prev, next, keys, target, isGeom);
@@ -20134,7 +20165,7 @@
             fixed = []; // 特殊性能优化，for拆开v8会提升不少
 
         if (allInFn) {
-          for (var _i23 = 0, _len15 = transition.length; _i23 < _len15; _i23++) {
+          for (var _i23 = 0, _len16 = transition.length; _i23 < _len16; _i23++) {
             var item = transition[_i23];
             var k = item.k,
                 v = item.v,
@@ -20151,7 +20182,7 @@
         } else {
           var currentProps = target.__currentProps;
 
-          var _loop2 = function _loop2(_i24, _len16) {
+          var _loop2 = function _loop2(_i24, _len17) {
             var item = transition[_i24];
             var k = item.k,
                 v = item.v,
@@ -20180,7 +20211,7 @@
                 }
               } else if (target.isMulti) {
                 if (k === 'points' || k === 'controls') {
-                  for (var _i26 = 0, _len18 = Math.min(st.length, v.length); _i26 < _len18; _i26++) {
+                  for (var _i26 = 0, _len19 = Math.min(st.length, v.length); _i26 < _len19; _i26++) {
                     var o = st[_i26];
                     var n = v[_i26];
                     var cli = cl[_i26];
@@ -20191,9 +20222,9 @@
                         var n2 = n[j];
 
                         if (!isNil$b(o2) && !isNil$b(n2)) {
-                          for (var _k8 = 0, len3 = Math.min(o2.length, n2.length); _k8 < len3; _k8++) {
-                            if (!isNil$b(o2[_k8]) && !isNil$b(n2[_k8])) {
-                              o2[_k8] = cli[j][_k8] + n2[_k8] * percent;
+                          for (var _k9 = 0, len3 = Math.min(o2.length, n2.length); _k9 < len3; _k9++) {
+                            if (!isNil$b(o2[_k9]) && !isNil$b(n2[_k9])) {
+                              o2[_k9] = cli[j][_k9] + n2[_k9] * percent;
                             }
                           }
                         }
@@ -20221,14 +20252,14 @@
                 }
               } else {
                 if (k === 'points' || k === 'controls') {
-                  for (var _i27 = 0, _len19 = Math.min(st.length, v.length); _i27 < _len19; _i27++) {
-                    var _o = st[_i27];
-                    var _n = v[_i27];
+                  for (var _i27 = 0, _len20 = Math.min(st.length, v.length); _i27 < _len20; _i27++) {
+                    var _o2 = st[_i27];
+                    var _n2 = v[_i27];
 
-                    if (!isNil$b(_o) && !isNil$b(_n)) {
-                      for (var _j6 = 0, _len20 = Math.min(_o.length, _n.length); _j6 < _len20; _j6++) {
-                        if (!isNil$b(_o[_j6]) && !isNil$b(_n[_j6])) {
-                          _o[_j6] = cl[_i27][_j6] + _n[_j6] * percent;
+                    if (!isNil$b(_o2) && !isNil$b(_n2)) {
+                      for (var _j7 = 0, _len21 = Math.min(_o2.length, _n2.length); _j7 < _len21; _j7++) {
+                        if (!isNil$b(_o2[_j7]) && !isNil$b(_n2[_j7])) {
+                          _o2[_j7] = cl[_i27][_j7] + _n2[_j7] * percent;
                         }
                       }
                     }
@@ -20252,8 +20283,8 @@
             }
           };
 
-          for (var _i24 = 0, _len16 = transition.length; _i24 < _len16; _i24++) {
-            _loop2(_i24, _len16);
+          for (var _i24 = 0, _len17 = transition.length; _i24 < _len17; _i24++) {
+            _loop2(_i24, _len17);
           } // string等的直接量，在不同帧之间可能存在变化，同帧变化后不再改变引用，因此前提是发生帧变化
           // 再检查是否和当前相等，防止跳到一个不变化的帧上，而前一帧有变化的情况，大部分都是无变化
 
@@ -20261,18 +20292,18 @@
           if (notSameFrame) {
             var f = frame.fixed;
 
-            for (var _i25 = 0, _len17 = f.length; _i25 < _len17; _i25++) {
-              var _k7 = f[_i25];
-              var isGeom = frame.isGeom && GEOM$1.hasOwnProperty(_k7);
+            for (var _i25 = 0, _len18 = f.length; _i25 < _len18; _i25++) {
+              var _k8 = f[_i25];
+              var isGeom = frame.isGeom && GEOM$1.hasOwnProperty(_k8);
 
-              if (!equalStyle$1(_k7, style[_k7], isGeom ? currentProps[_k7] : currentStyle[_k7], target)) {
-                if (GEOM$1.hasOwnProperty(_k7)) {
-                  currentProps[_k7] = style[_k7];
+              if (!equalStyle$1(_k8, style[_k8], isGeom ? currentProps[_k8] : currentStyle[_k8], target)) {
+                if (GEOM$1.hasOwnProperty(_k8)) {
+                  currentProps[_k8] = style[_k8];
                 } else {
-                  currentStyle[_k7] = style[_k7];
+                  currentStyle[_k8] = style[_k8];
                 }
 
-                fixed.push(_k7);
+                fixed.push(_k8);
               }
             }
           }

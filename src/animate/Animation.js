@@ -146,7 +146,6 @@ function framing(style, duration, es) {
     transition: [], // 变化的属性
     trans: [], // 变化的k
     fixed: [], // 不变的k
-    wasmTrans: [], // 特殊的几个wasm优化计算的k
     lastPercent: -1,
   };
 }
@@ -1349,6 +1348,13 @@ function calLastStyle(style, target, keys) {
           res.push(k);
         }
       }
+      else if(k === ROTATE_3D) {
+        if(!wn.equal_set_style(n, v[0].v, v[0].u)
+          || !wn.equal_set_style(n, v[1].v, v[1].u)
+          || !wn.equal_set_style(n, v[2].v, v[2].u)) {
+          res.push(k);
+        }
+      }
       else {
         if(!wn.equal_set_style(n, v.v, v.u)) {
           res.push(k);
@@ -1393,9 +1399,9 @@ function frameCb(self) {
   }
 }
 
-function wasmFrame(wa, wHash, frames, isReverse) {
+function wasmFrame(wa, wList, wHash, frames, isReverse) {
   for(let i = 0, len = frames.length; i < len; i++) {
-    let { style, transition, trans, wasmTrans, time, easing } = frames[i];
+    let { style, transition, trans, time, easing } = frames[i];
     let eType = EASING.DEFAULT, x1 = 0, y1 = 0, x2 = 1, y2 = 1;
     if(Array.isArray(easing)) {
       if(easing.length === 4) {
@@ -1433,27 +1439,55 @@ function wasmFrame(wa, wHash, frames, isReverse) {
       }
     }
     wa.add_frame(isReverse, time, eType, x1, y1, x2, y2);
-    for(let j = 0, len = transition.length; j < len; j++) {
-      let item = transition[j], k = item.k;
-      if(wHash.hasOwnProperty(k)) {
-        let o = style[k];
-        let n = WASM_STYLE_KEY[k];
-        let diff = item.v;
-        // 相关记录提取出来存到wasm记录上标识
-        transition.splice(j, 1);
-        trans.splice(j, 1);
-        wasmTrans.push(k);
-        // transformOrigin和rotate3d是复合型对应多条，其它简单型
-        if(k === TRANSFORM_ORIGIN) {
-          wa.add_item(isReverse, n, o[0].v, o[0].u, diff[0]);
-          wa.add_item(isReverse, n + 1, o[1].v, o[1].u, diff[1]);
+    // 除了最后一帧，都有transition
+    if(i < len - 1) {
+      for(let j = 0, len = transition.length; j < len; j++) {
+        let item = transition[j], k = item.k;
+        if(wHash.hasOwnProperty(k)) {
+          let o = style[k];
+          let n = WASM_STYLE_KEY[k];
+          let diff = item.v;
+          // 相关记录提取出来存到wasm记录上标识
+          transition.splice(j, 1);
+          trans.splice(j, 1);
+          // transformOrigin和rotate3d是复合型对应多条，其它简单型
+          if(k === TRANSFORM_ORIGIN) {
+            wa.add_item(isReverse, n, o[0].v, o[0].u, diff[0]);
+            wa.add_item(isReverse, n + 1, o[1].v, o[1].u, diff[1]);
+          }
+          else if(k === ROTATE_3D) {
+            wa.add_item(isReverse, n, o[0].v, o[0].u, diff[0]);
+            wa.add_item(isReverse, n + 1, o[1].v, o[1].u, diff[1]);
+            wa.add_item(isReverse, n + 1, o[2].v, o[2].u, diff[2]);
+          }
+          else {
+            wa.add_item(isReverse, n, o.v, o.u, diff);
+          }
+          j--;
+          len--;
         }
-        else if(k === ROTATE_3D) {}
-        else {
-          wa.add_item(isReverse, n, o.v, o.u, diff);
+      }
+    }
+    // 最后一帧特殊处理，将样式存入，diff都设置0即可
+    else {
+      for(let j = 0, len = wList.length; j < len; j++) {
+        let k = wList[j];
+        if(style.hasOwnProperty(k)) {
+          let o = style[k];
+          let n = WASM_STYLE_KEY[k];
+          if(k === TRANSFORM_ORIGIN) {
+            wa.add_item(isReverse, n, o[0].v, o[0].u, 0);
+            wa.add_item(isReverse, n + 1, o[1].v, o[1].u, 0);
+          }
+          else if(k === ROTATE_3D) {
+            wa.add_item(isReverse, n, o[0].v, o[0].u, 0);
+            wa.add_item(isReverse, n + 1, o[1].v, o[1].u, 0);
+            wa.add_item(isReverse, n + 1, o[2].v, o[2].u, 0);
+          }
+          else {
+            wa.add_item(isReverse, n, o.v, o.u, 0);
+          }
         }
-        j--;
-        len--;
       }
     }
   }
@@ -1599,14 +1633,19 @@ class Animation extends Event {
             wa.set_bezier(parseFloat(v[0]), parseFloat(v[1]), parseFloat(v[2]), parseFloat(v[3]));
           }
         }
-        wasmFrame(wa, wHash, frames, false);
-        wasmFrame(wa, wHash, framesR, true);
+        wasmFrame(wa, wList, wHash, frames, false);
+        wasmFrame(wa, wList, wHash, framesR, true);
         // originStyle也需要wasm保存下来等结束还原用
         for(let i = 0, len = wList.length; i < len; i++) {
           let k = wList[i], n = WASM_STYLE_KEY[k], v = __currentStyle[k];
           if(k === TRANSFORM_ORIGIN) {
             wa.add_origin(n, v[0].v, v[0].u);
             wa.add_origin(n + 1, v[1].v, v[1].u);
+          }
+          else if(k === ROTATE_3D) {
+            wa.add_origin(n, v[0].v, v[0].u);
+            wa.add_origin(n + 1, v[1].v, v[1].u);
+            wa.add_origin(n + 2, v[2].v, v[2].u);
           }
           else {
             wa.add_origin(n, v.v, v.u);

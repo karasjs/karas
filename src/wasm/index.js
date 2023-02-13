@@ -1,5 +1,23 @@
 import inject from '../util/inject';
 import util from '../util/util';
+import enums from '../util/enums';
+
+const {
+  STYLE_KEY: {
+    TRANSLATE_X,
+    TRANSLATE_Y,
+    TRANSLATE_Z,
+    SCALE_X,
+    SCALE_Y,
+    ROTATE_X,
+    ROTATE_Y,
+    ROTATE_Z,
+    SKEW_X,
+    SKEW_Y,
+    TRANSFORM_ORIGIN,
+    OPACITY,
+  },
+} = enums;
 
 let wasm;
 let cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: true });
@@ -221,6 +239,19 @@ export class Animation {
     wasm.__wbg_set_animation_first_play(this.ptr, arg0);
   }
   /**
+   * @returns {boolean}
+   */
+  get finished() {
+    const ret = wasm.__wbg_get_animation_finished(this.ptr);
+    return ret !== 0;
+  }
+  /**
+   * @param {boolean} arg0
+   */
+  set finished(arg0) {
+    wasm.__wbg_set_animation_finished(this.ptr, arg0);
+  }
+  /**
    * @returns {number}
    */
   get index() {
@@ -297,6 +328,19 @@ export class Animation {
     wasm.animation_add_item(this.ptr, is_reverse, k, v, u, d);
   }
   /**
+   * @param {number} k
+   * @param {number} v
+   * @param {number} u
+   */
+  add_origin(k, v, u) {
+    wasm.animation_add_origin(this.ptr, k, v, u);
+  }
+  /**
+   */
+  play() {
+    wasm.animation_play(this.ptr);
+  }
+  /**
    * @param {number} play_count
    */
   init_current_frames(play_count) {
@@ -304,19 +348,25 @@ export class Animation {
   }
   /**
    * @param {number} dur
-   * @param {boolean} from_goto
    * @returns {boolean}
    */
-  cal_current(dur, from_goto) {
-    const ret = wasm.animation_cal_current(this.ptr, dur, from_goto);
+  cal_current(dur) {
+    const ret = wasm.animation_cal_current(this.ptr, dur);
     return ret !== 0;
   }
   /**
    * @param {number} diff
    * @returns {boolean}
    */
-  on_frame(diff) {
-    const ret = wasm.animation_on_frame(this.ptr, diff);
+  before(diff) {
+    const ret = wasm.animation_before(this.ptr, diff);
+    return ret !== 0;
+  }
+  /**
+   * @returns {boolean}
+   */
+  after() {
+    const ret = wasm.animation_after(this.ptr);
     return ret !== 0;
   }
   /**
@@ -350,6 +400,19 @@ export class Node {
   free() {
     const ptr = this.__destroy_into_raw();
     wasm.__wbg_node_free(ptr);
+  }
+  /**
+   * @returns {number}
+   */
+  get root() {
+    const ret = wasm.__wbg_get_node_root(this.ptr);
+    return ret;
+  }
+  /**
+   * @param {number} arg0
+   */
+  set root(arg0) {
+    wasm.__wbg_set_node_root(this.ptr, arg0);
   }
   /**
    * @returns {boolean}
@@ -519,7 +582,7 @@ export class Node {
    * @param {number} root
    */
   set_root(root) {
-    wasm.node_set_root(this.ptr, root);
+    wasm.__wbg_set_node_root(this.ptr, root);
   }
   /**
    * @param {number} animation
@@ -603,8 +666,8 @@ export class Node {
   /**
    * @returns {number}
    */
-  computed_style() {
-    const ret = wasm.node_computed_style(this.ptr);
+  computed_style_ptr() {
+    const ret = wasm.node_computed_style_ptr(this.ptr);
     return ret;
   }
   /**
@@ -646,8 +709,15 @@ export class Node {
    * @param {number} diff
    * @returns {number}
    */
-  on_frame(diff) {
-    const ret = wasm.node_on_frame(this.ptr, diff);
+  before(diff) {
+    const ret = wasm.node_before(this.ptr, diff);
+    return ret >>> 0;
+  }
+  /**
+   * @returns {number}
+   */
+  after() {
+    const ret = wasm.node_after(this.ptr);
     return ret >>> 0;
   }
   /**
@@ -662,6 +732,68 @@ export class Node {
    */
   cal_matrix(rl) {
     wasm.node_cal_matrix(this.ptr, rl);
+  }
+  /**
+   * @param {number} v
+   * @param {number} u
+   * @param {number} parent
+   * @returns {number}
+   */
+  cal_size(v, u, parent) {
+    const ret = wasm.node_cal_size(this.ptr, v, u, parent);
+    return ret;
+  }
+  /**
+   * @param {number} k
+   * @param {number} v
+   * @param {number} u
+   * @returns {boolean}
+   */
+  equal_style(k, v, u) {
+    const ret = wasm.node_equal_style(this.ptr, k, v, u);
+    return ret !== 0;
+  }
+  /**
+   * @param {number} k
+   * @param {number} v
+   * @param {number} u
+   * @returns {boolean}
+   */
+  equal_set_style(k, v, u) {
+    const ret = wasm.node_equal_set_style(this.ptr, k, v, u);
+    return ret !== 0;
+  }
+  /**
+   * @param {number} k
+   * @param {number} v
+   * @param {number} u
+   */
+  update_style(k, v, u) {
+    wasm.node_update_style(this.ptr, k, v, u);
+  }
+  /**
+   * @param {number} v
+   */
+  offset_x(v) {
+    wasm.node_offset_x(this.ptr, v);
+  }
+  /**
+   * @param {number} v
+   */
+  offset_y(v) {
+    wasm.node_offset_y(this.ptr, v);
+  }
+  /**
+   * @param {number} v
+   */
+  resize_x(v) {
+    wasm.node_resize_x(this.ptr, v);
+  }
+  /**
+   * @param {number} v
+   */
+  resize_y(v) {
+    wasm.node_resize_y(this.ptr, v);
   }
 }
 /**
@@ -794,9 +926,22 @@ export class Root {
    * @param {number} diff
    * @returns {number}
    */
-  on_frame(diff) {
-    const ret = wasm.root_on_frame(this.ptr, diff);
+  before(diff) {
+    const ret = wasm.root_before(this.ptr, diff);
     return ret >>> 0;
+  }
+  /**
+   * @returns {number}
+   */
+  after() {
+    const ret = wasm.root_after(this.ptr);
+    return ret >>> 0;
+  }
+  /**
+   * @param {number} n
+   */
+  add_am_state(n) {
+    wasm.root_add_am_state(this.ptr, n);
   }
   /**
    */
@@ -829,6 +974,13 @@ export class Root {
    */
   vt_ptr() {
     const ret = wasm.root_vt_ptr(this.ptr);
+    return ret;
+  }
+  /**
+   * @returns {number}
+   */
+  am_states_ptr() {
+    const ret = wasm.root_am_states_ptr(this.ptr);
     return ret;
   }
 }
@@ -872,10 +1024,24 @@ export default {
     }
     return wasm;
   },
-  get wasm() {
+  get instance() {
     return wasm;
   },
   Node,
   Root,
   Animation,
+  isWasmStyle(k) {
+    return k === TRANSLATE_X
+      || k === TRANSLATE_Y
+      || k === TRANSLATE_Z
+      || k === ROTATE_X
+      || k === ROTATE_Y
+      || k === ROTATE_Z
+      || k === SCALE_X
+      || k === SCALE_Y
+      || k === SKEW_X
+      || k === SKEW_Y
+      || k === OPACITY
+      || k === TRANSFORM_ORIGIN;
+  },
 };

@@ -75,9 +75,10 @@ const {
     MIX_BLEND_MODE,
     FONT_SIZE,
   },
+  WASM_STYLE_KEY,
 } = enums;
 const { isNil, isFunction } = util;
-const { PX, INHERIT } = unit;
+const { PX, INHERIT, NUMBER } = unit;
 const {
   getLevel,
   isReflow,
@@ -187,7 +188,7 @@ class Root extends Dom {
     this.__rlv = REBUILD; // 每次刷新最大lv
     this.__lastUpdateP = null; // 每帧addUpdate都会向上检查，很多时候同级无需继续，第一次检查暂存parent对象
     // 开启wasm后，默认使用，除非显示取消
-    if(wasm.wasm && (props.wasm === undefined || props.wasm)) {
+    if(wasm.instance && (props.wasm === undefined || props.wasm)) {
       this.__wasmRoot = wasm.Root.new();
       this.__wasmNode = wasm.Node.new(false);
     }
@@ -818,6 +819,77 @@ class Root extends Dom {
       false, false);
   }
 
+  // wasm的动画更新外部不知道改了啥（性能），其内部倒是知道，这里检查mask和向上清空cache影响
+  __addWasmAniUpdate(node) {
+    let {
+      __computedStyle: computedStyle,
+      __mask,
+      __hasMask,
+      __domParent,
+    } = node;
+    // 没有变化或none无需刷新
+    if(computedStyle[DISPLAY] === 'none') {
+      return false;
+    }
+    // mask需清除遮罩对象的缓存
+    let hasRelease;
+    if(__mask) {
+      let prev = node.__prev;
+      while(prev && (prev.__mask)) {
+        prev = prev.__prev;
+      }
+      if(prev && (prev instanceof Xom || prev instanceof Component && prev.shadowRoot instanceof Xom)) {
+        prev.__refreshLevel |= CACHE | MASK;
+        prev.__struct.hasMask = prev.__hasMask = __mask;
+        if(prev.__cacheMask) {
+          hasRelease = prev.__cacheMask.release() || hasRelease;
+        }
+      }
+    }
+    // mask无论如何都要清除，除非是opacity/ppt，这里因为wasm只考虑opacity
+    if(__hasMask) {
+      let lv = node.__wasmNode.refresh_level;
+      if(lv ^ OP) {
+        if(node.__cacheMask) {
+          hasRelease = node.__cacheMask.release() || hasRelease;
+        }
+        if(node.__cacheFilter) {
+          hasRelease = node.__cacheFilter.release() || hasRelease;
+        }
+      }
+    }
+    // 除了清空cache，Root的rlv需要标识向上情况，这样webgl的渲染不会使用老的队列缓存
+    if(hasRelease) {
+      node.__updateCache();
+    }
+    if(__domParent !== this.__lastUpdateP) {
+      let p = __domParent;
+      this.__lastUpdateP = p; // 同层级避免重复进入查找，每次draw()重设
+      while(p) {
+        if(p.__refreshLevel & (CACHE | REPAINT | REFLOW)) {
+          break;
+        }
+        p.__refreshLevel |= CACHE;
+        if(p.__cacheTotal) {
+          hasRelease = p.__cacheTotal.release() || hasRelease;
+        }
+        if(p.__cacheFilter) {
+          hasRelease = p.__cacheFilter.release() || hasRelease;
+        }
+        if(p.__cacheMask) {
+          hasRelease = p.__cacheMask.release() || hasRelease;
+        }
+        if(hasRelease) {
+          p.__updateCache();
+        }
+        p = p.__domParent;
+      }
+    }
+    if(hasRelease) {
+      this.__rlv |= CACHE;
+    }
+  }
+
   __calUpdate(node, computedStyle, cacheStyle, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver,
               addDom, removeDom) {
     let {
@@ -847,6 +919,13 @@ class Root extends Dom {
         if(prev.__cacheMask) {
           hasRelease = prev.__cacheMask.release() || hasRelease;
         }
+      }
+    }
+    // wasm的特殊更新，不管lv多少只要有transform和op都得计算
+    if(lv & TRANSFORM_ALL) {
+      let wn = node.__wasmNode;
+      if(wn) {
+        wn.cal_matrix(lv & TRANSFORM_ALL);
       }
     }
     // 大部分动画都是repaint初始化已经知道
@@ -879,31 +958,30 @@ class Root extends Dom {
         }
         node.__calStyle(lv, currentStyle, computedStyle, cacheStyle);
         node.__calPerspective(currentStyle, computedStyle, cacheStyle);
-        // calStyle中matrix部分有wasm会不计算，这里让wasm计算
-        node.__wasmStyle(currentStyle);
       }
       // < REPAINT特殊的优化computedStyle计算
       else {
         if(lv & PPT) {
           node.__calPerspective(currentStyle, computedStyle, cacheStyle);
         }
-        // 特殊的ppt需清空cacheTotal
-        if(lv & TRANSFORM_ALL) {
+        if(lv & TRANSFORM_ALL || lv & OP) {
           let wn = node.__wasmNode;
           if(wn) {
-            node.__wasmStyle(currentStyle);
+            // 上面做过了不重复
           }
           else {
-            let o = node.__selfPerspectiveMatrix;
-            node.__calMatrix(lv, currentStyle, computedStyle, cacheStyle);
-            let n = node.__selfPerspectiveMatrix;
-            if(!need && !util.equalArr(o, n)) {
-              need = true;
+            if(lv & TRANSFORM_ALL) {
+              let o = node.__selfPerspectiveMatrix;
+              node.__calMatrix(lv, currentStyle, computedStyle, cacheStyle);
+              let n = node.__selfPerspectiveMatrix;
+              if(!need && !util.equalArr(o, n)) {
+                need = true;
+              }
+            }
+            if(lv & OP) {
+              computedStyle[OPACITY] = currentStyle[OPACITY];
             }
           }
-        }
-        if(lv & OP) {
-          computedStyle[OPACITY] = currentStyle[OPACITY];
         }
         if(lv & FT) {
           node.__calFilter(currentStyle, computedStyle, cacheStyle);
@@ -966,7 +1044,7 @@ class Root extends Dom {
           hasRelease = node.__cacheTotal.release() || hasRelease;
         }
       }
-      // mask无论如何都要清除，除非是opacity
+      // mask无论如何都要清除，除非是opacity/ppt，其它变化需要重新生成
       if(node.__hasMask) {
         if(need || (lv ^ OP) || (lv & PPT)) {
           if(node.__cacheMask) {
@@ -1113,15 +1191,21 @@ class Root extends Dom {
     this.__aniChange = false;
     if(!this.__pause) {
       let wr = this.__wasmRoot;
+      // wasm的动画计算顺序要放在前面，因为其他动画可能包含REPAINT/REFLOW之类的变更，涵盖wasm的transform/opacity
       if(wr) {
-        let n = wr.on_frame(diff);
+        let n = wr.before(diff);
         // 有动画执行了需刷新
         if(n) {
           this.__aniChange = true;
         }
       }
       for(let i = 0; i < len; i++) {
-        ani[i].__before(diff);
+        let a = ani[i];
+        let r = a.__before(diff);
+        // 返回true说明完全被wasm动画代理，非true则是其它，更新逻辑会包含wasm的
+        if(r) {
+          this.__addWasmAniUpdate(a.__target);
+        }
       }
     }
     if(this.__aniChange || len2 || len3) {
@@ -1140,8 +1224,52 @@ class Root extends Dom {
     // 动画用同一帧内的pause判断，ani的after可能会改变队列（比如结束），需要先制作副本
     let pause = this.__pause;
     if(!pause) {
-      for(let i = 0; i < len; i++) {
-        ani[i].__after(diff);
+      let wr = this.__wasmRoot;
+      /**
+       * 有wasm需要特殊对待，首先要保证动画的执行顺序，主体仍然是每个动画依次执行after，和before的顺序对应，
+       * 但wasm存在的话不可能一个个去执行，通信消耗过大，所以是先执行所有的wasm动画，计算transform和opacity，
+       * 然后是每个普通js动画执行after。
+       * 普通的动画中如果完全被wasm替代计算了，会有ignore标识，before不再执行，
+       * 但after需要执行且需要wasm那边的数据，比如是否begin、end、finish的状态。
+       * 多个动画可能会出现混合状态，即有的有wasm有的没有，有的被wasm完全替代有的没有，
+       * 这时候wasm动画数量和顺序和普通js动画对应不上，获取数据需注意，在普通js动画中有变量可以识别是否有wasm动画，
+       * 以此为手段，在遍历普通js动画中，可以增加偏移量来解决获取对应wasm动画索引的问题。
+       */
+      if(wr) {
+        let n = wr.after();
+        let states;
+        // 有n个长度的动画，取共享内存的状态，数量一定和before对得上
+        if(n) {
+          states = new Uint8Array(wasm.instance.memory.buffer, wr.am_states_ptr(), n);
+        }
+        let offset = 0; // 偏移计数器
+        for(let i = 0; i < len; i++) {
+          let a = ani[i];
+          if(a.__wasmAnimation) {
+            let s = states[i - offset];
+            // 0是fps中忽略，1是普通frame事件，2是begin，4是end，8是finish
+            if(s & 2) {
+              a.__begin = true;
+            }
+            if(s & 4) {
+              a.__end = true;
+            }
+            if(s & 8) {
+              a.__finished = true;
+            }
+          }
+          // 普通js动画无wasm也就是共享数据中不占队列，除了执行外要标识偏移++，如果下一个动画有wasm的话，索引要保持正确
+          else {
+            offset++;
+          }
+          a.__after();
+        }
+      }
+      // 没有wasm普通遍历执行动画列表
+      else {
+        for(let i = 0; i < len; i++) {
+          ani[i].__after();
+        }
       }
       for(let i = 0; i < len3; i++) {
         let item = frameTask[i];

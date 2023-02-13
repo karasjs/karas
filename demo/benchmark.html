@@ -7,12 +7,11 @@
   <link href="style.css" media="all" rel="stylesheet"/>
 </head>
 <body>
-<div class="pre">1000个包含文字和背景色的节点的动画性能，仅canvas且开启cacheAsBitmap缓存。</div>
+<div class="pre">1000个包含文字和背景色的节点的动画性能，canvas模式且开启cacheAsBitmap缓存。</div>
 <div id="div"></div>
 <div id="fps"></div>
 <pre><code class="brush:csx"></code></pre>
 <script type="text/jsx">
-  // karas.debug = true;
   let list = [];
   for(let i = 0; i < 1000; i++) {
     list.push(i);
@@ -38,17 +37,12 @@
   list.forEach(i => {
     let node = root.ref[i];
     node.animate([
-      {
-        translateX: 0,
-        translateY: 0,
-        rotateZ: 0,
-        scale: 0,
-      },
+      {},
       {
         translateX: -180 + Math.random() * 360,
         translateY: -180 + Math.random() * 360,
         rotateZ: Math.random() * 360,
-        scale: Math.random() * 2,
+        scale: 1 + Math.random(),
       }
     ], {
       duration: 500 + Math.random() * 500,

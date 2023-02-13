@@ -131,6 +131,7 @@ const {
     BOX_SIZING,
     FONT_SIZE_SHRINK,
   },
+  WASM_STYLE_KEY,
 } = enums;
 const { AUTO, PX, PERCENT, INHERIT, NUMBER, RGBA, STRING, REM, VW, VH, VMAX, VMIN, DEG, GRADIENT } = unit;
 const { int2rgba, rgba2int, joinArr, isNil, isFunction } = util;
@@ -779,15 +780,14 @@ class Xom extends Node {
     let cacheStyle = this.__cacheStyle;
     this.__calStyle(REFLOW, currentStyle, computedStyle, cacheStyle);
     this.__calPerspective(currentStyle, computedStyle, cacheStyle);
-    // 每次reflow重新传matrix到wasm
+    // 每次reflow传数据到wasm
     this.__wasmStyle(currentStyle);
   }
 
-  // 传递matrix相关样式到wasm中计算
+  // 传递transform/opacity相关样式到wasm中计算
   __wasmStyle(currentStyle) {
     let wn = this.__wasmNode;
     if(wn) {
-      currentStyle = currentStyle || this.__currentStyle;
       wn.set_style(this.__x1, this.__y1, this.__offsetWidth, this.__offsetHeight,
         currentStyle[TRANSLATE_X].v, currentStyle[TRANSLATE_Y].v, currentStyle[TRANSLATE_Z].v,
         currentStyle[ROTATE_X].v, currentStyle[ROTATE_Y].v, currentStyle[ROTATE_Z].v,
@@ -2844,20 +2844,47 @@ class Xom extends Node {
   updateFormatStyle(style, cb) {
     let root = this.__root, currentStyle = this.__currentStyle, currentProps = this.__currentProps;
     let keys = [];
+    let wn = this.__wasmNode;
     for(let k in style) {
       if(style.hasOwnProperty(k)) {
         let isGeom = GEOM.hasOwnProperty(k);
-        if(!isGeom) {
-          k = parseInt(k);
+        let v = style[k];
+        if(isGeom) {
+          if(!equalStyle(k, currentProps[k], v, this)) {
+            currentProps[k] = v;
+            keys.push(k);
+          }
         }
-        if(!equalStyle(k, isGeom ? currentProps[k] : currentStyle[k], style[k], this)) {
-          if(isGeom) {
-            currentProps[k] = style[k];
+        else {
+          k = parseInt(k);
+          if(wn && wasm.isWasmStyle(k)) {
+            let k2 = WASM_STYLE_KEY[k];
+            if(k === TRANSFORM_ORIGIN) {
+              let res;
+              if(!wn.equal_style(k2, v[0].v, v[0].u)) {
+                wn.update_style(k2, v[0].v, v[0].u);
+                res = true;
+              }
+              k2++;
+              if(!wn.equal_style(k2, v[1].v, v[1].u)) {
+                wn.update_style(k2, v[1].v, v[1].u);
+                res = true;
+              }
+              if(res) {
+                keys.push(k);
+              }
+            }
+            else {
+              if(!wn.equal_style(k2, v.v, v.u)) {
+                wn.update_style(k2, v.v, v.u);
+                keys.push(k);
+              }
+            }
           }
-          else {
-            currentStyle[k] = style[k];
+          else if(!equalStyle(k, currentStyle[k], v, this)) {
+            currentStyle[k] = v;
+            keys.push(k);
           }
-          keys.push(k);
         }
       }
     }
@@ -3045,6 +3072,10 @@ class Xom extends Node {
         this.__layoutStyle(lv);
       }
     }
+    let wn = this.__wasmNode;
+    if(wn) {
+      wn.resize_x(diff);
+    }
     this.clearCache();
   }
 
@@ -3069,6 +3100,10 @@ class Xom extends Node {
         this.__cacheStyle = [];
         this.__layoutStyle(lv);
       }
+    }
+    let wn = this.__wasmNode;
+    if(wn) {
+      wn.resize_y(diff);
     }
     this.clearCache();
   }
@@ -3099,15 +3134,53 @@ class Xom extends Node {
     else {
       keys = Object.keys(computedStyle);
     }
+    let wn = this.__wasmNode, wasmCps;
     keys.forEach(k => {
       if(GEOM.hasOwnProperty(k)) {
         res[k] = computedStyle[k];
       }
       else {
-        res[STYLE_RV_KEY[k]] = computedStyle[k];
+        if(wn && wasm.isWasmStyle(k)) {
+          if(!wasmCps) {
+            wasmCps = new Float64Array(wasm.instance.memory.buffer, wn.computed_style_ptr(), 18);
+          }
+          if(k === TRANSFORM_ORIGIN) {
+            let k2 = WASM_STYLE_KEY[k];
+            res[STYLE_RV_KEY[k]] = [wasmCps[k2], wasmCps[k2 + 1]];
+          }
+          else {
+            res[STYLE_RV_KEY[k]] = wasmCps[WASM_STYLE_KEY[k]];
+          }
+        }
+        else {
+          res[STYLE_RV_KEY[k]] = computedStyle[k];
+        }
       }
     });
     return res;
+  }
+
+  getStyle(k) {
+    if(!k || !util.isString(k) || abbr.hasOwnProperty(k)) {
+      throw new Error('Param must be a single style key');
+    }
+    let computedStyle = this.__computedStyle;
+    if(GEOM.hasOwnProperty(k)) {
+      return computedStyle[k];
+    }
+    let k2 = STYLE_KEY[style2Upper(k)];
+    let wn = this.__wasmNode;
+    if(wn && wasm.isWasmStyle(k2)) {
+      let wasmCps = new Float64Array(wasm.instance.memory.buffer, wn.computed_style_ptr(), 18);
+      if(k === TRANSFORM_ORIGIN) {
+        k2 = WASM_STYLE_KEY[k2];
+        return [wasmCps[k2], wasmCps[k2 + 1]];
+      }
+      else {
+        return wasmCps[WASM_STYLE_KEY[k2]];
+      }
+    }
+    return computedStyle[k2];
   }
 
   getBoundingClientRect(includeBbox) {
@@ -3297,7 +3370,7 @@ class Xom extends Node {
   get matrix() {
     let wn = this.__wasmNode;
     if(wn) {
-      return new Float64Array(wasm.wasm.memory.buffer, wn.m_ptr(), 16);
+      return new Float64Array(wasm.instance.memory.buffer, wn.m_ptr(), 16);
     }
     return this.__matrix;
   }
@@ -3305,7 +3378,7 @@ class Xom extends Node {
   get matrixEvent() {
     let wn = this.__wasmNode;
     if(wn) {
-      return new Float64Array(wasm.wasm.memory.buffer, wn.me_ptr(), 16);
+      return new Float64Array(wasm.instance.memory.buffer, wn.me_ptr(), 16);
     }
     return this.__matrixEvent;
   }

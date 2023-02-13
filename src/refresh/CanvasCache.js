@@ -6,6 +6,7 @@ import tf from '../style/transform';
 import enums from '../util/enums';
 import css from '../style/css';
 import mx from '../math/matrix';
+import wasm from '../wasm/index';
 
 const {
   STYLE_KEY: {
@@ -82,7 +83,16 @@ class CanvasCache extends Cache {
   static genMask(target, node, callback) {
     let cacheMask = genSingle(target, 'mask1');
     let list = [];
-    let { [TRANSFORM]: transform, [TRANSFORM_ORIGIN]: tfo } = node.__computedStyle;
+    let transform, tfo, wn = node.__wasmNode;
+    if(wn) {
+      transform = new Float64Array(wasm.instance.memory.buffer, wn.transform_ptr(), 16);
+      let cs = new Float64Array(wasm.instance.memory.buffer, wn.computed_style_ptr(), 18);
+      tfo = [cs[16], cs[17]];
+    }
+    else {
+      transform = node.__computedStyle[TRANSFORM];
+      tfo = node.__computedStyle[TRANSFORM_ORIGIN];
+    }
     let next = node.next;
     let isClip = next.__clip;
     while(next && next.__mask) {

@@ -88,8 +88,12 @@ const {
     BORDER_LEFT_COLOR,
     BORDER_RIGHT_COLOR,
     BORDER_TOP_COLOR,
-    POSITION,
   },
+  WASM_STYLE_KEY,
+  DIRECTION,
+  FILLS,
+  EASING,
+  PLAY_STATE,
 } = enums;
 const { AUTO, PX, PERCENT, INHERIT, RGBA, STRING, NUMBER, REM, VW, VH, VMAX, VMIN, GRADIENT, calUnit } = unit;
 const { isNil, isFunction, isNumber, isObject, clone, equalArr } = util;
@@ -108,53 +112,6 @@ const {
   isGradientKey,
   isRadiusKey,
 } = key;
-
-const DIRECTION = {
-  reverse: 1,
-  alternate: 2,
-  'alternate-reverse': 3,
-  alternateReverse: 3,
-};
-
-const FILLS = {
-  forwards: 1,
-  backwards: 2,
-  both: 3,
-};
-
-const EASING = {
-  DEFAULT: 0,
-  LINEAR: 1,
-  EASE_IN: 2,
-  EASE_OUT: 3,
-  EASE: 4,
-  EASE_IN_OUT: 5,
-  EASE_CUSTOM: 6,
-};
-
-const WASM_STYLE_KEY = {
-  [TRANSLATE_X]: 0,
-  [TRANSLATE_Y]: 1,
-  [TRANSLATE_Z]: 2,
-  [ROTATE_X]: 3,
-  [ROTATE_Y]: 4,
-  [ROTATE_Z]: 5,
-  [ROTATE_3D]: 6,
-  [SCALE_X]: 10,
-  [SCALE_Y]: 11,
-  [SCALE_Z]: 12,
-  [SKEW_X]: 13,
-  [SKEW_Y]: 14,
-  [OPACITY]: 15,
-  [TRANSFORM_ORIGIN]: 16,
-};
-
-const PLAY_STATE = {
-  IDLE: 0,
-  RUNNING: 1,
-  PAUSED: 2,
-  FINISHED: 3,
-};
 
 /**
  * 将每帧的样式格式化，提取出offset属性并转化为时间，提取出缓动曲线easing
@@ -1374,17 +1331,35 @@ function calColor(k, v, percent, st, cl, frame, currentStyle) {
  */
 function calLastStyle(style, target, keys) {
   let currentStyle = target.__currentStyle, currentProps = target.__currentProps, res = [];
+  let wn = target.__wasmNode;
   for(let i = 0, len = keys.length; i < len; i++) {
     let k = keys[i], v = style[k];
     let isGeom = GEOM.hasOwnProperty(k);
-    if(!equalStyle(k, v, isGeom ? currentProps[k] : currentStyle[k], target)) {
-      if(isGeom) {
+    if(isGeom) {
+      if(!equalStyle(k, v, currentProps[k], target)) {
         currentProps[k] = v;
+        res.push(k);
+      }
+    }
+    // wasm的情况transform和opacity都是在wasm上计算存储
+    else if(wn && wasm.isWasmStyle(k)) {
+      let n = WASM_STYLE_KEY[k];
+      if(k === TRANSFORM_ORIGIN) {
+        if(!wn.equal_set_style(n, v[0].v, v[0].u) || !wn.equal_set_style(n, v[1].v, v[1].u)) {
+          res.push(k);
+        }
       }
       else {
-        currentStyle[k] = v;
+        if(!wn.equal_set_style(n, v.v, v.u)) {
+          res.push(k);
+        }
       }
-      res.push(k);
+    }
+    else {
+      if(!equalStyle(k, v, currentStyle[k], target)) {
+        currentStyle[k] = v;
+        res.push(k);
+      }
     }
   }
   return res;
@@ -1606,19 +1581,7 @@ class Animation extends Event {
     if(wn) {
       for(let i = 0, len = keys.length; i <len; i++) {
         let k = keys[i];
-        if(k === TRANSLATE_X
-          || k === TRANSLATE_Y
-          || k === TRANSLATE_Z
-          || k === ROTATE_X
-          || k === ROTATE_Y
-          || k === ROTATE_Z
-          || k === SKEW_X
-          || k === SKEW_Y
-          || k === SCALE_X
-          || k === SCALE_X
-          || k === SCALE_Y
-          || k === SCALE_Z
-          || k === TRANSFORM_ORIGIN) {
+        if(wasm.isWasmStyle(k)) {
           wList.push(k);
           wHash[k] = true;
         }
@@ -1626,24 +1589,7 @@ class Animation extends Event {
       // 有相关的才交给wasm，并移除js中transition计算
       if(wList.length) {
         let iter = this.__iterations === Infinity ? 0 : this.__iterations;
-        let tf = getEasing(ea), easeType = EASING.LINEAR;
-        if(tf && ea !== easing.linear) {
-          if(tf === easing.easeIn) {
-            easeType = EASING.EASE_IN;
-          }
-          else if(tf === easing.easeOut) {
-            easeType = EASING.EASE_OUT;
-          }
-          else if(tf === easing.ease) {
-            easeType = EASING.EASE;
-          }
-          else if(tf === easing.easeInOut) {
-            easeType = EASING.EASE_IN_OUT;
-          }
-          else {
-            easeType = EASING.EASE_CUSTOM;
-          }
-        }
+        let easeType = getEaseType(ea);
         let wa = this.__wasmAnimation = wasm.Animation.new(target.__wasmNode.ptr, DIRECTION[this.__direction] || 0, this.__duration, this.__fps,
           this.__delay, this.__endDelay, FILLS[this.__fill] || 0, this.__playbackRate, iter,
           this.__areaStart, this.__areaDuration, easeType);
@@ -1655,6 +1601,17 @@ class Animation extends Event {
         }
         wasmFrame(wa, wHash, frames, false);
         wasmFrame(wa, wHash, framesR, true);
+        // originStyle也需要wasm保存下来等结束还原用
+        for(let i = 0, len = wList.length; i < len; i++) {
+          let k = wList[i], n = WASM_STYLE_KEY[k], v = __currentStyle[k];
+          if(k === TRANSFORM_ORIGIN) {
+            wa.add_origin(n, v[0].v, v[0].u);
+            wa.add_origin(n + 1, v[1].v, v[1].u);
+          }
+          else {
+            wa.add_origin(n, v.v, v.u);
+          }
+        }
         // 没有其他的则全部交由wasm
         if(wList.length === keys.length) {
           this.__ignore = true;
@@ -1760,9 +1717,7 @@ class Animation extends Event {
     this.__isEndDelay = false;
     let wa = this.__wasmAnimation;
     if(wa && !fromGoto) {
-      wa.play_count = 0;
-      wa.play_state = PLAY_STATE.RUNNING;
-      wa.first_play = true;
+      wa.play();
     }
     // 由root统一控制，防止重复play
     let root = this.__root;
@@ -1771,7 +1726,7 @@ class Animation extends Event {
   }
 
   __before(diff) {
-    // 有wasm且完全被包含情况忽略js计算，返回true标识
+    // 有wasm且完全被包含情况忽略js计算，返回true标识，即便不完全包含，其它的引发的刷新逻辑也包含matrix+opacity
     if(this.__ignore) {
       return true;
     }
@@ -1840,8 +1795,7 @@ class Animation extends Event {
       this.emit(Event.END, this.__playCount - 1);
     }
     if(this.__finished) {
-      this.__begin = this.__end = this.__isDelay = this.__finished
-        = this.__inFps = false;
+      this.__begin = this.__end = this.__isDelay = this.__isEndDelay = this.__finished = false;
       this.__playState = 'finished';
       this.emit(Event.FINISH, true);
       this.__clean(true);
@@ -1906,7 +1860,6 @@ class Animation extends Event {
       let target = this.__target;
       let style;
       // 是否停留在最后一帧
-      let currentFrame;
       if(this.__stayEnd) {
         let currentFrames = this.__initCurrentFrames(this.__playCount);
         let currentFrame = this.__currentFrame = currentFrames[currentFrames.length - 1];
@@ -1960,7 +1913,6 @@ class Animation extends Event {
     if(wa) {
       wa.play_state = PLAY_STATE.IDLE;
     }
-    let currentFrame = this.__currentFrame;
     this.__currentFrame = null;
     let root = this.__root;
     if(root) {
@@ -2186,15 +2138,24 @@ class Animation extends Event {
       let keys;
       // 是否停留在最后一帧
       if(this.__stayEnd) {
-        keys = calLastStyle(currentFrame.style, target, this.__keys);
+        // 第一次进入endDelay触发后续不再，并且设置__end标识在after触发END事件
+        if(!this.__isEndDelay) {
+          this.__isEndDelay = true;
+          this.__end = true;
+          keys = calLastStyle(currentFrame.style, target, this.__keys);
+        }
+        else {
+          keys = [];
+        }
+        // 有可能刚进endDelay（只有1ms很短）就超过直接finish了，所以只用时间对比
+        if(currentTime >= dur + this.__endDelay) {
+          this.__playCount++;
+          this.__finished = true;
+        }
       }
       else {
         keys = calLastStyle(this.__originStyle, target, this.__keys);
         currentFrame = this.__currentFrame = null;
-      }
-      // 第一次进入endDelay触发后续不再，并且设置__end标识在after触发END事件
-      if(!this.__isEndDelay) {
-        this.__isEndDelay = true;
         this.__end = true;
         this.__playCount++;
         this.__finished = true;
@@ -2334,6 +2295,10 @@ class Animation extends Event {
       this.__duration = v;
       this.__checkModify();
     }
+    let wn = this.__wasmAnimation;
+    if(wn) {
+      wn.duration = v;
+    }
     return v;
   }
 
@@ -2347,6 +2312,10 @@ class Animation extends Event {
       this.__delay = v;
       this.__checkModify();
     }
+    let wn = this.__wasmAnimation;
+    if(wn) {
+      wn.delay = v;
+    }
     return v;
   }
 
@@ -2359,6 +2328,10 @@ class Animation extends Event {
     if(this.__endDelay !== v) {
       this.__endDelay = v;
       this.__checkModify();
+    }
+    let wn = this.__wasmAnimation;
+    if(wn) {
+      wn.end_delay = v;
     }
     return v;
   }
@@ -2374,6 +2347,10 @@ class Animation extends Event {
         v = 60;
       }
       this.__fps = v;
+    }
+    let wn = this.__wasmAnimation;
+    if(wn) {
+      wn.fps = v;
     }
     return v;
   }
@@ -2395,6 +2372,10 @@ class Animation extends Event {
       if(isNaN(v) || v < 0) {
         v = 1;
       }
+    }
+    let wn = this.__wasmAnimation;
+    if(wn) {
+      wn.iterations = v === Infinity ? 0 : v;
     }
     if(this.__iterations !== v) {
       this.__iterations = v;
@@ -2420,6 +2401,10 @@ class Animation extends Event {
       forwards: true,
       both: true,
     }.hasOwnProperty(v);
+    let wn = this.__wasmAnimation;
+    if(wn) {
+      wn.fill = FILLS[v] || 0;
+    }
     return v;
   }
 
@@ -2429,6 +2414,10 @@ class Animation extends Event {
 
   set direction(v) {
     v = v || 'normal';
+    let wn = this.__wasmAnimation;
+    if(wn) {
+      wn.direction = DIRECTION[v] || 0;
+    }
     if(this.__direction !== v) {
       this.__direction = v;
       this.__checkModify();
@@ -2453,6 +2442,10 @@ class Animation extends Event {
     if(v <= 0) {
       v = 1;
     }
+    let wn = this.__wasmAnimation;
+    if(wn) {
+      wn.playback_rate = v;
+    }
     if(this.__playbackRate !== v) {
       this.__playbackRate = v;
     }
@@ -2464,6 +2457,16 @@ class Animation extends Event {
   }
 
   set easing(v) {
+    let wa = this.__wasmAnimation;
+    if(wa) {
+      let easeType = getEaseType(v);
+      if(easeType === EASING.EASE_CUSTOM) {
+        v = v.match(/[\d.]+/g);
+        if(v.length === 4) {
+          wa.set_bezier(parseFloat(v[0]), parseFloat(v[1]), parseFloat(v[2]), parseFloat(v[3]));
+        }
+      }
+    }
     this.__easing = v;
   }
 
@@ -2477,6 +2480,10 @@ class Animation extends Event {
 
   set currentTime(v) {
     v = Math.max(0, parseFloat(v) || 0);
+    let wn = this.__wasmAnimation;
+    if(wn) {
+      wn.current_time = v;
+    }
     if(this.__currentTime !== v) {
       this.__currentTime = v;
     }
@@ -2501,6 +2508,10 @@ class Animation extends Event {
 
   set playCount(v) {
     v = Math.max(0, parseInt(v) || 0);
+    let wn = this.__wasmAnimation;
+    if(wn) {
+      wn.play_count = v;
+    }
     if(this.__playCount !== v) {
       this.__playCount = v;
     }
@@ -2513,6 +2524,10 @@ class Animation extends Event {
 
   set areaStart(v) {
     v = Math.max(0, parseInt(v) || 0);
+    let wn = this.__wasmAnimation;
+    if(wn) {
+      wn.area_start = v;
+    }
     if(this.__areaStart !== v) {
       this.__areaStart = v;
     }
@@ -2525,6 +2540,10 @@ class Animation extends Event {
 
   set areaDuration(v) {
     v = Math.max(0, parseInt(v) || 0);
+    let wn = this.__wasmAnimation;
+    if(wn) {
+      wn.area_duration = v;
+    }
     if(this.__areaDuration !== v) {
       this.__areaDuration = v;
     }
@@ -2924,6 +2943,28 @@ class Animation extends Event {
     }
     return { trans, fixed };
   }
+}
+
+function getEaseType(ea) {
+  let tf = getEasing(ea), easeType = EASING.LINEAR;
+  if(tf && tf !== easing.linear) {
+    if(tf === easing.easeIn) {
+      easeType = EASING.EASE_IN;
+    }
+    else if(tf === easing.easeOut) {
+      easeType = EASING.EASE_OUT;
+    }
+    else if(tf === easing.ease) {
+      easeType = EASING.EASE;
+    }
+    else if(tf === easing.easeInOut) {
+      easeType = EASING.EASE_IN_OUT;
+    }
+    else {
+      easeType = EASING.EASE_CUSTOM;
+    }
+  }
+  return easeType;
 }
 
 export default Animation;

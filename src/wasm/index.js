@@ -328,6 +328,14 @@ export class Animation {
     wasm.animation_add_item(this.ptr, is_reverse, k, v, u, d);
   }
   /**
+   * @param {number} k
+   * @param {number} v
+   * @param {number} u
+   */
+  add_origin(k, v, u) {
+    wasm.animation_add_origin(this.ptr, k, v, u);
+  }
+  /**
    */
   play() {
     wasm.animation_play(this.ptr);
@@ -743,6 +751,16 @@ export class Node {
    */
   equal_style(k, v, u) {
     const ret = wasm.node_equal_style(this.ptr, k, v, u);
+    return ret !== 0;
+  }
+  /**
+   * @param {number} k
+   * @param {number} v
+   * @param {number} u
+   * @returns {boolean}
+   */
+  equal_set_style(k, v, u) {
+    const ret = wasm.node_equal_set_style(this.ptr, k, v, u);
     return ret !== 0;
   }
   /**

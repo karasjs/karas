@@ -1331,17 +1331,35 @@ function calColor(k, v, percent, st, cl, frame, currentStyle) {
  */
 function calLastStyle(style, target, keys) {
   let currentStyle = target.__currentStyle, currentProps = target.__currentProps, res = [];
+  let wn = target.__wasmNode;
   for(let i = 0, len = keys.length; i < len; i++) {
     let k = keys[i], v = style[k];
     let isGeom = GEOM.hasOwnProperty(k);
-    if(!equalStyle(k, v, isGeom ? currentProps[k] : currentStyle[k], target)) {
-      if(isGeom) {
+    if(isGeom) {
+      if(!equalStyle(k, v, currentProps[k], target)) {
         currentProps[k] = v;
+        res.push(k);
+      }
+    }
+    // wasm的情况transform和opacity都是在wasm上计算存储
+    else if(wn && wasm.isWasmStyle(k)) {
+      let n = WASM_STYLE_KEY[k];
+      if(k === TRANSFORM_ORIGIN) {
+        if(!wn.equal_set_style(n, v[0].v, v[0].u) || !wn.equal_set_style(n, v[1].v, v[1].u)) {
+          res.push(k);
+        }
       }
       else {
-        currentStyle[k] = v;
+        if(!wn.equal_set_style(n, v.v, v.u)) {
+          res.push(k);
+        }
       }
-      res.push(k);
+    }
+    else {
+      if(!equalStyle(k, v, currentStyle[k], target)) {
+        currentStyle[k] = v;
+        res.push(k);
+      }
     }
   }
   return res;
@@ -1583,6 +1601,17 @@ class Animation extends Event {
         }
         wasmFrame(wa, wHash, frames, false);
         wasmFrame(wa, wHash, framesR, true);
+        // originStyle也需要wasm保存下来等结束还原用
+        for(let i = 0, len = wList.length; i < len; i++) {
+          let k = wList[i], n = WASM_STYLE_KEY[k], v = __currentStyle[k];
+          if(k === TRANSFORM_ORIGIN) {
+            wa.add_origin(n, v[0].v, v[0].u);
+            wa.add_origin(n + 1, v[1].v, v[1].u);
+          }
+          else {
+            wa.add_origin(n, v.v, v.u);
+          }
+        }
         // 没有其他的则全部交由wasm
         if(wList.length === keys.length) {
           this.__ignore = true;
@@ -1831,7 +1860,6 @@ class Animation extends Event {
       let target = this.__target;
       let style;
       // 是否停留在最后一帧
-      let currentFrame;
       if(this.__stayEnd) {
         let currentFrames = this.__initCurrentFrames(this.__playCount);
         let currentFrame = this.__currentFrame = currentFrames[currentFrames.length - 1];
@@ -1885,7 +1913,6 @@ class Animation extends Event {
     if(wa) {
       wa.play_state = PLAY_STATE.IDLE;
     }
-    let currentFrame = this.__currentFrame;
     this.__currentFrame = null;
     let root = this.__root;
     if(root) {

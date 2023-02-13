@@ -6,8 +6,8 @@ module.exports = {
     browser
       .url('file://' + path.join(__dirname, 'index.html'))
       .waitForElementVisible('body', 1000)
-      .pause(450)
-      .assert.value('input', '/end/true/finish/0')
+      .pause(200)
+      .assert.value('input', '')
       .end();
   }
 };

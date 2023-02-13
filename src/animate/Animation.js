@@ -2514,6 +2514,9 @@ class Animation extends Event {
   }
 
   get currentTime() {
+    if(this.__ignore) {
+      return this.__wasmAnimation.current_time;
+    }
     return this.__currentTime;
   }
 
@@ -2530,10 +2533,16 @@ class Animation extends Event {
   }
 
   get pending() {
+    if(this.__ignore) {
+      return this.__wasmAnimation.play_state !== 1; // 硬编码，wasm对应状态
+    }
     return this.__playState !== 'running';
   }
 
   get finished() {
+    if(this.__ignore) {
+      return this.__wasmAnimation.play_state === 3; // 硬编码，wasm对应状态
+    }
     return this.__playState === 'finished';
   }
 
@@ -2542,6 +2551,9 @@ class Animation extends Event {
   }
 
   get playCount() {
+    if(this.__ignore) {
+      return this.__wasmAnimation.play_count;
+    }
     return this.__playCount;
   }
 

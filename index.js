@@ -19746,6 +19746,10 @@
     }, {
       key: "currentTime",
       get: function get() {
+        if (this.__ignore) {
+          return this.__wasmAnimation.current_time;
+        }
+
         return this.__currentTime;
       },
       set: function set(v) {
@@ -19765,11 +19769,19 @@
     }, {
       key: "pending",
       get: function get() {
+        if (this.__ignore) {
+          return this.__wasmAnimation.play_state !== 1; // 硬编码，wasm对应状态
+        }
+
         return this.__playState !== 'running';
       }
     }, {
       key: "finished",
       get: function get() {
+        if (this.__ignore) {
+          return this.__wasmAnimation.play_state === 3; // 硬编码，wasm对应状态
+        }
+
         return this.__playState === 'finished';
       }
     }, {
@@ -19780,6 +19792,10 @@
     }, {
       key: "playCount",
       get: function get() {
+        if (this.__ignore) {
+          return this.__wasmAnimation.play_count;
+        }
+
         return this.__playCount;
       },
       set: function set(v) {
@@ -48362,7 +48378,7 @@
     webgl: webgl
   };
 
-  var version = "0.85.14";
+  var version = "0.86.0";
 
   var isString = util.isString;
   Geom.register('$line', Line);

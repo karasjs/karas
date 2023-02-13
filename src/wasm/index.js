@@ -753,6 +753,30 @@ export class Node {
   update_style(k, v, u) {
     wasm.node_update_style(this.ptr, k, v, u);
   }
+  /**
+   * @param {number} v
+   */
+  offset_x(v) {
+    wasm.node_offset_x(this.ptr, v);
+  }
+  /**
+   * @param {number} v
+   */
+  offset_y(v) {
+    wasm.node_offset_y(this.ptr, v);
+  }
+  /**
+   * @param {number} v
+   */
+  resize_x(v) {
+    wasm.node_resize_x(this.ptr, v);
+  }
+  /**
+   * @param {number} v
+   */
+  resize_y(v) {
+    wasm.node_resize_y(this.ptr, v);
+  }
 }
 /**
  */

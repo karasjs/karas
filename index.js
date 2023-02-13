@@ -619,11 +619,21 @@
       key: "__offsetX",
       value: function __offsetX(diff) {
         this.__x += diff;
+        var wn = this.__wasmNode;
+
+        if (wn) {
+          wn.offset_x(diff);
+        }
       }
     }, {
       key: "__offsetY",
       value: function __offsetY(diff) {
         this.__y += diff;
+        var wn = this.__wasmNode;
+
+        if (wn) {
+          wn.offset_y(diff);
+        }
       }
     }, {
       key: "__destroy",
@@ -16479,6 +16489,42 @@
       value: function update_style(k, v, u) {
         wasm.node_update_style(this.ptr, k, v, u);
       }
+      /**
+       * @param {number} v
+       */
+
+    }, {
+      key: "offset_x",
+      value: function offset_x(v) {
+        wasm.node_offset_x(this.ptr, v);
+      }
+      /**
+       * @param {number} v
+       */
+
+    }, {
+      key: "offset_y",
+      value: function offset_y(v) {
+        wasm.node_offset_y(this.ptr, v);
+      }
+      /**
+       * @param {number} v
+       */
+
+    }, {
+      key: "resize_x",
+      value: function resize_x(v) {
+        wasm.node_resize_x(this.ptr, v);
+      }
+      /**
+       * @param {number} v
+       */
+
+    }, {
+      key: "resize_y",
+      value: function resize_y(v) {
+        wasm.node_resize_y(this.ptr, v);
+      }
     }], [{
       key: "__wrap",
       value: function __wrap(ptr) {
@@ -21438,11 +21484,11 @@
 
         this.__calStyle(REFLOW$3, currentStyle, computedStyle, cacheStyle);
 
-        this.__calPerspective(currentStyle, computedStyle, cacheStyle); // 每次reflow重新传matrix到wasm
+        this.__calPerspective(currentStyle, computedStyle, cacheStyle); // 每次reflow传数据到wasm
 
 
         this.__wasmStyle(currentStyle);
-      } // 传递matrix相关样式到wasm中计算
+      } // 传递transform/opacity相关样式到wasm中计算
 
     }, {
       key: "__wasmStyle",
@@ -21450,7 +21496,6 @@
         var wn = this.__wasmNode;
 
         if (wn) {
-          currentStyle = currentStyle || this.__currentStyle;
           wn.set_style(this.__x1, this.__y1, this.__offsetWidth, this.__offsetHeight, currentStyle[TRANSLATE_X].v, currentStyle[TRANSLATE_Y].v, currentStyle[TRANSLATE_Z].v, currentStyle[ROTATE_X].v, currentStyle[ROTATE_Y].v, currentStyle[ROTATE_Z].v, currentStyle[ROTATE_3D][0], currentStyle[ROTATE_3D][1], currentStyle[ROTATE_3D][2], currentStyle[ROTATE_3D][3].v, currentStyle[SCALE_X].v, currentStyle[SCALE_Y].v, currentStyle[SCALE_Z].v, currentStyle[SKEW_X].v, currentStyle[SKEW_Y].v, currentStyle[OPACITY$3], currentStyle[TRANSFORM_ORIGIN$2][0].v, currentStyle[TRANSFORM_ORIGIN$2][1].v, currentStyle[TRANSLATE_X].u, currentStyle[TRANSLATE_Y].u, currentStyle[TRANSLATE_Z].u, currentStyle[TRANSFORM_ORIGIN$2][0].u, currentStyle[TRANSFORM_ORIGIN$2][1].u);
         }
       }
@@ -23973,6 +24018,12 @@
           }
         }
 
+        var wn = this.__wasmNode;
+
+        if (wn) {
+          wn.resize_x(diff);
+        }
+
         this.clearCache();
       }
     }, {
@@ -24003,6 +24054,12 @@
 
             this.__layoutStyle(lv);
           }
+        }
+
+        var wn = this.__wasmNode;
+
+        if (wn) {
+          wn.resize_y(diff);
         }
 
         this.clearCache();

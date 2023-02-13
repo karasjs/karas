@@ -780,15 +780,14 @@ class Xom extends Node {
     let cacheStyle = this.__cacheStyle;
     this.__calStyle(REFLOW, currentStyle, computedStyle, cacheStyle);
     this.__calPerspective(currentStyle, computedStyle, cacheStyle);
-    // 每次reflow重新传matrix到wasm
+    // 每次reflow传数据到wasm
     this.__wasmStyle(currentStyle);
   }
 
-  // 传递matrix相关样式到wasm中计算
+  // 传递transform/opacity相关样式到wasm中计算
   __wasmStyle(currentStyle) {
     let wn = this.__wasmNode;
     if(wn) {
-      currentStyle = currentStyle || this.__currentStyle;
       wn.set_style(this.__x1, this.__y1, this.__offsetWidth, this.__offsetHeight,
         currentStyle[TRANSLATE_X].v, currentStyle[TRANSLATE_Y].v, currentStyle[TRANSLATE_Z].v,
         currentStyle[ROTATE_X].v, currentStyle[ROTATE_Y].v, currentStyle[ROTATE_Z].v,
@@ -3073,6 +3072,10 @@ class Xom extends Node {
         this.__layoutStyle(lv);
       }
     }
+    let wn = this.__wasmNode;
+    if(wn) {
+      wn.resize_x(diff);
+    }
     this.clearCache();
   }
 
@@ -3097,6 +3100,10 @@ class Xom extends Node {
         this.__cacheStyle = [];
         this.__layoutStyle(lv);
       }
+    }
+    let wn = this.__wasmNode;
+    if(wn) {
+      wn.resize_y(diff);
     }
     this.clearCache();
   }

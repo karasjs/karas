@@ -37,10 +37,18 @@ class Node {
 
   __offsetX(diff) {
     this.__x += diff;
+    let wn = this.__wasmNode;
+    if(wn) {
+      wn.offset_x(diff);
+    }
   }
 
   __offsetY(diff) {
     this.__y += diff;
+    let wn = this.__wasmNode;
+    if(wn) {
+      wn.offset_y(diff);
+    }
   }
 
   __destroy() {

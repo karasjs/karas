@@ -613,11 +613,21 @@ var Node$1 = /*#__PURE__*/function () {
     key: "__offsetX",
     value: function __offsetX(diff) {
       this.__x += diff;
+      var wn = this.__wasmNode;
+
+      if (wn) {
+        wn.offset_x(diff);
+      }
     }
   }, {
     key: "__offsetY",
     value: function __offsetY(diff) {
       this.__y += diff;
+      var wn = this.__wasmNode;
+
+      if (wn) {
+        wn.offset_y(diff);
+      }
     }
   }, {
     key: "__destroy",
@@ -4001,6 +4011,8 @@ var vector = {
   getPerpendicularVector3: getPerpendicularVector3
 };
 
+var _WASM_STYLE_KEY;
+
 var STYLE_KEY$4 = {
   POSITION: 0,
   DISPLAY: 1,
@@ -4150,13 +4162,32 @@ Object.keys(STYLE_KEY$4).forEach(function (k) {
   STYLE_RV_KEY$1[k2] = l;
   STYLE_V_KEY[l] = k2;
 });
-var WASM_STYLE = {
-  TRANSLATE_X: 0,
-  TRANSLATE_Y: 1,
-  TRANSLATE_Z: 2,
-  ROTATE_Z: 3,
-  SCALE_X: 4,
-  SCALE_Y: 5
+var WASM_STYLE_KEY$2 = (_WASM_STYLE_KEY = {}, _defineProperty(_WASM_STYLE_KEY, STYLE_KEY$4.TRANSLATE_X, 0), _defineProperty(_WASM_STYLE_KEY, STYLE_KEY$4.TRANSLATE_Y, 1), _defineProperty(_WASM_STYLE_KEY, STYLE_KEY$4.TRANSLATE_Z, 2), _defineProperty(_WASM_STYLE_KEY, STYLE_KEY$4.ROTATE_X, 3), _defineProperty(_WASM_STYLE_KEY, STYLE_KEY$4.ROTATE_Y, 4), _defineProperty(_WASM_STYLE_KEY, STYLE_KEY$4.ROTATE_Z, 5), _defineProperty(_WASM_STYLE_KEY, STYLE_KEY$4.ROTATE_3D, 6), _defineProperty(_WASM_STYLE_KEY, STYLE_KEY$4.SCALE_X, 10), _defineProperty(_WASM_STYLE_KEY, STYLE_KEY$4.SCALE_Y, 11), _defineProperty(_WASM_STYLE_KEY, STYLE_KEY$4.SCALE_Z, 12), _defineProperty(_WASM_STYLE_KEY, STYLE_KEY$4.SKEW_X, 13), _defineProperty(_WASM_STYLE_KEY, STYLE_KEY$4.SKEW_Y, 14), _defineProperty(_WASM_STYLE_KEY, STYLE_KEY$4.OPACITY, 15), _defineProperty(_WASM_STYLE_KEY, STYLE_KEY$4.TRANSFORM_ORIGIN, 16), _WASM_STYLE_KEY);
+var DIRECTION$1 = {
+  reverse: 1,
+  alternate: 2,
+  'alternate-reverse': 3,
+  alternateReverse: 3
+};
+var FILLS$1 = {
+  forwards: 1,
+  backwards: 2,
+  both: 3
+};
+var EASING$1 = {
+  DEFAULT: 0,
+  LINEAR: 1,
+  EASE_IN: 2,
+  EASE_OUT: 3,
+  EASE: 4,
+  EASE_IN_OUT: 5,
+  EASE_CUSTOM: 6
+};
+var PLAY_STATE$1 = {
+  IDLE: 0,
+  RUNNING: 1,
+  PAUSED: 2,
+  FINISHED: 3
 };
 var enums = {
   STYLE_KEY: STYLE_KEY$4,
@@ -4170,17 +4201,21 @@ var enums = {
   style2Lower: style2Lower,
   style2Upper: style2Upper$2,
   ELLIPSIS: '…',
-  WASM_STYLE: WASM_STYLE
+  WASM_STYLE_KEY: WASM_STYLE_KEY$2,
+  DIRECTION: DIRECTION$1,
+  FILLS: FILLS$1,
+  EASING: EASING$1,
+  PLAY_STATE: PLAY_STATE$1
 };
 
 var H$1 = 4 * (Math.sqrt(2) - 1) / 3;
 var crossProduct = vector.crossProduct;
 var calPoint$1 = matrix.calPoint,
     isE$4 = matrix.isE;
-var _enums$STYLE_KEY$k = enums.STYLE_KEY,
-    WIDTH$a = _enums$STYLE_KEY$k.WIDTH,
-    HEIGHT$a = _enums$STYLE_KEY$k.HEIGHT,
-    TRANSFORM_ORIGIN$6 = _enums$STYLE_KEY$k.TRANSFORM_ORIGIN;
+var _enums$STYLE_KEY$l = enums.STYLE_KEY,
+    WIDTH$a = _enums$STYLE_KEY$l.WIDTH,
+    HEIGHT$a = _enums$STYLE_KEY$l.HEIGHT,
+    TRANSFORM_ORIGIN$7 = _enums$STYLE_KEY$l.TRANSFORM_ORIGIN;
 /**
  * 圆弧拟合公式，根据角度求得3阶贝塞尔控制点比例长度，一般<=90，超过拆分
  * @param deg
@@ -4640,7 +4675,7 @@ function calCoordsInNode(px, py, node) {
       computedStyle = _node$computedStyle === void 0 ? [] : _node$computedStyle;
   var width = computedStyle[WIDTH$a],
       height = computedStyle[HEIGHT$a],
-      _computedStyle$TRANSF = computedStyle[TRANSFORM_ORIGIN$6];
+      _computedStyle$TRANSF = computedStyle[TRANSFORM_ORIGIN$7];
   _computedStyle$TRANSF = _computedStyle$TRANSF === void 0 ? [width * 0.5, height * 0.5] : _computedStyle$TRANSF;
 
   var _computedStyle$TRANSF2 = _slicedToArray(_computedStyle$TRANSF, 2),
@@ -4661,7 +4696,7 @@ function calPercentInNode(x, y, node) {
   var _node$computedStyle2 = node.computedStyle,
       width = _node$computedStyle2[WIDTH$a],
       height = _node$computedStyle2[HEIGHT$a],
-      _node$computedStyle2$ = _slicedToArray(_node$computedStyle2[TRANSFORM_ORIGIN$6], 2),
+      _node$computedStyle2$ = _slicedToArray(_node$computedStyle2[TRANSFORM_ORIGIN$7], 2),
       ox = _node$computedStyle2$[0],
       oy = _node$computedStyle2$[1]; // 先求无旋转时右下角相对于原点的角度ds
 
@@ -5168,18 +5203,18 @@ var PX$a = o$4.PX,
     VMIN$9 = o$4.VMIN;
 var canvasPolygon$6 = painter.canvasPolygon,
     svgPolygon$5 = painter.svgPolygon;
-var _enums$STYLE_KEY$j = enums.STYLE_KEY,
-    BORDER_LEFT_WIDTH$a = _enums$STYLE_KEY$j.BORDER_LEFT_WIDTH,
-    BORDER_TOP_WIDTH$8 = _enums$STYLE_KEY$j.BORDER_TOP_WIDTH,
-    BORDER_BOTTOM_WIDTH$7 = _enums$STYLE_KEY$j.BORDER_BOTTOM_WIDTH,
-    PADDING_LEFT$a = _enums$STYLE_KEY$j.PADDING_LEFT,
-    PADDING_BOTTOM$7 = _enums$STYLE_KEY$j.PADDING_BOTTOM,
-    PADDING_TOP$8 = _enums$STYLE_KEY$j.PADDING_TOP,
-    BORDER_TOP_LEFT_RADIUS$5 = _enums$STYLE_KEY$j.BORDER_TOP_LEFT_RADIUS,
-    BORDER_TOP_RIGHT_RADIUS$5 = _enums$STYLE_KEY$j.BORDER_TOP_RIGHT_RADIUS,
-    BORDER_BOTTOM_LEFT_RADIUS$5 = _enums$STYLE_KEY$j.BORDER_BOTTOM_LEFT_RADIUS,
-    BORDER_BOTTOM_RIGHT_RADIUS$5 = _enums$STYLE_KEY$j.BORDER_BOTTOM_RIGHT_RADIUS,
-    FONT_SIZE$c = _enums$STYLE_KEY$j.FONT_SIZE;
+var _enums$STYLE_KEY$k = enums.STYLE_KEY,
+    BORDER_LEFT_WIDTH$a = _enums$STYLE_KEY$k.BORDER_LEFT_WIDTH,
+    BORDER_TOP_WIDTH$8 = _enums$STYLE_KEY$k.BORDER_TOP_WIDTH,
+    BORDER_BOTTOM_WIDTH$7 = _enums$STYLE_KEY$k.BORDER_BOTTOM_WIDTH,
+    PADDING_LEFT$a = _enums$STYLE_KEY$k.PADDING_LEFT,
+    PADDING_BOTTOM$7 = _enums$STYLE_KEY$k.PADDING_BOTTOM,
+    PADDING_TOP$8 = _enums$STYLE_KEY$k.PADDING_TOP,
+    BORDER_TOP_LEFT_RADIUS$5 = _enums$STYLE_KEY$k.BORDER_TOP_LEFT_RADIUS,
+    BORDER_TOP_RIGHT_RADIUS$5 = _enums$STYLE_KEY$k.BORDER_TOP_RIGHT_RADIUS,
+    BORDER_BOTTOM_LEFT_RADIUS$5 = _enums$STYLE_KEY$k.BORDER_BOTTOM_LEFT_RADIUS,
+    BORDER_BOTTOM_RIGHT_RADIUS$5 = _enums$STYLE_KEY$k.BORDER_BOTTOM_RIGHT_RADIUS,
+    FONT_SIZE$c = _enums$STYLE_KEY$k.FONT_SIZE;
 /* 获取合适的虚线实体空白宽度ps/pd和数量n
  * 总长total，start边长bs，end边长be，内容长w，
  * 实体长范围[smin,smax]，空白长范围[dmin,dmax]
@@ -8718,17 +8753,17 @@ var BACKGROUND_COLOR$4 = STYLE_KEY$3.BACKGROUND_COLOR,
     LETTER_SPACING$5 = STYLE_KEY$3.LETTER_SPACING,
     PERSPECTIVE$6 = STYLE_KEY$3.PERSPECTIVE,
     TEXT_STROKE_WIDTH$7 = STYLE_KEY$3.TEXT_STROKE_WIDTH,
-    TRANSLATE_X$5 = STYLE_KEY$3.TRANSLATE_X,
-    TRANSLATE_Y$5 = STYLE_KEY$3.TRANSLATE_Y,
-    TRANSLATE_Z$5 = STYLE_KEY$3.TRANSLATE_Z,
-    SKEW_X$5 = STYLE_KEY$3.SKEW_X,
-    SKEW_Y$5 = STYLE_KEY$3.SKEW_Y,
-    SCALE_X$6 = STYLE_KEY$3.SCALE_X,
-    SCALE_Y$6 = STYLE_KEY$3.SCALE_Y,
+    TRANSLATE_X$6 = STYLE_KEY$3.TRANSLATE_X,
+    TRANSLATE_Y$6 = STYLE_KEY$3.TRANSLATE_Y,
+    TRANSLATE_Z$6 = STYLE_KEY$3.TRANSLATE_Z,
+    SKEW_X$6 = STYLE_KEY$3.SKEW_X,
+    SKEW_Y$6 = STYLE_KEY$3.SKEW_Y,
+    SCALE_X$7 = STYLE_KEY$3.SCALE_X,
+    SCALE_Y$7 = STYLE_KEY$3.SCALE_Y,
     SCALE_Z$5 = STYLE_KEY$3.SCALE_Z,
-    ROTATE_X$5 = STYLE_KEY$3.ROTATE_X,
-    ROTATE_Y$5 = STYLE_KEY$3.ROTATE_Y,
-    ROTATE_Z$7 = STYLE_KEY$3.ROTATE_Z,
+    ROTATE_X$6 = STYLE_KEY$3.ROTATE_X,
+    ROTATE_Y$6 = STYLE_KEY$3.ROTATE_Y,
+    ROTATE_Z$8 = STYLE_KEY$3.ROTATE_Z,
     BACKGROUND_IMAGE$4 = STYLE_KEY$3.BACKGROUND_IMAGE,
     FILL$5 = STYLE_KEY$3.FILL,
     STROKE$4 = STYLE_KEY$3.STROKE,
@@ -8746,7 +8781,7 @@ function isLengthKey$2(k) {
 }
 
 function isExpandKey$2(k) {
-  return k === TRANSLATE_X$5 || k === TRANSLATE_Y$5 || k === TRANSLATE_Z$5 || k === SKEW_X$5 || k === SKEW_Y$5 || k === SCALE_X$6 || k === SCALE_Y$6 || k === SCALE_Z$5 || k === ROTATE_X$5 || k === ROTATE_Y$5 || k === ROTATE_Z$7;
+  return k === TRANSLATE_X$6 || k === TRANSLATE_Y$6 || k === TRANSLATE_Z$6 || k === SKEW_X$6 || k === SKEW_Y$6 || k === SCALE_X$7 || k === SCALE_Y$7 || k === SCALE_Z$5 || k === ROTATE_X$6 || k === ROTATE_Y$6 || k === ROTATE_Z$8;
 }
 
 function isGradientKey$2(k) {
@@ -8943,60 +8978,60 @@ var blur = {
 
 var STYLE_KEY$1 = enums.STYLE_KEY,
     style2Upper$1 = enums.style2Upper,
-    _enums$STYLE_KEY$i = enums.STYLE_KEY,
-    POSITION$5 = _enums$STYLE_KEY$i.POSITION,
-    WIDTH$8 = _enums$STYLE_KEY$i.WIDTH,
-    HEIGHT$8 = _enums$STYLE_KEY$i.HEIGHT,
-    TRANSLATE_X$4 = _enums$STYLE_KEY$i.TRANSLATE_X,
-    TRANSLATE_Y$4 = _enums$STYLE_KEY$i.TRANSLATE_Y,
-    TRANSLATE_Z$4 = _enums$STYLE_KEY$i.TRANSLATE_Z,
-    SCALE_X$5 = _enums$STYLE_KEY$i.SCALE_X,
-    SCALE_Y$5 = _enums$STYLE_KEY$i.SCALE_Y,
-    SCALE_Z$4 = _enums$STYLE_KEY$i.SCALE_Z,
-    SKEW_X$4 = _enums$STYLE_KEY$i.SKEW_X,
-    SKEW_Y$4 = _enums$STYLE_KEY$i.SKEW_Y,
-    ROTATE_X$4 = _enums$STYLE_KEY$i.ROTATE_X,
-    ROTATE_Y$4 = _enums$STYLE_KEY$i.ROTATE_Y,
-    ROTATE_Z$6 = _enums$STYLE_KEY$i.ROTATE_Z,
-    ROTATE_3D$4 = _enums$STYLE_KEY$i.ROTATE_3D,
-    PERSPECTIVE$5 = _enums$STYLE_KEY$i.PERSPECTIVE,
-    PERSPECTIVE_ORIGIN$4 = _enums$STYLE_KEY$i.PERSPECTIVE_ORIGIN,
-    TRANSFORM$6 = _enums$STYLE_KEY$i.TRANSFORM,
-    TRANSFORM_ORIGIN$5 = _enums$STYLE_KEY$i.TRANSFORM_ORIGIN,
-    BACKGROUND_IMAGE$2 = _enums$STYLE_KEY$i.BACKGROUND_IMAGE,
-    BACKGROUND_COLOR$2 = _enums$STYLE_KEY$i.BACKGROUND_COLOR,
-    BACKGROUND_POSITION_X$3 = _enums$STYLE_KEY$i.BACKGROUND_POSITION_X,
-    BACKGROUND_POSITION_Y$3 = _enums$STYLE_KEY$i.BACKGROUND_POSITION_Y,
-    BACKGROUND_SIZE$2 = _enums$STYLE_KEY$i.BACKGROUND_SIZE,
-    OPACITY$6 = _enums$STYLE_KEY$i.OPACITY,
-    Z_INDEX$5 = _enums$STYLE_KEY$i.Z_INDEX,
-    COLOR$6 = _enums$STYLE_KEY$i.COLOR,
-    FONT_SIZE$9 = _enums$STYLE_KEY$i.FONT_SIZE,
-    FONT_FAMILY$6 = _enums$STYLE_KEY$i.FONT_FAMILY,
-    FONT_WEIGHT$6 = _enums$STYLE_KEY$i.FONT_WEIGHT,
-    FONT_STYLE$4 = _enums$STYLE_KEY$i.FONT_STYLE,
-    LINE_HEIGHT$7 = _enums$STYLE_KEY$i.LINE_HEIGHT,
-    TEXT_ALIGN$3 = _enums$STYLE_KEY$i.TEXT_ALIGN,
-    FILTER$6 = _enums$STYLE_KEY$i.FILTER,
-    VISIBILITY$5 = _enums$STYLE_KEY$i.VISIBILITY,
-    BOX_SHADOW$2 = _enums$STYLE_KEY$i.BOX_SHADOW,
-    POINTER_EVENTS$2 = _enums$STYLE_KEY$i.POINTER_EVENTS,
-    FILL$3 = _enums$STYLE_KEY$i.FILL,
-    STROKE$2 = _enums$STYLE_KEY$i.STROKE,
-    STROKE_WIDTH$8 = _enums$STYLE_KEY$i.STROKE_WIDTH,
-    STROKE_DASHARRAY$1 = _enums$STYLE_KEY$i.STROKE_DASHARRAY,
-    FLEX_BASIS$4 = _enums$STYLE_KEY$i.FLEX_BASIS,
-    MATRIX$4 = _enums$STYLE_KEY$i.MATRIX,
-    LETTER_SPACING$4 = _enums$STYLE_KEY$i.LETTER_SPACING,
-    WHITE_SPACE$3 = _enums$STYLE_KEY$i.WHITE_SPACE,
-    LINE_CLAMP$2 = _enums$STYLE_KEY$i.LINE_CLAMP,
-    ORDER$2 = _enums$STYLE_KEY$i.ORDER,
-    TRANSLATE_PATH$1 = _enums$STYLE_KEY$i.TRANSLATE_PATH,
-    TEXT_STROKE_COLOR$5 = _enums$STYLE_KEY$i.TEXT_STROKE_COLOR,
-    TEXT_STROKE_WIDTH$5 = _enums$STYLE_KEY$i.TEXT_STROKE_WIDTH,
-    TEXT_STROKE_OVER$4 = _enums$STYLE_KEY$i.TEXT_STROKE_OVER,
-    WRITING_MODE$3 = _enums$STYLE_KEY$i.WRITING_MODE,
-    FONT_SIZE_SHRINK$2 = _enums$STYLE_KEY$i.FONT_SIZE_SHRINK;
+    _enums$STYLE_KEY$j = enums.STYLE_KEY,
+    POSITION$5 = _enums$STYLE_KEY$j.POSITION,
+    WIDTH$8 = _enums$STYLE_KEY$j.WIDTH,
+    HEIGHT$8 = _enums$STYLE_KEY$j.HEIGHT,
+    TRANSLATE_X$5 = _enums$STYLE_KEY$j.TRANSLATE_X,
+    TRANSLATE_Y$5 = _enums$STYLE_KEY$j.TRANSLATE_Y,
+    TRANSLATE_Z$5 = _enums$STYLE_KEY$j.TRANSLATE_Z,
+    SCALE_X$6 = _enums$STYLE_KEY$j.SCALE_X,
+    SCALE_Y$6 = _enums$STYLE_KEY$j.SCALE_Y,
+    SCALE_Z$4 = _enums$STYLE_KEY$j.SCALE_Z,
+    SKEW_X$5 = _enums$STYLE_KEY$j.SKEW_X,
+    SKEW_Y$5 = _enums$STYLE_KEY$j.SKEW_Y,
+    ROTATE_X$5 = _enums$STYLE_KEY$j.ROTATE_X,
+    ROTATE_Y$5 = _enums$STYLE_KEY$j.ROTATE_Y,
+    ROTATE_Z$7 = _enums$STYLE_KEY$j.ROTATE_Z,
+    ROTATE_3D$4 = _enums$STYLE_KEY$j.ROTATE_3D,
+    PERSPECTIVE$5 = _enums$STYLE_KEY$j.PERSPECTIVE,
+    PERSPECTIVE_ORIGIN$4 = _enums$STYLE_KEY$j.PERSPECTIVE_ORIGIN,
+    TRANSFORM$6 = _enums$STYLE_KEY$j.TRANSFORM,
+    TRANSFORM_ORIGIN$6 = _enums$STYLE_KEY$j.TRANSFORM_ORIGIN,
+    BACKGROUND_IMAGE$2 = _enums$STYLE_KEY$j.BACKGROUND_IMAGE,
+    BACKGROUND_COLOR$2 = _enums$STYLE_KEY$j.BACKGROUND_COLOR,
+    BACKGROUND_POSITION_X$3 = _enums$STYLE_KEY$j.BACKGROUND_POSITION_X,
+    BACKGROUND_POSITION_Y$3 = _enums$STYLE_KEY$j.BACKGROUND_POSITION_Y,
+    BACKGROUND_SIZE$2 = _enums$STYLE_KEY$j.BACKGROUND_SIZE,
+    OPACITY$7 = _enums$STYLE_KEY$j.OPACITY,
+    Z_INDEX$5 = _enums$STYLE_KEY$j.Z_INDEX,
+    COLOR$6 = _enums$STYLE_KEY$j.COLOR,
+    FONT_SIZE$9 = _enums$STYLE_KEY$j.FONT_SIZE,
+    FONT_FAMILY$6 = _enums$STYLE_KEY$j.FONT_FAMILY,
+    FONT_WEIGHT$6 = _enums$STYLE_KEY$j.FONT_WEIGHT,
+    FONT_STYLE$4 = _enums$STYLE_KEY$j.FONT_STYLE,
+    LINE_HEIGHT$7 = _enums$STYLE_KEY$j.LINE_HEIGHT,
+    TEXT_ALIGN$3 = _enums$STYLE_KEY$j.TEXT_ALIGN,
+    FILTER$6 = _enums$STYLE_KEY$j.FILTER,
+    VISIBILITY$5 = _enums$STYLE_KEY$j.VISIBILITY,
+    BOX_SHADOW$2 = _enums$STYLE_KEY$j.BOX_SHADOW,
+    POINTER_EVENTS$2 = _enums$STYLE_KEY$j.POINTER_EVENTS,
+    FILL$3 = _enums$STYLE_KEY$j.FILL,
+    STROKE$2 = _enums$STYLE_KEY$j.STROKE,
+    STROKE_WIDTH$8 = _enums$STYLE_KEY$j.STROKE_WIDTH,
+    STROKE_DASHARRAY$1 = _enums$STYLE_KEY$j.STROKE_DASHARRAY,
+    FLEX_BASIS$4 = _enums$STYLE_KEY$j.FLEX_BASIS,
+    MATRIX$4 = _enums$STYLE_KEY$j.MATRIX,
+    LETTER_SPACING$4 = _enums$STYLE_KEY$j.LETTER_SPACING,
+    WHITE_SPACE$3 = _enums$STYLE_KEY$j.WHITE_SPACE,
+    LINE_CLAMP$2 = _enums$STYLE_KEY$j.LINE_CLAMP,
+    ORDER$2 = _enums$STYLE_KEY$j.ORDER,
+    TRANSLATE_PATH$1 = _enums$STYLE_KEY$j.TRANSLATE_PATH,
+    TEXT_STROKE_COLOR$5 = _enums$STYLE_KEY$j.TEXT_STROKE_COLOR,
+    TEXT_STROKE_WIDTH$5 = _enums$STYLE_KEY$j.TEXT_STROKE_WIDTH,
+    TEXT_STROKE_OVER$4 = _enums$STYLE_KEY$j.TEXT_STROKE_OVER,
+    WRITING_MODE$3 = _enums$STYLE_KEY$j.WRITING_MODE,
+    FONT_SIZE_SHRINK$2 = _enums$STYLE_KEY$j.FONT_SIZE_SHRINK;
 var AUTO$7 = o$4.AUTO,
     PX$8 = o$4.PX,
     PERCENT$7 = o$4.PERCENT,
@@ -9039,24 +9074,24 @@ function isGradient(s) {
 }
 
 var TRANSFORM_HASH = {
-  translateX: TRANSLATE_X$4,
-  translateY: TRANSLATE_Y$4,
-  translateZ: TRANSLATE_Z$4,
-  scaleX: SCALE_X$5,
-  scaleY: SCALE_Y$5,
+  translateX: TRANSLATE_X$5,
+  translateY: TRANSLATE_Y$5,
+  translateZ: TRANSLATE_Z$5,
+  scaleX: SCALE_X$6,
+  scaleY: SCALE_Y$6,
   scaleZ: SCALE_Z$4,
-  skewX: SKEW_X$4,
-  skewY: SKEW_Y$4,
-  rotateX: ROTATE_X$4,
-  rotateY: ROTATE_Y$4,
-  rotateZ: ROTATE_Z$6,
-  rotate: ROTATE_Z$6
+  skewX: SKEW_X$5,
+  skewY: SKEW_Y$5,
+  rotateX: ROTATE_X$5,
+  rotateY: ROTATE_Y$5,
+  rotateZ: ROTATE_Z$7,
+  rotate: ROTATE_Z$7
 };
 
 function compatibleTransform(k, arr) {
-  if (k === SCALE_X$5 || k === SCALE_Y$5 || k === SCALE_Z$4) {
+  if (k === SCALE_X$6 || k === SCALE_Y$6 || k === SCALE_Z$4) {
     arr.u = NUMBER$4;
-  } else if (k === TRANSLATE_X$4 || k === TRANSLATE_Y$4 || k === TRANSLATE_Z$4) {
+  } else if (k === TRANSLATE_X$5 || k === TRANSLATE_Y$5 || k === TRANSLATE_Z$5) {
     if (arr.u === NUMBER$4) {
       arr.u = PX$8;
     }
@@ -9717,9 +9752,9 @@ function normalize$1(style) {
     if (!isNaN(temp)) {
       temp = Math.max(temp, 0);
       temp = Math.min(temp, 1);
-      res[OPACITY$6] = temp;
+      res[OPACITY$7] = temp;
     } else {
-      res[OPACITY$6] = 1;
+      res[OPACITY$7] = 1;
     }
   }
 
@@ -10675,7 +10710,7 @@ function equalStyle$2(k, a, b, target) {
     return true;
   }
 
-  if (k === TRANSFORM_ORIGIN$5 || k === PERSPECTIVE_ORIGIN$4 || isRadiusKey$1(k)) {
+  if (k === TRANSFORM_ORIGIN$6 || k === PERSPECTIVE_ORIGIN$4 || isRadiusKey$1(k)) {
     return a[0].v === b[0].v && a[0].u === b[0].u && a[1].v === b[1].v && a[1].u === b[1].u;
   }
 
@@ -10942,7 +10977,7 @@ function cloneStyle$1(style, keys) {
 
         res[k] = _n;
       }
-    } else if (k === TRANSFORM_ORIGIN$5 || k === PERSPECTIVE_ORIGIN$4 || isRadiusKey$1(k)) {
+    } else if (k === TRANSFORM_ORIGIN$6 || k === PERSPECTIVE_ORIGIN$4 || isRadiusKey$1(k)) {
       if (v) {
         var _n2 = new Array(2);
 
@@ -10996,7 +11031,7 @@ function cloneStyle$1(style, keys) {
           }];
         });
       }
-    } else if (k === OPACITY$6 || k === Z_INDEX$5) {
+    } else if (k === OPACITY$7 || k === Z_INDEX$5) {
       res[k] = v;
     } else if (k === TRANSLATE_PATH$1) {
       if (v) {
@@ -11175,22 +11210,22 @@ var css = {
   spreadFilter: spreadFilter$2
 };
 
-var _enums$STYLE_KEY$h = enums.STYLE_KEY,
-    TRANSLATE_X$3 = _enums$STYLE_KEY$h.TRANSLATE_X,
-    TRANSLATE_Y$3 = _enums$STYLE_KEY$h.TRANSLATE_Y,
-    TRANSLATE_Z$3 = _enums$STYLE_KEY$h.TRANSLATE_Z,
-    SCALE_X$4 = _enums$STYLE_KEY$h.SCALE_X,
-    SCALE_Y$4 = _enums$STYLE_KEY$h.SCALE_Y,
-    SCALE_Z$3 = _enums$STYLE_KEY$h.SCALE_Z,
-    SKEW_X$3 = _enums$STYLE_KEY$h.SKEW_X,
-    SKEW_Y$3 = _enums$STYLE_KEY$h.SKEW_Y,
-    ROTATE_X$3 = _enums$STYLE_KEY$h.ROTATE_X,
-    ROTATE_Y$3 = _enums$STYLE_KEY$h.ROTATE_Y,
-    ROTATE_Z$5 = _enums$STYLE_KEY$h.ROTATE_Z,
-    ROTATE_3D$3 = _enums$STYLE_KEY$h.ROTATE_3D,
-    PERSPECTIVE$4 = _enums$STYLE_KEY$h.PERSPECTIVE,
-    MATRIX$3 = _enums$STYLE_KEY$h.MATRIX,
-    FONT_SIZE$8 = _enums$STYLE_KEY$h.FONT_SIZE;
+var _enums$STYLE_KEY$i = enums.STYLE_KEY,
+    TRANSLATE_X$4 = _enums$STYLE_KEY$i.TRANSLATE_X,
+    TRANSLATE_Y$4 = _enums$STYLE_KEY$i.TRANSLATE_Y,
+    TRANSLATE_Z$4 = _enums$STYLE_KEY$i.TRANSLATE_Z,
+    SCALE_X$5 = _enums$STYLE_KEY$i.SCALE_X,
+    SCALE_Y$5 = _enums$STYLE_KEY$i.SCALE_Y,
+    SCALE_Z$3 = _enums$STYLE_KEY$i.SCALE_Z,
+    SKEW_X$4 = _enums$STYLE_KEY$i.SKEW_X,
+    SKEW_Y$4 = _enums$STYLE_KEY$i.SKEW_Y,
+    ROTATE_X$4 = _enums$STYLE_KEY$i.ROTATE_X,
+    ROTATE_Y$4 = _enums$STYLE_KEY$i.ROTATE_Y,
+    ROTATE_Z$6 = _enums$STYLE_KEY$i.ROTATE_Z,
+    ROTATE_3D$3 = _enums$STYLE_KEY$i.ROTATE_3D,
+    PERSPECTIVE$4 = _enums$STYLE_KEY$i.PERSPECTIVE,
+    MATRIX$3 = _enums$STYLE_KEY$i.MATRIX,
+    FONT_SIZE$8 = _enums$STYLE_KEY$i.FONT_SIZE;
 var PX$7 = o$4.PX,
     PERCENT$6 = o$4.PERCENT,
     REM$6 = o$4.REM,
@@ -11331,25 +11366,25 @@ function calMatrix(transform, ow, oh, root) {
     var k = item.k;
     var v = calSingleValue(k, item.v, ow, oh, root);
 
-    if (k === TRANSLATE_X$3) {
+    if (k === TRANSLATE_X$4) {
       m = multiplyTranslateX(m, v);
-    } else if (k === TRANSLATE_Y$3) {
+    } else if (k === TRANSLATE_Y$4) {
       m = multiplyTranslateY(m, v);
-    } else if (k === TRANSLATE_Z$3) {
+    } else if (k === TRANSLATE_Z$4) {
       m = multiplyTranslateZ(m, v);
-    } else if (k === ROTATE_X$3) {
+    } else if (k === ROTATE_X$4) {
       m = multiplyRotateX$1(m, d2r$1(v));
-    } else if (k === ROTATE_Y$3) {
+    } else if (k === ROTATE_Y$4) {
       m = multiplyRotateY$1(m, d2r$1(v));
-    } else if (k === ROTATE_Z$5) {
+    } else if (k === ROTATE_Z$6) {
       m = multiplyRotateZ$1(m, d2r$1(v));
-    } else if (k === SKEW_X$3) {
+    } else if (k === SKEW_X$4) {
       m = multiplySkewX$1(m, d2r$1(v));
-    } else if (k === SKEW_Y$3) {
+    } else if (k === SKEW_Y$4) {
       m = multiplySkewY$1(m, d2r$1(v));
-    } else if (k === SCALE_X$4) {
+    } else if (k === SCALE_X$5) {
       m = multiplyScaleX$1(m, v);
-    } else if (k === SCALE_Y$4) {
+    } else if (k === SCALE_Y$5) {
       m = multiplyScaleY$1(m, v);
     } else if (k === SCALE_Z$3) {
       m = multiplyScaleZ$1(m, v);
@@ -11388,11 +11423,11 @@ function calMatrixWithOrigin(transform, ox, oy, ow, oh) {
 }
 
 function calSingleValue(k, v, ow, oh, root) {
-  if (k === TRANSLATE_X$3 || k === TRANSLATE_Y$3 || k === TRANSLATE_Z$3) {
+  if (k === TRANSLATE_X$4 || k === TRANSLATE_Y$4 || k === TRANSLATE_Z$4) {
     if (v.u === PX$7) {
       return v.v;
     } else if (v.u === PERCENT$6) {
-      return v.v * (k === TRANSLATE_Y$3 ? oh : ow) * 0.01;
+      return v.v * (k === TRANSLATE_Y$4 ? oh : ow) * 0.01;
     } else if (v.u === REM$6) {
       return v.v * root.__computedStyle[FONT_SIZE$8];
     } else if (v.u === VW$6) {
@@ -11450,18 +11485,18 @@ var transform$1 = {
   isPerspectiveMatrix: isPerspectiveMatrix
 };
 
-var _enums$STYLE_KEY$g = enums.STYLE_KEY,
-    COLOR$5 = _enums$STYLE_KEY$g.COLOR,
-    FONT_WEIGHT$5 = _enums$STYLE_KEY$g.FONT_WEIGHT,
-    FONT_FAMILY$5 = _enums$STYLE_KEY$g.FONT_FAMILY,
-    FONT_SIZE$7 = _enums$STYLE_KEY$g.FONT_SIZE,
-    FONT_STYLE$3 = _enums$STYLE_KEY$g.FONT_STYLE,
-    LETTER_SPACING$3 = _enums$STYLE_KEY$g.LETTER_SPACING,
-    TEXT_STROKE_COLOR$4 = _enums$STYLE_KEY$g.TEXT_STROKE_COLOR,
-    TEXT_STROKE_WIDTH$4 = _enums$STYLE_KEY$g.TEXT_STROKE_WIDTH,
-    TEXT_STROKE_OVER$3 = _enums$STYLE_KEY$g.TEXT_STROKE_OVER,
-    ROTATE_Z$4 = _enums$STYLE_KEY$g.ROTATE_Z,
-    LINE_HEIGHT$6 = _enums$STYLE_KEY$g.LINE_HEIGHT;
+var _enums$STYLE_KEY$h = enums.STYLE_KEY,
+    COLOR$5 = _enums$STYLE_KEY$h.COLOR,
+    FONT_WEIGHT$5 = _enums$STYLE_KEY$h.FONT_WEIGHT,
+    FONT_FAMILY$5 = _enums$STYLE_KEY$h.FONT_FAMILY,
+    FONT_SIZE$7 = _enums$STYLE_KEY$h.FONT_SIZE,
+    FONT_STYLE$3 = _enums$STYLE_KEY$h.FONT_STYLE,
+    LETTER_SPACING$3 = _enums$STYLE_KEY$h.LETTER_SPACING,
+    TEXT_STROKE_COLOR$4 = _enums$STYLE_KEY$h.TEXT_STROKE_COLOR,
+    TEXT_STROKE_WIDTH$4 = _enums$STYLE_KEY$h.TEXT_STROKE_WIDTH,
+    TEXT_STROKE_OVER$3 = _enums$STYLE_KEY$h.TEXT_STROKE_OVER,
+    ROTATE_Z$5 = _enums$STYLE_KEY$h.ROTATE_Z,
+    LINE_HEIGHT$6 = _enums$STYLE_KEY$h.LINE_HEIGHT;
 var DEG$2 = o$4.DEG;
 var CANVAS$4 = mode.CANVAS,
     SVG$4 = mode.SVG;
@@ -11554,7 +11589,7 @@ var TextBox = /*#__PURE__*/function () {
 
         if (isUpright) {
           list = [{
-            k: ROTATE_Z$4,
+            k: ROTATE_Z$5,
             v: {
               v: 90,
               u: DEG$2
@@ -11890,14 +11925,14 @@ var TextBox = /*#__PURE__*/function () {
   return TextBox;
 }();
 
-var _enums$STYLE_KEY$f = enums.STYLE_KEY,
-    FONT_SIZE$6 = _enums$STYLE_KEY$f.FONT_SIZE,
-    FONT_FAMILY$4 = _enums$STYLE_KEY$f.FONT_FAMILY,
-    FONT_WEIGHT$4 = _enums$STYLE_KEY$f.FONT_WEIGHT,
-    FONT_STYLE$2 = _enums$STYLE_KEY$f.FONT_STYLE,
-    COLOR$4 = _enums$STYLE_KEY$f.COLOR,
-    LINE_HEIGHT$5 = _enums$STYLE_KEY$f.LINE_HEIGHT,
-    ROTATE_Z$3 = _enums$STYLE_KEY$f.ROTATE_Z;
+var _enums$STYLE_KEY$g = enums.STYLE_KEY,
+    FONT_SIZE$6 = _enums$STYLE_KEY$g.FONT_SIZE,
+    FONT_FAMILY$4 = _enums$STYLE_KEY$g.FONT_FAMILY,
+    FONT_WEIGHT$4 = _enums$STYLE_KEY$g.FONT_WEIGHT,
+    FONT_STYLE$2 = _enums$STYLE_KEY$g.FONT_STYLE,
+    COLOR$4 = _enums$STYLE_KEY$g.COLOR,
+    LINE_HEIGHT$5 = _enums$STYLE_KEY$g.LINE_HEIGHT,
+    ROTATE_Z$4 = _enums$STYLE_KEY$g.ROTATE_Z;
 var DEG$1 = o$4.DEG;
 var CANVAS$3 = mode.CANVAS,
     SVG$3 = mode.SVG,
@@ -11960,7 +11995,7 @@ var Ellipsis = /*#__PURE__*/function (_Node) {
         if (isUpright) {
           var me = parent.matrixEvent,
               list = [{
-            k: ROTATE_Z$3,
+            k: ROTATE_Z$4,
             v: {
               v: 90,
               u: DEG$1
@@ -12016,26 +12051,26 @@ var Ellipsis = /*#__PURE__*/function (_Node) {
   return Ellipsis;
 }(Node$1);
 
-var _enums$STYLE_KEY$e = enums.STYLE_KEY,
-    TX$1 = _enums$STYLE_KEY$e.TRANSLATE_X,
-    TY$1 = _enums$STYLE_KEY$e.TRANSLATE_Y,
-    TZ$1 = _enums$STYLE_KEY$e.TRANSLATE_Z,
-    OP$2 = _enums$STYLE_KEY$e.OPACITY,
-    FT$2 = _enums$STYLE_KEY$e.FILTER,
-    PPT$2 = _enums$STYLE_KEY$e.PERSPECTIVE,
-    PERSPECTIVE_ORIGIN$3 = _enums$STYLE_KEY$e.PERSPECTIVE_ORIGIN,
-    Z_INDEX$4 = _enums$STYLE_KEY$e.Z_INDEX,
-    SX$1 = _enums$STYLE_KEY$e.SCALE_X,
-    SY$1 = _enums$STYLE_KEY$e.SCALE_Y,
-    SZ$1 = _enums$STYLE_KEY$e.SCALE_Z,
-    ROTATE_X$2 = _enums$STYLE_KEY$e.ROTATE_X,
-    ROTATE_Y$2 = _enums$STYLE_KEY$e.ROTATE_Y,
-    RZ$1 = _enums$STYLE_KEY$e.ROTATE_Z,
-    ROTATE_3D$2 = _enums$STYLE_KEY$e.ROTATE_3D,
-    SKEW_X$2 = _enums$STYLE_KEY$e.SKEW_X,
-    SKEW_Y$2 = _enums$STYLE_KEY$e.SKEW_Y,
-    TF$2 = _enums$STYLE_KEY$e.TRANSFORM,
-    TRANSFORM_ORIGIN$4 = _enums$STYLE_KEY$e.TRANSFORM_ORIGIN;
+var _enums$STYLE_KEY$f = enums.STYLE_KEY,
+    TX$1 = _enums$STYLE_KEY$f.TRANSLATE_X,
+    TY$1 = _enums$STYLE_KEY$f.TRANSLATE_Y,
+    TZ$1 = _enums$STYLE_KEY$f.TRANSLATE_Z,
+    OP$2 = _enums$STYLE_KEY$f.OPACITY,
+    FT$2 = _enums$STYLE_KEY$f.FILTER,
+    PPT$2 = _enums$STYLE_KEY$f.PERSPECTIVE,
+    PERSPECTIVE_ORIGIN$3 = _enums$STYLE_KEY$f.PERSPECTIVE_ORIGIN,
+    Z_INDEX$4 = _enums$STYLE_KEY$f.Z_INDEX,
+    SX$1 = _enums$STYLE_KEY$f.SCALE_X,
+    SY$1 = _enums$STYLE_KEY$f.SCALE_Y,
+    SZ$1 = _enums$STYLE_KEY$f.SCALE_Z,
+    ROTATE_X$3 = _enums$STYLE_KEY$f.ROTATE_X,
+    ROTATE_Y$3 = _enums$STYLE_KEY$f.ROTATE_Y,
+    RZ$1 = _enums$STYLE_KEY$f.ROTATE_Z,
+    ROTATE_3D$2 = _enums$STYLE_KEY$f.ROTATE_3D,
+    SKEW_X$3 = _enums$STYLE_KEY$f.SKEW_X,
+    SKEW_Y$3 = _enums$STYLE_KEY$f.SKEW_Y,
+    TF$2 = _enums$STYLE_KEY$f.TRANSFORM,
+    TRANSFORM_ORIGIN$5 = _enums$STYLE_KEY$f.TRANSFORM_ORIGIN;
 var isIgnore = o$2.isIgnore,
     isRepaint = o$2.isRepaint; // 低位表示<repaint级别
 
@@ -12044,19 +12079,19 @@ var NONE$4 = 0; //                                          0
 
 var CACHE$4 = 1; //                                         1
 
-var TRANSLATE_X$2 = 2; //                                  10
+var TRANSLATE_X$3 = 2; //                                  10
 
-var TRANSLATE_Y$2 = 4; //                                 100
+var TRANSLATE_Y$3 = 4; //                                 100
 
-var TRANSLATE_Z$2 = 8; //                                1000
+var TRANSLATE_Z$3 = 8; //                                1000
 
 var TRANSLATE = 14; //                                 1110
 
-var ROTATE_Z$2 = 16; //                                 10000
+var ROTATE_Z$3 = 16; //                                 10000
 
-var SCALE_X$3 = 32; //                                 100000
+var SCALE_X$4 = 32; //                                 100000
 
-var SCALE_Y$3 = 64; //                                1000000
+var SCALE_Y$4 = 64; //                                1000000
 
 var SCALE_Z$2 = 128; //                              10000000
 
@@ -12066,7 +12101,7 @@ var TRANSFORM$5 = 256; //                           100000000
 
 var TRANSFORM_ALL$4 = 510; //                       111111110
 
-var OPACITY$5 = 512; //                            1000000000
+var OPACITY$6 = 512; //                            1000000000
 
 var FILTER$5 = 1024; //                           10000000000
 
@@ -12087,18 +12122,18 @@ var REBUILD$1 = 65536; //                   10000000000000000
 var ENUM = {
   NONE: NONE$4,
   CACHE: CACHE$4,
-  TRANSLATE_X: TRANSLATE_X$2,
-  TRANSLATE_Y: TRANSLATE_Y$2,
-  TRANSLATE_Z: TRANSLATE_Z$2,
+  TRANSLATE_X: TRANSLATE_X$3,
+  TRANSLATE_Y: TRANSLATE_Y$3,
+  TRANSLATE_Z: TRANSLATE_Z$3,
   TRANSLATE: TRANSLATE,
-  ROTATE_Z: ROTATE_Z$2,
-  SCALE_X: SCALE_X$3,
-  SCALE_Y: SCALE_Y$3,
+  ROTATE_Z: ROTATE_Z$3,
+  SCALE_X: SCALE_X$4,
+  SCALE_Y: SCALE_Y$4,
   SCALE_Z: SCALE_Z$2,
   SCALE: SCALE$1,
   TRANSFORM: TRANSFORM$5,
   TRANSFORM_ALL: TRANSFORM_ALL$4,
-  OPACITY: OPACITY$5,
+  OPACITY: OPACITY$6,
   FILTER: FILTER$5,
   MIX_BLEND_MODE: MIX_BLEND_MODE$4,
   PERSPECTIVE: PERSPECTIVE$3,
@@ -12109,7 +12144,7 @@ var ENUM = {
 };
 
 function isTransforms(k) {
-  return k === ROTATE_X$2 || k === ROTATE_Y$2 || k === ROTATE_3D$2 || k === SKEW_X$2 || k === SKEW_Y$2 || k === TF$2 || k === TRANSFORM_ORIGIN$4;
+  return k === ROTATE_X$3 || k === ROTATE_Y$3 || k === ROTATE_3D$2 || k === SKEW_X$3 || k === SKEW_Y$3 || k === TF$2 || k === TRANSFORM_ORIGIN$5;
 }
 
 var o$1 = Object.assign({
@@ -12137,27 +12172,27 @@ var o$1 = Object.assign({
     }
 
     if (k === TX$1) {
-      return TRANSLATE_X$2;
+      return TRANSLATE_X$3;
     }
 
     if (k === TY$1) {
-      return TRANSLATE_Y$2;
+      return TRANSLATE_Y$3;
     }
 
     if (k === TZ$1) {
-      return TRANSLATE_Z$2;
+      return TRANSLATE_Z$3;
     }
 
     if (k === RZ$1) {
-      return ROTATE_Z$2;
+      return ROTATE_Z$3;
     }
 
     if (k === SX$1) {
-      return SCALE_X$3;
+      return SCALE_X$4;
     }
 
     if (k === SY$1) {
-      return SCALE_Y$3;
+      return SCALE_Y$4;
     }
 
     if (k === SZ$1) {
@@ -12165,7 +12200,7 @@ var o$1 = Object.assign({
     }
 
     if (k === OP$2) {
-      return OPACITY$5;
+      return OPACITY$6;
     }
 
     if (k === FT$2) {
@@ -12194,37 +12229,37 @@ var o$1 = Object.assign({
   }
 }, ENUM);
 
-var _enums$STYLE_KEY$d = enums.STYLE_KEY,
-    DISPLAY$7 = _enums$STYLE_KEY$d.DISPLAY,
-    POSITION$4 = _enums$STYLE_KEY$d.POSITION,
-    LINE_HEIGHT$4 = _enums$STYLE_KEY$d.LINE_HEIGHT,
-    FONT_SIZE$5 = _enums$STYLE_KEY$d.FONT_SIZE,
-    FONT_FAMILY$3 = _enums$STYLE_KEY$d.FONT_FAMILY,
-    FONT_WEIGHT$3 = _enums$STYLE_KEY$d.FONT_WEIGHT,
-    COLOR$3 = _enums$STYLE_KEY$d.COLOR,
-    VISIBILITY$4 = _enums$STYLE_KEY$d.VISIBILITY,
-    LETTER_SPACING$2 = _enums$STYLE_KEY$d.LETTER_SPACING,
-    OVERFLOW$3 = _enums$STYLE_KEY$d.OVERFLOW,
-    WHITE_SPACE$2 = _enums$STYLE_KEY$d.WHITE_SPACE,
-    TEXT_OVERFLOW$1 = _enums$STYLE_KEY$d.TEXT_OVERFLOW,
-    WIDTH$7 = _enums$STYLE_KEY$d.WIDTH,
-    HEIGHT$7 = _enums$STYLE_KEY$d.HEIGHT,
-    TEXT_STROKE_COLOR$3 = _enums$STYLE_KEY$d.TEXT_STROKE_COLOR,
-    TEXT_STROKE_WIDTH$3 = _enums$STYLE_KEY$d.TEXT_STROKE_WIDTH,
-    MARGIN_TOP$6 = _enums$STYLE_KEY$d.MARGIN_TOP,
-    MARGIN_BOTTOM$6 = _enums$STYLE_KEY$d.MARGIN_BOTTOM,
-    MARGIN_LEFT$8 = _enums$STYLE_KEY$d.MARGIN_LEFT,
-    MARGIN_RIGHT$7 = _enums$STYLE_KEY$d.MARGIN_RIGHT,
-    PADDING_TOP$6 = _enums$STYLE_KEY$d.PADDING_TOP,
-    PADDING_BOTTOM$5 = _enums$STYLE_KEY$d.PADDING_BOTTOM,
-    PADDING_LEFT$8 = _enums$STYLE_KEY$d.PADDING_LEFT,
-    PADDING_RIGHT$7 = _enums$STYLE_KEY$d.PADDING_RIGHT,
-    BORDER_TOP_WIDTH$6 = _enums$STYLE_KEY$d.BORDER_TOP_WIDTH,
-    BORDER_BOTTOM_WIDTH$5 = _enums$STYLE_KEY$d.BORDER_BOTTOM_WIDTH,
-    BORDER_LEFT_WIDTH$8 = _enums$STYLE_KEY$d.BORDER_LEFT_WIDTH,
-    BORDER_RIGHT_WIDTH$7 = _enums$STYLE_KEY$d.BORDER_RIGHT_WIDTH,
-    FILTER$4 = _enums$STYLE_KEY$d.FILTER,
-    FONT_SIZE_SHRINK$1 = _enums$STYLE_KEY$d.FONT_SIZE_SHRINK,
+var _enums$STYLE_KEY$e = enums.STYLE_KEY,
+    DISPLAY$7 = _enums$STYLE_KEY$e.DISPLAY,
+    POSITION$4 = _enums$STYLE_KEY$e.POSITION,
+    LINE_HEIGHT$4 = _enums$STYLE_KEY$e.LINE_HEIGHT,
+    FONT_SIZE$5 = _enums$STYLE_KEY$e.FONT_SIZE,
+    FONT_FAMILY$3 = _enums$STYLE_KEY$e.FONT_FAMILY,
+    FONT_WEIGHT$3 = _enums$STYLE_KEY$e.FONT_WEIGHT,
+    COLOR$3 = _enums$STYLE_KEY$e.COLOR,
+    VISIBILITY$4 = _enums$STYLE_KEY$e.VISIBILITY,
+    LETTER_SPACING$2 = _enums$STYLE_KEY$e.LETTER_SPACING,
+    OVERFLOW$3 = _enums$STYLE_KEY$e.OVERFLOW,
+    WHITE_SPACE$2 = _enums$STYLE_KEY$e.WHITE_SPACE,
+    TEXT_OVERFLOW$1 = _enums$STYLE_KEY$e.TEXT_OVERFLOW,
+    WIDTH$7 = _enums$STYLE_KEY$e.WIDTH,
+    HEIGHT$7 = _enums$STYLE_KEY$e.HEIGHT,
+    TEXT_STROKE_COLOR$3 = _enums$STYLE_KEY$e.TEXT_STROKE_COLOR,
+    TEXT_STROKE_WIDTH$3 = _enums$STYLE_KEY$e.TEXT_STROKE_WIDTH,
+    MARGIN_TOP$6 = _enums$STYLE_KEY$e.MARGIN_TOP,
+    MARGIN_BOTTOM$6 = _enums$STYLE_KEY$e.MARGIN_BOTTOM,
+    MARGIN_LEFT$8 = _enums$STYLE_KEY$e.MARGIN_LEFT,
+    MARGIN_RIGHT$7 = _enums$STYLE_KEY$e.MARGIN_RIGHT,
+    PADDING_TOP$6 = _enums$STYLE_KEY$e.PADDING_TOP,
+    PADDING_BOTTOM$5 = _enums$STYLE_KEY$e.PADDING_BOTTOM,
+    PADDING_LEFT$8 = _enums$STYLE_KEY$e.PADDING_LEFT,
+    PADDING_RIGHT$7 = _enums$STYLE_KEY$e.PADDING_RIGHT,
+    BORDER_TOP_WIDTH$6 = _enums$STYLE_KEY$e.BORDER_TOP_WIDTH,
+    BORDER_BOTTOM_WIDTH$5 = _enums$STYLE_KEY$e.BORDER_BOTTOM_WIDTH,
+    BORDER_LEFT_WIDTH$8 = _enums$STYLE_KEY$e.BORDER_LEFT_WIDTH,
+    BORDER_RIGHT_WIDTH$7 = _enums$STYLE_KEY$e.BORDER_RIGHT_WIDTH,
+    FILTER$4 = _enums$STYLE_KEY$e.FILTER,
+    FONT_SIZE_SHRINK$1 = _enums$STYLE_KEY$e.FONT_SIZE_SHRINK,
     ELLIPSIS$1 = enums.ELLIPSIS;
 var AUTO$6 = o$4.AUTO;
 var CANVAS$2 = mode.CANVAS,
@@ -13969,19 +14004,19 @@ Object.keys(o$2.GEOM).concat(['x', 'y', 'width', 'height', 'outerWidth', 'outerH
   };
 });
 
-var _enums$STYLE_KEY$c = enums.STYLE_KEY,
-    MARGIN_TOP$5 = _enums$STYLE_KEY$c.MARGIN_TOP,
-    MARGIN_LEFT$7 = _enums$STYLE_KEY$c.MARGIN_LEFT,
-    MARGIN_RIGHT$6 = _enums$STYLE_KEY$c.MARGIN_RIGHT,
-    MARGIN_BOTTOM$5 = _enums$STYLE_KEY$c.MARGIN_BOTTOM,
-    PADDING_TOP$5 = _enums$STYLE_KEY$c.PADDING_TOP,
-    PADDING_LEFT$7 = _enums$STYLE_KEY$c.PADDING_LEFT,
-    PADDING_RIGHT$6 = _enums$STYLE_KEY$c.PADDING_RIGHT,
-    PADDING_BOTTOM$4 = _enums$STYLE_KEY$c.PADDING_BOTTOM,
-    BORDER_TOP_WIDTH$5 = _enums$STYLE_KEY$c.BORDER_TOP_WIDTH,
-    BORDER_LEFT_WIDTH$7 = _enums$STYLE_KEY$c.BORDER_LEFT_WIDTH,
-    BORDER_RIGHT_WIDTH$6 = _enums$STYLE_KEY$c.BORDER_RIGHT_WIDTH,
-    BORDER_BOTTOM_WIDTH$4 = _enums$STYLE_KEY$c.BORDER_BOTTOM_WIDTH;
+var _enums$STYLE_KEY$d = enums.STYLE_KEY,
+    MARGIN_TOP$5 = _enums$STYLE_KEY$d.MARGIN_TOP,
+    MARGIN_LEFT$7 = _enums$STYLE_KEY$d.MARGIN_LEFT,
+    MARGIN_RIGHT$6 = _enums$STYLE_KEY$d.MARGIN_RIGHT,
+    MARGIN_BOTTOM$5 = _enums$STYLE_KEY$d.MARGIN_BOTTOM,
+    PADDING_TOP$5 = _enums$STYLE_KEY$d.PADDING_TOP,
+    PADDING_LEFT$7 = _enums$STYLE_KEY$d.PADDING_LEFT,
+    PADDING_RIGHT$6 = _enums$STYLE_KEY$d.PADDING_RIGHT,
+    PADDING_BOTTOM$4 = _enums$STYLE_KEY$d.PADDING_BOTTOM,
+    BORDER_TOP_WIDTH$5 = _enums$STYLE_KEY$d.BORDER_TOP_WIDTH,
+    BORDER_LEFT_WIDTH$7 = _enums$STYLE_KEY$d.BORDER_LEFT_WIDTH,
+    BORDER_RIGHT_WIDTH$6 = _enums$STYLE_KEY$d.BORDER_RIGHT_WIDTH,
+    BORDER_BOTTOM_WIDTH$4 = _enums$STYLE_KEY$d.BORDER_BOTTOM_WIDTH;
 /**
  * 获取inline的每一行内容的矩形坐标4个点，同时附带上border的矩形，比前面4个点尺寸大或相等（有无border/padding）
  * @param xom
@@ -14234,9 +14269,9 @@ var inline = {
   getInlineWidth: getInlineWidth
 };
 
-var _enums$STYLE_KEY$b = enums.STYLE_KEY,
-    SCALE_X$2 = _enums$STYLE_KEY$b.SCALE_X,
-    SCALE_Y$2 = _enums$STYLE_KEY$b.SCALE_Y;
+var _enums$STYLE_KEY$c = enums.STYLE_KEY,
+    SCALE_X$3 = _enums$STYLE_KEY$c.SCALE_X,
+    SCALE_Y$3 = _enums$STYLE_KEY$c.SCALE_Y;
 var NUMBER$3 = o$4.NUMBER;
 
 function matrixResize(imgWidth, imgHeight, targetWidth, targetHeight, x, y, w, h) {
@@ -14245,13 +14280,13 @@ function matrixResize(imgWidth, imgHeight, targetWidth, targetHeight, x, y, w, h
   }
 
   var list = [{
-    k: SCALE_X$2,
+    k: SCALE_X$3,
     v: {
       v: targetWidth / imgWidth,
       u: NUMBER$3
     }
   }, {
-    k: SCALE_Y$2,
+    k: SCALE_Y$3,
     v: {
       v: targetHeight / imgHeight,
       u: NUMBER$3
@@ -14264,9 +14299,9 @@ var image = {
   matrixResize: matrixResize
 };
 
-var _enums$STYLE_KEY$a = enums.STYLE_KEY,
-    BACKGROUND_POSITION_X$2 = _enums$STYLE_KEY$a.BACKGROUND_POSITION_X,
-    BACKGROUND_POSITION_Y$2 = _enums$STYLE_KEY$a.BACKGROUND_POSITION_Y;
+var _enums$STYLE_KEY$b = enums.STYLE_KEY,
+    BACKGROUND_POSITION_X$2 = _enums$STYLE_KEY$b.BACKGROUND_POSITION_X,
+    BACKGROUND_POSITION_Y$2 = _enums$STYLE_KEY$b.BACKGROUND_POSITION_Y;
 var clone$2 = util.clone,
     joinArr$2 = util.joinArr;
 var canvasPolygon$4 = painter.canvasPolygon,
@@ -15450,6 +15485,19 @@ var Controller = /*#__PURE__*/function () {
   return Controller;
 }();
 
+var _enums$STYLE_KEY$a = enums.STYLE_KEY,
+    TRANSLATE_X$2 = _enums$STYLE_KEY$a.TRANSLATE_X,
+    TRANSLATE_Y$2 = _enums$STYLE_KEY$a.TRANSLATE_Y,
+    TRANSLATE_Z$2 = _enums$STYLE_KEY$a.TRANSLATE_Z,
+    SCALE_X$2 = _enums$STYLE_KEY$a.SCALE_X,
+    SCALE_Y$2 = _enums$STYLE_KEY$a.SCALE_Y,
+    ROTATE_X$2 = _enums$STYLE_KEY$a.ROTATE_X,
+    ROTATE_Y$2 = _enums$STYLE_KEY$a.ROTATE_Y,
+    ROTATE_Z$2 = _enums$STYLE_KEY$a.ROTATE_Z,
+    SKEW_X$2 = _enums$STYLE_KEY$a.SKEW_X,
+    SKEW_Y$2 = _enums$STYLE_KEY$a.SKEW_Y,
+    TRANSFORM_ORIGIN$4 = _enums$STYLE_KEY$a.TRANSFORM_ORIGIN,
+    OPACITY$5 = _enums$STYLE_KEY$a.OPACITY;
 var wasm;
 var cachedTextDecoder = new TextDecoder('utf-8', {
   ignoreBOM: true,
@@ -15747,9 +15795,9 @@ var Animation$1 = /*#__PURE__*/function () {
      */
 
   }, {
-    key: "is_end_delay",
+    key: "finished",
     get: function get() {
-      var ret = wasm.__wbg_get_animation_is_end_delay(this.ptr);
+      var ret = wasm.__wbg_get_animation_finished(this.ptr);
 
       return ret !== 0;
     }
@@ -15758,25 +15806,7 @@ var Animation$1 = /*#__PURE__*/function () {
      */
     ,
     set: function set(arg0) {
-      wasm.__wbg_set_animation_is_end_delay(this.ptr, arg0);
-    }
-    /**
-     * @returns {boolean}
-     */
-
-  }, {
-    key: "end",
-    get: function get() {
-      var ret = wasm.__wbg_get_animation_end(this.ptr);
-
-      return ret !== 0;
-    }
-    /**
-     * @param {boolean} arg0
-     */
-    ,
-    set: function set(arg0) {
-      wasm.__wbg_set_animation_end(this.ptr, arg0);
+      wasm.__wbg_set_animation_finished(this.ptr, arg0);
     }
     /**
      * @returns {number}
@@ -15869,6 +15899,17 @@ var Animation$1 = /*#__PURE__*/function () {
     key: "add_item",
     value: function add_item(is_reverse, k, v, u, d) {
       wasm.animation_add_item(this.ptr, is_reverse, k, v, u, d);
+    }
+    /**
+     * @param {number} k
+     * @param {number} v
+     * @param {number} u
+     */
+
+  }, {
+    key: "add_origin",
+    value: function add_origin(k, v, u) {
+      wasm.animation_add_origin(this.ptr, k, v, u);
     }
     /**
      */
@@ -15967,6 +16008,24 @@ var Node = /*#__PURE__*/function () {
       var ptr = this.__destroy_into_raw();
 
       wasm.__wbg_node_free(ptr);
+    }
+    /**
+     * @returns {number}
+     */
+
+  }, {
+    key: "root",
+    get: function get() {
+      var ret = wasm.__wbg_get_node_root(this.ptr);
+
+      return ret;
+    }
+    /**
+     * @param {number} arg0
+     */
+    ,
+    set: function set(arg0) {
+      wasm.__wbg_set_node_root(this.ptr, arg0);
     }
     /**
      * @returns {boolean}
@@ -16196,7 +16255,7 @@ var Node = /*#__PURE__*/function () {
      * @param {number} root
      */
     function set_root(root) {
-      wasm.node_set_root(this.ptr, root);
+      wasm.__wbg_set_node_root(this.ptr, root);
     }
     /**
      * @param {number} animation
@@ -16397,6 +16456,92 @@ var Node = /*#__PURE__*/function () {
     key: "cal_matrix",
     value: function cal_matrix(rl) {
       wasm.node_cal_matrix(this.ptr, rl);
+    }
+    /**
+     * @param {number} v
+     * @param {number} u
+     * @param {number} parent
+     * @returns {number}
+     */
+
+  }, {
+    key: "cal_size",
+    value: function cal_size(v, u, parent) {
+      var ret = wasm.node_cal_size(this.ptr, v, u, parent);
+      return ret;
+    }
+    /**
+     * @param {number} k
+     * @param {number} v
+     * @param {number} u
+     * @returns {boolean}
+     */
+
+  }, {
+    key: "equal_style",
+    value: function equal_style(k, v, u) {
+      var ret = wasm.node_equal_style(this.ptr, k, v, u);
+      return ret !== 0;
+    }
+    /**
+     * @param {number} k
+     * @param {number} v
+     * @param {number} u
+     * @returns {boolean}
+     */
+
+  }, {
+    key: "equal_set_style",
+    value: function equal_set_style(k, v, u) {
+      var ret = wasm.node_equal_set_style(this.ptr, k, v, u);
+      return ret !== 0;
+    }
+    /**
+     * @param {number} k
+     * @param {number} v
+     * @param {number} u
+     */
+
+  }, {
+    key: "update_style",
+    value: function update_style(k, v, u) {
+      wasm.node_update_style(this.ptr, k, v, u);
+    }
+    /**
+     * @param {number} v
+     */
+
+  }, {
+    key: "offset_x",
+    value: function offset_x(v) {
+      wasm.node_offset_x(this.ptr, v);
+    }
+    /**
+     * @param {number} v
+     */
+
+  }, {
+    key: "offset_y",
+    value: function offset_y(v) {
+      wasm.node_offset_y(this.ptr, v);
+    }
+    /**
+     * @param {number} v
+     */
+
+  }, {
+    key: "resize_x",
+    value: function resize_x(v) {
+      wasm.node_resize_x(this.ptr, v);
+    }
+    /**
+     * @param {number} v
+     */
+
+  }, {
+    key: "resize_y",
+    value: function resize_y(v) {
+      wasm.node_resize_y(this.ptr, v);
     }
   }], [{
     key: "__wrap",
@@ -16599,6 +16744,15 @@ var Root$1 = /*#__PURE__*/function () {
       return ret >>> 0;
     }
     /**
+     * @param {number} n
+     */
+
+  }, {
+    key: "add_am_state",
+    value: function add_am_state(n) {
+      wasm.root_add_am_state(this.ptr, n);
+    }
+    /**
      */
 
   }, {
@@ -16644,6 +16798,16 @@ var Root$1 = /*#__PURE__*/function () {
     key: "vt_ptr",
     value: function vt_ptr() {
       var ret = wasm.root_vt_ptr(this.ptr);
+      return ret;
+    }
+    /**
+     * @returns {number}
+     */
+
+  }, {
+    key: "am_states_ptr",
+    value: function am_states_ptr() {
+      var ret = wasm.root_am_states_ptr(this.ptr);
       return ret;
     }
   }], [{
@@ -16765,10 +16929,12 @@ var wasm$1 = {
 
   Node: Node,
   Root: Root$1,
-  Animation: Animation$1
+  Animation: Animation$1,
+  isWasmStyle: function isWasmStyle(k) {
+    return k === TRANSLATE_X$2 || k === TRANSLATE_Y$2 || k === TRANSLATE_Z$2 || k === ROTATE_X$2 || k === ROTATE_Y$2 || k === ROTATE_Z$2 || k === SCALE_X$2 || k === SCALE_Y$2 || k === SKEW_X$2 || k === SKEW_Y$2 || k === OPACITY$5 || k === TRANSFORM_ORIGIN$4;
+  }
 };
 
-var _WASM_STYLE_KEY;
 var _enums$STYLE_KEY$9 = enums.STYLE_KEY,
     FILTER$3 = _enums$STYLE_KEY$9.FILTER,
     TRANSFORM_ORIGIN$3 = _enums$STYLE_KEY$9.TRANSFORM_ORIGIN,
@@ -16840,7 +17006,12 @@ var _enums$STYLE_KEY$9 = enums.STYLE_KEY,
     BORDER_BOTTOM_COLOR$1 = _enums$STYLE_KEY$9.BORDER_BOTTOM_COLOR,
     BORDER_LEFT_COLOR$1 = _enums$STYLE_KEY$9.BORDER_LEFT_COLOR,
     BORDER_RIGHT_COLOR$1 = _enums$STYLE_KEY$9.BORDER_RIGHT_COLOR,
-    BORDER_TOP_COLOR$1 = _enums$STYLE_KEY$9.BORDER_TOP_COLOR;
+    BORDER_TOP_COLOR$1 = _enums$STYLE_KEY$9.BORDER_TOP_COLOR,
+    WASM_STYLE_KEY$1 = enums.WASM_STYLE_KEY,
+    DIRECTION = enums.DIRECTION,
+    FILLS = enums.FILLS,
+    EASING = enums.EASING,
+    PLAY_STATE = enums.PLAY_STATE;
 var AUTO$5 = o$4.AUTO,
     PX$6 = o$4.PX,
     PERCENT$5 = o$4.PERCENT,
@@ -16872,33 +17043,6 @@ var isColorKey = key.isColorKey,
     isLengthKey = key.isLengthKey,
     isGradientKey = key.isGradientKey,
     isRadiusKey = key.isRadiusKey;
-var DIRECTION = {
-  reverse: 1,
-  alternate: 2,
-  'alternate-reverse': 3,
-  alternateReverse: 3
-};
-var FILLS = {
-  forwards: 1,
-  backwards: 2,
-  both: 3
-};
-var EASING = {
-  DEFAULT: 0,
-  LINEAR: 1,
-  EASE_IN: 2,
-  EASE_OUT: 3,
-  EASE: 4,
-  EASE_IN_OUT: 5,
-  EASE_CUSTOM: 6
-};
-var WASM_STYLE_KEY = (_WASM_STYLE_KEY = {}, _defineProperty(_WASM_STYLE_KEY, TRANSLATE_X$1, 0), _defineProperty(_WASM_STYLE_KEY, TRANSLATE_Y$1, 1), _defineProperty(_WASM_STYLE_KEY, TRANSLATE_Z$1, 2), _defineProperty(_WASM_STYLE_KEY, ROTATE_X$1, 3), _defineProperty(_WASM_STYLE_KEY, ROTATE_Y$1, 4), _defineProperty(_WASM_STYLE_KEY, ROTATE_Z$1, 5), _defineProperty(_WASM_STYLE_KEY, ROTATE_3D$1, 6), _defineProperty(_WASM_STYLE_KEY, SCALE_X$1, 10), _defineProperty(_WASM_STYLE_KEY, SCALE_Y$1, 11), _defineProperty(_WASM_STYLE_KEY, SCALE_Z$1, 12), _defineProperty(_WASM_STYLE_KEY, SKEW_X$1, 13), _defineProperty(_WASM_STYLE_KEY, SKEW_Y$1, 14), _defineProperty(_WASM_STYLE_KEY, OPACITY$4, 15), _defineProperty(_WASM_STYLE_KEY, TRANSFORM_ORIGIN$3, 16), _WASM_STYLE_KEY);
-var PLAY_STATE = {
-  IDLE: 0,
-  RUNNING: 1,
-  PAUSED: 2,
-  FINISHED: 3
-};
 /**
  * 将每帧的样式格式化，提取出offset属性并转化为时间，提取出缓动曲线easing
  * 加好空数组transition/keys，后续计算两帧之间变化时存入
@@ -16942,8 +17086,6 @@ function framing(style, duration, es) {
     // 变化的k
     fixed: [],
     // 不变的k
-    wasmTrans: [],
-    // 特殊的几个wasm优化计算的k
     lastPercent: -1
   };
 }
@@ -18162,20 +18304,40 @@ function calLastStyle(style, target, keys) {
   var currentStyle = target.__currentStyle,
       currentProps = target.__currentProps,
       res = [];
+  var wn = target.__wasmNode;
 
   for (var i = 0, len = keys.length; i < len; i++) {
     var k = keys[i],
         v = style[k];
     var isGeom = GEOM$1.hasOwnProperty(k);
 
-    if (!equalStyle$1(k, v, isGeom ? currentProps[k] : currentStyle[k], target)) {
-      if (isGeom) {
+    if (isGeom) {
+      if (!equalStyle$1(k, v, currentProps[k], target)) {
         currentProps[k] = v;
-      } else {
-        currentStyle[k] = v;
+        res.push(k);
       }
+    } // wasm的情况transform和opacity都是在wasm上计算存储
+    else if (wn && wasm$1.isWasmStyle(k)) {
+      var n = WASM_STYLE_KEY$1[k];
 
-      res.push(k);
+      if (k === TRANSFORM_ORIGIN$3) {
+        if (!wn.equal_set_style(n, v[0].v, v[0].u) || !wn.equal_set_style(n, v[1].v, v[1].u)) {
+          res.push(k);
+        }
+      } else if (k === ROTATE_3D$1) {
+        if (!wn.equal_set_style(n, v[0].v, v[0].u) || !wn.equal_set_style(n, v[1].v, v[1].u) || !wn.equal_set_style(n, v[2].v, v[2].u)) {
+          res.push(k);
+        }
+      } else {
+        if (!wn.equal_set_style(n, v.v, v.u)) {
+          res.push(k);
+        }
+      }
+    } else {
+      if (!equalStyle$1(k, v, currentStyle[k], target)) {
+        currentStyle[k] = v;
+        res.push(k);
+      }
     }
   }
 
@@ -18220,13 +18382,12 @@ function frameCb(self) {
   }
 }
 
-function wasmFrame(wa, wHash, frames, isReverse) {
+function wasmFrame(wa, wList, wHash, frames, isReverse) {
   for (var i = 0, len = frames.length; i < len; i++) {
     var _frames$i = frames[i],
         style = _frames$i.style,
         transition = _frames$i.transition,
         trans = _frames$i.trans,
-        wasmTrans = _frames$i.wasmTrans,
         time = _frames$i.time,
         _easing = _frames$i.easing;
     var eType = EASING.DEFAULT,
@@ -18266,30 +18427,56 @@ function wasmFrame(wa, wHash, frames, isReverse) {
       }
     }
 
-    wa.add_frame(isReverse, time, eType, x1, y1, x2, y2);
+    wa.add_frame(isReverse, time, eType, x1, y1, x2, y2); // 除了最后一帧，都有transition
 
-    for (var j = 0, _len9 = transition.length; j < _len9; j++) {
-      var item = transition[j],
-          k = item.k;
+    if (i < len - 1) {
+      for (var j = 0, _len9 = transition.length; j < _len9; j++) {
+        var item = transition[j],
+            k = item.k;
 
-      if (wHash.hasOwnProperty(k)) {
-        var o = style[k];
-        var n = WASM_STYLE_KEY[k];
-        var diff = item.v; // 相关记录提取出来存到wasm记录上标识
+        if (wHash.hasOwnProperty(k)) {
+          var o = style[k];
+          var n = WASM_STYLE_KEY$1[k];
+          var diff = item.v; // 相关记录提取出来存到wasm记录上标识
 
-        transition.splice(j, 1);
-        trans.splice(j, 1);
-        wasmTrans.push(k); // transformOrigin和rotate3d是复合型对应多条，其它简单型
+          transition.splice(j, 1);
+          trans.splice(j, 1); // transformOrigin和rotate3d是复合型对应多条，其它简单型
 
-        if (k === TRANSFORM_ORIGIN$3) {
-          wa.add_item(isReverse, n, o[0].v, o[0].u, diff[0]);
-          wa.add_item(isReverse, n + 1, o[1].v, o[1].u, diff[1]);
-        } else if (k === ROTATE_3D$1) ; else {
-          wa.add_item(isReverse, n, o.v, o.u, diff);
+          if (k === TRANSFORM_ORIGIN$3) {
+            wa.add_item(isReverse, n, o[0].v, o[0].u, diff[0]);
+            wa.add_item(isReverse, n + 1, o[1].v, o[1].u, diff[1]);
+          } else if (k === ROTATE_3D$1) {
+            wa.add_item(isReverse, n, o[0].v, o[0].u, diff[0]);
+            wa.add_item(isReverse, n + 1, o[1].v, o[1].u, diff[1]);
+            wa.add_item(isReverse, n + 1, o[2].v, o[2].u, diff[2]);
+          } else {
+            wa.add_item(isReverse, n, o.v, o.u, diff);
+          }
+
+          j--;
+          _len9--;
         }
+      }
+    } // 最后一帧特殊处理，将样式存入，diff都设置0即可
+    else {
+      for (var _j6 = 0, _len10 = wList.length; _j6 < _len10; _j6++) {
+        var _k6 = wList[_j6];
 
-        j--;
-        _len9--;
+        if (style.hasOwnProperty(_k6)) {
+          var _o = style[_k6];
+          var _n = WASM_STYLE_KEY$1[_k6];
+
+          if (_k6 === TRANSFORM_ORIGIN$3) {
+            wa.add_item(isReverse, _n, _o[0].v, _o[0].u, 0);
+            wa.add_item(isReverse, _n + 1, _o[1].v, _o[1].u, 0);
+          } else if (_k6 === ROTATE_3D$1) {
+            wa.add_item(isReverse, _n, _o[0].v, _o[0].u, 0);
+            wa.add_item(isReverse, _n + 1, _o[1].v, _o[1].u, 0);
+            wa.add_item(isReverse, _n + 1, _o[2].v, _o[2].u, 0);
+          } else {
+            wa.add_item(isReverse, _n, _o.v, _o.u, 0);
+          }
+        }
       }
     }
   }
@@ -18452,7 +18639,7 @@ var Animation = /*#__PURE__*/function (_Event) {
         for (var i = 0, len = keys.length; i < len; i++) {
           var k = keys[i];
 
-          if (k === TRANSLATE_X$1 || k === TRANSLATE_Y$1 || k === TRANSLATE_Z$1 || k === ROTATE_X$1 || k === ROTATE_Y$1 || k === ROTATE_Z$1 || k === SKEW_X$1 || k === SKEW_Y$1 || k === SCALE_X$1 || k === SCALE_X$1 || k === SCALE_Y$1 || k === SCALE_Z$1 || k === TRANSFORM_ORIGIN$3 || k === OPACITY$4) {
+          if (wasm$1.isWasmStyle(k)) {
             wList.push(k);
             wHash[k] = true;
           }
@@ -18461,24 +18648,7 @@ var Animation = /*#__PURE__*/function (_Event) {
 
         if (wList.length) {
           var iter = this.__iterations === Infinity ? 0 : this.__iterations;
-
-          var _tf = getEasing(ea),
-              easeType = EASING.LINEAR;
-
-          if (_tf && ea !== easing.linear) {
-            if (_tf === easing.easeIn) {
-              easeType = EASING.EASE_IN;
-            } else if (_tf === easing.easeOut) {
-              easeType = EASING.EASE_OUT;
-            } else if (_tf === easing.ease) {
-              easeType = EASING.EASE;
-            } else if (_tf === easing.easeInOut) {
-              easeType = EASING.EASE_IN_OUT;
-            } else {
-              easeType = EASING.EASE_CUSTOM;
-            }
-          }
-
+          var easeType = getEaseType(ea);
           var wa = this.__wasmAnimation = wasm$1.Animation["new"](target.__wasmNode.ptr, DIRECTION[this.__direction] || 0, this.__duration, this.__fps, this.__delay, this.__endDelay, FILLS[this.__fill] || 0, this.__playbackRate, iter, this.__areaStart, this.__areaDuration, easeType);
 
           if (easeType === EASING.EASE_CUSTOM) {
@@ -18489,8 +18659,26 @@ var Animation = /*#__PURE__*/function (_Event) {
             }
           }
 
-          wasmFrame(wa, wHash, frames, false);
-          wasmFrame(wa, wHash, framesR, true); // 没有其他的则全部交由wasm
+          wasmFrame(wa, wList, wHash, frames, false);
+          wasmFrame(wa, wList, wHash, framesR, true); // originStyle也需要wasm保存下来等结束还原用
+
+          for (var _i18 = 0, _len11 = wList.length; _i18 < _len11; _i18++) {
+            var _k7 = wList[_i18],
+                n = WASM_STYLE_KEY$1[_k7],
+                _v20 = __currentStyle[_k7];
+
+            if (_k7 === TRANSFORM_ORIGIN$3) {
+              wa.add_origin(n, _v20[0].v, _v20[0].u);
+              wa.add_origin(n + 1, _v20[1].v, _v20[1].u);
+            } else if (_k7 === ROTATE_3D$1) {
+              wa.add_origin(n, _v20[0].v, _v20[0].u);
+              wa.add_origin(n + 1, _v20[1].v, _v20[1].u);
+              wa.add_origin(n + 2, _v20[2].v, _v20[2].u);
+            } else {
+              wa.add_origin(n, _v20.v, _v20.u);
+            }
+          } // 没有其他的则全部交由wasm
+
 
           if (wList.length === keys.length) {
             this.__ignore = true;
@@ -18558,8 +18746,6 @@ var Animation = /*#__PURE__*/function (_Event) {
       } else {
         this.__currentTime = 0;
         this.__playCount = 0;
-        this.__end = false;
-        this.__isEndDelay = false;
       }
 
       var currentTime = this.__currentTime;
@@ -18719,7 +18905,7 @@ var Animation = /*#__PURE__*/function (_Event) {
       }
 
       if (this.__finished) {
-        this.__begin = this.__end = this.__isDelay = this.__finished = this.__inFps = false;
+        this.__begin = this.__end = this.__isDelay = this.__isEndDelay = this.__finished = false;
         this.__playState = 'finished';
         this.emit(Event.FINISH, true);
 
@@ -18808,9 +18994,8 @@ var Animation = /*#__PURE__*/function (_Event) {
         if (this.__stayEnd) {
           var currentFrames = this.__initCurrentFrames(this.__playCount);
 
-          var _currentFrame2 = this.__currentFrame = currentFrames[currentFrames.length - 1];
-
-          style = _currentFrame2.style;
+          var currentFrame = this.__currentFrame = currentFrames[currentFrames.length - 1];
+          style = currentFrame.style;
         } else {
           style = this.__originStyle;
         }
@@ -18875,7 +19060,6 @@ var Animation = /*#__PURE__*/function (_Event) {
         wa.play_state = PLAY_STATE.IDLE;
       }
 
-      this.__currentFrame;
       this.__currentFrame = null;
       var root = this.__root;
 
@@ -19332,6 +19516,12 @@ var Animation = /*#__PURE__*/function (_Event) {
         this.__checkModify();
       }
 
+      var wn = this.__wasmAnimation;
+
+      if (wn) {
+        wn.duration = v;
+      }
+
       return v;
     }
   }, {
@@ -19346,6 +19536,12 @@ var Animation = /*#__PURE__*/function (_Event) {
         this.__delay = v;
 
         this.__checkModify();
+      }
+
+      var wn = this.__wasmAnimation;
+
+      if (wn) {
+        wn.delay = v;
       }
 
       return v;
@@ -19364,6 +19560,12 @@ var Animation = /*#__PURE__*/function (_Event) {
         this.__checkModify();
       }
 
+      var wn = this.__wasmAnimation;
+
+      if (wn) {
+        wn.end_delay = v;
+      }
+
       return v;
     }
   }, {
@@ -19380,6 +19582,12 @@ var Animation = /*#__PURE__*/function (_Event) {
         }
 
         this.__fps = v;
+      }
+
+      var wn = this.__wasmAnimation;
+
+      if (wn) {
+        wn.fps = v;
       }
 
       return v;
@@ -19403,6 +19611,12 @@ var Animation = /*#__PURE__*/function (_Event) {
         if (isNaN(v) || v < 0) {
           v = 1;
         }
+      }
+
+      var wn = this.__wasmAnimation;
+
+      if (wn) {
+        wn.iterations = v === Infinity ? 0 : v;
       }
 
       if (this.__iterations !== v) {
@@ -19433,6 +19647,12 @@ var Animation = /*#__PURE__*/function (_Event) {
         forwards: true,
         both: true
       }.hasOwnProperty(v);
+      var wn = this.__wasmAnimation;
+
+      if (wn) {
+        wn.fill = FILLS[v] || 0;
+      }
+
       return v;
     }
   }, {
@@ -19442,6 +19662,11 @@ var Animation = /*#__PURE__*/function (_Event) {
     },
     set: function set(v) {
       v = v || 'normal';
+      var wn = this.__wasmAnimation;
+
+      if (wn) {
+        wn.direction = DIRECTION[v] || 0;
+      }
 
       if (this.__direction !== v) {
         this.__direction = v;
@@ -19473,6 +19698,12 @@ var Animation = /*#__PURE__*/function (_Event) {
         v = 1;
       }
 
+      var wn = this.__wasmAnimation;
+
+      if (wn) {
+        wn.playback_rate = v;
+      }
+
       if (this.__playbackRate !== v) {
         this.__playbackRate = v;
       }
@@ -19485,6 +19716,20 @@ var Animation = /*#__PURE__*/function (_Event) {
       return this.__easing;
     },
     set: function set(v) {
+      var wa = this.__wasmAnimation;
+
+      if (wa) {
+        var easeType = getEaseType(v);
+
+        if (easeType === EASING.EASE_CUSTOM) {
+          v = v.match(/[\d.]+/g);
+
+          if (v.length === 4) {
+            wa.set_bezier(parseFloat(v[0]), parseFloat(v[1]), parseFloat(v[2]), parseFloat(v[3]));
+          }
+        }
+      }
+
       this.__easing = v;
     }
   }, {
@@ -19495,10 +19740,19 @@ var Animation = /*#__PURE__*/function (_Event) {
   }, {
     key: "currentTime",
     get: function get() {
+      if (this.__ignore) {
+        return this.__wasmAnimation.current_time;
+      }
+
       return this.__currentTime;
     },
     set: function set(v) {
       v = Math.max(0, parseFloat(v) || 0);
+      var wn = this.__wasmAnimation;
+
+      if (wn) {
+        wn.current_time = v;
+      }
 
       if (this.__currentTime !== v) {
         this.__currentTime = v;
@@ -19509,11 +19763,19 @@ var Animation = /*#__PURE__*/function (_Event) {
   }, {
     key: "pending",
     get: function get() {
+      if (this.__ignore) {
+        return this.__wasmAnimation.play_state !== 1; // 硬编码，wasm对应状态
+      }
+
       return this.__playState !== 'running';
     }
   }, {
     key: "finished",
     get: function get() {
+      if (this.__ignore) {
+        return this.__wasmAnimation.play_state === 3; // 硬编码，wasm对应状态
+      }
+
       return this.__playState === 'finished';
     }
   }, {
@@ -19524,10 +19786,19 @@ var Animation = /*#__PURE__*/function (_Event) {
   }, {
     key: "playCount",
     get: function get() {
+      if (this.__ignore) {
+        return this.__wasmAnimation.play_count;
+      }
+
       return this.__playCount;
     },
     set: function set(v) {
       v = Math.max(0, parseInt(v) || 0);
+      var wn = this.__wasmAnimation;
+
+      if (wn) {
+        wn.play_count = v;
+      }
 
       if (this.__playCount !== v) {
         this.__playCount = v;
@@ -19542,6 +19813,11 @@ var Animation = /*#__PURE__*/function (_Event) {
     },
     set: function set(v) {
       v = Math.max(0, parseInt(v) || 0);
+      var wn = this.__wasmAnimation;
+
+      if (wn) {
+        wn.area_start = v;
+      }
 
       if (this.__areaStart !== v) {
         this.__areaStart = v;
@@ -19556,6 +19832,11 @@ var Animation = /*#__PURE__*/function (_Event) {
     },
     set: function set(v) {
       v = Math.max(0, parseInt(v) || 0);
+      var wn = this.__wasmAnimation;
+
+      if (wn) {
+        wn.area_duration = v;
+      }
 
       if (this.__areaDuration !== v) {
         this.__areaDuration = v;
@@ -19585,8 +19866,8 @@ var Animation = /*#__PURE__*/function (_Event) {
       // 过滤时间非法的，过滤后续offset<=前面的
       var offset = -1;
 
-      var _loop = function _loop(_i18, _len10) {
-        var current = list[_i18];
+      var _loop = function _loop(_i19, _len12) {
+        var current = list[_i19];
 
         if (current.hasOwnProperty('offset')) {
           current.offset = parseFloat(current.offset) || 0;
@@ -19594,19 +19875,19 @@ var Animation = /*#__PURE__*/function (_Event) {
           current.offset = Math.min(1, current.offset); // 超过区间[0,1]
 
           if (isNaN(current.offset) || current.offset < 0 || current.offset > 1) {
-            list.splice(_i18, 1);
-            _i18--;
-            _len10--;
-            i = _i18;
-            len = _len10;
+            list.splice(_i19, 1);
+            _i19--;
+            _len12--;
+            i = _i19;
+            len = _len12;
             return "continue";
           } // <=前面的
           else if (current.offset <= offset) {
-            list.splice(_i18, 1);
-            _i18--;
-            _len10--;
-            i = _i18;
-            len = _len10;
+            list.splice(_i19, 1);
+            _i19--;
+            _len12--;
+            i = _i19;
+            len = _len12;
             return "continue";
           }
         } // 缩写处理
@@ -19623,8 +19904,8 @@ var Animation = /*#__PURE__*/function (_Event) {
             delete current[k];
           }
         });
-        i = _i18;
-        len = _len10;
+        i = _i19;
+        len = _len12;
       };
 
       for (var i = 0, len = list.length; i < len; i++) {
@@ -19677,14 +19958,14 @@ var Animation = /*#__PURE__*/function (_Event) {
       } // 计算没有设置offset的帧
 
 
-      for (var _i19 = 1, _len11 = list.length; _i19 < _len11; _i19++) {
-        var start = list[_i19]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
+      for (var _i20 = 1, _len13 = list.length; _i20 < _len13; _i20++) {
+        var start = list[_i20]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
 
         if (!start.hasOwnProperty('offset')) {
           var end = void 0;
-          var j = _i19 + 1;
+          var j = _i20 + 1;
 
-          for (; j < _len11; j++) {
+          for (; j < _len13; j++) {
             end = list[j];
 
             if (end.hasOwnProperty('offset')) {
@@ -19692,25 +19973,25 @@ var Animation = /*#__PURE__*/function (_Event) {
             }
           }
 
-          var num = j - _i19 + 1;
-          start = list[_i19 - 1];
+          var num = j - _i20 + 1;
+          start = list[_i20 - 1];
           var per = (end.offset - start.offset) / num;
 
-          for (var k = _i19; k < j; k++) {
+          for (var k = _i20; k < j; k++) {
             var item = list[k];
-            item.offset = start.offset + per * (k + 1 - _i19);
+            item.offset = start.offset + per * (k + 1 - _i20);
           }
 
-          _i19 = j;
+          _i20 = j;
         }
       }
 
       var frames = [];
 
-      for (var _i20 = 0, _len12 = list.length; _i20 < _len12; _i20++) {
-        var o = framing(list[_i20], duration, easing);
-        o.index = _i20;
-        frames[_i20] = o;
+      for (var _i21 = 0, _len14 = list.length; _i21 < _len14; _i21++) {
+        var o = framing(list[_i21], duration, easing);
+        o.index = _i21;
+        frames[_i21] = o;
       }
 
       return frames;
@@ -19829,8 +20110,8 @@ var Animation = /*#__PURE__*/function (_Event) {
       var prev = frames[0];
       prev.clone = cloneStyle(prev.style, keys);
 
-      for (var _i21 = 1, _len13 = frames.length; _i21 < _len13; _i21++) {
-        var next = frames[_i21];
+      for (var _i22 = 1, _len15 = frames.length; _i22 < _len15; _i22++) {
+        var next = frames[_i22];
         next.clone = cloneStyle(next.style, keys);
         prev = calFrame(prev, next, keys, target, isGeom);
       }
@@ -19894,8 +20175,8 @@ var Animation = /*#__PURE__*/function (_Event) {
           fixed = []; // 特殊性能优化，for拆开v8会提升不少
 
       if (allInFn) {
-        for (var _i22 = 0, _len14 = transition.length; _i22 < _len14; _i22++) {
-          var item = transition[_i22];
+        for (var _i23 = 0, _len16 = transition.length; _i23 < _len16; _i23++) {
+          var item = transition[_i23];
           var k = item.k,
               v = item.v,
               st = item.st,
@@ -19911,8 +20192,8 @@ var Animation = /*#__PURE__*/function (_Event) {
       } else {
         var currentProps = target.__currentProps;
 
-        var _loop2 = function _loop2(_i23, _len15) {
-          var item = transition[_i23];
+        var _loop2 = function _loop2(_i24, _len17) {
+          var item = transition[_i24];
           var k = item.k,
               v = item.v,
               st = item.st,
@@ -19940,10 +20221,10 @@ var Animation = /*#__PURE__*/function (_Event) {
               }
             } else if (target.isMulti) {
               if (k === 'points' || k === 'controls') {
-                for (var _i25 = 0, _len17 = Math.min(st.length, v.length); _i25 < _len17; _i25++) {
-                  var o = st[_i25];
-                  var n = v[_i25];
-                  var cli = cl[_i25];
+                for (var _i26 = 0, _len19 = Math.min(st.length, v.length); _i26 < _len19; _i26++) {
+                  var o = st[_i26];
+                  var n = v[_i26];
+                  var cli = cl[_i26];
 
                   if (!isNil$b(o) && !isNil$b(n)) {
                     for (var j = 0, len2 = Math.min(o.length, n.length); j < len2; j++) {
@@ -19951,9 +20232,9 @@ var Animation = /*#__PURE__*/function (_Event) {
                       var n2 = n[j];
 
                       if (!isNil$b(o2) && !isNil$b(n2)) {
-                        for (var _k7 = 0, len3 = Math.min(o2.length, n2.length); _k7 < len3; _k7++) {
-                          if (!isNil$b(o2[_k7]) && !isNil$b(n2[_k7])) {
-                            o2[_k7] = cli[j][_k7] + n2[_k7] * percent;
+                        for (var _k9 = 0, len3 = Math.min(o2.length, n2.length); _k9 < len3; _k9++) {
+                          if (!isNil$b(o2[_k9]) && !isNil$b(n2[_k9])) {
+                            o2[_k9] = cli[j][_k9] + n2[_k9] * percent;
                           }
                         }
                       }
@@ -19981,14 +20262,14 @@ var Animation = /*#__PURE__*/function (_Event) {
               }
             } else {
               if (k === 'points' || k === 'controls') {
-                for (var _i26 = 0, _len18 = Math.min(st.length, v.length); _i26 < _len18; _i26++) {
-                  var _o = st[_i26];
-                  var _n = v[_i26];
+                for (var _i27 = 0, _len20 = Math.min(st.length, v.length); _i27 < _len20; _i27++) {
+                  var _o2 = st[_i27];
+                  var _n2 = v[_i27];
 
-                  if (!isNil$b(_o) && !isNil$b(_n)) {
-                    for (var _j6 = 0, _len19 = Math.min(_o.length, _n.length); _j6 < _len19; _j6++) {
-                      if (!isNil$b(_o[_j6]) && !isNil$b(_n[_j6])) {
-                        _o[_j6] = cl[_i26][_j6] + _n[_j6] * percent;
+                  if (!isNil$b(_o2) && !isNil$b(_n2)) {
+                    for (var _j7 = 0, _len21 = Math.min(_o2.length, _n2.length); _j7 < _len21; _j7++) {
+                      if (!isNil$b(_o2[_j7]) && !isNil$b(_n2[_j7])) {
+                        _o2[_j7] = cl[_i27][_j7] + _n2[_j7] * percent;
                       }
                     }
                   }
@@ -20012,8 +20293,8 @@ var Animation = /*#__PURE__*/function (_Event) {
           }
         };
 
-        for (var _i23 = 0, _len15 = transition.length; _i23 < _len15; _i23++) {
-          _loop2(_i23, _len15);
+        for (var _i24 = 0, _len17 = transition.length; _i24 < _len17; _i24++) {
+          _loop2(_i24, _len17);
         } // string等的直接量，在不同帧之间可能存在变化，同帧变化后不再改变引用，因此前提是发生帧变化
         // 再检查是否和当前相等，防止跳到一个不变化的帧上，而前一帧有变化的情况，大部分都是无变化
 
@@ -20021,18 +20302,18 @@ var Animation = /*#__PURE__*/function (_Event) {
         if (notSameFrame) {
           var f = frame.fixed;
 
-          for (var _i24 = 0, _len16 = f.length; _i24 < _len16; _i24++) {
-            var _k6 = f[_i24];
-            var isGeom = frame.isGeom && GEOM$1.hasOwnProperty(_k6);
+          for (var _i25 = 0, _len18 = f.length; _i25 < _len18; _i25++) {
+            var _k8 = f[_i25];
+            var isGeom = frame.isGeom && GEOM$1.hasOwnProperty(_k8);
 
-            if (!equalStyle$1(_k6, style[_k6], isGeom ? currentProps[_k6] : currentStyle[_k6], target)) {
-              if (GEOM$1.hasOwnProperty(_k6)) {
-                currentProps[_k6] = style[_k6];
+            if (!equalStyle$1(_k8, style[_k8], isGeom ? currentProps[_k8] : currentStyle[_k8], target)) {
+              if (GEOM$1.hasOwnProperty(_k8)) {
+                currentProps[_k8] = style[_k8];
               } else {
-                currentStyle[_k6] = style[_k6];
+                currentStyle[_k8] = style[_k8];
               }
 
-              fixed.push(_k6);
+              fixed.push(_k8);
             }
           }
         }
@@ -20047,6 +20328,27 @@ var Animation = /*#__PURE__*/function (_Event) {
 
   return Animation;
 }(Event);
+
+function getEaseType(ea) {
+  var tf = getEasing(ea),
+      easeType = EASING.LINEAR;
+
+  if (tf && tf !== easing.linear) {
+    if (tf === easing.easeIn) {
+      easeType = EASING.EASE_IN;
+    } else if (tf === easing.easeOut) {
+      easeType = EASING.EASE_OUT;
+    } else if (tf === easing.ease) {
+      easeType = EASING.EASE;
+    } else if (tf === easing.easeInOut) {
+      easeType = EASING.EASE_IN_OUT;
+    } else {
+      easeType = EASING.EASE_CUSTOM;
+    }
+  }
+
+  return easeType;
+}
 
 var int2rgba$2 = util.int2rgba;
 var canvasPolygon$3 = painter.canvasPolygon,
@@ -20547,7 +20849,8 @@ var STYLE_KEY = enums.STYLE_KEY,
     TRANSFORM_STYLE$1 = _enums$STYLE_KEY$8.TRANSFORM_STYLE,
     BACKFACE_VISIBILITY$1 = _enums$STYLE_KEY$8.BACKFACE_VISIBILITY,
     BOX_SIZING = _enums$STYLE_KEY$8.BOX_SIZING,
-    FONT_SIZE_SHRINK = _enums$STYLE_KEY$8.FONT_SIZE_SHRINK;
+    FONT_SIZE_SHRINK = _enums$STYLE_KEY$8.FONT_SIZE_SHRINK,
+    WASM_STYLE_KEY = enums.WASM_STYLE_KEY;
 var AUTO$4 = o$4.AUTO,
     PX$5 = o$4.PX,
     PERCENT$4 = o$4.PERCENT,
@@ -21274,11 +21577,11 @@ var Xom = /*#__PURE__*/function (_Node) {
 
       this.__calStyle(REFLOW$3, currentStyle, computedStyle, cacheStyle);
 
-      this.__calPerspective(currentStyle, computedStyle, cacheStyle); // 每次reflow重新传matrix到wasm
+      this.__calPerspective(currentStyle, computedStyle, cacheStyle); // 每次reflow传数据到wasm
 
 
       this.__wasmStyle(currentStyle);
-    } // 传递matrix相关样式到wasm中计算
+    } // 传递transform/opacity相关样式到wasm中计算
 
   }, {
     key: "__wasmStyle",
@@ -21286,7 +21589,6 @@ var Xom = /*#__PURE__*/function (_Node) {
       var wn = this.__wasmNode;
 
       if (wn) {
-        currentStyle = currentStyle || this.__currentStyle;
         wn.set_style(this.__x1, this.__y1, this.__offsetWidth, this.__offsetHeight, currentStyle[TRANSLATE_X].v, currentStyle[TRANSLATE_Y].v, currentStyle[TRANSLATE_Z].v, currentStyle[ROTATE_X].v, currentStyle[ROTATE_Y].v, currentStyle[ROTATE_Z].v, currentStyle[ROTATE_3D][0], currentStyle[ROTATE_3D][1], currentStyle[ROTATE_3D][2], currentStyle[ROTATE_3D][3].v, currentStyle[SCALE_X].v, currentStyle[SCALE_Y].v, currentStyle[SCALE_Z].v, currentStyle[SKEW_X].v, currentStyle[SKEW_Y].v, currentStyle[OPACITY$3], currentStyle[TRANSFORM_ORIGIN$2][0].v, currentStyle[TRANSFORM_ORIGIN$2][1].v, currentStyle[TRANSLATE_X].u, currentStyle[TRANSLATE_Y].u, currentStyle[TRANSLATE_Z].u, currentStyle[TRANSFORM_ORIGIN$2][0].u, currentStyle[TRANSFORM_ORIGIN$2][1].u);
       }
     }
@@ -23516,23 +23818,52 @@ var Xom = /*#__PURE__*/function (_Node) {
           currentStyle = this.__currentStyle,
           currentProps = this.__currentProps;
       var keys = [];
+      var wn = this.__wasmNode;
 
       for (var k in style) {
         if (style.hasOwnProperty(k)) {
           var isGeom = GEOM.hasOwnProperty(k);
+          var v = style[k];
 
-          if (!isGeom) {
-            k = parseInt(k);
-          }
-
-          if (!equalStyle(k, isGeom ? currentProps[k] : currentStyle[k], style[k], this)) {
-            if (isGeom) {
-              currentProps[k] = style[k];
-            } else {
-              currentStyle[k] = style[k];
+          if (isGeom) {
+            if (!equalStyle(k, currentProps[k], v, this)) {
+              currentProps[k] = v;
+              keys.push(k);
             }
+          } else {
+            k = parseInt(k);
 
-            keys.push(k);
+            if (wn && wasm$1.isWasmStyle(k)) {
+              var k2 = WASM_STYLE_KEY[k];
+
+              if (k === TRANSFORM_ORIGIN$2) {
+                var res = void 0;
+
+                if (!wn.equal_style(k2, v[0].v, v[0].u)) {
+                  wn.update_style(k2, v[0].v, v[0].u);
+                  res = true;
+                }
+
+                k2++;
+
+                if (!wn.equal_style(k2, v[1].v, v[1].u)) {
+                  wn.update_style(k2, v[1].v, v[1].u);
+                  res = true;
+                }
+
+                if (res) {
+                  keys.push(k);
+                }
+              } else {
+                if (!wn.equal_style(k2, v.v, v.u)) {
+                  wn.update_style(k2, v.v, v.u);
+                  keys.push(k);
+                }
+              }
+            } else if (!equalStyle(k, currentStyle[k], v, this)) {
+              currentStyle[k] = v;
+              keys.push(k);
+            }
           }
         }
       }
@@ -23780,6 +24111,12 @@ var Xom = /*#__PURE__*/function (_Node) {
         }
       }
 
+      var wn = this.__wasmNode;
+
+      if (wn) {
+        wn.resize_x(diff);
+      }
+
       this.clearCache();
     }
   }, {
@@ -23810,6 +24147,12 @@ var Xom = /*#__PURE__*/function (_Node) {
 
           this.__layoutStyle(lv);
         }
+      }
+
+      var wn = this.__wasmNode;
+
+      if (wn) {
+        wn.resize_y(diff);
       }
 
       this.clearCache();
@@ -23843,14 +24186,58 @@ var Xom = /*#__PURE__*/function (_Node) {
         keys = Object.keys(computedStyle);
       }
 
+      var wn = this.__wasmNode,
+          wasmCps;
       keys.forEach(function (k) {
         if (GEOM.hasOwnProperty(k)) {
           res[k] = computedStyle[k];
         } else {
-          res[STYLE_RV_KEY[k]] = computedStyle[k];
+          if (wn && wasm$1.isWasmStyle(k)) {
+            if (!wasmCps) {
+              wasmCps = new Float64Array(wasm$1.instance.memory.buffer, wn.computed_style_ptr(), 18);
+            }
+
+            if (k === TRANSFORM_ORIGIN$2) {
+              var k2 = WASM_STYLE_KEY[k];
+              res[STYLE_RV_KEY[k]] = [wasmCps[k2], wasmCps[k2 + 1]];
+            } else {
+              res[STYLE_RV_KEY[k]] = wasmCps[WASM_STYLE_KEY[k]];
+            }
+          } else {
+            res[STYLE_RV_KEY[k]] = computedStyle[k];
+          }
         }
       });
       return res;
+    }
+  }, {
+    key: "getStyle",
+    value: function getStyle(k) {
+      if (!k || !util.isString(k) || abbr.hasOwnProperty(k)) {
+        throw new Error('Param must be a single style key');
+      }
+
+      var computedStyle = this.__computedStyle;
+
+      if (GEOM.hasOwnProperty(k)) {
+        return computedStyle[k];
+      }
+
+      var k2 = STYLE_KEY[style2Upper(k)];
+      var wn = this.__wasmNode;
+
+      if (wn && wasm$1.isWasmStyle(k2)) {
+        var wasmCps = new Float64Array(wasm$1.instance.memory.buffer, wn.computed_style_ptr(), 18);
+
+        if (k === TRANSFORM_ORIGIN$2) {
+          k2 = WASM_STYLE_KEY[k2];
+          return [wasmCps[k2], wasmCps[k2 + 1]];
+        } else {
+          return wasmCps[WASM_STYLE_KEY[k2]];
+        }
+      }
+
+      return computedStyle[k2];
     }
   }, {
     key: "getBoundingClientRect",
@@ -31512,7 +31899,6 @@ function drawTextureCache$1(gl, list, cx, cy, dx, dy, wasmOp, wasmMe) {
         ty2 = cache.__ty2,
         page = cache.__page,
         bbox = cache.__bbox;
-    console.log(cache.__page, wasm);
 
     if (!i) {
       // canvas需要生成texture，texture则强制不会进来
@@ -39216,6 +39602,8 @@ function renderSvg$1(renderMode, ctx, root, isFirst, rlv) {
   }
 }
 
+var lastList = [];
+
 function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
   if (isFirst) {
     Page.init(gl.getParameter(gl.MAX_TEXTURE_SIZE), true);
@@ -39576,10 +39964,15 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
       _node11.__updateCache();
     }
   } // 非首次，没有cache变更重新生成的，可以直接用上次的缓存渲染列表
-  else if (!isFirst) {
+  else if (wasmOp && !isFirst && rlv < REPAINT$1 && !(rlv & (CACHE$1 | FT$1 | PPT$1 | MASK$1))) {
+    for (var _i10 = 0, _len12 = lastList.length; _i10 < _len12; _i10++) {
+      drawTextureCache(gl, lastList[_i10], cx, cy, 0, 0, wasmOp, wasmMe);
+    }
 
     return;
   }
+
+  lastList.splice(0);
   /**
    * 最后先序遍历一次应用__cacheTotal即可，没有的用__cache，以及剩下的超尺寸的和Text
    * 由于mixBlendMode的存在，需先申请个fbo纹理，所有绘制默认向该纹理绘制，最后fbo纹理再进入主画布
@@ -39619,6 +40012,7 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
 
         if (lastPage && lastPage !== p) {
           var o = list.splice(0);
+          lastList.push(o);
           drawTextureCache(gl, o, cx, cy, 0, 0, wasmOp, wasmMe);
         }
 
@@ -39725,6 +40119,8 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
           if (_mixBlendMode2 !== 'normal') {
             if (list.length) {
               var _o5 = list.splice(0);
+
+              lastList.push(_o5);
               drawTextureCache(gl, _o5, cx, cy, 0, 0, wasmOp, wasmMe);
               lastPage = null;
             }
@@ -39745,6 +40141,8 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
 
             if (lastPage && lastPage !== _p8) {
               var _o6 = list.splice(0);
+
+              lastList.push(_o6);
               drawTextureCache(gl, _o6, cx, cy, 0, 0, wasmOp, wasmMe);
             }
 
@@ -39781,6 +40179,8 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
 
         if (render !== DOM_RENDER && render !== IMG_RENDER && render !== GEOM_RENDER) {
           var _o7 = list.splice(0);
+
+          lastList.push(_o7);
           drawTextureCache(gl, _o7, cx, cy, 0, 0, wasmOp, wasmMe);
           lastPage = null;
 
@@ -39791,6 +40191,8 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
       }
     }
   }
+
+  lastList.push(list);
   drawTextureCache(gl, list, cx, cy, 0, 0, wasmOp, wasmMe); // 有mbm时将汇总的fbo绘入主画布，否则本身就是到主画布无需多余操作
 
   if (hasMbm) {
@@ -40334,10 +40736,12 @@ var _enums$STYLE_KEY = enums.STYLE_KEY,
     OPACITY = _enums$STYLE_KEY.OPACITY,
     MIX_BLEND_MODE = _enums$STYLE_KEY.MIX_BLEND_MODE,
     FONT_SIZE = _enums$STYLE_KEY.FONT_SIZE;
+    enums.WASM_STYLE_KEY;
 var isNil$8 = util.isNil,
     isFunction$1 = util.isFunction;
 var PX = o$4.PX,
     INHERIT = o$4.INHERIT;
+    o$4.NUMBER;
 var getLevel = o$1.getLevel,
     isReflow = o$1.isReflow,
     NONE = o$1.NONE,
@@ -41318,6 +41722,15 @@ var Root = /*#__PURE__*/function (_Dom) {
             hasRelease = prev.__cacheMask.release() || hasRelease;
           }
         }
+      } // wasm的特殊更新，不管lv多少只要有transform和op都得计算
+
+
+      if (lv & TRANSFORM_ALL) {
+        var wn = node.__wasmNode;
+
+        if (wn) {
+          wn.cal_matrix(lv & TRANSFORM_ALL);
+        }
       } // 大部分动画都是repaint初始化已经知道
 
 
@@ -41357,10 +41770,7 @@ var Root = /*#__PURE__*/function (_Dom) {
 
           node.__calStyle(lv, currentStyle, computedStyle, cacheStyle);
 
-          node.__calPerspective(currentStyle, computedStyle, cacheStyle); // calStyle中matrix部分有wasm会不计算，这里让wasm计算
-
-
-          node.__wasmStyle(currentStyle);
+          node.__calPerspective(currentStyle, computedStyle, cacheStyle);
         } // < REPAINT特殊的优化computedStyle计算
         else {
           if (lv & PPT) {
@@ -41368,11 +41778,9 @@ var Root = /*#__PURE__*/function (_Dom) {
           }
 
           if (lv & TRANSFORM_ALL || lv & OP) {
-            var wn = node.__wasmNode;
+            var _wn = node.__wasmNode;
 
-            if (wn) {
-              node.__wasmStyle(currentStyle);
-            } else {
+            if (_wn) ; else {
               if (lv & TRANSFORM_ALL) {
                 var o = node.__selfPerspectiveMatrix;
 
@@ -41641,7 +42049,7 @@ var Root = /*#__PURE__*/function (_Dom) {
         var wr = this.__wasmRoot; // wasm的动画计算顺序要放在前面，因为其他动画可能包含REPAINT/REFLOW之类的变更，涵盖wasm的transform/opacity
 
         if (wr) {
-          var n = wr.on_frame(diff); // 有动画执行了需刷新
+          var n = wr.before(diff); // 有动画执行了需刷新
 
           if (n) {
             this.__aniChange = true;
@@ -41683,19 +42091,68 @@ var Root = /*#__PURE__*/function (_Dom) {
       var pause = this.__pause;
 
       if (!pause) {
-        for (var i = 0; i < len; i++) {
-          ani[i].__after(diff);
+        var wr = this.__wasmRoot;
+        /**
+         * 有wasm需要特殊对待，首先要保证动画的执行顺序，主体仍然是每个动画依次执行after，和before的顺序对应，
+         * 但wasm存在的话不可能一个个去执行，通信消耗过大，所以是先执行所有的wasm动画，计算transform和opacity，
+         * 然后是每个普通js动画执行after。
+         * 普通的动画中如果完全被wasm替代计算了，会有ignore标识，before不再执行，
+         * 但after需要执行且需要wasm那边的数据，比如是否begin、end、finish的状态。
+         * 多个动画可能会出现混合状态，即有的有wasm有的没有，有的被wasm完全替代有的没有，
+         * 这时候wasm动画数量和顺序和普通js动画对应不上，获取数据需注意，在普通js动画中有变量可以识别是否有wasm动画，
+         * 以此为手段，在遍历普通js动画中，可以增加偏移量来解决获取对应wasm动画索引的问题。
+         */
+
+        if (wr) {
+          var n = wr.after();
+          var states; // 有n个长度的动画，取共享内存的状态，数量一定和before对得上
+
+          if (n) {
+            states = new Uint8Array(wasm$1.instance.memory.buffer, wr.am_states_ptr(), n);
+          }
+
+          var offset = 0; // 偏移计数器
+
+          for (var i = 0; i < len; i++) {
+            var a = ani[i];
+
+            if (a.__wasmAnimation) {
+              var s = states[i - offset]; // 0是fps中忽略，1是普通frame事件，2是begin，4是end，8是finish
+
+              if (s & 2) {
+                a.__begin = true;
+              }
+
+              if (s & 4) {
+                a.__end = true;
+              }
+
+              if (s & 8) {
+                a.__finished = true;
+              }
+            } // 普通js动画无wasm也就是共享数据中不占队列，除了执行外要标识偏移++，如果下一个动画有wasm的话，索引要保持正确
+            else {
+              offset++;
+            }
+
+            a.__after();
+          }
+        } // 没有wasm普通遍历执行动画列表
+        else {
+          for (var _i3 = 0; _i3 < len; _i3++) {
+            ani[_i3].__after();
+          }
         }
 
-        for (var _i3 = 0; _i3 < len3; _i3++) {
-          var item = frameTask[_i3];
+        for (var _i4 = 0; _i4 < len3; _i4++) {
+          var item = frameTask[_i4];
           item && item(diff);
         }
       } // frameDraw不受pause影响，即主动更新样式之类非动画/帧动画，参数true标明异步
 
 
-      for (var _i4 = 0; _i4 < len2; _i4++) {
-        var _item = task[_i4];
+      for (var _i5 = 0; _i5 < len2; _i5++) {
+        var _item = task[_i5];
         _item && _item(true);
       }
 
@@ -47915,7 +48372,7 @@ var refresh = {
   webgl: webgl
 };
 
-var version = "0.85.14";
+var version = "0.86.0";
 
 var isString = util.isString;
 Geom.register('$line', Line);

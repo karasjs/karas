@@ -595,6 +595,14 @@ console.log(root.ref.div.getComputedStyle('width').width); // 等同
 console.log(root.ref.div.getComputedStyle(['width']).width); // 等同
 ```
 
+### getStyle
+* **类型** `Function`
+* **参数**
+  * key `String`
+    想要获取的样式键名。
+* **说明**  
+获取当前计算好的单个样式。
+
 #### getBoundingClientRect
 * **类型** `Function`
 * **参数**

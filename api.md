@@ -1029,6 +1029,14 @@ console.log(root.getTargetAtPoint(10, 10)); // { target: span, path: [0, 0], zPa
 * **说明**  
 解冻这个画布实例，恢复正常状态。会让[Root](#Root)触发`unFreeze`事件。
 
+#### pause
+* **说明**
+暂停所有与动画相关的计算，停止时间运行。类似动画的pause()方法，但是针对本画布下全部内容。
+
+#### resume
+* **说明**
+恢复所有与动画相关的计算，继续时间运行。类似动画的resume()方法，但是针对本画布下全部内容。
+
 <a name="Geom"></a>
 ## Geom
 * **类型** `class`

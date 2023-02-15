@@ -1045,7 +1045,7 @@ console.log(root.getTargetAtPoint(10, 10)); // { target: span, path: [0, 0], zPa
 * **示例**
 ```jsx
 class Custom extends karas.Geom {
-  render(renderMode, lv, ctx, defs) {
+  render(renderMode, ctx, dx, dy) {
     if(renderMode === karas.mode.CANVAS) {
       // canvas下绘制自定义图形
     }
@@ -2017,8 +2017,8 @@ class Custom extends karas.Geom {
     this.__custom = props.custom;
   }
 
-  render(renderMode, lv, ctx, defs) {
-    let res = super.render(renderMode, lv, ctx, defs);
+  render(renderMode, ctx, dx, dy) {
+    let res = super.render(renderMode, ctx, dx, dy);
     if(res.break) {
       return res;
     }
@@ -2046,8 +2046,8 @@ class Yuan extends karas.Geom {
     super(tagName, props);
     this.__banjing = props.banjing;
   }
-  render(renderMode, lv, ctx, defs) {
-    let res = super.render(renderMode, lv, ctx, defs);
+  render(renderMode, ctx, dx, dy) {
+    let res = super.render(renderMode, ctx, dx, dy);
     let {
       cx,
       cy,

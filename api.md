@@ -610,7 +610,7 @@ let root = karas.render(
         </canvas>,
         '#selector'
 );
-console.log(root.ref.div.getStyle('width').width); // 100
+console.log(root.ref.div.getStyle('width')); // 100
 ```
 
 #### getBoundingClientRect

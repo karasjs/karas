@@ -581,7 +581,7 @@ let root = karas.render(
   * key `String/Array<String>`
     想要获取的样式键名，可为空，默认全部。
 * **说明**  
-获取当前计算好的样式。
+获取当前计算好的样式集合。
 * **示例**
 ```jsx
 let root = karas.render(
@@ -602,6 +602,16 @@ console.log(root.ref.div.getComputedStyle(['width']).width); // 等同
     想要获取的样式键名。
 * **说明**  
 获取当前计算好的单个样式。
+* **示例**
+```jsx
+let root = karas.render(
+        <canvas>
+          <div style={{width: 100, height: 100}} ref="div"/>
+        </canvas>,
+        '#selector'
+);
+console.log(root.ref.div.getStyle('width').width); // 100
+```
 
 #### getBoundingClientRect
 * **类型** `Function`

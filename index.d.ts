@@ -245,6 +245,11 @@ declare namespace karas {
     freeze(): void
 
     unFreeze(): void
+
+    pause(): void
+
+    resume(): void
+
     get dom(): HTMLElement
 
     get uuid(): number

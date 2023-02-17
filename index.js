@@ -11506,7 +11506,6 @@
   var DEG$2 = o$4.DEG;
   var CANVAS$4 = mode.CANVAS,
       SVG$4 = mode.SVG;
-      mode.WEBGL;
   var TuOrU = /(?:[\xA7\xA9\xAE\xB1\xBC-\xBE\xD7\xF7\u02EA\u02EB\u1100-\u11FF\u1401-\u167F\u18B0-\u18FF\u2016\u2020\u2021\u2030\u2031\u203B\u203C\u2042\u2047-\u2049\u2051\u2065\u20DD-\u20E0\u20E2-\u20E4\u2100\u2101\u2103-\u2109\u210F\u2113\u2114\u2116\u2117\u211E-\u2123\u2125\u2127\u2129\u212E\u2135-\u213F\u2145-\u214A\u214C\u214D\u214F-\u2189\u218C-\u218F\u221E\u2234\u2235\u2300-\u2307\u230C-\u231F\u2324-\u2328\u232B\u237D-\u239A\u23BE-\u23CD\u23CF\u23D1-\u23DB\u23E2-\u2422\u2424-\u24FF\u25A0-\u2619\u2620-\u2767\u2776-\u2793\u2B12-\u2B2F\u2B50-\u2B59\u2B97\u2BB8-\u2BD1\u2BD3-\u2BEB\u2BF0-\u2BFF\u2E50\u2E51\u2E80-\u3000\u3003-\u3007\u3012\u3013\u3020-\u302F\u3031-\u3040\u3042\u3044\u3046\u3048\u304A-\u3062\u3064-\u3082\u3084\u3086\u3088-\u308D\u308F-\u3094\u3097-\u309A\u309D-\u309F\u30A2\u30A4\u30A6\u30A8\u30AA-\u30C2\u30C4-\u30E2\u30E4\u30E6\u30E8-\u30ED\u30EF-\u30F4\u30F7-\u30FB\u30FD-\u3126\u3128-\u31EF\u3200-\u32FE\u3358-\u337A\u3380-\uA4CF\uA960-\uA97F\uAC00-\uD7FF\uE000-\uFAFF\uFE10-\uFE1F\uFE30-\uFE48\uFE53-\uFE57\uFE5F-\uFE62\uFE67-\uFE6F\uFF02-\uFF07\uFF0A\uFF0B\uFF0F-\uFF19\uFF20-\uFF3A\uFF3C\uFF3E\uFF40-\uFF5A\uFFE0-\uFFE2\uFFE4-\uFFE7\uFFF0-\uFFF8\uFFFC\uFFFD]|\uD802[\uDD80-\uDD9F]|\uD805[\uDD80-\uDDFF]|\uD806[\uDE00-\uDEBF]|[\uD80C\uD81C-\uD822\uD83D\uD840-\uD87E\uD880-\uD8BE][\uDC00-\uDFFF]|\uD80D[\uDC00-\uDC5F]|\uD811[\uDC00-\uDE7F]|\uD81B[\uDFE0-\uDFFF]|\uD823[\uDC00-\uDD7F]|\uD82B[\uDFF0-\uDFFF]|\uD82C[\uDC00-\uDEFF]|\uD833[\uDF00-\uDFCF]|\uD834[\uDC00-\uDDFF\uDEE0-\uDF7F]|\uD836[\uDC00-\uDEAF]|\uD83C[\uDC00-\uDDFF\uDE02-\uDFFF]|\uD83E[\uDD00-\uDEFF]|[\uD87F\uD8BF][\uDC00-\uDFFD])/;
   /**
    * 表示一行文本的类，保存它的位置、内容、从属信息，在布局阶段生成，并在渲染阶段被Text调用render()
@@ -24728,7 +24727,9 @@
               if (n !== baseline) {
                 var d = baseline - n;
 
-                item.__offsetX(d, true); // 同下方
+                item.__offsetX(d, true);
+
+                item.__parent.__offsetX(d, false); // 同下方
 
 
                 increase = Math.max(increase, item.offsetWidth + d);
@@ -24739,7 +24740,10 @@
               if (_n !== baseline) {
                 var _d = baseline - _n;
 
-                item.__offsetY(_d, true); // text的话对齐下移可能影响整体高度，在同行有img/ib这样的替换元素下，需记录最大偏移导致的高度调整值
+                item.__offsetY(_d, true); // TextBox偏移后，Text也要更改x/y坐标，否则bbox不对，webgl渲染缓存位图就会偏差
+
+
+                item.__parent.__offsetY(_d, false); // text的话对齐下移可能影响整体高度，在同行有img/ib这样的替换元素下，需记录最大偏移导致的高度调整值
                 // 比如一个字符和img，字符下调y即字符的baseline和图片底部对齐，导致高度增加lineHeight和baseline的差值
 
 

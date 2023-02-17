@@ -63,6 +63,7 @@ class LineBox {
           if(n !== baseline) {
             let d = baseline - n;
             item.__offsetX(d, true);
+            item.__parent.__offsetX(d, false);
             // 同下方
             increase = Math.max(increase, item.offsetWidth + d);
           }
@@ -72,6 +73,8 @@ class LineBox {
           if(n !== baseline) {
             let d = baseline - n;
             item.__offsetY(d, true);
+            // TextBox偏移后，Text也要更改x/y坐标，否则bbox不对，webgl渲染缓存位图就会偏差
+            item.__parent.__offsetY(d, false);
             // text的话对齐下移可能影响整体高度，在同行有img/ib这样的替换元素下，需记录最大偏移导致的高度调整值
             // 比如一个字符和img，字符下调y即字符的baseline和图片底部对齐，导致高度增加lineHeight和baseline的差值
             increase = Math.max(increase, item.offsetHeight + d);

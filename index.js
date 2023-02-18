@@ -16331,6 +16331,18 @@
        */
 
     }, {
+      key: "set_xywh",
+      value: function set_xywh(x, y, offset_width, offset_height) {
+        wasm.node_set_xywh(this.ptr, x, y, offset_width, offset_height);
+      }
+      /**
+       * @param {number} x
+       * @param {number} y
+       * @param {number} offset_width
+       * @param {number} offset_height
+       */
+
+    }, {
       key: "set_txt",
       value: function set_txt(x, y, offset_width, offset_height) {
         wasm.node_set_txt(this.ptr, x, y, offset_width, offset_height);
@@ -21027,6 +21039,8 @@
 
       _this.__fontRegister = {}; // 优先级字体尚未加载时记录回调hash，销毁时删除回调
 
+      _this.__firstInit = true; // 标识是否第一次创建，布局后置false
+
       return _this;
     }
 
@@ -21594,7 +21608,13 @@
         var wn = this.__wasmNode;
 
         if (wn) {
-          wn.set_style(this.__x1, this.__y1, this.__offsetWidth, this.__offsetHeight, currentStyle[TRANSLATE_X].v, currentStyle[TRANSLATE_Y].v, currentStyle[TRANSLATE_Z].v, currentStyle[ROTATE_X].v, currentStyle[ROTATE_Y].v, currentStyle[ROTATE_Z].v, currentStyle[ROTATE_3D][0], currentStyle[ROTATE_3D][1], currentStyle[ROTATE_3D][2], currentStyle[ROTATE_3D][3].v, currentStyle[SCALE_X].v, currentStyle[SCALE_Y].v, currentStyle[SCALE_Z].v, currentStyle[SKEW_X].v, currentStyle[SKEW_Y].v, currentStyle[OPACITY$3], currentStyle[TRANSFORM_ORIGIN$2][0].v, currentStyle[TRANSFORM_ORIGIN$2][1].v, currentStyle[TRANSLATE_X].u, currentStyle[TRANSLATE_Y].u, currentStyle[TRANSLATE_Z].u, currentStyle[TRANSFORM_ORIGIN$2][0].u, currentStyle[TRANSFORM_ORIGIN$2][1].u);
+          // 第一次布局时全部传入，后续由updateStyle更新wasm数据，transform/opacity相关不能再用初始赋值会错
+          if (this.__firstInit) {
+            this.__firstInit = false;
+            wn.set_style(this.__x1, this.__y1, this.__offsetWidth, this.__offsetHeight, currentStyle[TRANSLATE_X].v, currentStyle[TRANSLATE_Y].v, currentStyle[TRANSLATE_Z].v, currentStyle[ROTATE_X].v, currentStyle[ROTATE_Y].v, currentStyle[ROTATE_Z].v, currentStyle[ROTATE_3D][0], currentStyle[ROTATE_3D][1], currentStyle[ROTATE_3D][2], currentStyle[ROTATE_3D][3].v, currentStyle[SCALE_X].v, currentStyle[SCALE_Y].v, currentStyle[SCALE_Z].v, currentStyle[SKEW_X].v, currentStyle[SKEW_Y].v, currentStyle[OPACITY$3], currentStyle[TRANSFORM_ORIGIN$2][0].v, currentStyle[TRANSFORM_ORIGIN$2][1].v, currentStyle[TRANSLATE_X].u, currentStyle[TRANSLATE_Y].u, currentStyle[TRANSLATE_Z].u, currentStyle[TRANSFORM_ORIGIN$2][0].u, currentStyle[TRANSFORM_ORIGIN$2][1].u);
+          } else {
+            wn.set_xywh(this.__x1, this.__y1, this.__offsetWidth, this.__offsetHeight);
+          }
         }
       }
     }, {

@@ -255,6 +255,7 @@ class Xom extends Node {
     this.__hasComputeReflow = false; // 每次布局计算缓存标，使得每次开始只computeReflow一次
     this.__parentLineBox = null; // inline时指向
     this.__fontRegister = {}; // 优先级字体尚未加载时记录回调hash，销毁时删除回调
+    this.__firstInit = true; // 标识是否第一次创建，布局后置false
   }
 
   __structure(lv, j) {
@@ -788,15 +789,22 @@ class Xom extends Node {
   __wasmStyle(currentStyle) {
     let wn = this.__wasmNode;
     if(wn) {
-      wn.set_style(this.__x1, this.__y1, this.__offsetWidth, this.__offsetHeight,
-        currentStyle[TRANSLATE_X].v, currentStyle[TRANSLATE_Y].v, currentStyle[TRANSLATE_Z].v,
-        currentStyle[ROTATE_X].v, currentStyle[ROTATE_Y].v, currentStyle[ROTATE_Z].v,
-        currentStyle[ROTATE_3D][0], currentStyle[ROTATE_3D][1], currentStyle[ROTATE_3D][2], currentStyle[ROTATE_3D][3].v,
-        currentStyle[SCALE_X].v, currentStyle[SCALE_Y].v, currentStyle[SCALE_Z].v,
-        currentStyle[SKEW_X].v, currentStyle[SKEW_Y].v, currentStyle[OPACITY],
-        currentStyle[TRANSFORM_ORIGIN][0].v, currentStyle[TRANSFORM_ORIGIN][1].v,
-        currentStyle[TRANSLATE_X].u, currentStyle[TRANSLATE_Y].u, currentStyle[TRANSLATE_Z].u,
-        currentStyle[TRANSFORM_ORIGIN][0].u, currentStyle[TRANSFORM_ORIGIN][1].u);
+      // 第一次布局时全部传入，后续由updateStyle更新wasm数据，transform/opacity相关不能再用初始赋值会错
+      if(this.__firstInit) {
+        this.__firstInit = false;
+        wn.set_style(this.__x1, this.__y1, this.__offsetWidth, this.__offsetHeight,
+          currentStyle[TRANSLATE_X].v, currentStyle[TRANSLATE_Y].v, currentStyle[TRANSLATE_Z].v,
+          currentStyle[ROTATE_X].v, currentStyle[ROTATE_Y].v, currentStyle[ROTATE_Z].v,
+          currentStyle[ROTATE_3D][0], currentStyle[ROTATE_3D][1], currentStyle[ROTATE_3D][2], currentStyle[ROTATE_3D][3].v,
+          currentStyle[SCALE_X].v, currentStyle[SCALE_Y].v, currentStyle[SCALE_Z].v,
+          currentStyle[SKEW_X].v, currentStyle[SKEW_Y].v, currentStyle[OPACITY],
+          currentStyle[TRANSFORM_ORIGIN][0].v, currentStyle[TRANSFORM_ORIGIN][1].v,
+          currentStyle[TRANSLATE_X].u, currentStyle[TRANSLATE_Y].u, currentStyle[TRANSLATE_Z].u,
+          currentStyle[TRANSFORM_ORIGIN][0].u, currentStyle[TRANSFORM_ORIGIN][1].u);
+      }
+      else {
+        wn.set_xywh(this.__x1, this.__y1, this.__offsetWidth, this.__offsetHeight);
+      }
     }
   }
 

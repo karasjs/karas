@@ -639,6 +639,15 @@ export class Node {
    * @param {number} offset_width
    * @param {number} offset_height
    */
+  set_xywh(x, y, offset_width, offset_height) {
+    wasm.node_set_xywh(this.ptr, x, y, offset_width, offset_height);
+  }
+  /**
+   * @param {number} x
+   * @param {number} y
+   * @param {number} offset_width
+   * @param {number} offset_height
+   */
   set_txt(x, y, offset_width, offset_height) {
     wasm.node_set_txt(this.ptr, x, y, offset_width, offset_height);
   }

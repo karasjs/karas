@@ -15,10 +15,12 @@ let o = {
       // mdr: 0.64599609375, // middle ratio，(1854-1062/2)/2048
       lgr: 0.03271484375, // line-gap ratio，67/2048，默认0
     },
+    // Times, Helvetica, Courier，3个特殊字体偏移，逻辑来自webkit历史
+    // 查看字体发现非推荐标准，先统一取osx的hhea字段，然后ascent做整体15%放大
+    // https://github.com/WebKit/WebKit/blob/main/Source/WebCore/platform/graphics/coretext/FontCoreText.cpp#L173
     helvetica: {
-      lhr: 1.14990234375, // (8+1900+447)/2048
-      blr: 0.927734375, // 1900/2048
-      lgr: 0.00390625, // 8/2048
+      lhr: 1.14990234375, // ((1577 + Round((1577 + 471) * 0.15)) + 471) / 2048
+      blr: 0.919921875, // (1577 + Round((1577 + 471) * 0.15)) / 2048
     },
     verdana: {
       lhr: 1.21533203125, // (0+2059+430)/2048

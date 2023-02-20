@@ -2163,7 +2163,7 @@
   var CANVAS$5 = {};
   var SUPPORT_OFFSCREEN_CANVAS = typeof OffscreenCanvas === 'function' && OffscreenCanvas.prototype.getContext;
 
-  function offscreenCanvas(key, width, height, message) {
+  function offscreenCanvas(key, width, height, message, contextAttributes) {
     var o;
 
     if (!key) {
@@ -2192,7 +2192,7 @@
       document.body.appendChild(o);
     }
 
-    var ctx = o.getContext('2d');
+    var ctx = o.getContext('2d', contextAttributes);
 
     if (!ctx) {
       inject.error('Total canvas memory use exceeds the maximum limit');
@@ -2504,8 +2504,8 @@
     hasOffscreenCanvas: function hasOffscreenCanvas(key) {
       return key && CANVAS$5.hasOwnProperty(key);
     },
-    getOffscreenCanvas: function getOffscreenCanvas(width, height, key, message) {
-      return offscreenCanvas(key, width, height, message);
+    getOffscreenCanvas: function getOffscreenCanvas(width, height, key, message, contextAttributes) {
+      return offscreenCanvas(key, width, height, message, contextAttributes);
     },
     isDom: function isDom(o) {
       if (o) {
@@ -2539,8 +2539,8 @@
       }
     },
     defaultFontFamily: 'arial',
-    getFontCanvas: function getFontCanvas() {
-      return inject.getOffscreenCanvas(16, 16, '__$$CHECK_SUPPORT_FONT_FAMILY$$__', null);
+    getFontCanvas: function getFontCanvas(contextAttributes) {
+      return inject.getOffscreenCanvas(16, 16, '__$$CHECK_SUPPORT_FONT_FAMILY$$__', null, contextAttributes);
     },
     checkSupportFontFamily: function checkSupportFontFamily(ff) {
       ff = ff.toLowerCase(); // 强制arial兜底
@@ -2553,7 +2553,9 @@
         return SUPPORT_FONT[ff];
       }
 
-      var canvas = inject.getFontCanvas();
+      var canvas = inject.getFontCanvas({
+        willReadFrequently: true
+      });
       var context = canvas.ctx;
       context.textAlign = 'center';
       context.fillStyle = '#000';
@@ -3458,12 +3460,13 @@
         lgr: 0.03271484375 // line-gap ratio，67/2048，默认0
 
       },
+      // Times, Helvetica, Courier，3个特殊字体偏移，逻辑来自webkit历史
+      // 查看字体发现非推荐标准，先统一取osx的hhea字段，然后ascent做整体15%放大
+      // https://github.com/WebKit/WebKit/blob/main/Source/WebCore/platform/graphics/coretext/FontCoreText.cpp#L173
       helvetica: {
         lhr: 1.14990234375,
-        // (8+1900+447)/2048
-        blr: 0.927734375,
-        // 1900/2048
-        lgr: 0.00390625 // 8/2048
+        // ((1577 + Round((1577 + 471) * 0.15)) + 471) / 2048
+        blr: 0.919921875 // (1577 + Round((1577 + 471) * 0.15)) / 2048
 
       },
       verdana: {

@@ -6,7 +6,7 @@ const SPF = 1000 / 60;
 const CANVAS = {};
 const SUPPORT_OFFSCREEN_CANVAS = typeof OffscreenCanvas === 'function' && OffscreenCanvas.prototype.getContext;
 
-function offscreenCanvas(key, width, height, message) {
+function offscreenCanvas(key, width, height, message, contextAttributes) {
   let o;
   if(!key) {
     o = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
@@ -30,7 +30,7 @@ function offscreenCanvas(key, width, height, message) {
     }
     document.body.appendChild(o);
   }
-  let ctx = o.getContext('2d');
+  let ctx = o.getContext('2d', contextAttributes);
   if(!ctx) {
     inject.error('Total canvas memory use exceeds the maximum limit');
   }
@@ -280,8 +280,8 @@ let inject = {
   hasOffscreenCanvas(key) {
     return key && CANVAS.hasOwnProperty(key);
   },
-  getOffscreenCanvas(width, height, key, message) {
-    return offscreenCanvas(key, width, height, message);
+  getOffscreenCanvas(width, height, key, message, contextAttributes) {
+    return offscreenCanvas(key, width, height, message, contextAttributes);
   },
   isDom(o) {
     if(o) {
@@ -310,8 +310,8 @@ let inject = {
     }
   },
   defaultFontFamily: 'arial',
-  getFontCanvas() {
-    return inject.getOffscreenCanvas(16, 16, '__$$CHECK_SUPPORT_FONT_FAMILY$$__', null);
+  getFontCanvas(contextAttributes) {
+    return inject.getOffscreenCanvas(16, 16, '__$$CHECK_SUPPORT_FONT_FAMILY$$__', null, contextAttributes);
   },
   checkSupportFontFamily(ff) {
     ff = ff.toLowerCase();
@@ -322,7 +322,7 @@ let inject = {
     if(SUPPORT_FONT.hasOwnProperty(ff)) {
       return SUPPORT_FONT[ff];
     }
-    let canvas = inject.getFontCanvas();
+    let canvas = inject.getFontCanvas({ willReadFrequently: true });
     let context = canvas.ctx;
     context.textAlign = 'center';
     context.fillStyle = '#000';

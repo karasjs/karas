@@ -4054,8 +4054,6 @@
           text = decode.MACSTRING(data, stringOffset + offset, byteLength, encoding);
         }
 
-        console.log(platformName, language, text);
-
         if (text) {
           var platform = name[platformName];
 
@@ -49159,7 +49157,7 @@
     webgl: webgl
   };
 
-  var version = "0.86.0";
+  var version = "0.86.1";
 
   var isString = util.isString;
   Geom.register('$line', Line);

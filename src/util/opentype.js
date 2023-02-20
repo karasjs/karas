@@ -747,7 +747,7 @@ function parseNameTable(data, start, ltag) {
         text = decode.UTF16(data, stringOffset + offset, byteLength);
       } else {
         text = decode.MACSTRING(data, stringOffset + offset, byteLength, encoding);
-      } console.log(platformName, language, text);
+      }
 
       if (text) {
         let platform = name[platformName];

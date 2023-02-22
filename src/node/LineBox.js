@@ -184,42 +184,42 @@ class LineBox {
       let first = list[0];
       let last = list[length - 1];
       let x1 = first.x;
-      let dom = first instanceof TextBox ? first.parent.domParent : first.domParent;
+      let dom = first instanceof TextBox ? first.__parent.__domParent : first.__domParent;
       // 因为inline可以嵌套inline，所以一直向上查找到非inline为止，每层inline如果是首个则减去左侧mbp
       while(true) {
-        let list = dom.contentBoxList;
+        let list = dom.__contentBoxList;
         let {
           [DISPLAY]: display,
           [MARGIN_LEFT]: marginLeft,
           [BORDER_LEFT_WIDTH]: borderLeftWidth,
           [PADDING_LEFT]: paddingLeft,
-        } = dom.computedStyle;
+        } = dom.__computedStyle;
         if(display !== 'inline') {
           break;
         }
         if(first === list[0]) {
           x1 -= marginLeft + borderLeftWidth + paddingLeft;
         }
-        dom = dom.domParent;
+        dom = dom.__domParent;
       }
       let x2 = last.x + last.outerWidth;
-      dom = last instanceof TextBox ? last.parent.domParent : last.domParent;
+      dom = last instanceof TextBox ? last.__parent.__domParent : last.__domParent;
       // 同向上查非inline，每层inline如果是最后一个则加上右侧mbp
       while(true) {
-        let list = dom.contentBoxList;
+        let list = dom.__contentBoxList;
         let {
           [DISPLAY]: display,
           [MARGIN_RIGHT]: marginRight,
           [BORDER_RIGHT_WIDTH]: borderRightWidth,
           [PADDING_RIGHT]: paddingRight,
-        } = dom.computedStyle;
+        } = dom.__computedStyle;
         if(display !== 'inline') {
           break;
         }
         if(first === list[list.length - 1]) {
           x2 += marginRight + borderRightWidth + paddingRight;
         }
-        dom = dom.domParent;
+        dom = dom.__domParent;
       }
       return x2 - x1;
     }
@@ -228,7 +228,7 @@ class LineBox {
 
   get height() {
     if(!this.isUpright) {
-      return this.lineHeight;
+      return this.__lineHeight;
     }
     let list = this.list;
     let length = list.length;
@@ -236,29 +236,29 @@ class LineBox {
       let first = list[0];
       let last = list[length - 1];
       let y1 = first.y;
-      let dom = first instanceof TextBox ? first.parent.domParent : first.domParent;
+      let dom = first instanceof TextBox ? first.__parent.__domParent : first.__domParent;
       // 因为inline可以嵌套inline，所以一直向上查找到非inline为止，每层inline如果是首个则减去左侧mbp
       while(true) {
-        let list = dom.contentBoxList;
+        let list = dom.__contentBoxList;
         let {
           [DISPLAY]: display,
           [MARGIN_TOP]: marginTop,
           [BORDER_TOP_WIDTH]: borderTopWidth,
           [PADDING_TOP]: paddingTop,
-        } = dom.computedStyle;
+        } = dom.__computedStyle;
         if(display !== 'inline') {
           break;
         }
         if(first === list[0]) {
           y1 -= marginTop + borderTopWidth + paddingTop;
         }
-        dom = dom.domParent;
+        dom = dom.__domParent;
       }
       let y2 = last.y + last.outerHeight;
-      dom = last instanceof TextBox ? last.parent.domParent : last.domParent;
+      dom = last instanceof TextBox ? last.__parent.__domParent : last.__domParent;
       // 同向上查非inline，每层inline如果是最后一个则加上右侧mbp
       while(true) {
-        let list = dom.contentBoxList;
+        let list = dom.__contentBoxList;
         let {
           [DISPLAY]: display,
           [MARGIN_BOTTOM]: marginBottom,
@@ -271,7 +271,7 @@ class LineBox {
         if(first === list[list.length - 1]) {
           y2 += marginBottom + borderBottomWidth + paddingBottom;
         }
-        dom = dom.domParent;
+        dom = dom.__domParent;
       }
       return y2 - y1;
     }

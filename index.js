@@ -25645,15 +25645,15 @@
           var first = list[0];
           var last = list[length - 1];
           var x1 = first.x;
-          var dom = first instanceof TextBox ? first.parent.domParent : first.domParent; // 因为inline可以嵌套inline，所以一直向上查找到非inline为止，每层inline如果是首个则减去左侧mbp
+          var dom = first instanceof TextBox ? first.__parent.__domParent : first.__domParent; // 因为inline可以嵌套inline，所以一直向上查找到非inline为止，每层inline如果是首个则减去左侧mbp
 
           while (true) {
-            var _list = dom.contentBoxList;
-            var _dom$computedStyle = dom.computedStyle,
-                display = _dom$computedStyle[DISPLAY$5],
-                marginLeft = _dom$computedStyle[MARGIN_LEFT$4],
-                borderLeftWidth = _dom$computedStyle[BORDER_LEFT_WIDTH$4],
-                paddingLeft = _dom$computedStyle[PADDING_LEFT$4];
+            var _list = dom.__contentBoxList;
+            var _dom$__computedStyle = dom.__computedStyle,
+                display = _dom$__computedStyle[DISPLAY$5],
+                marginLeft = _dom$__computedStyle[MARGIN_LEFT$4],
+                borderLeftWidth = _dom$__computedStyle[BORDER_LEFT_WIDTH$4],
+                paddingLeft = _dom$__computedStyle[PADDING_LEFT$4];
 
             if (display !== 'inline') {
               break;
@@ -25663,19 +25663,19 @@
               x1 -= marginLeft + borderLeftWidth + paddingLeft;
             }
 
-            dom = dom.domParent;
+            dom = dom.__domParent;
           }
 
           var x2 = last.x + last.outerWidth;
-          dom = last instanceof TextBox ? last.parent.domParent : last.domParent; // 同向上查非inline，每层inline如果是最后一个则加上右侧mbp
+          dom = last instanceof TextBox ? last.__parent.__domParent : last.__domParent; // 同向上查非inline，每层inline如果是最后一个则加上右侧mbp
 
           while (true) {
-            var _list2 = dom.contentBoxList;
-            var _dom$computedStyle2 = dom.computedStyle,
-                _display = _dom$computedStyle2[DISPLAY$5],
-                marginRight = _dom$computedStyle2[MARGIN_RIGHT$3],
-                borderRightWidth = _dom$computedStyle2[BORDER_RIGHT_WIDTH$3],
-                paddingRight = _dom$computedStyle2[PADDING_RIGHT$3];
+            var _list2 = dom.__contentBoxList;
+            var _dom$__computedStyle2 = dom.__computedStyle,
+                _display = _dom$__computedStyle2[DISPLAY$5],
+                marginRight = _dom$__computedStyle2[MARGIN_RIGHT$3],
+                borderRightWidth = _dom$__computedStyle2[BORDER_RIGHT_WIDTH$3],
+                paddingRight = _dom$__computedStyle2[PADDING_RIGHT$3];
 
             if (_display !== 'inline') {
               break;
@@ -25685,7 +25685,7 @@
               x2 += marginRight + borderRightWidth + paddingRight;
             }
 
-            dom = dom.domParent;
+            dom = dom.__domParent;
           }
 
           return x2 - x1;
@@ -25697,7 +25697,7 @@
       key: "height",
       get: function get() {
         if (!this.isUpright) {
-          return this.lineHeight;
+          return this.__lineHeight;
         }
 
         var list = this.list;
@@ -25707,15 +25707,15 @@
           var first = list[0];
           var last = list[length - 1];
           var y1 = first.y;
-          var dom = first instanceof TextBox ? first.parent.domParent : first.domParent; // 因为inline可以嵌套inline，所以一直向上查找到非inline为止，每层inline如果是首个则减去左侧mbp
+          var dom = first instanceof TextBox ? first.__parent.__domParent : first.__domParent; // 因为inline可以嵌套inline，所以一直向上查找到非inline为止，每层inline如果是首个则减去左侧mbp
 
           while (true) {
-            var _list3 = dom.contentBoxList;
-            var _dom$computedStyle3 = dom.computedStyle,
-                display = _dom$computedStyle3[DISPLAY$5],
-                marginTop = _dom$computedStyle3[MARGIN_TOP$2],
-                borderTopWidth = _dom$computedStyle3[BORDER_TOP_WIDTH$2],
-                paddingTop = _dom$computedStyle3[PADDING_TOP$2];
+            var _list3 = dom.__contentBoxList;
+            var _dom$__computedStyle3 = dom.__computedStyle,
+                display = _dom$__computedStyle3[DISPLAY$5],
+                marginTop = _dom$__computedStyle3[MARGIN_TOP$2],
+                borderTopWidth = _dom$__computedStyle3[BORDER_TOP_WIDTH$2],
+                paddingTop = _dom$__computedStyle3[PADDING_TOP$2];
 
             if (display !== 'inline') {
               break;
@@ -25725,19 +25725,19 @@
               y1 -= marginTop + borderTopWidth + paddingTop;
             }
 
-            dom = dom.domParent;
+            dom = dom.__domParent;
           }
 
           var y2 = last.y + last.outerHeight;
-          dom = last instanceof TextBox ? last.parent.domParent : last.domParent; // 同向上查非inline，每层inline如果是最后一个则加上右侧mbp
+          dom = last instanceof TextBox ? last.__parent.__domParent : last.__domParent; // 同向上查非inline，每层inline如果是最后一个则加上右侧mbp
 
           while (true) {
-            var _list4 = dom.contentBoxList;
-            var _dom$computedStyle4 = dom.computedStyle,
-                _display2 = _dom$computedStyle4[DISPLAY$5],
-                marginBottom = _dom$computedStyle4[MARGIN_BOTTOM$2],
-                borderBottomWidth = _dom$computedStyle4[BORDER_BOTTOM_WIDTH$1],
-                paddingBottom = _dom$computedStyle4[PADDING_BOTTOM$1];
+            var _list4 = dom.__contentBoxList;
+            var _dom$computedStyle = dom.computedStyle,
+                _display2 = _dom$computedStyle[DISPLAY$5],
+                marginBottom = _dom$computedStyle[MARGIN_BOTTOM$2],
+                borderBottomWidth = _dom$computedStyle[BORDER_BOTTOM_WIDTH$1],
+                paddingBottom = _dom$computedStyle[PADDING_BOTTOM$1];
 
             if (_display2 !== 'inline') {
               break;
@@ -25747,7 +25747,7 @@
               y2 += marginBottom + borderBottomWidth + paddingBottom;
             }
 
-            dom = dom.domParent;
+            dom = dom.__domParent;
           }
 
           return y2 - y1;

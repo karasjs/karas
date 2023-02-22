@@ -25697,7 +25697,7 @@
       key: "height",
       get: function get() {
         if (!this.isUpright) {
-          return this.__lineHeight;
+          return this.lineHeight;
         }
 
         var list = this.list;

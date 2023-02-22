@@ -228,7 +228,7 @@ class LineBox {
 
   get height() {
     if(!this.isUpright) {
-      return this.__lineHeight;
+      return this.lineHeight;
     }
     let list = this.list;
     let length = list.length;

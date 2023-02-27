@@ -9,7 +9,7 @@ function isType(type) {
 
 let isObject = isType('Object');
 let isString = isType('String');
-let isFunction = isType('Function');
+let isFunction = isType('Function') || isType('AsyncFunction') || isType('GeneratorFunction');
 let isNumber = isType('Number');
 let isBoolean = isType('Boolean');
 let isDate = isType('Date');

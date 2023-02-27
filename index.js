@@ -1585,7 +1585,7 @@
 
   var isObject$1 = isType('Object');
   var isString$2 = isType('String');
-  var isFunction$b = isType('Function');
+  var isFunction$b = isType('Function') || isType('AsyncFunction') || isType('GeneratorFunction');
   var isNumber$2 = isType('Number');
   var isBoolean = isType('Boolean');
   var isDate = isType('Date');
@@ -49157,7 +49157,7 @@
     webgl: webgl
   };
 
-  var version = "0.86.1";
+  var version = "0.86.2";
 
   var isString = util.isString;
   Geom.register('$line', Line);

@@ -7,9 +7,21 @@ function isType(type) {
   }
 }
 
+function isTypes(types) {
+  return function(obj) {
+    let s = toString.call(obj);
+    for(let i = 0, len = types.length; i < len; i++) {
+      if(s === '[object ' + types[i] + ']') {
+        return true;
+      }
+    }
+    return false;
+  }
+}
+
 let isObject = isType('Object');
 let isString = isType('String');
-let isFunction = isType('Function') || isType('AsyncFunction') || isType('GeneratorFunction');
+let isFunction = isTypes(['Function', 'AsyncFunction', 'GeneratorFunction']);
 let isNumber = isType('Number');
 let isBoolean = isType('Boolean');
 let isDate = isType('Date');

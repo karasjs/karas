@@ -1577,9 +1577,23 @@ function isType(type) {
   };
 }
 
+function isTypes(types) {
+  return function (obj) {
+    var s = toString.call(obj);
+
+    for (var i = 0, len = types.length; i < len; i++) {
+      if (s === '[object ' + types[i] + ']') {
+        return true;
+      }
+    }
+
+    return false;
+  };
+}
+
 var isObject$1 = isType('Object');
 var isString$2 = isType('String');
-var isFunction$b = isType('Function') || isType('AsyncFunction') || isType('GeneratorFunction');
+var isFunction$b = isTypes(['Function', 'AsyncFunction', 'GeneratorFunction']);
 var isNumber$2 = isType('Number');
 var isBoolean = isType('Boolean');
 var isDate = isType('Date');
@@ -49151,7 +49165,7 @@ var refresh = {
   webgl: webgl
 };
 
-var version = "0.86.2";
+var version = "0.86.3";
 
 var isString = util.isString;
 Geom.register('$line', Line);

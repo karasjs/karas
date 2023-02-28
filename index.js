@@ -24769,7 +24769,7 @@
         var root = this.__root;
 
         this.__frameAnimateList.splice(0).forEach(function (o) {
-          root.__offFrame(cb);
+          root.__offFrame(o);
         });
       } // isLayout为false时，为relative，true则是absolute/justify/marginAuto等直接改layoutData数据的
       // lv是reflow偏移时传入，需要清除cacheStyle，并且对位图cache进行偏移设置
@@ -49171,7 +49171,7 @@
     webgl: webgl
   };
 
-  var version = "0.86.3";
+  var version = "0.86.4";
 
   var isString = util.isString;
   Geom.register('$line', Line);

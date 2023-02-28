@@ -2977,7 +2977,7 @@ class Xom extends Node {
   clearFrameAnimate() {
     let root = this.__root;
     this.__frameAnimateList.splice(0).forEach(o => {
-      root.__offFrame(cb);
+      root.__offFrame(o);
     });
   }
 

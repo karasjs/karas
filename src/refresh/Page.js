@@ -25,11 +25,7 @@ class Page {
     this.__number = number;
     this.__width = this.__height = size;
     // 标识n*n个单元格是否空闲可用，一维数组表示
-    let grid = [];
-    for(let i = 0, len = number * number; i < len; i++) {
-      grid.push(0);
-    }
-    this.__grid = new Int32Array(grid);
+    this.__grid = new Int8Array(number * number);
     this.__uuid = uuid++;
     // webgl贴图缓存更新使用，canvas/img等发生变更需刷新重新生成texture，fbo的texture不需要
     this.__update = false;

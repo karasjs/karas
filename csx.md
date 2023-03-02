@@ -316,6 +316,8 @@
   * vertical-lr
 * wordBreak `没有实现但等同于只有break-all`
   * break-all 
+* overflowWrap `即wordWrap，没有实现但等同于只有break-word`
+  * break-word 
 * mixBlendMode
   * normal 默认
   * multiply

@@ -196,7 +196,7 @@ function backtrack(bp, lineBoxManager, lineBox, total, endSpace, isUpright) {
     ew = ctx.measureText(ELLIPSIS).width;
   }
   else {
-    ew = inject.measureTextSync(ELLIPSIS, computedStyle[FONT_FAMILY], computedStyle[FONT_SIZE], computedStyle[FONT_WEIGHT]);
+    ew = inject.measureTextSync(ELLIPSIS, computedStyle[FONT_FAMILY], computedStyle[FONT_SIZE], computedStyle[FONT_WEIGHT], false);
   }
   for(let i = list.length - 1; i >= 0; i--) {
     let item = list[i];

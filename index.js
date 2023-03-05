@@ -13040,7 +13040,7 @@
    * 测量的封装，主要是增加了shrinkFontSize声明时，不断尝试fontSize--，直到限制或者满足一行展示要求
    */
 
-  function measureLineWidth(ctx, renderMode, start, length, content, w, ew, perW, computedStyle, fontFamily, fontSize, fontWeight, fontSizeShrink, letterSpacing, isUpright) {
+  function measureLineWidth(ctx, renderMode, start, length, content, w, ew, perW, computedStyle, fontFamily, fontSize, fontWeight, fontSizeShrink, letterSpacing) {
     if (start >= length) {
       // 特殊情况不应该走进这里
       return {
@@ -13050,7 +13050,7 @@
       };
     }
 
-    var res = measure(ctx, renderMode, start, length, content, w - ew, perW, fontFamily, fontSize, fontWeight, letterSpacing, isUpright);
+    var res = measure(ctx, renderMode, start, length, content, w - ew, perW, fontFamily, fontSize, fontWeight, letterSpacing);
 
     if (res.newLine && fontSizeShrink > 0 && fontSizeShrink < fontSize) {
       while (res.newLine && fontSize > fontSizeShrink) {
@@ -13060,15 +13060,15 @@
         if (renderMode === CANVAS$2 || renderMode === WEBGL$2) {
           ew = ctx.measureText(ELLIPSIS$1).width;
         } else {
-          ew = inject.measureTextSync(ELLIPSIS$1, computedStyle[FONT_FAMILY$3], fontSize, computedStyle[FONT_WEIGHT$3]);
+          ew = inject.measureTextSync(ELLIPSIS$1, fontFamily, fontSize, fontWeight, false);
         }
 
-        res = measure(ctx, renderMode, start, length, content, w - ew, perW, fontFamily, fontSize, fontWeight, letterSpacing, isUpright);
+        res = measure(ctx, renderMode, start, length, content, w - ew, perW, fontFamily, fontSize, fontWeight, letterSpacing);
         res.fitFontSize = fontSize;
         res.ew = ew; // 有ew的时候还要尝试没有是否放得下
 
         if (ew) {
-          var t = measure(ctx, renderMode, start, length, content, w, perW, fontFamily, fontSize, fontWeight, letterSpacing, isUpright);
+          var t = measure(ctx, renderMode, start, length, content, w, perW, fontFamily, fontSize, fontWeight, letterSpacing);
 
           if (!t.newLine) {
             t.fitFontSize = fontSize;
@@ -13091,7 +13091,7 @@
    */
 
 
-  function measure(ctx, renderMode, start, length, content, w, perW, fontFamily, fontSize, fontWeight, letterSpacing, isUpright) {
+  function measure(ctx, renderMode, start, length, content, w, perW, fontFamily, fontSize, fontWeight, letterSpacing) {
     var i = start,
         j = length,
         rw = 0,
@@ -13136,7 +13136,7 @@
       if (renderMode === CANVAS$2 || renderMode === WEBGL$2) {
         _mw = ctx.measureText(str).width;
       } else if (renderMode === SVG$2) {
-        _mw = inject.measureTextSync(str, fontFamily, fontSize, fontWeight, isUpright);
+        _mw = inject.measureTextSync(str, fontFamily, fontSize, fontWeight, false);
       }
 
       if (letterSpacing) {
@@ -13367,7 +13367,7 @@
                   ctx.font = css.setFontStyle(computedStyle, --fs);
                   textWidth = ctx.measureText(content).width + letterSpacing * content.length;
                 } else if (renderMode === SVG$2) {
-                  textWidth = inject.measureTextSync(content, fontFamily, fs, fontWeight) + letterSpacing * content.length;
+                  textWidth = inject.measureTextSync(content, fontFamily, fs, fontWeight, false) + letterSpacing * content.length;
                 }
               }
 
@@ -13518,7 +13518,7 @@
 
           ew = ctx.measureText(ELLIPSIS$1).width;
         } else {
-          ew = inject.measureTextSync(ELLIPSIS$1, computedStyle[FONT_FAMILY$3], computedStyle[FONT_SIZE$5], computedStyle[FONT_WEIGHT$3]);
+          ew = inject.measureTextSync(ELLIPSIS$1, fontFamily, fontSize, fontWeight, false);
         }
 
         if (renderMode === CANVAS$2 || renderMode === WEBGL$2) {
@@ -14169,7 +14169,7 @@
             ctx.font = css.setFontStyle(computedStyle, 0);
             o.firstCharWidth = ctx.measureText(content.charAt(0)).width + letterSpacing;
           } else if (renderMode === SVG$2) {
-            o.firstCharWidth = inject.measureTextSync(content.charAt(0), fontFamily, fontSize, fontWeight) + letterSpacing;
+            o.firstCharWidth = inject.measureTextSync(content.charAt(0), fontFamily, fontSize, fontWeight, false) + letterSpacing;
           }
         }
 
@@ -14205,7 +14205,7 @@
             ctx.font = css.setFontStyle(computedStyle, 0);
             o.textWidth = ctx.measureText(content).width + letterSpacing * content.length;
           } else if (renderMode === SVG$2) {
-            o.textWidth = inject.measureTextSync(content, fontFamily, fontSize, fontWeight) + letterSpacing * content.length;
+            o.textWidth = inject.measureTextSync(content, fontFamily, fontSize, fontWeight, false) + letterSpacing * content.length;
           }
         }
 
@@ -28190,7 +28190,7 @@
 
       ew = ctx.measureText(ELLIPSIS).width;
     } else {
-      ew = inject.measureTextSync(ELLIPSIS, computedStyle[FONT_FAMILY], computedStyle[FONT_SIZE$2], computedStyle[FONT_WEIGHT]);
+      ew = inject.measureTextSync(ELLIPSIS, computedStyle[FONT_FAMILY], computedStyle[FONT_SIZE$2], computedStyle[FONT_WEIGHT], false);
     }
 
     for (var i = list.length - 1; i >= 0; i--) {

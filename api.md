@@ -168,7 +168,7 @@ karas.parse(
 ### Event
 * **类型** `class`
 * **说明**  
-一个简单的事件基类，[Root](#Root)、[Component](#Component)均实现了此类，可以发送和侦听自定义事件。详见[自定义事件](#自定义事件)。
+一个简单的事件基类，[Root](#Root)、[Component](#Component1)均实现了此类，可以发送和侦听自定义事件。详见[自定义事件](#自定义事件)。
 
 <a name="mode"></a>
 ### mode
@@ -224,7 +224,7 @@ class Component extends karas.Component {
 ### Component
 * **类型** `class`
 * **说明**  
-组件的基类，混入了[Event](#Event)。详见[Component](#Component)。
+组件的基类，混入了[Event](#Event)。详见[Component](#Component1)。
   
 ### util
 * **类型** `Object`
@@ -370,7 +370,7 @@ y坐标。
 #### domParent
 * **类型** `Xom` 只读
 * **说明**  
-真实父亲节点，[Component](#Component)的[shadowRoot](#shadowRoot)没有`parent`，因此`domParent`会指向`Component`本身的`parent`。
+真实父亲节点，[Component](#Component1)的[shadowRoot](#shadowRoot)没有`parent`，因此`domParent`会指向`Component`本身的`parent`。
 
 #### root
 * **类型** `Root` 只读
@@ -380,7 +380,7 @@ y坐标。
 #### host
 * **类型** `Root/Component` 只读
 * **说明**  
-局部根节点，即ref所属的根节点。当出现在一个组件内部时，通过`Component.ref.a`访问到自己，是属于组件的。当直接出现在Root下时，通过`Root.ref.a`访问到自己，是属于Root。详见[Root](#Root)、[Component](#Component)。
+局部根节点，即ref所属的根节点。当出现在一个组件内部时，通过`Component.ref.a`访问到自己，是属于组件的。当直接出现在Root下时，通过`Root.ref.a`访问到自己，是属于Root。详见[Root](#Root)、[Component](#Component1)。
 
 #### bbox
 * **类型** `Array<Number>` 只读
@@ -508,7 +508,7 @@ svg标准的transform最终计算值，一维6为数组表达，相对于父元�
 #### isShadowRoot
 * **类型** `boolean` 只读
 * **说明**  
-是否是[Component](#Component)的shadowRoot。
+是否是[Component](#Component1)的shadowRoot。
 
 #### isDestroyed
 * **类型** `boolean` 只读
@@ -1266,7 +1266,7 @@ karas.render(
 * **说明**
 将一张图片转为webgl的缓存纹理以供渲染。
 
-<a name="Component"></a>
+<a name="Component1"></a>
 ## Component
 * **类型** `class`
 * **说明**  
@@ -1800,7 +1800,7 @@ karas.render()方法渲染的根节点是个特殊虚拟Dom，它扩展了一些
 #### ref
 * **类型** `Object` 只读
 * **说明**  
-同React一样，类似[Component](#Component)的ref功能。获取所包含的虚拟Dom对象引用时用到。
+同React一样，类似[Component](#Component1)的ref功能。获取所包含的虚拟Dom对象引用时用到。
 
 #### animateController
 * **类型** `Object` 只读
@@ -2110,7 +2110,7 @@ root.ref.yuan.animate([
 
 <a name="自定义组件"></a>
 ## 自定义组件
-同React一样，组件是在VirtualDom之上的一层封装，通过覆盖render()方法实现自定义输出渲染，通过调用setState()方法更新数据，从而完成视图的更新。另外为了贴合`Web Componet`，部分采用了`ShadowDom`的标准设计，详见[ShadowDom](#ShadowDom)。
+同React一样，组件是在VirtualDom之上的一层封装，通过覆盖render()方法实现自定义输出渲染，但因性能原因没有setState()方法。另外为了贴合`Web Componet`，部分采用了`ShadowDom`的标准设计，详见[ShadowDom](#ShadowDom)。
 
 ### 类属性property
 
@@ -2129,11 +2129,6 @@ tagName、root、host、prev、next、parent、isDestroyed、x、y、width、hei
 * **说明**  
 组件的真实Dom子树的根节点，和[shadow](#shadow)不同。
 
-#### state
-* **类型** `Object` 只读
-* **说明**  
-组件的state，和React一样。
-
 #### host
 * **类型** `Root/Component` 只读
 * **说明**  
@@ -2148,28 +2143,6 @@ tagName、root、host、prev、next、parent、isDestroyed、x、y、width、hei
 
 #### 代理实现
 animate、removeAnimate、clearAnimate、updateStyle，同[Xom](#Xom)或[Dom](#Dom)或[Geom](#Geom)，均为代理。
-
-#### setState
-* **类型** `Function`
-* **参数**
-  * newState `Object`
-  混入老的state中的新数据。
-  * cb `Function`
-  执行并刷新后的回调。
-* **说明**  
-组件更新state，和React一样。
-* **示例**
-```jsx
-let root = karas.render(
-  <canvas>
-    <Component ref="cp"/>
-  </canvas>,
-  '#selector'
-);
-root.ref.cp.setState({ a: 1 }, function() {
-  console.log('setState finish');
-});
-```
 
 ### 静态属性
 

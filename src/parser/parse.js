@@ -1,8 +1,9 @@
 import Node from '../node/Node';
 import Component from '../node/Component';
+import Geom from '../node/geom/Geom';
 import util from '../util/util';
 
-let { isPrimitive, isNil } = util;
+let { isPrimitive, isNil, isString } = util;
 
 /**
  * 入口方法，animateRecords记录所有的动画结果等初始化后分配开始动画
@@ -40,20 +41,36 @@ function parse(karas, json, animateRecords, areaStart, areaDuration) {
     throw new Error('children must be an array');
   }
   let vd;
-  if(tagName.charAt(0) === '$') {
-    vd = karas.createGm(tagName, props);
+  if(isString(tagName)) {
+    if(tagName.charAt(0) === '$') {
+      vd = karas.createGm(tagName, props);
+    }
+    else if(/^[A-Z]/.test(tagName)) {
+      let cp = Component.getRegister(tagName);
+      props.tagName = props.tagName || tagName;
+      vd = karas.createCp(cp, props, children.map(item => {
+        return parse(karas, item, animateRecords, areaStart, areaDuration);
+      }));
+    }
+    else {
+      vd = karas.createVd(tagName, props, children.map(item => {
+        return parse(karas, item, animateRecords, areaStart, areaDuration);
+      }));
+    }
   }
-  else if(/^[A-Z]/.test(tagName)) {
-    let cp = Component.getRegister(tagName);
-    props.tagName = props.tagName || tagName;
-    vd = karas.createCp(cp, props, children.map(item => {
-      return parse(karas, item, animateRecords, areaStart, areaDuration);
-    }));
-  }
+  // 扩展支持非标准json，tagName是个类引用
   else {
-    vd = karas.createVd(tagName, props, children.map(item => {
-      return parse(karas, item, animateRecords, areaStart, areaDuration);
-    }));
+    // 特殊的$匿名类
+    if(tagName instanceof Geom || tagName.prototype && tagName.prototype instanceof Geom) {
+      vd = karas.createGm(tagName, props);
+    }
+    else {
+      let cp = Component.getRegister(tagName);
+      props.tagName = props.tagName || tagName;
+      vd = karas.createCp(cp, props, children.map(item => {
+        return parse(karas, item, animateRecords, areaStart, areaDuration);
+      }));
+    }
   }
   if(animate) {
     if(!Array.isArray(animate)) {

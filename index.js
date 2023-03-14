@@ -14546,6 +14546,13 @@
         var sr = this.__shadowRoot;
 
         if (sr instanceof Text) ; else if (sr instanceof Node$1) {
+          // 组件的json的动画得放到sr上
+          var ar = this.__animateRecords;
+
+          if (ar) {
+            sr.__animateRecords = ar;
+          }
+
           var style = css.normalize(this.props.style);
           var keys = Object.keys(style);
           extend$2(sr.style, style, keys);
@@ -48695,6 +48702,7 @@
       } // 递归的parse，如果有动画，此时还没root，先暂存下来，等上面的root的render第一次布局时收集
       else {
         if (animateRecords.length) {
+          console.log(vd, vd.shadowRoot);
           vd.__animateRecords = {
             options: options,
             list: animateRecords,
@@ -49181,7 +49189,7 @@
     webgl: webgl
   };
 
-  var version = "0.86.6";
+  var version = "0.86.7";
 
   var isString = util.isString;
   Geom.register('$line', Line);

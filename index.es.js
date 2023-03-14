@@ -1592,7 +1592,7 @@ function isTypes(types) {
 }
 
 var isObject$1 = isType('Object');
-var isString$2 = isType('String');
+var isString$3 = isType('String');
 var isFunction$b = isTypes(['Function', 'AsyncFunction', 'GeneratorFunction']);
 var isNumber$2 = isType('Number');
 var isBoolean = isType('Boolean');
@@ -2126,7 +2126,7 @@ function replaceRgba2Hex$1(s) {
 
 var util = {
   isObject: isObject$1,
-  isString: isString$2,
+  isString: isString$3,
   isFunction: isFunction$b,
   isNumber: isNumber$2,
   isBoolean: isBoolean,
@@ -4202,7 +4202,7 @@ var opentype = {
   }
 };
 
-var isString$1 = util.isString;
+var isString$2 = util.isString;
 var CALLBACK = {};
 var o$3 = {
   info: {
@@ -4268,7 +4268,7 @@ var o$3 = {
     // url和data同时需要，也可以先data后url，不能先url后data
     name = name.toLowerCase();
 
-    if (!isString$1(url) && !(url instanceof ArrayBuffer)) {
+    if (!isString$2(url) && !(url instanceof ArrayBuffer)) {
       data = url;
       url = null;
     }
@@ -14540,6 +14540,13 @@ var Component = /*#__PURE__*/function (_Event) {
       var sr = this.__shadowRoot;
 
       if (sr instanceof Text) ; else if (sr instanceof Node$1) {
+        // 组件的json的动画得放到sr上
+        var ar = this.__animateRecords;
+
+        if (ar) {
+          sr.__animateRecords = ar;
+        }
+
         var style = css.normalize(this.props.style);
         var keys = Object.keys(style);
         extend$2(sr.style, style, keys);
@@ -48187,7 +48194,8 @@ var Ellipse = /*#__PURE__*/function (_Geom) {
 }(Geom);
 
 var isPrimitive$1 = util.isPrimitive,
-    isNil$1 = util.isNil;
+    isNil$1 = util.isNil,
+    isString$1 = util.isString;
 /**
  * 入口方法，animateRecords记录所有的动画结果等初始化后分配开始动画
  * offsetTime默认0，递归传下去为右libraryId引用的元素增加偏移时间，为了库元素动画复用而开始时间不同
@@ -48240,18 +48248,33 @@ function parse(karas, json, animateRecords, areaStart, areaDuration) {
 
   var vd;
 
-  if (tagName.charAt(0) === '$') {
-    vd = karas.createGm(tagName, props);
-  } else if (/^[A-Z]/.test(tagName)) {
-    var cp = Component.getRegister(tagName);
-    props.tagName = props.tagName || tagName;
-    vd = karas.createCp(cp, props, children.map(function (item) {
-      return parse(karas, item, animateRecords, areaStart, areaDuration);
-    }));
-  } else {
-    vd = karas.createVd(tagName, props, children.map(function (item) {
-      return parse(karas, item, animateRecords, areaStart, areaDuration);
-    }));
+  if (isString$1(tagName)) {
+    if (tagName.charAt(0) === '$') {
+      vd = karas.createGm(tagName, props);
+    } else if (/^[A-Z]/.test(tagName)) {
+      var cp = Component.getRegister(tagName);
+      props.tagName = props.tagName || tagName;
+      vd = karas.createCp(cp, props, children.map(function (item) {
+        return parse(karas, item, animateRecords, areaStart, areaDuration);
+      }));
+    } else {
+      vd = karas.createVd(tagName, props, children.map(function (item) {
+        return parse(karas, item, animateRecords, areaStart, areaDuration);
+      }));
+    }
+  } // 扩展支持非标准json，tagName是个类引用
+  else {
+    // 特殊的$匿名类
+    if (tagName instanceof Geom || tagName.prototype && tagName.prototype instanceof Geom) {
+      vd = karas.createGm(tagName, props);
+    } else {
+      var _cp = Component.getRegister(tagName);
+
+      props.tagName = props.tagName || tagName;
+      vd = karas.createCp(_cp, props, children.map(function (item) {
+        return parse(karas, item, animateRecords, areaStart, areaDuration);
+      }));
+    }
   }
 
   if (animate) {
@@ -48673,6 +48696,7 @@ var o = {
     } // 递归的parse，如果有动画，此时还没root，先暂存下来，等上面的root的render第一次布局时收集
     else {
       if (animateRecords.length) {
+        console.log(vd, vd.shadowRoot);
         vd.__animateRecords = {
           options: options,
           list: animateRecords,
@@ -49159,7 +49183,7 @@ var refresh = {
   webgl: webgl
 };
 
-var version = "0.86.6";
+var version = "0.86.7";
 
 var isString = util.isString;
 Geom.register('$line', Line);

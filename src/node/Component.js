@@ -38,6 +38,11 @@ class Component extends Event {
       // 文字视作为父节点的直接文字子节点
     }
     else if(sr instanceof Node) {
+      // 组件的json的动画得放到sr上
+      let ar = this.__animateRecords;
+      if(ar) {
+        sr.__animateRecords = ar;
+      }
       let style = css.normalize(this.props.style);
       let keys = Object.keys(style);
       extend(sr.style, style, keys);

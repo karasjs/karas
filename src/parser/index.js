@@ -60,7 +60,6 @@ let o = {
     // 递归的parse，如果有动画，此时还没root，先暂存下来，等上面的root的render第一次布局时收集
     else {
       if(animateRecords.length) {
-        console.log(vd, vd.shadowRoot);
         vd.__animateRecords = {
           options,
           list: animateRecords,

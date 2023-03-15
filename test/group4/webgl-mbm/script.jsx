@@ -1,5 +1,5 @@
 let o = karas.render(
-  <webgl width="360" height="360">
+  <webgl contextAttributes={{ preserveDrawingBuffer: false }} width="360" height="360">
     <div style={{position:'absolute',left:0,top:0,width:40,height:40,background:'#5F0',opacity:0.5}}/>
     <div style={{position:'absolute',left:20,top:20,width:40,height:40,background:'#C0F',opacity:0.5,mixBlendMode:'multiply'}}/>
     <div style={{position:'absolute',left:60,top:0,width:40,height:40,background:'#F93'}}/>

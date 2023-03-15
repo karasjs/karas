@@ -126,7 +126,7 @@ void main() {
 karas.Geom.register('$custom', $custom);
 
 let o = karas.render(
-  <webgl width="360" height="360">
+  <webgl contextAttributes={{ preserveDrawingBuffer: false }} width="360" height="360">
     <$custom style={{margin:20,width:100,height:100,background:'#F00',filter:'blur(1)',rotateZ:30}}/>
     <div>aaa</div>
   </webgl>,

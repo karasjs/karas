@@ -1,5 +1,5 @@
 let o = karas.render(
-  <webgl width="360" height="360"></webgl>,
+  <webgl contextAttributes={{ preserveDrawingBuffer: false }} width="360" height="360"></webgl>,
   '#test'
 );
 

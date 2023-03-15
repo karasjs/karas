@@ -2,7 +2,7 @@ export default {
   alpha: true,
   antialias: true,
   premultipliedAlpha: true,
-  preserveDrawingBuffer: true,
+  preserveDrawingBuffer: false,
   depth: true,
-  // stencil: true,
+  stencil: true,
 };

@@ -1,5 +1,5 @@
 let o = karas.render(
-  <webgl width="360" height="360">
+  <webgl contextAttributes={{ preserveDrawingBuffer: false }} width="360" height="360">
     <div style={{width:100}}>
       <span style={{color:'#F00'}}>aaa</span>
       <span style={{fontSize:40,color:'#00F'}}>bbb</span>

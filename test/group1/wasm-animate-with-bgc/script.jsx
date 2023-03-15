@@ -1,6 +1,6 @@
 karas.wasm.init('../../../karas_bg.wasm', function() {
   let root = karas.render(
-    <webgl width="360" height="360">
+    <webgl contextAttributes={{ preserveDrawingBuffer: false }} width="360" height="360">
       <div ref="div" style={{
         width: 50,
         height: 50,

@@ -965,7 +965,7 @@ console.log(root);
 #### contextAttributes
 * **类型** `boolean`
 * **说明**  
-新建上下文参数。此举在getContext('2d')或getContext('webgl')时会传递给第2个参数。默认alpha/antialias/premultipliedAlpha/preserveDrawingBuffer为true。
+新建上下文参数。此举在getContext('2d')或getContext('webgl')时会传递给第2个参数。默认alpha/antialias/premultipliedAlpha/depth/stencil为true。
 
 #### webgl2
 * **类型** `boolean`

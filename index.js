@@ -20242,6 +20242,8 @@
       key: "remove",
       value: function remove() {
         if (this.__target) {
+          this.cancel();
+
           this.__target.removeAnimate(this);
 
           this.__destroy();

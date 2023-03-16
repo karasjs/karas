@@ -2282,6 +2282,13 @@ class Animation extends Event {
     this.__playCb = this.__stopCb = null;
   }
 
+  remove() {
+    if(this.__target) {
+      this.__target.removeAnimate(this);
+      this.__destroy();
+    }
+  }
+
   __destroy() {
     if(this.__isDestroyed) {
       return;

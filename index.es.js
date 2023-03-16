@@ -20233,6 +20233,15 @@ var Animation = /*#__PURE__*/function (_Event) {
       this.__playCb = this.__stopCb = null;
     }
   }, {
+    key: "remove",
+    value: function remove() {
+      if (this.__target) {
+        this.__target.removeAnimate(this);
+
+        this.__destroy();
+      }
+    }
+  }, {
     key: "__destroy",
     value: function __destroy() {
       if (this.__isDestroyed) {
@@ -41445,9 +41454,9 @@ var ca = {
   alpha: true,
   antialias: true,
   premultipliedAlpha: true,
-  preserveDrawingBuffer: true,
-  depth: true // stencil: true,
-
+  preserveDrawingBuffer: false,
+  depth: true,
+  stencil: true
 };
 
 var vertex = "#version 100\n#define GLSLIFY 1\nattribute vec4 a_position;attribute vec2 a_texCoords;varying vec2 v_texCoords;attribute float a_opacity;varying float v_opacity;void main(){gl_Position=a_position;v_texCoords=a_texCoords;v_opacity=a_opacity;}"; // eslint-disable-line

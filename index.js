@@ -20239,6 +20239,15 @@
         this.__playCb = this.__stopCb = null;
       }
     }, {
+      key: "remove",
+      value: function remove() {
+        if (this.__target) {
+          this.__target.removeAnimate(this);
+
+          this.__destroy();
+        }
+      }
+    }, {
       key: "__destroy",
       value: function __destroy() {
         if (this.__isDestroyed) {

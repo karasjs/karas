@@ -1,6 +1,6 @@
 karas.wasm.init('../../../karas_bg.wasm', function() {
   karas.render(
-    <webgl contextAttributes={{ preserveDrawingBuffer: false }} width="360" height="360">
+    <webgl contextAttributes={{ preserveDrawingBuffer: true }} width="360" height="360">
       <div cacheAsBitmap={1}
            style={{
              position: 'absolute',

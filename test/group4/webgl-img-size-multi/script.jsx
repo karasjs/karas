@@ -1,5 +1,5 @@
 let o = karas.render(
-  <webgl contextAttributes={{ preserveDrawingBuffer: false }} width="360" height="360">
+  <webgl contextAttributes={{ preserveDrawingBuffer: true }} width="360" height="360">
     <img src="../../logo.png" style={{
       display: 'block',
       width: 200,

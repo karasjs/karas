@@ -4,7 +4,7 @@ karas.refresh.Page.CONFIG = {
 };
 
 let o = karas.render(
-  <webgl contextAttributes={{ preserveDrawingBuffer: false }} width="360" height="360">
+  <webgl contextAttributes={{ preserveDrawingBuffer: true }} width="360" height="360">
     <div style={{position:'absolute',left:10,top:10,width:200}}>aaaaaaaaaaaaaaaaaaaaaa</div>
   </webgl>,
   '#test'

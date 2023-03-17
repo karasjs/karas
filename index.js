@@ -14770,8 +14770,7 @@
       }
     });
   });
-  ['__layout', '__layoutFlow', '__layoutStyle', '__layoutAbs', '__layoutNone', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__computeReflow', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'frameAnimate', 'updateStyle', 'getBoundingClientRect', 'getComputedStyle', 'clearCache', '__structure', // '__modifyStruct',
-  '__updateStruct', 'flowChildren', 'absChildren', '__isRealInline', '__calBasis', '__calMinMax', '__computeMeasure', 'appendChild', 'prependChild', 'insertBefore', 'insertAfter', 'removeChild', 'remove', 'addEventListener', 'removeEventListener'].forEach(function (fn) {
+  ['__layout', '__layoutFlow', '__layoutStyle', '__layoutAbs', '__layoutNone', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__computeReflow', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'frameAnimate', 'updateStyle', 'getBoundingClientRect', 'getComputedStyle', 'getStyle', 'clearCache', '__structure', '__updateStruct', 'flowChildren', 'absChildren', '__isRealInline', '__calBasis', '__calMinMax', '__computeMeasure', 'appendChild', 'prependChild', 'insertBefore', 'insertAfter', 'removeChild', 'remove', 'addEventListener', 'removeEventListener'].forEach(function (fn) {
     Component.prototype[fn] = function () {
       var sr = this.shadowRoot;
 
@@ -31682,8 +31681,7 @@
         }
 
         child.__parent = this;
-        children.push(child);
-        var zIndexChildren = this.__zIndexChildren = genZIndexChildren(this); // 离屏情况，不刷新
+        children.push(child); // 离屏情况，不刷新
 
         if (this.__isDestroyed) {
           if (isFunction$3(cb)) {
@@ -31695,6 +31693,7 @@
 
 
         builder.relation(root, host || root, this, child, {});
+        var zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
 
         this.__insertStruct(child, zIndexChildren.indexOf(child)); // 可能为component，不能用__currentStyle
 
@@ -31738,8 +31737,7 @@
         }
 
         child.__parent = this;
-        children.unshift(child);
-        var zIndexChildren = this.__zIndexChildren = genZIndexChildren(this); // 离屏情况，不刷新
+        children.unshift(child); // 离屏情况，不刷新
 
         if (this.__isDestroyed) {
           if (isFunction$3(cb)) {
@@ -31751,6 +31749,7 @@
 
 
         builder.relation(root, host, this, child, {});
+        var zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
 
         this.__insertStruct(child, zIndexChildren.indexOf(child)); // 可能为component，不能用__currentStyle
 
@@ -31804,7 +31803,6 @@
           child.__next = target;
           target.__prev = child;
           children.splice(i, 0, child);
-          parent.__zIndexChildren = genZIndexChildren(parent);
         } else {
           throw new Error('InsertBefore() illegal');
         } // 离屏情况，不刷新
@@ -31820,6 +31818,7 @@
 
 
         builder.relation(root, parent.__host, parent, child, {});
+        parent.__zIndexChildren = genZIndexChildren(parent);
 
         parent.__insertStruct(child, parent.__zIndexChildren.indexOf(child));
 
@@ -31864,7 +31863,6 @@
           target.__next = child;
           child.__prev = target;
           children.splice(i + 1, 0, child);
-          parent.__zIndexChildren = genZIndexChildren(parent);
         } else {
           throw new Error('InsertAfter() illegal');
         } // 离屏情况，不刷新
@@ -31880,6 +31878,7 @@
 
 
         builder.relation(root, parent.__host, parent, child, {});
+        parent.__zIndexChildren = genZIndexChildren(parent);
 
         parent.__insertStruct(child, parent.__zIndexChildren.indexOf(child));
 

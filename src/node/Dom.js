@@ -3299,7 +3299,6 @@ class Dom extends Xom {
     }
     child.__parent = this;
     children.push(child);
-    let zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
     // 离屏情况，不刷新
     if(this.__isDestroyed) {
       if(isFunction(cb)) {
@@ -3309,6 +3308,7 @@ class Dom extends Xom {
     }
     // 在dom中则整体设置关系和struct，不可见提前跳出
     builder.relation(root, host || root, this, child, {});
+    let zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
     this.__insertStruct(child, zIndexChildren.indexOf(child));
     // 可能为component，不能用__currentStyle
     if(child.currentStyle[DISPLAY] === 'none' || this.__computedStyle[DISPLAY] === 'none') {
@@ -3340,7 +3340,6 @@ class Dom extends Xom {
     }
     child.__parent = this;
     children.unshift(child);
-    let zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
     // 离屏情况，不刷新
     if(this.__isDestroyed) {
       if(isFunction(cb)) {
@@ -3350,6 +3349,7 @@ class Dom extends Xom {
     }
     // 在dom中则整体设置关系和struct，不可见提前跳出
     builder.relation(root, host, this, child, {});
+    let zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
     this.__insertStruct(child, zIndexChildren.indexOf(child));
     // 可能为component，不能用__currentStyle
     if(child.currentStyle[DISPLAY] === 'none' || this.__computedStyle[DISPLAY] === 'none') {
@@ -3390,7 +3390,6 @@ class Dom extends Xom {
       child.__next = target;
       target.__prev = child;
       children.splice(i, 0, child);
-      parent.__zIndexChildren = genZIndexChildren(parent);
     }
     else {
       throw new Error('InsertBefore() illegal');
@@ -3404,6 +3403,7 @@ class Dom extends Xom {
     }
     // 在dom中则整体设置关系和struct，不可见提前跳出
     builder.relation(root, parent.__host, parent, child, {});
+    parent.__zIndexChildren = genZIndexChildren(parent);
     parent.__insertStruct(child, parent.__zIndexChildren.indexOf(child));
     if(child.currentStyle[DISPLAY] === 'none' || parent.__computedStyle[DISPLAY] === 'none') {
       child.__layoutNone();
@@ -3437,7 +3437,6 @@ class Dom extends Xom {
       target.__next = child;
       child.__prev = target;
       children.splice(i + 1, 0, child);
-      parent.__zIndexChildren = genZIndexChildren(parent);
     }
     else {
       throw new Error('InsertAfter() illegal');
@@ -3451,6 +3450,7 @@ class Dom extends Xom {
     }
     // 在dom中则整体设置关系和struct，不可见提前跳出
     builder.relation(root, parent.__host, parent, child, {});
+    parent.__zIndexChildren = genZIndexChildren(parent);
     parent.__insertStruct(child, parent.__zIndexChildren.indexOf(child));
     if(child.currentStyle[DISPLAY] === 'none' || parent.__computedStyle[DISPLAY] === 'none') {
       child.__layoutNone();

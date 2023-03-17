@@ -3218,6 +3218,11 @@ let a = root.ref.div.animate([
 a.gotoAndStop(500);
 ```
 
+#### remove
+* **类型** `Function`
+* **说明**  
+等同于其作用对象上的`removeAnimate`方法，移除本身。
+
 <a name="frame"></a>
 ## frame
 帧动画基础工具集对象，总控。

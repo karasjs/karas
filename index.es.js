@@ -49193,7 +49193,7 @@ var refresh = {
   webgl: webgl
 };
 
-var version = "0.86.7";
+var version = "0.86.8";
 
 var isString = util.isString;
 Geom.register('$line', Line);

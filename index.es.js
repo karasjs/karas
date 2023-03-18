@@ -14764,8 +14764,7 @@ Object.keys(o$2.GEOM).concat(['x', 'y', 'width', 'height', 'outerWidth', 'outerH
     }
   });
 });
-['__layout', '__layoutFlow', '__layoutStyle', '__layoutAbs', '__layoutNone', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__computeReflow', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'frameAnimate', 'updateStyle', 'getBoundingClientRect', 'getComputedStyle', 'clearCache', '__structure', // '__modifyStruct',
-'__updateStruct', 'flowChildren', 'absChildren', '__isRealInline', '__calBasis', '__calMinMax', '__computeMeasure', 'appendChild', 'prependChild', 'insertBefore', 'insertAfter', 'removeChild', 'remove', 'addEventListener', 'removeEventListener'].forEach(function (fn) {
+['__layout', '__layoutFlow', '__layoutStyle', '__layoutAbs', '__layoutNone', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__computeReflow', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'frameAnimate', 'updateStyle', 'getBoundingClientRect', 'getComputedStyle', 'getStyle', 'clearCache', '__structure', '__updateStruct', 'flowChildren', 'absChildren', '__isRealInline', '__calBasis', '__calMinMax', '__computeMeasure', 'appendChild', 'prependChild', 'insertBefore', 'insertAfter', 'removeChild', 'remove', 'addEventListener', 'removeEventListener'].forEach(function (fn) {
   Component.prototype[fn] = function () {
     var sr = this.shadowRoot;
 
@@ -31676,8 +31675,7 @@ var Dom = /*#__PURE__*/function (_Xom) {
       }
 
       child.__parent = this;
-      children.push(child);
-      var zIndexChildren = this.__zIndexChildren = genZIndexChildren(this); // 离屏情况，不刷新
+      children.push(child); // 离屏情况，不刷新
 
       if (this.__isDestroyed) {
         if (isFunction$3(cb)) {
@@ -31689,6 +31687,7 @@ var Dom = /*#__PURE__*/function (_Xom) {
 
 
       builder.relation(root, host || root, this, child, {});
+      var zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
 
       this.__insertStruct(child, zIndexChildren.indexOf(child)); // 可能为component，不能用__currentStyle
 
@@ -31732,8 +31731,7 @@ var Dom = /*#__PURE__*/function (_Xom) {
       }
 
       child.__parent = this;
-      children.unshift(child);
-      var zIndexChildren = this.__zIndexChildren = genZIndexChildren(this); // 离屏情况，不刷新
+      children.unshift(child); // 离屏情况，不刷新
 
       if (this.__isDestroyed) {
         if (isFunction$3(cb)) {
@@ -31745,6 +31743,7 @@ var Dom = /*#__PURE__*/function (_Xom) {
 
 
       builder.relation(root, host, this, child, {});
+      var zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
 
       this.__insertStruct(child, zIndexChildren.indexOf(child)); // 可能为component，不能用__currentStyle
 
@@ -31798,7 +31797,6 @@ var Dom = /*#__PURE__*/function (_Xom) {
         child.__next = target;
         target.__prev = child;
         children.splice(i, 0, child);
-        parent.__zIndexChildren = genZIndexChildren(parent);
       } else {
         throw new Error('InsertBefore() illegal');
       } // 离屏情况，不刷新
@@ -31814,6 +31812,7 @@ var Dom = /*#__PURE__*/function (_Xom) {
 
 
       builder.relation(root, parent.__host, parent, child, {});
+      parent.__zIndexChildren = genZIndexChildren(parent);
 
       parent.__insertStruct(child, parent.__zIndexChildren.indexOf(child));
 
@@ -31858,7 +31857,6 @@ var Dom = /*#__PURE__*/function (_Xom) {
         target.__next = child;
         child.__prev = target;
         children.splice(i + 1, 0, child);
-        parent.__zIndexChildren = genZIndexChildren(parent);
       } else {
         throw new Error('InsertAfter() illegal');
       } // 离屏情况，不刷新
@@ -31874,6 +31872,7 @@ var Dom = /*#__PURE__*/function (_Xom) {
 
 
       builder.relation(root, parent.__host, parent, child, {});
+      parent.__zIndexChildren = genZIndexChildren(parent);
 
       parent.__insertStruct(child, parent.__zIndexChildren.indexOf(child));
 
@@ -41541,12 +41540,10 @@ var _enums$STYLE_KEY = enums.STYLE_KEY,
     OPACITY = _enums$STYLE_KEY.OPACITY,
     MIX_BLEND_MODE = _enums$STYLE_KEY.MIX_BLEND_MODE,
     FONT_SIZE = _enums$STYLE_KEY.FONT_SIZE;
-    enums.WASM_STYLE_KEY;
 var isNil$8 = util.isNil,
     isFunction$1 = util.isFunction;
 var PX = o$4.PX,
     INHERIT = o$4.INHERIT;
-    o$4.NUMBER;
 var getLevel = o$1.getLevel,
     isReflow = o$1.isReflow,
     NONE = o$1.NONE,
@@ -49193,7 +49190,7 @@ var refresh = {
   webgl: webgl
 };
 
-var version = "0.86.8";
+var version = "0.86.9";
 
 var isString = util.isString;
 Geom.register('$line', Line);

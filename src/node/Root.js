@@ -75,10 +75,9 @@ const {
     MIX_BLEND_MODE,
     FONT_SIZE,
   },
-  WASM_STYLE_KEY,
 } = enums;
 const { isNil, isFunction } = util;
-const { PX, INHERIT, NUMBER } = unit;
+const { PX, INHERIT } = unit;
 const {
   getLevel,
   isReflow,

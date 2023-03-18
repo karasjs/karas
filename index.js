@@ -41546,12 +41546,10 @@
       OPACITY = _enums$STYLE_KEY.OPACITY,
       MIX_BLEND_MODE = _enums$STYLE_KEY.MIX_BLEND_MODE,
       FONT_SIZE = _enums$STYLE_KEY.FONT_SIZE;
-      enums.WASM_STYLE_KEY;
   var isNil$8 = util.isNil,
       isFunction$1 = util.isFunction;
   var PX = o$4.PX,
       INHERIT = o$4.INHERIT;
-      o$4.NUMBER;
   var getLevel = o$1.getLevel,
       isReflow = o$1.isReflow,
       NONE = o$1.NONE,
@@ -49198,7 +49196,7 @@
     webgl: webgl
   };
 
-  var version = "0.86.8";
+  var version = "0.86.9";
 
   var isString = util.isString;
   Geom.register('$line', Line);

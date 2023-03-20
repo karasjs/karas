@@ -379,9 +379,6 @@ let inject = {
       });
       return;
     }
-    if(!fontFamily) {
-      fontFamily = url;
-    }
     let cache = FONT[url] = FONT[url] || {
       state: INIT,
       task: [],

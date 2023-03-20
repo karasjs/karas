@@ -486,7 +486,7 @@ class Xom extends Node {
       if(p) {
         let crs = p.__currentStyle;
         let alignSelf = currentStyle[ALIGN_SELF];
-        // flex的子元素stretch提前处理认为高度，以便其子元素%高度计算
+        // flex的子元素stretch提前处理认为有高度，以便其子元素%高度计算
         if(crs[DISPLAY] === 'flex' && p.__height) {
           if(crs[FLEX_DIRECTION].indexOf('row') > -1
             && (alignSelf === 'stretch'
@@ -3227,9 +3227,15 @@ class Xom extends Node {
       // 移除component的shadowRoot视为移除component
       let target = this.isShadowRoot ? this.hostRoot : this;
       i = parent.__children.indexOf(target);
+      if (i === -1) {
+        throw new Error('Invalid index of remove()');
+      }
       parent.__children.splice(i, 1);
       if(parent.__zIndexChildren) {
         i = parent.__zIndexChildren.indexOf(target);
+        if (i === -1) {
+          throw new Error('Invalid index of remove()');
+        }
         parent.__zIndexChildren.splice(i, 1);
       }
       let { __prev, __next } = target;

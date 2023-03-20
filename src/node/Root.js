@@ -176,7 +176,7 @@ class Root extends Dom {
     this.__taskClone = []; // 动画执行时可能会修改task，每帧执行前先clone出来防止被篡改
     this.__frameTask = []; // 帧动画回调汇总
     this.__ani = []; // 动画异步刷新&回调
-    this.__isInFrame = false;
+    this.__isAsyncDraw = false;
     this.__pause = false;
     this.__arList = []; // parse中dom的动画解析预存到Root上，layout后执行
     this.__ref = {};
@@ -465,8 +465,8 @@ class Root extends Dom {
       wr.refresh();
     }
     let rlv = this.__rlv;
-    // freeze()冻住不渲染，但第一次不能生效
-    if(this.props.noRender || !isFirst && this.__freeze) {
+    // freeze()冻住不渲染
+    if(this.props.noRender || this.__freeze) {
       this.emit(Event.REFRESH, rlv, true);
       return;
     }
@@ -752,10 +752,10 @@ class Root extends Dom {
     }
     // wasm动画变更可能会无keys和lv，需要强制刷新
     if(res || wasmChange) {
-      this.__frameDraw(cb);
+      this.__asyncDraw(cb);
     }
     else {
-      cb && cb(false);
+      cb && cb(true);
     }
   }
 
@@ -1112,15 +1112,15 @@ class Root extends Dom {
 
   // 所有动画由Root代理，方便控制pause，主动更新时参数传null复用，
   // 注意逻辑耦合，任意动画/主动更新第一次触发时，需把ani和task的队列填充，以防重复onFrame调用
-  __frameDraw(cb) {
-    if(!this.__isInFrame) {
+  __asyncDraw(cb) {
+    if(!this.__isAsyncDraw) {
       frame.onFrame(this);
-      this.__isInFrame = true;
+      this.__isAsyncDraw = true;
     }
     this.__task.push(cb);
   }
 
-  __cancelFrameDraw(cb) {
+  __cancelAsyncDraw(cb) {
     if(!cb) {
       return;
     }
@@ -1130,15 +1130,15 @@ class Root extends Dom {
       task.splice(i, 1);
       if(!task.length && !this.__frameTask.length && !this.__ani.length) {
         frame.offFrame(this);
-        this.__isInFrame = false;
+        this.__isAsyncDraw = false;
       }
     }
   }
 
   __onFrame(cb) {
-    if(!this.__isInFrame) {
+    if(!this.__isAsyncDraw) {
       frame.onFrame(this);
-      this.__isInFrame = true;
+      this.__isAsyncDraw = true;
     }
     this.__frameTask.push(cb);
   }
@@ -1153,15 +1153,15 @@ class Root extends Dom {
       frameTask.splice(i, 1);
       if(!frameTask.length && !this.__task.length && !this.__ani.length) {
         frame.offFrame(this);
-        this.__isInFrame = false;
+        this.__isAsyncDraw = false;
       }
     }
   }
 
   __onAniFrame(animation) {
-    if(!this.__isInFrame) {
+    if(!this.__isAsyncDraw) {
       frame.onFrame(this);
-      this.__isInFrame = true;
+      this.__isAsyncDraw = true;
     }
     this.__ani.push(animation);
   }
@@ -1173,13 +1173,13 @@ class Root extends Dom {
       ani.splice(i, 1);
       if(!ani.length && !this.__task.length && !this.__frameTask.length) {
         frame.offFrame(this);
-        this.__isInFrame = false;
+        this.__isAsyncDraw = false;
       }
     }
   }
 
   /**
-   * 每帧调用Root的before回调，将存储的动画before执行，触发数据先变更完，之后若有变化或主动更新则刷新
+   * 每帧调用Root的before回调，先将存储的动画before执行，触发数据先变更完，然后若有变化或主动更新则刷新
    * wasm的执行也放在和动画__before一起，先后顺序无要求
    */
   __before(diff) {
@@ -1275,17 +1275,17 @@ class Root extends Dom {
         item && item(diff);
       }
     }
-    // frameDraw不受pause影响，即主动更新样式之类非动画/帧动画，参数true标明异步
+    // frameDraw不受pause影响，即主动更新样式之类非动画/帧动画
     for(let i = 0; i < len2; i++) {
       let item = task[i];
-      item && item(true);
+      item && item();
     }
     len = this.__ani.length; // 动画和渲染任务可能会改变自己的任务队列
     len2 = this.__task.length;
     len3 = this.__frameTask.length;
     if(!len && !len2 && !len3) {
       frame.offFrame(this);
-      this.__isInFrame = false;
+      this.__isAsyncDraw = false;
     }
   }
 

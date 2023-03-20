@@ -783,6 +783,13 @@
      * @returns 格式化好的[number, unit]
      */
     calUnit: function calUnit(v) {
+      if (v === 'auto') {
+        return {
+          v: 0,
+          u: AUTO$8
+        };
+      }
+
       var n = parseFloat(v) || 0;
 
       if (/%$/.test(v)) {
@@ -2633,10 +2640,6 @@
           url: url
         });
         return;
-      }
-
-      if (!fontFamily) {
-        fontFamily = url;
       }
 
       var cache = FONT[url] = FONT[url] || {
@@ -10543,17 +10546,10 @@
         return;
       }
 
-      if (v === 'auto') {
-        v = {
-          v: 0,
-          u: AUTO$7
-        };
-      } else {
-        v = calUnit$1(v || 0); // 无单位视为px
+      v = calUnit$1(v || 0); // 无单位视为px
 
-        if ([NUMBER$4, DEG$3].indexOf(v.u) > -1) {
-          v.u = PX$8;
-        }
+      if ([NUMBER$4, DEG$3].indexOf(v.u) > -1) {
+        v.u = PX$8;
       }
 
       var k2 = STYLE_KEY$1[style2Upper$1(k)];
@@ -10654,13 +10650,13 @@
         var _v = calUnit$1(temp); // fontSize不能为非正数，否则为继承
 
 
-        if (_v <= 0) {
+        if (_v.v <= 0) {
           res[FONT_SIZE$9] = {
             u: INHERIT$3
           };
         } else {
           if ([NUMBER$4, DEG$3, EM].indexOf(_v.u) > -1) {
-            _v.v = parseInt(_v.v); // 防止小数
+            _v.v = Math.floor(_v.v); // 防止小数
 
             _v.u = PX$8;
           }
@@ -10676,14 +10672,14 @@
       var _v2 = calUnit$1(temp); // 不能为非正数，否则为0
 
 
-      if (_v2 <= 0) {
+      if (_v2.v <= 0) {
         res[FONT_SIZE_SHRINK$2] = {
           v: 0,
           u: PX$8
         };
       } else {
         if ([NUMBER$4, DEG$3, EM].indexOf(_v2.u) > -1) {
-          _v2.v = parseInt(_v2.v); // 防止小数
+          _v2.v = Math.floor(_v2.v); // 防止小数
 
           _v2.u = PX$8;
         }
@@ -10703,7 +10699,7 @@
         var _v3 = calUnit$1(temp); // textStrokeWidth不能为负数，否则为继承
 
 
-        if (_v3 < 0) {
+        if (_v3.v < 0) {
           res[TEXT_STROKE_WIDTH$5] = {
             u: INHERIT$3
           };
@@ -10746,6 +10742,11 @@
           v: 700,
           u: NUMBER$4
         };
+      } else if (/bolder/i.test(temp)) {
+        res[FONT_WEIGHT$6] = {
+          v: 900,
+          u: NUMBER$4
+        };
       } else if (/normal/i.test(temp)) {
         res[FONT_WEIGHT$6] = {
           v: 400,
@@ -10753,7 +10754,7 @@
         };
       } else if (/lighter/i.test(temp)) {
         res[FONT_WEIGHT$6] = {
-          v: 200,
+          v: 300,
           u: NUMBER$4
         };
       } else if (/inherit/i.test(temp)) {
@@ -10762,7 +10763,7 @@
         };
       } else {
         res[FONT_WEIGHT$6] = {
-          v: Math.max(0, parseInt(temp)) || 400,
+          v: Math.min(900, Math.max(100, parseInt(temp)) || 400),
           u: NUMBER$4
         };
       }
@@ -10801,7 +10802,7 @@
       } else {
         // 统一文字声明格式
         res[FONT_FAMILY$6] = {
-          v: temp.toString().toLowerCase().replace(/['"]/, '').replace(/\s*,\s*/g, ','),
+          v: temp.toString().trim().toLowerCase().replace(/['"]/g, '').replace(/\s*,\s*/g, ','),
           u: STRING$2
         };
       }
@@ -19550,7 +19551,7 @@
           var isChange = !!keys.length;
 
           if (this.__stopCb) {
-            _root.__cancelFrameDraw(this.__stopCb);
+            _root.__cancelAsyncDraw(this.__stopCb);
           } // 有变化的backwards才更新，否则无需理会，不需要回调，极端情况立刻pause()回造成一次无用刷新
 
 
@@ -19792,7 +19793,7 @@
           var isChange = !!keys.length;
 
           if (this.__stopCb) {
-            root.__cancelFrameDraw(this.__stopCb);
+            root.__cancelAsyncDraw(this.__stopCb);
           }
 
           this.__stopCb = function () {
@@ -20166,7 +20167,7 @@
         var _this4 = this;
 
         if (this.__stopCb) {
-          root.__cancelFrameDraw(this.__stopCb);
+          root.__cancelAsyncDraw(this.__stopCb);
         }
 
         var isChange = gotoParams.wasmChange || !!keys.length;
@@ -20232,7 +20233,7 @@
         root.__offAniFrame(this);
 
         if (this.__stopCb) {
-          root.__cancelFrameDraw(this.__stopCb);
+          root.__cancelAsyncDraw(this.__stopCb);
         }
 
         this.__playCb = this.__stopCb = null;
@@ -22032,7 +22033,7 @@
 
           if (p) {
             var crs = p.__currentStyle;
-            var alignSelf = currentStyle[ALIGN_SELF$1]; // flex的子元素stretch提前处理认为高度，以便其子元素%高度计算
+            var alignSelf = currentStyle[ALIGN_SELF$1]; // flex的子元素stretch提前处理认为有高度，以便其子元素%高度计算
 
             if (crs[DISPLAY$6] === 'flex' && p.__height) {
               if (crs[FLEX_DIRECTION$1].indexOf('row') > -1 && (alignSelf === 'stretch' || crs[ALIGN_ITEMS$1] === 'stretch' && alignSelf === 'auto')) {
@@ -25104,10 +25105,18 @@
           var target = this.isShadowRoot ? this.hostRoot : this;
           i = parent.__children.indexOf(target);
 
+          if (i === -1) {
+            throw new Error('Invalid index of remove()');
+          }
+
           parent.__children.splice(i, 1);
 
           if (parent.__zIndexChildren) {
             i = parent.__zIndexChildren.indexOf(target);
+
+            if (i === -1) {
+              throw new Error('Invalid index of remove()');
+            }
 
             parent.__zIndexChildren.splice(i, 1);
           }
@@ -41670,7 +41679,7 @@
 
       _this.__ani = []; // 动画异步刷新&回调
 
-      _this.__isInFrame = false;
+      _this.__isAsyncDraw = false;
       _this.__pause = false;
       _this.__arList = []; // parse中dom的动画解析预存到Root上，layout后执行
 
@@ -42027,9 +42036,9 @@
           wr.refresh();
         }
 
-        var rlv = this.__rlv; // freeze()冻住不渲染，但第一次不能生效
+        var rlv = this.__rlv; // freeze()冻住不渲染
 
-        if (this.props.noRender || !isFirst && this.__freeze) {
+        if (this.props.noRender || this.__freeze) {
           this.emit(Event.REFRESH, rlv, true);
           return;
         }
@@ -42341,9 +42350,9 @@
 
 
         if (res || wasmChange) {
-          this.__frameDraw(cb);
+          this.__asyncDraw(cb);
         } else {
-          cb && cb(false);
+          cb && cb(true);
         }
       }
     }, {
@@ -42753,18 +42762,18 @@
       // 注意逻辑耦合，任意动画/主动更新第一次触发时，需把ani和task的队列填充，以防重复onFrame调用
 
     }, {
-      key: "__frameDraw",
-      value: function __frameDraw(cb) {
-        if (!this.__isInFrame) {
+      key: "__asyncDraw",
+      value: function __asyncDraw(cb) {
+        if (!this.__isAsyncDraw) {
           frame.onFrame(this);
-          this.__isInFrame = true;
+          this.__isAsyncDraw = true;
         }
 
         this.__task.push(cb);
       }
     }, {
-      key: "__cancelFrameDraw",
-      value: function __cancelFrameDraw(cb) {
+      key: "__cancelAsyncDraw",
+      value: function __cancelAsyncDraw(cb) {
         if (!cb) {
           return;
         }
@@ -42777,16 +42786,16 @@
 
           if (!task.length && !this.__frameTask.length && !this.__ani.length) {
             frame.offFrame(this);
-            this.__isInFrame = false;
+            this.__isAsyncDraw = false;
           }
         }
       }
     }, {
       key: "__onFrame",
       value: function __onFrame(cb) {
-        if (!this.__isInFrame) {
+        if (!this.__isAsyncDraw) {
           frame.onFrame(this);
-          this.__isInFrame = true;
+          this.__isAsyncDraw = true;
         }
 
         this.__frameTask.push(cb);
@@ -42806,16 +42815,16 @@
 
           if (!frameTask.length && !this.__task.length && !this.__ani.length) {
             frame.offFrame(this);
-            this.__isInFrame = false;
+            this.__isAsyncDraw = false;
           }
         }
       }
     }, {
       key: "__onAniFrame",
       value: function __onAniFrame(animation) {
-        if (!this.__isInFrame) {
+        if (!this.__isAsyncDraw) {
           frame.onFrame(this);
-          this.__isInFrame = true;
+          this.__isAsyncDraw = true;
         }
 
         this.__ani.push(animation);
@@ -42831,12 +42840,12 @@
 
           if (!ani.length && !this.__task.length && !this.__frameTask.length) {
             frame.offFrame(this);
-            this.__isInFrame = false;
+            this.__isAsyncDraw = false;
           }
         }
       }
       /**
-       * 每帧调用Root的before回调，将存储的动画before执行，触发数据先变更完，之后若有变化或主动更新则刷新
+       * 每帧调用Root的before回调，先将存储的动画before执行，触发数据先变更完，然后若有变化或主动更新则刷新
        * wasm的执行也放在和动画__before一起，先后顺序无要求
        */
 
@@ -42956,12 +42965,12 @@
             var item = frameTask[_i4];
             item && item(diff);
           }
-        } // frameDraw不受pause影响，即主动更新样式之类非动画/帧动画，参数true标明异步
+        } // frameDraw不受pause影响，即主动更新样式之类非动画/帧动画
 
 
         for (var _i5 = 0; _i5 < len2; _i5++) {
           var _item = task[_i5];
-          _item && _item(true);
+          _item && _item();
         }
 
         len = this.__ani.length; // 动画和渲染任务可能会改变自己的任务队列
@@ -42971,7 +42980,7 @@
 
         if (!len && !len2 && !len3) {
           frame.offFrame(this);
-          this.__isInFrame = false;
+          this.__isAsyncDraw = false;
         }
       }
     }, {

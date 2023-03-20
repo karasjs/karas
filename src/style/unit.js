@@ -36,6 +36,12 @@ let o = {
    * @returns 格式化好的[number, unit]
    */
   calUnit(v) {
+    if(v === 'auto') {
+      return {
+        v: 0,
+        u: AUTO,
+      };
+    }
     let n = parseFloat(v) || 0;
     if(/%$/.test(v)) {
       return {

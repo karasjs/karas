@@ -667,15 +667,10 @@ function normalize(style, resetList = []) {
     if(v === undefined) {
       return;
     }
-    if(v === 'auto') {
-      v = { v: 0, u: AUTO };
-    }
-    else {
-      v = calUnit(v || 0);
-      // 无单位视为px
-      if([NUMBER, DEG].indexOf(v.u) > -1) {
-        v.u = PX;
-      }
+    v = calUnit(v || 0);
+    // 无单位视为px
+    if([NUMBER, DEG].indexOf(v.u) > -1) {
+      v.u = PX;
     }
     let k2 = STYLE_KEY[style2Upper(k)];
     res[k2] = v;
@@ -748,12 +743,12 @@ function normalize(style, resetList = []) {
     else {
       let v = calUnit(temp);
       // fontSize不能为非正数，否则为继承
-      if(v <= 0) {
+      if(v.v <= 0) {
         res[FONT_SIZE] = { u: INHERIT };
       }
       else {
         if([NUMBER, DEG, EM].indexOf(v.u) > -1) {
-          v.v = parseInt(v.v); // 防止小数
+          v.v = Math.floor(v.v); // 防止小数
           v.u = PX;
         }
         res[FONT_SIZE] = v;
@@ -764,12 +759,12 @@ function normalize(style, resetList = []) {
   if(temp !== undefined) {
     let v = calUnit(temp);
     // 不能为非正数，否则为0
-    if(v <= 0) {
+    if(v.v <= 0) {
       res[FONT_SIZE_SHRINK] = { v: 0, u: PX };
     }
     else {
       if([NUMBER, DEG, EM].indexOf(v.u) > -1) {
-        v.v = parseInt(v.v); // 防止小数
+        v.v = Math.floor(v.v); // 防止小数
         v.u = PX;
       }
       res[FONT_SIZE_SHRINK] = v;
@@ -783,7 +778,7 @@ function normalize(style, resetList = []) {
     else {
       let v = calUnit(temp);
       // textStrokeWidth不能为负数，否则为继承
-      if(v < 0) {
+      if(v.v < 0) {
         res[TEXT_STROKE_WIDTH] = { u: INHERIT };
       }
       else {
@@ -812,17 +807,20 @@ function normalize(style, resetList = []) {
     if(/bold/i.test(temp)) {
       res[FONT_WEIGHT] = { v: 700, u: NUMBER };
     }
+    else if(/bolder/i.test(temp)) {
+      res[FONT_WEIGHT] = { v: 900, u: NUMBER };
+    }
     else if(/normal/i.test(temp)) {
       res[FONT_WEIGHT] = { v: 400, u: NUMBER };
     }
     else if(/lighter/i.test(temp)) {
-      res[FONT_WEIGHT] = { v: 200, u: NUMBER };
+      res[FONT_WEIGHT] = { v: 300, u: NUMBER };
     }
     else if(/inherit/i.test(temp)) {
       res[FONT_WEIGHT] = { u: INHERIT };
     }
     else {
-      res[FONT_WEIGHT] = { v: Math.max(0, parseInt(temp)) || 400, u: NUMBER };
+      res[FONT_WEIGHT] = { v: Math.min(900, Math.max(100, parseInt(temp)) || 400), u: NUMBER };
     }
   }
   temp = style.fontStyle;
@@ -848,8 +846,8 @@ function normalize(style, resetList = []) {
     }
     else {
       // 统一文字声明格式
-      res[FONT_FAMILY] = { v: temp.toString().toLowerCase()
-          .replace(/['"]/, '')
+      res[FONT_FAMILY] = { v: temp.toString().trim().toLowerCase()
+          .replace(/['"]/g, '')
           .replace(/\s*,\s*/g, ','), u: STRING };
     }
   }

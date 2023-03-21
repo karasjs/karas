@@ -41930,7 +41930,6 @@
         this.draw(true);
         this.__eventCbList = initEvent(this.__dom, Root);
         this.__dom.__root = this;
-        frame.removeRoot(this);
         frame.addRoot(this);
       }
     }, {
@@ -42089,6 +42088,8 @@
         });
 
         this.__destroy();
+
+        frame.removeRoot(this);
 
         this.__animateController.__destroy();
 

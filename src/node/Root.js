@@ -896,6 +896,10 @@ class Root extends Dom {
       __mask,
       __domParent,
     } = node;
+    // 防御一下
+    if(addDom || removeDom) {
+      lv |= REFLOW;
+    }
     // 没有变化或none无需刷新
     if(lv === NONE
       || computedStyle[DISPLAY] === 'none' && !hasDisplay) {

@@ -42510,7 +42510,12 @@
       value: function __calUpdate(node, computedStyle, cacheStyle, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver, addDom, removeDom) {
         var currentStyle = node.__currentStyle,
             __mask = node.__mask,
-            __domParent = node.__domParent; // 没有变化或none无需刷新
+            __domParent = node.__domParent; // 防御一下
+
+        if (addDom || removeDom) {
+          lv |= REFLOW;
+        } // 没有变化或none无需刷新
+
 
         if (lv === NONE || computedStyle[DISPLAY] === 'none' && !hasDisplay) {
           return false;

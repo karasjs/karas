@@ -34210,9 +34210,13 @@
             }
           });
         } else if (ca.state === inject.LOADED) {
-          loadImg.source = ca.source;
-          loadImg.width = loadImg.__width = ca.width;
-          loadImg.height = loadImg.__height = ca.height;
+          if (ca.success) {
+            loadImg.source = ca.source;
+            loadImg.width = loadImg.__width = ca.width;
+            loadImg.height = loadImg.__height = ca.height;
+          } else {
+            loadImg.error = true;
+          }
         }
       }
 
@@ -34244,9 +34248,15 @@
               this.__loadAndRefresh(loadImg, null);
             }
           } else if (cache && cache.state === inject.LOADED && cache.success) {
-            loadImg.source = cache.source;
-            loadImg.width = loadImg.__width = cache.width;
-            loadImg.height = loadImg.__height = cache.height;
+            loadImg.loading = false;
+
+            if (cache.success) {
+              loadImg.source = cache.source;
+              loadImg.width = loadImg.__width = cache.width;
+              loadImg.height = loadImg.__height = cache.height;
+            } else {
+              loadImg.error = true;
+            }
           }
 
           loadImg.cache = false;
@@ -34310,7 +34320,7 @@
           loadImg.onlyImg = false;
         }
 
-        return res;
+        return this.__hasContent = res;
       }
     }, {
       key: "render",
@@ -37451,7 +37461,7 @@
               gl = page.gl,
               size = page.__size; // 尺寸必须对上才行
 
-          var data = new Uint8Array(this.__width * this.__height * 4);
+          var data = new Uint8ClampedArray(this.__width * this.__height * 4);
           gl.bindTexture(gl.TEXTURE_2D, page.texture); // 注意y镜像和原点左下
 
           gl.texSubImage2D(gl.TEXTURE_2D, 0, this.__x, size - this.__y - this.__height, this.__width, this.__height, gl.RGBA, gl.UNSIGNED_BYTE, data);

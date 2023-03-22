@@ -66,9 +66,14 @@ class Img extends Dom {
         });
       }
       else if(ca.state === inject.LOADED) {
-        loadImg.source = ca.source;
-        loadImg.width = loadImg.__width = ca.width;
-        loadImg.height = loadImg.__height = ca.height;
+        if(ca.success) {
+          loadImg.source = ca.source;
+          loadImg.width = loadImg.__width = ca.width;
+          loadImg.height = loadImg.__height = ca.height;
+        }
+        else {
+          loadImg.error = true;
+        }
       }
     }
   }
@@ -93,9 +98,15 @@ class Img extends Dom {
         }
       }
       else if(cache && cache.state === inject.LOADED && cache.success) {
-        loadImg.source = cache.source;
-        loadImg.width = loadImg.__width = cache.width;
-        loadImg.height = loadImg.__height = cache.height;
+        loadImg.loading = false;
+        if (cache.success) {
+          loadImg.source = cache.source;
+          loadImg.width = loadImg.__width = cache.width;
+          loadImg.height = loadImg.__height = cache.height;
+        }
+        else {
+          loadImg.error = true;
+        }
       }
       loadImg.cache = false;
     }
@@ -158,7 +169,7 @@ class Img extends Dom {
     else {
       loadImg.onlyImg = false;
     }
-    return res;
+    return this.__hasContent = res;
   }
 
   render(renderMode, ctx, dx = 0, dy = 0) {

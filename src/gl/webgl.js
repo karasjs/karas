@@ -72,7 +72,7 @@ function createProgram(gl, vshader, fshader) {
  * @param source shader program (string)
  * @return created shader object, or null if the creation has failed.
  */
-export function loadShader(gl, type, source) {
+function loadShader(gl, type, source) {
   // Create shader object
   let shader = gl.createShader(type);
   if(shader == null) {

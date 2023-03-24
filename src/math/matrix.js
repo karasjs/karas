@@ -14,7 +14,7 @@ function multiply(a, b) {
   if(isE(b)) {
     return a;
   }
-  let c = [];
+  let c = identity();
   for(let i = 0; i < 4; i++) {
     let a0 = a[i] || 0;
     let a1 = a[i + 4] || 0;

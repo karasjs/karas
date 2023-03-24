@@ -1050,7 +1050,7 @@ class Xom extends Node {
     let optimize = true;
     let matrixCache = this.__matrix;
     // 优化计算scale不能为0，无法计算倍数差，rotateZ优化不能包含rotateX/rotateY/skew
-    if(lv >= REPAINT || lv & TF) {
+    if(lv >= REFLOW || lv & TF) {
       optimize = false;
     }
     else if((lv & SX) && !__computedStyle[SCALE_X]
@@ -1061,7 +1061,7 @@ class Xom extends Node {
       optimize = false;
     }
     // translate/scale变化特殊优化，d/h/l不能有值，否则不能这样直接简化运算，因为这里不包含perspective，所以一定没有
-    if(optimize && matrixCache) {
+    if(optimize) {
       let transform = __computedStyle[TRANSFORM];
       if(lv & TX) {
         let v = __currentStyle[TRANSLATE_X];
@@ -1129,9 +1129,9 @@ class Xom extends Node {
       }
       if(lv & SCALE) {
         if(lv & SX) {
-          if(!__computedStyle[SCALE_X]) {
-            return this.__calMatrix(REPAINT, __currentStyle, __computedStyle, __cacheStyle, false);
-          }
+          // if(!__computedStyle[SCALE_X]) {
+          //   return this.__calMatrix(REFLOW, __currentStyle, __computedStyle, __cacheStyle, false);
+          // }
           let v = __currentStyle[SCALE_X].v;
           let x = v / __computedStyle[SCALE_X];
           __computedStyle[SCALE_X] = v;
@@ -1143,9 +1143,9 @@ class Xom extends Node {
           matrixCache[2] *= x;
         }
         if(lv & SY) {
-          if(!__computedStyle[SCALE_Y]) {
-            return this.__calMatrix(REPAINT, __currentStyle, __computedStyle, __cacheStyle, false);
-          }
+          // if(!__computedStyle[SCALE_Y]) {
+          //   return this.__calMatrix(REFLOW, __currentStyle, __computedStyle, __cacheStyle, false);
+          // }
           let v = __currentStyle[SCALE_Y].v;
           let y = v / __computedStyle[SCALE_Y];
           __computedStyle[SCALE_Y] = v;
@@ -1158,7 +1158,7 @@ class Xom extends Node {
         }
         if(lv & SZ) {
           if(!__computedStyle[SCALE_Z]) {
-            return this.__calMatrix(REPAINT, __currentStyle, __computedStyle, __cacheStyle, false);
+            return this.__calMatrix(REFLOW, __currentStyle, __computedStyle, __cacheStyle, false);
           }
           let v = __currentStyle[SCALE_Z].v;
           let z = v / __computedStyle[SCALE_Z];
@@ -2898,7 +2898,7 @@ class Xom extends Node {
     }
     if(!keys.length || this.__isDestroyed) {
       if(isFunction(cb)) {
-        cb(false);
+        cb(true);
       }
       return;
     }

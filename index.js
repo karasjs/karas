@@ -875,7 +875,7 @@
       return a;
     }
 
-    var c = [];
+    var c = identity$2();
 
     for (var i = 0; i < 4; i++) {
       var a0 = a[i] || 0;
@@ -22642,14 +22642,14 @@
         var optimize = true;
         var matrixCache = this.__matrix; // 优化计算scale不能为0，无法计算倍数差，rotateZ优化不能包含rotateX/rotateY/skew
 
-        if (lv >= REPAINT$3 || lv & TF$1) {
+        if (lv >= REFLOW$3 || lv & TF$1) {
           optimize = false;
         } else if (lv & SX && !__computedStyle[SCALE_X] || lv & SY && !__computedStyle[SCALE_Y] || lv & SZ && !__computedStyle[SCALE_Z] || lv & RZ && (__computedStyle[ROTATE_X] || __computedStyle[ROTATE_Y] || __computedStyle[SKEW_X] || __computedStyle[SKEW_Y])) {
           optimize = false;
         } // translate/scale变化特殊优化，d/h/l不能有值，否则不能这样直接简化运算，因为这里不包含perspective，所以一定没有
 
 
-        if (optimize && matrixCache) {
+        if (optimize) {
           var transform = __computedStyle[TRANSFORM$3];
 
           if (lv & TX) {
@@ -22726,10 +22726,9 @@
 
           if (lv & SCALE) {
             if (lv & SX) {
-              if (!__computedStyle[SCALE_X]) {
-                return this.__calMatrix(REPAINT$3, __currentStyle, __computedStyle, __cacheStyle, false);
-              }
-
+              // if(!__computedStyle[SCALE_X]) {
+              //   return this.__calMatrix(REFLOW, __currentStyle, __computedStyle, __cacheStyle, false);
+              // }
               var _v4 = __currentStyle[SCALE_X].v;
 
               var _x2 = _v4 / __computedStyle[SCALE_X];
@@ -22744,10 +22743,9 @@
             }
 
             if (lv & SY) {
-              if (!__computedStyle[SCALE_Y]) {
-                return this.__calMatrix(REPAINT$3, __currentStyle, __computedStyle, __cacheStyle, false);
-              }
-
+              // if(!__computedStyle[SCALE_Y]) {
+              //   return this.__calMatrix(REFLOW, __currentStyle, __computedStyle, __cacheStyle, false);
+              // }
               var _v5 = __currentStyle[SCALE_Y].v;
 
               var _y2 = _v5 / __computedStyle[SCALE_Y];
@@ -22763,7 +22761,7 @@
 
             if (lv & SZ) {
               if (!__computedStyle[SCALE_Z]) {
-                return this.__calMatrix(REPAINT$3, __currentStyle, __computedStyle, __cacheStyle, false);
+                return this.__calMatrix(REFLOW$3, __currentStyle, __computedStyle, __cacheStyle, false);
               }
 
               var _v6 = __currentStyle[SCALE_Z].v;
@@ -24678,7 +24676,7 @@
 
         if (!keys.length || this.__isDestroyed) {
           if (isFunction$4(cb)) {
-            cb(false);
+            cb(true);
           }
 
           return;

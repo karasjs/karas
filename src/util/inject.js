@@ -313,6 +313,7 @@ let inject = {
   getFontCanvas(contextAttributes) {
     return inject.getOffscreenCanvas(16, 16, '__$$CHECK_SUPPORT_FONT_FAMILY$$__', null, contextAttributes);
   },
+  // TODO 移入font且设置默认字体可用
   checkSupportFontFamily(ff) {
     ff = ff.toLowerCase();
     // 强制arial兜底

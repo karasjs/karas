@@ -3389,6 +3389,7 @@ class Xom extends Node {
     return this.__matrix;
   }
 
+  // TODO 渲染之前尚无数据，需判断refreshLevel
   get matrixEvent() {
     let wn = this.__wasmNode;
     if(wn) {

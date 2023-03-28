@@ -47,9 +47,6 @@ let o = {
       blr: 1.06,
     },
   },
-  support(fontFamily) {
-    return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].checked;
-  },
   register(name, url, data) { // url和data同时需要，也可以先data后url，不能先url后data
     name = name.toLowerCase();
     if(!isString(url) && !(url instanceof ArrayBuffer)) {

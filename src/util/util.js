@@ -227,14 +227,6 @@ function int2rgba(color) {
       }
       return 'rgba(' + color[0] + ',' + color[1] + ',' + color[2] + ',1)';
     }
-    // if(color.length === 4) {
-    //   color = color.map((c, i) => i === 3 ? c : Math.floor(Math.max(0, c)));
-    //   return 'rgba(' + joinArr(color, ',') + ')';
-    // }
-    // else if(color.length === 3) {
-    //   color = color.map(c => Math.floor(c));
-    //   return 'rgba(' + joinArr(color, ',') + ',1)';
-    // }
   }
   return color || 'rgba(0,0,0,0)';
 }

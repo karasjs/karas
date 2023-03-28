@@ -1811,15 +1811,7 @@
         }
 
         return 'rgba(' + color[0] + ',' + color[1] + ',' + color[2] + ',1)';
-      } // if(color.length === 4) {
-      //   color = color.map((c, i) => i === 3 ? c : Math.floor(Math.max(0, c)));
-      //   return 'rgba(' + joinArr(color, ',') + ')';
-      // }
-      // else if(color.length === 3) {
-      //   color = color.map(c => Math.floor(c));
-      //   return 'rgba(' + joinArr(color, ',') + ',1)';
-      // }
-
+      }
     }
 
     return color || 'rgba(0,0,0,0)';
@@ -2563,6 +2555,7 @@
     getFontCanvas: function getFontCanvas(contextAttributes) {
       return inject.getOffscreenCanvas(16, 16, '__$$CHECK_SUPPORT_FONT_FAMILY$$__', null, contextAttributes);
     },
+    // TODO 移入font且设置默认字体可用
     checkSupportFontFamily: function checkSupportFontFamily(ff) {
       ff = ff.toLowerCase(); // 强制arial兜底
 
@@ -4269,9 +4262,6 @@
         // (0+1060+340)/1000
         blr: 1.06
       }
-    },
-    support: function support(fontFamily) {
-      return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].checked;
     },
     register: function register(name, url, data) {
       // url和data同时需要，也可以先data后url，不能先url后data
@@ -25300,7 +25290,8 @@
         }
 
         return this.__matrix;
-      }
+      } // TODO 渲染之前尚无数据，需判断refreshLevel
+
     }, {
       key: "matrixEvent",
       get: function get() {

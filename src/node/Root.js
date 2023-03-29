@@ -413,6 +413,9 @@ class Root extends Dom {
       width,
       height,
     } = this;
+    if(this.__renderMode === mode.WEBGL) {
+      this.ctx.viewport(0, 0, width, height);
+    }
     this.__checkRoot(renderMode, width, height);
     let wm = this.__currentStyle[WRITING_MODE];
     let isUpright = wm.v && wm.v.indexOf('vertical') === 0;

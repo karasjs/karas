@@ -868,11 +868,11 @@
     }
 
     if (isE$5(a)) {
-      return b;
+      return new Float64Array(b);
     }
 
     if (isE$5(b)) {
-      return a;
+      return new Float64Array(a);
     }
 
     var c = identity$2();
@@ -41964,6 +41964,10 @@
         var renderMode = this.renderMode,
             width = this.width,
             height = this.height;
+
+        if (this.__renderMode === mode.WEBGL) {
+          this.ctx.viewport(0, 0, width, height);
+        }
 
         this.__checkRoot(renderMode, width, height);
 

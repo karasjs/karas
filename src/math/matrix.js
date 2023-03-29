@@ -9,10 +9,10 @@ function multiply(a, b) {
     return identity();
   }
   if(isE(a)) {
-    return b;
+    return new Float64Array(b);
   }
   if(isE(b)) {
-    return a;
+    return new Float64Array(a);
   }
   let c = identity();
   for(let i = 0; i < 4; i++) {

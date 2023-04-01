@@ -42776,7 +42776,7 @@
         this.__rlv |= lv;
 
         if (addDom || removeDom) {
-          this.__rlv |= lv & REBUILD;
+          this.__rlv |= REBUILD;
         }
 
         return true;

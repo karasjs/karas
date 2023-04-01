@@ -1108,11 +1108,9 @@ class Root extends Dom {
     if(hasRelease) {
       lv |= CACHE;
     }
+    this.__rlv |= lv;
     if(addDom || removeDom) {
-      this.__rlv |= REBUILD;
-    }
-    else {
-      this.__rlv |= lv;
+      this.__rlv |= lv & REBUILD;
     }
     return true;
   }

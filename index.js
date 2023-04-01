@@ -34598,7 +34598,8 @@
         loadImg.loading = true;
         var root = this.__root,
             ctx = root.ctx;
-        var placeholder = this.props.placeholder,
+        var props = this.props;
+        var placeholder = props.placeholder,
             computedStyle = this.__computedStyle;
         var width = computedStyle[WIDTH$1],
             height = computedStyle[HEIGHT$1]; // 再测量，可能瞬间完成替换掉上面的
@@ -34625,6 +34626,10 @@
               loadImg.source = data.source;
               loadImg.width = data.width;
               loadImg.height = data.height;
+
+              if (isFunction$2(props.onLoad)) {
+                props.onLoad();
+              }
             } else if (placeholder) {
               loadImg.error = true;
               inject.measureImg(placeholder, function (data) {
@@ -34643,9 +34648,18 @@
                 width: width,
                 height: height
               });
+
+              if (isFunction$2(props.onError)) {
+                props.onError();
+              }
+
               return;
             } else {
               loadImg.error = true;
+
+              if (isFunction$2(props.onError)) {
+                props.onError();
+              }
             } // 可见状态进行刷新操作，visibility某些情况需要刷新，可能宽高未定义要重新布局
 
 
@@ -34663,8 +34677,6 @@
         var loadImg = this.__loadImg; // 相等或空且当前error直接返回
 
         if (v === loadImg.src || this.__isDestroyed || !v && loadImg.error) {
-          loadImg.src = v;
-
           if (v && v !== loadImg.src) {
             inject.measureImg(v, function (res) {
               if (loadImg.src === v) {
@@ -34683,6 +34695,8 @@
             });
           }
 
+          loadImg.src = v;
+
           if (isFunction$2(cb)) {
             cb(false);
           }
@@ -34690,22 +34704,21 @@
           return;
         }
 
-        loadImg.src = v;
-        inject.measureImg(v, function (res) {
-          if (loadImg.src === v) {
-            var props = _this2.props;
-
-            if (res.success) {
-              if (isFunction$2(props.onLoad)) {
-                props.onLoad();
-              }
-            } else {
-              if (isFunction$2(props.onError)) {
-                props.onError();
-              }
-            }
-          }
-        });
+        loadImg.src = v; // inject.measureImg(v, res => {
+        //   if(loadImg.src === v) {
+        //     let props = this.props;
+        //     if(res.success) {
+        //       if(isFunction(props.onLoad)) {
+        //         props.onLoad();
+        //       }
+        //     }
+        //     else {
+        //       if(isFunction(props.onError)) {
+        //         props.onError();
+        //       }
+        //     }
+        //   }
+        // });
 
         this.__loadAndRefresh(loadImg, cb);
       }
@@ -42760,10 +42773,10 @@
           lv |= CACHE;
         }
 
+        this.__rlv |= lv;
+
         if (addDom || removeDom) {
-          this.__rlv |= REBUILD;
-        } else {
-          this.__rlv |= lv;
+          this.__rlv |= lv & REBUILD;
         }
 
         return true;

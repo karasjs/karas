@@ -467,6 +467,7 @@ class Root extends Dom {
       wr.refresh();
     }
     let rlv = this.__rlv;
+    this.__rlv = NONE;
     // freeze()冻住不渲染
     if(this.props.noRender || this.__freeze) {
       this.emit(Event.REFRESH, rlv, true);
@@ -499,7 +500,6 @@ class Root extends Dom {
       renderWebgl(renderMode, ctx, this, isFirst, rlv);
     }
     this.emit(Event.REFRESH, rlv, false);
-    this.__rlv = NONE;
   }
 
   remove() {

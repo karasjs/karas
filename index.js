@@ -42051,7 +42051,8 @@
           wr.refresh();
         }
 
-        var rlv = this.__rlv; // freeze()冻住不渲染
+        var rlv = this.__rlv;
+        this.__rlv = NONE; // freeze()冻住不渲染
 
         if (this.props.noRender || this.__freeze) {
           this.emit(Event.REFRESH, rlv, true);
@@ -42087,7 +42088,6 @@
         }
 
         this.emit(Event.REFRESH, rlv, false);
-        this.__rlv = NONE;
       }
     }, {
       key: "remove",

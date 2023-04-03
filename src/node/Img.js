@@ -557,26 +557,11 @@ class Img extends Dom {
       }
       loadImg.src = v
       if(isFunction(cb)) {
-        cb(false);
+        cb(true);
       }
       return;
     }
     loadImg.src = v;
-    // inject.measureImg(v, res => {
-    //   if(loadImg.src === v) {
-    //     let props = this.props;
-    //     if(res.success) {
-    //       if(isFunction(props.onLoad)) {
-    //         props.onLoad();
-    //       }
-    //     }
-    //     else {
-    //       if(isFunction(props.onError)) {
-    //         props.onError();
-    //       }
-    //     }
-    //   }
-    // });
     this.__loadAndRefresh(loadImg, cb);
   }
 

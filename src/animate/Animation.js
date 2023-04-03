@@ -1688,7 +1688,7 @@ class Animation extends Event {
     }
     if(playState === 'running') {
       if(isFunction(cb)) {
-        cb(false); // 同步回调
+        cb(true); // 同步回调
       }
       return this;
     }
@@ -1882,7 +1882,7 @@ class Animation extends Event {
     }
     if(playState === 'finished') {
       if(isFunction(cb)) {
-        cb(false);
+        cb(true);
       }
       return this;
     }
@@ -1941,7 +1941,7 @@ class Animation extends Event {
     }
     if(playState === 'idle') {
       if(isFunction(cb)) {
-        cb(false);
+        cb(true);
       }
       return this;
     }
@@ -1997,7 +1997,7 @@ class Animation extends Event {
     // 重复相同时间，且正在播放中，且
     if(v === currentTime && this.__playState === 'running') {
       if(isFunction(cb)) {
-        cb(false);
+        cb(true);
       }
       return;
     }
@@ -2047,7 +2047,7 @@ class Animation extends Event {
     // 重复相同时间忽略
     if(v === currentTime) {
       if(isFunction(cb)) {
-        cb(false);
+        cb(true);
       }
       return;
     }

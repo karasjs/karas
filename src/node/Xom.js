@@ -3248,7 +3248,7 @@ class Xom extends Node {
     }
     if(this.__isDestroyed) {
       if(isFunction(cb)) {
-        cb(false);
+        cb(true);
       }
       return;
     }
@@ -3258,7 +3258,7 @@ class Xom extends Node {
     if(this.__computedStyle[DISPLAY] === 'none' || parent && parent.__computedStyle[DISPLAY] === 'none') {
       this.__destroy();
       if(isFunction(cb)) {
-        cb(false);
+        cb(true);
       }
       return;
     }

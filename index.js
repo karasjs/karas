@@ -13986,7 +13986,7 @@
           this.__content = s;
 
           if (isFunction$a(cb)) {
-            cb(false);
+            cb(true);
           }
 
           return;
@@ -14035,7 +14035,7 @@
 
         if (this.__isDestroyed) {
           if (isFunction$a(cb)) {
-            cb(false);
+            cb(true);
           }
 
           return;
@@ -14048,7 +14048,7 @@
           this.__destroy();
 
           if (isFunction$a(cb)) {
-            cb(false);
+            cb(true);
           }
 
           return;
@@ -19507,7 +19507,7 @@
 
         if (playState === 'running') {
           if (isFunction$5(cb)) {
-            cb(false); // 同步回调
+            cb(true); // 同步回调
           }
 
           return this;
@@ -19747,7 +19747,7 @@
 
         if (playState === 'finished') {
           if (isFunction$5(cb)) {
-            cb(false);
+            cb(true);
           }
 
           return this;
@@ -19823,7 +19823,7 @@
 
         if (playState === 'idle') {
           if (isFunction$5(cb)) {
-            cb(false);
+            cb(true);
           }
 
           return this;
@@ -19893,7 +19893,7 @@
 
         if (v === currentTime && this.__playState === 'running') {
           if (isFunction$5(cb)) {
-            cb(false);
+            cb(true);
           }
 
           return;
@@ -19953,7 +19953,7 @@
 
         if (v === currentTime) {
           if (isFunction$5(cb)) {
-            cb(false);
+            cb(true);
           }
 
           return;
@@ -25123,7 +25123,7 @@
 
         if (this.__isDestroyed) {
           if (isFunction$4(cb)) {
-            cb(false);
+            cb(true);
           }
 
           return;
@@ -25136,7 +25136,7 @@
           this.__destroy();
 
           if (isFunction$4(cb)) {
-            cb(false);
+            cb(true);
           }
 
           return;
@@ -34698,27 +34698,13 @@
           loadImg.src = v;
 
           if (isFunction$2(cb)) {
-            cb(false);
+            cb(true);
           }
 
           return;
         }
 
-        loadImg.src = v; // inject.measureImg(v, res => {
-        //   if(loadImg.src === v) {
-        //     let props = this.props;
-        //     if(res.success) {
-        //       if(isFunction(props.onLoad)) {
-        //         props.onLoad();
-        //       }
-        //     }
-        //     else {
-        //       if(isFunction(props.onError)) {
-        //         props.onError();
-        //       }
-        //     }
-        //   }
-        // });
+        loadImg.src = v;
 
         this.__loadAndRefresh(loadImg, cb);
       }

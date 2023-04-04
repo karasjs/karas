@@ -1,25 +1,25 @@
 import util from './util';
-import debug from './debug';
+import config from './config';
 
 const SPF = 1000 / 60;
 
 const CANVAS = {};
-const SUPPORT_OFFSCREEN_CANVAS = typeof OffscreenCanvas === 'function' && OffscreenCanvas.prototype.getContext;
+const SUPPORT_OFFSCREEN_CANVAS = config.offscreenCanvas && typeof OffscreenCanvas === 'function' && OffscreenCanvas.prototype.getContext;
 
 function offscreenCanvas(key, width, height, message, contextAttributes) {
   let o;
   if(!key) {
-    o = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
+    o = !config.debug && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
   }
   else if(!CANVAS[key]) {
-    o = CANVAS[key] = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
+    o = CANVAS[key] = !config.debug && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
   }
   else {
     o = CANVAS[key];
   }
   o.width = width;
   o.height = height;
-  if(debug.flag) {
+  if(config.debug) {
     o.style.width = width + 'px';
     o.style.height = height + 'px';
     if(key) {
@@ -51,7 +51,7 @@ function offscreenCanvas(key, width, height, message, contextAttributes) {
       ctx.clearRect(0, 0, width, height);
       o.width = o.height = 0;
       this.__available = false;
-      if(debug.flag && o) {
+      if(config.debug && o) {
         document.body.removeChild(o);
       }
       o = null;
@@ -220,7 +220,7 @@ let inject = {
           }
         }
         img.src = url;
-        if(debug.flag && typeof document !== 'undefined') {
+        if(config.debug && typeof document !== 'undefined') {
           document.body.appendChild(img);
         }
       }

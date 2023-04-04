@@ -2168,8 +2168,9 @@
     replaceRgba2Hex: replaceRgba2Hex$1
   };
 
-  var debug = {
-    flag: false
+  var config = {
+    debug: false,
+    offscreenCanvas: true
   };
 
   var SPF = 1000 / 60;
@@ -2180,9 +2181,9 @@
     var o;
 
     if (!key) {
-      o = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
+      o = !config.debug && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
     } else if (!CANVAS$5[key]) {
-      o = CANVAS$5[key] = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
+      o = CANVAS$5[key] = !config.debug && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
     } else {
       o = CANVAS$5[key];
     }
@@ -2190,7 +2191,7 @@
     o.width = width;
     o.height = height;
 
-    if (debug.flag) {
+    if (config.debug) {
       o.style.width = width + 'px';
       o.style.height = height + 'px';
 
@@ -2232,7 +2233,7 @@
         o.width = o.height = 0;
         this.__available = false;
 
-        if (debug.flag && o) {
+        if (config.debug && o) {
           document.body.removeChild(o);
         }
 
@@ -2420,7 +2421,7 @@
 
           img.src = url;
 
-          if (debug.flag && typeof document !== 'undefined') {
+          if (config.debug && typeof document !== 'undefined') {
             document.body.appendChild(img);
           }
         };
@@ -49331,11 +49332,11 @@
     ca: ca,
 
     get debug() {
-      return debug.flag;
+      return config.debug;
     },
 
     set debug(v) {
-      debug.flag = !!v;
+      config.debug = !!v;
     }
 
   };

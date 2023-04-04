@@ -19,7 +19,7 @@ import Event from './util/Event';
 import util from './util/util';
 import inject from './util/inject';
 import enums from './util/enums';
-import debug from './util/debug';
+import config from './util/config';
 import parser from './parser/index';
 import style from './style/index';
 import animate from './animate/index';
@@ -134,10 +134,10 @@ let karas = {
   enums,
   ca,
   get debug() {
-    return debug.flag;
+    return config.debug;
   },
   set debug(v) {
-    debug.flag = !!v;
+    config.debug = !!v;
   },
 };
 

@@ -862,14 +862,14 @@ function multiply$4(a, b) {
   }
 
   if (isE$5(a)) {
-    return b;
+    return new Float64Array(b);
   }
 
   if (isE$5(b)) {
-    return a;
+    return new Float64Array(a);
   }
 
-  var c = [];
+  var c = identity$2();
 
   for (var i = 0; i < 4; i++) {
     var a0 = a[i] || 0;
@@ -1805,15 +1805,7 @@ function int2rgba$4(color) {
       }
 
       return 'rgba(' + color[0] + ',' + color[1] + ',' + color[2] + ',1)';
-    } // if(color.length === 4) {
-    //   color = color.map((c, i) => i === 3 ? c : Math.floor(Math.max(0, c)));
-    //   return 'rgba(' + joinArr(color, ',') + ')';
-    // }
-    // else if(color.length === 3) {
-    //   color = color.map(c => Math.floor(c));
-    //   return 'rgba(' + joinArr(color, ',') + ',1)';
-    // }
-
+    }
   }
 
   return color || 'rgba(0,0,0,0)';
@@ -2170,8 +2162,9 @@ var util = {
   replaceRgba2Hex: replaceRgba2Hex$1
 };
 
-var debug = {
-  flag: false
+var config = {
+  debug: false,
+  offscreenCanvas: true
 };
 
 var SPF = 1000 / 60;
@@ -2182,9 +2175,9 @@ function offscreenCanvas(key, width, height, message, contextAttributes) {
   var o;
 
   if (!key) {
-    o = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
+    o = !config.debug && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
   } else if (!CANVAS$5[key]) {
-    o = CANVAS$5[key] = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
+    o = CANVAS$5[key] = !config.debug && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
   } else {
     o = CANVAS$5[key];
   }
@@ -2192,7 +2185,7 @@ function offscreenCanvas(key, width, height, message, contextAttributes) {
   o.width = width;
   o.height = height;
 
-  if (debug.flag) {
+  if (config.debug) {
     o.style.width = width + 'px';
     o.style.height = height + 'px';
 
@@ -2234,7 +2227,7 @@ function offscreenCanvas(key, width, height, message, contextAttributes) {
       o.width = o.height = 0;
       this.__available = false;
 
-      if (debug.flag && o) {
+      if (config.debug && o) {
         document.body.removeChild(o);
       }
 
@@ -2422,7 +2415,7 @@ var inject = {
 
         img.src = url;
 
-        if (debug.flag && typeof document !== 'undefined') {
+        if (config.debug && typeof document !== 'undefined') {
           document.body.appendChild(img);
         }
       };
@@ -2557,6 +2550,7 @@ var inject = {
   getFontCanvas: function getFontCanvas(contextAttributes) {
     return inject.getOffscreenCanvas(16, 16, '__$$CHECK_SUPPORT_FONT_FAMILY$$__', null, contextAttributes);
   },
+  // TODO 移入font且设置默认字体可用
   checkSupportFontFamily: function checkSupportFontFamily(ff) {
     ff = ff.toLowerCase(); // 强制arial兜底
 
@@ -4263,9 +4257,6 @@ var o$3 = {
       // (0+1060+340)/1000
       blr: 1.06
     }
-  },
-  support: function support(fontFamily) {
-    return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].checked;
   },
   register: function register(name, url, data) {
     // url和data同时需要，也可以先data后url，不能先url后data
@@ -13990,7 +13981,7 @@ var Text = /*#__PURE__*/function (_Node) {
         this.__content = s;
 
         if (isFunction$a(cb)) {
-          cb(false);
+          cb(true);
         }
 
         return;
@@ -14039,7 +14030,7 @@ var Text = /*#__PURE__*/function (_Node) {
 
       if (this.__isDestroyed) {
         if (isFunction$a(cb)) {
-          cb(false);
+          cb(true);
         }
 
         return;
@@ -14052,7 +14043,7 @@ var Text = /*#__PURE__*/function (_Node) {
         this.__destroy();
 
         if (isFunction$a(cb)) {
-          cb(false);
+          cb(true);
         }
 
         return;
@@ -19511,7 +19502,7 @@ var Animation = /*#__PURE__*/function (_Event) {
 
       if (playState === 'running') {
         if (isFunction$5(cb)) {
-          cb(false); // 同步回调
+          cb(true); // 同步回调
         }
 
         return this;
@@ -19751,7 +19742,7 @@ var Animation = /*#__PURE__*/function (_Event) {
 
       if (playState === 'finished') {
         if (isFunction$5(cb)) {
-          cb(false);
+          cb(true);
         }
 
         return this;
@@ -19827,7 +19818,7 @@ var Animation = /*#__PURE__*/function (_Event) {
 
       if (playState === 'idle') {
         if (isFunction$5(cb)) {
-          cb(false);
+          cb(true);
         }
 
         return this;
@@ -19897,7 +19888,7 @@ var Animation = /*#__PURE__*/function (_Event) {
 
       if (v === currentTime && this.__playState === 'running') {
         if (isFunction$5(cb)) {
-          cb(false);
+          cb(true);
         }
 
         return;
@@ -19957,7 +19948,7 @@ var Animation = /*#__PURE__*/function (_Event) {
 
       if (v === currentTime) {
         if (isFunction$5(cb)) {
-          cb(false);
+          cb(true);
         }
 
         return;
@@ -22636,14 +22627,14 @@ var Xom = /*#__PURE__*/function (_Node) {
       var optimize = true;
       var matrixCache = this.__matrix; // 优化计算scale不能为0，无法计算倍数差，rotateZ优化不能包含rotateX/rotateY/skew
 
-      if (lv >= REPAINT$3 || lv & TF$1) {
+      if (lv >= REFLOW$3 || lv & TF$1) {
         optimize = false;
       } else if (lv & SX && !__computedStyle[SCALE_X] || lv & SY && !__computedStyle[SCALE_Y] || lv & SZ && !__computedStyle[SCALE_Z] || lv & RZ && (__computedStyle[ROTATE_X] || __computedStyle[ROTATE_Y] || __computedStyle[SKEW_X] || __computedStyle[SKEW_Y])) {
         optimize = false;
       } // translate/scale变化特殊优化，d/h/l不能有值，否则不能这样直接简化运算，因为这里不包含perspective，所以一定没有
 
 
-      if (optimize && matrixCache) {
+      if (optimize) {
         var transform = __computedStyle[TRANSFORM$3];
 
         if (lv & TX) {
@@ -22720,10 +22711,9 @@ var Xom = /*#__PURE__*/function (_Node) {
 
         if (lv & SCALE) {
           if (lv & SX) {
-            if (!__computedStyle[SCALE_X]) {
-              return this.__calMatrix(REPAINT$3, __currentStyle, __computedStyle, __cacheStyle, false);
-            }
-
+            // if(!__computedStyle[SCALE_X]) {
+            //   return this.__calMatrix(REFLOW, __currentStyle, __computedStyle, __cacheStyle, false);
+            // }
             var _v4 = __currentStyle[SCALE_X].v;
 
             var _x2 = _v4 / __computedStyle[SCALE_X];
@@ -22738,10 +22728,9 @@ var Xom = /*#__PURE__*/function (_Node) {
           }
 
           if (lv & SY) {
-            if (!__computedStyle[SCALE_Y]) {
-              return this.__calMatrix(REPAINT$3, __currentStyle, __computedStyle, __cacheStyle, false);
-            }
-
+            // if(!__computedStyle[SCALE_Y]) {
+            //   return this.__calMatrix(REFLOW, __currentStyle, __computedStyle, __cacheStyle, false);
+            // }
             var _v5 = __currentStyle[SCALE_Y].v;
 
             var _y2 = _v5 / __computedStyle[SCALE_Y];
@@ -22757,7 +22746,7 @@ var Xom = /*#__PURE__*/function (_Node) {
 
           if (lv & SZ) {
             if (!__computedStyle[SCALE_Z]) {
-              return this.__calMatrix(REPAINT$3, __currentStyle, __computedStyle, __cacheStyle, false);
+              return this.__calMatrix(REFLOW$3, __currentStyle, __computedStyle, __cacheStyle, false);
             }
 
             var _v6 = __currentStyle[SCALE_Z].v;
@@ -24672,7 +24661,7 @@ var Xom = /*#__PURE__*/function (_Node) {
 
       if (!keys.length || this.__isDestroyed) {
         if (isFunction$4(cb)) {
-          cb(false);
+          cb(true);
         }
 
         return;
@@ -25129,7 +25118,7 @@ var Xom = /*#__PURE__*/function (_Node) {
 
       if (this.__isDestroyed) {
         if (isFunction$4(cb)) {
-          cb(false);
+          cb(true);
         }
 
         return;
@@ -25142,7 +25131,7 @@ var Xom = /*#__PURE__*/function (_Node) {
         this.__destroy();
 
         if (isFunction$4(cb)) {
-          cb(false);
+          cb(true);
         }
 
         return;
@@ -25296,7 +25285,8 @@ var Xom = /*#__PURE__*/function (_Node) {
       }
 
       return this.__matrix;
-    }
+    } // TODO 渲染之前尚无数据，需判断refreshLevel
+
   }, {
     key: "matrixEvent",
     get: function get() {
@@ -34204,9 +34194,13 @@ var Img = /*#__PURE__*/function (_Dom) {
           }
         });
       } else if (ca.state === inject.LOADED) {
-        loadImg.source = ca.source;
-        loadImg.width = loadImg.__width = ca.width;
-        loadImg.height = loadImg.__height = ca.height;
+        if (ca.success) {
+          loadImg.source = ca.source;
+          loadImg.width = loadImg.__width = ca.width;
+          loadImg.height = loadImg.__height = ca.height;
+        } else {
+          loadImg.error = true;
+        }
       }
     }
 
@@ -34238,9 +34232,15 @@ var Img = /*#__PURE__*/function (_Dom) {
             this.__loadAndRefresh(loadImg, null);
           }
         } else if (cache && cache.state === inject.LOADED && cache.success) {
-          loadImg.source = cache.source;
-          loadImg.width = loadImg.__width = cache.width;
-          loadImg.height = loadImg.__height = cache.height;
+          loadImg.loading = false;
+
+          if (cache.success) {
+            loadImg.source = cache.source;
+            loadImg.width = loadImg.__width = cache.width;
+            loadImg.height = loadImg.__height = cache.height;
+          } else {
+            loadImg.error = true;
+          }
         }
 
         loadImg.cache = false;
@@ -34304,7 +34304,7 @@ var Img = /*#__PURE__*/function (_Dom) {
         loadImg.onlyImg = false;
       }
 
-      return res;
+      return this.__hasContent = res;
     }
   }, {
     key: "render",
@@ -34593,7 +34593,8 @@ var Img = /*#__PURE__*/function (_Dom) {
       loadImg.loading = true;
       var root = this.__root,
           ctx = root.ctx;
-      var placeholder = this.props.placeholder,
+      var props = this.props;
+      var placeholder = props.placeholder,
           computedStyle = this.__computedStyle;
       var width = computedStyle[WIDTH$1],
           height = computedStyle[HEIGHT$1]; // 再测量，可能瞬间完成替换掉上面的
@@ -34620,6 +34621,10 @@ var Img = /*#__PURE__*/function (_Dom) {
             loadImg.source = data.source;
             loadImg.width = data.width;
             loadImg.height = data.height;
+
+            if (isFunction$2(props.onLoad)) {
+              props.onLoad();
+            }
           } else if (placeholder) {
             loadImg.error = true;
             inject.measureImg(placeholder, function (data) {
@@ -34638,9 +34643,18 @@ var Img = /*#__PURE__*/function (_Dom) {
               width: width,
               height: height
             });
+
+            if (isFunction$2(props.onError)) {
+              props.onError();
+            }
+
             return;
           } else {
             loadImg.error = true;
+
+            if (isFunction$2(props.onError)) {
+              props.onError();
+            }
           } // 可见状态进行刷新操作，visibility某些情况需要刷新，可能宽高未定义要重新布局
 
 
@@ -34658,8 +34672,6 @@ var Img = /*#__PURE__*/function (_Dom) {
       var loadImg = this.__loadImg; // 相等或空且当前error直接返回
 
       if (v === loadImg.src || this.__isDestroyed || !v && loadImg.error) {
-        loadImg.src = v;
-
         if (v && v !== loadImg.src) {
           inject.measureImg(v, function (res) {
             if (loadImg.src === v) {
@@ -34678,29 +34690,16 @@ var Img = /*#__PURE__*/function (_Dom) {
           });
         }
 
+        loadImg.src = v;
+
         if (isFunction$2(cb)) {
-          cb(false);
+          cb(true);
         }
 
         return;
       }
 
       loadImg.src = v;
-      inject.measureImg(v, function (res) {
-        if (loadImg.src === v) {
-          var props = _this2.props;
-
-          if (res.success) {
-            if (isFunction$2(props.onLoad)) {
-              props.onLoad();
-            }
-          } else {
-            if (isFunction$2(props.onError)) {
-              props.onError();
-            }
-          }
-        }
-      });
 
       this.__loadAndRefresh(loadImg, cb);
     }
@@ -37445,7 +37444,7 @@ var TextureCache = /*#__PURE__*/function (_Cache) {
             gl = page.gl,
             size = page.__size; // 尺寸必须对上才行
 
-        var data = new Uint8Array(this.__width * this.__height * 4);
+        var data = new Uint8ClampedArray(this.__width * this.__height * 4);
         gl.bindTexture(gl.TEXTURE_2D, page.texture); // 注意y镜像和原点左下
 
         gl.texSubImage2D(gl.TEXTURE_2D, 0, this.__x, size - this.__y - this.__height, this.__width, this.__height, gl.RGBA, gl.UNSIGNED_BYTE, data);
@@ -41924,7 +41923,6 @@ var Root = /*#__PURE__*/function (_Dom) {
       this.draw(true);
       this.__eventCbList = initEvent(this.__dom, Root);
       this.__dom.__root = this;
-      frame.removeRoot(this);
       frame.addRoot(this);
     }
   }, {
@@ -41960,6 +41958,10 @@ var Root = /*#__PURE__*/function (_Dom) {
       var renderMode = this.renderMode,
           width = this.width,
           height = this.height;
+
+      if (this.__renderMode === mode.WEBGL) {
+        this.ctx.viewport(0, 0, width, height);
+      }
 
       this.__checkRoot(renderMode, width, height);
 
@@ -42030,7 +42032,8 @@ var Root = /*#__PURE__*/function (_Dom) {
         wr.refresh();
       }
 
-      var rlv = this.__rlv; // freeze()冻住不渲染
+      var rlv = this.__rlv;
+      this.__rlv = NONE; // freeze()冻住不渲染
 
       if (this.props.noRender || this.__freeze) {
         this.emit(Event.REFRESH, rlv, true);
@@ -42066,7 +42069,6 @@ var Root = /*#__PURE__*/function (_Dom) {
       }
 
       this.emit(Event.REFRESH, rlv, false);
-      this.__rlv = NONE;
     }
   }, {
     key: "remove",
@@ -42083,6 +42085,8 @@ var Root = /*#__PURE__*/function (_Dom) {
       });
 
       this.__destroy();
+
+      frame.removeRoot(this);
 
       this.__animateController.__destroy();
 
@@ -42503,7 +42507,12 @@ var Root = /*#__PURE__*/function (_Dom) {
     value: function __calUpdate(node, computedStyle, cacheStyle, lv, hasDisplay, hasVisibility, hasZ, hasColor, hasTsColor, hasTsWidth, hasTsOver, addDom, removeDom) {
       var currentStyle = node.__currentStyle,
           __mask = node.__mask,
-          __domParent = node.__domParent; // 没有变化或none无需刷新
+          __domParent = node.__domParent; // 防御一下
+
+      if (addDom || removeDom) {
+        lv |= REFLOW;
+      } // 没有变化或none无需刷新
+
 
       if (lv === NONE || computedStyle[DISPLAY] === 'none' && !hasDisplay) {
         return false;
@@ -42745,10 +42754,10 @@ var Root = /*#__PURE__*/function (_Dom) {
         lv |= CACHE;
       }
 
+      this.__rlv |= lv;
+
       if (addDom || removeDom) {
         this.__rlv |= REBUILD;
-      } else {
-        this.__rlv |= lv;
       }
 
       return true;
@@ -49199,7 +49208,7 @@ var refresh = {
   webgl: webgl
 };
 
-var version = "0.86.9";
+var version = "0.86.10";
 
 var isString = util.isString;
 Geom.register('$line', Line);
@@ -49317,11 +49326,11 @@ var karas$1 = {
   ca: ca,
 
   get debug() {
-    return debug.flag;
+    return config.debug;
   },
 
   set debug(v) {
-    debug.flag = !!v;
+    config.debug = !!v;
   }
 
 };

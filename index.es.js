@@ -2169,7 +2169,7 @@ var config = {
 
 var SPF = 1000 / 60;
 var CANVAS$5 = {};
-var SUPPORT_OFFSCREEN_CANVAS = typeof OffscreenCanvas === 'function' && OffscreenCanvas.prototype.getContext;
+var SUPPORT_OFFSCREEN_CANVAS = config.offscreenCanvas && typeof OffscreenCanvas === 'function' && OffscreenCanvas.prototype.getContext;
 
 function offscreenCanvas(key, width, height, message, contextAttributes) {
   var o;
@@ -49208,7 +49208,7 @@ var refresh = {
   webgl: webgl
 };
 
-var version = "0.86.10";
+var version = "0.86.11";
 
 var isString = util.isString;
 Geom.register('$line', Line);
@@ -49324,15 +49324,7 @@ var karas$1 = {
   refresh: refresh,
   enums: enums,
   ca: ca,
-
-  get debug() {
-    return config.debug;
-  },
-
-  set debug(v) {
-    config.debug = !!v;
-  }
-
+  config: config
 };
 
 if (typeof window !== 'undefined') {

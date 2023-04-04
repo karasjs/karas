@@ -133,12 +133,7 @@ let karas = {
   refresh,
   enums,
   ca,
-  get debug() {
-    return config.debug;
-  },
-  set debug(v) {
-    config.debug = !!v;
-  },
+  config,
 };
 
 if(typeof window !== 'undefined') {

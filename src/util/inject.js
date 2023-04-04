@@ -4,15 +4,15 @@ import config from './config';
 const SPF = 1000 / 60;
 
 const CANVAS = {};
-const SUPPORT_OFFSCREEN_CANVAS = config.offscreenCanvas && typeof OffscreenCanvas === 'function' && OffscreenCanvas.prototype.getContext;
+const SUPPORT_OFFSCREEN_CANVAS = typeof OffscreenCanvas === 'function' && OffscreenCanvas.prototype.getContext;
 
-function offscreenCanvas(key, width, height, message, contextAttributes) {
+function offscreenCanvas(width, height, key, message, contextAttributes) {
   let o;
   if(!key) {
-    o = !config.debug && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
+    o = !config.debug && config.offscreenCanvas && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
   }
   else if(!CANVAS[key]) {
-    o = CANVAS[key] = !config.debug && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
+    o = CANVAS[key] = !config.debug && config.offscreenCanvas && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
   }
   else {
     o = CANVAS[key];
@@ -281,7 +281,7 @@ let inject = {
     return key && CANVAS.hasOwnProperty(key);
   },
   getOffscreenCanvas(width, height, key, message, contextAttributes) {
-    return offscreenCanvas(key, width, height, message, contextAttributes);
+    return offscreenCanvas(width, height, key, message, contextAttributes);
   },
   isDom(o) {
     if(o) {

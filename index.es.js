@@ -2169,15 +2169,15 @@ var config = {
 
 var SPF = 1000 / 60;
 var CANVAS$5 = {};
-var SUPPORT_OFFSCREEN_CANVAS = config.offscreenCanvas && typeof OffscreenCanvas === 'function' && OffscreenCanvas.prototype.getContext;
+var SUPPORT_OFFSCREEN_CANVAS = typeof OffscreenCanvas === 'function' && OffscreenCanvas.prototype.getContext;
 
-function offscreenCanvas(key, width, height, message, contextAttributes) {
+function offscreenCanvas(width, height, key, message, contextAttributes) {
   var o;
 
   if (!key) {
-    o = !config.debug && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
+    o = !config.debug && config.offscreenCanvas && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
   } else if (!CANVAS$5[key]) {
-    o = CANVAS$5[key] = !config.debug && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
+    o = CANVAS$5[key] = !config.debug && config.offscreenCanvas && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
   } else {
     o = CANVAS$5[key];
   }
@@ -2513,7 +2513,7 @@ var inject = {
     return key && CANVAS$5.hasOwnProperty(key);
   },
   getOffscreenCanvas: function getOffscreenCanvas(width, height, key, message, contextAttributes) {
-    return offscreenCanvas(key, width, height, message, contextAttributes);
+    return offscreenCanvas(width, height, key, message, contextAttributes);
   },
   isDom: function isDom(o) {
     if (o) {
@@ -49208,7 +49208,7 @@ var refresh = {
   webgl: webgl
 };
 
-var version = "0.86.11";
+var version = "0.86.12";
 
 var isString = util.isString;
 Geom.register('$line', Line);

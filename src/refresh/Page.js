@@ -72,6 +72,7 @@ class Page {
     outer:
     for(let i = 0; i < number; i++) {
       let u = grid[i];
+      // 有值，判断是否相同可归同列
       if(u) {
         if(u === unitSize) {
           // 找到同尺寸的列位置，向下查找空白区域确定行位置
@@ -86,12 +87,15 @@ class Page {
           i += u - 1;
         }
       }
+      // 无值，先防止到右边距离不够
       else if(i + unitSize <= number) {
-        // 空白列检查尺寸是否符合
-        for(let j = i + 1, len = i + unitSize; j < len; j++) {
-          if(grid[j]) {
-            i = j - 1;
-            continue outer;
+        // 如果需要占用这些列，那么所有数据都必须为空，因为可能之前其它尺寸的占了，但上面开头数据被删除了
+        for(let j = i, len = i + unitSize; j < len; j++) {
+          for(let k = 0; k < number; k++) {
+            if(grid[j + k * number]) {
+              i = Math.max(i, j - 1); // 防止首列检查就不符合死循环，至少列数增1
+              continue outer;
+            }
           }
         }
         return i;

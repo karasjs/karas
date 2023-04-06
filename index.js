@@ -22751,10 +22751,9 @@
             }
 
             if (lv & SZ) {
-              if (!__computedStyle[SCALE_Z]) {
-                return this.__calMatrix(REFLOW$3, __currentStyle, __computedStyle, __cacheStyle, false);
-              }
-
+              // if(!__computedStyle[SCALE_Z]) {
+              //   return this.__calMatrix(REFLOW, __currentStyle, __computedStyle, __cacheStyle, false);
+              // }
               var _v6 = __currentStyle[SCALE_Z].v;
 
               var _z = _v6 / __computedStyle[SCALE_Z];
@@ -32312,7 +32311,7 @@
             grid = this.grid;
 
         outer: for (var i = 0; i < number; i++) {
-          var u = grid[i];
+          var u = grid[i]; // 有值，判断是否相同可归同列
 
           if (u) {
             if (u === unitSize) {
@@ -32327,12 +32326,16 @@
             } else {
               i += u - 1;
             }
-          } else if (i + unitSize <= number) {
-            // 空白列检查尺寸是否符合
-            for (var _j = i + 1, len = i + unitSize; _j < len; _j++) {
-              if (grid[_j]) {
-                i = _j - 1;
-                continue outer;
+          } // 无值，先防止到右边距离不够
+          else if (i + unitSize <= number) {
+            // 如果需要占用这些列，那么所有数据都必须为空，因为可能之前其它尺寸的占了，但上面开头数据被删除了
+            for (var _j = i, len = i + unitSize; _j < len; _j++) {
+              for (var k = 0; k < number; k++) {
+                if (grid[_j + k * number]) {
+                  i = Math.max(i, _j - 1); // 防止首列检查就不符合死循环，至少列数增1
+
+                  continue outer;
+                }
               }
             }
 

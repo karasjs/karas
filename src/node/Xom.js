@@ -1157,9 +1157,9 @@ class Xom extends Node {
           matrixCache[6] *= y;
         }
         if(lv & SZ) {
-          if(!__computedStyle[SCALE_Z]) {
-            return this.__calMatrix(REFLOW, __currentStyle, __computedStyle, __cacheStyle, false);
-          }
+          // if(!__computedStyle[SCALE_Z]) {
+          //   return this.__calMatrix(REFLOW, __currentStyle, __computedStyle, __cacheStyle, false);
+          // }
           let v = __currentStyle[SCALE_Z].v;
           let z = v / __computedStyle[SCALE_Z];
           __computedStyle[SCALE_Z] = v;

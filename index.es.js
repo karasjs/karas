@@ -5817,13 +5817,14 @@ function canvasPolygon$7(ctx, list) {
     return;
   }
 
-  var first = list[start];
-  ctx.moveTo(first[0] + dx, first[1] + dy); // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
+  var first = list[start]; // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
 
   if (first.length === 4) {
     ctx.moveTo(first[2] + dx, first[3] + dy);
   } else if (first.length === 6) {
     ctx.moveTo(first[4] + dx, first[5] + dy);
+  } else {
+    ctx.moveTo(first[0] + dx, first[1] + dy);
   }
 
   for (var _i = start + 1, _len = list.length; _i < _len; _i++) {
@@ -10641,8 +10642,7 @@ function normalize$1(style) {
         };
       } else {
         if ([NUMBER$4, DEG$3, EM].indexOf(_v.u) > -1) {
-          _v.v = Math.floor(_v.v); // 防止小数
-
+          // v.v = Math.floor(v.v); // 防止小数
           _v.u = PX$8;
         }
 
@@ -31590,10 +31590,11 @@ var Dom = /*#__PURE__*/function (_Xom) {
 
       if (computedStyle[OVERFLOW$1] === 'hidden' && !this.willResponseEvent(e, true)) {
         return;
-      } // __cacheTotal可提前判断是否在bbox范围内，svg没有bbox防止进入判断
+      } // __cacheTotal可提前判断是否在bbox范围内，svg没有bbox防止进入判断，
+      // img比较特殊，cache只有自己，不能进入，否则鼠标移入mousemove会错误覆盖matrixEvent
 
 
-      if (__cacheTotal && __cacheTotal.__available && __cacheTotal.bbox) {
+      if (__cacheTotal && __cacheTotal.__available && __cacheTotal.bbox && this.__tagName !== 'img') {
         // 不是E的话，因为缓存缘故影响cache的子元素，先左乘可能的父matrix（嵌套cache），再赋值给pm递归传下去
         if (!isE$2(this.matrix)) {
           pm = multiply$1(pm, this.matrix);
@@ -32241,7 +32242,7 @@ var Page = /*#__PURE__*/function () {
     this.__number = number;
     this.__width = this.__height = size; // 标识n*n个单元格是否空闲可用，一维数组表示
 
-    this.__grid = new Int8Array(number * number);
+    this.__grid = new Uint16Array(number * number);
     this.__uuid = uuid$1++; // webgl贴图缓存更新使用，canvas/img等发生变更需刷新重新生成texture，fbo的texture不需要
 
     this.__update = false;
@@ -49211,7 +49212,7 @@ var refresh = {
   webgl: webgl
 };
 
-var version = "0.86.13";
+var version = "0.86.14";
 
 var isString = util.isString;
 Geom.register('$line', Line);

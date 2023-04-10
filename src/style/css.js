@@ -748,7 +748,7 @@ function normalize(style, resetList = []) {
       }
       else {
         if([NUMBER, DEG, EM].indexOf(v.u) > -1) {
-          v.v = Math.floor(v.v); // 防止小数
+          // v.v = Math.floor(v.v); // 防止小数
           v.u = PX;
         }
         res[FONT_SIZE] = v;

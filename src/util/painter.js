@@ -18,13 +18,15 @@ function canvasPolygon(ctx, list, dx = 0, dy = 0) {
     return;
   }
   let first = list[start];
-  ctx.moveTo(first[0] + dx, first[1] + dy);
   // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
   if(first.length === 4) {
     ctx.moveTo(first[2] + dx, first[3] + dy);
   }
   else if(first.length === 6) {
     ctx.moveTo(first[4] + dx, first[5] + dy);
+  }
+  else {
+    ctx.moveTo(first[0] + dx, first[1] + dy);
   }
   for(let i = start + 1, len = list.length; i < len; i++) {
     let item = list[i];

@@ -457,7 +457,7 @@ function parseGradient(s) {
       }
       // 扩展支持从a点到b点相对坐标，而不是css角度，sketch等ui软件中用此格式
       else {
-        let points = /([-+]?[\d.]+)\s+([-+]?[\d.]+)\s+([-+]?[\d.]+)\s+([-+]?[\d.]+)/.exec(gradient[2]);
+        let points = /([\d.+-e]+)\s+([\d.+-e]+)\s+([\d.+-e]+)\s+([\d.+-e]+)/.exec(gradient[2]);
         if(points) {
           o.d = [parseFloat(points[1]), parseFloat(points[2]), parseFloat(points[3]), parseFloat(points[4])];
         }
@@ -540,7 +540,7 @@ function parseGradient(s) {
       if(percent) {
         let v = calUnit(percent[0]);
         if([NUMBER, DEG].indexOf(v.u) > -1) {
-          v.v = PX;
+          v.u = PX;
         }
         arr[1] = v;
       }
@@ -574,7 +574,7 @@ function getLinear(v, d, ox, oy, cx, cy, w, h, root, dx = 0, dy = 0) {
     }
     // 根据角度求直线上2点，设置半径为长宽最大值，这样一定在矩形外，看做一个向量A
     let len = Math.max(w, h);
-    let coords = calLinearCoords(d, len, cx, cy, w, h);
+    let coords = calLinearCoords(d, len, cx, cy);
     len *= 2;
     // start和4个顶点的向量在A上的投影长度
     let l1 = vector.dotProduct(ox - coords[0], oy - coords[1], coords[2] - coords[0], coords[3] - coords[1]) / len;

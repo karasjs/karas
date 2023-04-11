@@ -8811,7 +8811,7 @@
           o.d = getLinearDeg(deg[0].toLowerCase());
         } // 扩展支持从a点到b点相对坐标，而不是css角度，sketch等ui软件中用此格式
         else {
-          var points = /([-+]?[\d.]+)\s+([-+]?[\d.]+)\s+([-+]?[\d.]+)\s+([-+]?[\d.]+)/.exec(gradient[2]);
+          var points = /([\d.+-e]+)\s+([\d.+-e]+)\s+([\d.+-e]+)\s+([\d.+-e]+)/.exec(gradient[2]);
 
           if (points) {
             o.d = [parseFloat(points[1]), parseFloat(points[2]), parseFloat(points[3]), parseFloat(points[4])];
@@ -8910,7 +8910,7 @@
           var _v = calUnit$2(percent[0]);
 
           if ([NUMBER$5, DEG$4].indexOf(_v.u) > -1) {
-            _v.v = PX$9;
+            _v.u = PX$9;
           }
 
           arr[1] = _v;

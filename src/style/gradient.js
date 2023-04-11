@@ -60,7 +60,7 @@ function getRadialPosition(data) {
   if(/^[-+]?[\d.]/.test(data)) {
     let v = calUnit(data);
     if([NUMBER, DEG].indexOf(v.u) > -1) {
-      v.v = PX;
+      v.u = PX;
     }
     return v;
   }

@@ -8403,7 +8403,7 @@
       var v = calUnit$2(data);
 
       if ([NUMBER$5, DEG$4].indexOf(v.u) > -1) {
-        v.v = PX$9;
+        v.u = PX$9;
       }
 
       return v;

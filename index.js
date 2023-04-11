@@ -5823,18 +5823,14 @@
       return;
     }
 
-    var first = list[start],
-        xa,
-        ya; // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
+    var first = list[start]; // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
 
     if (first.length === 4) {
       ctx.moveTo(first[2] + dx, first[3] + dy);
     } else if (first.length === 6) {
       ctx.moveTo(first[4] + dx, first[5] + dy);
     } else {
-      xa = first[0] + dx;
-      ya = first[1] + dy;
-      ctx.moveTo(xa, ya);
+      ctx.moveTo(first[0] + dx, first[1] + dy);
     }
 
     for (var _i = start + 1, _len = list.length; _i < _len; _i++) {
@@ -5845,31 +5841,11 @@
       }
 
       if (_item.length === 2) {
-        var x = _item[0] + dx,
-            y = _item[1] + dy;
-        ctx.lineTo(x, y); // 自动判断关闭
-
-        if (_i === _len - 1 && xa === x && ya === y) {
-          ctx.closePath();
-        }
+        ctx.lineTo(_item[0] + dx, _item[1] + dy);
       } else if (_item.length === 4) {
-        var _x = _item[2] + dx,
-            _y = _item[3] + dy;
-
-        ctx.quadraticCurveTo(_item[0] + dx, _item[1] + dy, _x, _y); // 自动判断关闭
-
-        if (_i === _len - 1 && xa === _x && ya === _y) {
-          ctx.closePath();
-        }
+        ctx.quadraticCurveTo(_item[0] + dx, _item[1] + dy, _item[2] + dx, _item[3] + dy);
       } else if (_item.length === 6) {
-        var _x2 = _item[4] + dx,
-            _y2 = _item[5] + dy;
-
-        ctx.bezierCurveTo(_item[0] + dx, _item[1] + dy, _item[2] + dx, _item[3] + dy, _x2, _y2); // 自动判断关闭
-
-        if (_i === _len - 1 && xa === _x2 && ya === _y2) {
-          ctx.closePath();
-        }
+        ctx.bezierCurveTo(_item[0] + dx, _item[1] + dy, _item[2] + dx, _item[3] + dy, _item[4] + dx, _item[5] + dy);
       }
     }
   }
@@ -9142,6 +9118,7 @@
       ctx.beginPath();
       canvasPolygon$5(ctx, list);
       ctx.clip();
+      ctx.closePath();
       ctx.drawImage(offscreen.canvas, x, y);
       ctx.restore();
       offscreen.ctx.clearRect(0, 0, w, h);
@@ -15160,6 +15137,7 @@
 
       canvasPolygon$4(ctx, list, dx, dy);
       ctx[method]();
+      ctx.closePath();
 
       if (matrix$1) {
         ctx.restore();
@@ -21212,9 +21190,9 @@
 
           if (spread) {
             canvasPolygon$3(ctx, cross);
-            ctx.beginPath();
             canvasPolygon$3(ctx, box.slice(0).reverse());
             ctx.clip();
+            ctx.closePath();
             ctx.beginPath();
 
             if (ctx.fillStyle !== c) {
@@ -21223,11 +21201,13 @@
 
             canvasPolygon$3(ctx, box);
             ctx.fill();
+            ctx.closePath();
             ctx.restore();
             ctx.save();
             ctx.beginPath();
             canvasPolygon$3(ctx, cross);
             ctx.clip();
+            ctx.closePath();
             ctx.beginPath();
 
             if (ctx.fillStyle !== '#FFF') {
@@ -21241,6 +21221,7 @@
           } else {
             canvasPolygon$3(ctx, box);
             ctx.clip();
+            ctx.closePath();
             ctx.beginPath();
 
             if (ctx.fillStyle !== '#FFF') {
@@ -21271,9 +21252,9 @@
           if (spread) {
             // 扩散区域类似边框填充
             canvasPolygon$3(ctx, box);
-            ctx.beginPath();
             canvasPolygon$3(ctx, blurBox.slice(0).reverse());
             ctx.clip();
+            ctx.closePath();
             ctx.beginPath();
 
             if (ctx.fillStyle !== c) {
@@ -21282,6 +21263,7 @@
 
             canvasPolygon$3(ctx, blurBox);
             ctx.fill();
+            ctx.closePath();
             ctx.restore();
             ctx.save();
             ctx.beginPath(); // 阴影部分看相交情况裁剪，有相交时逆时针绘制相交区域即可排除之
@@ -21294,6 +21276,7 @@
             canvasPolygon$3(ctx, blurBox);
             canvasPolygon$3(ctx, outer);
             ctx.clip();
+            ctx.closePath();
             ctx.beginPath();
 
             if (ctx.fillStyle !== '#FFF') {
@@ -21305,9 +21288,9 @@
             canvasPolygon$3(ctx, blurBox);
           } else {
             canvasPolygon$3(ctx, box);
-            ctx.beginPath();
             canvasPolygon$3(ctx, outer);
             ctx.clip();
+            ctx.closePath();
             ctx.beginPath();
 
             if (ctx.fillStyle !== '#FFF') {
@@ -21323,6 +21306,7 @@
         }
 
         ctx.fill();
+        ctx.closePath();
         ctx.restore();
       } else if (renderMode === mode.SVG) {
         var d = blur.outerSize(sigma);
@@ -26818,13 +26802,13 @@
         if (renderMode === mode.CANVAS) {
           this.__preSetCanvas(renderMode, ctx, res);
 
+          ctx.beginPath();
+
           if (isMulti) {
             list.forEach(function (item) {
-              ctx.beginPath();
-              canvasPolygon$2(ctx, item, dx, dy);
+              return canvasPolygon$2(ctx, item, dx, dy);
             });
           } else {
-            ctx.beginPath();
             canvasPolygon$2(ctx, list, dx, dy);
           }
 
@@ -26835,6 +26819,8 @@
           if (isStroke && stroke && stroke !== 'none' && strokeWidth && strokeWidth > 0) {
             ctx.stroke();
           }
+
+          ctx.closePath();
         } else if (renderMode === mode.SVG) {
           var d = '';
 
@@ -26974,6 +26960,7 @@
           }
 
           ctx[method]();
+          ctx.closePath();
 
           if (matrix$1) {
             ctx.restore();
@@ -27039,6 +27026,7 @@
               ctx.beginPath();
               canvasPolygon$2(ctx, item, dx, dy);
               ctx.clip();
+              ctx.closePath();
               ctx.drawImage(offscreen.canvas, x1 + dx, y1 + dy);
               ctx.restore();
             });
@@ -27047,6 +27035,7 @@
             ctx.beginPath();
             canvasPolygon$2(ctx, list, dx, dy);
             ctx.clip();
+            ctx.closePath();
             ctx.drawImage(offscreen.canvas, x1 + dx, y1 + dy);
             ctx.restore();
           }
@@ -34378,12 +34367,13 @@
             ctx.lineTo(originX + width, originY + height);
             ctx.lineTo(originX, originY + height);
             ctx.lineTo(originX, originY);
-            ctx.closePath();
             ctx.stroke();
+            ctx.closePath();
             ctx.beginPath();
             var points = geom.ellipsePoints(cx, cy, r, r);
             painter.canvasPolygon(ctx, points, 0, 0);
             ctx.fill();
+            ctx.closePath();
             ctx.beginPath();
             ctx.moveTo(pts[0][0], pts[0][1]);
 
@@ -34393,8 +34383,8 @@
             }
 
             ctx.lineTo(pts[0][0], pts[0][1]);
-            ctx.closePath();
             ctx.fill();
+            ctx.closePath();
           } else if (renderMode === mode.SVG) {
             this.__addGeom('rect', [['x', originX], ['y', originY], ['width', width], ['height', height], ['stroke', stroke], ['stroke-width', strokeWidth], ['fill', 'rgba(0,0,0,0)']]);
 
@@ -34425,6 +34415,7 @@
               ctx.beginPath();
               canvasPolygon$1(ctx, list, dx, dy);
               ctx.clip();
+              ctx.closePath();
               ctx.drawImage(source, originX, originY, width, height);
               ctx.restore();
             } else {
@@ -35401,6 +35392,7 @@
         }
 
         ctx.fill();
+        ctx.closePath();
         ctx.globalCompositeOperation = 'source-over';
         ctx = origin;
         ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -44292,6 +44284,7 @@
               }
 
               ctx.stroke();
+              ctx.closePath();
             }
           });
         } else if (renderMode === mode.SVG) {
@@ -47232,11 +47225,6 @@
                 xa = _pointList$[0],
                 ya = _pointList$[1];
 
-            bbox[0] = Math.min(bbox[0], xa - half);
-            bbox[1] = Math.min(bbox[1], ya - half);
-            bbox[2] = Math.max(bbox[2], xa + half);
-            bbox[3] = Math.max(bbox[3], ya + half);
-
             for (var _i4 = 1, len = pointList.length; _i4 < len; _i4++) {
               var item = pointList[_i4];
 
@@ -47264,10 +47252,10 @@
                 bbox[2] = Math.max(bbox[2], _bezierBox[2] + half);
                 bbox[3] = Math.max(bbox[3], _bezierBox[3] + half);
               } else {
-                bbox[0] = Math.min(bbox[0], xb - half);
-                bbox[1] = Math.min(bbox[1], yb - half);
-                bbox[2] = Math.max(bbox[2], xb + half);
-                bbox[3] = Math.max(bbox[3], yb + half);
+                bbox[0] = Math.min(bbox[0], xa - half);
+                bbox[1] = Math.min(bbox[1], ya - half);
+                bbox[2] = Math.max(bbox[2], xa + half);
+                bbox[3] = Math.max(bbox[3], ya + half);
               }
 
               xa = xb;

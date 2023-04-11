@@ -475,14 +475,11 @@ class Geom extends Xom {
     } = res;
     if(renderMode === mode.CANVAS) {
       this.__preSetCanvas(renderMode, ctx, res);
+      ctx.beginPath();
       if(isMulti) {
-        list.forEach(item => {
-          ctx.beginPath();
-          canvasPolygon(ctx, item, dx, dy);
-        });
+        list.forEach(item => canvasPolygon(ctx, item, dx, dy));
       }
       else {
-        ctx.beginPath();
         canvasPolygon(ctx, list, dx, dy);
       }
       if(isFill && fill && fill !== 'none') {
@@ -491,6 +488,7 @@ class Geom extends Xom {
       if(isStroke && stroke && stroke !== 'none' && strokeWidth && strokeWidth > 0) {
         ctx.stroke();
       }
+      ctx.closePath();
     }
     else if(renderMode === mode.SVG) {
       let d = '';
@@ -600,6 +598,7 @@ class Geom extends Xom {
         canvasPolygon(ctx, list);
       }
       ctx[method]();
+      ctx.closePath();
       if(matrix) {
         ctx.restore();
       }
@@ -651,6 +650,7 @@ class Geom extends Xom {
           ctx.beginPath();
           canvasPolygon(ctx, item, dx, dy);
           ctx.clip();
+          ctx.closePath();
           ctx.drawImage(offscreen.canvas, x1 + dx, y1 + dy);
           ctx.restore();
         });
@@ -660,6 +660,7 @@ class Geom extends Xom {
         ctx.beginPath();
         canvasPolygon(ctx, list, dx, dy);
         ctx.clip();
+        ctx.closePath();
         ctx.drawImage(offscreen.canvas, x1 + dx, y1 + dy);
         ctx.restore();
       }

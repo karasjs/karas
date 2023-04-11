@@ -318,6 +318,7 @@ class Line extends Geom {
             painter.canvasLine(ctx, xa, ya, xb, yb, controlA, controlB, curve, dx, dy);
           }
           ctx.stroke();
+          ctx.closePath();
         }
       });
     }

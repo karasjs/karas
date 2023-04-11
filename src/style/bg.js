@@ -67,6 +67,7 @@ function renderBgc(xom, renderMode, ctx, color, list, x, y, w, h, btlr, btrr, bb
     }
     canvasPolygon(ctx, list, dx, dy);
     ctx[method]();
+    ctx.closePath();
     if(matrix) {
       ctx.restore();
     }

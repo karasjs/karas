@@ -64,22 +64,20 @@ function renderBoxShadow(xom, renderMode, ctx, data, x1, y1, x2, y2, w, h, dx = 
         // 扩散区域类似边框填充
         if(spread) {
           canvasPolygon(ctx, cross);
+          ctx.beginPath();
           canvasPolygon(ctx, box.slice(0).reverse());
           ctx.clip();
-          ctx.closePath();
           ctx.beginPath();
           if(ctx.fillStyle !== c) {
             ctx.fillStyle = c;
           }
           canvasPolygon(ctx, box);
           ctx.fill();
-          ctx.closePath();
           ctx.restore();
           ctx.save();
           ctx.beginPath();
           canvasPolygon(ctx, cross);
           ctx.clip();
-          ctx.closePath();
           ctx.beginPath();
           if(ctx.fillStyle !== '#FFF') {
             ctx.fillStyle = '#FFF';
@@ -104,7 +102,6 @@ function renderBoxShadow(xom, renderMode, ctx, data, x1, y1, x2, y2, w, h, dx = 
         else {
           canvasPolygon(ctx, box);
           ctx.clip();
-          ctx.closePath();
           ctx.beginPath();
           if(ctx.fillStyle !== '#FFF') {
             ctx.fillStyle = '#FFF';
@@ -147,16 +144,15 @@ function renderBoxShadow(xom, renderMode, ctx, data, x1, y1, x2, y2, w, h, dx = 
         if(spread) {
           // 扩散区域类似边框填充
           canvasPolygon(ctx, box);
+          ctx.beginPath();
           canvasPolygon(ctx, blurBox.slice(0).reverse());
           ctx.clip();
-          ctx.closePath();
           ctx.beginPath();
           if(ctx.fillStyle !== c) {
             ctx.fillStyle = c;
           }
           canvasPolygon(ctx, blurBox);
           ctx.fill();
-          ctx.closePath();
           ctx.restore();
           ctx.save();
           ctx.beginPath();
@@ -174,7 +170,6 @@ function renderBoxShadow(xom, renderMode, ctx, data, x1, y1, x2, y2, w, h, dx = 
           canvasPolygon(ctx, blurBox);
           canvasPolygon(ctx, outer);
           ctx.clip();
-          ctx.closePath();
           ctx.beginPath();
           if(ctx.fillStyle !== '#FFF') {
             ctx.fillStyle = '#FFF';
@@ -185,9 +180,9 @@ function renderBoxShadow(xom, renderMode, ctx, data, x1, y1, x2, y2, w, h, dx = 
         }
         else {
           canvasPolygon(ctx, box);
+          ctx.beginPath();
           canvasPolygon(ctx, outer);
           ctx.clip();
-          ctx.closePath();
           ctx.beginPath();
           if(ctx.fillStyle !== '#FFF') {
             ctx.fillStyle = '#FFF';
@@ -200,7 +195,6 @@ function renderBoxShadow(xom, renderMode, ctx, data, x1, y1, x2, y2, w, h, dx = 
         }
       }
       ctx.fill();
-      ctx.closePath();
       ctx.restore();
     }
     else if(renderMode === mode.SVG) {

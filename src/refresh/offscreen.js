@@ -36,7 +36,6 @@ function applyOffscreen(ctx, list, width, height) {
         ctx.rect(x, y, offsetWidth, offsetHeight);
       }
       ctx.fill();
-      ctx.closePath();
       ctx.globalCompositeOperation = 'source-over';
       ctx = origin;
       ctx.setTransform(1, 0, 0, 1, 0, 0);

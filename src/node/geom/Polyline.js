@@ -544,6 +544,10 @@ class Polyline extends Geom {
         }
         let controlList = controls[i] || [];
         let [xa, ya] = pointList[0];
+        bbox[0] = Math.min(bbox[0], xa - half);
+        bbox[1] = Math.min(bbox[1], ya - half);
+        bbox[2] = Math.max(bbox[2], xa + half);
+        bbox[3] = Math.max(bbox[3], ya + half);
         for(let i = 1, len = pointList.length; i < len; i++) {
           let item = pointList[i];
           if(!item || item.length < 2) {
@@ -566,10 +570,10 @@ class Polyline extends Geom {
             bbox[3] = Math.max(bbox[3], bezierBox[3] + half);
           }
           else {
-            bbox[0] = Math.min(bbox[0], xa - half);
-            bbox[1] = Math.min(bbox[1], ya - half);
-            bbox[2] = Math.max(bbox[2], xa + half);
-            bbox[3] = Math.max(bbox[3], ya + half);
+            bbox[0] = Math.min(bbox[0], xb - half);
+            bbox[1] = Math.min(bbox[1], yb - half);
+            bbox[2] = Math.max(bbox[2], xb + half);
+            bbox[3] = Math.max(bbox[3], yb + half);
           }
           xa = xb;
           ya = yb;

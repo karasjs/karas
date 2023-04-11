@@ -223,13 +223,12 @@ class Img extends Dom {
         ctx.lineTo(originX + width, originY + height);
         ctx.lineTo(originX, originY + height);
         ctx.lineTo(originX, originY);
-        ctx.stroke();
         ctx.closePath();
+        ctx.stroke();
         ctx.beginPath();
         let points = geom.ellipsePoints(cx, cy, r, r);
         painter.canvasPolygon(ctx, points, 0, 0);
         ctx.fill();
-        ctx.closePath();
         ctx.beginPath();
         ctx.moveTo(pts[0][0], pts[0][1]);
         for(let i = 1, len = pts.length; i < len; i++) {
@@ -237,8 +236,8 @@ class Img extends Dom {
           ctx.lineTo(point[0], point[1]);
         }
         ctx.lineTo(pts[0][0], pts[0][1]);
-        ctx.fill();
         ctx.closePath();
+        ctx.fill();
       }
       else if(renderMode === mode.SVG) {
         this.__addGeom('rect', [
@@ -281,7 +280,6 @@ class Img extends Dom {
           ctx.beginPath();
           canvasPolygon(ctx, list, dx, dy);
           ctx.clip();
-          ctx.closePath();
           ctx.drawImage(source, originX, originY, width, height);
           ctx.restore();
         }

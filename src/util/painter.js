@@ -17,7 +17,7 @@ function canvasPolygon(ctx, list, dx = 0, dy = 0) {
   if(start === -1) {
     return;
   }
-  let first = list[start];
+  let first = list[start], xa, ya;
   // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
   if(first.length === 4) {
     ctx.moveTo(first[2] + dx, first[3] + dy);
@@ -26,7 +26,9 @@ function canvasPolygon(ctx, list, dx = 0, dy = 0) {
     ctx.moveTo(first[4] + dx, first[5] + dy);
   }
   else {
-    ctx.moveTo(first[0] + dx, first[1] + dy);
+    xa = first[0] + dx;
+    ya = first[1] + dy;
+    ctx.moveTo(xa, ya);
   }
   for(let i = start + 1, len = list.length; i < len; i++) {
     let item = list[i];
@@ -34,13 +36,28 @@ function canvasPolygon(ctx, list, dx = 0, dy = 0) {
       continue;
     }
     if(item.length === 2) {
-      ctx.lineTo(item[0] + dx, item[1] + dy);
+      const x = item[0] + dx, y = item[1] + dy;
+      ctx.lineTo(x, y);
+      // 自动判断关闭
+      if (i === len - 1 && xa === x && ya === y) {
+        ctx.closePath();
+      }
     }
     else if(item.length === 4) {
-      ctx.quadraticCurveTo(item[0] + dx, item[1] + dy, item[2] + dx, item[3] + dy);
+      const x = item[2] + dx, y = item[3] + dy;
+      ctx.quadraticCurveTo(item[0] + dx, item[1] + dy, x, y);
+      // 自动判断关闭
+      if (i === len - 1 && xa === x && ya === y) {
+        ctx.closePath();
+      }
     }
     else if(item.length === 6) {
-      ctx.bezierCurveTo(item[0] + dx, item[1] + dy, item[2] + dx, item[3] + dy, item[4] + dx, item[5] + dy);
+      const x = item[4] + dx, y = item[5] + dy;
+      ctx.bezierCurveTo(item[0] + dx, item[1] + dy, item[2] + dx, item[3] + dy, x, y);
+      // 自动判断关闭
+      if (i === len - 1 && xa === x && ya === y) {
+        ctx.closePath();
+      }
     }
   }
 }

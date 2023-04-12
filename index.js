@@ -8805,13 +8805,13 @@
       };
 
       if (o.k === 'linear') {
-        var deg = /([-+]?[\d.]+deg)|(to\s+[toprighbml]+)/i.exec(gradient[2]);
+        var deg = /([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?deg)|(to\s+[toprighbml]+)/i.exec(gradient[2]);
 
         if (deg) {
           o.d = getLinearDeg(deg[0].toLowerCase());
         } // 扩展支持从a点到b点相对坐标，而不是css角度，sketch等ui软件中用此格式
         else {
-          var points = /([-+]?\d*(?:\.\d*)?(?:e[-+]?\d+)?)\s+([-+]?\d*(?:\.\d*)?(?:e[-+]?\d+)?)\s+([-+]?\d*(?:\.\d*)?(?:e[-+]?\d+)?)\s+([-+]?\d*(?:\.\d*)?(?:e[-+]?\d+)?)/.exec(gradient[2]);
+          var points = /([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)/.exec(gradient[2]);
 
           if (points) {
             o.d = [parseFloat(points[1]), parseFloat(points[2]), parseFloat(points[3]), parseFloat(points[4])];
@@ -8900,11 +8900,11 @@
         }
       }
 
-      var v = gradient[2].match(/(([-+]?[\d.]+[pxremvwhina%]+)?\s*((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*([-+]?[\d.]+[pxremvwhina%]+)?)|(transparent)/ig) || [];
+      var v = gradient[2].match(/(([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?[pxremvwhina%]+)?\s*((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?[pxremvwhina%]+)?)|(transparent)/ig) || [];
       o.v = v.map(function (item) {
         var color = /(?:#[0-9a-f]{3,8})|(?:rgba?\s*\(.+?\))|(?:transparent)/i.exec(item);
         var arr = [rgba2int$2(color[0])];
-        var percent = /[-+]?[\d.]+[pxremvwhina%]+/.exec(item);
+        var percent = /[-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?[pxremvwhina%]+/.exec(item);
 
         if (percent) {
           var _v = calUnit$2(percent[0]);

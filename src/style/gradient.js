@@ -451,13 +451,13 @@ function parseGradient(s) {
       k: gradient[1],
     };
     if(o.k === 'linear') {
-      let deg = /([-+]?[\d.]+deg)|(to\s+[toprighbml]+)/i.exec(gradient[2]);
+      let deg = /([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?deg)|(to\s+[toprighbml]+)/i.exec(gradient[2]);
       if(deg) {
         o.d = getLinearDeg(deg[0].toLowerCase());
       }
       // 扩展支持从a点到b点相对坐标，而不是css角度，sketch等ui软件中用此格式
       else {
-        let points = /([-+]?\d*(?:\.\d*)?(?:e[-+]?\d+)?)\s+([-+]?\d*(?:\.\d*)?(?:e[-+]?\d+)?)\s+([-+]?\d*(?:\.\d*)?(?:e[-+]?\d+)?)\s+([-+]?\d*(?:\.\d*)?(?:e[-+]?\d+)?)/.exec(gradient[2]);
+        let points = /([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)/.exec(gradient[2]);
         if(points) {
           o.d = [parseFloat(points[1]), parseFloat(points[2]), parseFloat(points[3]), parseFloat(points[4])];
         }
@@ -532,11 +532,11 @@ function parseGradient(s) {
         o.p = [{ v: 50, u: PERCENT }, { v: 50, u: PERCENT }];
       }
     }
-    let v = gradient[2].match(/(([-+]?[\d.]+[pxremvwhina%]+)?\s*((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*([-+]?[\d.]+[pxremvwhina%]+)?)|(transparent)/ig) || [];
+    let v = gradient[2].match(/(([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?[pxremvwhina%]+)?\s*((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?[pxremvwhina%]+)?)|(transparent)/ig) || [];
     o.v = v.map(item => {
       let color = /(?:#[0-9a-f]{3,8})|(?:rgba?\s*\(.+?\))|(?:transparent)/i.exec(item);
       let arr = [rgba2int(color[0])];
-      let percent = /[-+]?[\d.]+[pxremvwhina%]+/.exec(item);
+      let percent = /[-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?[pxremvwhina%]+/.exec(item);
       if(percent) {
         let v = calUnit(percent[0]);
         if([NUMBER, DEG].indexOf(v.u) > -1) {

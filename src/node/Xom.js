@@ -2693,7 +2693,7 @@ class Xom extends Node {
     else if(k === 'radial') {
       let gd = gradient.getRadial(v, s, z, p, bx1, by1, bx2, by2, this.root, dx, dy);
       if(gd) {
-        res.v = this.__getRg(renderMode, ctx, gd)
+        res.v = this.__getRg(renderMode, ctx, gd);
         if(gd.matrix) {
           res.v = [res.v, gd.matrix, gd.cx, gd.cy];
         }

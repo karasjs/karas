@@ -477,10 +477,10 @@ class Geom extends Xom {
       this.__preSetCanvas(renderMode, ctx, res);
       ctx.beginPath();
       if(isMulti) {
-        list.forEach(item => canvasPolygon(ctx, item, dx, dy));
+        list.forEach(item => canvasPolygon(ctx, item, dx, dy, true));
       }
       else {
-        canvasPolygon(ctx, list, dx, dy);
+        canvasPolygon(ctx, list, dx, dy, true);
       }
       if(isFill && fill && fill !== 'none') {
         ctx.fill(fillRule);
@@ -488,7 +488,6 @@ class Geom extends Xom {
       if(isStroke && stroke && stroke !== 'none' && strokeWidth && strokeWidth > 0) {
         ctx.stroke();
       }
-      ctx.closePath();
     }
     else if(renderMode === mode.SVG) {
       let d = '';
@@ -592,13 +591,12 @@ class Geom extends Xom {
         ctx[method + 'Style'] = color;
       }
       if(isMulti) {
-        list.forEach(item => painter.canvasPolygon(ctx, item));
+        list.forEach(item => painter.canvasPolygon(ctx, item, 0, 0, true));
       }
       else {
-        canvasPolygon(ctx, list);
+        canvasPolygon(ctx, list, 0, 0, true);
       }
       ctx[method]();
-      ctx.closePath();
       if(matrix) {
         ctx.restore();
       }
@@ -648,9 +646,8 @@ class Geom extends Xom {
         list.forEach(item => {
           ctx.save();
           ctx.beginPath();
-          canvasPolygon(ctx, item, dx, dy);
+          canvasPolygon(ctx, item, dx, dy, true);
           ctx.clip();
-          ctx.closePath();
           ctx.drawImage(offscreen.canvas, x1 + dx, y1 + dy);
           ctx.restore();
         });
@@ -658,9 +655,8 @@ class Geom extends Xom {
       else {
         ctx.save();
         ctx.beginPath();
-        canvasPolygon(ctx, list, dx, dy);
+        canvasPolygon(ctx, list, dx, dy, true);
         ctx.clip();
-        ctx.closePath();
         ctx.drawImage(offscreen.canvas, x1 + dx, y1 + dy);
         ctx.restore();
       }

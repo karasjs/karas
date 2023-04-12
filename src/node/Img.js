@@ -227,9 +227,8 @@ class Img extends Dom {
         ctx.closePath();
         ctx.beginPath();
         let points = geom.ellipsePoints(cx, cy, r, r);
-        painter.canvasPolygon(ctx, points, 0, 0);
+        painter.canvasPolygon(ctx, points, 0, 0, true);
         ctx.fill();
-        ctx.closePath();
         ctx.beginPath();
         ctx.moveTo(pts[0][0], pts[0][1]);
         for(let i = 1, len = pts.length; i < len; i++) {
@@ -279,9 +278,8 @@ class Img extends Dom {
         if(list) {
           ctx.save();
           ctx.beginPath();
-          canvasPolygon(ctx, list, dx, dy);
+          canvasPolygon(ctx, list, dx, dy, true);
           ctx.clip();
-          ctx.closePath();
           ctx.drawImage(source, originX, originY, width, height);
           ctx.restore();
         }

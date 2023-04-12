@@ -2,7 +2,7 @@ import util from './util';
 
 const { int2rgba } = util;
 
-function canvasPolygon(ctx, list, dx = 0, dy = 0) {
+function canvasPolygon(ctx, list, dx = 0, dy = 0, close = false) {
   if(!list || !list.length) {
     return;
   }
@@ -17,31 +17,47 @@ function canvasPolygon(ctx, list, dx = 0, dy = 0) {
   if(start === -1) {
     return;
   }
-  let first = list[start];
+  let first = list[start], xa, ya;
   // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
-  if(first.length === 4) {
-    ctx.moveTo(first[2] + dx, first[3] + dy);
+  if(first.length === 2) {
+    xa = first[0] + dx;
+    ya = first[1] + dy;
+    ctx.moveTo(xa, ya);
+  }
+  else if(first.length === 4) {
+    xa = first[2] + dx;
+    ya = first[3] + dy;
+    ctx.moveTo(xa, ya);
   }
   else if(first.length === 6) {
-    ctx.moveTo(first[4] + dx, first[5] + dy);
+    xa = first[4] + dx;
+    ya = first[5] + dy;
+    ctx.moveTo(xa, ya);
   }
-  else {
-    ctx.moveTo(first[0] + dx, first[1] + dy);
-  }
+  let xb, yb;
   for(let i = start + 1, len = list.length; i < len; i++) {
     let item = list[i];
     if(!Array.isArray(item)) {
       continue;
     }
     if(item.length === 2) {
-      ctx.lineTo(item[0] + dx, item[1] + dy);
+      xb = item[0] + dx;
+      yb = item[1] + dy;
+      ctx.lineTo(xb, yb);
     }
     else if(item.length === 4) {
-      ctx.quadraticCurveTo(item[0] + dx, item[1] + dy, item[2] + dx, item[3] + dy);
+      xb = item[2] + dx;
+      yb = item[3] + dy;
+      ctx.quadraticCurveTo(item[0] + dx, item[1] + dy, xb, yb);
     }
     else if(item.length === 6) {
-      ctx.bezierCurveTo(item[0] + dx, item[1] + dy, item[2] + dx, item[3] + dy, item[4] + dx, item[5] + dy);
+      xb = item[4] + dx;
+      yb = item[5] + dy;
+      ctx.bezierCurveTo(item[0] + dx, item[1] + dy, item[2] + dx, item[3] + dy, xb, yb);
     }
+  }
+  if(close && xa === xb && ya === yb) {
+    ctx.closePath();
   }
 }
 

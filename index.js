@@ -5803,6 +5803,7 @@
   function canvasPolygon$7(ctx, list) {
     var dx = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
     var dy = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
+    var close = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : false;
 
     if (!list || !list.length) {
       return;
@@ -5823,15 +5824,25 @@
       return;
     }
 
-    var first = list[start]; // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
+    var first = list[start],
+        xa,
+        ya; // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
 
-    if (first.length === 4) {
-      ctx.moveTo(first[2] + dx, first[3] + dy);
+    if (first.length === 2) {
+      xa = first[0] + dx;
+      ya = first[1] + dy;
+      ctx.moveTo(xa, ya);
+    } else if (first.length === 4) {
+      xa = first[2] + dx;
+      ya = first[3] + dy;
+      ctx.moveTo(xa, ya);
     } else if (first.length === 6) {
-      ctx.moveTo(first[4] + dx, first[5] + dy);
-    } else {
-      ctx.moveTo(first[0] + dx, first[1] + dy);
+      xa = first[4] + dx;
+      ya = first[5] + dy;
+      ctx.moveTo(xa, ya);
     }
+
+    var xb, yb;
 
     for (var _i = start + 1, _len = list.length; _i < _len; _i++) {
       var _item = list[_i];
@@ -5841,12 +5852,22 @@
       }
 
       if (_item.length === 2) {
-        ctx.lineTo(_item[0] + dx, _item[1] + dy);
+        xb = _item[0] + dx;
+        yb = _item[1] + dy;
+        ctx.lineTo(xb, yb);
       } else if (_item.length === 4) {
-        ctx.quadraticCurveTo(_item[0] + dx, _item[1] + dy, _item[2] + dx, _item[3] + dy);
+        xb = _item[2] + dx;
+        yb = _item[3] + dy;
+        ctx.quadraticCurveTo(_item[0] + dx, _item[1] + dy, xb, yb);
       } else if (_item.length === 6) {
-        ctx.bezierCurveTo(_item[0] + dx, _item[1] + dy, _item[2] + dx, _item[3] + dy, _item[4] + dx, _item[5] + dy);
+        xb = _item[4] + dx;
+        yb = _item[5] + dy;
+        ctx.bezierCurveTo(_item[0] + dx, _item[1] + dy, _item[2] + dx, _item[3] + dy, xb, yb);
       }
+    }
+
+    if (close && xa === xb && ya === yb) {
+      ctx.closePath();
     }
   }
 
@@ -26806,10 +26827,10 @@
 
           if (isMulti) {
             list.forEach(function (item) {
-              return canvasPolygon$2(ctx, item, dx, dy);
+              return canvasPolygon$2(ctx, item, dx, dy, true);
             });
           } else {
-            canvasPolygon$2(ctx, list, dx, dy);
+            canvasPolygon$2(ctx, list, dx, dy, true);
           }
 
           if (isFill && fill && fill !== 'none') {
@@ -26819,8 +26840,6 @@
           if (isStroke && stroke && stroke !== 'none' && strokeWidth && strokeWidth > 0) {
             ctx.stroke();
           }
-
-          ctx.closePath();
         } else if (renderMode === mode.SVG) {
           var d = '';
 
@@ -26953,14 +26972,13 @@
 
           if (isMulti) {
             list.forEach(function (item) {
-              return painter.canvasPolygon(ctx, item);
+              return painter.canvasPolygon(ctx, item, 0, 0, true);
             });
           } else {
-            canvasPolygon$2(ctx, list);
+            canvasPolygon$2(ctx, list, 0, 0, true);
           }
 
           ctx[method]();
-          ctx.closePath();
 
           if (matrix$1) {
             ctx.restore();
@@ -27024,18 +27042,16 @@
             list.forEach(function (item) {
               ctx.save();
               ctx.beginPath();
-              canvasPolygon$2(ctx, item, dx, dy);
+              canvasPolygon$2(ctx, item, dx, dy, true);
               ctx.clip();
-              ctx.closePath();
               ctx.drawImage(offscreen.canvas, x1 + dx, y1 + dy);
               ctx.restore();
             });
           } else {
             ctx.save();
             ctx.beginPath();
-            canvasPolygon$2(ctx, list, dx, dy);
+            canvasPolygon$2(ctx, list, dx, dy, true);
             ctx.clip();
-            ctx.closePath();
             ctx.drawImage(offscreen.canvas, x1 + dx, y1 + dy);
             ctx.restore();
           }
@@ -34371,9 +34387,8 @@
             ctx.closePath();
             ctx.beginPath();
             var points = geom.ellipsePoints(cx, cy, r, r);
-            painter.canvasPolygon(ctx, points, 0, 0);
+            painter.canvasPolygon(ctx, points, 0, 0, true);
             ctx.fill();
-            ctx.closePath();
             ctx.beginPath();
             ctx.moveTo(pts[0][0], pts[0][1]);
 
@@ -34413,9 +34428,8 @@
             if (list) {
               ctx.save();
               ctx.beginPath();
-              canvasPolygon$1(ctx, list, dx, dy);
+              canvasPolygon$1(ctx, list, dx, dy, true);
               ctx.clip();
-              ctx.closePath();
               ctx.drawImage(source, originX, originY, width, height);
               ctx.restore();
             } else {

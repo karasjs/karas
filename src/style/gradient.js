@@ -704,9 +704,8 @@ function renderConic(xom, renderMode, ctx, res, x, y, w, h, btlr, btrr, bbrr, bb
     offscreen.ctx.putImageData(imgData, 0, 0);
     ctx.save();
     ctx.beginPath();
-    canvasPolygon(ctx, list);
+    canvasPolygon(ctx, list, 0, 0, true);
     ctx.clip();
-    ctx.closePath();
     ctx.drawImage(offscreen.canvas, x, y);
     ctx.restore();
     offscreen.ctx.clearRect(0, 0, w, h);

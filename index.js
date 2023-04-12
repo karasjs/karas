@@ -8349,10 +8349,9 @@
       }
 
       points.forEach(function (point) {
-        canvasPolygon$6(ctx, point, dx, dy);
+        canvasPolygon$6(ctx, point, dx, dy, true);
       });
       ctx.fill();
-      ctx.closePath();
     } else if (renderMode === mode.SVG) {
       var s = '';
       points.forEach(function (point) {
@@ -9137,9 +9136,8 @@
       offscreen.ctx.putImageData(imgData, 0, 0);
       ctx.save();
       ctx.beginPath();
-      canvasPolygon$5(ctx, list);
+      canvasPolygon$5(ctx, list, 0, 0, true);
       ctx.clip();
-      ctx.closePath();
       ctx.drawImage(offscreen.canvas, x, y);
       ctx.restore();
       offscreen.ctx.clearRect(0, 0, w, h);
@@ -15156,9 +15154,8 @@
         ctx.fillStyle = color;
       }
 
-      canvasPolygon$4(ctx, list, dx, dy);
+      canvasPolygon$4(ctx, list, dx, dy, true);
       ctx[method]();
-      ctx.closePath();
 
       if (matrix$1) {
         ctx.restore();
@@ -35400,13 +35397,12 @@
         ctx.beginPath();
 
         if (_list) {
-          canvasPolygon(ctx, _list);
+          canvasPolygon(ctx, _list, 0, 0, true);
         } else {
           ctx.rect(x, y, offsetWidth, offsetHeight);
         }
 
         ctx.fill();
-        ctx.closePath();
         ctx.globalCompositeOperation = 'source-over';
         ctx = origin;
         ctx.setTransform(1, 0, 0, 1, 0, 0);

@@ -2886,10 +2886,9 @@ function renderBorder(xom, renderMode, ctx, points, color, dx, dy) {
       ctx.fillStyle = color;
     }
     points.forEach(point => {
-      canvasPolygon(ctx, point, dx, dy);
+      canvasPolygon(ctx, point, dx, dy, true);
     });
     ctx.fill();
-    ctx.closePath();
   }
   else if(renderMode === mode.SVG) {
     let s = '';

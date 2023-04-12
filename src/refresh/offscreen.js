@@ -30,13 +30,12 @@ function applyOffscreen(ctx, list, width, height) {
       ctx.fillStyle = '#FFF';
       ctx.beginPath();
       if(list) {
-        canvasPolygon(ctx, list);
+        canvasPolygon(ctx, list, 0, 0, true);
       }
       else {
         ctx.rect(x, y, offsetWidth, offsetHeight);
       }
       ctx.fill();
-      ctx.closePath();
       ctx.globalCompositeOperation = 'source-over';
       ctx = origin;
       ctx.setTransform(1, 0, 0, 1, 0, 0);

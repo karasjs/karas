@@ -79,7 +79,7 @@ function getRootsInInterval(min, max, coefs) {
   let degree = coefs.length - 1;
   if(degree === 1) {
     root = bisection(min, max, coefs);
-    if(root != null) {
+    if(root !== undefined) {
       roots.push(root);
     }
   }
@@ -90,27 +90,27 @@ function getRootsInInterval(min, max, coefs) {
     if(droots.length > 0) {
       // find root on [min, droots[0]]
       root = bisection(min, droots[0], coefs);
-      if(root != null) {
+      if(root !== undefined) {
         roots.push(root);
       }
       // find root on [droots[i],droots[i+1]] for 0 <= i <= count-2
       for(let i = 0; i <= droots.length - 2; i++) {
         root = bisection(droots[i], droots[i + 1], coefs);
-        if(root != null) {
+        if(root !== undefined) {
           roots.push(root);
         }
       }
 
       // find root on [droots[count-1],xmax]
       root = bisection(droots[droots.length - 1], max, coefs);
-      if(root != null) {
+      if(root !== undefined) {
         roots.push(root);
       }
     }
     else {
       // polynomial is monotone on [min,max], has at most one root
       root = bisection(min, max, coefs);
-      if(root != null) {
+      if(root !== undefined) {
         roots.push(root);
       }
     }

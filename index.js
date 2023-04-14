@@ -35852,7 +35852,7 @@
     if (degree === 1) {
       root = bisection(min, max, coefs);
 
-      if (root != null) {
+      if (root !== undefined) {
         roots.push(root);
       }
     } else {
@@ -35863,7 +35863,7 @@
         // find root on [min, droots[0]]
         root = bisection(min, droots[0], coefs);
 
-        if (root != null) {
+        if (root !== undefined) {
           roots.push(root);
         } // find root on [droots[i],droots[i+1]] for 0 <= i <= count-2
 
@@ -35871,7 +35871,7 @@
         for (var i = 0; i <= droots.length - 2; i++) {
           root = bisection(droots[i], droots[i + 1], coefs);
 
-          if (root != null) {
+          if (root !== undefined) {
             roots.push(root);
           }
         } // find root on [droots[count-1],xmax]
@@ -35879,14 +35879,14 @@
 
         root = bisection(droots[droots.length - 1], max, coefs);
 
-        if (root != null) {
+        if (root !== undefined) {
           roots.push(root);
         }
       } else {
         // polynomial is monotone on [min,max], has at most one root
         root = bisection(min, max, coefs);
 
-        if (root != null) {
+        if (root !== undefined) {
           roots.push(root);
         }
       }
@@ -43574,7 +43574,7 @@
     var end = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 1;
 
     if (!Array.isArray(points) || points.length < 3) {
-      return;
+      return points;
     }
 
     start = Math.max(start, 0);

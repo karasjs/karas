@@ -355,7 +355,7 @@ function sliceBezier(points, t) {
 
 function sliceBezier2Both(points, start = 0, end = 1) {
   if(!Array.isArray(points) || points.length < 3) {
-    return;
+    return points;
   }
   start = Math.max(start, 0);
   end = Math.min(end, 1);

@@ -1,5 +1,5 @@
 import Polygon from './Polygon';
-import chain from './chain';
+import chains from './chains';
 
 // 多边形都是多个区域，重载支持外部传入1个区域则数组化
 function prefix(polygon) {
@@ -114,7 +114,7 @@ export default {
       source.segments = list;
       return source;
     }
-    return chain(list);
+    return chains(list);
   },
   union(polygonA, polygonB, intermediate) {
     let [source, clip] = trivial(polygonA, polygonB);
@@ -123,7 +123,7 @@ export default {
       source.segments = list;
       return source;
     }
-    return chain(list);
+    return chains(list);
   },
   subtract(polygonA, polygonB, intermediate) {
     let [source, clip] = trivial(polygonA, polygonB);
@@ -132,7 +132,7 @@ export default {
       source.segments = list;
       return source;
     }
-    return chain(list);
+    return chains(list);
   },
   subtractRev(polygonA, polygonB, intermediate) {
     let [source, clip] = trivial(polygonA, polygonB);
@@ -141,7 +141,7 @@ export default {
       source.segments = list;
       return source;
     }
-    return chain(list);
+    return chains(list);
   },
   xor(polygonA, polygonB, intermediate) {
     let [source, clip] = trivial(polygonA, polygonB);
@@ -150,12 +150,13 @@ export default {
       source.segments = list;
       return source;
     }
-    return chain(list);
+    return chains(list);
   },
   chain(polygon) {
     if(polygon instanceof Polygon) {
-      return chain(polygon.segments);
+      return chains(polygon.segments);
     }
     return prefix(polygon);
   },
+  chains,
 };

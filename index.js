@@ -46096,7 +46096,7 @@
     return chain.reverse();
   }
 
-  function _chain (list) {
+  function chains (list) {
     var chains = [],
         res = []; // 在对方内部的排在前面，这样会优先形成包含情况而不是交叉
 
@@ -46485,7 +46485,7 @@
         return source;
       }
 
-      return _chain(list);
+      return chains(list);
     },
     union: function union(polygonA, polygonB, intermediate) {
       var _trivial3 = trivial(polygonA, polygonB),
@@ -46500,7 +46500,7 @@
         return source;
       }
 
-      return _chain(list);
+      return chains(list);
     },
     subtract: function subtract(polygonA, polygonB, intermediate) {
       var _trivial5 = trivial(polygonA, polygonB),
@@ -46515,7 +46515,7 @@
         return source;
       }
 
-      return _chain(list);
+      return chains(list);
     },
     subtractRev: function subtractRev(polygonA, polygonB, intermediate) {
       var _trivial7 = trivial(polygonA, polygonB),
@@ -46530,7 +46530,7 @@
         return source;
       }
 
-      return _chain(list);
+      return chains(list);
     },
     xor: function xor(polygonA, polygonB, intermediate) {
       var _trivial9 = trivial(polygonA, polygonB),
@@ -46545,21 +46545,22 @@
         return source;
       }
 
-      return _chain(list);
+      return chains(list);
     },
     chain: function chain(polygon) {
       if (polygon instanceof Polygon$1) {
-        return _chain(polygon.segments);
+        return chains(polygon.segments);
       }
 
       return prefix(polygon);
-    }
+    },
+    chains: chains
   };
 
   var intersect = bo.intersect,
       union = bo.union,
       subtract = bo.subtract,
-      subtract2 = bo.subtract2,
+      subtractRev = bo.subtractRev,
       xor = bo.xor,
       chain = bo.chain;
   var STROKE_WIDTH$4 = enums.STYLE_KEY.STROKE_WIDTH;
@@ -46746,7 +46747,7 @@
             var op = (bo[_i2 - 1] || '').toString().toLowerCase();
             var cur = list[_i2];
 
-            if (['intersect', 'intersection', 'union', 'subtract', 'subtract2', 'diff', 'difference', 'xor'].indexOf(op) === -1) {
+            if (['intersect', 'intersection', 'union', 'subtract', 'subtractrev', 'diff', 'difference', 'xor'].indexOf(op) === -1) {
               res = res.concat(chain(temp));
               temp = cur || [];
               continue;
@@ -46768,8 +46769,8 @@
                 temp = subtract(temp, cur, true);
                 break;
 
-              case 'subtract2':
-                temp = subtract2(temp, cur, true);
+              case 'subtractrev':
+                temp = subtractRev(temp, cur, true);
                 break;
 
               case 'xor':

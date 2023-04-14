@@ -5,7 +5,7 @@ import bezier from '../../math/bezier';
 import bo from '../../math/bo/index';
 import mode from '../../refresh/mode';
 
-let { intersect, union, subtract, subtract2, xor, chain } = bo;
+let { intersect, union, subtract, subtractRev, xor, chain } = bo;
 
 const { STYLE_KEY: {
   STROKE_WIDTH,
@@ -150,7 +150,7 @@ class Polyline extends Geom {
       for(let i = 1; i < len; i++) {
         let op = (bo[i - 1] || '').toString().toLowerCase();
         let cur = list[i];
-        if(['intersect', 'intersection', 'union', 'subtract', 'subtract2', 'diff', 'difference', 'xor'].indexOf(op) === -1) {
+        if(['intersect', 'intersection', 'union', 'subtract', 'subtractrev', 'diff', 'difference', 'xor'].indexOf(op) === -1) {
           res = res.concat(chain(temp));
           temp = cur || [];
           continue;
@@ -168,8 +168,8 @@ class Polyline extends Geom {
           case 'difference':
             temp = subtract(temp, cur, true);
             break;
-          case 'subtract2':
-            temp = subtract2(temp, cur, true);
+          case 'subtractrev':
+            temp = subtractRev(temp, cur, true);
             break;
           case 'xor':
             temp = xor(temp, cur, true);

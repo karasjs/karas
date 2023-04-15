@@ -128,6 +128,10 @@ export default {
   subtract(polygonA, polygonB, intermediate) {
     let [source, clip] = trivial(polygonA, polygonB);
     let list = filter(source.segments.concat(clip.segments), SUBTRACT);
+    // 暂时这样解决反向的问题
+    if (!list.length) {
+      list = filter(source.segments.concat(clip.segments), SUBTRACT_REV);
+    }
     if(intermediate) {
       source.segments = list;
       return source;

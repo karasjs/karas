@@ -45767,12 +45767,12 @@
     if (coords.length === 3) {
       var t = isX ? (coords[0].x - coords[1].x) / (coords[0].x - 2 * coords[1].x + coords[2].x) : (coords[0].y - coords[1].y) / (coords[0].y - 2 * coords[1].y + coords[2].y);
 
-      if (t > 0 && t < 1) {
+      if (t > 1e-9 && t < 1 - 1e-9) {
         return [t];
       }
     } else if (coords.length === 4) {
       var _t2 = equation.getRoots([isX ? 3 * (coords[1].x - coords[0].x) : 3 * (coords[1].y - coords[0].y), isX ? 6 * (coords[2].x + coords[0].x - 2 * coords[1].x) : 6 * (coords[2].y + coords[0].y - 2 * coords[1].y), isX ? 3 * (coords[3].x + 3 * coords[1].x - coords[0].x - 3 * coords[2].x) : 3 * (coords[3].y + 3 * coords[1].y - coords[0].y - 3 * coords[2].y)]).filter(function (i) {
-        return i > 0 && i < 1;
+        return i > 1e-9 && i < 1 - 1e-9;
       });
 
       if (_t2.length) {

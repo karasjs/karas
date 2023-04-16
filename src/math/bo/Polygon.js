@@ -925,7 +925,7 @@ function getBezierMonotonicity(coords, isX) {
     let t = isX
       ? (coords[0].x - coords[1].x) / (coords[0].x - 2 * coords[1].x + coords[2].x)
       : (coords[0].y - coords[1].y) / (coords[0].y - 2 * coords[1].y + coords[2].y);
-    if(t > 0 && t < 1) {
+    if(t > 1e-9 && t < 1 - (1e-9)) {
       return [t];
     }
   }
@@ -940,7 +940,7 @@ function getBezierMonotonicity(coords, isX) {
       isX
         ? 3 * (coords[3].x + 3 * coords[1].x - coords[0].x - 3 * coords[2].x)
         : 3 * (coords[3].y + 3 * coords[1].y - coords[0].y - 3 * coords[2].y)
-    ]).filter(i => i > 0 && i < 1);
+    ]).filter(i => i > 1e-9 && i < 1 - (1e-9));
     if(t.length) {
       return t.sort(function(a, b) {
         return a - b;

@@ -38,7 +38,8 @@ function getIntersectionBezier2Line(ax1, ay1, ax2, ay2, ax3, ay3,
       else {
         toClip = Math.abs((item.y - by1) / (by2 - by1));
       }
-      if(item.t > EPS && item.t < EPS2 && toClip > EPS && toClip < EPS2) {
+      // 相交于双方端点忽略，一方非端点要记录，防止多区域情况
+      if(item.t > EPS && item.t < EPS2 || toClip > EPS && toClip < EPS2) {
         // 还要判断斜率，相等也忽略（小于一定误差）
         let k1 = bezier.bezierSlope([
           [ax1, ay1],
@@ -170,6 +171,7 @@ function getIntersectionBezier3Line(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4,
       else {
         toClip = Math.abs((item.y - by1) / (by2 - by1));
       }
+      // 相交于双方端点忽略，一方非端点要记录，防止多区域情况
       if(item.t > EPS && item.t < EPS2 && toClip > EPS && toClip < EPS2) {
         // 还要判断斜率，相等也忽略（小于一定误差）
         let k1 = bezier.bezierSlope([
@@ -270,4 +272,6 @@ export default {
   getIntersectionBezier3Line,
   getIntersectionBezier3Bezier3,
   sortIntersection,
+  EPS,
+  EPS2,
 };

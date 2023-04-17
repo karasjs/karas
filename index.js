@@ -36305,10 +36305,12 @@
     };
     cl = bx1 * by2 - bx2 * by1;
     var coefs = [cl + dot(n, c0), dot(n, c1), dot(n, c2), dot(n, c3)];
+    console.log(coefs);
     var roots = getRoots(coefs);
 
     for (var i = 0; i < roots.length; i++) {
       var t = roots[i];
+      console.log(i, t);
 
       if (0 <= t && t <= 1) {
         var p5 = lerp({
@@ -44569,14 +44571,14 @@
     return Segment;
   }();
 
-  var EPS = 1e-9;
-  var EPS2 = 1 - 1e-9;
+  var EPS$1 = 1e-9;
+  var EPS2$1 = 1 - 1e-9;
 
   function getIntersectionLineLine$1(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, d) {
     var toSource = ((bx2 - bx1) * (ay1 - by1) - (by2 - by1) * (ax1 - bx1)) / d;
     var toClip = ((ax2 - ax1) * (ay1 - by1) - (ay2 - ay1) * (ax1 - bx1)) / d; // 非顶点相交才是真相交
 
-    if (toSource > EPS && toSource < EPS2 && toClip > EPS && toClip < EPS2) {
+    if (toSource > EPS$1 && toSource < EPS2$1 && toClip > EPS$1 && toClip < EPS2$1) {
       var ox = ax1 + toSource * (ax2 - ax1);
       var oy = ay1 + toSource * (ay2 - ay1);
       return [{
@@ -44598,14 +44600,15 @@
           toClip = Math.abs((item.x - bx1) / (bx2 - bx1));
         } else {
           toClip = Math.abs((item.y - by1) / (by2 - by1));
-        }
+        } // 相交于双方端点忽略，一方非端点要记录，防止多区域情况
 
-        if (item.t > EPS && item.t < EPS2 && toClip > EPS && toClip < EPS2) {
+
+        if (item.t > EPS$1 && item.t < EPS2$1 || toClip > EPS$1 && toClip < EPS2$1) {
           // 还要判断斜率，相等也忽略（小于一定误差）
           var k1 = bezier.bezierSlope([[ax1, ay1], [ax2, ay2], [ax3, ay3]], item.t);
           var k2 = bezier.bezierSlope([[bx1, by1], [bx2, by2]]); // 忽略方向，180°也是平行，Infinity相减为NaN
 
-          if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < EPS) {
+          if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < EPS$1) {
             return;
           }
 
@@ -44637,12 +44640,12 @@
         if (toClip.length) {
           toClip = toClip[0];
 
-          if (item.t > EPS && item.t < EPS2 && toClip > EPS && toClip < EPS2) {
+          if (item.t > EPS$1 && item.t < EPS2$1 && toClip > EPS$1 && toClip < EPS2$1) {
             // 还要判断斜率，相等也忽略（小于一定误差）
             var k1 = bezier.bezierSlope([[ax1, ay1], [ax2, ay2], [ax3, ay3]], item.t);
             var k2 = bezier.bezierSlope([[bx1, by1], [bx2, by2], [bx3, by3]], toClip); // 忽略方向，180°也是平行，Infinity相减为NaN
 
-            if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < EPS) {
+            if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < EPS$1) {
               return;
             }
 
@@ -44675,12 +44678,12 @@
         if (toClip.length) {
           toClip = toClip[0];
 
-          if (item.t > EPS && item.t < EPS2 && toClip > EPS && toClip < EPS2) {
+          if (item.t > EPS$1 && item.t < EPS2$1 && toClip > EPS$1 && toClip < EPS2$1) {
             // 还要判断斜率，相等也忽略（小于一定误差）
             var k1 = bezier.bezierSlope([[ax1, ay1], [ax2, ay2], [ax3, ay3]], item.t);
             var k2 = bezier.bezierSlope([[bx1, by1], [bx2, by2], [bx3, by3], [bx4, by4]], toClip); // 忽略方向，180°也是平行，Infinity相减为NaN
 
-            if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < EPS) {
+            if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < EPS$1) {
               return;
             }
 
@@ -44714,14 +44717,15 @@
           toClip = Math.abs((item.x - bx1) / (bx2 - bx1));
         } else {
           toClip = Math.abs((item.y - by1) / (by2 - by1));
-        }
+        } // 相交于双方端点忽略，一方非端点要记录，防止多区域情况
 
-        if (item.t > EPS && item.t < EPS2 && toClip > EPS && toClip < EPS2) {
+
+        if (item.t > EPS$1 && item.t < EPS2$1 && toClip > EPS$1 && toClip < EPS2$1) {
           // 还要判断斜率，相等也忽略（小于一定误差）
           var k1 = bezier.bezierSlope([[ax1, ay1], [ax2, ay2], [ax3, ay3], [ax4, ay4]], item.t);
           var k2 = bezier.bezierSlope([[bx1, by1], [bx2, by2]]); // 忽略方向，180°也是平行，Infinity相减为NaN
 
-          if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < EPS) {
+          if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < EPS$1) {
             return;
           }
 
@@ -44753,12 +44757,12 @@
         if (toClip.length) {
           toClip = toClip[0];
 
-          if (item.t > EPS && item.t < EPS2 && toClip > EPS && toClip < EPS2) {
+          if (item.t > EPS$1 && item.t < EPS2$1 && toClip > EPS$1 && toClip < EPS2$1) {
             // 还要判断斜率，相等也忽略（小于一定误差）
             var k1 = bezier.bezierSlope([[ax1, ay1], [ax2, ay2], [ax3, ay3], [ax4, ay4]], item.t);
             var k2 = bezier.bezierSlope([[bx1, by1], [bx2, by2], [bx3, by3], [bx4, by4]], toClip); // 忽略方向，180°也是平行，Infinity相减为NaN
 
-            if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < EPS) {
+            if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < EPS$1) {
               return;
             }
 
@@ -44794,7 +44798,7 @@
         t: isSource ? item.toSource : item.toClip
       };
     }).filter(function (item) {
-      return item.t > EPS && item.t < EPS2;
+      return item.t > EPS$1 && item.t < EPS2$1;
     });
   }
 
@@ -44805,7 +44809,9 @@
     getIntersectionBezier2Bezier3: getIntersectionBezier2Bezier3$1,
     getIntersectionBezier3Line: getIntersectionBezier3Line$1,
     getIntersectionBezier3Bezier3: getIntersectionBezier3Bezier3$1,
-    sortIntersection: sortIntersection$1
+    sortIntersection: sortIntersection$1,
+    EPS: EPS$1,
+    EPS2: EPS2$1
   };
 
   var getIntersectionLineLine = intersect$1.getIntersectionLineLine,
@@ -44814,7 +44820,9 @@
       getIntersectionBezier2Bezier3 = intersect$1.getIntersectionBezier2Bezier3,
       getIntersectionBezier3Line = intersect$1.getIntersectionBezier3Line,
       getIntersectionBezier3Bezier3 = intersect$1.getIntersectionBezier3Bezier3,
-      sortIntersection = intersect$1.sortIntersection;
+      sortIntersection = intersect$1.sortIntersection,
+      EPS = intersect$1.EPS,
+      EPS2 = intersect$1.EPS2;
 
   var Polygon$1 = /*#__PURE__*/function () {
     function Polygon(regions, index) {
@@ -45413,7 +45421,23 @@
                   break;
                 } // 有交点，确保原先线段方向顺序（x升序、y升序），各自依次切割，x右侧新线段也要存入list
                 else if (inters && inters.length) {
-                  // console.log('inters', i, inters);
+                  // 特殊检查，当只有一方需要切割时，说明交点在另一方端点上，但是由于精度问题，导致这个点坐标不和那个端点数据一致，
+                  // 且进一步为了让点的引用一致，也应该直接使用这个已存在的端点易用
+                  for (var _i4 = 0, len = inters.length; _i4 < len; _i4++) {
+                    var pt = inters[_i4]; // 只会有一种可能，如果交点对2条线都是误差忽略，求交时已经被屏蔽
+
+                    if (pt.toSource <= EPS) {
+                      pt.point = isSourceReverted ? coordsB[0] : coordsA[0];
+                    } else if (pt.toSource >= EPS2) {
+                      pt.point = isSourceReverted ? coordsB[coordsB.length - 1] : coordsA[coordsA.length - 1];
+                    } else if (pt.toClip <= EPS) {
+                      pt.point = isSourceReverted ? coordsA[0] : coordsB[0];
+                    } else if (pt.toClip >= EPS2) {
+                      pt.point = isSourceReverted ? coordsA[coordsA.length - 1] : coordsB[coordsB.length - 1];
+                    }
+                  } // console.log('inters', i, inters);
+
+
                   var pa = sortIntersection(inters, !isSourceReverted); // console.log(pa);
 
                   var ra = sliceSegment(seg, pa, isIntermediateA && belong === 0); // console.log(ra.map(item => item.toString()));

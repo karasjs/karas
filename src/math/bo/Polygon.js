@@ -14,6 +14,8 @@ const {
   getIntersectionBezier3Line,
   getIntersectionBezier3Bezier3,
   sortIntersection,
+  EPS,
+  EPS2,
 } = intersect;
 
 class Polygon {
@@ -605,6 +607,24 @@ function findIntersection(list, compareBelong, isIntermediateA, isIntermediateB)
               }
               // 有交点，确保原先线段方向顺序（x升序、y升序），各自依次切割，x右侧新线段也要存入list
               else if(inters && inters.length) {
+                // 特殊检查，当只有一方需要切割时，说明交点在另一方端点上，但是由于精度问题，导致这个点坐标不和那个端点数据一致，
+                // 且进一步为了让点的引用一致，也应该直接使用这个已存在的端点易用
+                for (let i = 0, len = inters.length; i < len; i++) {
+                  const pt = inters[i];
+                  // 只会有一种可能，如果交点对2条线都是误差忽略，求交时已经被屏蔽
+                  if (pt.toSource <= EPS) {
+                    pt.point = isSourceReverted ? coordsB[0] : coordsA[0];
+                  }
+                  else if(pt.toSource >= EPS2) {
+                    pt.point = isSourceReverted ? coordsB[coordsB.length - 1] : coordsA[coordsA.length - 1];
+                  }
+                  else if (pt.toClip <= EPS) {
+                    pt.point = isSourceReverted ? coordsA[0] : coordsB[0];
+                  }
+                  else if (pt.toClip >= EPS2) {
+                    pt.point = isSourceReverted ? coordsA[coordsA.length - 1] : coordsB[coordsB.length - 1];
+                  }
+                }
                 // console.log('inters', i, inters);
                 let pa = sortIntersection(inters, !isSourceReverted);
                 // console.log(pa);

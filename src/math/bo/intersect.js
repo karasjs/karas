@@ -5,6 +5,24 @@ import bezier from '../bezier';
 const EPS = 1e-9;
 const EPS2 = 1 - (1e-9);
 
+function isParallel(k1, k2) {
+  if (k1 === Infinity && k2 === Infinity) {
+    return true;
+  }
+  else if (k1 === Infinity && k2 === -Infinity) {
+    return true;
+  }
+  else if (k1 === -Infinity && k2 === -Infinity) {
+    return true;
+  }
+  else if (k1 === -Infinity && k2 === Infinity) {
+    return true;
+  }
+  else {
+    return Math.abs(k1 - k2) < EPS;
+  }
+}
+
 function getIntersectionLineLine(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, d) {
   let toSource = (
     (bx2 - bx1) * (ay1 - by1) - (by2 - by1) * (ax1 - bx1)
@@ -13,7 +31,7 @@ function getIntersectionLineLine(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, d) {
     (ax2 - ax1) * (ay1 - by1) - (ay2 - ay1) * (ax1 - bx1)
   ) / d;
   // 非顶点相交才是真相交
-  if(toSource > EPS && toSource < EPS2 && toClip > EPS && toClip < EPS2) {
+  if(toSource >= 0 && toSource <= 1 && toClip >= 0 && toClip <= 1 && (toSource > EPS && toSource < EPS2 || toClip > EPS && toClip < EPS2)) {
     let ox = ax1 + toSource * (ax2 - ax1);
     let oy = ay1 + toSource * (ay2 - ay1);
     return [{
@@ -48,7 +66,7 @@ function getIntersectionBezier2Line(ax1, ay1, ax2, ay2, ax3, ay3,
         ], item.t);
         let k2 = bezier.bezierSlope([[bx1, by1], [bx2, by2]]);
         // 忽略方向，180°也是平行，Infinity相减为NaN
-        if(Math.abs((Math.abs(k1) - Math.abs(k2)) || 0) < EPS) {
+        if (isParallel(k1, k2)) {
           return;
         }
         return {
@@ -79,7 +97,7 @@ function getIntersectionBezier2Bezier2(ax1, ay1, ax2, ay2, ax3, ay3,
       // 防止误差无值
       if(toClip.length) {
         toClip = toClip[0];
-        if(item.t > EPS && item.t < EPS2 && toClip > EPS && toClip < EPS2) {
+        if(item.t > EPS && item.t < EPS2 || toClip > EPS && toClip < EPS2) {
           // 还要判断斜率，相等也忽略（小于一定误差）
           let k1 = bezier.bezierSlope([
             [ax1, ay1],
@@ -92,7 +110,7 @@ function getIntersectionBezier2Bezier2(ax1, ay1, ax2, ay2, ax3, ay3,
             [bx3, by3],
           ], toClip);
           // 忽略方向，180°也是平行，Infinity相减为NaN
-          if(Math.abs((Math.abs(k1) - Math.abs(k2)) || 0) < EPS) {
+          if (isParallel(k1, k2)) {
             return;
           }
           return {
@@ -126,7 +144,7 @@ function getIntersectionBezier2Bezier3(ax1, ay1, ax2, ay2, ax3, ay3,
       // 防止误差无值
       if(toClip.length) {
         toClip = toClip[0];
-        if(item.t > EPS && item.t < EPS2 && toClip > EPS && toClip < EPS2) {
+        if(item.t > EPS && item.t < EPS2 || toClip > EPS && toClip < EPS2) {
           // 还要判断斜率，相等也忽略（小于一定误差）
           let k1 = bezier.bezierSlope([
             [ax1, ay1],
@@ -140,7 +158,7 @@ function getIntersectionBezier2Bezier3(ax1, ay1, ax2, ay2, ax3, ay3,
             [bx4, by4],
           ], toClip);
           // 忽略方向，180°也是平行，Infinity相减为NaN
-          if(Math.abs((Math.abs(k1) - Math.abs(k2)) || 0) < EPS) {
+          if (isParallel(k1, k2)) {
             return;
           }
           return {
@@ -172,7 +190,7 @@ function getIntersectionBezier3Line(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4,
         toClip = Math.abs((item.y - by1) / (by2 - by1));
       }
       // 相交于双方端点忽略，一方非端点要记录，防止多区域情况
-      if(item.t > EPS && item.t < EPS2 && toClip > EPS && toClip < EPS2) {
+      if(item.t > EPS && item.t < EPS2 || toClip > EPS && toClip < EPS2) {
         // 还要判断斜率，相等也忽略（小于一定误差）
         let k1 = bezier.bezierSlope([
           [ax1, ay1],
@@ -185,7 +203,7 @@ function getIntersectionBezier3Line(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4,
           [bx2, by2],
         ]);
         // 忽略方向，180°也是平行，Infinity相减为NaN
-        if(Math.abs((Math.abs(k1) - Math.abs(k2)) || 0) < EPS) {
+        if (isParallel(k1, k2)) {
           return;
         }
         return {
@@ -217,7 +235,7 @@ function getIntersectionBezier3Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4,
       // 防止误差无值
       if(toClip.length) {
         toClip = toClip[0];
-        if(item.t > EPS && item.t < EPS2 && toClip > EPS && toClip < EPS2) {
+        if(item.t > EPS && item.t < EPS2 || toClip > EPS && toClip < EPS2) {
           // 还要判断斜率，相等也忽略（小于一定误差）
           let k1 = bezier.bezierSlope([
             [ax1, ay1],
@@ -232,7 +250,7 @@ function getIntersectionBezier3Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4,
             [bx4, by4],
           ], toClip);
           // 忽略方向，180°也是平行，Infinity相减为NaN
-          if(Math.abs((Math.abs(k1) - Math.abs(k2)) || 0) < EPS) {
+          if (isParallel(k1, k2)) {
             return;
           }
           return {

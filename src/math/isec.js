@@ -623,6 +623,8 @@ function intersectBezier2Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by
 function intersectBezier2Line(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2) {
   let c2, c1, c0;
   let cl, n;
+  let isV = bx1 === bx2;
+  let isH = by1 === by2;
   let result = [];
 
   let minbx = Math.min(bx1, bx2);
@@ -685,6 +687,26 @@ function intersectBezier2Line(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2) 
       }
     }
   }
+  if (isH || isV) {
+    result.forEach(item => {
+      if (isV) {
+        if (item.x < minbx) {
+          item.x = minbx;
+        }
+        else if (item.x > maxbx) {
+          item.x = maxbx;
+        }
+      }
+      else {
+        if (item.y < minby) {
+          item.y = minby;
+        }
+        else if (item.y > maxby) {
+          item.y = maxby;
+        }
+      }
+    });
+  }
   return result;
 }
 
@@ -699,6 +721,8 @@ function intersectBezier2Line(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2) 
 function intersectBezier3Line(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2) {
   let c3, c2, c1, c0;
   let cl, n;
+  let isV = bx1 === bx2;
+  let isH = by1 === by2;
   let result = [];
 
   let minbx = Math.min(bx1, bx2);
@@ -735,7 +759,7 @@ function intersectBezier3Line(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, 
     dot(n, c1),
     dot(n, c2),
     dot(n, c3),
-  ];console.log(coefs);
+  ];
 
   let roots = getRoots(coefs);
 
@@ -764,6 +788,26 @@ function intersectBezier3Line(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, 
         result.push(p10);
       }
     }
+  }
+  if (isH || isV) {
+    result.forEach(item => {
+      if (isV) {
+        if (item.x < minbx) {
+          item.x = minbx;
+        }
+        else if (item.x > maxbx) {
+          item.x = maxbx;
+        }
+      }
+      else {
+        if (item.y < minby) {
+          item.y = minby;
+        }
+        else if (item.y > maxby) {
+          item.y = maxby;
+        }
+      }
+    });
   }
   return result;
 }

@@ -1016,7 +1016,7 @@ function isRectsOverlap(bboxA, bboxB, lenA, lenB) {
       return true;
     }
     // 2条水平线也是
-    if(bboxA[1] === bboxA[3] && bboxB[1] === bboxB[3] && bboxA[1] === bboxA[1]) {
+    if(bboxA[1] === bboxA[3] && bboxB[1] === bboxB[3] && bboxA[1] === bboxA[3]) {
       if(bboxA[0] >= bboxB[2] || bboxB[0] >= bboxA[2]) {
         return false;
       }

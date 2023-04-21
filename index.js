@@ -4601,7 +4601,7 @@
   } // 是否平行
 
 
-  function isParallel(x1, y1, x2, y2) {
+  function isParallel$1(x1, y1, x2, y2) {
     if (isZero(x1, y1, x2, y2)) {
       return true;
     }
@@ -4765,7 +4765,7 @@
     crossProduct3: crossProduct3$1,
     unitize: unitize,
     unitize3: unitize3$1,
-    isParallel: isParallel,
+    isParallel: isParallel$1,
     isParallel3: isParallel3$1,
     isZero: isZero,
     isZero3: isZero3$1,
@@ -36177,6 +36177,8 @@
   function intersectBezier2Line(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2) {
     var c2, c1, c0;
     var cl, n;
+    var isV = bx1 === bx2;
+    var isH = by1 === by2;
     var result = [];
     var minbx = Math.min(bx1, bx2);
     var minby = Math.min(by1, by2);
@@ -36251,6 +36253,24 @@
       }
     }
 
+    if (isH || isV) {
+      result.forEach(function (item) {
+        if (isV) {
+          if (item.x < minbx) {
+            item.x = minbx;
+          } else if (item.x > maxbx) {
+            item.x = maxbx;
+          }
+        } else {
+          if (item.y < minby) {
+            item.y = minby;
+          } else if (item.y > maxby) {
+            item.y = maxby;
+          }
+        }
+      });
+    }
+
     return result;
   }
   /**
@@ -36265,6 +36285,8 @@
   function intersectBezier3Line(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2) {
     var c3, c2, c1, c0;
     var cl, n;
+    var isV = bx1 === bx2;
+    var isH = by1 === by2;
     var result = [];
     var minbx = Math.min(bx1, bx2);
     var minby = Math.min(by1, by2);
@@ -36305,7 +36327,6 @@
     };
     cl = bx1 * by2 - bx2 * by1;
     var coefs = [cl + dot(n, c0), dot(n, c1), dot(n, c2), dot(n, c3)];
-    console.log(coefs);
     var roots = getRoots(coefs);
 
     for (var i = 0; i < roots.length; i++) {
@@ -36350,6 +36371,24 @@
           result.push(p10);
         }
       }
+    }
+
+    if (isH || isV) {
+      result.forEach(function (item) {
+        if (isV) {
+          if (item.x < minbx) {
+            item.x = minbx;
+          } else if (item.x > maxbx) {
+            item.x = maxbx;
+          }
+        } else {
+          if (item.y < minby) {
+            item.y = minby;
+          } else if (item.y > maxby) {
+            item.y = maxby;
+          }
+        }
+      });
     }
 
     return result;
@@ -44574,11 +44613,25 @@
   var EPS$1 = 1e-9;
   var EPS2$1 = 1 - 1e-9;
 
+  function isParallel(k1, k2) {
+    if (k1 === Infinity && k2 === Infinity) {
+      return true;
+    } else if (k1 === Infinity && k2 === -Infinity) {
+      return true;
+    } else if (k1 === -Infinity && k2 === -Infinity) {
+      return true;
+    } else if (k1 === -Infinity && k2 === Infinity) {
+      return true;
+    } else {
+      return Math.abs(k1 - k2) < EPS$1;
+    }
+  }
+
   function getIntersectionLineLine$1(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, d) {
     var toSource = ((bx2 - bx1) * (ay1 - by1) - (by2 - by1) * (ax1 - bx1)) / d;
     var toClip = ((ax2 - ax1) * (ay1 - by1) - (ay2 - ay1) * (ax1 - bx1)) / d; // 非顶点相交才是真相交
 
-    if (toSource > EPS$1 && toSource < EPS2$1 && toClip > EPS$1 && toClip < EPS2$1) {
+    if (toSource >= 0 && toSource <= 1 && toClip >= 0 && toClip <= 1 && (toSource > EPS$1 && toSource < EPS2$1 || toClip > EPS$1 && toClip < EPS2$1)) {
       var ox = ax1 + toSource * (ax2 - ax1);
       var oy = ay1 + toSource * (ay2 - ay1);
       return [{
@@ -44608,7 +44661,7 @@
           var k1 = bezier.bezierSlope([[ax1, ay1], [ax2, ay2], [ax3, ay3]], item.t);
           var k2 = bezier.bezierSlope([[bx1, by1], [bx2, by2]]); // 忽略方向，180°也是平行，Infinity相减为NaN
 
-          if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < EPS$1) {
+          if (isParallel(k1, k2)) {
             return;
           }
 
@@ -44640,12 +44693,12 @@
         if (toClip.length) {
           toClip = toClip[0];
 
-          if (item.t > EPS$1 && item.t < EPS2$1 && toClip > EPS$1 && toClip < EPS2$1) {
+          if (item.t > EPS$1 && item.t < EPS2$1 || toClip > EPS$1 && toClip < EPS2$1) {
             // 还要判断斜率，相等也忽略（小于一定误差）
             var k1 = bezier.bezierSlope([[ax1, ay1], [ax2, ay2], [ax3, ay3]], item.t);
             var k2 = bezier.bezierSlope([[bx1, by1], [bx2, by2], [bx3, by3]], toClip); // 忽略方向，180°也是平行，Infinity相减为NaN
 
-            if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < EPS$1) {
+            if (isParallel(k1, k2)) {
               return;
             }
 
@@ -44678,12 +44731,12 @@
         if (toClip.length) {
           toClip = toClip[0];
 
-          if (item.t > EPS$1 && item.t < EPS2$1 && toClip > EPS$1 && toClip < EPS2$1) {
+          if (item.t > EPS$1 && item.t < EPS2$1 || toClip > EPS$1 && toClip < EPS2$1) {
             // 还要判断斜率，相等也忽略（小于一定误差）
             var k1 = bezier.bezierSlope([[ax1, ay1], [ax2, ay2], [ax3, ay3]], item.t);
             var k2 = bezier.bezierSlope([[bx1, by1], [bx2, by2], [bx3, by3], [bx4, by4]], toClip); // 忽略方向，180°也是平行，Infinity相减为NaN
 
-            if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < EPS$1) {
+            if (isParallel(k1, k2)) {
               return;
             }
 
@@ -44720,12 +44773,12 @@
         } // 相交于双方端点忽略，一方非端点要记录，防止多区域情况
 
 
-        if (item.t > EPS$1 && item.t < EPS2$1 && toClip > EPS$1 && toClip < EPS2$1) {
+        if (item.t > EPS$1 && item.t < EPS2$1 || toClip > EPS$1 && toClip < EPS2$1) {
           // 还要判断斜率，相等也忽略（小于一定误差）
           var k1 = bezier.bezierSlope([[ax1, ay1], [ax2, ay2], [ax3, ay3], [ax4, ay4]], item.t);
           var k2 = bezier.bezierSlope([[bx1, by1], [bx2, by2]]); // 忽略方向，180°也是平行，Infinity相减为NaN
 
-          if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < EPS$1) {
+          if (isParallel(k1, k2)) {
             return;
           }
 
@@ -44757,12 +44810,12 @@
         if (toClip.length) {
           toClip = toClip[0];
 
-          if (item.t > EPS$1 && item.t < EPS2$1 && toClip > EPS$1 && toClip < EPS2$1) {
+          if (item.t > EPS$1 && item.t < EPS2$1 || toClip > EPS$1 && toClip < EPS2$1) {
             // 还要判断斜率，相等也忽略（小于一定误差）
             var k1 = bezier.bezierSlope([[ax1, ay1], [ax2, ay2], [ax3, ay3], [ax4, ay4]], item.t);
             var k2 = bezier.bezierSlope([[bx1, by1], [bx2, by2], [bx3, by3], [bx4, by4]], toClip); // 忽略方向，180°也是平行，Infinity相减为NaN
 
-            if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < EPS$1) {
+            if (isParallel(k1, k2)) {
               return;
             }
 
@@ -45859,7 +45912,7 @@
       } // 2条水平线也是
 
 
-      if (bboxA[1] === bboxA[3] && bboxB[1] === bboxB[3] && bboxA[1] === bboxA[1]) {
+      if (bboxA[1] === bboxA[3] && bboxB[1] === bboxB[3] && bboxA[1] === bboxA[3]) {
         if (bboxA[0] >= bboxB[2] || bboxB[0] >= bboxA[2]) {
           return false;
         }

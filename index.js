@@ -43164,7 +43164,7 @@
     if (x1 < minX || y1 < minY || x1 > maxX || y1 > maxY) {
       var tx = (x0 - x1) / (x0 - 2 * x1 + x2);
 
-      if (tx < 0) {
+      if (isNaN(tx) || tx < 0) {
         tx = 0;
       } else if (tx > 1) {
         tx = 1;
@@ -43172,7 +43172,7 @@
 
       var ty = (y0 - y1) / (y0 - 2 * y1 + y2);
 
-      if (ty < 0) {
+      if (isNaN(ty) || ty < 0) {
         ty = 0;
       } else if (ty > 1) {
         ty = 1;

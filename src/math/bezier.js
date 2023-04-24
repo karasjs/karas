@@ -19,14 +19,14 @@ function bboxBezier2(x0, y0, x1, y1, x2, y2) {
   // 控制点位于边界内部时，边界就是范围框，否则计算导数获取极值
   if(x1 < minX || y1 < minY || x1 > maxX || y1 > maxY) {
     let tx = (x0 - x1) / (x0 - 2 * x1 + x2);
-    if(tx < 0) {
+    if(isNaN(tx) || tx < 0) {
       tx = 0;
     }
     else if(tx > 1) {
       tx = 1;
     }
     let ty = (y0 - y1) / (y0 - 2 * y1 + y2);
-    if(ty < 0) {
+    if(isNaN(ty) || ty < 0) {
       ty = 0;
     }
     else if(ty > 1) {

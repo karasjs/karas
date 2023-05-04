@@ -25086,10 +25086,10 @@
           y: box[3]
         }, matrixEvent));
         return {
-          left: Math.min(p1.x, Math.min(p2.x, Math.min(p3.x, p4.x))),
-          top: Math.min(p1.y, Math.min(p2.y, Math.min(p3.y, p4.y))),
-          right: Math.max(p1.x, Math.max(p2.x, Math.max(p3.x, p4.x))),
-          bottom: Math.max(p1.y, Math.max(p2.y, Math.max(p3.y, p4.y))),
+          left: Math.min(p1.x, p2.x, p3.x, p4.x),
+          top: Math.min(p1.y, p2.y, p3.y, p4.y),
+          right: Math.max(p1.x, p2.x, p3.x, p4.x),
+          bottom: Math.max(p1.y, p2.y, p3.y, p4.y),
           points: [p1, p2, p3, p4]
         };
       } // img和geom返回false，在inline布局时判断是否是真的inline

@@ -3182,7 +3182,7 @@ class Dom extends Xom {
     let res = super.render(renderMode, ctx, dx, dy);
     let ep = this.__ellipsis;
     if(ep) {
-      ep.render(renderMode, res.ctx, dx, dy)
+      ep.render(renderMode, res.ctx, dx, dy);
     }
     if(renderMode === SVG) {
       this.virtualDom.type = 'dom';

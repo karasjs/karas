@@ -36331,7 +36331,6 @@
 
     for (var i = 0; i < roots.length; i++) {
       var t = roots[i];
-      console.log(i, t);
 
       if (0 <= t && t <= 1) {
         var p5 = lerp({

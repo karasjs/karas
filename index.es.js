@@ -4595,7 +4595,7 @@ function unitize3$1(x, y, z) {
 } // 是否平行
 
 
-function isParallel(x1, y1, x2, y2) {
+function isParallel$1(x1, y1, x2, y2) {
   if (isZero(x1, y1, x2, y2)) {
     return true;
   }
@@ -4759,7 +4759,7 @@ var vector = {
   crossProduct3: crossProduct3$1,
   unitize: unitize,
   unitize3: unitize3$1,
-  isParallel: isParallel,
+  isParallel: isParallel$1,
   isParallel3: isParallel3$1,
   isZero: isZero,
   isZero3: isZero3$1,
@@ -5797,6 +5797,7 @@ var int2rgba$3 = util.int2rgba;
 function canvasPolygon$7(ctx, list) {
   var dx = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
   var dy = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
+  var close = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : false;
 
   if (!list || !list.length) {
     return;
@@ -5817,15 +5818,25 @@ function canvasPolygon$7(ctx, list) {
     return;
   }
 
-  var first = list[start]; // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
+  var first = list[start],
+      xa,
+      ya; // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
 
-  if (first.length === 4) {
-    ctx.moveTo(first[2] + dx, first[3] + dy);
+  if (first.length === 2) {
+    xa = first[0] + dx;
+    ya = first[1] + dy;
+    ctx.moveTo(xa, ya);
+  } else if (first.length === 4) {
+    xa = first[2] + dx;
+    ya = first[3] + dy;
+    ctx.moveTo(xa, ya);
   } else if (first.length === 6) {
-    ctx.moveTo(first[4] + dx, first[5] + dy);
-  } else {
-    ctx.moveTo(first[0] + dx, first[1] + dy);
+    xa = first[4] + dx;
+    ya = first[5] + dy;
+    ctx.moveTo(xa, ya);
   }
+
+  var xb, yb;
 
   for (var _i = start + 1, _len = list.length; _i < _len; _i++) {
     var _item = list[_i];
@@ -5835,12 +5846,22 @@ function canvasPolygon$7(ctx, list) {
     }
 
     if (_item.length === 2) {
-      ctx.lineTo(_item[0] + dx, _item[1] + dy);
+      xb = _item[0] + dx;
+      yb = _item[1] + dy;
+      ctx.lineTo(xb, yb);
     } else if (_item.length === 4) {
-      ctx.quadraticCurveTo(_item[0] + dx, _item[1] + dy, _item[2] + dx, _item[3] + dy);
+      xb = _item[2] + dx;
+      yb = _item[3] + dy;
+      ctx.quadraticCurveTo(_item[0] + dx, _item[1] + dy, xb, yb);
     } else if (_item.length === 6) {
-      ctx.bezierCurveTo(_item[0] + dx, _item[1] + dy, _item[2] + dx, _item[3] + dy, _item[4] + dx, _item[5] + dy);
+      xb = _item[4] + dx;
+      yb = _item[5] + dy;
+      ctx.bezierCurveTo(_item[0] + dx, _item[1] + dy, _item[2] + dx, _item[3] + dy, xb, yb);
     }
+  }
+
+  if (close && xa === xb && ya === yb) {
+    ctx.closePath();
   }
 }
 
@@ -8322,10 +8343,9 @@ function renderBorder(xom, renderMode, ctx, points, color, dx, dy) {
     }
 
     points.forEach(function (point) {
-      canvasPolygon$6(ctx, point, dx, dy);
+      canvasPolygon$6(ctx, point, dx, dy, true);
     });
     ctx.fill();
-    ctx.closePath();
   } else if (renderMode === mode.SVG) {
     var s = '';
     points.forEach(function (point) {
@@ -8397,7 +8417,7 @@ function getRadialPosition(data) {
     var v = calUnit$2(data);
 
     if ([NUMBER$5, DEG$4].indexOf(v.u) > -1) {
-      v.v = PX$9;
+      v.u = PX$9;
     }
 
     return v;
@@ -8799,13 +8819,13 @@ function parseGradient(s) {
     };
 
     if (o.k === 'linear') {
-      var deg = /([-+]?[\d.]+deg)|(to\s+[toprighbml]+)/i.exec(gradient[2]);
+      var deg = /([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?deg)|(to\s+[toprighbml]+)/i.exec(gradient[2]);
 
       if (deg) {
         o.d = getLinearDeg(deg[0].toLowerCase());
       } // 扩展支持从a点到b点相对坐标，而不是css角度，sketch等ui软件中用此格式
       else {
-        var points = /([-+]?[\d.]+)\s+([-+]?[\d.]+)\s+([-+]?[\d.]+)\s+([-+]?[\d.]+)/.exec(gradient[2]);
+        var points = /([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)\s+([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?)/.exec(gradient[2]);
 
         if (points) {
           o.d = [parseFloat(points[1]), parseFloat(points[2]), parseFloat(points[3]), parseFloat(points[4])];
@@ -8894,17 +8914,17 @@ function parseGradient(s) {
       }
     }
 
-    var v = gradient[2].match(/(([-+]?[\d.]+[pxremvwhina%]+)?\s*((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*([-+]?[\d.]+[pxremvwhina%]+)?)|(transparent)/ig) || [];
+    var v = gradient[2].match(/(([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?[pxremvwhina%]+)?\s*((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*([-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?[pxremvwhina%]+)?)|(transparent)/ig) || [];
     o.v = v.map(function (item) {
       var color = /(?:#[0-9a-f]{3,8})|(?:rgba?\s*\(.+?\))|(?:transparent)/i.exec(item);
       var arr = [rgba2int$2(color[0])];
-      var percent = /[-+]?[\d.]+[pxremvwhina%]+/.exec(item);
+      var percent = /[-+]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[-+]?\d+)?[pxremvwhina%]+/.exec(item);
 
       if (percent) {
         var _v = calUnit$2(percent[0]);
 
         if ([NUMBER$5, DEG$4].indexOf(_v.u) > -1) {
-          _v.v = PX$9;
+          _v.u = PX$9;
         }
 
         arr[1] = _v;
@@ -9110,9 +9130,8 @@ function renderConic(xom, renderMode, ctx, res, x, y, w, h, btlr, btrr, bbrr, bb
     offscreen.ctx.putImageData(imgData, 0, 0);
     ctx.save();
     ctx.beginPath();
-    canvasPolygon$5(ctx, list);
+    canvasPolygon$5(ctx, list, 0, 0, true);
     ctx.clip();
-    ctx.closePath();
     ctx.drawImage(offscreen.canvas, x, y);
     ctx.restore();
     offscreen.ctx.clearRect(0, 0, w, h);
@@ -15129,9 +15148,8 @@ function renderBgc(xom, renderMode, ctx, color, list, x, y, w, h, btlr, btrr, bb
       ctx.fillStyle = color;
     }
 
-    canvasPolygon$4(ctx, list, dx, dy);
+    canvasPolygon$4(ctx, list, dx, dy, true);
     ctx[method]();
-    ctx.closePath();
 
     if (matrix$1) {
       ctx.restore();
@@ -25062,10 +25080,10 @@ var Xom = /*#__PURE__*/function (_Node) {
         y: box[3]
       }, matrixEvent));
       return {
-        left: Math.min(p1.x, Math.min(p2.x, Math.min(p3.x, p4.x))),
-        top: Math.min(p1.y, Math.min(p2.y, Math.min(p3.y, p4.y))),
-        right: Math.max(p1.x, Math.max(p2.x, Math.max(p3.x, p4.x))),
-        bottom: Math.max(p1.y, Math.max(p2.y, Math.max(p3.y, p4.y))),
+        left: Math.min(p1.x, p2.x, p3.x, p4.x),
+        top: Math.min(p1.y, p2.y, p3.y, p4.y),
+        right: Math.max(p1.x, p2.x, p3.x, p4.x),
+        bottom: Math.max(p1.y, p2.y, p3.y, p4.y),
         points: [p1, p2, p3, p4]
       };
     } // img和geom返回false，在inline布局时判断是否是真的inline
@@ -26800,10 +26818,10 @@ var Geom = /*#__PURE__*/function (_Xom) {
 
         if (isMulti) {
           list.forEach(function (item) {
-            return canvasPolygon$2(ctx, item, dx, dy);
+            return canvasPolygon$2(ctx, item, dx, dy, true);
           });
         } else {
-          canvasPolygon$2(ctx, list, dx, dy);
+          canvasPolygon$2(ctx, list, dx, dy, true);
         }
 
         if (isFill && fill && fill !== 'none') {
@@ -26813,8 +26831,6 @@ var Geom = /*#__PURE__*/function (_Xom) {
         if (isStroke && stroke && stroke !== 'none' && strokeWidth && strokeWidth > 0) {
           ctx.stroke();
         }
-
-        ctx.closePath();
       } else if (renderMode === mode.SVG) {
         var d = '';
 
@@ -26947,14 +26963,13 @@ var Geom = /*#__PURE__*/function (_Xom) {
 
         if (isMulti) {
           list.forEach(function (item) {
-            return painter.canvasPolygon(ctx, item);
+            return painter.canvasPolygon(ctx, item, 0, 0, true);
           });
         } else {
-          canvasPolygon$2(ctx, list);
+          canvasPolygon$2(ctx, list, 0, 0, true);
         }
 
         ctx[method]();
-        ctx.closePath();
 
         if (matrix$1) {
           ctx.restore();
@@ -27018,18 +27033,16 @@ var Geom = /*#__PURE__*/function (_Xom) {
           list.forEach(function (item) {
             ctx.save();
             ctx.beginPath();
-            canvasPolygon$2(ctx, item, dx, dy);
+            canvasPolygon$2(ctx, item, dx, dy, true);
             ctx.clip();
-            ctx.closePath();
             ctx.drawImage(offscreen.canvas, x1 + dx, y1 + dy);
             ctx.restore();
           });
         } else {
           ctx.save();
           ctx.beginPath();
-          canvasPolygon$2(ctx, list, dx, dy);
+          canvasPolygon$2(ctx, list, dx, dy, true);
           ctx.clip();
-          ctx.closePath();
           ctx.drawImage(offscreen.canvas, x1 + dx, y1 + dy);
           ctx.restore();
         }
@@ -34365,9 +34378,8 @@ var Img = /*#__PURE__*/function (_Dom) {
           ctx.closePath();
           ctx.beginPath();
           var points = geom.ellipsePoints(cx, cy, r, r);
-          painter.canvasPolygon(ctx, points, 0, 0);
+          painter.canvasPolygon(ctx, points, 0, 0, true);
           ctx.fill();
-          ctx.closePath();
           ctx.beginPath();
           ctx.moveTo(pts[0][0], pts[0][1]);
 
@@ -34407,9 +34419,8 @@ var Img = /*#__PURE__*/function (_Dom) {
           if (list) {
             ctx.save();
             ctx.beginPath();
-            canvasPolygon$1(ctx, list, dx, dy);
+            canvasPolygon$1(ctx, list, dx, dy, true);
             ctx.clip();
-            ctx.closePath();
             ctx.drawImage(source, originX, originY, width, height);
             ctx.restore();
           } else {
@@ -35380,13 +35391,12 @@ function applyOffscreen$1(ctx, list, width, height) {
       ctx.beginPath();
 
       if (_list) {
-        canvasPolygon(ctx, _list);
+        canvasPolygon(ctx, _list, 0, 0, true);
       } else {
         ctx.rect(x, y, offsetWidth, offsetHeight);
       }
 
       ctx.fill();
-      ctx.closePath();
       ctx.globalCompositeOperation = 'source-over';
       ctx = origin;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -35836,7 +35846,7 @@ function getRootsInInterval(min, max, coefs) {
   if (degree === 1) {
     root = bisection(min, max, coefs);
 
-    if (root != null) {
+    if (root !== undefined) {
       roots.push(root);
     }
   } else {
@@ -35847,7 +35857,7 @@ function getRootsInInterval(min, max, coefs) {
       // find root on [min, droots[0]]
       root = bisection(min, droots[0], coefs);
 
-      if (root != null) {
+      if (root !== undefined) {
         roots.push(root);
       } // find root on [droots[i],droots[i+1]] for 0 <= i <= count-2
 
@@ -35855,7 +35865,7 @@ function getRootsInInterval(min, max, coefs) {
       for (var i = 0; i <= droots.length - 2; i++) {
         root = bisection(droots[i], droots[i + 1], coefs);
 
-        if (root != null) {
+        if (root !== undefined) {
           roots.push(root);
         }
       } // find root on [droots[count-1],xmax]
@@ -35863,14 +35873,14 @@ function getRootsInInterval(min, max, coefs) {
 
       root = bisection(droots[droots.length - 1], max, coefs);
 
-      if (root != null) {
+      if (root !== undefined) {
         roots.push(root);
       }
     } else {
       // polynomial is monotone on [min,max], has at most one root
       root = bisection(min, max, coefs);
 
-      if (root != null) {
+      if (root !== undefined) {
         roots.push(root);
       }
     }
@@ -36161,6 +36171,8 @@ function intersectBezier2Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by
 function intersectBezier2Line(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2) {
   var c2, c1, c0;
   var cl, n;
+  var isV = bx1 === bx2;
+  var isH = by1 === by2;
   var result = [];
   var minbx = Math.min(bx1, bx2);
   var minby = Math.min(by1, by2);
@@ -36235,6 +36247,24 @@ function intersectBezier2Line(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2) 
     }
   }
 
+  if (isH || isV) {
+    result.forEach(function (item) {
+      if (isV) {
+        if (item.x < minbx) {
+          item.x = minbx;
+        } else if (item.x > maxbx) {
+          item.x = maxbx;
+        }
+      } else {
+        if (item.y < minby) {
+          item.y = minby;
+        } else if (item.y > maxby) {
+          item.y = maxby;
+        }
+      }
+    });
+  }
+
   return result;
 }
 /**
@@ -36249,6 +36279,8 @@ function intersectBezier2Line(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2) 
 function intersectBezier3Line(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2) {
   var c3, c2, c1, c0;
   var cl, n;
+  var isV = bx1 === bx2;
+  var isH = by1 === by2;
   var result = [];
   var minbx = Math.min(bx1, bx2);
   var minby = Math.min(by1, by2);
@@ -36332,6 +36364,24 @@ function intersectBezier3Line(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, 
         result.push(p10);
       }
     }
+  }
+
+  if (isH || isV) {
+    result.forEach(function (item) {
+      if (isV) {
+        if (item.x < minbx) {
+          item.x = minbx;
+        } else if (item.x > maxbx) {
+          item.x = maxbx;
+        }
+      } else {
+        if (item.y < minby) {
+          item.y = minby;
+        } else if (item.y > maxby) {
+          item.y = maxby;
+        }
+      }
+    });
   }
 
   return result;
@@ -43107,7 +43157,7 @@ function bboxBezier2(x0, y0, x1, y1, x2, y2) {
   if (x1 < minX || y1 < minY || x1 > maxX || y1 > maxY) {
     var tx = (x0 - x1) / (x0 - 2 * x1 + x2);
 
-    if (tx < 0) {
+    if (isNaN(tx) || tx < 0) {
       tx = 0;
     } else if (tx > 1) {
       tx = 1;
@@ -43115,7 +43165,7 @@ function bboxBezier2(x0, y0, x1, y1, x2, y2) {
 
     var ty = (y0 - y1) / (y0 - 2 * y1 + y2);
 
-    if (ty < 0) {
+    if (isNaN(ty) || ty < 0) {
       ty = 0;
     } else if (ty > 1) {
       ty = 1;
@@ -43558,7 +43608,7 @@ function sliceBezier2Both(points) {
   var end = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 1;
 
   if (!Array.isArray(points) || points.length < 3) {
-    return;
+    return points;
   }
 
   start = Math.max(start, 0);
@@ -44553,14 +44603,28 @@ var Segment = /*#__PURE__*/function () {
   return Segment;
 }();
 
-var EPS = 1e-9;
-var EPS2 = 1 - 1e-9;
+var EPS$1 = 1e-9;
+var EPS2$1 = 1 - 1e-9;
+
+function isParallel(k1, k2) {
+  if (k1 === Infinity && k2 === Infinity) {
+    return true;
+  } else if (k1 === Infinity && k2 === -Infinity) {
+    return true;
+  } else if (k1 === -Infinity && k2 === -Infinity) {
+    return true;
+  } else if (k1 === -Infinity && k2 === Infinity) {
+    return true;
+  } else {
+    return Math.abs(k1 - k2) < EPS$1;
+  }
+}
 
 function getIntersectionLineLine$1(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, d) {
   var toSource = ((bx2 - bx1) * (ay1 - by1) - (by2 - by1) * (ax1 - bx1)) / d;
   var toClip = ((ax2 - ax1) * (ay1 - by1) - (ay2 - ay1) * (ax1 - bx1)) / d; // 非顶点相交才是真相交
 
-  if (toSource > EPS && toSource < EPS2 && toClip > EPS && toClip < EPS2) {
+  if (toSource >= 0 && toSource <= 1 && toClip >= 0 && toClip <= 1 && (toSource > EPS$1 && toSource < EPS2$1 || toClip > EPS$1 && toClip < EPS2$1)) {
     var ox = ax1 + toSource * (ax2 - ax1);
     var oy = ay1 + toSource * (ay2 - ay1);
     return [{
@@ -44582,14 +44646,15 @@ function getIntersectionBezier2Line$1(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx
         toClip = Math.abs((item.x - bx1) / (bx2 - bx1));
       } else {
         toClip = Math.abs((item.y - by1) / (by2 - by1));
-      }
+      } // 相交于双方端点忽略，一方非端点要记录，防止多区域情况
 
-      if (item.t > EPS && item.t < EPS2 && toClip > EPS && toClip < EPS2) {
+
+      if (item.t > EPS$1 && item.t < EPS2$1 || toClip > EPS$1 && toClip < EPS2$1) {
         // 还要判断斜率，相等也忽略（小于一定误差）
         var k1 = bezier.bezierSlope([[ax1, ay1], [ax2, ay2], [ax3, ay3]], item.t);
         var k2 = bezier.bezierSlope([[bx1, by1], [bx2, by2]]); // 忽略方向，180°也是平行，Infinity相减为NaN
 
-        if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < EPS) {
+        if (isParallel(k1, k2)) {
           return;
         }
 
@@ -44621,12 +44686,12 @@ function getIntersectionBezier2Bezier2$1(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1,
       if (toClip.length) {
         toClip = toClip[0];
 
-        if (item.t > EPS && item.t < EPS2 && toClip > EPS && toClip < EPS2) {
+        if (item.t > EPS$1 && item.t < EPS2$1 || toClip > EPS$1 && toClip < EPS2$1) {
           // 还要判断斜率，相等也忽略（小于一定误差）
           var k1 = bezier.bezierSlope([[ax1, ay1], [ax2, ay2], [ax3, ay3]], item.t);
           var k2 = bezier.bezierSlope([[bx1, by1], [bx2, by2], [bx3, by3]], toClip); // 忽略方向，180°也是平行，Infinity相减为NaN
 
-          if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < EPS) {
+          if (isParallel(k1, k2)) {
             return;
           }
 
@@ -44659,12 +44724,12 @@ function getIntersectionBezier2Bezier3$1(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1,
       if (toClip.length) {
         toClip = toClip[0];
 
-        if (item.t > EPS && item.t < EPS2 && toClip > EPS && toClip < EPS2) {
+        if (item.t > EPS$1 && item.t < EPS2$1 || toClip > EPS$1 && toClip < EPS2$1) {
           // 还要判断斜率，相等也忽略（小于一定误差）
           var k1 = bezier.bezierSlope([[ax1, ay1], [ax2, ay2], [ax3, ay3]], item.t);
           var k2 = bezier.bezierSlope([[bx1, by1], [bx2, by2], [bx3, by3], [bx4, by4]], toClip); // 忽略方向，180°也是平行，Infinity相减为NaN
 
-          if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < EPS) {
+          if (isParallel(k1, k2)) {
             return;
           }
 
@@ -44698,14 +44763,15 @@ function getIntersectionBezier3Line$1(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx
         toClip = Math.abs((item.x - bx1) / (bx2 - bx1));
       } else {
         toClip = Math.abs((item.y - by1) / (by2 - by1));
-      }
+      } // 相交于双方端点忽略，一方非端点要记录，防止多区域情况
 
-      if (item.t > EPS && item.t < EPS2 && toClip > EPS && toClip < EPS2) {
+
+      if (item.t > EPS$1 && item.t < EPS2$1 || toClip > EPS$1 && toClip < EPS2$1) {
         // 还要判断斜率，相等也忽略（小于一定误差）
         var k1 = bezier.bezierSlope([[ax1, ay1], [ax2, ay2], [ax3, ay3], [ax4, ay4]], item.t);
         var k2 = bezier.bezierSlope([[bx1, by1], [bx2, by2]]); // 忽略方向，180°也是平行，Infinity相减为NaN
 
-        if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < EPS) {
+        if (isParallel(k1, k2)) {
           return;
         }
 
@@ -44737,12 +44803,12 @@ function getIntersectionBezier3Bezier3$1(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4,
       if (toClip.length) {
         toClip = toClip[0];
 
-        if (item.t > EPS && item.t < EPS2 && toClip > EPS && toClip < EPS2) {
+        if (item.t > EPS$1 && item.t < EPS2$1 || toClip > EPS$1 && toClip < EPS2$1) {
           // 还要判断斜率，相等也忽略（小于一定误差）
           var k1 = bezier.bezierSlope([[ax1, ay1], [ax2, ay2], [ax3, ay3], [ax4, ay4]], item.t);
           var k2 = bezier.bezierSlope([[bx1, by1], [bx2, by2], [bx3, by3], [bx4, by4]], toClip); // 忽略方向，180°也是平行，Infinity相减为NaN
 
-          if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < EPS) {
+          if (isParallel(k1, k2)) {
             return;
           }
 
@@ -44778,7 +44844,7 @@ function sortIntersection$1(res, isSource) {
       t: isSource ? item.toSource : item.toClip
     };
   }).filter(function (item) {
-    return item.t > EPS && item.t < EPS2;
+    return item.t > EPS$1 && item.t < EPS2$1;
   });
 }
 
@@ -44789,7 +44855,9 @@ var intersect$1 = {
   getIntersectionBezier2Bezier3: getIntersectionBezier2Bezier3$1,
   getIntersectionBezier3Line: getIntersectionBezier3Line$1,
   getIntersectionBezier3Bezier3: getIntersectionBezier3Bezier3$1,
-  sortIntersection: sortIntersection$1
+  sortIntersection: sortIntersection$1,
+  EPS: EPS$1,
+  EPS2: EPS2$1
 };
 
 var getIntersectionLineLine = intersect$1.getIntersectionLineLine,
@@ -44798,7 +44866,9 @@ var getIntersectionLineLine = intersect$1.getIntersectionLineLine,
     getIntersectionBezier2Bezier3 = intersect$1.getIntersectionBezier2Bezier3,
     getIntersectionBezier3Line = intersect$1.getIntersectionBezier3Line,
     getIntersectionBezier3Bezier3 = intersect$1.getIntersectionBezier3Bezier3,
-    sortIntersection = intersect$1.sortIntersection;
+    sortIntersection = intersect$1.sortIntersection,
+    EPS = intersect$1.EPS,
+    EPS2 = intersect$1.EPS2;
 
 var Polygon$1 = /*#__PURE__*/function () {
   function Polygon(regions, index) {
@@ -45397,7 +45467,23 @@ function findIntersection(list, compareBelong, isIntermediateA, isIntermediateB)
                 break;
               } // 有交点，确保原先线段方向顺序（x升序、y升序），各自依次切割，x右侧新线段也要存入list
               else if (inters && inters.length) {
-                // console.log('inters', i, inters);
+                // 特殊检查，当只有一方需要切割时，说明交点在另一方端点上，但是由于精度问题，导致这个点坐标不和那个端点数据一致，
+                // 且进一步为了让点的引用一致，也应该直接使用这个已存在的端点易用
+                for (var _i4 = 0, len = inters.length; _i4 < len; _i4++) {
+                  var pt = inters[_i4]; // 只会有一种可能，如果交点对2条线都是误差忽略，求交时已经被屏蔽
+
+                  if (pt.toSource <= EPS) {
+                    pt.point = isSourceReverted ? coordsB[0] : coordsA[0];
+                  } else if (pt.toSource >= EPS2) {
+                    pt.point = isSourceReverted ? coordsB[coordsB.length - 1] : coordsA[coordsA.length - 1];
+                  } else if (pt.toClip <= EPS) {
+                    pt.point = isSourceReverted ? coordsA[0] : coordsB[0];
+                  } else if (pt.toClip >= EPS2) {
+                    pt.point = isSourceReverted ? coordsA[coordsA.length - 1] : coordsB[coordsB.length - 1];
+                  }
+                } // console.log('inters', i, inters);
+
+
                 var pa = sortIntersection(inters, !isSourceReverted); // console.log(pa);
 
                 var ra = sliceSegment(seg, pa, isIntermediateA && belong === 0); // console.log(ra.map(item => item.toString()));
@@ -45751,12 +45837,12 @@ function getBezierMonotonicity(coords, isX) {
   if (coords.length === 3) {
     var t = isX ? (coords[0].x - coords[1].x) / (coords[0].x - 2 * coords[1].x + coords[2].x) : (coords[0].y - coords[1].y) / (coords[0].y - 2 * coords[1].y + coords[2].y);
 
-    if (t > 0 && t < 1) {
+    if (t > 1e-9 && t < 1 - 1e-9) {
       return [t];
     }
   } else if (coords.length === 4) {
     var _t2 = equation.getRoots([isX ? 3 * (coords[1].x - coords[0].x) : 3 * (coords[1].y - coords[0].y), isX ? 6 * (coords[2].x + coords[0].x - 2 * coords[1].x) : 6 * (coords[2].y + coords[0].y - 2 * coords[1].y), isX ? 3 * (coords[3].x + 3 * coords[1].x - coords[0].x - 3 * coords[2].x) : 3 * (coords[3].y + 3 * coords[1].y - coords[0].y - 3 * coords[2].y)]).filter(function (i) {
-      return i > 0 && i < 1;
+      return i > 1e-9 && i < 1 - 1e-9;
     });
 
     if (_t2.length) {
@@ -45819,7 +45905,7 @@ function isRectsOverlap(bboxA, bboxB, lenA, lenB) {
     } // 2条水平线也是
 
 
-    if (bboxA[1] === bboxA[3] && bboxB[1] === bboxB[3] && bboxA[1] === bboxA[1]) {
+    if (bboxA[1] === bboxA[3] && bboxB[1] === bboxB[3] && bboxA[1] === bboxA[3]) {
       if (bboxA[0] >= bboxB[2] || bboxB[0] >= bboxA[2]) {
         return false;
       }
@@ -46080,7 +46166,7 @@ function reverse(chain) {
   return chain.reverse();
 }
 
-function _chain (list) {
+function chains (list) {
   var chains = [],
       res = []; // 在对方内部的排在前面，这样会优先形成包含情况而不是交叉
 
@@ -46469,7 +46555,7 @@ var bo = {
       return source;
     }
 
-    return _chain(list);
+    return chains(list);
   },
   union: function union(polygonA, polygonB, intermediate) {
     var _trivial3 = trivial(polygonA, polygonB),
@@ -46484,7 +46570,7 @@ var bo = {
       return source;
     }
 
-    return _chain(list);
+    return chains(list);
   },
   subtract: function subtract(polygonA, polygonB, intermediate) {
     var _trivial5 = trivial(polygonA, polygonB),
@@ -46492,14 +46578,18 @@ var bo = {
         source = _trivial6[0],
         clip = _trivial6[1];
 
-    var list = filter(source.segments.concat(clip.segments), SUBTRACT);
+    var list = filter(source.segments.concat(clip.segments), SUBTRACT); // 暂时这样解决反向的问题
+
+    if (!list.length) {
+      list = filter(source.segments.concat(clip.segments), SUBTRACT_REV);
+    }
 
     if (intermediate) {
       source.segments = list;
       return source;
     }
 
-    return _chain(list);
+    return chains(list);
   },
   subtractRev: function subtractRev(polygonA, polygonB, intermediate) {
     var _trivial7 = trivial(polygonA, polygonB),
@@ -46514,7 +46604,7 @@ var bo = {
       return source;
     }
 
-    return _chain(list);
+    return chains(list);
   },
   xor: function xor(polygonA, polygonB, intermediate) {
     var _trivial9 = trivial(polygonA, polygonB),
@@ -46529,21 +46619,22 @@ var bo = {
       return source;
     }
 
-    return _chain(list);
+    return chains(list);
   },
   chain: function chain(polygon) {
     if (polygon instanceof Polygon$1) {
-      return _chain(polygon.segments);
+      return chains(polygon.segments);
     }
 
     return prefix(polygon);
-  }
+  },
+  chains: chains
 };
 
 var intersect = bo.intersect,
     union = bo.union,
     subtract = bo.subtract,
-    subtract2 = bo.subtract2,
+    subtractRev = bo.subtractRev,
     xor = bo.xor,
     chain = bo.chain;
 var STROKE_WIDTH$4 = enums.STYLE_KEY.STROKE_WIDTH;
@@ -46730,7 +46821,7 @@ var Polyline = /*#__PURE__*/function (_Geom) {
           var op = (bo[_i2 - 1] || '').toString().toLowerCase();
           var cur = list[_i2];
 
-          if (['intersect', 'intersection', 'union', 'subtract', 'subtract2', 'diff', 'difference', 'xor'].indexOf(op) === -1) {
+          if (['intersect', 'intersection', 'union', 'subtract', 'subtractrev', 'diff', 'difference', 'xor'].indexOf(op) === -1) {
             res = res.concat(chain(temp));
             temp = cur || [];
             continue;
@@ -46752,8 +46843,8 @@ var Polyline = /*#__PURE__*/function (_Geom) {
               temp = subtract(temp, cur, true);
               break;
 
-            case 'subtract2':
-              temp = subtract2(temp, cur, true);
+            case 'subtractrev':
+              temp = subtractRev(temp, cur, true);
               break;
 
             case 'xor':
@@ -49212,7 +49303,7 @@ var refresh = {
   webgl: webgl
 };
 
-var version = "0.86.14";
+var version = "0.86.15";
 
 var isString = util.isString;
 Geom.register('$line', Line);

@@ -9739,8 +9739,7 @@
     }
 
     for (var _i = 1; _i <= len; _i++) {
-      var _n = Math.pow(Math.E, -Math.pow(_i, 2) / (2 * Math.pow(sigma, 2))) / (sigma * Math.sqrt(2 * Math.PI));
-
+      var _n = list[len - _i];
       list.push(_n);
       total += _n;
     }
@@ -39627,7 +39626,7 @@
         width = cache.width,
         height = cache.height;
     var d = blur.kernelSize(sigma);
-    var max = Math.max(15, gl.getParameter(gl.MAX_VARYING_VECTORS));
+    var max = gl.getParameter(gl.MAX_VARYING_VECTORS) * 2; // vec2比vec4可以多一倍
 
     while (d > max) {
       d -= 2;

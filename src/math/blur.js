@@ -49,8 +49,7 @@ function gaussianWeight(sigma, d) {
     total += n;
   }
   for(let i = 1; i <= len; i++) {
-    let n = Math.pow(Math.E, -Math.pow(i, 2) / (2 * Math.pow(sigma, 2)))
-      / (sigma * Math.sqrt(2 * Math.PI));
+    let n = list[len - i];
     list.push(n);
     total += n;
   }

@@ -39626,7 +39626,7 @@
         width = cache.width,
         height = cache.height;
     var d = blur.kernelSize(sigma);
-    var max = gl.getParameter(gl.MAX_VARYING_VECTORS) * 2; // vec2比vec4可以多一倍
+    var max = gl.getParameter(gl.MAX_VARYING_VECTORS);
 
     while (d > max) {
       d -= 2;

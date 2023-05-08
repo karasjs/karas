@@ -1611,7 +1611,7 @@ function genBlurShader(gl, sigma, d) {
 function genBlurWebgl(renderMode, gl, cache, sigma) {
   let { x1, y1, bbox, width, height } = cache;
   let d = blur.kernelSize(sigma);
-  let max = gl.getParameter(gl.MAX_VARYING_VECTORS) * 2; // vec2比vec4可以多一倍
+  let max = gl.getParameter(gl.MAX_VARYING_VECTORS);
   while(d > max) {
     d -= 2;
   }

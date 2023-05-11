@@ -153,14 +153,7 @@ function getColorStop(v, length, root) {
       i = j;
     }
   }
-  // 每个不能小于前面的，canvas/svg不能兼容这种情况，需处理
-  for(let i = 1, len = list.length; i < len; i++) {
-    let item = list[i];
-    let prev = list[i - 1];
-    if(item[1] < prev[1]) {
-      item[1] = prev[1];
-    }
-  }
+  // 每个不能小于前面的，按大小排序，canvas/svg兼容这种情况，无需处理
   // 0之前的和1之后的要过滤掉
   for(let i = 0, len = list.length; i < len; i++) {
     let item = list[i];

@@ -8521,60 +8521,51 @@
 
         _i2 = j;
       }
-    } // 每个不能小于前面的，canvas/svg不能兼容这种情况，需处理
+    } // 每个不能小于前面的，按大小排序，canvas/svg兼容这种情况，无需处理
+    // 0之前的和1之后的要过滤掉
 
 
-    for (var _i3 = 1, _len2 = list.length; _i3 < _len2; _i3++) {
+    for (var _i3 = 0, _len2 = list.length; _i3 < _len2; _i3++) {
       var _item4 = list[_i3];
-      var prev = list[_i3 - 1];
 
-      if (_item4[1] < prev[1]) {
-        _item4[1] = prev[1];
-      }
-    } // 0之前的和1之后的要过滤掉
+      if (_item4[1] > 1) {
+        list.splice(_i3);
+        var prev = list[_i3 - 1];
 
+        if (prev && prev[1] < 1) {
+          var dr = _item4[0][0] - prev[0][0];
+          var dg = _item4[0][1] - prev[0][1];
+          var db = _item4[0][2] - prev[0][2];
+          var da = _item4[0][3] - prev[0][3];
 
-    for (var _i4 = 0, _len3 = list.length; _i4 < _len3; _i4++) {
-      var _item5 = list[_i4];
+          var _p = (1 - prev[1]) / (_item4[1] - prev[1]);
 
-      if (_item5[1] > 1) {
-        list.splice(_i4);
-        var _prev = list[_i4 - 1];
-
-        if (_prev && _prev[1] < 1) {
-          var dr = _item5[0][0] - _prev[0][0];
-          var dg = _item5[0][1] - _prev[0][1];
-          var db = _item5[0][2] - _prev[0][2];
-          var da = _item5[0][3] - _prev[0][3];
-
-          var _p = (1 - _prev[1]) / (_item5[1] - _prev[1]);
-
-          list.push([[_item5[0][0] + dr * _p, _item5[0][1] + dg * _p, _item5[0][2] + db * _p, _item5[0][3] + da * _p], 1]);
+          list.push([[_item4[0][0] + dr * _p, _item4[0][1] + dg * _p, _item4[0][2] + db * _p, _item4[0][3] + da * _p], 1]);
         }
 
         break;
       }
     }
 
-    for (var _i5 = list.length - 1; _i5 >= 0; _i5--) {
-      var _item6 = list[_i5];
+    for (var _i4 = list.length - 1; _i4 >= 0; _i4--) {
+      var _item5 = list[_i4];
 
-      if (_item6[1] < 0) {
-        list.splice(0, _i5 + 1);
-        var next = list[_i5];
+      if (_item5[1] < 0) {
+        list.splice(0, _i4 + 1);
+        var next = list[_i4];
 
         if (next && next[1] > 0) {
-          var _dr = next[0][0] - _item6[0][0];
+          var _dr = next[0][0] - _item5[0][0];
 
-          var _dg = next[0][1] - _item6[0][1];
+          var _dg = next[0][1] - _item5[0][1];
 
-          var _db = next[0][2] - _item6[0][2];
+          var _db = next[0][2] - _item5[0][2];
 
-          var _da = next[0][3] - _item6[0][3];
+          var _da = next[0][3] - _item5[0][3];
 
-          var _p2 = -_item6[1] / (next[1] - _item6[1]);
+          var _p2 = -_item5[1] / (next[1] - _item5[1]);
 
-          list.unshift([[_item6[0][0] + _dr * _p2, _item6[0][1] + _dg * _p2, _item6[0][2] + _db * _p2, _item6[0][3] + _da * _p2], 0]);
+          list.unshift([[_item5[0][0] + _dr * _p2, _item5[0][1] + _dg * _p2, _item5[0][2] + _db * _p2, _item5[0][3] + _da * _p2], 0]);
         }
 
         break;

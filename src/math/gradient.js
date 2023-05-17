@@ -64,7 +64,7 @@ function getConicGradientImage(
     if(dx === 0) {
       return dy < 0
         ? // y轴负半轴，
-        1 * Math.PI
+        Math.PI
         : // y轴正半轴，因此，(originX, originY) 的angle视作0
         0;
     }

@@ -826,6 +826,10 @@ export default {
       numTables = getUShort(data, 12);
       tableEntries = parseWOFFTableEntries(data, numTables);
     }
+    else if (signature === 'wOF2') {
+      let issue = 'https://github.com/opentypejs/opentype.js/issues/183#issuecomment-1147228025';
+      inject.error('WOFF2 require an external decompressor library, see examples at: ' + issue);
+    }
     else {
       inject.error('Unsupported OpenType signature ' + signature);
     }

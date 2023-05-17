@@ -4145,6 +4145,9 @@
 
         numTables = getUShort(data, 12);
         tableEntries = parseWOFFTableEntries(data, numTables);
+      } else if (signature === 'wOF2') {
+        var issue = 'https://github.com/opentypejs/opentype.js/issues/183#issuecomment-1147228025';
+        inject.error('WOFF2 require an external decompressor library, see examples at: ' + issue);
       } else {
         inject.error('Unsupported OpenType signature ' + signature);
       }
@@ -5717,7 +5720,7 @@
 
       if (dx === 0) {
         return dy < 0 ? // y轴负半轴，
-        1 * Math.PI : // y轴正半轴，因此，(originX, originY) 的angle视作0
+        Math.PI : // y轴正半轴，因此，(originX, originY) 的angle视作0
         0;
       } // 在x轴上
 

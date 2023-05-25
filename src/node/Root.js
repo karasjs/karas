@@ -803,6 +803,7 @@ class Root extends Dom {
     for(let i = 0, len = fLen; i < len; i++) {
       let k = fixed[i];
       lv |= getLevel(k);
+      cacheStyle[k] = undefined;
       // 特殊的2个，影响是否需要刷新生效
       if(k === DISPLAY) {
         hasDisplay = true;

@@ -42448,7 +42448,8 @@
 
         for (var _i2 = 0, _len = fLen; _i2 < _len; _i2++) {
           var _k = fixed[_i2];
-          lv |= getLevel(_k); // 特殊的2个，影响是否需要刷新生效
+          lv |= getLevel(_k);
+          cacheStyle[_k] = undefined; // 特殊的2个，影响是否需要刷新生效
 
           if (_k === DISPLAY) {
             hasDisplay = true;

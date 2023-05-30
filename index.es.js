@@ -22205,7 +22205,11 @@ var Xom = /*#__PURE__*/function (_Node) {
             next = next.next;
           }
 
-          this.__hasMask = count;
+          this.__hasMask = count; // appendChild一个parse好的节点引用对象，会先生成struct，此时遗漏hasMask
+
+          if (this.__struct) {
+            this.__struct.hasMask = count;
+          }
         }
       }
 
@@ -49297,7 +49301,7 @@ var refresh = {
   webgl: webgl
 };
 
-var version = "0.86.16";
+var version = "0.86.17";
 
 var isString = util.isString;
 Geom.register('$line', Line);

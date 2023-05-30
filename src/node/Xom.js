@@ -642,6 +642,10 @@ class Xom extends Node {
           next = next.next;
         }
         this.__hasMask = count;
+        // appendChild一个parse好的节点引用对象，会先生成struct，此时遗漏hasMask
+        if(this.__struct) {
+          this.__struct.hasMask = count;
+        }
       }
     }
     if(__isDestroyed || display === 'none') {

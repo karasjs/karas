@@ -37495,7 +37495,7 @@ var TextureCache = /*#__PURE__*/function (_Cache) {
             gl = page.gl,
             size = page.__size; // 尺寸必须对上才行
 
-        var data = new Uint8ClampedArray(this.__width * this.__height * 4);
+        var data = new Uint8Array(this.__width * this.__height * 4);
         gl.bindTexture(gl.TEXTURE_2D, page.texture); // 注意y镜像和原点左下
 
         gl.texSubImage2D(gl.TEXTURE_2D, 0, this.__x, size - this.__y - this.__height, this.__width, this.__height, gl.RGBA, gl.UNSIGNED_BYTE, data);
@@ -49301,7 +49301,7 @@ var refresh = {
   webgl: webgl
 };
 
-var version = "0.86.17";
+var version = "0.86.18";
 
 var isString = util.isString;
 Geom.register('$line', Line);

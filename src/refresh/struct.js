@@ -1581,24 +1581,16 @@ function genBlurShader(gl, sigma, d) {
     return gl[key];
   }
   let weights = blur.gaussianWeight(sigma, d);
-  let vert = '';
   let frag = '';
   let r = Math.floor(d * 0.5);
   for(let i = 0; i < r; i++) {
     let c = (r - i) * 0.01;
-    vert += `v_texCoordsBlur[${i}] = a_texCoords + vec2(-${c}, -${c}) * u_direction;`;
-    frag += `gl_FragColor += texture2D(u_texture, v_texCoordsBlur[${i}]) * ${weights[i]};`;
+    frag += `gl_FragColor += texture2D(u_texture, v_texCoords + vec2(-${c}, -${c}) * u_direction) * ${weights[i]};
+      gl_FragColor += texture2D(u_texture, v_texCoords + vec2(${c}, ${c}) * u_direction) * ${weights[i]};\n`;
   }
-  vert += `v_texCoordsBlur[${r}] = a_texCoords;`;
-  frag += `gl_FragColor += texture2D(u_texture, v_texCoordsBlur[${r}]) * ${weights[r]};`;
-  for(let i = 0; i < r; i++) {
-    let c = (i + 1) * 0.01;
-    vert += `v_texCoordsBlur[${i + r + 1}] = a_texCoords + vec2(${c}, ${c}) * u_direction;`;
-    frag += `gl_FragColor += texture2D(u_texture, v_texCoordsBlur[${i + r + 1}]) * ${weights[i + r + 1]};`;
-  }
-  vert = vertexBlur.replace('[3]', '[' + d + ']').replace(/}$/, vert + '}');
-  frag = fragmentBlur.replace('[3]', '[' + d + ']').replace(/}$/, frag + '}');
-  return gl[key] = webgl.initShaders(gl, vert, frag);
+  frag += `gl_FragColor += texture2D(u_texture, v_texCoords) * ${weights[r]};`;
+  frag = fragmentBlur.replace('placeholder', frag);
+  return gl[key] = webgl.initShaders(gl, vertexBlur, frag);
 }
 
 /**
@@ -1611,10 +1603,6 @@ function genBlurShader(gl, sigma, d) {
 function genBlurWebgl(renderMode, gl, cache, sigma) {
   let { x1, y1, bbox, width, height } = cache;
   let d = blur.kernelSize(sigma);
-  let max = gl.getParameter(gl.MAX_VARYING_VECTORS);
-  while(d > max) {
-    d -= 2;
-  }
   let spread = blur.outerSizeByD(d);
   // 防止超限，webgl最大纹理尺寸限制
   if(width > Page.MAX + spread || height > Page.MAX + spread) {
@@ -1876,10 +1864,6 @@ function genDropShadowWebgl(renderMode, gl, cache, v) {
   // 先根据x/y/color生成单色阴影
   let [x, y, sigma, , color] = v;
   let d = blur.kernelSize(sigma);
-  let max = Math.max(15, gl.getParameter(gl.MAX_VARYING_VECTORS));
-  while(d > max) {
-    d -= 2;
-  }
   let spread = blur.outerSizeByD(d);
   // 防止超限，webgl最大纹理尺寸限制
   if(width > Page.MAX + spread || height > Page.MAX + spread) {

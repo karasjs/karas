@@ -41507,7 +41507,7 @@
 
   var vertexMask = "#version 100\n#define GLSLIFY 1\nattribute vec4 a_position;attribute vec2 a_texCoords1;attribute vec2 a_texCoords2;varying vec2 v_texCoords1;varying vec2 v_texCoords2;void main(){gl_Position=a_position;v_texCoords1=a_texCoords1;v_texCoords2=a_texCoords2;}"; // eslint-disable-line
 
-  var fragmentMask = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords1;varying vec2 v_texCoords2;uniform sampler2D u_texture1;uniform sampler2D u_texture2;void main(){vec4 color1=texture2D(u_texture1,v_texCoords1);vec4 color2=texture2D(u_texture2,v_texCoords2);float a=color1.a*color2.a;gl_FragColor=vec4(color1.rgb*color2.a,a);}"; // eslint-disable-line
+  var fragmentMask = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords1;varying vec2 v_texCoords2;uniform sampler2D u_texture1;uniform sampler2D u_texture2;void main(){vec4 color1=texture2D(u_texture1,v_texCoords1);vec4 color2=texture2D(u_texture2,v_texCoords2);gl_FragColor=color1*color2.a;}"; // eslint-disable-line
 
   var fragmentClip = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords1;varying vec2 v_texCoords2;uniform sampler2D u_texture1;uniform sampler2D u_texture2;void main(){vec4 color1=texture2D(u_texture1,v_texCoords1);vec4 color2=texture2D(u_texture2,v_texCoords2);float a=color1.a*(1.0-color2.a);gl_FragColor=vec4(color1.rgb*(1.0-color2.a),a);}"; // eslint-disable-line
 
@@ -49283,7 +49283,7 @@
     webgl: webgl
   };
 
-  var version = "0.86.18";
+  var version = "0.86.19";
 
   var isString = util.isString;
   Geom.register('$line', Line);

@@ -33988,13 +33988,11 @@
         var w2 = bbox[2] - bbox[0],
             h2 = bbox[3] - bbox[1];
         var key = rootId + ',' + loadImg.width + ' ' + loadImg.height + ' ' + loadImg.src;
-        console.log(key, HASH$1.hasOwnProperty(key));
 
         if (HASH$1.hasOwnProperty(key)) {
           var o = HASH$1[key];
           o.count++;
           var _cache = o.cache;
-          console.log(w > Page.MAX * 0.5, h > Page.MAX * 0.5);
 
           if (w > Page.MAX * 0.5 || h > Page.MAX * 0.5) {
             return {
@@ -49292,7 +49290,7 @@
     webgl: webgl
   };
 
-  var version = "0.86.19";
+  var version = "0.86.20";
 
   var isString = util.isString;
   Geom.register('$line', Line);

@@ -33988,11 +33988,13 @@
         var w2 = bbox[2] - bbox[0],
             h2 = bbox[3] - bbox[1];
         var key = rootId + ',' + loadImg.width + ' ' + loadImg.height + ' ' + loadImg.src;
+        console.log(key, HASH$1.hasOwnProperty(key));
 
         if (HASH$1.hasOwnProperty(key)) {
           var o = HASH$1[key];
           o.count++;
           var _cache = o.cache;
+          console.log(w > Page.MAX * 0.5, h > Page.MAX * 0.5);
 
           if (w > Page.MAX * 0.5 || h > Page.MAX * 0.5) {
             return {
@@ -34005,8 +34007,10 @@
               __ty1: 0,
               __tx2: 1,
               __ty2: 1,
-              __width: w2,
-              __height: h2,
+              __width: w,
+              __height: h,
+              __tw: w2,
+              __th: h2,
               __available: true,
               __enabled: true,
 
@@ -42659,6 +42663,11 @@
 
             if (lv & MBM) {
               computedStyle[MIX_BLEND_MODE] = currentStyle[MIX_BLEND_MODE];
+            } // 暂时这样，缺少lv
+
+
+            if (hasZ) {
+              computedStyle[Z_INDEX] = currentStyle[Z_INDEX];
             }
           } // 影响子继承REPAINT的变化，如果被cache住需要清除
 
@@ -42766,18 +42775,18 @@
               }
 
               p = p.__domParent;
-            } // 清除parent的zIndexChildren缓存，强制所有孩子重新渲染
+            }
+          } // 清除parent的zIndexChildren缓存，强制所有孩子重新渲染，父节点下可能多个子节点重复调用
 
 
-            if (hasZ && __domParent) {
-              __domParent.__zIndexChildren = null;
+          if (hasZ && __domParent) {
+            __domParent.__zIndexChildren = null;
 
-              __domParent.__updateStruct();
+            __domParent.__updateStruct();
 
-              if (this.__renderMode === mode.SVG) {
-                hasRelease = node.__cacheTotal.release() || hasRelease;
-                reflow.clearSvgCache(__domParent);
-              }
+            if (this.__renderMode === mode.SVG) {
+              hasRelease = node.__cacheTotal.release() || hasRelease;
+              reflow.clearSvgCache(__domParent);
             }
           }
         }

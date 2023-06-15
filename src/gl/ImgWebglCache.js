@@ -36,10 +36,11 @@ class ImgWebglCache extends CanvasCache {
     let w = loadImg.width, h = loadImg.height;
     let w2 = bbox[2] - bbox[0], h2 = bbox[3] - bbox[1];
     let key = rootId + ',' + loadImg.width + ' ' + loadImg.height + ' ' + loadImg.src;
+    console.log(key, HASH.hasOwnProperty(key))
     if(HASH.hasOwnProperty(key)) {
       let o = HASH[key];
       o.count++;
-      let cache = o.cache;
+      let cache = o.cache; console.log(w > Page.MAX * 0.5, h > Page.MAX * 0.5)
       if(w > Page.MAX * 0.5 || h > Page.MAX * 0.5) {
         return {
           key,
@@ -51,8 +52,10 @@ class ImgWebglCache extends CanvasCache {
           __ty1: 0,
           __tx2: 1,
           __ty2: 1,
-          __width: w2,
-          __height: h2,
+          __width: w,
+          __height: h,
+          __tw: w2,
+          __th: h2,
           __available: true,
           __enabled: true,
           get available() {

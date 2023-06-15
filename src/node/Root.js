@@ -996,6 +996,10 @@ class Root extends Dom {
         if(lv & MBM) {
           computedStyle[MIX_BLEND_MODE] = currentStyle[MIX_BLEND_MODE];
         }
+        // 暂时这样，缺少lv
+        if(hasZ) {
+          computedStyle[Z_INDEX] = currentStyle[Z_INDEX];
+        }
       }
       // 影响子继承REPAINT的变化，如果被cache住需要清除
       if(hasVisibility || hasColor || hasTsColor || hasTsWidth || hasTsOver) {
@@ -1093,14 +1097,14 @@ class Root extends Dom {
           }
           p = p.__domParent;
         }
-        // 清除parent的zIndexChildren缓存，强制所有孩子重新渲染
-        if(hasZ && __domParent) {
-          __domParent.__zIndexChildren = null;
-          __domParent.__updateStruct();
-          if(this.__renderMode === mode.SVG) {
-            hasRelease = node.__cacheTotal.release() || hasRelease;
-            reflow.clearSvgCache(__domParent);
-          }
+      }
+      // 清除parent的zIndexChildren缓存，强制所有孩子重新渲染，父节点下可能多个子节点重复调用
+      if(hasZ && __domParent) {
+        __domParent.__zIndexChildren = null;
+        __domParent.__updateStruct();
+        if(this.__renderMode === mode.SVG) {
+          hasRelease = node.__cacheTotal.release() || hasRelease;
+          reflow.clearSvgCache(__domParent);
         }
       }
     }

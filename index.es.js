@@ -33999,8 +33999,10 @@ var ImgWebglCache = /*#__PURE__*/function (_CanvasCache) {
             __ty1: 0,
             __tx2: 1,
             __ty2: 1,
-            __width: w2,
-            __height: h2,
+            __width: w,
+            __height: h,
+            __tw: w2,
+            __th: h2,
             __available: true,
             __enabled: true,
 
@@ -37517,9 +37519,9 @@ var TextureCache = /*#__PURE__*/function (_Cache) {
   return TextureCache;
 }(Cache);
 
-var vertexBlur = "#version 100\n#define GLSLIFY 1\nattribute vec4 a_position;attribute vec2 a_texCoords;varying vec2 v_texCoordsBlur[3];uniform vec2 u_direction;void main(){gl_Position=a_position;}"; // eslint-disable-line
+var vertexBlur = "#version 100\n#define GLSLIFY 1\nattribute vec4 a_position;attribute vec2 a_texCoords;varying vec2 v_texCoords;void main(){gl_Position=a_position;v_texCoords=a_texCoords;}"; // eslint-disable-line
 
-var fragmentBlur = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoordsBlur[3];uniform sampler2D u_texture;void main(){gl_FragColor=vec4(0.0);}"; // eslint-disable-line
+var fragmentBlur = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture;uniform vec2 u_direction;void main(){gl_FragColor=vec4(0.0);placeholder;}"; // eslint-disable-line
 
 var HASH = {};
 /**
@@ -39578,29 +39580,17 @@ function genBlurShader(gl, sigma, d) {
   }
 
   var weights = blur.gaussianWeight(sigma, d);
-  var vert = '';
   var frag = '';
   var r = Math.floor(d * 0.5);
 
   for (var i = 0; i < r; i++) {
     var c = (r - i) * 0.01;
-    vert += "v_texCoordsBlur[".concat(i, "] = a_texCoords + vec2(-").concat(c, ", -").concat(c, ") * u_direction;");
-    frag += "gl_FragColor += texture2D(u_texture, v_texCoordsBlur[".concat(i, "]) * ").concat(weights[i], ";");
+    frag += "gl_FragColor += texture2D(u_texture, v_texCoords + vec2(-".concat(c, ", -").concat(c, ") * u_direction) * ").concat(weights[i], ";\n      gl_FragColor += texture2D(u_texture, v_texCoords + vec2(").concat(c, ", ").concat(c, ") * u_direction) * ").concat(weights[i], ";\n");
   }
 
-  vert += "v_texCoordsBlur[".concat(r, "] = a_texCoords;");
-  frag += "gl_FragColor += texture2D(u_texture, v_texCoordsBlur[".concat(r, "]) * ").concat(weights[r], ";");
-
-  for (var _i5 = 0; _i5 < r; _i5++) {
-    var _c = (_i5 + 1) * 0.01;
-
-    vert += "v_texCoordsBlur[".concat(_i5 + r + 1, "] = a_texCoords + vec2(").concat(_c, ", ").concat(_c, ") * u_direction;");
-    frag += "gl_FragColor += texture2D(u_texture, v_texCoordsBlur[".concat(_i5 + r + 1, "]) * ").concat(weights[_i5 + r + 1], ";");
-  }
-
-  vert = vertexBlur.replace('[3]', '[' + d + ']').replace(/}$/, vert + '}');
-  frag = fragmentBlur.replace('[3]', '[' + d + ']').replace(/}$/, frag + '}');
-  return gl[key] = webgl.initShaders(gl, vert, frag);
+  frag += "gl_FragColor += texture2D(u_texture, v_texCoords) * ".concat(weights[r], ";");
+  frag = fragmentBlur.replace('placeholder', frag);
+  return gl[key] = webgl.initShaders(gl, vertexBlur, frag);
 }
 /**
  * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement
@@ -39618,12 +39608,6 @@ function genBlurWebgl(renderMode, gl, cache, sigma) {
       width = cache.width,
       height = cache.height;
   var d = blur.kernelSize(sigma);
-  var max = gl.getParameter(gl.MAX_VARYING_VECTORS);
-
-  while (d > max) {
-    d -= 2;
-  }
-
   var spread = blur.outerSizeByD(d); // 防止超限，webgl最大纹理尺寸限制
 
   if (width > Page.MAX + spread || height > Page.MAX + spread) {
@@ -39958,12 +39942,6 @@ function genDropShadowWebgl(renderMode, gl, cache, v) {
       color = _v[4];
 
   var d = blur.kernelSize(sigma);
-  var max = Math.max(15, gl.getParameter(gl.MAX_VARYING_VECTORS));
-
-  while (d > max) {
-    d -= 2;
-  }
-
   var spread = blur.outerSizeByD(d); // 防止超限，webgl最大纹理尺寸限制
 
   if (width > Page.MAX + spread || height > Page.MAX + spread) {
@@ -40148,8 +40126,8 @@ function renderSvg$1(renderMode, ctx, root, isFirst, rlv) {
   var lastRefreshLv = 0;
   var lastNode;
 
-  var _loop = function _loop(_i7, _len6) {
-    var _structs$_i2 = __structs[_i7],
+  var _loop = function _loop(_i6, _len6) {
+    var _structs$_i2 = __structs[_i6],
         node = _structs$_i2.node,
         lv = _structs$_i2.lv,
         total = _structs$_i2.total,
@@ -40176,13 +40154,13 @@ function renderSvg$1(renderMode, ctx, root, isFirst, rlv) {
     var display = computedStyle[DISPLAY$1]; // 将随后的若干个mask节点范围存下来
 
     if (hasMask && display !== 'none') {
-      var _start = _i7 + (total || 0) + 1;
+      var _start = _i6 + (total || 0) + 1;
 
       var _end = _start + hasMask; // svg限制了只能Geom单节点，不可能是Dom，所以end只有唯一
 
 
       maskHash[_end - 1] = {
-        index: _i7,
+        index: _i6,
         start: _start,
         end: _end,
         isClip: __structs[_start].node.__clip // 第一个节点是clip为准
@@ -40212,7 +40190,7 @@ function renderSvg$1(renderMode, ctx, root, isFirst, rlv) {
       virtualDom = node.__virtualDom; // total可以跳过所有孩子节点省略循环
 
       if (__cacheTotal && __cacheTotal.__available) {
-        _i7 += total || 0;
+        _i6 += total || 0;
         virtualDom.cache = true;
       } else {
         __cacheTotal && (__cacheTotal.__available = true);
@@ -40224,10 +40202,10 @@ function renderSvg$1(renderMode, ctx, root, isFirst, rlv) {
 
 
         if (display === 'none') {
-          _i7 += total || 0;
+          _i6 += total || 0;
 
           if (hasMask) {
-            _i7 += hasMask;
+            _i6 += hasMask;
           }
         } else {
           delete virtualDom.cache;
@@ -40304,7 +40282,7 @@ function renderSvg$1(renderMode, ctx, root, isFirst, rlv) {
           __available: true,
 
           get available() {
-            _i6 = _i7;
+            _i5 = _i6;
             return this.__available;
           },
 
@@ -40321,8 +40299,8 @@ function renderSvg$1(renderMode, ctx, root, isFirst, rlv) {
       display = computedStyle[DISPLAY$1];
 
       if (display === 'none') {
-        _i7 += total || 0;
-        _i7 += hasMask || 0;
+        _i6 += total || 0;
+        _i6 += hasMask || 0;
       }
     }
     /**
@@ -40332,9 +40310,9 @@ function renderSvg$1(renderMode, ctx, root, isFirst, rlv) {
      */
 
 
-    var mh = maskHash[_i7];
+    var mh = maskHash[_i6];
 
-    if (mh && (maskEffectHash[_i7] || __refreshLevel >= REPAINT$1 || __refreshLevel & (TRANSFORM_ALL$1 | OP$1))) {
+    if (mh && (maskEffectHash[_i6] || __refreshLevel >= REPAINT$1 || __refreshLevel & (TRANSFORM_ALL$1 | OP$1))) {
       var index = mh.index,
           _start2 = mh.start,
           _end2 = mh.end,
@@ -40424,11 +40402,11 @@ function renderSvg$1(renderMode, ctx, root, isFirst, rlv) {
       } // 清掉上次的
 
 
-      for (var _i8 = __cacheDefs.length - 1; _i8 >= 0; _i8--) {
-        var _item = __cacheDefs[_i8];
+      for (var _i7 = __cacheDefs.length - 1; _i7 >= 0; _i7--) {
+        var _item = __cacheDefs[_i7];
 
         if (_item.tagName === 'mask') {
-          __cacheDefs.splice(_i8, 1);
+          __cacheDefs.splice(_i7, 1);
 
           ctx.removeCache(_item);
         }
@@ -40452,16 +40430,16 @@ function renderSvg$1(renderMode, ctx, root, isFirst, rlv) {
       parentVd.children.push(virtualDom);
     }
 
-    if (_i7 === 0) {
+    if (_i6 === 0) {
       parentMatrix = node.__matrix;
       parentVd = virtualDom;
     }
 
-    _i6 = _i7;
+    _i5 = _i6;
   };
 
-  for (var _i6 = 0, _len6 = __structs.length; _i6 < _len6; _i6++) {
-    _loop(_i6);
+  for (var _i5 = 0, _len6 = __structs.length; _i5 < _len6; _i5++) {
+    _loop(_i5);
   }
 }
 
@@ -40769,7 +40747,7 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
 
     for (var ii = 0, _len11 = mergeList.length; ii < _len11; ii++) {
       var _mergeList$ii = mergeList[ii],
-          _i9 = _mergeList$ii.i,
+          _i8 = _mergeList$ii.i,
           _lv6 = _mergeList$ii.lv,
           _total12 = _mergeList$ii.total,
           _node11 = _mergeList$ii.node,
@@ -40793,9 +40771,9 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
         var res = void 0;
 
         if (_isPpt2) {
-          res = genPptWebgl(renderMode, _cacheTotal, gl, root, _node11, _i9, _lv6, _total12 || 0, __structs, width, height);
+          res = genPptWebgl(renderMode, _cacheTotal, gl, root, _node11, _i8, _lv6, _total12 || 0, __structs, width, height);
         } else {
-          res = genTotalWebgl(renderMode, _cacheTotal, gl, root, _node11, _i9, _lv6, _total12 || 0, __structs, width, height, null, null, null);
+          res = genTotalWebgl(renderMode, _cacheTotal, gl, root, _node11, _i8, _lv6, _total12 || 0, __structs, width, height, null, null, null);
         }
 
         if (!res) {
@@ -40821,15 +40799,15 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
       }
 
       if (_hasMask6 && (!__cacheMask || !__cacheMask.__available || needGen)) {
-        genMaskWebgl(renderMode, gl, root, _node11, target, width, height, _i9 + (_total12 || 0) + 1, _lv6, __structs);
+        genMaskWebgl(renderMode, gl, root, _node11, target, width, height, _i8 + (_total12 || 0) + 1, _lv6, __structs);
       }
 
       _node11.__updateCache();
     }
   } // 非首次，没有cache变更重新生成的，可以直接用上次的缓存渲染列表
   else if (wasmOp && !isFirst && rlv < REPAINT$1 && !(rlv & (CACHE$1 | FT$1 | PPT$1 | MASK$1))) {
-    for (var _i10 = 0, _len12 = lastList.length; _i10 < _len12; _i10++) {
-      drawTextureCache(gl, lastList[_i10], cx, cy, 0, 0, wasmOp, wasmMe);
+    for (var _i9 = 0, _len12 = lastList.length; _i9 < _len12; _i9++) {
+      drawTextureCache(gl, lastList[_i9], cx, cy, 0, 0, wasmOp, wasmMe);
     }
 
     return;
@@ -40856,8 +40834,8 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
   var lastPage,
       list = [];
 
-  for (var _i11 = 0, _len13 = __structs.length; _i11 < _len13; _i11++) {
-    var _structs$_i3 = __structs[_i11],
+  for (var _i10 = 0, _len13 = __structs.length; _i10 < _len13; _i10++) {
+    var _structs$_i3 = __structs[_i10],
         _node12 = _structs$_i3.node,
         _total13 = _structs$_i3.total,
         _hasMask7 = _structs$_i3.hasMask,
@@ -40884,7 +40862,7 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
         if (wasmOp) {
           list.push({
             cache: _cache5,
-            index: _i11,
+            index: _i10,
             wasm: true
           });
         } else {
@@ -40899,10 +40877,10 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
       var _computedStyle5 = _node12.__computedStyle; // none跳过这棵子树，判断下最后一个节点的离屏应用即可
 
       if (_computedStyle5[DISPLAY$1] === 'none') {
-        _i11 += _total13 || 0;
+        _i10 += _total13 || 0;
 
         if (_hasMask7) {
-          _i11 += countMaskNum(__structs, _i11 + 1, _hasMask7);
+          _i10 += countMaskNum(__structs, _i10 + 1, _hasMask7);
         }
 
         continue;
@@ -40911,7 +40889,7 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
       var _mixBlendMode2 = _computedStyle5[MIX_BLEND_MODE$1],
           visibility = _computedStyle5[VISIBILITY$1],
           backfaceVisibility = _computedStyle5[BACKFACE_VISIBILITY];
-      var opacity = wasmOp ? wasmOp[_i11] : _computedStyle5[OPACITY$1];
+      var opacity = wasmOp ? wasmOp[_i10] : _computedStyle5[OPACITY$1];
       var _cache6 = _node12.__cache;
       var m = void 0;
 
@@ -40950,7 +40928,7 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
 
       if (visibility === 'hidden' && !_total13) {
         if (_hasMask7) {
-          _i11 += countMaskNum(__structs, _i11 + 1, _hasMask7);
+          _i10 += countMaskNum(__structs, _i10 + 1, _hasMask7);
         }
 
         continue;
@@ -40963,10 +40941,10 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
             _y8 = _m6[0] < 0 && _m6[10] < 0;
 
         if (_x8 || _y8) {
-          _i11 += _total13 || 0;
+          _i10 += _total13 || 0;
 
           if (_hasMask7) {
-            _i11 += countMaskNum(__structs, _i11 + 1, _hasMask7);
+            _i10 += countMaskNum(__structs, _i10 + 1, _hasMask7);
           }
 
           continue;
@@ -41014,7 +40992,7 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
             if (wasmOp) {
               list.push({
                 cache: _target8,
-                index: _i11,
+                index: _i10,
                 wasm: true
               });
             } else {
@@ -41028,10 +41006,10 @@ function renderWebgl$1(renderMode, gl, root, isFirst, rlv) {
         }
 
         if (_target8 !== _cache6) {
-          _i11 += _total13 || 0;
+          _i10 += _total13 || 0;
 
           if (_hasMask7) {
-            _i11 += countMaskNum(__structs, _i11 + 1, _hasMask7);
+            _i10 += countMaskNum(__structs, _i10 + 1, _hasMask7);
           }
         }
       } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
@@ -41226,8 +41204,8 @@ function renderCanvas$1(renderMode, ctx, root, isFirst, rlv) {
   var offscreenHash = [];
   var lastOpacity = -1;
 
-  for (var _i12 = 0, _len15 = __structs.length; _i12 < _len15; _i12++) {
-    var _structs$_i4 = __structs[_i12],
+  for (var _i11 = 0, _len15 = __structs.length; _i11 < _len15; _i11++) {
+    var _structs$_i4 = __structs[_i11],
         _node13 = _structs$_i4.node,
         _lv7 = _structs$_i4.lv,
         _total14 = _structs$_i4.total,
@@ -41237,7 +41215,7 @@ function renderCanvas$1(renderMode, ctx, root, isFirst, rlv) {
     if (_isText4) {
       _node13.render(renderMode, ctx, 0, 0);
 
-      var oh = offscreenHash[_i12];
+      var oh = offscreenHash[_i11];
 
       if (oh) {
         ctx = applyOffscreen(ctx, oh, width, height, false);
@@ -41247,13 +41225,13 @@ function renderCanvas$1(renderMode, ctx, root, isFirst, rlv) {
       var _computedStyle6 = _node13.__computedStyle; // none跳过这棵子树，判断下最后一个节点的离屏应用即可
 
       if (_computedStyle6[DISPLAY$1] === 'none') {
-        _i12 += _total14 || 0;
+        _i11 += _total14 || 0;
 
         if (_hasMask8) {
-          _i12 += countMaskNum(__structs, _i12 + 1, _hasMask8);
+          _i11 += countMaskNum(__structs, _i11 + 1, _hasMask8);
         }
 
-        var _oh4 = offscreenHash[_i12];
+        var _oh4 = offscreenHash[_i11];
 
         if (_oh4) {
           ctx = applyOffscreen(ctx, _oh4, width, height, true);
@@ -41266,7 +41244,7 @@ function renderCanvas$1(renderMode, ctx, root, isFirst, rlv) {
       // 这样当mask本身有filter时优先自身，然后才是OFFSCREEN_MASK2
 
 
-      var msh = maskStartHash[_i12];
+      var msh = maskStartHash[_i11];
 
       if (msh) {
         var idx = msh.idx,
@@ -41279,7 +41257,7 @@ function renderCanvas$1(renderMode, ctx, root, isFirst, rlv) {
 
         offscreenMask.isClip = _node13.__clip; // 定位到最后一个mask元素上的末尾
 
-        var j = _i12 + (_total14 || 0) + 1;
+        var j = _i11 + (_total14 || 0) + 1;
 
         while (--_hasMask9) {
           var _total15 = __structs[j].total;
@@ -41308,7 +41286,7 @@ function renderCanvas$1(renderMode, ctx, root, isFirst, rlv) {
       } // 设置opacity/matrix，根节点是没有父节点的不计算继承值
 
 
-      var opacity = wasmOp ? wasmOp[_i12] : _computedStyle6[OPACITY$1];
+      var opacity = wasmOp ? wasmOp[_i11] : _computedStyle6[OPACITY$1];
       var m = void 0;
 
       if (!wasmOp) {
@@ -41348,7 +41326,7 @@ function renderCanvas$1(renderMode, ctx, root, isFirst, rlv) {
 
         if (opacity > 0) {
           if (wasmOp) {
-            var _idx = _i12 * 16;
+            var _idx = _i11 * 16;
 
             ctx.setTransform(wasmMe[_idx], wasmMe[_idx + 1], wasmMe[_idx + 4], wasmMe[_idx + 5], wasmMe[_idx + 12], wasmMe[_idx + 13]);
           } else {
@@ -41376,14 +41354,14 @@ function renderCanvas$1(renderMode, ctx, root, isFirst, rlv) {
           ctx.globalCompositeOperation = 'source-over';
         }
 
-        _i12 += _total14 || 0;
+        _i11 += _total14 || 0;
 
         if (_hasMask8) {
-          _i12 += countMaskNum(__structs, _i12 + 1, _hasMask8);
+          _i11 += countMaskNum(__structs, _i11 + 1, _hasMask8);
         } // 父超限但子有total的时候，i此时已经增加到了末尾，也需要检查
 
 
-        var _oh5 = offscreenHash[_i12];
+        var _oh5 = offscreenHash[_i11];
 
         if (_oh5) {
           ctx = applyOffscreen(ctx, _oh5, width, height, false);
@@ -41415,7 +41393,7 @@ function renderCanvas$1(renderMode, ctx, root, isFirst, rlv) {
 
         if (opacity > 0) {
           if (wasmOp) {
-            var _idx2 = _i12 * 16;
+            var _idx2 = _i11 * 16;
 
             ctx.setTransform(wasmMe[_idx2], wasmMe[_idx2 + 1], wasmMe[_idx2 + 4], wasmMe[_idx2 + 5], wasmMe[_idx2 + 12], wasmMe[_idx2 + 13]);
           } else {
@@ -41427,7 +41405,7 @@ function renderCanvas$1(renderMode, ctx, root, isFirst, rlv) {
 
 
         if (offscreenBlend) {
-          var _j10 = _i12 + (_total14 || 0);
+          var _j10 = _i11 + (_total14 || 0);
 
           if (_hasMask8) {
             _j10 += countMaskNum(__structs, _j10 + 1, _hasMask8);
@@ -41436,7 +41414,7 @@ function renderCanvas$1(renderMode, ctx, root, isFirst, rlv) {
           var _list7 = offscreenHash[_j10] = offscreenHash[_j10] || [];
 
           _list7.push({
-            idx: _i12,
+            idx: _i11,
             lv: _lv7,
             type: OFFSCREEN_BLEND,
             offscreen: offscreenBlend
@@ -41446,10 +41424,10 @@ function renderCanvas$1(renderMode, ctx, root, isFirst, rlv) {
 
 
         if (_offscreenMask3) {
-          var _j11 = _i12 + (_total14 || 0);
+          var _j11 = _i11 + (_total14 || 0);
 
           maskStartHash[_j11 + 1] = {
-            idx: _i12,
+            idx: _i11,
             hasMask: _hasMask8,
             offscreenMask: _offscreenMask3
           };
@@ -41457,7 +41435,7 @@ function renderCanvas$1(renderMode, ctx, root, isFirst, rlv) {
 
 
         if (offscreenFilter) {
-          var _j12 = _i12 + (_total14 || 0);
+          var _j12 = _i11 + (_total14 || 0);
 
           if (_hasMask8) {
             _j12 += countMaskNum(__structs, _j12 + 1, _hasMask8);
@@ -41466,7 +41444,7 @@ function renderCanvas$1(renderMode, ctx, root, isFirst, rlv) {
           var _list8 = offscreenHash[_j12] = offscreenHash[_j12] || [];
 
           _list8.push({
-            idx: _i12,
+            idx: _i11,
             lv: _lv7,
             type: OFFSCREEN_FILTER,
             offscreen: offscreenFilter
@@ -41475,7 +41453,7 @@ function renderCanvas$1(renderMode, ctx, root, isFirst, rlv) {
 
 
         if (offscreenOverflow) {
-          var _j13 = _i12 + (_total14 || 0);
+          var _j13 = _i11 + (_total14 || 0);
 
           if (_hasMask8) {
             _j13 += countMaskNum(__structs, _j13 + 1, _hasMask8);
@@ -41484,7 +41462,7 @@ function renderCanvas$1(renderMode, ctx, root, isFirst, rlv) {
           var _list9 = offscreenHash[_j13] = offscreenHash[_j13] || [];
 
           _list9.push({
-            idx: _i12,
+            idx: _i11,
             lv: _lv7,
             type: OFFSCREEN_OVERFLOW,
             offscreen: offscreenOverflow
@@ -41493,7 +41471,7 @@ function renderCanvas$1(renderMode, ctx, root, isFirst, rlv) {
         // 由于mask特殊索引影响，所有离屏都在最后一个mask索引判断，此时mask本身优先结算，以index序大到小判断
 
 
-        var _oh6 = offscreenHash[_i12];
+        var _oh6 = offscreenHash[_i11];
 
         if (_oh6) {
           ctx = applyOffscreen(ctx, _oh6, width, height, false);
@@ -41525,7 +41503,7 @@ var fragment = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GL
 
 var vertexMask = "#version 100\n#define GLSLIFY 1\nattribute vec4 a_position;attribute vec2 a_texCoords1;attribute vec2 a_texCoords2;varying vec2 v_texCoords1;varying vec2 v_texCoords2;void main(){gl_Position=a_position;v_texCoords1=a_texCoords1;v_texCoords2=a_texCoords2;}"; // eslint-disable-line
 
-var fragmentMask = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords1;varying vec2 v_texCoords2;uniform sampler2D u_texture1;uniform sampler2D u_texture2;void main(){vec4 color1=texture2D(u_texture1,v_texCoords1);vec4 color2=texture2D(u_texture2,v_texCoords2);float a=color1.a*color2.a;gl_FragColor=vec4(color1.rgb*color2.a,a);}"; // eslint-disable-line
+var fragmentMask = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords1;varying vec2 v_texCoords2;uniform sampler2D u_texture1;uniform sampler2D u_texture2;void main(){vec4 color1=texture2D(u_texture1,v_texCoords1);vec4 color2=texture2D(u_texture2,v_texCoords2);gl_FragColor=color1*color2.a;}"; // eslint-disable-line
 
 var fragmentClip = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords1;varying vec2 v_texCoords2;uniform sampler2D u_texture1;uniform sampler2D u_texture2;void main(){vec4 color1=texture2D(u_texture1,v_texCoords1);vec4 color2=texture2D(u_texture2,v_texCoords2);float a=color1.a*(1.0-color2.a);gl_FragColor=vec4(color1.rgb*(1.0-color2.a),a);}"; // eslint-disable-line
 
@@ -42677,6 +42655,11 @@ var Root = /*#__PURE__*/function (_Dom) {
 
           if (lv & MBM) {
             computedStyle[MIX_BLEND_MODE] = currentStyle[MIX_BLEND_MODE];
+          } // 暂时这样，缺少lv
+
+
+          if (hasZ) {
+            computedStyle[Z_INDEX] = currentStyle[Z_INDEX];
           }
         } // 影响子继承REPAINT的变化，如果被cache住需要清除
 
@@ -42784,18 +42767,18 @@ var Root = /*#__PURE__*/function (_Dom) {
             }
 
             p = p.__domParent;
-          } // 清除parent的zIndexChildren缓存，强制所有孩子重新渲染
+          }
+        } // 清除parent的zIndexChildren缓存，强制所有孩子重新渲染，父节点下可能多个子节点重复调用
 
 
-          if (hasZ && __domParent) {
-            __domParent.__zIndexChildren = null;
+        if (hasZ && __domParent) {
+          __domParent.__zIndexChildren = null;
 
-            __domParent.__updateStruct();
+          __domParent.__updateStruct();
 
-            if (this.__renderMode === mode.SVG) {
-              hasRelease = node.__cacheTotal.release() || hasRelease;
-              reflow.clearSvgCache(__domParent);
-            }
+          if (this.__renderMode === mode.SVG) {
+            hasRelease = node.__cacheTotal.release() || hasRelease;
+            reflow.clearSvgCache(__domParent);
           }
         }
       }
@@ -49301,7 +49284,7 @@ var refresh = {
   webgl: webgl
 };
 
-var version = "0.86.18";
+var version = "0.86.20";
 
 var isString = util.isString;
 Geom.register('$line', Line);

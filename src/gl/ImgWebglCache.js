@@ -172,6 +172,10 @@ class ImgWebglCache extends CanvasCache {
       }
     }
   }
+
+  static get HASH() {
+    return HASH;
+  }
 }
 
 export default ImgWebglCache;

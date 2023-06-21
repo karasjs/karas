@@ -9,6 +9,18 @@ class TexturePage extends Page {
     gl.bindTexture(gl.TEXTURE_2D, null);
   }
 
+  del(pos) {
+    super.del(pos);
+    if(!this.__count) {
+      let t = this.texture;
+      if(t) {
+        let gl = this.gl;
+        gl.deleteTexture(t);
+        this.texture = null;
+      }
+    }
+  }
+
   static getInstance(renderMode, gl, rootId, size, excludePage) {
     return super.getInstance(renderMode, gl, rootId, size, this, excludePage);
   }

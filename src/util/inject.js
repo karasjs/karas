@@ -83,6 +83,7 @@ function createDiv() {
 }
 
 let inject = {
+  CANVAS,
   measureTextSync(str, ff, fs, fw, isUpright) {
     if(!div) {
       createDiv();

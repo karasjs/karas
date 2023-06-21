@@ -5,6 +5,7 @@ import Cache from './Cache';
 import CanvasPage from './CanvasPage';
 import CanvasCache from './CanvasCache';
 import webgl from '../gl/webgl';
+import ImgWebglCache from '../gl/ImgWebglCache';
 
 export default {
   level,
@@ -14,4 +15,5 @@ export default {
   CanvasPage,
   CanvasCache,
   webgl,
+  ImgWebglCache,
 };

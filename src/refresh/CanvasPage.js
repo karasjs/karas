@@ -27,6 +27,7 @@ class CanvasPage extends Page {
       if(t) {
         let gl = this.__ctx;
         gl.deleteTexture(t);
+        this.texture = null;
       }
     }
   }

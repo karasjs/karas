@@ -2264,6 +2264,7 @@ function createDiv() {
 }
 
 var inject = {
+  CANVAS: CANVAS$5,
   measureTextSync: function measureTextSync(str, ff, fs, fw, isUpright) {
     if (!div) {
       createDiv();
@@ -33712,6 +33713,7 @@ var CanvasPage = /*#__PURE__*/function (_Page) {
         if (t) {
           var gl = this.__ctx;
           gl.deleteTexture(t);
+          this.texture = null;
         }
       }
     }
@@ -34143,6 +34145,11 @@ var ImgWebglCache = /*#__PURE__*/function (_CanvasCache) {
           return cache;
         }
       }
+    }
+  }, {
+    key: "HASH",
+    get: function get() {
+      return HASH$1;
     }
   }]);
 
@@ -37459,7 +37466,22 @@ var TexturePage = /*#__PURE__*/function (_Page) {
     return _this;
   }
 
-  _createClass(TexturePage, null, [{
+  _createClass(TexturePage, [{
+    key: "del",
+    value: function del(pos) {
+      _get(_getPrototypeOf(TexturePage.prototype), "del", this).call(this, pos);
+
+      if (!this.__count) {
+        var t = this.texture;
+
+        if (t) {
+          var gl = this.gl;
+          gl.deleteTexture(t);
+          this.texture = null;
+        }
+      }
+    }
+  }], [{
     key: "getInstance",
     value: function getInstance(renderMode, gl, rootId, size, excludePage) {
       return _get(_getPrototypeOf(TexturePage), "getInstance", this).call(this, renderMode, gl, rootId, size, this, excludePage);
@@ -49281,7 +49303,8 @@ var refresh = {
   Cache: Cache,
   CanvasPage: CanvasPage,
   CanvasCache: CanvasCache,
-  webgl: webgl
+  webgl: webgl,
+  ImgWebglCache: ImgWebglCache
 };
 
 var version = "0.86.20";

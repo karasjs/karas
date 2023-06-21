@@ -9,6 +9,15 @@ class TexturePage extends Page {
     gl.bindTexture(gl.TEXTURE_2D, null);
   }
 
+
+  add(unitSize, pos) {
+    super.add(unitSize, pos);
+    if (!this.texture) {
+      this.texture = webgl.createTexture(this.gl, null, 0, this.__size, this.__size);
+      this.gl.bindTexture(this.gl.TEXTURE_2D, null);
+    }
+  }
+
   del(pos) {
     super.del(pos);
     if(!this.__count) {

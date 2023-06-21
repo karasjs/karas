@@ -37467,6 +37467,16 @@ var TexturePage = /*#__PURE__*/function (_Page) {
   }
 
   _createClass(TexturePage, [{
+    key: "add",
+    value: function add(unitSize, pos) {
+      _get(_getPrototypeOf(TexturePage.prototype), "add", this).call(this, unitSize, pos);
+
+      if (!this.texture) {
+        this.texture = webgl.createTexture(this.gl, null, 0, this.__size, this.__size);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, null);
+      }
+    }
+  }, {
     key: "del",
     value: function del(pos) {
       _get(_getPrototypeOf(TexturePage.prototype), "del", this).call(this, pos);
@@ -42148,6 +42158,7 @@ var Root = /*#__PURE__*/function (_Dom) {
         n.__root = null;
       }
 
+      this.__dom = null;
       var gl = this.__ctx;
 
       if (this.renderMode === mode.CANVAS) {

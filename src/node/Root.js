@@ -519,6 +519,7 @@ class Root extends Dom {
       removeEvent(n, this.__eventCbList || []);
       n.__root = null;
     }
+    this.__dom = null;
     let gl = this.__ctx;
     if(this.renderMode === mode.CANVAS) {
       this.__clearCanvas(gl);

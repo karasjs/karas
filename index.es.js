@@ -2224,6 +2224,7 @@ function offscreenCanvas(width, height, key, message, contextAttributes) {
       ctx.globalAlpha = 1;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, width, height);
+      ctx.globalCompositeOperation = 'source-over';
       o.width = o.height = 0;
       this.__available = false;
 
@@ -2232,6 +2233,7 @@ function offscreenCanvas(width, height, key, message, contextAttributes) {
       }
 
       o = null;
+      ctx = null;
     }
   };
 }
@@ -33270,7 +33272,9 @@ function drawDropShadowMerge(gl, target, size, tex1, dx1, dy1, w, h, tex2, dx2, 
   bindTexture$1(gl, tex2, 0);
   gl.uniform1i(u_texture, 0);
   gl.drawArrays(gl.TRIANGLES, 0, 6);
-  bindTexture$1(gl, null, 0);
+  bindTexture$1(gl, null, 0); // gl.deleteBuffer(pointBuffer);
+  // gl.deleteBuffer(texBuffer);
+  // gl.deleteBuffer(opacityBuffer);
 }
 
 function drawTex2Cache$1(gl, program, cache, tex, width, height) {
@@ -33377,7 +33381,9 @@ function drawCache2Tex$1(gl, program, cache, width, height, spread) {
   var u_texture = gl.getUniformLocation(program, 'u_texture');
   bindTexture$1(gl, texture, 0);
   gl.uniform1i(u_texture, 0);
-  gl.drawArrays(gl.TRIANGLES, 0, 6);
+  gl.drawArrays(gl.TRIANGLES, 0, 6); // gl.deleteBuffer(pointBuffer);
+  // gl.deleteBuffer(texBuffer);
+  // gl.deleteBuffer(opacityBuffer);
 }
 
 function drawSameSize(gl, tex, opacity) {
@@ -33679,11 +33685,7 @@ var CanvasPage = /*#__PURE__*/function (_Page) {
   _inherits(CanvasPage, _Page);
 
   function CanvasPage(renderMode, ctx, size, number) {
-    var _this;
-
-    _this = _Page.call(this, renderMode, ctx, size, number) || this;
-    _this.__offscreen = inject.getOffscreenCanvas(size, size, null, number);
-    return _this;
+    return _Page.call(this, renderMode, ctx, size, number) || this;
   }
 
   _createClass(CanvasPage, [{
@@ -33703,6 +33705,15 @@ var CanvasPage = /*#__PURE__*/function (_Page) {
       }
     }
   }, {
+    key: "add",
+    value: function add(unitSize, pos) {
+      _get(_getPrototypeOf(CanvasPage.prototype), "add", this).call(this, unitSize, pos);
+
+      if (!this.__offscreen) {
+        this.__offscreen = inject.getOffscreenCanvas(this.__size, this.__size, null, this.__number);
+      }
+    }
+  }, {
     key: "del",
     value: function del(pos) {
       _get(_getPrototypeOf(CanvasPage.prototype), "del", this).call(this, pos);
@@ -33714,6 +33725,12 @@ var CanvasPage = /*#__PURE__*/function (_Page) {
           var gl = this.__ctx;
           gl.deleteTexture(t);
           this.texture = null;
+        }
+
+        if (this.__offscreen) {
+          this.__offscreen.release();
+
+          this.__offscreen = null;
         }
       }
     }
@@ -42155,7 +42172,7 @@ var Root = /*#__PURE__*/function (_Dom) {
 
       if (n) {
         removeEvent(n, this.__eventCbList || []);
-        n.__root = null;
+        delete n.__root;
       }
 
       this.__dom = null;
@@ -42166,11 +42183,12 @@ var Root = /*#__PURE__*/function (_Dom) {
       } else if (this.renderMode === mode.WEBGL) {
         this.__clearWebgl(gl);
 
-        ['program', 'programMask', 'programClip', 'programOverflow', 'programCm', 'programDs', 'programMbmMp', 'programMbmSr', 'programMbmOl', 'programMbmDk', 'programMbmLt', 'programMbmCd', 'programMbmCb', 'programMbmHl', 'programMbmSl', 'programMbmDf', 'programMbmEx', 'programMbmHue', 'programMbmSt', 'programMbmCl', 'programMbmLm'].forEach(function (k) {
+        ['program', 'programMask', 'programClip', 'programOverflow', 'programCm', 'programDs', 'programMbmMp', 'programMbmSr', 'programMbmOl', 'programMbmDk', 'programMbmLt', 'programMbmCd', 'programMbmCb', 'programMbmHl', 'programMbmSl', 'programMbmDf', 'programMbmEx', 'programMbmHue', 'programMbmSt', 'programMbmCl', 'programMbmLm', 'programSs'].forEach(function (k) {
           var p = gl[k];
           gl.deleteShader(p.vertexShader);
           gl.deleteShader(p.fragmentShader);
           gl.deleteProgram(p);
+          delete gl[k];
         });
 
         for (var i in gl) {
@@ -42179,10 +42197,14 @@ var Root = /*#__PURE__*/function (_Dom) {
             gl.deleteShader(p.vertexShader);
             gl.deleteShader(p.fragmentShader);
             gl.deleteProgram(p);
+            delete gl[i];
           }
         }
+
+        gl.bindTexture(gl.TEXTURE_2D, null); // gl.getExtension('WEBGL_lose_context').loseContext();
       }
 
+      this.__ctx = gl = null;
       var wr = this.__wasmRoot;
 
       if (wr) {
@@ -49318,7 +49340,7 @@ var refresh = {
   ImgWebglCache: ImgWebglCache
 };
 
-var version = "0.86.21";
+var version = "0.86.22";
 
 var isString = util.isString;
 Geom.register('$line', Line);

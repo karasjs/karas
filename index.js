@@ -33693,11 +33693,7 @@
     _inherits(CanvasPage, _Page);
 
     function CanvasPage(renderMode, ctx, size, number) {
-      var _this;
-
-      _this = _Page.call(this, renderMode, ctx, size, number) || this;
-      _this.__offscreen = inject.getOffscreenCanvas(size, size, null, number);
-      return _this;
+      return _Page.call(this, renderMode, ctx, size, number) || this;
     }
 
     _createClass(CanvasPage, [{
@@ -33717,6 +33713,15 @@
         }
       }
     }, {
+      key: "add",
+      value: function add(unitSize, pos) {
+        _get(_getPrototypeOf(CanvasPage.prototype), "add", this).call(this, unitSize, pos);
+
+        if (!this.__offscreen) {
+          this.__offscreen = inject.getOffscreenCanvas(this.__size, this.__size, null, this.__number);
+        }
+      }
+    }, {
       key: "del",
       value: function del(pos) {
         _get(_getPrototypeOf(CanvasPage.prototype), "del", this).call(this, pos);
@@ -33728,6 +33733,12 @@
             var gl = this.__ctx;
             gl.deleteTexture(t);
             this.texture = null;
+          }
+
+          if (this.__offscreen) {
+            this.__offscreen.release();
+
+            this.__offscreen = null;
           }
         }
       }
@@ -42197,8 +42208,9 @@
               delete gl[i];
             }
           }
-        } // gl.getExtension('WEBGL_lose_context').loseContext();
+        }
 
+        gl.bindTexture(gl.TEXTURE_2D, null); // gl.getExtension('WEBGL_lose_context').loseContext();
 
         this.__ctx = gl = null;
         var wr = this.__wasmRoot;

@@ -566,6 +566,7 @@ class Root extends Dom {
         }
       }
     }
+    gl.bindTexture(gl.TEXTURE_2D, null);
     // gl.getExtension('WEBGL_lose_context').loseContext();
     this.__ctx = gl = null;
     let wr = this.__wasmRoot;

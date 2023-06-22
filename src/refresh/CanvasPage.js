@@ -5,7 +5,6 @@ import inject from '../util/inject';
 class CanvasPage extends Page {
   constructor(renderMode, ctx, size, number) {
     super(renderMode, ctx, size, number);
-    this.__offscreen = inject.getOffscreenCanvas(size, size, null, number);
   }
 
   genTexture(gl) {
@@ -20,6 +19,13 @@ class CanvasPage extends Page {
     }
   }
 
+  add(unitSize, pos) {
+    super.add(unitSize, pos);
+    if (!this.__offscreen) {
+      this.__offscreen = inject.getOffscreenCanvas(this.__size, this.__size, null, this.__number);
+    }
+  }
+
   del(pos) {
     super.del(pos);
     if(!this.__count) {
@@ -28,6 +34,10 @@ class CanvasPage extends Page {
         let gl = this.__ctx;
         gl.deleteTexture(t);
         this.texture = null;
+      }
+      if (this.__offscreen) {
+        this.__offscreen.release();
+        this.__offscreen = null;
       }
     }
   }

@@ -49,12 +49,14 @@ function offscreenCanvas(width, height, key, message, contextAttributes) {
       ctx.globalAlpha = 1;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, width, height);
+      ctx.globalCompositeOperation = 'source-over';
       o.width = o.height = 0;
       this.__available = false;
       if(config.debug && o) {
         document.body.removeChild(o);
       }
       o = null;
+      ctx = null;
     },
   };
 }

@@ -2230,6 +2230,7 @@
         ctx.globalAlpha = 1;
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, width, height);
+        ctx.globalCompositeOperation = 'source-over';
         o.width = o.height = 0;
         this.__available = false;
 
@@ -2238,6 +2239,7 @@
         }
 
         o = null;
+        ctx = null;
       }
     };
   }
@@ -33277,6 +33279,9 @@
     gl.uniform1i(u_texture, 0);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
     bindTexture$1(gl, null, 0);
+    gl.deleteBuffer(pointBuffer);
+    gl.deleteBuffer(texBuffer);
+    gl.deleteBuffer(opacityBuffer);
   }
 
   function drawTex2Cache$1(gl, program, cache, tex, width, height) {
@@ -33384,6 +33389,9 @@
     bindTexture$1(gl, texture, 0);
     gl.uniform1i(u_texture, 0);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
+    gl.deleteBuffer(pointBuffer);
+    gl.deleteBuffer(texBuffer);
+    gl.deleteBuffer(opacityBuffer);
   }
 
   function drawSameSize(gl, tex, opacity) {
@@ -42161,7 +42169,7 @@
 
         if (n) {
           removeEvent(n, this.__eventCbList || []);
-          n.__root = null;
+          delete n.__root;
         }
 
         this.__dom = null;
@@ -42172,11 +42180,12 @@
         } else if (this.renderMode === mode.WEBGL) {
           this.__clearWebgl(gl);
 
-          ['program', 'programMask', 'programClip', 'programOverflow', 'programCm', 'programDs', 'programMbmMp', 'programMbmSr', 'programMbmOl', 'programMbmDk', 'programMbmLt', 'programMbmCd', 'programMbmCb', 'programMbmHl', 'programMbmSl', 'programMbmDf', 'programMbmEx', 'programMbmHue', 'programMbmSt', 'programMbmCl', 'programMbmLm'].forEach(function (k) {
+          ['program', 'programMask', 'programClip', 'programOverflow', 'programCm', 'programDs', 'programMbmMp', 'programMbmSr', 'programMbmOl', 'programMbmDk', 'programMbmLt', 'programMbmCd', 'programMbmCb', 'programMbmHl', 'programMbmSl', 'programMbmDf', 'programMbmEx', 'programMbmHue', 'programMbmSt', 'programMbmCl', 'programMbmLm', 'programSs'].forEach(function (k) {
             var p = gl[k];
             gl.deleteShader(p.vertexShader);
             gl.deleteShader(p.fragmentShader);
             gl.deleteProgram(p);
+            delete gl[k];
           });
 
           for (var i in gl) {
@@ -42185,10 +42194,13 @@
               gl.deleteShader(p.vertexShader);
               gl.deleteShader(p.fragmentShader);
               gl.deleteProgram(p);
+              delete gl[i];
             }
           }
-        }
+        } // gl.getExtension('WEBGL_lose_context').loseContext();
 
+
+        this.__ctx = gl = null;
         var wr = this.__wasmRoot;
 
         if (wr) {

@@ -517,7 +517,7 @@ class Root extends Dom {
     let n = this.dom;
     if(n) {
       removeEvent(n, this.__eventCbList || []);
-      n.__root = null;
+      delete n.__root;
     }
     this.__dom = null;
     let gl = this.__ctx;
@@ -548,11 +548,13 @@ class Root extends Dom {
         'programMbmSt',
         'programMbmCl',
         'programMbmLm',
+        'programSs',
       ].forEach(k =>  {
         let p = gl[k];
         gl.deleteShader(p.vertexShader);
         gl.deleteShader(p.fragmentShader);
         gl.deleteProgram(p);
+        delete gl[k];
       });
       for(let i in gl) {
         if(i.indexOf('programBlur,') === 0) {
@@ -560,9 +562,12 @@ class Root extends Dom {
           gl.deleteShader(p.vertexShader);
           gl.deleteShader(p.fragmentShader);
           gl.deleteProgram(p);
+          delete gl[i];
         }
       }
     }
+    // gl.getExtension('WEBGL_lose_context').loseContext();
+    this.__ctx = gl = null;
     let wr = this.__wasmRoot;
     if(wr) {
       wr.clear();

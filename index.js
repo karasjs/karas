@@ -33278,10 +33278,9 @@
     bindTexture$1(gl, tex2, 0);
     gl.uniform1i(u_texture, 0);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
-    bindTexture$1(gl, null, 0);
-    gl.deleteBuffer(pointBuffer);
-    gl.deleteBuffer(texBuffer);
-    gl.deleteBuffer(opacityBuffer);
+    bindTexture$1(gl, null, 0); // gl.deleteBuffer(pointBuffer);
+    // gl.deleteBuffer(texBuffer);
+    // gl.deleteBuffer(opacityBuffer);
   }
 
   function drawTex2Cache$1(gl, program, cache, tex, width, height) {
@@ -33388,10 +33387,9 @@
     var u_texture = gl.getUniformLocation(program, 'u_texture');
     bindTexture$1(gl, texture, 0);
     gl.uniform1i(u_texture, 0);
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
-    gl.deleteBuffer(pointBuffer);
-    gl.deleteBuffer(texBuffer);
-    gl.deleteBuffer(opacityBuffer);
+    gl.drawArrays(gl.TRIANGLES, 0, 6); // gl.deleteBuffer(pointBuffer);
+    // gl.deleteBuffer(texBuffer);
+    // gl.deleteBuffer(opacityBuffer);
   }
 
   function drawSameSize(gl, tex, opacity) {

@@ -737,9 +737,9 @@ function drawDropShadowMerge(gl, target, size, tex1, dx1, dy1, w, h, tex2, dx2, 
   gl.uniform1i(u_texture, 0);
   gl.drawArrays(gl.TRIANGLES, 0, 6);
   bindTexture(gl, null, 0);
-  gl.deleteBuffer(pointBuffer);
-  gl.deleteBuffer(texBuffer);
-  gl.deleteBuffer(opacityBuffer);
+  // gl.deleteBuffer(pointBuffer);
+  // gl.deleteBuffer(texBuffer);
+  // gl.deleteBuffer(opacityBuffer);
 }
 
 function drawTex2Cache(gl, program, cache, tex, width, height) {
@@ -848,9 +848,9 @@ function drawCache2Tex(gl, program, cache, width, height, spread) {
   bindTexture(gl, texture, 0);
   gl.uniform1i(u_texture, 0);
   gl.drawArrays(gl.TRIANGLES, 0, 6);
-  gl.deleteBuffer(pointBuffer);
-  gl.deleteBuffer(texBuffer);
-  gl.deleteBuffer(opacityBuffer);
+  // gl.deleteBuffer(pointBuffer);
+  // gl.deleteBuffer(texBuffer);
+  // gl.deleteBuffer(opacityBuffer);
 }
 
 function drawSameSize(gl, tex, opacity) {

@@ -508,8 +508,17 @@ function findIntersection(list, compareBelong, isIntermediateA, isIntermediateB)
                       }
                     }
                     else {
-                      let b1 = (ay2 - ay1) * ax1 / (ax2 - ax1) + ay1;
-                      let b2 = (by2 - by1) * bx1 / (bx2 - bx1) + by1;
+                      // 水平线默认k是0
+                      let k1 = 0;
+                      let k2 = 0;
+                      if (ay2 !== ay1) {
+                        k1 = (ax2 - ax1) / (ay2 - ay1);
+                      }
+                      if (by2 !== by1) {
+                        k2 = (bx2 - bx1) / (by2 - by1);
+                      }
+                      const b1 = ay1 - k1 * ax1;
+                      const b2 = by1 - k2 * bx1;
                       if(b1 === b2) {
                         overs = checkOverlapLine(ax1, ay1, ax2, ay2, seg,
                           bx1, by1, bx2, by2, item, false);

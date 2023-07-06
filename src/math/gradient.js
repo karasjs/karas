@@ -38,11 +38,11 @@ function getConicGradientImage(
   width,
   height,
   stop,
-  data
+  data,
 ) {
   if(stop.length < 2) {
     throw new Error(
-      'Conic gradient should recieve at least 2 gradient statements (start line and end line).'
+      'Conic gradient should receive at least 2 gradient statements (start and end).'
     );
   }
 

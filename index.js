@@ -5703,7 +5703,7 @@
    */
   function getConicGradientImage(originX, originY, width, height, stop, data) {
     if (stop.length < 2) {
-      throw new Error('Conic gradient should recieve at least 2 gradient statements (start line and end line).');
+      throw new Error('Conic gradient should receive at least 2 gradient statements (start and end).');
     }
 
     width = Math.floor(width);

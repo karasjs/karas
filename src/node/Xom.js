@@ -830,8 +830,9 @@ class Xom extends Node {
         ac.init(ac.__records2, ac.list2);
       }
       else {
-        ac.__records = ac.__records.concat(ar.list);
-        ac.__playAuto();
+        ac.__addAuto(ar.list);
+        // ac.__records = ac.__records.concat(ar.list);
+        // ac.__playAuto();
       }
     }
   }

@@ -39,6 +39,32 @@ class Controller {
     });
   }
 
+  // 后面parse的自动播放的dom动画，需要特殊处理，单独运行，否则会使得开始已有的动画重复播放
+  __addAuto(records) {
+    const list = this.__list;
+    records.forEach(item => {
+      let { target, animate, areaStart, areaDuration } = item;
+      if(target.isDestroyed || !animate) {
+        return;
+      }
+      if(!Array.isArray(animate)) {
+        animate = [animate];
+      }
+      animate.forEach(animate => {
+        let { value, options } = animate;
+        if(areaStart || !isNil(areaDuration)) {
+          options = Object.assign({}, options); // clone防止多个使用相同的干扰
+          options.areaStart = areaStart;
+          options.areaDuration = areaDuration;
+        }
+        let o = target.animate(value, options);
+        o.__isControlled = true;
+        this.add(o, list);
+      });
+      return animate;
+    });
+  }
+
   init(records = this.__records, list = this.__list) {
     // 检查尚未初始化的record，并初始化，后面才能调用各种控制方法
     if(records.length) {

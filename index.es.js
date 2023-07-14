@@ -15923,11 +15923,51 @@ var Controller = /*#__PURE__*/function () {
       this.__list.forEach(function (item) {
         item[k].apply(item, args);
       });
+    } // 后面parse的自动播放的dom动画，需要特殊处理，单独运行，否则会使得开始已有的动画重复播放
+
+  }, {
+    key: "__addAuto",
+    value: function __addAuto(records) {
+      var _this = this;
+
+      var list = this.__list;
+      records.forEach(function (item) {
+        var target = item.target,
+            animate = item.animate,
+            areaStart = item.areaStart,
+            areaDuration = item.areaDuration;
+
+        if (target.isDestroyed || !animate) {
+          return;
+        }
+
+        if (!Array.isArray(animate)) {
+          animate = [animate];
+        }
+
+        animate.forEach(function (animate) {
+          var value = animate.value,
+              options = animate.options;
+
+          if (areaStart || !isNil$c(areaDuration)) {
+            options = Object.assign({}, options); // clone防止多个使用相同的干扰
+
+            options.areaStart = areaStart;
+            options.areaDuration = areaDuration;
+          }
+
+          var o = target.animate(value, options);
+          o.__isControlled = true;
+
+          _this.add(o, list);
+        });
+        return animate;
+      });
     }
   }, {
     key: "init",
     value: function init() {
-      var _this = this;
+      var _this2 = this;
 
       var records = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.__records;
       var list = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : this.__list;
@@ -15964,7 +16004,7 @@ var Controller = /*#__PURE__*/function () {
             var o = target.animate(value, options);
             o.__isControlled = true;
 
-            _this.add(o, list);
+            _this2.add(o, list);
           });
         });
       } // 非自动播放后初始化需检测事件，给非自动播放添加上，并清空本次
@@ -15980,8 +16020,8 @@ var Controller = /*#__PURE__*/function () {
               var cb = function cb() {
                 var time = frame.__now;
 
-                if (time !== _this.__lastTime[arr[0]]) {
-                  _this.__lastTime[arr[0]] = time;
+                if (time !== _this2.__lastTime[arr[0]]) {
+                  _this2.__lastTime[arr[0]] = time;
                   arr[1] && arr[1]();
                 }
               };
@@ -16156,14 +16196,14 @@ var Controller = /*#__PURE__*/function () {
   }, {
     key: "__on",
     value: function __on(id, handle) {
-      var _this2 = this;
+      var _this3 = this;
 
       this.__list.forEach(function (item) {
         var cb = function cb() {
           var time = frame.__now;
 
-          if (time !== _this2.__lastTime[id]) {
-            _this2.__lastTime[id] = time;
+          if (time !== _this3.__lastTime[id]) {
+            _this3.__lastTime[id] = time;
             handle && handle();
           }
         };
@@ -22423,9 +22463,9 @@ var Xom = /*#__PURE__*/function (_Node) {
           ac.__records2 = ac.__records2.concat(ar.list);
           ac.init(ac.__records2, ac.list2);
         } else {
-          ac.__records = ac.__records.concat(ar.list);
+          ac.__addAuto(ar.list); // ac.__records = ac.__records.concat(ar.list);
+          // ac.__playAuto();
 
-          ac.__playAuto();
         }
       }
     }
@@ -49352,7 +49392,7 @@ var refresh = {
   ImgWebglCache: ImgWebglCache
 };
 
-var version = "0.86.22";
+var version = "0.86.23";
 
 var isString = util.isString;
 Geom.register('$line', Line);

@@ -758,7 +758,13 @@ function sliceSegment(seg, ps, isIntermediate) {
 // 相交的线段slice成多条后，老的删除，新的考虑添加进扫描列表和活动边列表，根据新的是否在范围内
 function activeNewSeg(segments, list, ael, x, ns) {
   ns.forEach(seg => {
-    let bbox = seg.bbox, x1 = bbox[0], x2 = bbox[2];
+    let coords = seg.coords;
+    let p1 = coords[0];
+    let p2 = coords[coords.length - 1];
+    let x1 = p1.x, x2 = p2.x;
+    if (x1 > x2) {
+      [x1, x2] = [x2, x1];
+    }
     // console.log(seg.toString(), x1, x2, x);
     // 活跃x之前无相交判断意义，除了竖线，出现活跃前只可能一方为竖线截断另一方的左边部分
     if(x2 <= x && x1 !== x2 && seg.coords.length !== 2) {
@@ -815,7 +821,13 @@ function activeNewSeg(segments, list, ael, x, ns) {
 function genHashXList(segments) {
   let hashX = {};
   segments.forEach(seg => {
-    let bbox = seg.bbox, min = bbox[0], max = bbox[2];
+    let coords = seg.coords;
+    let p1 = coords[0];
+    let p2 = coords[coords.length - 1];
+    let min = p1.x, max = p2.x;
+    if (min > max) {
+      [min, max] = [max, min];
+    }
     putHashX(hashX, min, seg);
     putHashX(hashX, max, seg);
   });
@@ -924,9 +936,24 @@ function segAboveCompare(segA, segB) {
       return pointAboveOrOnLine(a1, b1, b2);
     }
   }
-  // a是竖线的话看另一条在左还是右，左的话a在下，否则在上，因为此时只可能是左和a尾相连或右和a首相连
-  if(la === 2 && a1.x === ca[1].x) {
-    return b1.x >= a1.x;
+  // a是竖线的话，另外一条（一定是曲线）如果相连，特殊判断看在左在右，注意相连不可能出现a首b尾的情况
+  if (la === 2 && a1.x === ca[1].x) {
+    if (a1 === b1) {
+      // b只可能首相连，尾的会end优先出栈进不来
+      return true;
+    }
+    else if (ca[la - 1] === b1) {
+      return true;
+    }
+    else if (ca[la - 1] === cb[lb - 1]) {
+      return false;
+    }
+  }
+  // b是竖线同上，但只可能a和b首相连
+  if (lb === 2 && b1.x === cb[1].x) {
+    if (a1 === b1) {
+      return false;
+    }
   }
   // 如果有曲线，取二者x共同的区域部分[x1, x3]，以及区域中点x2，这3个点不可能都重合，一定会有某点的y比较大小
   let x1 = Math.max(a1.x, b1.x), x3 = Math.min(ca[la - 1].x, cb[lb - 1].x), x2 = x1 + (x3 - x1) * 0.5;
@@ -936,15 +963,16 @@ function segAboveCompare(segA, segB) {
       return y1 > y2;
     }
   }
+  let y1 = getYByX(ca, x2), y2 = getYByX(cb, x2);
+  if(y1 !== y2) {
+    return y1 > y2;
+  }
+  // 一般开始点和中间点就不会相同了，否则就是重合或相交，这里末尾点再判断下兜个底，曲线曾经出现过一个特例，末尾点判断的上下性反了，所以放在最后
   if(ca[la - 1] !== cb[lb - 1]) {
     let y1 = getYByX(ca, x3), y2 = getYByX(cb, x3);
     if(y1 !== y2) {
       return y1 > y2;
     }
-  }
-  let y1 = getYByX(ca, x2), y2 = getYByX(cb, x2);
-  if(y1 !== y2) {
-    return y1 > y2;
   }
 }
 

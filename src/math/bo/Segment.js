@@ -2,6 +2,26 @@ import bezier from '../bezier';
 
 class Segment {
   constructor(coords, belong) {
+    // 截取过程中曲线可能分成很小一截的水平/垂直直线，这里去除一下
+    if (coords.length > 2) {
+      const first = coords[0];
+      let equalX = true, equalY = true;
+      for (let i = 1, len = coords.length; i < len; i++) {
+        const item = coords[i];
+        if (item.x !== first.x) {
+          equalX = false;
+        }
+        if (item.y !== first.y) {
+          equalY = false;
+        }
+        if (!equalX && !equalY) {
+          break;
+        }
+      }
+      if (equalX || equalY) {
+        coords.splice(1, coords.length - 2);
+      }
+    }
     this.coords = coords;
     this.belong = belong; // 属于source多边形还是clip多边形，0和1区别
     this.calBbox();

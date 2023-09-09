@@ -44596,6 +44596,33 @@ var Point = /*#__PURE__*/function () {
 
 var Segment = /*#__PURE__*/function () {
   function Segment(coords, belong) {
+    // 截取过程中曲线可能分成很小一截的水平/垂直直线，这里去除一下
+    if (coords.length > 2) {
+      var first = coords[0];
+      var equalX = true,
+          equalY = true;
+
+      for (var i = 1, len = coords.length; i < len; i++) {
+        var item = coords[i];
+
+        if (item.x !== first.x) {
+          equalX = false;
+        }
+
+        if (item.y !== first.y) {
+          equalY = false;
+        }
+
+        if (!equalX && !equalY) {
+          break;
+        }
+      }
+
+      if (equalX || equalY) {
+        coords.splice(1, coords.length - 2);
+      }
+    }
+
     this.coords = coords;
     this.belong = belong; // 属于source多边形还是clip多边形，0和1区别
 
@@ -45694,10 +45721,19 @@ function sliceSegment(seg, ps, isIntermediate) {
 
 function activeNewSeg(segments, list, ael, x, ns) {
   ns.forEach(function (seg) {
-    var bbox = seg.bbox,
-        x1 = bbox[0],
-        x2 = bbox[2]; // console.log(seg.toString(), x1, x2, x);
+    var coords = seg.coords;
+    var p1 = coords[0];
+    var p2 = coords[coords.length - 1];
+    var x1 = p1.x,
+        x2 = p2.x;
+
+    if (x1 > x2) {
+      var _ref = [x2, x1];
+      x1 = _ref[0];
+      x2 = _ref[1];
+    } // console.log(seg.toString(), x1, x2, x);
     // 活跃x之前无相交判断意义，除了竖线，出现活跃前只可能一方为竖线截断另一方的左边部分
+
 
     if (x2 <= x && x1 !== x2 && seg.coords.length !== 2) {
       segments.push(seg);
@@ -45760,9 +45796,18 @@ function activeNewSeg(segments, list, ael, x, ns) {
 function genHashXList(segments) {
   var hashX = {};
   segments.forEach(function (seg) {
-    var bbox = seg.bbox,
-        min = bbox[0],
-        max = bbox[2];
+    var coords = seg.coords;
+    var p1 = coords[0];
+    var p2 = coords[coords.length - 1];
+    var min = p1.x,
+        max = p2.x;
+
+    if (min > max) {
+      var _ref2 = [max, min];
+      min = _ref2[0];
+      max = _ref2[1];
+    }
+
     putHashX(hashX, min, seg);
     putHashX(hashX, max, seg);
   });
@@ -45882,11 +45927,25 @@ function segAboveCompare(segA, segB) {
     } else {
       return pointAboveOrOnLine(a1, b1, b2);
     }
-  } // a是竖线的话看另一条在左还是右，左的话a在下，否则在上，因为此时只可能是左和a尾相连或右和a首相连
+  } // a是竖线的话，另外一条（一定是曲线）如果相连，特殊判断看在左在右，注意相连不可能出现a首b尾的情况
 
 
   if (la === 2 && a1.x === ca[1].x) {
-    return b1.x >= a1.x;
+    if (a1 === b1) {
+      // b只可能首相连，尾的会end优先出栈进不来
+      return true;
+    } else if (ca[la - 1] === b1) {
+      return true;
+    } else if (ca[la - 1] === cb[lb - 1]) {
+      return false;
+    }
+  } // b是竖线同上，但只可能a和b首相连
+
+
+  if (lb === 2 && b1.x === cb[1].x) {
+    if (a1 === b1) {
+      return false;
+    }
   } // 如果有曲线，取二者x共同的区域部分[x1, x3]，以及区域中点x2，这3个点不可能都重合，一定会有某点的y比较大小
 
 
@@ -45903,6 +45962,14 @@ function segAboveCompare(segA, segB) {
     }
   }
 
+  var y1 = getYByX(ca, x2),
+      y2 = getYByX(cb, x2);
+
+  if (y1 !== y2) {
+    return y1 > y2;
+  } // 一般开始点和中间点就不会相同了，否则就是重合或相交，这里末尾点再判断下兜个底，曲线曾经出现过一个特例，末尾点判断的上下性反了，所以放在最后
+
+
   if (ca[la - 1] !== cb[lb - 1]) {
     var _y3 = getYByX(ca, x3),
         _y4 = getYByX(cb, x3);
@@ -45910,13 +45977,6 @@ function segAboveCompare(segA, segB) {
     if (_y3 !== _y4) {
       return _y3 > _y4;
     }
-  }
-
-  var y1 = getYByX(ca, x2),
-      y2 = getYByX(cb, x2);
-
-  if (y1 !== y2) {
-    return y1 > y2;
   }
 } // 获取曲线单调性t值，有结果才返回
 
@@ -49392,7 +49452,7 @@ var refresh = {
   ImgWebglCache: ImgWebglCache
 };
 
-var version = "0.86.23";
+var version = "0.86.24";
 
 var isString = util.isString;
 Geom.register('$line', Line);

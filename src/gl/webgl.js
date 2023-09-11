@@ -376,7 +376,7 @@ function drawBlur(gl, program, tex1, width, height) {
       gl.uniform2f(u_direction, max, 0);
     }
     else {
-      gl.uniform2f(u_direction, max * ratio, 0);
+      gl.uniform2f(u_direction, max / ratio, 0);
     }
     gl.uniform1i(u_texture, 0);
     gl.drawArrays(gl.TRIANGLES, 0, 6);

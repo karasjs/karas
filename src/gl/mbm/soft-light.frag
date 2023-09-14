@@ -12,9 +12,9 @@ uniform sampler2D u_texture2;
 float op(float a, float b) {
   return b <= 0.5
     ? a - (1.0 - 2.0 * b) * a * (1.0 - a)
-    : a + (2.0 * b - 1.0) * (a <= 0.25
+    : a + (2.0 * b - 1.0) * ((a <= 0.25
       ? ((16.0 * a - 12.0) * a + 4.0) * a
-      : sqrt(a) - a);
+      : sqrt(a)) - a);
 }
 
 vec3 premultipliedAlpha(vec4 color) {

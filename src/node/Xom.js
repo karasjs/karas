@@ -3261,6 +3261,11 @@ class Xom extends Node {
     parent && parent.__deleteStruct(this, i);
     // 不可见仅改变数据结构
     if(this.__computedStyle[DISPLAY] === 'none' || parent && parent.__computedStyle[DISPLAY] === 'none') {
+      let temp = this;
+      while(temp.isShadowRoot) {
+        temp = temp.__host;
+        temp.__destroy();
+      }
       this.__destroy();
       if(isFunction(cb)) {
         cb(true);

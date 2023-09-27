@@ -25191,6 +25191,14 @@
         parent && parent.__deleteStruct(this, i); // 不可见仅改变数据结构
 
         if (this.__computedStyle[DISPLAY$6] === 'none' || parent && parent.__computedStyle[DISPLAY$6] === 'none') {
+          var temp = this;
+
+          while (temp.isShadowRoot) {
+            temp = temp.__host;
+
+            temp.__destroy();
+          }
+
           this.__destroy();
 
           if (isFunction$4(cb)) {

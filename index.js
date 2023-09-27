@@ -49466,7 +49466,7 @@
     ImgWebglCache: ImgWebglCache
   };
 
-  var version = "0.86.25";
+  var version = "0.86.26";
 
   var isString = util.isString;
   Geom.register('$line', Line);

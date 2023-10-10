@@ -784,11 +784,11 @@ class Text extends Node {
   }
 
   get root() {
-    return this.domParent.root;
+    return (this.domParent || {}).root;
   }
 
   get currentStyle() {
-    return this.domParent.currentStyle;
+    return (this.domParent || {}).currentStyle;
   }
 
   get style() {
@@ -796,15 +796,15 @@ class Text extends Node {
   }
 
   get computedStyle() {
-    return this.domParent.computedStyle;
+    return (this.domParent || {}).computedStyle;
   }
 
   get cacheStyle() {
-    return this.domParent.__cacheStyle;
+    return (this.domParent || {}).__cacheStyle;
   }
 
   get bbox() {
-    let { sx, sy, width, height, root, currentStyle: { [TEXT_STROKE_WIDTH]: textStrokeWidth } } = this;
+    let { sx, sy, width, height, root, currentStyle: { [TEXT_STROKE_WIDTH]: textStrokeWidth = [0] } = {} } = this;
     let half = 0;
     if(textStrokeWidth[1] === REM) {
       half = Math.max(textStrokeWidth[0] * root.computedStyle[FONT_SIZE] * 0.5, half);

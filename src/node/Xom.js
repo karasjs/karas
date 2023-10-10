@@ -2879,12 +2879,12 @@ class Xom extends Node {
       let {
         __sx1, __sy1, clientWidth, clientHeight,
         currentStyle: {
-          [BORDER_TOP_WIDTH]: borderTopWidth,
-          [BORDER_RIGHT_WIDTH]: borderRightWidth,
-          [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
-          [BORDER_LEFT_WIDTH]: borderLeftWidth,
-          [BOX_SHADOW]: boxShadow,
-        },
+          [BORDER_TOP_WIDTH]: borderTopWidth = [0],
+          [BORDER_RIGHT_WIDTH]: borderRightWidth = [0],
+          [BORDER_BOTTOM_WIDTH]: borderBottomWidth = [0],
+          [BORDER_LEFT_WIDTH]: borderLeftWidth = [0],
+          [BOX_SHADOW]: boxShadow = [],
+        } = {},
       } = this;
       let [ox, oy] = this.__spreadBbox(boxShadow);
       clientWidth += borderLeftWidth[0] + borderRightWidth[0];

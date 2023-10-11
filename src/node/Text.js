@@ -1004,35 +1004,35 @@ class Text extends Node {
   }
 
   get root() {
-    return this.__domParent.__root;
+    return (this.__domParent || {}).__root;
   }
 
   get currentStyle() {
-    return this.__domParent.__currentStyle;
+    return (this.__domParent || {}).__currentStyle;
   }
 
   get __currentStyle() {
-    return this.__domParent.__currentStyle;
+    return (this.__domParent || {}).__currentStyle;
   }
 
   get style() {
-    return this.__domParent.__style;
+    return (this.__domParent || {}).__style;
   }
 
   get computedStyle() {
-    return this.__domParent.__computedStyle;
+    return (this.__domParent || {}).__computedStyle;
   }
 
   get __computedStyle() {
-    return this.__domParent.__computedStyle;
+    return (this.__domParent || {}).__computedStyle;
   }
 
   get cacheStyle() {
-    return this.__domParent.__cacheStyle;
+    return (this.__domParent || {}).__cacheStyle;
   }
 
   get __cacheStyle() {
-    return this.__domParent.__cacheStyle;
+    return (this.__domParent || {}).__cacheStyle;
   }
 
   get bbox() {
@@ -1064,15 +1064,15 @@ class Text extends Node {
   }
 
   get matrix() {
-    return this.__domParent.__matrix;
+    return (this.__domParent || {}).__matrix;
   }
 
   get matrixEvent() {
-    return this.__domParent.__matrixEvent;
+    return (this.__domParent || {}).__matrixEvent;
   }
 
   get perspectiveMatrix() {
-    return this.__domParent.__perspectiveMatrix;
+    return (this.__domParent || {}).__perspectiveMatrix;
   }
 
   get fitFontSize() {

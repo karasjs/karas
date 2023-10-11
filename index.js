@@ -14251,42 +14251,42 @@
     }, {
       key: "root",
       get: function get() {
-        return this.__domParent.__root;
+        return (this.__domParent || {}).__root;
       }
     }, {
       key: "currentStyle",
       get: function get() {
-        return this.__domParent.__currentStyle;
+        return (this.__domParent || {}).__currentStyle;
       }
     }, {
       key: "__currentStyle",
       get: function get() {
-        return this.__domParent.__currentStyle;
+        return (this.__domParent || {}).__currentStyle;
       }
     }, {
       key: "style",
       get: function get() {
-        return this.__domParent.__style;
+        return (this.__domParent || {}).__style;
       }
     }, {
       key: "computedStyle",
       get: function get() {
-        return this.__domParent.__computedStyle;
+        return (this.__domParent || {}).__computedStyle;
       }
     }, {
       key: "__computedStyle",
       get: function get() {
-        return this.__domParent.__computedStyle;
+        return (this.__domParent || {}).__computedStyle;
       }
     }, {
       key: "cacheStyle",
       get: function get() {
-        return this.__domParent.__cacheStyle;
+        return (this.__domParent || {}).__cacheStyle;
       }
     }, {
       key: "__cacheStyle",
       get: function get() {
-        return this.__domParent.__cacheStyle;
+        return (this.__domParent || {}).__cacheStyle;
       }
     }, {
       key: "bbox",
@@ -14323,17 +14323,17 @@
     }, {
       key: "matrix",
       get: function get() {
-        return this.__domParent.__matrix;
+        return (this.__domParent || {}).__matrix;
       }
     }, {
       key: "matrixEvent",
       get: function get() {
-        return this.__domParent.__matrixEvent;
+        return (this.__domParent || {}).__matrixEvent;
       }
     }, {
       key: "perspectiveMatrix",
       get: function get() {
-        return this.__domParent.__perspectiveMatrix;
+        return (this.__domParent || {}).__perspectiveMatrix;
       }
     }, {
       key: "fitFontSize",

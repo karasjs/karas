@@ -287,8 +287,8 @@ function pointAtBezierWithLength(points, length, percent = 1, maxIteration = 20,
     // Newton 法
     let derivative1 = norm(at(approachT, points, 1)); // 1 阶导数
     let derivative2 = norm(at(approachT, points, 2)); // 2 阶导数
-    let numerator = 2 * d * derivative1;
-    let denominator = 2 * d * derivative2 + derivative1 * derivative1;
+    let numerator = d * derivative1;
+    let denominator = d * derivative2 + derivative1 * derivative1;
     approachT = approachT - numerator / denominator;
     if(Math.abs(approachT - preApproachT) < eps) {
       break;
